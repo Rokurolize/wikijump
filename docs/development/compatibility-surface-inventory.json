@@ -377,9 +377,10 @@
       "open43.case:M806_IMAGE_WHITESPACE_AND_HEAD_BOUNDARY",
       "open43.case:M806_SOURCELESS_ATTACHMENT_AND_RESIZE",
       "open43.case:M806_UNFROZEN_ARGUMENT_MATRIX",
+      "open43.case:Q1026_ACTOR_SPECIAL_IDENTITY_MATRIX",
       "open43.case:Q1026_BROWSER_PRINTUSER_INTERVALS",
       "open43.case:Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY",
-      "open43.case:Q1026_FULL_ACTOR_GENERATED_CACHE_MATRIX",
+      "open43.case:Q1026_RENAME_DELETE_IMPORT_INVALIDATION",
       "open43.case:Q1026_TYPED_NUMERIC_AND_DELETED_IDENTITY",
       "open43.case:Q1026_V7_POSITIONAL_LOOKUP",
       "open43.case:Q1027_ANONYMOUS_PERMISSION_AND_COMPLETE_BOUNDED_SCAN",
@@ -5707,6 +5708,11 @@
       "target": "wikijump.runtime:media"
     },
     {
+      "source": "open43-audit-case:Q1026_ACTOR_SPECIAL_IDENTITY_MATRIX",
+      "type": "implemented_by",
+      "target": "wikijump.runtime:search-users"
+    },
+    {
       "source": "open43-audit-case:Q1026_BROWSER_PRINTUSER_INTERVALS",
       "type": "implemented_by",
       "target": "wikijump.runtime:search-users"
@@ -5717,7 +5723,7 @@
       "target": "wikijump.runtime:search-users"
     },
     {
-      "source": "open43-audit-case:Q1026_FULL_ACTOR_GENERATED_CACHE_MATRIX",
+      "source": "open43-audit-case:Q1026_RENAME_DELETE_IMPORT_INVALIDATION",
       "type": "implemented_by",
       "target": "wikijump.runtime:search-users"
     },
@@ -11195,8 +11201,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "b421645397e4e511094d4ea3797f00cd108c7607",
-      "tree": "035d5af2c858eb0369753fea3d1a72b3178f1f33"
+      "commit": "4eb9ec870c11c614953b3478dc494bdefe6bc800",
+      "tree": "1febd434cd810930df2b50ae21875da2d727b8e7"
     },
     "ftml": {
       "commit": "7ce4f22bcd9d7c0fffb901b5c0967987b2daa0d5",
@@ -11349,7 +11355,7 @@
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
-        "sha256": "b05b6b568503ef81f53f7506350263137309f8162dd561ccf9a34b5fc12a8e1f"
+        "sha256": "a0e881675df55f39db8f99d8d342113ceb5b7eefae15bffb98988128035c528a"
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
@@ -11373,11 +11379,11 @@
       },
       {
         "path": "docs/development/open43-blocked-evidence-routing.json",
-        "sha256": "88c22c2d3ed9542f80723c44b2f211a0a435e1c75cfc20283be509b5a8c46ed4"
+        "sha256": "fa901c2493d37cf89849a0011f2b28ed07ea30eb427a3000d8bf918ca36d4749"
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "e87998952985b6605b20de5b970bab95c9882571975820cc715b3d003145f130"
+        "sha256": "6ea78b6e2045a90c0f1a964413847504e482df7eafa9a8b568349f9a739836ba"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -11393,7 +11399,7 @@
       },
       {
         "path": "docs/development/open43-q-search-users-closure-audit.json",
-        "sha256": "7844c652ccd984af3d1c256c7e162f8374b4483b70c6c18c95bf005594637dbd"
+        "sha256": "ab0f5a355c3e00efffc4b9207ed24c7359ecfbaf120983b86cdd5957f6dff470"
       },
       {
         "path": "docs/development/open43-s-settings-browser-closure-audit.json",
@@ -11417,15 +11423,15 @@
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
-        "sha256": "fe422968bdb53a3e7f6bd00ffc8f79620fcf0f5b2c81acfdc4e5c838f0471baf"
+        "sha256": "1590b17869bc8dce525c9021a9b25af58ddc4aa6aec8cfb1f1e79d5a7372a18b"
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "a37d0c9e95087a81b09968ecc3d57b0265abcf212681a1e71535bcc3a18247cb"
+        "sha256": "0b2f677b82725e1fb3e138bcdac73ca8267bc1ad9132da416c0a649928cee8d2"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "1cd6076c0aa11a98ea14d8fb650fb815b1c8723ccc71c9c97ef20a5c06ef55d1"
+        "sha256": "5e07694b531d570ced2276e9fe301b380155ea806bcb3ebfd4dde33a6110b386"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -11645,7 +11651,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "a37d0c9e95087a81b09968ecc3d57b0265abcf212681a1e71535bcc3a18247cb"
+        "sha256": "0b2f677b82725e1fb3e138bcdac73ca8267bc1ad9132da416c0a649928cee8d2"
       },
       {
         "path": "wws/src/route.rs",
@@ -11736,7 +11742,7 @@
     ]
   },
   "counts": {
-    "total": 931,
+    "total": 932,
     "by_kind": {
       "catalog_feature": 210,
       "deepwell_jsonrpc_method": 167,
@@ -11746,7 +11752,7 @@
       "framerail_server_action": 97,
       "framerail_xmlrpc_method": 17,
       "missing_page_control": 2,
-      "open43_audit_case": 284,
+      "open43_audit_case": 285,
       "page_action": 25,
       "wikidot_py_amc_module_shape": 22,
       "wws_route": 50
@@ -43216,6 +43222,48 @@
       ]
     },
     {
+      "surface_id": "open43-audit-case:Q1026_ACTOR_SPECIAL_IDENTITY_MATRIX",
+      "kind": "open43_audit_case",
+      "public_reference": [
+        "docs/development/open43-q-search-users-closure-audit.json#Q1026_ACTOR_SPECIAL_IDENTITY_MATRIX"
+      ],
+      "existing_refs": {
+        "issues": [
+          1026
+        ],
+        "cases": [
+          "Q1026_ACTOR_SPECIAL_IDENTITY_MATRIX"
+        ],
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q1026-user-identity-candidate-case-set.mjs"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "open43.case:Q1026_ACTOR_SPECIAL_IDENTITY_MATRIX",
+      "implementation_owners": [
+        "wikijump.runtime:search-users"
+      ]
+    },
+    {
       "surface_id": "open43-audit-case:Q1026_BROWSER_PRINTUSER_INTERVALS",
       "kind": "open43_audit_case",
       "public_reference": [
@@ -43300,17 +43348,17 @@
       ]
     },
     {
-      "surface_id": "open43-audit-case:Q1026_FULL_ACTOR_GENERATED_CACHE_MATRIX",
+      "surface_id": "open43-audit-case:Q1026_RENAME_DELETE_IMPORT_INVALIDATION",
       "kind": "open43_audit_case",
       "public_reference": [
-        "docs/development/open43-q-search-users-closure-audit.json#Q1026_FULL_ACTOR_GENERATED_CACHE_MATRIX"
+        "docs/development/open43-q-search-users-closure-audit.json#Q1026_RENAME_DELETE_IMPORT_INVALIDATION"
       ],
       "existing_refs": {
         "issues": [
           1026
         ],
         "cases": [
-          "Q1026_FULL_ACTOR_GENERATED_CACHE_MATRIX"
+          "Q1026_RENAME_DELETE_IMPORT_INVALIDATION"
         ],
         "tests": []
       },
@@ -43334,7 +43382,7 @@
         "status": "blocked",
         "references": []
       },
-      "specification_owner": "open43.case:Q1026_FULL_ACTOR_GENERATED_CACHE_MATRIX",
+      "specification_owner": "open43.case:Q1026_RENAME_DELETE_IMPORT_INVALIDATION",
       "implementation_owners": [
         "wikijump.runtime:search-users"
       ]

@@ -1057,7 +1057,7 @@ test("CLI emits the pinned FTML raw manifest without changing the public denomin
 
   assert.equal(result.status, 0, result.stderr)
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
-  assert.equal(inventory.counts.total, 931)
+  assert.equal(inventory.counts.total, 932)
   assert.deepEqual(inventory.ftml_raw_surface_manifest.counts, {
     lexer_rules: 62,
     parser_functions: 3,
@@ -1539,7 +1539,7 @@ test("CLI emits closed owner keys and typed edges without double-counting FTML r
     inventory.ftml_raw_surface_manifest.records.map(({ surface_id: surfaceId }) => surfaceId)
   )
   assert.ok([...rawIds].every((surfaceId) => !publicIds.has(surfaceId)))
-  assert.equal(inventory.counts.total, 931)
+  assert.equal(inventory.counts.total, 932)
   assert.equal(
     inventory.relationship_edges.filter(({ type }) => type === "alias").length,
     47

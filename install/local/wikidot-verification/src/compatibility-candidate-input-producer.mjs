@@ -5,7 +5,11 @@ import https from "node:https";
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { buildQ1026UserIdentitySource } from "./open43-q1026-user-identity-candidate-case-set.mjs";
+import {
+  buildQ1026UserIdentitySource,
+  Q1026_FIXTURE_PROVENANCE,
+  Q1026_USER_FIXTURES,
+} from "./open43-q1026-user-identity-candidate-case-set.mjs";
 import { OPEN43_Q1032_SAVED_DIRECTORY_SOURCE } from "./open43-q1032-members-userinfo-candidate-contract.mjs";
 import { SAVED_SOURCE as Q1036_SAVED_SOURCE } from "./open43-q1036-search-feed-candidate-contract.mjs";
 import { FORUM_MINI_SAVED_SOURCE } from "./open43-q778-forum-mini-candidate-case-set.mjs";
@@ -27,10 +31,6 @@ const STANDARD_SITE_SLUG = "scp-wiki";
 const FOREIGN_SITE_ID = 6_000_006;
 const ACTOR_IDS = Object.freeze({ editor: 20_000_007, eligible: 20_000_008, registered: 20_000_009, pending: 20_000_010, banned: 20_000_011, other: 20_000_012 });
 export const Q778_WIKIDOT_AUTHOR = Object.freeze({ user_id: 20_000_013, name: "Q778 Wikidot Author", slug: "q778-wikidot-author" });
-const Q1026_USERS = Object.freeze({
-  visible_user: Object.freeze({ user_id: 19_102_600, name: "Extant User", slug: "extant-user", is_deleted: false }),
-  deleted_user: Object.freeze({ user_id: 19_102_601, name: "Deleted User", slug: "deleted-user", is_deleted: true }),
-});
 const MEDIA_BROWSER_EVIDENCE = Object.freeze({
   M756_BROWSER_CACHE_TRANSITIONS: "E_ICON_OBSERVATIONS",
   M776_BROWSER_GEOMETRY_AND_NETWORK: "E_G06",
@@ -655,13 +655,16 @@ export async function prepareCompatibilityCandidateInputs(args) {
     const q1036 = await page("q1036-saved-boundary", "Q1036 saved boundary", Q1036_SAVED_SOURCE);
     Object.assign(general, { saved_page_id: q1036.page_id, saved_revision_id: q1036.revision_id, saved_page_slug: q1036.slug });
 
-    sql(database, `insert into known_user(user_id) values (${Q1026_USERS.visible_user.user_id}),(${Q1026_USERS.deleted_user.user_id}) on conflict do nothing; insert into wikidot_user(user_id,created_at,fetched_at,is_deleted,name,slug,karma,is_pro) values (${Q1026_USERS.visible_user.user_id},now()-interval '1 second',now(),false,'${Q1026_USERS.visible_user.name}','${Q1026_USERS.visible_user.slug}',0,false),(${Q1026_USERS.deleted_user.user_id},now()-interval '1 second',now(),true,'${Q1026_USERS.deleted_user.name}','${Q1026_USERS.deleted_user.slug}',0,false) on conflict (user_id) do update set is_deleted=excluded.is_deleted,name=excluded.name,slug=excluded.slug,fetched_at=excluded.fetched_at;`);
+    const q1026Users = Object.values(Q1026_USER_FIXTURES);
+    const q1026KnownRows = q1026Users.map(({ user_id }) => `(${user_id})`).join(",");
+    const q1026WikidotRows = q1026Users.map(({ user_id, name, slug, is_deleted }) => `(${user_id},now()-interval '1 second',now(),${is_deleted ? "true" : "false"},$x$${name}$x$,$x$${slug}$x$,0,false)`).join(",");
+    sql(database, `insert into known_user(user_id) values ${q1026KnownRows} on conflict do nothing; insert into wikidot_user(user_id,created_at,fetched_at,is_deleted,name,slug,karma,is_pro) values ${q1026WikidotRows} on conflict (user_id) do update set is_deleted=excluded.is_deleted,name=excluded.name,slug=excluded.slug,fetched_at=excluded.fetched_at;`);
     sql(database, `select setval('known_user_user_id_seq',(select max(user_id) from known_user),true);`);
-    const q1026Source = buildQ1026UserIdentitySource(Q1026_USERS.visible_user, Q1026_USERS.deleted_user);
+    const q1026Source = buildQ1026UserIdentitySource(Q1026_USER_FIXTURES);
     const q1026Page = await page("fixture-wikidot-user-identity-matrix", "Q1026 identity matrix", q1026Source);
     const q1026Path = path.join(args["output-private-dir"], "q1026-r11.json");
     const q1026Input = JSON.parse(await fs.readFile(q1026Path, "utf8"));
-    Object.assign(q1026Input.fixture, { site_id: SITE_ID, page: { page_id: q1026Page.page_id, revision_id: q1026Page.revision_id, slug: q1026Page.slug }, source_sha256: sha256(q1026Source), ...Q1026_USERS });
+    Object.assign(q1026Input.fixture, { site_id: SITE_ID, page: { page_id: q1026Page.page_id, revision_id: q1026Page.revision_id, slug: q1026Page.slug }, source_sha256: sha256(q1026Source), provenance: Q1026_FIXTURE_PROVENANCE, ...Q1026_USER_FIXTURES });
     await fs.writeFile(q1026Path, `${JSON.stringify(q1026Input, null, 2)}\n`, { mode: 0o600 });
 
     const q1034Pages = {};

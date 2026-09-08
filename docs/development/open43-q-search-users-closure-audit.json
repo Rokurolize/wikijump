@@ -117,6 +117,12 @@
       "authority": "sealed anonymous live user-block positional and missing-user fragments"
     },
     {
+      "evidence_id": "USER_SYNTAX_ACTOR_MATRIX_20260908",
+      "path": "install/local/wikidot-verification/artifacts/issue1026-user-actor-live-20260908.json",
+      "sha256": "ab581243e867a224458888ac4768ad7b38d7abfb02ba68f7968301c5bb2dfae7",
+      "authority": "four-request current live PagePreview matrix proving observed user-syntax actor invariance, system and anonymous special identities, and digit-only name-key behavior"
+    },
+    {
       "evidence_id": "MODULE_OWN_LINE_LIVE_REFERENCES",
       "path": "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl",
       "sha256": "686f9fd383f51b5fe393b5f98b2a7e499010bfb691a39086309170a29982a783",
@@ -249,11 +255,12 @@
         {
           "case_id": "Q1026_TYPED_NUMERIC_AND_DELETED_IDENTITY",
           "status": "implemented_unverified",
+          "evidence_id": "USER_SYNTAX_ACTOR_MATRIX_20260908",
           "public_tests": [
             "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries",
             "deepwell/src/services/render/ftml_user_info.rs#tests"
           ],
-          "result": "Digit-only keys use the user-ID namespace, slug lookup remains separate, deleted imported identities fail closed before profile links are rendered, and profile URLs are generated from typed identity rather than parsed as authority."
+          "result": "Digit-only authored user text stays in the normalized name namespace and does not fall back to a numeric user-ID lookup. The current Deepwell regression also proves that a separately loaded identity whose display name itself is numeric can resolve by that name, while deleted imported identities fail closed before profile links are rendered and profile URLs come only from typed resolved identity."
         }
       ],
       "needs_source": [],
@@ -265,13 +272,17 @@
         {
           "case_id": "Q1026_BROWSER_PRINTUSER_INTERVALS",
           "requires": "Verify link, avatar, hover, focus, network, initial paint, and settled printuser DOM against a sealed live identity matrix."
+        },
+        {
+          "case_id": "Q1026_ACTOR_SPECIAL_IDENTITY_MATRIX",
+          "requires": "Run the expanded user-syntax source through public preview and saved page for anonymous plus editor, administrator, and unrelated authenticated actors on one exact candidate. Prove exact output invariance across actors, system printuser, literal Anonymous, starred avatarhover, colliding-name fail-closed behavior, Unicode normalization, display-name 2 precedence over numeric user ID 2, and no numeric-ID fallback for a different pure-digit lookup."
         }
       ],
       "blocked_evidence": [
         {
-          "case_id": "Q1026_FULL_ACTOR_GENERATED_CACHE_MATRIX",
-          "missing": "Independent live evidence and local authority are incomplete for system and anonymous special identities, private actor differences, generated-name forgery resistance, rename/delete/import invalidation, and hover/avatar behavior.",
-          "forbidden_inference": "Do not derive a missing or deleted identity from a profile URL and do not invent a privacy policy absent from the local model."
+          "case_id": "Q1026_RENAME_DELETE_IMPORT_INVALIDATION",
+          "missing": "The current import seam inserts a Wikidot identity but does not define a same-ID rename/delete refresh lifecycle. Exact rename, delete, re-import, and generated-name cache invalidation therefore remain without an authoritative local transition contract.",
+          "forbidden_inference": "Do not turn the insert-only import seam into an undocumented upsert merely to make the candidate matrix pass. Keep same-ID rename/delete/import invalidation actionable until the producer and invalidation owner are evidenced."
         }
       ],
       "closure_verdict": "candidate_and_evidence_required"

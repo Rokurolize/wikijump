@@ -97,7 +97,7 @@ const AUDITED_OWNERSHIP_REPORTS = Object.freeze([
     sha256: "ef87c37c9bd2ebf661d003c361f386c5d979b30aeebb18a6b44c307124f0636c"
   }
 ])
-const AUDITED_CATALOG_SHA256 = "fe422968bdb53a3e7f6bd00ffc8f79620fcf0f5b2c81acfdc4e5c838f0471baf"
+const AUDITED_CATALOG_SHA256 = "1590b17869bc8dce525c9021a9b25af58ddc4aa6aec8cfb1f1e79d5a7372a18b"
 const AUDITED_CATALOG_FALLBACK = Object.freeze({
   count: 92,
   surface_ids_sha256: "08a6222562288778e1b0eb705a0281401424f514aeb542bedbabf37a0261a95e",

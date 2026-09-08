@@ -293,7 +293,7 @@ test("issue #1372 candidate seam verifyCleanup requires the public absence proof
 test("candidate case registry exposes the real #1026 user identity adapter", async () => {
   const caseSet = await candidateCaseSet("open43-q1026-user-identity");
   assert.equal(caseSet.id, "open43-q1026-user-identity");
-  assert.deepEqual(caseSet.caseIds, ["Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY", "Q1026_BROWSER_PRINTUSER_INTERVALS"]);
+  assert.deepEqual(caseSet.caseIds, ["Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY", "Q1026_BROWSER_PRINTUSER_INTERVALS", "Q1026_ACTOR_SPECIAL_IDENTITY_MATRIX"]);
   assert.equal(typeof caseSet.prepareRun, "function");
 });
 

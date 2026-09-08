@@ -290,7 +290,8 @@
       "name": "open43-q1026-user-identity",
       "case_ids": [
         "Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY",
-        "Q1026_BROWSER_PRINTUSER_INTERVALS"
+        "Q1026_BROWSER_PRINTUSER_INTERVALS",
+        "Q1026_ACTOR_SPECIAL_IDENTITY_MATRIX"
       ]
     },
     {
