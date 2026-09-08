@@ -847,7 +847,7 @@ export function createOpen43B690GeometryCandidateCaseSet() {
                 liveCapture.document,
                 `${canary.slug} settled live document`,
               ),
-              live_capture_sha256: sha256Value(liveCapture),
+              live_capture_sha256: sha256Value(liveRecords[canary.slug].capture),
               artifact_sha256: {
                 domcontentloaded_immediate: capture.first_paint.screenshot.sha256,
                 settled_viewport: capture.settled_viewport_screenshot.sha256,
