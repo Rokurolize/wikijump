@@ -12,8 +12,10 @@ import {
   createPersistentBrowserRequestGate,
   createBrowserResponseCache,
   evidenceReplaySubresourceFulfillment,
+  fetchBrowserEvidenceResponse,
   isWikidotCapturePublicOrigin,
   installBrowserRequestGate,
+  lookupBrowserEvidenceResponse,
   resolveEvidenceReplaySubresourceRedirect,
 } from "./browser-request-gate.mjs";
 import { startCaptureEgressProxy } from "./capture-egress-proxy.mjs";
@@ -142,7 +144,7 @@ export async function installCandidateFilePortRoute(
       (requestUrl.pathname.startsWith("/local--files/") ||
         requestUrl.pathname.startsWith("/local--code/"));
     if (!isSourceFileAuthority && !isLocalPageFile) {
-      await route.continue();
+      await route.fallback();
       return;
     }
     if (requestUrl.origin === canonicalFilesOrigin) requestUrl.port = files.port;
@@ -183,9 +185,12 @@ export async function installCandidateFilePortRoute(
       responseStatus !== 200 &&
       (sourcePath.startsWith("/local--files/") || sourcePath.startsWith("/local--code/"))
     ) {
-      const cached = responseCache.get(
-        `https://${filesSite}.wdfiles.com${sourcePath}${new URL(route.request().url()).search}`,
-      );
+      const cacheUrl = `https://${filesSite}.wdfiles.com${sourcePath}${new URL(route.request().url()).search}`;
+      const cached = await lookupBrowserEvidenceResponse({
+        responseCache,
+        request: route.request(),
+        targetUrl: cacheUrl,
+      });
       if (cached !== null) {
         response = cached;
         responseStatus = cached.status;
@@ -255,6 +260,13 @@ export async function installCandidateFilePortRoute(
           headers: responseHeaders,
           body: Buffer.alloc(0),
         },
+        fetchRetainedEntry: (targetUrl) => fetchBrowserEvidenceResponse({
+          route,
+          gate: sourceRequestGate,
+          responseCache,
+          request: route.request(),
+          targetUrl,
+        }),
       });
       if (resolved?.entry) {
         await route.fulfill(

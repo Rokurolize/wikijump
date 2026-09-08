@@ -2,7 +2,6 @@ const STANDALONE_SELECTOR = 'a.wiki-standalone-button[href="javascript:;"]';
 const VIEWPORT = Object.freeze({ width: 1280, height: 900 });
 const TIMEOUT_MS = 300_000;
 const PROBE_KEY = "__open43Issue1041Lifecycle";
-const PROBE_STORAGE_KEY = "__open43Issue1041LifecycleState";
 const CAPTURE_CONTRACT = Object.freeze({
   slug: "issue1041-lifecycle",
   theme_family: "candidate",
@@ -151,11 +150,7 @@ export class Open43Issue1041LifecycleBrowserAdapter {
           storageState: this.#storageState(actor),
           viewport: VIEWPORT,
         });
-        await owned.context.route("https://*.wdfiles.com/**", (route) => {
-          const resourceType = route.request().resourceType();
-          if (["stylesheet", "font", "image"].includes(resourceType)) return route.abort();
-          return route.continue();
-        });
+        await installIssue1041WdfilesRoute(owned.context);
         await owned.context.addInitScript(installLifecycleProbe);
         return owned.context;
       })());
@@ -409,4 +404,12 @@ export class Open43Issue1041LifecycleBrowserAdapter {
     };
     return { initial, edit, history, source, print, set_tags: setTags, set_tags_error: setTagsError };
   }
+}
+
+export async function installIssue1041WdfilesRoute(context) {
+  await context.route("https://*.wdfiles.com/**", (route) => {
+    const resourceType = route.request().resourceType();
+    if (["stylesheet", "font", "image"].includes(resourceType)) return route.abort();
+    return route.fallback();
+  });
 }

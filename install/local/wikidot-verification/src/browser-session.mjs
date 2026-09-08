@@ -4,6 +4,7 @@ import {fileURLToPath} from "node:url";
 
 import {
   createBrowserResponseCache,
+  defaultPublicEvidenceResponseCacheOptions,
   installBrowserRequestGate,
 } from "./browser-request-gate.mjs";
 
@@ -46,12 +47,14 @@ export function browserContextOptions({ignoreHttpsErrors, storageState = null, p
   };
 }
 
-async function newContextPair({browser, ignoreHttpsErrors, sourceStorageState, localStorageState, sourceProxyServer, localProxyServer, requestGate = null, localOrigins = [], sourceResponseCacheOptions = {}}) {
+async function newContextPair({browser, ignoreHttpsErrors, sourceStorageState, localStorageState, sourceProxyServer, localProxyServer, requestGate = null, localOrigins = [], sourceResponseCache = null, sourceResponseCacheOptions = null}) {
   let sourceContext = null;
   let localContext = null;
-  const sourceResponseCache = requestGate ? createBrowserResponseCache(sourceResponseCacheOptions) : null;
+  const responseCache = requestGate
+    ? (sourceResponseCache ?? createBrowserResponseCache(sourceResponseCacheOptions ?? defaultPublicEvidenceResponseCacheOptions()))
+    : null;
   try {
-    await sourceResponseCache?.load();
+    await responseCache?.load();
     sourceContext = await browser.newContext(
       browserContextOptions({
         ignoreHttpsErrors,
@@ -60,7 +63,7 @@ async function newContextPair({browser, ignoreHttpsErrors, sourceStorageState, l
         blockServiceWorkers: Boolean(requestGate),
       }),
     );
-    if (requestGate) await installBrowserRequestGate(sourceContext, {gate: requestGate, responseCache: sourceResponseCache});
+    if (requestGate) await installBrowserRequestGate(sourceContext, {gate: requestGate, responseCache});
     localContext = await browser.newContext(
       browserContextOptions({
         ignoreHttpsErrors,
@@ -69,8 +72,13 @@ async function newContextPair({browser, ignoreHttpsErrors, sourceStorageState, l
         blockServiceWorkers: Boolean(requestGate),
       }),
     );
-    if (requestGate) await installBrowserRequestGate(localContext, {gate: requestGate, exemptOrigins: localOrigins});
-    return {sourceContext, localContext, sourceResponseCache};
+    if (requestGate) await installBrowserRequestGate(localContext, {
+      gate: requestGate,
+      exemptOrigins: localOrigins,
+      responseCache,
+      cacheOnly: true,
+    });
+    return {sourceContext, localContext, sourceResponseCache: responseCache};
   } catch (error) {
     if (localContext && localContext !== sourceContext) {
       await localContext.close().catch(() => {});
@@ -113,9 +121,9 @@ function browserSession({browser, sourceContext, localContext, sourceResponseCac
         localProxyServer,
         requestGate,
         localOrigins,
+        sourceResponseCache,
         sourceResponseCacheOptions,
       });
-      if (pair.sourceResponseCache) responseCaches.add(pair.sourceResponseCache);
       return pair;
     },
     async close() {
@@ -167,7 +175,7 @@ export async function openBrowser({
   localProxyServer = null,
   requestGate = null,
   localOrigins = [],
-  sourceResponseCacheOptions = {},
+  sourceResponseCacheOptions = null,
 }) {
   const resolvedStates = resolveStorageStates({storageState, sourceStorageState, localStorageState});
   let browser = null;

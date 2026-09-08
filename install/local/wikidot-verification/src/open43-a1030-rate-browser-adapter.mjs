@@ -201,7 +201,7 @@ export class Open43A1030RateBrowserAdapter {
       try {
         observed();
         await hold;
-        await route.continue();
+        await route.fallback();
       } catch (error) {
         handlerError = error;
       } finally {

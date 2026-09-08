@@ -356,6 +356,20 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
     /page\.goto\(url, \{waitUntil: "commit", timeout: args\.timeoutMs\}\)/u,
     "temporal navigation must hand readiness to the exact trigger and predicate waits"
   )
+  const failureControlSource = captureScript.slice(
+    captureScript.indexOf("async function armFailureControl"),
+    captureScript.indexOf("function armResultOracle"),
+  )
+  assert.match(
+    failureControlSource,
+    /await route\.fallback\(\)/u,
+    "failure-control observation must fall through to the context-level request gate for non-target requests",
+  )
+  assert.doesNotMatch(
+    failureControlSource,
+    /route\.continue\(/u,
+    "failure-control observation must not bypass the context-level request gate",
+  )
   assert.equal(
     createHash("sha256").update(captureScript).digest("hex"),
     contract.capture.script_sha256

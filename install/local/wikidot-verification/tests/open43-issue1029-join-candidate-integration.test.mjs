@@ -303,7 +303,7 @@ class FakeIssue1029BrowserPage {
     this.#busyEvents.push(true);
     if (this.#routeHandler !== null) {
       await this.#routeHandler({
-        continue: async () => {
+        fallback: async () => {
           this.#joinControlCount = 0;
           this.#ariaBusy = false;
         },

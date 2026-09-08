@@ -487,7 +487,7 @@ async function runNavigationLifecycle(page, awayUrl) {
   const originalUrl = page.url();
   const pageOrigin = new URL(originalUrl).origin;
   const lifecycleRoute = async (route) => b689NavigationRequestIsLocal(route.request().url(), pageOrigin)
-    ? route.continue()
+    ? route.fallback()
     : route.abort("blockedbyclient");
   // The navigation row verifies URL/history and tab reset semantics, not live external-resource
   // parity. The settled rows above already prove the fully loaded live geometry. Avoid routing

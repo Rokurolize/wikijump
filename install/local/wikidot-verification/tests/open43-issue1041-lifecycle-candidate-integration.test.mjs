@@ -11,6 +11,7 @@ import {
   createOpen43Issue1041LifecycleCandidateCaseSet,
 } from "../src/open43-issue1041-lifecycle-candidate-case-set.mjs";
 import {
+  installIssue1041WdfilesRoute,
   isIssue1041PageDataResponse,
   waitForIssue1041ActionPageStable,
 } from "../src/open43-issue1041-lifecycle-browser-adapter.mjs";
@@ -26,6 +27,36 @@ const EDIT_URL = `${PAGE_ORIGIN}${EDIT_PATH}`;
 const hash = (character) => digest(`open43-issue1041-${character}-fixture`);
 const git = (character) => digest(`open43-issue1041-${character}-git`).slice(0, 40);
 const runId = () => `candidate-run-${digest("open43-issue1041-run").slice(0, 12)}`;
+
+test("issue 1041 WDFiles interception aborts passive assets and falls back to the central cache gate for everything else", async () => {
+  let handler = null;
+  const context = {
+    async route(pattern, candidate) {
+      assert.equal(pattern, "https://*.wdfiles.com/**");
+      handler = candidate;
+    },
+  };
+  await installIssue1041WdfilesRoute(context);
+  assert.equal(typeof handler, "function");
+
+  for (const resourceType of ["stylesheet", "font", "image"]) {
+    const actions = [];
+    await handler({
+      request: () => ({resourceType: () => resourceType}),
+      async abort() { actions.push("abort"); },
+      async fallback() { actions.push("fallback"); },
+    });
+    assert.deepEqual(actions, ["abort"]);
+  }
+
+  const actions = [];
+  await handler({
+    request: () => ({resourceType: () => "script"}),
+    async abort() { actions.push("abort"); },
+    async fallback() { actions.push("fallback"); },
+  });
+  assert.deepEqual(actions, ["fallback"]);
+});
 
 test("issue 1041 action-page settling rejects a transient editor disappearance", async () => {
   const previousDocument = globalThis.document;

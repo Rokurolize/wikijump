@@ -8,6 +8,7 @@ import {
   openBrowser,
   resolveStorageStates,
 } from "../src/browser-session.mjs";
+import {createBrowserRequestGate} from "../src/browser-request-gate.mjs";
 import {browserRenderTestDirectory as __dirname} from "./support/browser-render-evidence-fixture.mjs";
 
 test("default browser root is resolved from the repository, not cwd", () => {
@@ -105,6 +106,88 @@ test("openBrowser can isolate source and local storage states", async () => {
   await session.close();
   assert.deepEqual(closedContexts, [1, 0]);
   assert.equal(closedBrowser, true);
+});
+
+test("source and local contexts share one response cache so local external assets do not refetch", async () => {
+  const contexts = [];
+  const browser = {
+    async newContext() {
+      const context = {
+        routes: [],
+        async route(pattern, handler) {
+          this.routes.push({pattern, handler});
+        },
+        async routeWebSocket() {},
+        on() {},
+        async close() {},
+      };
+      contexts.push(context);
+      return context;
+    },
+    async close() {},
+  };
+  const chromium = {async launch() { return browser; }};
+  const gate = createBrowserRequestGate({intervalMs: 0});
+  const session = await openBrowser({
+    chromium,
+    browserExecutable: "/usr/bin/google-chrome",
+    ignoreHttpsErrors: true,
+    requestGate: gate,
+    localOrigins: ["https://scp-wiki.wikijump.localhost"],
+    sourceResponseCacheOptions: {evidenceReplay: true},
+  });
+  const url = "https://scp-wiki.wdfiles.com/local--files/component:theme/shared.css";
+  const makeRequest = () => ({
+    url: () => url,
+    method: () => "GET",
+    resourceType: () => "stylesheet",
+    headers: () => ({}),
+    allHeaders: async () => ({}),
+    frame: () => null,
+  });
+  const sourceActions = [];
+  const sourceRoute = {
+    request: makeRequest,
+    async fetch(options) {
+      sourceActions.push({type: "fetch", options});
+      return {
+        status: () => 200,
+        headers: () => ({"content-length": "6"}),
+        allHeaders: async () => ({"content-length": "6"}),
+        body: async () => Buffer.from("cached"),
+      };
+    },
+    async fulfill(options) {
+      sourceActions.push({type: "fulfill", status: options.status ?? options.response?.status() ?? null});
+    },
+    async abort(reason) { sourceActions.push({type: "abort", reason}); },
+    async continue() { sourceActions.push({type: "continue"}); },
+  };
+  const localActions = [];
+  const localRoute = {
+    request: makeRequest,
+    async fetch() { throw new Error("local context must not refetch retained external evidence"); },
+    async fulfill(options) {
+      localActions.push({type: "fulfill", status: options.status ?? options.response?.status() ?? null});
+    },
+    async abort(reason) { localActions.push({type: "abort", reason}); },
+    async continue() { localActions.push({type: "continue"}); },
+  };
+
+  await contexts[0].routes[0].handler(sourceRoute);
+  await contexts[1].routes[0].handler(localRoute);
+
+  assert.deepEqual(sourceActions, [
+    {type: "fetch", options: {maxRedirects: 0}},
+    {type: "fulfill", status: 200},
+  ]);
+  assert.deepEqual(localActions, [{type: "fulfill", status: 200}]);
+  assert.equal(gate.snapshot().external_network_requests, 1);
+  assert.equal(session.sourceResponseCache.snapshot().stores, 1);
+  assert.equal(session.sourceResponseCache.snapshot().hits, 1);
+  const extraPair = await session.newContextPair();
+  assert.equal(extraPair.sourceResponseCache, session.sourceResponseCache);
+  await session.close();
 });
 
 test("openBrowser can launch a headed capture browser on an owned display", async () => {
