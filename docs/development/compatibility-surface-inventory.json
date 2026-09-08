@@ -11201,8 +11201,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "4eb9ec870c11c614953b3478dc494bdefe6bc800",
-      "tree": "1febd434cd810930df2b50ae21875da2d727b8e7"
+      "commit": "f1541b3f55c899373fb18db281b1c87fba39897d",
+      "tree": "655434098a6fa701caed0a6f6acdde89fe97c992"
     },
     "ftml": {
       "commit": "7ce4f22bcd9d7c0fffb901b5c0967987b2daa0d5",
@@ -11379,11 +11379,11 @@
       },
       {
         "path": "docs/development/open43-blocked-evidence-routing.json",
-        "sha256": "fa901c2493d37cf89849a0011f2b28ed07ea30eb427a3000d8bf918ca36d4749"
+        "sha256": "a7ac0d4a3542ffa9660b5e27ff1def0fff26d62a82b74220d3b9a5edcfa98dc2"
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "6ea78b6e2045a90c0f1a964413847504e482df7eafa9a8b568349f9a739836ba"
+        "sha256": "814465f0daab72d24797ad343d702fe4ee651d14d85eefdba45c0cb3e72c9e02"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -11395,7 +11395,7 @@
       },
       {
         "path": "docs/development/open43-q-page-query-closure-audit.json",
-        "sha256": "e315a265f2a86b33a6620e5015c521e46ed2742a7a882c7fbc8ba3795242ee5d"
+        "sha256": "843468f6600b168011eddc6e14da2c68c208014171f0c30631963541ded923a7"
       },
       {
         "path": "docs/development/open43-q-search-users-closure-audit.json",
@@ -11423,15 +11423,15 @@
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
-        "sha256": "1590b17869bc8dce525c9021a9b25af58ddc4aa6aec8cfb1f1e79d5a7372a18b"
+        "sha256": "dbd10194c8b5e4d92d8a4b723ba73a460219efa0d89a6dd65e7e4fb1967d0d33"
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "0b2f677b82725e1fb3e138bcdac73ca8267bc1ad9132da416c0a649928cee8d2"
+        "sha256": "3076e77ea933708af69d797debe0e781fa9741c7ce88c6a637f80caf520a9125"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "5e07694b531d570ced2276e9fe301b380155ea806bcb3ebfd4dde33a6110b386"
+        "sha256": "d5affc891570e50aa11a74976172db8474c8a29addc2c38b9795bb6e5e98422d"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -11651,7 +11651,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "0b2f677b82725e1fb3e138bcdac73ca8267bc1ad9132da416c0a649928cee8d2"
+        "sha256": "3076e77ea933708af69d797debe0e781fa9741c7ce88c6a637f80caf520a9125"
       },
       {
         "path": "wws/src/route.rs",
@@ -18382,7 +18382,8 @@
         "references": [
           "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl::module-own-line-sitechanges",
           "docs/wikidot-specifications/specifications/module/module-sitechanges.md",
-          "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json::E_OPEN43_SITECHANGES_AMC_20260810"
+          "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json::E_OPEN43_SITECHANGES_AMC_20260810",
+          "install/local/wikidot-verification/artifacts/sitechanges-mutation-live-20260908.json::q1035 mutation lifecycle"
         ]
       },
       "source": {
@@ -45185,23 +45186,23 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
-        "status": "implemented",
+        "status": "pending",
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q1035_SITECHANGES_FILE_META_DELETE_RESTORE",
