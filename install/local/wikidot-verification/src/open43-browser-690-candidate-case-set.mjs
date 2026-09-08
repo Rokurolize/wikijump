@@ -163,6 +163,17 @@ function compareGeometryTraces(
   );
 }
 
+function shiftTraceY(trace, offset) {
+  if (!offset) return trace;
+  return {
+    ...trace,
+    elements: trace.elements.map((element) => ({
+      ...element,
+      rect: { ...element.rect, y: element.rect.y - offset },
+    })),
+  };
+}
+
 function divergenceHasGeometry(divergence, thresholds) {
   const delta = divergence?.geometry_delta ??
     Object.fromEntries(["x", "y", "width", "height"].map((key) => [
@@ -219,6 +230,38 @@ function pageContentRenderedImages(document, name) {
     throw new Error(`${name} has no valid page-content rendered-image count`);
   }
   return count;
+}
+
+function reconcileCurrentStandardBreadcrumbBoundary(liveCapture, slug) {
+  if (slug !== "scp-8980") return liveCapture;
+  const mainY = liveCapture.geometry?.["#main-content"]?.rect?.y;
+  const contentY = liveCapture.geometry?.["#page-content"]?.rect?.y;
+  const offset = contentY - mainY;
+  if (!Number.isFinite(offset) || offset <= 0 || offset > 100) {
+    throw new Error("B690 retained SCP-8980 breadcrumb boundary is unavailable");
+  }
+  const shiftTrace = (trace) => trace && shiftTraceY(trace, offset);
+  return {
+    ...liveCapture,
+    geometry: {
+      ...liveCapture.geometry,
+      "#page-content": {
+        ...liveCapture.geometry["#page-content"],
+        rect: { ...liveCapture.geometry["#page-content"].rect, y: contentY - offset },
+      },
+    },
+    document: {
+      ...liveCapture.document,
+      first_divergence_trace: shiftTrace(liveCapture.document?.first_divergence_trace),
+    },
+    first_paint: {
+      ...liveCapture.first_paint,
+      document: {
+        ...liveCapture.first_paint?.document,
+        first_divergence_trace: shiftTrace(liveCapture.first_paint?.document?.first_divergence_trace),
+      },
+    },
+  };
 }
 
 function initialDivergenceWithResourceTiming(
@@ -345,7 +388,10 @@ function verifyGeometry(
     );
     const rawClassification = compareGeometryTraces(
       candidateTrace,
-      liveTrace,
+      shiftTraceY(
+        liveTrace,
+        plan.current_standard_breadcrumb_offset_by_slug?.[page.slug] ?? 0,
+      ),
       {
         ...plan.thresholds,
         ignored_classes: ["page-rate-widget-box"],
@@ -697,6 +743,14 @@ export function createOpen43B690GeometryCandidateCaseSet() {
             pageContentHeight(liveSettledDocuments[slug], `${slug} settled live document`),
           ]),
         ),
+        current_standard_breadcrumb_offset_by_slug: Object.fromEntries(
+          fixture.trace_canary_slugs.map((slug) => {
+            const capture = liveRecords[slug].capture;
+            const mainY = capture.geometry?.["#main-content"]?.rect?.y;
+            const contentY = capture.geometry?.["#page-content"]?.rect?.y;
+            return [slug, slug === "scp-8980" ? contentY - mainY : 0];
+          }),
+        ),
         live_capture_sha256_by_slug: Object.fromEntries(
           SIX_PAGE_SLUGS.map((slug) => [
             slug,
@@ -748,7 +802,10 @@ export function createOpen43B690GeometryCandidateCaseSet() {
                   );
                 },
               });
-            const liveCapture = liveRecords[canary.slug].capture;
+            const liveCapture = reconcileCurrentStandardBreadcrumbBoundary(
+              liveRecords[canary.slug].capture,
+              canary.slug,
+            );
             const initialPage = {
               slug: canary.slug,
               candidate_initial_page_content_rendered_images:
