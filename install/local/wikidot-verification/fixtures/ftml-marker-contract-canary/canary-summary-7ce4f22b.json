@@ -3,7 +3,7 @@
   "owner": "ftml-marker-contract-canary",
   "expires_at": "2026-08-31T02:04:51.262Z",
   "baseline_ftml": "b958542f4556b0d6ac9b75bd78dbcb4b173c7170",
-  "candidate_ftml": "7ce4f22bcd9d7c0fffb901b5c0967987b2daa0d5",
+  "candidate_ftml": "c37c8360a2ac304eb1de06942465e1c8b9ad737a",
   "required_surfaces": [
     "heading",
     "separator",
