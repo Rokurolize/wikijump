@@ -53,6 +53,13 @@
       "authority": "The source, runtime, browser, and local-authoring receipt cited by both issue reports.",
       "path": "/home/roku/codex-thread-workspaces/theme-localization-20260802-019fbe58/receipt.md",
       "sha256": "a1d95733beb35132b0a50e34b709f4c65cfd0648c955639a61737b4a5c605c7e"
+    },
+    {
+      "evidence_id": "AUTHORING_PARENT_STANDARD_LAYOUT_LIVE_20260908",
+      "authority": "Fresh reversible current-Wikidot observations proving that parent metadata does not synthesize #breadcrumbs in the standard saved-page layout across chain, rename, no-parent, deleted-parent, cycle, and independent controls.",
+      "path": "install/local/wikidot-verification/artifacts/issue1063-parent-breadcrumb-live-20260908.json",
+      "sha256": "5c68a8df37651e4fc0753860ca2aac2e6a8abac637665a1ff7fd8253852ae444",
+      "source_revision": "e7678a6c1d03171d3f884ad63b8bcd29bcec8bad"
     }
   ],
   "method": {
@@ -70,7 +77,7 @@
       "POST ?/revisionDiff",
       "GET /-/settings",
       "POST /-/settings?/display",
-      "served #breadcrumbs"
+      "standard saved-page shell omits automatic #breadcrumbs"
     ],
     "ordering_rules": [
       "Use internal records only to arrange or inspect a fixture. Require a public action, JSON-RPC response, article response, or served browser observation for acceptance.",
@@ -246,7 +253,7 @@
           "public_tests": [
             "deepwell/tests/authoring_boundaries.rs#imported_breadcrumbs_fail_closed_at_relation_boundaries"
           ],
-          "result": "Public article_view cases return no breadcrumb payload for parent-none and missing-parent states. They reject cyclic or depth-truncated snapshot chains instead of returning a repeated partial chain. They preserve the imported source fullname when the local parent row is renamed. Exact served DOM and live legacy relation semantics remain candidate or blocked evidence."
+          "result": "Public article_view cases return no breadcrumb payload for parent-none and missing-parent states. They reject cyclic or depth-truncated snapshot chains instead of returning a repeated partial chain. They preserve the imported source fullname when the local parent row is renamed. Fresh current Wikidot evidence separately establishes that the standard saved-page shell does not synthesize #breadcrumbs; only the Pro custom-layout [[breadcrumbs]] presentation remains blocked authority."
         },
         {
           "case_id": "A1063_SETTINGS_ACTION_BOUNDARY_REGRESSION",
@@ -271,12 +278,18 @@
           "requires": "Run the served History workflow for loading, success, fail-closed error, swap, escaped source, long and empty lines, back and forward navigation, and focus. Record the request actor and confirm that hidden source is never rendered."
         },
         {
-          "case_id": "A1063_BREADCRUMB_SERVED_CANDIDATE",
-          "requires": "Run parent-none, one, chain, private, missing, deleted, cycle, and rename fixtures through article_view and the served #breadcrumbs DOM. Compare links, titles, order, separators, cache identity, initial paint, and settled output."
-        },
-        {
           "case_id": "A1063_SETTINGS_BROWSER_WORKFLOW",
           "requires": "Run anonymous redirect and authenticated invalid, save, cancel, reload, CSRF rejection, and cross-actor controls through the served settings route. Confirm persistence through a fresh page load rather than client state alone."
+        }
+      ],
+      "superseded_acceptance": [
+        {
+          "case_id": "A1063_BREADCRUMB_SERVED_CANDIDATE",
+          "status": "superseded_by_current_live_evidence",
+          "source_merge": "eb1c7876400abcd01d4e2d5ec670fe157186acb9",
+          "evidence_id": "AUTHORING_PARENT_STANDARD_LAYOUT_LIVE_20260908",
+          "result": "The former candidate requirement assumed that a parent relation produces a served #breadcrumbs DOM in the standard saved-page layout. Fresh current Wikidot evidence disproves that premise. Standard saved pages retain parent semantics but do not synthesize #breadcrumbs, so no candidate row may require links, separators, or breadcrumb paint from parent metadata alone.",
+          "boundary": "Deepwell ancestry remains valid internal/public relation data. Pro custom-layout [[breadcrumbs]] behavior is a separate authority and is not inferred from the standard shell."
         }
       ],
       "blocked_evidence": [
@@ -287,8 +300,8 @@
         },
         {
           "case_id": "A1063_FULL_BREADCRUMB_LIVE_BOUNDARY",
-          "missing": "The feature specification establishes breadcrumb navigation, but no sealed live matrix covers missing, deleted, private, cyclic, renamed, or cross-site parent relations.",
-          "forbidden_inference": "Do not recognize a captured page chain or expose a hidden ancestor to preserve a visually complete path."
+          "missing": "Current live evidence now establishes that the standard saved-page shell does not synthesize #breadcrumbs from parent relations. The remaining unobserved breadcrumb presentation authority is the separately documented Pro custom-layout [[breadcrumbs]] surface, including its exact DOM and relation-boundary behavior.",
+          "forbidden_inference": "Do not infer custom-layout [[breadcrumbs]] output from the standard shell, and do not remove or expose Deepwell ancestry merely to manufacture a breadcrumb presentation."
         }
       ],
       "closure_verdict": "candidate_and_evidence_required"
@@ -322,7 +335,7 @@
       {
         "feature": "page-parent-relations",
         "ledger_status": "pending",
-        "audit_disposition": "A public permission-filtered breadcrumb payload exists, but the relation and served DOM matrix remains incomplete."
+        "audit_disposition": "A public permission-filtered ancestry payload exists. Fresh current Wikidot evidence establishes that the standard saved-page shell does not automatically project it as #breadcrumbs; only the separate custom-layout breadcrumb presentation authority remains unobserved."
       }
     ],
     "rule": "Do not close either issue or upgrade a broad ledger row from this audit alone. The five former needs-source rows now have public regressions and minimal source changes, but every source-ready row still needs central validation and every candidate row needs an exact identity-bound receipt."
@@ -418,11 +431,11 @@
         "observable_assertion": "The served settings route records anonymous redirect, invalid input, self-only save, cancel, fresh reload persistence, CSRF rejection, cross-actor inertness, and restored cleanup state."
       }
     ],
-    "blocked_row": {
+    "superseded_row": {
       "case_id": "A1063_BREADCRUMB_SERVED_CANDIDATE",
-      "status": "blocked_missing_public_fixture_producer",
-      "missing": "No supported public request creates provenance-backed wikidot_page_snapshot ancestry for parent-none, chain, private, missing, deleted, and renamed imported-page states.",
-      "forbidden_inference": "Do not use ordinary parent_set relations as imported snapshot ancestry, mutate a mirror, or publish a self-reported passing receipt. Exact cycle semantics also remain blocked by missing authoritative evidence."
+      "status": "superseded_by_current_live_evidence",
+      "evidence_id": "AUTHORING_PARENT_STANDARD_LAYOUT_LIVE_20260908",
+      "disposition": "Do not add a candidate breadcrumb fixture. The old row required a standard-shell #breadcrumbs presentation that current Wikidot does not produce. Keep the existing ancestry source tests and treat custom-layout [[breadcrumbs]] as a separate blocked authority."
     }
   },
   "browser_commands": [
@@ -441,14 +454,6 @@
       "command": null,
       "status": "blocked_missing_shared_candidate_case_adapter",
       "prerequisite": "Add the served History workflow through candidate_harness_gap.missing_shared_seam with a public actor-aware fixture."
-    },
-    {
-      "case_ids": [
-        "A1063_BREADCRUMB_SERVED_CANDIDATE"
-      ],
-      "command": null,
-      "status": "blocked_missing_public_fixture_producer",
-      "prerequisite": "Establish a provenance-backed read-only imported-page fixture set or a supported public snapshot-ancestry producer before adding a browser case."
     },
     {
       "case_ids": [
@@ -541,5 +546,5 @@
       "rejected_findings": 0
     }
   },
-  "closure_rule": "This lane closes neither issue. Issue 1061 now has source for post-commit dispatch, rollback absence, duplicate-edge collapse, finite cycle stopping, worker consumption, and first public read, but still requires exact-candidate execution and first-reload browser intervals. Issue 1063 now has all five former source regressions but still requires served diff, breadcrumb, settings browser receipts, and exact candidate validation. Exact Wikidot authoring presentation and cyclic-cascade semantics remain unimplemented until authoritative live evidence exists."
+  "closure_rule": "This lane closes neither issue. Issue 1061 now has source for post-commit dispatch, rollback absence, duplicate-edge collapse, finite cycle stopping, worker consumption, and first public read, but still requires exact-candidate execution and first-reload browser intervals. Issue 1063 requires the existing exact source, served diff, and settings candidate receipts; the former standard-layout breadcrumb candidate row is superseded by fresh current-live evidence proving that parent metadata does not synthesize #breadcrumbs. Exact Wikidot revision-diff/settings presentation and the separate Pro custom-layout [[breadcrumbs]] surface remain blocked until authoritative live evidence exists."
 }
