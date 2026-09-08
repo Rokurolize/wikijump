@@ -131,6 +131,22 @@ test("standing chrome scope delegates page-body geometry and DOM distance", () =
   assert.equal(result.dom_multiset_distance.ratio, 1);
 });
 
+test("standing chrome scope ignores page-body attributes", () => {
+  const geometry = {
+    "#header": { count: 1, rect: { x: 0, y: 0, width: 1, height: 1 } },
+    "#header h1 a": { count: 1, rect: { x: 0, y: 0, width: 1, height: 1 } },
+  };
+  const result = compareCaptures(
+    capture({ geometry, attribute_signatures: [{ tag: "img", name: "src", value: "/local.png" }] }),
+    capture({ geometry, input_url: "https://scp-wiki.wikidot.com/scp-9506", final_url: "https://scp-wiki.wikidot.com/scp-9506", attribute_signatures: [{ tag: "img", name: "src", value: "/live.png" }] }),
+    DEFAULT_THRESHOLDS,
+    [],
+    { comparison_scope: "standing-chrome", first_paint_geometry_selectors: [] },
+  );
+  assert.equal(result.status, "pass");
+  assert.equal(result.attributes.status, "pass");
+});
+
 test("immediate theme properties fail before a settled state can conceal a flash", () => {
   const expectations = canaryForUrl(
     "https://scp-wiki.wikidot.com/scp-9506",
