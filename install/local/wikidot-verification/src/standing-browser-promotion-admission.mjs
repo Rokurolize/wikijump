@@ -152,13 +152,15 @@ export async function verifyStandingCandidateParityAdmission({
   candidateIdentityPath,
   liveReferencePath,
   liveCompletionPolicyPath,
+  liveReferenceCapturePolicyPath = liveCompletionPolicyPath,
   now = new Date(),
   collectExecutionIdentity = collectCandidateExecutionIdentity,
 }) {
-  const [receiptRaw, identityRaw, policy] = await Promise.all([
+  const [receiptRaw, identityRaw, policy, referencePolicy] = await Promise.all([
     readJsonObject(receiptPath, "candidate parity receipt"),
     readJsonObject(candidateIdentityPath, "candidate parity identity"),
     readPolicy(liveCompletionPolicyPath),
+    readPolicy(liveReferenceCapturePolicyPath),
   ]);
   const [
     receiptSha256,
@@ -230,6 +232,9 @@ export async function verifyStandingCandidateParityAdmission({
     policy: policy.value,
     policySha256: policy.sha256,
     policyFilePath: policy.filePath,
+    referencePolicy: referencePolicy.value,
+    referencePolicySha256: referencePolicy.sha256,
+    referencePolicyFilePath: referencePolicy.filePath,
   });
   if (liveReference.sha256 !== receipt.parity.live_reference_sha256) {
     throw new Error(
