@@ -94,16 +94,16 @@
     },
     {
       "path": "docs/development/open43-q-search-users-closure-audit.json",
-      "sha256": "7844c652ccd984af3d1c256c7e162f8374b4483b70c6c18c95bf005594637dbd",
-      "source_revision": "ae0a5e8a812d09a1b997795904bd5ef88b2492c2",
+      "sha256": "ab0f5a355c3e00efffc4b9207ed24c7359ecfbaf120983b86cdd5957f6dff470",
+      "source_revision": "e98edcc6910c54b844d1d4c0767502a8500437ae",
       "issue_count": 6,
-      "case_count": 29,
-      "classification_counts": {"source_ready": 12, "needs_source": 0, "candidate_required": 10, "blocked_evidence": 7},
+      "case_count": 30,
+      "classification_counts": {"source_ready": 12, "needs_source": 0, "candidate_required": 11, "blocked_evidence": 7},
       "issue_summaries": [
         {"issue": 748, "case_count": 4, "classification_counts": {"source_ready": 1, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 1}},
         {"issue": 807, "case_count": 3, "classification_counts": {"source_ready": 1, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
         {"issue": 810, "case_count": 3, "classification_counts": {"source_ready": 1, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
-        {"issue": 1026, "case_count": 5, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 1}},
+        {"issue": 1026, "case_count": 6, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 1}},
         {"issue": 1032, "case_count": 9, "classification_counts": {"source_ready": 5, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 1}},
         {"issue": 1036, "case_count": 5, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 2}}
       ]
@@ -134,12 +134,12 @@
     "duplicate_issue_numbers": [],
     "unexpected_or_closed_issue_numbers": [],
     "tracking_issue_numbers_owned": [],
-    "case_count": 284,
-    "unique_case_count": 284,
+    "case_count": 285,
+    "unique_case_count": 285,
     "duplicate_case_ids": [],
     "unknown_classifications": [],
     "closure_claims": 0,
-    "classification_counts": {"source_ready": 130, "needs_source": 0, "candidate_required": 83, "blocked_evidence": 71}
+    "classification_counts": {"source_ready": 130, "needs_source": 0, "candidate_required": 84, "blocked_evidence": 71}
   },
   "validation": {
     "jq_structural_assertions": "pass",
@@ -147,7 +147,7 @@
       "status": "pass",
       "command": "node install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs --root . --output docs/development/compatibility-surface-inventory.json",
       "audit_count": 7,
-      "case_count": 284,
+      "case_count": 285,
       "blocked_routing_count": 71,
       "authoritative_manifest_count": 3,
       "open_issue_snapshot_count": 43,

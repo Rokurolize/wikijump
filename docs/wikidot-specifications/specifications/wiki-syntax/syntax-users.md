@@ -20,6 +20,31 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### Current user syntax keeps digit-only text in the name namespace and is actor-invariant for the observed public matrix
+
+- Observation ID: `user-syntax-name-key-special-identities-and-actor-invariance-20260908`
+- Classification: `live-boundary`
+- Observed at: `2026-09-08`
+- Analysis: Retained 2026-09-04 PagePreview evidence shows that real pure-digit Wikidot user IDs authored as [[user ...]] text produce the ordinary missing-user error instead of resolving by numeric ID. A 2026-09-08 combined PagePreview observation then packed a known user, the starred known-user form, system, anonymous, an unknown name, a real numeric ID, and a V7 assignment-shaped name into one source and requested it exactly once as anonymous and once through each of three independent authenticated test accounts. The four response structures are identical after removing only the starred avatar URL timestamp. The known user renders printuser, the starred form renders avatarhover printuser, system renders printuser, anonymous renders the literal text Anonymous, and the unknown, numeric-ID text, and V7 name-key controls render missing-user errors. This evidence establishes the public lookup and actor boundary only; rename, delete, import, and generated-name cache invalidation remain separate local-candidate work.
+
+Normative behavior:
+
+- Authored [[user]] and [[*user]] positional text is resolved through the normalized user-name namespace. Digit-only text must not fall back to the numeric user-ID namespace merely because a Wikidot account with that ID exists.
+- For the observed public matrix, anonymous and the three authenticated test actors must receive the same printuser, literal, and missing-user structure. Actor identity must not change user-syntax resolution or disclose an otherwise missing identity.
+- The system special identity renders as ordinary printuser markup, while the anonymous special identity renders the literal text Anonymous in the observed user-syntax position.
+- The starred user form may vary the avatar URL timestamp over time without changing its printuser/avatarhover identity. That timestamp is temporal presentation data, not actor-specific authority.
+- This observation does not define rename, delete, import, or generated-name cache invalidation semantics; those boundaries remain separately actionable until a local candidate or stronger authority establishes them.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/issue1026-user-actor-live-20260908.json` (SHA-256 `ab581243e867a224458888ac4768ad7b38d7abfb02ba68f7968301c5bb2dfae7`), cases: `issue1026-known-user`, `issue1026-known-user-starred`, `issue1026-system-special-identity`, `issue1026-anonymous-special-identity`, `issue1026-unknown-name`, `issue1026-real-numeric-id-as-authored-text`, `issue1026-v7-duplicate-argument-name-key`
+
+
 
 ## Suggested public TDD seams
 

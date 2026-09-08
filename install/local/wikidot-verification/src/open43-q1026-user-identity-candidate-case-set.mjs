@@ -4,6 +4,7 @@ import net from "node:net";
 import { requestCandidateCaseHttp } from "./candidate-case-http.mjs";
 import { deepwellRpcAuthorization } from "./deepwell-rpc-auth.mjs";
 import {
+  verifyOpen43Q1026ActorMatrixCase,
   verifyOpen43Q1026PrintuserIntervalsCase,
   verifyOpen43Q1026UserIdentityCase,
   verifyOpen43Q1026UserIdentityCleanup,
@@ -20,6 +21,7 @@ import {
 export const OPEN43_Q1026_USER_IDENTITY_CASE_IDS = Object.freeze([
   "Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY",
   "Q1026_BROWSER_PRINTUSER_INTERVALS",
+  "Q1026_ACTOR_SPECIAL_IDENTITY_MATRIX",
 ]);
 
 const SITE_HOST = "scpaiueouiuiuiui.wikijump.localhost";
@@ -27,16 +29,24 @@ const FIXTURE_ID = "Q1026_PRINTUSER_INTERVALS";
 const DEFAULT_VIEWPORT = Object.freeze({ width: 1280, height: 900 });
 const CAPTURE_TIMEOUT_MS = 300_000;
 
-const FIXTURE_PROVENANCE = Object.freeze({
+export const Q1026_FIXTURE_PROVENANCE = Object.freeze({
   path: "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries",
   source_file: "deepwell/tests/page.rs",
-  sha256: "ea3e1a1daf6db9d750d13af649e46137186b9d4b415e562fd69fad7a1dacf8f7",
+  sha256: "b47242cdfd57e122367c43397527a576cf02df34aa7186ca4c11cb4675dd118b",
 });
-const FIXTURE_SOURCE_SHA256 = "496aa92286a90cbf996a6e428f8829619527c16cf2ff87e57851f8ce9babe99f";
-const EXISTING_USER_FIXTURES = Object.freeze({
+const FIXTURE_SOURCE_SHA256 = "201031ec502c99355498ef27533d2c10f15bf49c959116a3bfacba9ce2f0a92d";
+export const Q1026_USER_FIXTURES = Object.freeze({
   visible_user: Object.freeze({ user_id: 19_102_600, name: "Extant User", slug: "extant-user", is_deleted: false }),
   deleted_user: Object.freeze({ user_id: 19_102_601, name: "Deleted User", slug: "deleted-user", is_deleted: true }),
+  name_only_user: Object.freeze({ user_id: 19_102_602, name: "Name Only User", slug: "name-only-slug", is_deleted: false }),
+  collision_first_user: Object.freeze({ user_id: 19_102_603, name: "Shared Person", slug: "shared-person-first", is_deleted: false }),
+  collision_second_user: Object.freeze({ user_id: 19_102_604, name: "Shared_Person", slug: "shared-person-second", is_deleted: false }),
+  unicode_user: Object.freeze({ user_id: 19_102_605, name: "Éclair\tName\u00a0JP", slug: "unicode-name", is_deleted: false }),
+  numeric_target_user: Object.freeze({ user_id: 2, name: "Numeric Target", slug: "numeric-target", is_deleted: false }),
+  display_numeric_name_user: Object.freeze({ user_id: 19_102_606, name: "2", slug: "display-two", is_deleted: false }),
+  system_user: Object.freeze({ user_id: 122_357, name: "system", slug: "system", is_deleted: false }),
 });
+const ACTOR_NAMES = Object.freeze(["anonymous", "editor", "administrator", "other"]);
 const NO_MUTATION_CLEANUP = Object.freeze({ public_absence_verified: true, mutation_count: 0 });
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -56,11 +66,21 @@ function userFixture(value, name, deleted) {
   return Object.freeze({ user_id: user.user_id, name: user.name, slug: user.slug, is_deleted: user.is_deleted });
 }
 
-export function buildQ1026UserIdentitySource(visible, deleted) {
+export function buildQ1026UserIdentitySource(users = Q1026_USER_FIXTURES) {
+  const visible = users.visible_user;
+  const deleted = users.deleted_user;
   return [
     `NAME=[[user ${visible.name}]]`,
+    `NAME_STAR=[[*user ${visible.name}]]`,
+    `NAME_ONLY=[[user ${users.name_only_user.name}]]`,
+    `COLLISION=[[*user ${users.collision_first_user.name}]]`,
+    "UNKNOWN_AVATAR=[[*user Unknown Avatar User]]",
+    "UNICODE=[[user éCLAIR\u00a0name\tjp]]",
+    "NUMERIC_DISPLAY=[[user 2]]",
     `ID=[[*user ${visible.user_id}]]`,
     `DELETED=[[user ${deleted.name}]]`,
+    "SYSTEM=[[user system]]",
+    "ANONYMOUS=[[user anonymous]]",
     'A=[[user v7ws="alpha\tbeta\u00a0gamma"]]',
     'B=[[user v7ser="serialized body"]]',
     'C=[[user v7text="visible text"]]',
@@ -74,16 +94,17 @@ export function buildQ1026UserIdentitySource(visible, deleted) {
 function fixtureIdentity(value) {
   const input = requirePlainObject(value, "private input fixture identity");
   const page = requirePlainObject(input.page, "private input fixture page");
-  const visible = userFixture(input.visible_user, "visible_user", false);
-  const deleted = userFixture(input.deleted_user, "deleted_user", true);
-  if (!Number.isSafeInteger(input.site_id) || input.site_id <= 0 || !Number.isSafeInteger(page.page_id) || !Number.isSafeInteger(page.revision_id) || typeof page.slug !== "string" || !page.slug || visible.user_id === deleted.user_id || visible.slug === deleted.slug) throw new Error("private input #1026 fixture identity is invalid");
-  if (JSON.stringify(visible) !== JSON.stringify(EXISTING_USER_FIXTURES.visible_user) || JSON.stringify(deleted) !== JSON.stringify(EXISTING_USER_FIXTURES.deleted_user)) throw new Error("private input #1026 users are not the existing identity fixtures");
-  const source = buildQ1026UserIdentitySource(visible, deleted);
+  const users = Object.fromEntries(Object.entries(Q1026_USER_FIXTURES).map(([name, expected]) => [name, userFixture(input[name], name, expected.is_deleted)]));
+  if (!Number.isSafeInteger(input.site_id) || input.site_id <= 0 || !Number.isSafeInteger(page.page_id) || !Number.isSafeInteger(page.revision_id) || typeof page.slug !== "string" || !page.slug) throw new Error("private input #1026 fixture identity is invalid");
+  for (const [name, expected] of Object.entries(Q1026_USER_FIXTURES)) {
+    if (JSON.stringify(users[name]) !== JSON.stringify(expected)) throw new Error(`private input #1026 ${name} is not the existing identity fixture`);
+  }
+  const source = buildQ1026UserIdentitySource(users);
   const sourceSha256 = requireSha256(input.source_sha256, "private input #1026 source SHA-256");
   if (sourceSha256 !== FIXTURE_SOURCE_SHA256 || sha256(source) !== FIXTURE_SOURCE_SHA256) throw new Error("private input #1026 source hash does not match the fixed identity matrix");
   const provenance = requirePlainObject(input.provenance, "private input #1026 fixture provenance");
-  if (provenance.path !== FIXTURE_PROVENANCE.path || provenance.source_file !== FIXTURE_PROVENANCE.source_file) throw new Error("private input #1026 fixture provenance is not the existing user identity fixture");
-  if (provenance.sha256 !== FIXTURE_PROVENANCE.sha256) throw new Error("private input #1026 fixture source SHA-256 is not the existing identity fixture");
+  if (provenance.path !== Q1026_FIXTURE_PROVENANCE.path || provenance.source_file !== Q1026_FIXTURE_PROVENANCE.source_file) throw new Error("private input #1026 fixture provenance is not the existing user identity fixture");
+  if (provenance.sha256 !== Q1026_FIXTURE_PROVENANCE.sha256) throw new Error("private input #1026 fixture source SHA-256 is not the existing identity fixture");
   return Object.freeze({
     site_id: input.site_id,
     page_id: page.page_id,
@@ -91,10 +112,15 @@ function fixtureIdentity(value) {
     page_slug: page.slug,
     source_sha256: sourceSha256,
     provenance: Object.freeze({ path: provenance.path, source_file: provenance.source_file, sha256: provenance.sha256 }),
-    visible_user: visible,
-    deleted_user: deleted,
+    ...users,
     source,
   });
+}
+
+function candidateActor(value, name) {
+  const actor = requirePlainObject(value, `private input #1026 actor ${name}`);
+  if (!Number.isSafeInteger(actor.user_id) || typeof actor.session_token !== "string" || !actor.session_token.startsWith("wj:")) throw new Error(`private input #1026 actor ${name} is invalid`);
+  return Object.freeze({ user_id: actor.user_id, session_token: actor.session_token });
 }
 
 export class Open43Q1026UserIdentityCandidateSession {
@@ -103,6 +129,7 @@ export class Open43Q1026UserIdentityCandidateSession {
   #rpcToken;
   #tlsCa;
   #fixture;
+  #actors;
   #request;
   #signal;
   #rpcId = 1;
@@ -115,6 +142,8 @@ export class Open43Q1026UserIdentityCandidateSession {
     this.#rpcAuthorization = deepwellRpcAuthorization(this.#rpcToken);
     this.#tlsCa = requireNonEmptyString(input.tls_ca_pem, "private input tls_ca_pem");
     this.#fixture = fixtureIdentity(input.fixture);
+    const actors = requirePlainObject(input.actors, "private input #1026 actors");
+    this.#actors = Object.freeze(Object.fromEntries(ACTOR_NAMES.filter((name) => name !== "anonymous").map((name) => [name, candidateActor(actors[name], name)])));
     this.#request = requestImpl;
     this.#signal = signal;
   }
@@ -129,8 +158,7 @@ export class Open43Q1026UserIdentityCandidateSession {
       page_slug: this.#fixture.page_slug,
       source_sha256: this.#fixture.source_sha256,
       provenance: this.#fixture.provenance,
-      visible_user: this.#fixture.visible_user,
-      deleted_user: this.#fixture.deleted_user,
+      users: Object.fromEntries(Object.keys(Q1026_USER_FIXTURES).map((name) => [name, this.#fixture[name]])),
     };
     return {
       deepwell_rpc_url: this.#rpc.url.href,
@@ -142,19 +170,18 @@ export class Open43Q1026UserIdentityCandidateSession {
       page_id: this.#fixture.page_id,
       revision_id: this.#fixture.revision_id,
       page_slug: this.#fixture.page_slug,
-      visible_user_id: this.#fixture.visible_user.user_id,
-      deleted_user_id: this.#fixture.deleted_user.user_id,
+      actor_identities: Object.fromEntries(Object.entries(this.#actors).map(([name, actor]) => [name, { user_id: actor.user_id, session_token_sha256: sha256(actor.session_token) }])),
     };
   }
   get requiredServiceBindings() {
     return [{ role: "deepwell", container_port: "2747/tcp", host_address: this.#rpc.address, host_port: Number(this.#rpc.url.port) }];
   }
 
-  async rpc(method, params) {
+  async rpc(method, params, { sessionToken = null } = {}) {
     const response = await this.#request({
       url: this.#rpc.url,
       method: "POST",
-      headers: { authorization: this.#rpcAuthorization, "content-type": "application/json" },
+      headers: { authorization: this.#rpcAuthorization, "content-type": "application/json", ...(sessionToken === null ? {} : { "x-deepwell-session-token": sessionToken }) },
       body: Buffer.from(JSON.stringify({ jsonrpc: "2.0", id: this.#rpcId++, method, params })),
       connectAddress: this.#rpc.address,
       tlsCa: this.#tlsCa,
@@ -171,12 +198,21 @@ export class Open43Q1026UserIdentityCandidateSession {
     return await this.rpc("page_get", { site_id: this.#fixture.site_id, page: this.#fixture.page_slug, details: { wikitext: true, compiled: false } });
   }
 
-  async preview() {
-    return await this.rpc("wikidot_page_preview", { site_id: this.#fixture.site_id, title: "#1026 candidate user identity", wikitext: this.#fixture.source });
+  actorUserId(name) {
+    if (name === "anonymous") return null;
+    return this.#actors[name]?.user_id ?? null;
   }
 
-  async savedPage() {
-    return await this.rpc("page_view", { site_id: this.#fixture.site_id, session_token: null, route: { slug: this.#fixture.page_slug, extra: "" }, locales: ["en-US", "en"] });
+  async preview(actor = "anonymous") {
+    const sessionToken = actor === "anonymous" ? null : this.#actors[actor]?.session_token;
+    if (actor !== "anonymous" && !sessionToken) throw new Error(`unknown #1026 candidate actor ${actor}`);
+    return await this.rpc("wikidot_page_preview", { site_id: this.#fixture.site_id, title: "#1026 candidate user identity", wikitext: this.#fixture.source }, { sessionToken });
+  }
+
+  async savedPage(actor = "anonymous") {
+    const sessionToken = actor === "anonymous" ? null : this.#actors[actor]?.session_token;
+    if (actor !== "anonymous" && !sessionToken) throw new Error(`unknown #1026 candidate actor ${actor}`);
+    return await this.rpc("page_view", { site_id: this.#fixture.site_id, session_token: sessionToken, route: { slug: this.#fixture.page_slug, extra: "" }, locales: ["en-US", "en"] }, { sessionToken });
   }
 }
 
@@ -195,7 +231,7 @@ const SOURCE_FILES = Object.freeze([
   "install/local/wikidot-verification/src/standing-browser-runtime-identity.mjs",
   "install/local/wikidot-verification/package.json",
   "install/local/wikidot-verification/pnpm-lock.yaml",
-  FIXTURE_PROVENANCE.source_file,
+  Q1026_FIXTURE_PROVENANCE.source_file,
 ]);
 
 class Open43Q1026PrintuserBrowserAdapter {
@@ -239,6 +275,7 @@ class Open43Q1026PrintuserBrowserAdapter {
         error_em_html: errors.map((span) => span.querySelector("em")?.textContent ?? null),
         error_texts: errors.map((span) => span.textContent ?? ""),
         error_anchor_counts: errors.map((span) => span.querySelectorAll("a").length),
+        anonymous_literal_present: document.body.textContent?.includes("ANONYMOUS=Anonymous") ?? false,
       };
     });
     try {
@@ -297,10 +334,30 @@ export function createOpen43Q1026UserIdentityCandidateCaseSet({ sessionFactory =
           saved_surface_sha256: sha256Value(savedBody),
           rpc_events: { methods: session.events.map(({ method }) => method), statuses: session.events.map(({ response_status }) => response_status) },
         };
+        const actorSurfaces = {
+          anonymous: {
+            user_id: null,
+            preview_sha256: sha256Value(previewBody),
+            saved_sha256: sha256Value(savedBody),
+          },
+        };
+        for (const actor of ACTOR_NAMES.slice(1)) {
+          const actorPreview = await session.preview(actor);
+          const actorSaved = await session.savedPage(actor);
+          const actorPreviewBody = requireNonEmptyString(actorPreview?.body, `#1026 ${actor} preview body`);
+          const actorSavedData = actorSaved?.type === "found" ? actorSaved.data : null;
+          const actorSavedBody = requireNonEmptyString(actorSavedData?.compiled_body_html, `#1026 ${actor} saved page body`);
+          actorSurfaces[actor] = {
+            user_id: session.actorUserId(actor),
+            preview_sha256: sha256Value(actorPreviewBody),
+            saved_sha256: sha256Value(actorSavedBody),
+          };
+        }
         const printuser = await browser.capturePrintuser();
         return [
           { case_id: OPEN43_Q1026_USER_IDENTITY_CASE_IDS[0], observations },
           { case_id: OPEN43_Q1026_USER_IDENTITY_CASE_IDS[1], observations: printuser },
+          { case_id: OPEN43_Q1026_USER_IDENTITY_CASE_IDS[2], observations: { source_sha256: fixture.source_sha256, actor_surfaces: actorSurfaces } },
         ];
       };
       const verifyPlan = {
@@ -309,7 +366,8 @@ export function createOpen43Q1026UserIdentityCandidateCaseSet({ sessionFactory =
         revision_id: fixture.revision_id,
         page_slug: fixture.page_slug,
         source_sha256: fixture.source_sha256,
-        fixture: { visible_user: fixture.visible_user, deleted_user: fixture.deleted_user },
+        fixture: Object.fromEntries(Object.keys(Q1026_USER_FIXTURES).map((name) => [name, fixture[name]])),
+        actor_user_ids: Object.fromEntries(ACTOR_NAMES.map((name) => [name, session.actorUserId(name)])),
         page_origin: pageOrigin,
       };
       return Object.freeze({
@@ -326,14 +384,17 @@ export function createOpen43Q1026UserIdentityCandidateCaseSet({ sessionFactory =
           page_slug: fixture.page_slug,
           source_sha256: fixture.source_sha256,
           page_origin: pageOrigin,
-          fixture: { provenance: fixture.provenance, visible_user: fixture.visible_user, deleted_user: fixture.deleted_user },
-          candidate_observation_scope: "anonymous-read-only-public-deepwell-rpc-and-browser",
+          fixture: { provenance: fixture.provenance, users: Object.fromEntries(Object.keys(Q1026_USER_FIXTURES).map((name) => [name, fixture[name]])) },
+          actor_user_ids: verifyPlan.actor_user_ids,
+          candidate_observation_scope: "read-only-public-deepwell-rpc-actor-matrix-and-anonymous-browser",
         },
         execute,
         cleanup: async () => structuredClone(NO_MUTATION_CLEANUP),
-        verifyCase: (caseId, observations) => caseId === OPEN43_Q1026_USER_IDENTITY_CASE_IDS[0]
-          ? verifyOpen43Q1026UserIdentityCase(caseId, observations, verifyPlan)
-          : verifyOpen43Q1026PrintuserIntervalsCase(caseId, observations, verifyPlan),
+        verifyCase: (caseId, observations) => {
+          if (caseId === OPEN43_Q1026_USER_IDENTITY_CASE_IDS[0]) return verifyOpen43Q1026UserIdentityCase(caseId, observations, verifyPlan);
+          if (caseId === OPEN43_Q1026_USER_IDENTITY_CASE_IDS[1]) return verifyOpen43Q1026PrintuserIntervalsCase(caseId, observations, verifyPlan);
+          return verifyOpen43Q1026ActorMatrixCase(caseId, observations, verifyPlan);
+        },
         verifyCleanup: verifyOpen43Q1026UserIdentityCleanup,
       });
     },
