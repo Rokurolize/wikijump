@@ -5955,7 +5955,7 @@
     {
       "source": "open43-audit-case:Q1035_SITECHANGES_FILE_META_DELETE_RESTORE",
       "type": "implemented_by",
-      "target": "wikijump.runtime:page-query"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:Q1035_SITECHANGES_FILTER_AND_AJAX_PAGER",
@@ -11201,8 +11201,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "f1541b3f55c899373fb18db281b1c87fba39897d",
-      "tree": "655434098a6fa701caed0a6f6acdde89fe97c992"
+      "commit": "adc4f8ddef19855211b77e0d550df18202b75b1b",
+      "tree": "db09d84912ade343fff103d1a9338d226a6a845f"
     },
     "ftml": {
       "commit": "7ce4f22bcd9d7c0fffb901b5c0967987b2daa0d5",
@@ -11307,7 +11307,7 @@
       },
       {
         "path": "deepwell/src/endpoints/parent.rs",
-        "sha256": "b2082caca8a2ff102ea7ebf2895b3fdcc731fd7c93fd8126272eed794319e9b3"
+        "sha256": "6d56acedbe45d7b2e014161421efb33fac61ebb0938c26774778c148e6db05dd"
       },
       {
         "path": "deepwell/src/endpoints/routing.rs",
@@ -11359,7 +11359,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "7da3d8c2491ed0459aa4939e6487caed5777ac8490c7c2d58fe3026d502d00b8"
+        "sha256": "29baf35ea9e49cbb9962f46dcfe5746231d618fecba0656535efd6171fb33afe"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11379,11 +11379,11 @@
       },
       {
         "path": "docs/development/open43-blocked-evidence-routing.json",
-        "sha256": "a7ac0d4a3542ffa9660b5e27ff1def0fff26d62a82b74220d3b9a5edcfa98dc2"
+        "sha256": "861a579a48ca6c2e23d652533c99a9f4af529e1e3b5043c9f105b162243d86eb"
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "814465f0daab72d24797ad343d702fe4ee651d14d85eefdba45c0cb3e72c9e02"
+        "sha256": "b3cc84f677392866937a98cc1fa1a962bea1a3b0b86137abab8096ad443e49bf"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -11395,7 +11395,7 @@
       },
       {
         "path": "docs/development/open43-q-page-query-closure-audit.json",
-        "sha256": "843468f6600b168011eddc6e14da2c68c208014171f0c30631963541ded923a7"
+        "sha256": "101c84ac464e1b6569900019b41c08a370a4273f2914c90143fec5a6d9372597"
       },
       {
         "path": "docs/development/open43-q-search-users-closure-audit.json",
@@ -45183,31 +45183,34 @@
         "cases": [
           "Q1035_SITECHANGES_FILE_META_DELETE_RESTORE"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/render/site_changes.rs::tests::site_changes_flags_derive_from_revision_authority",
+          "deepwell/tests/parent.rs::changed_parent_relationships_queue_parent_rerenders"
+        ]
       },
       "evidence": {
-        "status": "available",
+        "status": "blocked",
         "references": []
       },
       "source": {
-        "status": "pending",
+        "status": "implemented",
         "references": []
       },
       "candidate": {
-        "status": "pending",
+        "status": "blocked",
         "references": []
       },
       "standing": {
-        "status": "pending",
+        "status": "blocked",
         "references": []
       },
       "closure": {
-        "status": "open",
+        "status": "blocked",
         "references": []
       },
       "specification_owner": "open43.case:Q1035_SITECHANGES_FILE_META_DELETE_RESTORE",
       "implementation_owners": [
-        "wikijump.runtime:page-query"
+        "wikijump.deepwell"
       ]
     },
     {
