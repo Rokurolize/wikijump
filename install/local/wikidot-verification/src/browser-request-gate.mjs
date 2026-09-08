@@ -140,6 +140,20 @@ function responseCacheRequestKey(request, overrideUrl = null, requestHeaders = n
     ? url
     : `${url}#__wikijump_evidence_request=${identity.join("&")}`;
 }
+
+function unconditionalResponseCacheKey(baseKey) {
+  const marker = "#__wikijump_evidence_request=";
+  const markerIndex = baseKey.indexOf(marker);
+  if (markerIndex === -1) return null;
+  const identity = baseKey.slice(markerIndex + marker.length).split("&");
+  const retained = identity.filter((part) => {
+    const separator = part.indexOf("=");
+    return !RESPONSE_CACHE_REQUEST_IDENTITY_HEADERS.includes(decodeURIComponent(separator === -1 ? part : part.slice(0, separator)));
+  });
+  return retained.length === 0
+    ? baseKey.slice(0, markerIndex)
+    : `${baseKey.slice(0, markerIndex)}${marker}${retained.join("&")}`;
+}
 const LOCK_SCHEMA = "wikijump_full_parity.browser_capture_lock.v1";
 const STATE_SCHEMA = "wikijump_full_parity.browser_request_gate_state.v1";
 const STATE_CONFIRMATIONS = new Set(["pending", "sealed"]);
@@ -473,37 +487,42 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
 
   function matchingRetainedEntry(baseKey, requestHeaders, {count = true} = {}) {
     const normalizedRequestHeaders = requestHeaders === null ? null : normalizedHeaderRecord(requestHeaders);
-    let legacy = null;
-    for (const entry of entries.values()) {
-      if (entry.baseKey !== baseKey) continue;
-      if (entry.status === 304) {
-        throw new Error(`browser response cache retained 304 response is not standalone-replayable: ${baseKey}`);
-      }
-      if (entry.varyBinding !== null) {
-        if (entry.varyBinding.names.length === 1 && entry.varyBinding.names[0] === "*") {
-          throw new Error(`browser response cache retained Vary * response is not exact-replayable: ${baseKey}`);
+    let retained304 = false;
+    for (const candidateKey of [baseKey, unconditionalResponseCacheKey(baseKey)].filter((key, index, keys) => key !== null && keys.indexOf(key) === index)) {
+      let legacy = null;
+      for (const entry of entries.values()) {
+        if (entry.baseKey !== candidateKey) continue;
+        if (entry.status === 304) {
+          retained304 = true;
+          continue;
         }
-        if (normalizedRequestHeaders === null) continue;
-        const expected = varyBindingForRequest(entry.varyBinding.names, normalizedRequestHeaders);
-        if (varyBindingsEqual(entry.varyBinding, expected)) {
-          if (count) {
-            hits += 1;
-            exactVariantHits += 1;
+        if (entry.varyBinding !== null) {
+          if (entry.varyBinding.names.length === 1 && entry.varyBinding.names[0] === "*") {
+            throw new Error(`browser response cache retained Vary * response is not exact-replayable: ${candidateKey}`);
           }
-          return {status: entry.status, headers: entry.headers, body: entry.body};
+          if (normalizedRequestHeaders === null) continue;
+          const expected = varyBindingForRequest(entry.varyBinding.names, normalizedRequestHeaders);
+          if (varyBindingsEqual(entry.varyBinding, expected)) {
+            if (count) {
+              hits += 1;
+              exactVariantHits += 1;
+            }
+            return {status: entry.status, headers: entry.headers, body: entry.body};
+          }
+          continue;
         }
-        continue;
+        legacy = entry;
       }
-      legacy = entry;
-    }
-    if (legacy !== null) {
-      const legacyVary = varyHeaderNames(legacy.headers);
-      if (legacyVary.length === 0) {
-        if (count) hits += 1;
-        return {status: legacy.status, headers: legacy.headers, body: legacy.body};
+      if (legacy !== null) {
+        const legacyVary = varyHeaderNames(legacy.headers);
+        if (legacyVary.length === 0) {
+          if (count) hits += 1;
+          return {status: legacy.status, headers: legacy.headers, body: legacy.body};
+        }
+        if (count) legacyVariantMisses += 1;
       }
-      if (count) legacyVariantMisses += 1;
     }
+    if (retained304) throw new Error(`browser response cache retained 304 response is not standalone-replayable: ${baseKey}`);
     if (count) misses += 1;
     return null;
   }

@@ -1501,6 +1501,30 @@ test("a retained 304 is preserved but never replayed or automatically reacquired
   );
 });
 
+test("a conditional request reuses a retained unconditional representation", async () => {
+  const gate = createBrowserRequestGate({intervalMs: 0});
+  const responseCache = createBrowserResponseCache({evidenceReplay: true, cacheDocuments: true});
+  const context = createContext();
+  await installBrowserRequestGate(context, {gate, responseCache});
+  const url = "https://cdn.example.test/conditional-with-200";
+  const first = createRoute(url, {
+    resourceType: "document",
+    fetchResponse: createFetchResponse({body: "retained-representation"}),
+  });
+  await context.routes[0].handler(first);
+
+  const second = createRoute(url, {
+    resourceType: "document",
+    headers: {"if-none-match": "etag-v1"},
+    fetchResponse: createFetchResponse({status: 304}),
+  });
+  await context.routes[0].handler(second);
+
+  assert.deepEqual(second.actions, [{type: "fulfill", status: 200}]);
+  assert.equal(gate.snapshot().external_network_requests, 1);
+  assert.equal(responseCache.snapshot().entries, 1);
+});
+
 test("evidence replay retains terminal server failures instead of retrying them", async () => {
   const gate = createBrowserRequestGate({intervalMs: 0});
   const responseCache = createBrowserResponseCache({evidenceReplay: true});
