@@ -289,7 +289,6 @@
       "open43.case:A1061_UNRELATED_PAGE_STAYS_UNCHANGED",
       "open43.case:A1063_BREADCRUMB_PUBLIC_PAYLOAD",
       "open43.case:A1063_BREADCRUMB_RELATION_BOUNDARIES",
-      "open43.case:A1063_BREADCRUMB_SERVED_CANDIDATE",
       "open43.case:A1063_DIFF_BROWSER_WORKFLOW",
       "open43.case:A1063_DIFF_FULL_NONDISCLOSURE_REGRESSION",
       "open43.case:A1063_EXACT_PUBLIC_SOURCE_CANDIDATE",
@@ -5254,11 +5253,6 @@
     },
     {
       "source": "open43-audit-case:A1063_BREADCRUMB_RELATION_BOUNDARIES",
-      "type": "implemented_by",
-      "target": "wikijump.runtime:authoring"
-    },
-    {
-      "source": "open43-audit-case:A1063_BREADCRUMB_SERVED_CANDIDATE",
       "type": "implemented_by",
       "target": "wikijump.runtime:authoring"
     },
@@ -11201,8 +11195,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "a3de6fd24a8101491ce9ad0c8c65c8ad012b15b7",
-      "tree": "a9011865dd12857c506b4a679a9f21aab7a73265"
+      "commit": "b421645397e4e511094d4ea3797f00cd108c7607",
+      "tree": "035d5af2c858eb0369753fea3d1a72b3178f1f33"
     },
     "ftml": {
       "commit": "7ce4f22bcd9d7c0fffb901b5c0967987b2daa0d5",
@@ -11355,7 +11349,7 @@
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
-        "sha256": "817b393bd1196fa5518f6bcb4b4c48b800bba67da2948cf0593430cd889c90fd"
+        "sha256": "b05b6b568503ef81f53f7506350263137309f8162dd561ccf9a34b5fc12a8e1f"
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
@@ -11375,15 +11369,15 @@
       },
       {
         "path": "docs/development/open43-a-authoring-closure-audit.json",
-        "sha256": "0a768538c0def082c9bad30634ce81a277985e7932d8f5d8d2d1c3e39b36e194"
+        "sha256": "94a2d6631bc49db77275aafac991b002b05d1de005016b4eaff67708c6658eb8"
       },
       {
         "path": "docs/development/open43-blocked-evidence-routing.json",
-        "sha256": "5916b62d4be68960b5a01864fb86ff1fe728ae1d01ca52e395a792d90cbbfb30"
+        "sha256": "88c22c2d3ed9542f80723c44b2f211a0a435e1c75cfc20283be509b5a8c46ed4"
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "623aad26390e7337648a228a7e4aa5094e5b266aa5942a699453af2d87d60c30"
+        "sha256": "e87998952985b6605b20de5b970bab95c9882571975820cc715b3d003145f130"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -11423,15 +11417,15 @@
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
-        "sha256": "b69d218353c988c479c0af977240a7fa273f38918c57156dc3dae171c57f023c"
+        "sha256": "fe422968bdb53a3e7f6bd00ffc8f79620fcf0f5b2c81acfdc4e5c838f0471baf"
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "80f5ddbc2ba2524e3e8a0599950972899c19197c7f1ed9d7f4589a3f9d35f3fe"
+        "sha256": "a37d0c9e95087a81b09968ecc3d57b0265abcf212681a1e71535bcc3a18247cb"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "34bb5734a034b137a82def2e5313ea15db5e769ad58e5e4de7aedae0d49a9022"
+        "sha256": "1cd6076c0aa11a98ea14d8fb650fb815b1c8723ccc71c9c97ef20a5c06ef55d1"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -11651,7 +11645,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "80f5ddbc2ba2524e3e8a0599950972899c19197c7f1ed9d7f4589a3f9d35f3fe"
+        "sha256": "a37d0c9e95087a81b09968ecc3d57b0265abcf212681a1e71535bcc3a18247cb"
       },
       {
         "path": "wws/src/route.rs",
@@ -11742,7 +11736,7 @@
     ]
   },
   "counts": {
-    "total": 932,
+    "total": 931,
     "by_kind": {
       "catalog_feature": 210,
       "deepwell_jsonrpc_method": 167,
@@ -11752,7 +11746,7 @@
       "framerail_server_action": 97,
       "framerail_xmlrpc_method": 17,
       "missing_page_control": 2,
-      "open43_audit_case": 285,
+      "open43_audit_case": 284,
       "page_action": 25,
       "wikidot_py_amc_module_shape": 22,
       "wws_route": 50
@@ -39481,46 +39475,6 @@
         "references": []
       },
       "specification_owner": "open43.case:A1063_BREADCRUMB_RELATION_BOUNDARIES",
-      "implementation_owners": [
-        "wikijump.runtime:authoring"
-      ]
-    },
-    {
-      "surface_id": "open43-audit-case:A1063_BREADCRUMB_SERVED_CANDIDATE",
-      "kind": "open43_audit_case",
-      "public_reference": [
-        "docs/development/open43-a-authoring-closure-audit.json#A1063_BREADCRUMB_SERVED_CANDIDATE"
-      ],
-      "existing_refs": {
-        "issues": [
-          1063
-        ],
-        "cases": [
-          "A1063_BREADCRUMB_SERVED_CANDIDATE"
-        ],
-        "tests": []
-      },
-      "evidence": {
-        "status": "available",
-        "references": []
-      },
-      "source": {
-        "status": "implemented",
-        "references": []
-      },
-      "candidate": {
-        "status": "pending",
-        "references": []
-      },
-      "standing": {
-        "status": "pending",
-        "references": []
-      },
-      "closure": {
-        "status": "open",
-        "references": []
-      },
-      "specification_owner": "open43.case:A1063_BREADCRUMB_SERVED_CANDIDATE",
       "implementation_owners": [
         "wikijump.runtime:authoring"
       ]
