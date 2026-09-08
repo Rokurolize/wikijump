@@ -1,0 +1,106 @@
+{
+  "schema": "wikijump.issue1026.user_actor_live.v1",
+  "issue": 1026,
+  "observed_at": "2026-09-08",
+  "site": "sandbox-for-codex",
+  "acquisition": {
+    "transport": "edit/PagePreviewModule",
+    "mutation": false,
+    "external_request_count": 4,
+    "request_shape": "one combined user-syntax source per actor",
+    "actors": [
+      "anonymous",
+      "account_A",
+      "account_B",
+      "account_C"
+    ],
+    "wikidot_py_commit": "9f33c0f450de9daf333b068e8d70527e033fc07c"
+  },
+  "retained_sources": [
+    {
+      "path": "/home/roku/wjlab/evidence/issue1026-user-shape-20260904/preview-anon/artifact.json",
+      "sha256": "28f5127fe40683f1d53ac197641d9ae524ea018ccf0f264871b68fd1483f4c65",
+      "purpose": "anonymous name-key and missing-user controls"
+    },
+    {
+      "path": "/home/roku/wjlab/evidence/issue1026-user-shape-20260904/preview-B/artifact.json",
+      "sha256": "2670b503f03373c7ed23e854e305e9d6e2e75c69953a8d248f6dc3c0f5cf77ef",
+      "purpose": "authenticated member name-key controls"
+    },
+    {
+      "path": "/home/roku/wjlab/evidence/issue1026-actor-matrix-20260908-r1/artifact.json",
+      "sha256": "06690fd7698858f5966587ebb9c059bb475c4508927cd356bc0f54177bbbf4a9",
+      "purpose": "four-actor combined PagePreview observation"
+    },
+    {
+      "path": "/home/roku/wjlab/evidence/issue1026-actor-matrix-20260908-r1/analysis.json",
+      "sha256": "7df46e80e9af38379ad2c902216adf880fb2f0aa2bdcbc6eab7236c24ec85d01",
+      "purpose": "local-only identity-redacted and avatar-timestamp-normalized actor comparison"
+    }
+  ],
+  "source_sha256": "81f401fd7a62f5065b00968f74451d5aa232c7548efdd1a8d0f65ea53fe7d444",
+  "canonical_actor_shape_sha256": "14cad05ccb4daf3e969013f5ede2b5dd8bdd8919e30f4530dfb433dbcdba2a40",
+  "actor_invariance": {
+    "status": "observed",
+    "raw_body_difference": "starred-user avatar timestamp only",
+    "canonical_shapes_equal": true,
+    "per_actor_counts": {
+      "printuser": 3,
+      "avatarhover": 1,
+      "error_inline": 3,
+      "profile_anchors": 4,
+      "userinfo_listeners": 4,
+      "missing_user_errors": 3
+    }
+  },
+  "cases": [
+    {
+      "case_id": "issue1026-known-user",
+      "result": "printuser",
+      "actor_invariant": true
+    },
+    {
+      "case_id": "issue1026-known-user-starred",
+      "result": "printuser-avatarhover",
+      "actor_invariant": true,
+      "temporal_field": "avatar URL timestamp"
+    },
+    {
+      "case_id": "issue1026-system-special-identity",
+      "result": "printuser",
+      "actor_invariant": true
+    },
+    {
+      "case_id": "issue1026-anonymous-special-identity",
+      "result": "literal-Anonymous",
+      "actor_invariant": true
+    },
+    {
+      "case_id": "issue1026-unknown-name",
+      "result": "missing-user-error",
+      "actor_invariant": true
+    },
+    {
+      "case_id": "issue1026-real-numeric-id-as-authored-text",
+      "result": "missing-user-error",
+      "actor_invariant": true,
+      "rule": "digit-only authored [[user]] text remains a name key and does not fall back to numeric user ID lookup"
+    },
+    {
+      "case_id": "issue1026-v7-duplicate-argument-name-key",
+      "result": "missing-user-error",
+      "actor_invariant": true
+    }
+  ],
+  "not_established": [
+    "generated-name forgery resistance beyond the observed controls",
+    "rename invalidation",
+    "delete invalidation",
+    "import invalidation",
+    "candidate cache invalidation after identity mutation"
+  ],
+  "cleanup": {
+    "required": false,
+    "persistent_site_state_created": false
+  }
+}

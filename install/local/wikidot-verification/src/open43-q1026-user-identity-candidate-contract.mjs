@@ -5,18 +5,39 @@ import {
   sha256Value,
 } from "./standing-browser-parity-util.mjs";
 
-const VISIBLE_MARKERS = Object.freeze(["NAME"]);
+const VISIBLE_MARKERS = Object.freeze([
+  ["NAME", "visible_user", false],
+  ["NAME_STAR", "visible_user", true],
+  ["NAME_ONLY", "name_only_user", false],
+  ["UNICODE", "unicode_user", false],
+  ["NUMERIC_DISPLAY", "display_numeric_name_user", false],
+  ["SYSTEM", "system_user", false],
+]);
 const NO_IDENTITY_MARKUP = Object.freeze(["<a", "onclick=", "printuser", "avatar"]);
 
 function object(value, name) {
   return requirePlainObject(value, name);
 }
 
-function verifyVisible(body, marker, user, surface) {
+function markerFragment(body, marker) {
+  const start = body.indexOf(`${marker}=`);
+  if (start < 0) throw new Error(`missing #1026 marker ${marker}`);
+  const tail = body.slice(start);
+  const endings = [tail.indexOf("\n"), tail.indexOf("<br"), tail.indexOf("</p>")].filter((index) => index >= 0);
+  return tail.slice(0, endings.length === 0 ? undefined : Math.min(...endings));
+}
+
+function verifyVisible(body, marker, user, surface, starred) {
+  const fragment = markerFragment(body, marker);
   const profile = `http://www.wikidot.com/user:info/${user.slug}`;
   const onclick = `WIKIDOT.page.listeners.userInfo(${user.user_id}); return false;`;
-  if (!body.includes(profile) || !body.includes(onclick) || !body.includes(`>${user.name}</a>`)) {
+  if (!fragment.includes(profile) || !fragment.includes(onclick) || !fragment.includes(`>${user.name}</a>`)) {
     throw new Error(`${surface} ${marker} lookup did not render the fixed visible identity`);
+  }
+  if (starred) {
+    if (!fragment.includes('class="printuser avatarhover"') || !fragment.includes("<img") || !fragment.includes(`userid=${user.user_id}`)) throw new Error(`${surface} ${marker} did not preserve avatarhover identity`);
+  } else if (fragment.includes("avatarhover") || fragment.includes("<img")) {
+    throw new Error(`${surface} ${marker} unexpectedly emitted avatar identity`);
   }
   return { marker, profile, onclick };
 }
@@ -42,8 +63,10 @@ function verifyHidden(body, fixture, surface) {
 
 function verifySurface(body, fixture, surface) {
   const html = requireNonEmptyString(body, `${surface} HTML`);
-  const visible = VISIBLE_MARKERS.map((marker) => verifyVisible(html, marker, fixture.visible_user, surface));
+  const visible = VISIBLE_MARKERS.map(([marker, fixtureName, starred]) => verifyVisible(html, marker, fixture[fixtureName], surface, starred));
   const hidden = verifyHidden(html, fixture, surface);
+  const anonymous = markerFragment(html, "ANONYMOUS");
+  if (anonymous !== "ANONYMOUS=Anonymous" || NO_IDENTITY_MARKUP.some((marker) => anonymous.includes(marker))) throw new Error(`${surface} anonymous special identity is not literal`);
   return { html_sha256: sha256Value(html), visible, hidden };
 }
 
@@ -85,6 +108,8 @@ export function verifyOpen43Q1026UserIdentityCleanup(proof, resources) {
 }
 
 export const OPEN43_Q1026_EXPECTED_EM_CONTENTS = Object.freeze([
+  "Shared Person",
+  "Unknown Avatar User",
   "19102600",
   "Deleted User",
   "v7ws=\"alpha beta\u00a0gamma\"",
@@ -96,22 +121,46 @@ export const OPEN43_Q1026_EXPECTED_EM_CONTENTS = Object.freeze([
   "v7arg='single quoted' data-v7=unquoted",
 ]);
 
+export function verifyOpen43Q1026ActorMatrixCase(caseId, observations, plan) {
+  if (caseId !== "Q1026_ACTOR_SPECIAL_IDENTITY_MATRIX") throw new Error(`unsupported Open43 #1026 actor matrix case: ${caseId}`);
+  const value = object(observations, `${caseId} observations`);
+  if (value.source_sha256 !== plan.source_sha256) throw new Error("#1026 actor matrix source identity changed during execution");
+  const surfaces = object(value.actor_surfaces, "#1026 actor surfaces");
+  const actors = ["anonymous", "editor", "administrator", "other"];
+  if (JSON.stringify(Object.keys(surfaces).sort()) !== JSON.stringify([...actors].sort())) throw new Error("#1026 actor matrix denominator changed");
+  const baseline = object(surfaces.anonymous, "#1026 anonymous actor surface");
+  if (baseline.user_id !== null) throw new Error("#1026 anonymous actor unexpectedly has a user ID");
+  for (const actor of actors) {
+    const surface = object(surfaces[actor], `#1026 ${actor} actor surface`);
+    if (surface.user_id !== plan.actor_user_ids[actor]) throw new Error(`#1026 ${actor} actor identity drifted`);
+    requireSha256(surface.preview_sha256, `#1026 ${actor} preview SHA-256`);
+    requireSha256(surface.saved_sha256, `#1026 ${actor} saved SHA-256`);
+    if (surface.preview_sha256 !== baseline.preview_sha256 || surface.saved_sha256 !== baseline.saved_sha256) throw new Error(`#1026 ${actor} changed user-syntax output by request actor`);
+  }
+  return { verified: true, actor_count: actors.length, preview_sha256: baseline.preview_sha256, saved_sha256: baseline.saved_sha256 };
+}
+
 function verifyPrintuserState(state, fixture, label) {
   const value = object(state, `#1026 ${label}`);
-  if (value.printuser_count !== 1 || value.avatarhover_count !== 0) {
+  if (value.printuser_count !== 6 || value.avatarhover_count !== 1) {
     throw new Error(`#1026 ${label} printuser wrapper counts differ from the sealed live matrix`);
   }
-  const profile = `http://www.wikidot.com/user:info/${fixture.visible_user.slug}`;
-  const onclick = `WIKIDOT.page.listeners.userInfo(${fixture.visible_user.user_id}); return false;`;
-  if (!Array.isArray(value.anchors) || value.anchors.length !== 1) {
+  const expectedAnchors = new Map([
+    [fixture.visible_user.slug, { user_id: fixture.visible_user.user_id, count: 3 }],
+    [fixture.name_only_user.slug, { user_id: fixture.name_only_user.user_id, count: 1 }],
+    [fixture.unicode_user.slug, { user_id: fixture.unicode_user.user_id, count: 1 }],
+    [fixture.display_numeric_name_user.slug, { user_id: fixture.display_numeric_name_user.user_id, count: 1 }],
+    [fixture.system_user.slug, { user_id: fixture.system_user.user_id, count: 1 }],
+  ]);
+  if (!Array.isArray(value.anchors) || value.anchors.length !== 7) {
     throw new Error(`#1026 ${label} printuser links differ from the sealed live matrix`);
   }
-  for (const anchor of value.anchors) {
-    if (anchor.href !== profile || anchor.onclick !== onclick) {
-      throw new Error(`#1026 ${label} printuser link identity is wrong`);
-    }
+  for (const [slug, expected] of expectedAnchors) {
+    const profile = `http://www.wikidot.com/user:info/${slug}`;
+    const onclick = `WIKIDOT.page.listeners.userInfo(${expected.user_id}); return false;`;
+    if (value.anchors.filter((anchor) => anchor.href === profile && anchor.onclick === onclick).length !== expected.count) throw new Error(`#1026 ${label} printuser link identity is wrong for ${slug}`);
   }
-  if (!Array.isArray(value.avatar_images) || value.avatar_images.length !== 0) {
+  if (!Array.isArray(value.avatar_images) || value.avatar_images.length !== 1 || value.avatar_images[0].alt !== fixture.visible_user.name || !value.avatar_images[0].style?.includes(`u=${fixture.visible_user.user_id}`)) {
     throw new Error(`#1026 ${label} avatar image count is wrong`);
   }
   if (value.error_count !== OPEN43_Q1026_EXPECTED_EM_CONTENTS.length) {
@@ -126,11 +175,12 @@ function verifyPrintuserState(state, fixture, label) {
   if (!Array.isArray(value.error_anchor_counts) || value.error_anchor_counts.some((count) => count !== 0)) {
     throw new Error(`#1026 ${label} missing-user error leaked a link or avatar authority`);
   }
+  if (value.anonymous_literal_present !== true) throw new Error(`#1026 ${label} anonymous special identity did not stay literal`);
   return {
     printuser_count: value.printuser_count,
     avatarhover_count: value.avatarhover_count,
     error_count: value.error_count,
-    profile,
+    anchor_count: value.anchors.length,
   };
 }
 
