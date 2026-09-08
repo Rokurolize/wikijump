@@ -498,7 +498,7 @@ class Open43MediaBrowserRun {
     await installCspProbe(browserPage);
     await browserPage.route("**/-/file/**", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 200));
-      await route.continue();
+      await route.fallback();
     });
     try {
       const url = candidateUrl(this.#session.pageOrigin, pageFixture.slug);

@@ -10,6 +10,7 @@ import {
   DEFAULT_REQUEST_INTERVAL_MS,
   acquireBrowserCaptureLock,
   createPersistentBrowserRequestGate,
+  defaultPublicEvidenceResponseCacheOptions,
   localBrowserCaptureOrigins,
 } from "../src/browser-request-gate.mjs";
 import {
@@ -155,15 +156,25 @@ function parseArgs(argv) {
   if (!args.outputDir) throw new Error("--output-dir is required");
   if (args.sourceResponseCacheDir !== null && args.sourceResponseCacheIdentity === null) throw new Error("--source-response-cache-identity is required with --source-response-cache-dir");
   if (args.sourceResponseCacheDir === null && args.sourceResponseCacheIdentity !== null) throw new Error("--source-response-cache-dir is required with --source-response-cache-identity");
+  if (args.sourceResponseCacheDir === null) {
+    const defaults = defaultPublicEvidenceResponseCacheOptions();
+    args.sourceResponseCacheDir = defaults.persistentDir;
+    args.sourceResponseCacheIdentity = defaults.persistentIdentity;
+    args.sourceResponseCacheDocuments = true;
+  } else if (!args.sourceResponseCacheDocuments) {
+    throw new Error("explicit browser evidence caches require --cache-source-documents so reruns do not reacquire source pages");
+  }
   return args;
 }
 
 function printHelp() {
-  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--storage-state FILE | --source-storage-state FILE --local-storage-state FILE] [--source-response-cache-dir DIR --source-response-cache-identity ID [--cache-source-documents]] [--actor-label LABEL] [--local-url-field local_https_url] [--timeout-ms 900000] [--settle-ms 1000] [--visible-text-scope main-frame] [--ignore-https-errors] [--no-screenshot] [--json]
+  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--storage-state FILE | --source-storage-state FILE --local-storage-state FILE] [--source-response-cache-dir DIR --source-response-cache-identity ID --cache-source-documents] [--actor-label LABEL] [--local-url-field local_https_url] [--timeout-ms 900000] [--settle-ms 1000] [--visible-text-scope main-frame] [--ignore-https-errors] [--no-screenshot] [--json]
 
 Writes validator-compatible browser rendering evidence JSON plus DOM/screenshot artifacts for selected corpus inventory rows. The output directory should live under one of the render validator evidence roots, for example:
 
   $OUT/validation/browser-rendering/en-0001
+
+Anonymous source responses use a persistent evidence-replay cache under XDG_CACHE_HOME (or ~/.cache) by default, including source documents. Reuse the default identity for retries. Supply all three source-response-cache options only when intentionally selecting a different acquisition identity.
 `);
 }
 
@@ -398,6 +409,12 @@ async function run() {
       source_context_exempt_origins: [],
       local_context_exempt_origins: [...new Set(localOrigins)].sort(),
       public_request_policy: "every HTTP(S) request except an exact local-context origin is admitted by the shared gate",
+      source_response_cache: {
+        persistent_dir: args.sourceResponseCacheDir,
+        persistent_identity: args.sourceResponseCacheIdentity,
+        cache_documents: args.sourceResponseCacheDocuments,
+        evidence_replay: true,
+      },
       service_workers: "block",
       web_sockets: "blocked_without_network_connection",
     });
@@ -417,10 +434,12 @@ async function run() {
       localProxyServer: localEgressProxy.url,
       requestGate,
       localOrigins,
-      sourceResponseCacheOptions: args.sourceResponseCacheDir === null ? {} : {
+      sourceResponseCacheOptions: {
+        ...defaultPublicEvidenceResponseCacheOptions(),
         persistentDir: args.sourceResponseCacheDir,
         persistentIdentity: args.sourceResponseCacheIdentity,
         cacheDocuments: args.sourceResponseCacheDocuments,
+        evidenceReplay: true,
       },
     });
     const runContexts = {

@@ -13,6 +13,7 @@ import {publishBytesNoReplace} from "../src/atomic-no-replace.mjs";
 import {
   DEFAULT_REQUEST_INTERVAL_MS,
   acquireBrowserCaptureLock,
+  candidatePublicEvidenceResponseCacheOptions,
   createPersistentBrowserRequestGate,
   localBrowserCaptureOrigins,
 } from "../src/browser-request-gate.mjs";
@@ -874,7 +875,7 @@ async function armFailureControl(page, control, timeoutMs, label) {
       await route.abort("failed");
       return;
     }
-    await route.continue();
+    await route.fallback();
   };
   await page.route("**/*", handler);
   return {signal, cleanup: async () => page.unroute("**/*", handler)};
@@ -1272,6 +1273,7 @@ export async function runTemporalCapture(args) {
     }));
     captureLock = await acquireBrowserCaptureLock({runId});
     requestGate = await createPersistentBrowserRequestGate({statePath: captureLock.statePath, intervalMs: requestIntervalMs});
+    const sourceResponseCacheOptions = candidatePublicEvidenceResponseCacheOptions();
     await writeExclusiveJson(requestGateConfigPath, {
       schema: "wikijump_full_parity.browser_request_gate_config.v1",
       status: "sealed_before_browser_request",
@@ -1283,6 +1285,12 @@ export async function runTemporalCapture(args) {
       source_context_exempt_origins: [],
       local_context_exempt_origins: localOrigins,
       public_request_policy: "every HTTP(S) request except an exact local-context origin is admitted by the shared gate",
+      source_response_cache: {
+        persistent_dir: sourceResponseCacheOptions.persistentDir,
+        persistent_identity: sourceResponseCacheOptions.persistentIdentity,
+        cache_documents: sourceResponseCacheOptions.cacheDocuments,
+        evidence_replay: sourceResponseCacheOptions.evidenceReplay,
+      },
       service_workers: "block",
       web_sockets: "blocked_without_network_connection",
     });
@@ -1304,6 +1312,7 @@ export async function runTemporalCapture(args) {
         localProxyServer: localEgressProxy.url,
         requestGate,
         localOrigins,
+        sourceResponseCacheOptions,
       });
       try {
         if (!browserSession.localContext) throw new Error("browser local context was not initialized");

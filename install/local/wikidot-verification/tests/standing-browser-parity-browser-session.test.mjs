@@ -565,7 +565,9 @@ test("candidate file routing replays a retained wdfiles asset when the local mir
   };
   const lookups = [];
   const responseCache = {
-    get(key) {
+    evidenceReplay: true,
+    cacheDocuments: true,
+    lookup(key) {
       lookups.push(key);
       return cached;
     },
@@ -619,6 +621,197 @@ test("candidate file routing replays a retained wdfiles asset when the local mir
     "https://scp-wiki.wdfiles.com/local--files/scp-8980/femalescientist.png",
     "https://scp-wiki.wdfiles.com/local--files/scp-8980/femalescientist.png",
   ]);
+});
+
+test("candidate file fallback replay keeps GET, HEAD, Range, and credential identities separate", async () => {
+  const handlers = new Map();
+  const context = {
+    async route(value, callback) {
+      handlers.set(value, callback);
+    },
+  };
+  const targetUrl = "https://scp-wiki.wdfiles.com/local--files/scp-8980/femalescientist.png";
+  const cached = {
+    status: 200,
+    headers: {"content-type": "image/png"},
+    body: Buffer.from("retained-get"),
+  };
+  const responseCache = createBrowserResponseCache({evidenceReplay: true});
+  assert.equal(responseCache.store(targetUrl, cached, {requestHeaders: {}}), true);
+  await installCandidateFilePortRoute(
+    context,
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+    ],
+    {responseCache},
+  );
+  const handler = handlers.get("https://scp-wiki.wjfiles.localhost:18449/**");
+  const localUrl = "https://scp-wiki.wjfiles.localhost:18449/local--files/scp-8980/femalescientist.png";
+
+  async function observe(method, headers = {}) {
+    const localMiss = {status: () => 404, headers: () => ({})};
+    let fulfillment = null;
+    await handler({
+      request() {
+        return {
+          method: () => method,
+          resourceType: () => "image",
+          url: () => localUrl,
+          headers: () => headers,
+          allHeaders: async () => headers,
+        };
+      },
+      async fetch() {
+        return localMiss;
+      },
+      async fulfill(options) {
+        fulfillment = options;
+      },
+    });
+    return {fulfillment, localMiss};
+  }
+
+  const get = await observe("GET");
+  assert.deepEqual(get.fulfillment, {status: cached.status, headers: cached.headers, body: cached.body});
+  for (const [method, headers] of [
+    ["HEAD", {}],
+    ["GET", {range: "bytes=0-9"}],
+    ["GET", {cookie: "session=secret"}],
+  ]) {
+    const observation = await observe(method, headers);
+    assert.deepEqual(observation.fulfillment, {response: observation.localMiss});
+  }
+});
+
+test("candidate file redirect acquisition leaves a durable no-refetch barrier after transport uncertainty", async (t) => {
+  const handlers = new Map();
+  const context = {
+    async route(value, callback) {
+      handlers.set(value, callback);
+    },
+  };
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-file-redirect-barrier-"));
+  t.after(() => fs.rm(cacheDir, {recursive: true, force: true}));
+  const responseCache = createBrowserResponseCache({
+    persistentDir: cacheDir,
+    persistentIdentity: "evidence:file-redirect-barrier",
+    evidenceReplay: true,
+  });
+  await responseCache.load();
+  let externalAdmissions = 0;
+  await installCandidateFilePortRoute(
+    context,
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+    ],
+    {
+      responseCache,
+      sourceRequestGate: {
+        async acquire() {
+          externalAdmissions += 1;
+        },
+        recordSyntheticPublicAdmission() {},
+      },
+    },
+  );
+  const handler = handlers.get("https://scp-wiki.wjfiles.localhost:18449/**");
+  const localUrl = "https://scp-wiki.wjfiles.localhost/local--files/theme%3Abasalt/logo.svg";
+  const targetUrl = "https://scp-wiki.wdfiles.com/local--files/theme%3Abasalt/logo.svg";
+  const redirect = {status: () => 302, headers: () => ({location: targetUrl})};
+  let targetFetches = 0;
+  const makeRoute = () => ({
+    request() {
+      return {
+        method: () => "GET",
+        resourceType: () => "image",
+        url: () => localUrl,
+        headers: () => ({}),
+        allHeaders: async () => ({}),
+      };
+    },
+    async fetch(options) {
+      if (options.url === targetUrl) {
+        targetFetches += 1;
+        throw new Error("simulated uncertain redirect transport");
+      }
+      return redirect;
+    },
+    async fulfill() {},
+  });
+
+  await assert.rejects(handler(makeRoute()), /simulated uncertain redirect transport/u);
+  await assert.rejects(handler(makeRoute()), /refuses to reacquire an identity with uncertain prior acquisition/u);
+  assert.equal(targetFetches, 1);
+  assert.equal(externalAdmissions, 1);
+  assert.equal(responseCache.snapshot().acquisition_barriers, 1);
+  const manifest = JSON.parse(await fs.readFile(path.join(cacheDir, "manifest.json"), "utf8"));
+  assert.deepEqual(manifest.acquisition_barriers, [targetUrl]);
+});
+
+test("candidate file public redirects never replay anonymous target evidence for credential-bearing requests", async () => {
+  const targetUrl = "https://scp-wiki.wdfiles.com/local--files/theme%3Abasalt/logo.svg";
+  for (const variant of [
+    {name: "cookie", headers: {cookie: "session=secret"}, userinfo: ""},
+    {name: "authorization", headers: {authorization: "Bearer secret"}, userinfo: ""},
+    {name: "userinfo", headers: {}, userinfo: "user:secret@"},
+  ]) {
+    const handlers = new Map();
+    const context = {
+      async route(value, callback) {
+        handlers.set(value, callback);
+      },
+    };
+    const responseCache = createBrowserResponseCache({evidenceReplay: true});
+    assert.equal(responseCache.store(targetUrl, {
+      status: 200,
+      headers: {"content-type": "image/svg+xml"},
+      body: Buffer.from("anonymous-retained-target"),
+    }, {requestHeaders: {}}), true);
+    let externalAdmissions = 0;
+    await installCandidateFilePortRoute(
+      context,
+      [
+        "https://scp-wiki.wikijump.localhost:18449",
+        "https://scp-wiki.wjfiles.localhost:18449",
+      ],
+      {
+        responseCache,
+        sourceRequestGate: {
+          async acquire() {
+            externalAdmissions += 1;
+          },
+          recordSyntheticPublicAdmission() {},
+        },
+      },
+    );
+    const redirect = {status: () => 302, headers: () => ({location: targetUrl})};
+    let fulfillment = null;
+    let targetFetches = 0;
+    await handlers.get("https://scp-wiki.wjfiles.localhost:18449/**")({
+      request() {
+        return {
+          method: () => "GET",
+          resourceType: () => "image",
+          url: () => `https://${variant.userinfo}scp-wiki.wjfiles.localhost/local--files/theme%3Abasalt/logo.svg`,
+          headers: () => variant.headers,
+          allHeaders: async () => variant.headers,
+        };
+      },
+      async fetch(options) {
+        if (options.url === targetUrl) targetFetches += 1;
+        return redirect;
+      },
+      async fulfill(options) {
+        fulfillment = options;
+      },
+    });
+
+    assert.deepEqual(fulfillment, {response: redirect}, variant.name);
+    assert.equal(targetFetches, 0, variant.name);
+    assert.equal(externalAdmissions, 0, variant.name);
+  }
 });
 
 test("candidate file routing preserves collapsed source admissions when a redirect is outside the public gate", async () => {

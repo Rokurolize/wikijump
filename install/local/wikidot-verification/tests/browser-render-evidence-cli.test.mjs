@@ -194,7 +194,7 @@ exports.chromium = {
       browserRoot,
       "--json",
     ],
-    {env: {...process.env, WIKIJUMP_CONTEXT_TRACE: tracePath}}
+    {env: {...process.env, XDG_CACHE_HOME: path.join(root, "cache"), WIKIJUMP_CONTEXT_TRACE: tracePath}}
   );
 
   const trace = (await fs.readFile(tracePath, "utf8"))
@@ -228,6 +228,12 @@ exports.chromium = {
   const requestGateConfig = JSON.parse(await fs.readFile(path.join(outputDir, "request-gate-config.json"), "utf8"));
   assert.equal(requestGateConfig.status, "sealed_before_browser_request");
   assert.equal(requestGateConfig.interval_ms, 0);
+  assert.deepEqual(requestGateConfig.source_response_cache, {
+    persistent_dir: path.join(root, "cache", "wikijump-verification", "candidate-public-evidence-v1"),
+    persistent_identity: "wikijump-candidate-public-evidence-cache-v1",
+    cache_documents: true,
+    evidence_replay: true,
+  });
   assert.equal(records.capture.request_gate.public_requests, 0);
   assert.equal(records.capture.browser_context_scope, "run");
   assert.equal(records.capture.source_response_cache.entries, 0);
@@ -279,18 +285,22 @@ exports.chromium = {
   );
   await fs.writeFile(inventoryPath, JSON.stringify({schema: inventory.schema, rows: [inventory.rows[0]]}), "utf8");
 
-  await execFileAsync(process.execPath, [
-    scriptPath,
-    "--inventory",
-    inventoryPath,
-    "--output-dir",
-    outputDir,
-    "--browser-root",
-    browserRoot,
-    "--visible-text-scope",
-    "main-frame",
-    "--json",
-  ]);
+  await execFileAsync(
+    process.execPath,
+    [
+      scriptPath,
+      "--inventory",
+      inventoryPath,
+      "--output-dir",
+      outputDir,
+      "--browser-root",
+      browserRoot,
+      "--visible-text-scope",
+      "main-frame",
+      "--json",
+    ],
+    {env: {...process.env, XDG_CACHE_HOME: path.join(root, "cache")}},
+  );
 
   const records = JSON.parse(await fs.readFile(path.join(outputDir, "records.json"), "utf8"));
   const [record] = records.evidence;
@@ -356,16 +366,20 @@ exports.chromium = {
   );
 
   await assert.rejects(
-    execFileAsync(process.execPath, [
-      scriptPath,
-      "--inventory",
-      inventoryPath,
-      "--output-dir",
-      outputDir,
-      "--browser-root",
-      browserRoot,
-      "--json",
-    ]),
+    execFileAsync(
+      process.execPath,
+      [
+        scriptPath,
+        "--inventory",
+        inventoryPath,
+        "--output-dir",
+        outputDir,
+        "--browser-root",
+        browserRoot,
+        "--json",
+      ],
+      {env: {...process.env, XDG_CACHE_HOME: path.join(root, "cache")}},
+    ),
     (error) => {
       assert.match(error.stdout, /"selected_count":1/);
       return true;

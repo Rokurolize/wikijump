@@ -31,6 +31,31 @@ test("candidate response cache defaults to one cross-campaign user cache", () =>
     defaultCandidateResponseCacheOptions({ environment: {}, homeDirectory: "/home/fixture" }).persistentDir,
     "/home/fixture/.cache/wikijump-verification/candidate-public-evidence-v1",
   );
+  assert.deepEqual(
+    defaultCandidateResponseCacheOptions({
+      environment: {
+        WIKIJUMP_CANDIDATE_RESPONSE_CACHE_DIR: "/tmp/explicit-candidate-cache",
+        WIKIJUMP_CANDIDATE_RESPONSE_CACHE_IDENTITY: "explicit-candidate-cache-v2",
+      },
+      homeDirectory: "/home/fixture",
+    }),
+    {
+      persistentDir: "/tmp/explicit-candidate-cache",
+      persistentIdentity: "explicit-candidate-cache-v2",
+      cacheDocuments: true,
+      evidenceReplay: true,
+      maxEntries: 8192,
+      maxBytes: 512 * 1024 * 1024,
+      maxEntryBytes: 32 * 1024 * 1024,
+    },
+  );
+  assert.throws(
+    () => defaultCandidateResponseCacheOptions({
+      environment: {WIKIJUMP_CANDIDATE_RESPONSE_CACHE_DIR: "/tmp/only-dir"},
+      homeDirectory: "/home/fixture",
+    }),
+    /configured together/u,
+  );
 });
 
 function candidateIdentity() {

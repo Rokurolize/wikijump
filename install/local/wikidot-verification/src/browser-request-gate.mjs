@@ -10,13 +10,135 @@ export const DEFAULT_BROWSER_CAPTURE_LOCK = "/var/tmp/wikijump-wikidot-browser-c
 const DEFAULT_RESPONSE_CACHE_MAX_ENTRIES = 512;
 const DEFAULT_RESPONSE_CACHE_MAX_BYTES = 64 * 1024 * 1024;
 const DEFAULT_RESPONSE_CACHE_MAX_ENTRY_BYTES = 8 * 1024 * 1024;
+const DEFAULT_PUBLIC_EVIDENCE_CACHE_IDENTITY = "wikijump-candidate-public-evidence-cache-v1";
+const DEFAULT_PUBLIC_EVIDENCE_CACHE_MAX_ENTRIES = 8192;
+const DEFAULT_PUBLIC_EVIDENCE_CACHE_MAX_BYTES = 512 * 1024 * 1024;
+const DEFAULT_PUBLIC_EVIDENCE_CACHE_MAX_ENTRY_BYTES = 32 * 1024 * 1024;
 const RESPONSE_CACHE_STORE_SCHEMA = "wikijump_full_parity.browser_response_cache_store.v1";
+const RESPONSE_CACHE_MANIFEST_LOCK_SCHEMA = "wikijump_full_parity.browser_response_cache_manifest_lock.v1";
 const RESPONSE_CACHE_REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 const MAX_RESPONSE_CACHE_REDIRECTS = 10;
+const HTTP_HEADER_NAME_RE = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/u;
+const RESPONSE_CACHE_REQUEST_IDENTITY_HEADERS = [
+  "if-match",
+  "if-none-match",
+  "if-modified-since",
+  "if-unmodified-since",
+  "if-range",
+];
 
 function responseCacheKey(value) {
   if (/^https:\/\/www\.wikidot\.com\/avatar\.php\?/u.test(value)) return value.replace(/(?:&amp;|&)timestamp=[^&]*/u, "");
   return value;
+}
+
+function reusableStoredHeaders(headers) {
+  const reusable = normalizedHeaderRecord(headers);
+  for (const name of ["content-encoding", "content-length", "transfer-encoding", "set-cookie", "set-cookie2"]) {
+    delete reusable[name];
+  }
+  return reusable;
+}
+
+function normalizedHeaderRecord(headers) {
+  const normalized = {};
+  for (const [rawName, rawValue] of Object.entries(headers ?? {})) {
+    const name = rawName.toLowerCase();
+    if (!HTTP_HEADER_NAME_RE.test(name) || typeof rawValue !== "string") {
+      throw new Error("browser response cache request headers are malformed");
+    }
+    normalized[name] = rawValue;
+  }
+  return normalized;
+}
+
+function varyHeaderNames(headers) {
+  const raw = headers?.vary;
+  if (raw === undefined) return [];
+  if (typeof raw !== "string") throw new Error("browser response cache Vary header is malformed");
+  const names = raw
+    .split(",")
+    .map((name) => name.trim().toLowerCase())
+    .filter(Boolean);
+  if (names.length === 0 || names.some((name) => name !== "*" && !HTTP_HEADER_NAME_RE.test(name))) {
+    throw new Error("browser response cache Vary header is malformed");
+  }
+  if (names.includes("*") && names.length !== 1) throw new Error("browser response cache Vary header mixes * with named fields");
+  return [...new Set(names)].sort();
+}
+
+function varyBindingForRequest(varyNames, requestHeaders) {
+  if (varyNames.length === 0) return null;
+  const normalized = normalizedHeaderRecord(requestHeaders);
+  if (varyNames.length === 1 && varyNames[0] === "*") {
+    return {
+      names: ["*"],
+      values: Object.fromEntries(Object.entries(normalized).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)),
+    };
+  }
+  return {
+    names: varyNames,
+    values: Object.fromEntries(varyNames.map((name) => [name, Object.hasOwn(normalized, name) ? normalized[name] : null])),
+  };
+}
+
+function canonicalVaryBinding(value) {
+  if (value === null) return null;
+  if (!value || !Array.isArray(value.names) || value.names.length === 0 || typeof value.values !== "object" || value.values === null || Array.isArray(value.values)) {
+    throw new Error("browser response cache Vary binding is malformed");
+  }
+  const names = value.names.map((name) => {
+    if (typeof name !== "string") throw new Error("browser response cache Vary binding is malformed");
+    const normalized = name.toLowerCase();
+    if (normalized !== "*" && !HTTP_HEADER_NAME_RE.test(normalized)) throw new Error("browser response cache Vary binding is malformed");
+    return normalized;
+  });
+  const uniqueNames = [...new Set(names)].sort();
+  if (uniqueNames.length !== names.length || (uniqueNames.includes("*") && uniqueNames.length !== 1)) {
+    throw new Error("browser response cache Vary binding is malformed");
+  }
+  const values = {};
+  for (const [rawName, rawValue] of Object.entries(value.values)) {
+    const name = rawName.toLowerCase();
+    if (!HTTP_HEADER_NAME_RE.test(name) || (rawValue !== null && typeof rawValue !== "string")) {
+      throw new Error("browser response cache Vary binding is malformed");
+    }
+    values[name] = rawValue;
+  }
+  const sortedValues = Object.fromEntries(Object.entries(values).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0));
+  if (uniqueNames[0] !== "*") {
+    const valueNames = Object.keys(sortedValues).sort();
+    if (JSON.stringify(valueNames) !== JSON.stringify(uniqueNames)) throw new Error("browser response cache Vary binding fields do not match Vary");
+  } else if (Object.values(sortedValues).some((headerValue) => headerValue === null)) {
+    throw new Error("browser response cache Vary * binding cannot contain absent headers");
+  }
+  return {names: uniqueNames, values: sortedValues};
+}
+
+function varyBindingsEqual(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function retainedEntryIdentity(baseKey, varyBinding) {
+  return varyBinding === null
+    ? `legacy\0${baseKey}`
+    : `variant\0${baseKey}\0${JSON.stringify(varyBinding)}`;
+}
+
+function responseCacheRequestKey(request, overrideUrl = null, requestHeaders = null) {
+  const url = responseCacheKey(overrideUrl ?? request.url());
+  const method = request.method();
+  const headers = requestHeaders ?? (typeof request.headers === "function" ? request.headers() : {});
+  const range = headers.range;
+  const identity = [];
+  if (method !== "GET") identity.push(`method=${encodeURIComponent(method)}`);
+  if (range !== undefined) identity.push(`range=${encodeURIComponent(range)}`);
+  for (const name of RESPONSE_CACHE_REQUEST_IDENTITY_HEADERS) {
+    if (headers[name] !== undefined) identity.push(`${name}=${encodeURIComponent(headers[name])}`);
+  }
+  return identity.length === 0
+    ? url
+    : `${url}#__wikijump_evidence_request=${identity.join("&")}`;
 }
 const LOCK_SCHEMA = "wikijump_full_parity.browser_capture_lock.v1";
 const STATE_SCHEMA = "wikijump_full_parity.browser_request_gate_state.v1";
@@ -76,6 +198,49 @@ function positiveSafeInteger(value, name) {
   return value;
 }
 
+export function defaultPublicEvidenceResponseCacheOptions({
+  environment = process.env,
+  homeDirectory = os.homedir(),
+} = {}) {
+  const xdgCacheHome = environment.XDG_CACHE_HOME;
+  if (xdgCacheHome !== undefined && (typeof xdgCacheHome !== "string" || !path.isAbsolute(xdgCacheHome))) {
+    throw new Error("XDG_CACHE_HOME must be an absolute path when set");
+  }
+  if (typeof homeDirectory !== "string" || !path.isAbsolute(homeDirectory)) {
+    throw new Error("public evidence response cache home directory must be absolute");
+  }
+  const cacheHome = xdgCacheHome ?? path.join(homeDirectory, ".cache");
+  return {
+    persistentDir: path.join(cacheHome, "wikijump-verification", "candidate-public-evidence-v1"),
+    persistentIdentity: DEFAULT_PUBLIC_EVIDENCE_CACHE_IDENTITY,
+    cacheDocuments: true,
+    evidenceReplay: true,
+    maxEntries: DEFAULT_PUBLIC_EVIDENCE_CACHE_MAX_ENTRIES,
+    maxBytes: DEFAULT_PUBLIC_EVIDENCE_CACHE_MAX_BYTES,
+    maxEntryBytes: DEFAULT_PUBLIC_EVIDENCE_CACHE_MAX_ENTRY_BYTES,
+  };
+}
+
+export function candidatePublicEvidenceResponseCacheOptions({
+  environment = process.env,
+  homeDirectory = os.homedir(),
+} = {}) {
+  const options = defaultPublicEvidenceResponseCacheOptions({environment, homeDirectory});
+  const directory = environment.WIKIJUMP_CANDIDATE_RESPONSE_CACHE_DIR;
+  const identity = environment.WIKIJUMP_CANDIDATE_RESPONSE_CACHE_IDENTITY;
+  if ((directory === undefined) !== (identity === undefined)) {
+    throw new Error("candidate response cache directory and identity must be configured together");
+  }
+  if (directory !== undefined) {
+    if (typeof directory !== "string" || directory === "" || typeof identity !== "string" || identity === "") {
+      throw new Error("candidate response cache directory and identity must be non-empty strings");
+    }
+    options.persistentDir = path.resolve(directory);
+    options.persistentIdentity = identity;
+  }
+  return options;
+}
+
 async function ensurePrivateCacheDirectory(directory) {
   await fs.mkdir(directory, {recursive: true, mode: 0o700});
   const stat = await fs.lstat(directory);
@@ -98,6 +263,117 @@ async function readPrivateCacheManifest(filePath) {
   }
 }
 
+function validCacheManifestLockOwner(value) {
+  return value?.schema === RESPONSE_CACHE_MANIFEST_LOCK_SCHEMA &&
+    typeof value.hostname === "string" && value.hostname !== "" &&
+    Number.isSafeInteger(value.pid) && value.pid > 0 &&
+    /^\d+$/u.test(value.process_start_ticks ?? "");
+}
+
+async function syncDirectory(directory) {
+  const handle = await fs.open(directory, fsConstants.O_RDONLY | (fsConstants.O_DIRECTORY ?? 0));
+  try {
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
+}
+
+async function withPrivateCacheManifestLock(filePath, operation) {
+  const directory = path.dirname(filePath);
+  const lockPath = `${filePath}.lock`;
+  await ensurePrivateCacheDirectory(directory);
+  const startTicks = await currentProcessStartTicks(process.pid);
+  if (!startTicks) throw new Error("cannot bind browser response cache manifest lock to this process");
+  const owner = {
+    schema: RESPONSE_CACHE_MANIFEST_LOCK_SCHEMA,
+    hostname: os.hostname(),
+    pid: process.pid,
+    process_start_ticks: startTicks,
+  };
+  let lockStat = null;
+  for (let attempt = 0; attempt < 6_000; attempt += 1) {
+    let handle = null;
+    try {
+      handle = await fs.open(lockPath, fsConstants.O_WRONLY | fsConstants.O_CREAT | fsConstants.O_EXCL | (fsConstants.O_NOFOLLOW ?? 0), 0o600);
+      await handle.writeFile(`${JSON.stringify(owner)}\n`, "utf8");
+      await handle.sync();
+      lockStat = await handle.stat();
+      await handle.close();
+      handle = null;
+      await syncDirectory(directory);
+      break;
+    } catch (error) {
+      await handle?.close().catch(() => {});
+      if (error?.code !== "EEXIST") throw error;
+      let stat;
+      try {
+        stat = await fs.lstat(lockPath);
+      } catch (statError) {
+        if (statError?.code === "ENOENT") continue;
+        throw statError;
+      }
+      if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0) throw new Error(`browser response cache manifest lock is malformed: ${lockPath}`);
+      let existing;
+      try {
+        existing = JSON.parse(await fs.readFile(lockPath, "utf8"));
+      } catch (readError) {
+        if (readError?.code === "ENOENT") continue;
+        if (Date.now() - stat.mtimeMs < 1_000) {
+          await defaultSleep(5);
+          continue;
+        }
+        throw new Error(`browser response cache manifest lock owner is malformed: ${lockPath}`);
+      }
+      if (!validCacheManifestLockOwner(existing) || existing.hostname !== owner.hostname) {
+        throw new Error(`browser response cache manifest lock is held by an unverifiable owner: ${lockPath}`);
+      }
+      const existingTicks = await currentProcessStartTicks(existing.pid);
+      if (existingTicks === existing.process_start_ticks) {
+        await defaultSleep(5);
+        continue;
+      }
+      let current;
+      try {
+        current = await fs.lstat(lockPath);
+      } catch (currentError) {
+        if (currentError?.code === "ENOENT") continue;
+        throw currentError;
+      }
+      if (current.dev !== stat.dev || current.ino !== stat.ino) continue;
+      await fs.unlink(lockPath);
+      await syncDirectory(directory);
+    }
+  }
+  if (!lockStat) throw new Error(`browser response cache manifest lock timed out: ${lockPath}`);
+  let result;
+  let operationError = null;
+  try {
+    result = await operation();
+  } catch (error) {
+    operationError = error;
+  }
+  let cleanupError = null;
+  try {
+    let current = null;
+    try {
+      current = await fs.lstat(lockPath);
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+    if (current && current.dev === lockStat.dev && current.ino === lockStat.ino) {
+      await fs.unlink(lockPath);
+      await syncDirectory(directory);
+    }
+  } catch (error) {
+    cleanupError = error;
+  }
+  if (operationError !== null && cleanupError !== null) throw new AggregateError([operationError, cleanupError], "browser response cache operation and manifest-lock cleanup both failed");
+  if (operationError !== null) throw operationError;
+  if (cleanupError !== null) throw cleanupError;
+  return result;
+}
+
 async function writePrivateCacheManifest(filePath, value) {
   const directory = path.dirname(filePath);
   await ensurePrivateCacheDirectory(directory);
@@ -112,6 +388,7 @@ async function writePrivateCacheManifest(filePath, value) {
     await handle.close();
     handle = null;
     await fs.rename(temporary, filePath);
+    await syncDirectory(directory);
   } catch (error) {
     await handle?.close().catch(() => {});
     await fs.unlink(temporary).catch(() => {});
@@ -126,9 +403,11 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
   if (maxEntryBytes > maxBytes) throw new Error("maxEntryBytes cannot exceed maxBytes");
   if (persistentDir !== null && (typeof persistentDir !== "string" || persistentDir === "")) throw new Error("persistentDir must be a non-empty path or null");
   if (persistentDir !== null && (typeof persistentIdentity !== "string" || persistentIdentity === "")) throw new Error("persistentIdentity is required for a persistent browser response cache");
+  if (persistentDir !== null && !evidenceReplay) throw new Error("persistent browser response caches are append-only evidence replay stores");
 
   const entries = new Map();
   const persistentPath = persistentDir === null ? null : path.resolve(persistentDir, "manifest.json");
+  const retainedEntryMaxBytes = persistentPath === null ? maxEntryBytes : Number.MAX_SAFE_INTEGER;
   let bytes = 0;
   let hits = 0;
   let misses = 0;
@@ -136,11 +415,133 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
   let bypasses = 0;
   let evictions = 0;
   let loaded = persistentPath === null;
-  let dirty = false;
   let loadedEntries = 0;
+  let mutationGeneration = 0;
+  let persistedGeneration = 0;
+  let flushQueue = Promise.resolve();
+  const fills = new Map();
+  let exactVariantHits = 0;
+  let legacyVariantMisses = 0;
+  let variantStores = 0;
+  let acquisitionBarriers = new Set();
+
+  function decodeManifestEntry(entry, sourcePath) {
+    if (typeof entry?.key !== "string" || !/^https?:\/\//u.test(entry.key) || !isCacheableResponseStatus(entry.status, {evidenceReplay}) || typeof entry.headers !== "object" || entry.headers === null || typeof entry.body_base64 !== "string") {
+      throw new Error(`browser response cache entry is malformed: ${sourcePath}`);
+    }
+    const body = Buffer.from(entry.body_base64, "base64");
+    if (body.toString("base64") !== entry.body_base64 || body.length > retainedEntryMaxBytes) {
+      throw new Error(`browser response cache entry exceeds limits or is malformed: ${sourcePath}`);
+    }
+    const headers = reusableStoredHeaders(entry.headers);
+    const varyNames = varyHeaderNames(headers);
+    const varyBinding = entry.vary_binding === undefined
+      ? null
+      : canonicalVaryBinding(entry.vary_binding);
+    if (varyBinding !== null && JSON.stringify(varyBinding.names) !== JSON.stringify(varyNames)) {
+      throw new Error(`browser response cache Vary binding does not match response Vary header: ${sourcePath}`);
+    }
+    const baseKey = responseCacheKey(entry.key);
+    return {
+      key: retainedEntryIdentity(baseKey, varyBinding),
+      value: {baseKey, status: entry.status, headers, body, varyBinding},
+      canonicalized: baseKey !== entry.key || JSON.stringify(headers) !== JSON.stringify(entry.headers),
+    };
+  }
+
+  function entriesEqual(left, right) {
+    if (left.status !== right.status || !left.body.equals(right.body)) return false;
+    const normalize = (headers) => Object.entries(headers).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
+    return JSON.stringify(normalize(left.headers)) === JSON.stringify(normalize(right.headers));
+  }
+
+  function mergeRetainedEntry(identity, value, sourcePath) {
+    const existing = entries.get(identity);
+    if (existing) {
+      if (!entriesEqual(existing, value)) {
+        throw new Error(`browser response cache retained response conflicts with persisted evidence: ${sourcePath}`);
+      }
+      return false;
+    }
+    if (persistentPath === null && (entries.size + 1 > maxEntries || bytes + value.body.length > maxBytes)) {
+      throw new Error(`browser response cache merged manifest exceeds limits: ${sourcePath}`);
+    }
+    entries.set(identity, value);
+    bytes += value.body.length;
+    return true;
+  }
+
+  function matchingRetainedEntry(baseKey, requestHeaders, {count = true} = {}) {
+    const normalizedRequestHeaders = requestHeaders === null ? null : normalizedHeaderRecord(requestHeaders);
+    let legacy = null;
+    for (const entry of entries.values()) {
+      if (entry.baseKey !== baseKey) continue;
+      if (entry.status === 304) {
+        throw new Error(`browser response cache retained 304 response is not standalone-replayable: ${baseKey}`);
+      }
+      if (entry.varyBinding !== null) {
+        if (entry.varyBinding.names.length === 1 && entry.varyBinding.names[0] === "*") {
+          throw new Error(`browser response cache retained Vary * response is not exact-replayable: ${baseKey}`);
+        }
+        if (normalizedRequestHeaders === null) continue;
+        const expected = varyBindingForRequest(entry.varyBinding.names, normalizedRequestHeaders);
+        if (varyBindingsEqual(entry.varyBinding, expected)) {
+          if (count) {
+            hits += 1;
+            exactVariantHits += 1;
+          }
+          return {status: entry.status, headers: entry.headers, body: entry.body};
+        }
+        continue;
+      }
+      legacy = entry;
+    }
+    if (legacy !== null) {
+      const legacyVary = varyHeaderNames(legacy.headers);
+      if (legacyVary.length === 0) {
+        if (count) hits += 1;
+        return {status: legacy.status, headers: legacy.headers, body: legacy.body};
+      }
+      if (count) legacyVariantMisses += 1;
+    }
+    if (count) misses += 1;
+    return null;
+  }
+
+  async function mergeCurrentManifest() {
+    const current = await readPrivateCacheManifest(persistentPath);
+    if (current === null) return;
+    if (current.schema !== RESPONSE_CACHE_STORE_SCHEMA || current.identity !== persistentIdentity || !Array.isArray(current.entries)) {
+      throw new Error(`browser response cache identity or schema mismatch: ${persistentPath}`);
+    }
+    if (current.acquisition_barriers !== undefined && (!Array.isArray(current.acquisition_barriers) || current.acquisition_barriers.some((key) => typeof key !== "string" || !/^https?:\/\//u.test(key)))) {
+      throw new Error(`browser response cache acquisition barriers are malformed: ${persistentPath}`);
+    }
+    for (const raw of current.entries) {
+      const decoded = decodeManifestEntry(raw, persistentPath);
+      if (mergeRetainedEntry(decoded.key, decoded.value, persistentPath)) mutationGeneration += 1;
+      if (decoded.canonicalized) mutationGeneration += 1;
+    }
+    acquisitionBarriers = new Set((current.acquisition_barriers ?? []).map(responseCacheKey));
+  }
+
+  async function writeCurrentManifest() {
+    await writePrivateCacheManifest(persistentPath, {
+      schema: RESPONSE_CACHE_STORE_SCHEMA,
+      identity: persistentIdentity,
+      entries: [...entries.values()].map((entry) => ({
+        key: entry.baseKey,
+        ...(entry.varyBinding === null ? {} : {vary_binding: entry.varyBinding, body_representation: "decoded"}),
+        status: entry.status,
+        headers: entry.headers,
+        body_base64: entry.body.toString("base64"),
+      })),
+      ...(acquisitionBarriers.size === 0 ? {} : {acquisition_barriers: [...acquisitionBarriers].sort()}),
+    });
+  }
 
   return {
-    maxEntryBytes,
+    maxEntryBytes: retainedEntryMaxBytes,
     cacheDocuments,
     evidenceReplay,
     async load() {
@@ -152,52 +553,122 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
         return;
       }
       if (manifest.schema !== RESPONSE_CACHE_STORE_SCHEMA || manifest.identity !== persistentIdentity || !Array.isArray(manifest.entries)) throw new Error(`browser response cache identity or schema mismatch: ${persistentPath}`);
-      for (const entry of manifest.entries) {
-        if (typeof entry?.key !== "string" || !/^https?:\/\//u.test(entry.key) || !isCacheableResponseStatus(entry.status, {evidenceReplay}) || typeof entry.headers !== "object" || entry.headers === null || typeof entry.body_base64 !== "string") throw new Error(`browser response cache entry is malformed: ${persistentPath}`);
-        const body = Buffer.from(entry.body_base64, "base64");
-        if (body.toString("base64") !== entry.body_base64 || body.length > maxEntryBytes || entries.has(entry.key)) throw new Error(`browser response cache entry exceeds limits or is duplicated: ${persistentPath}`);
-        entries.set(entry.key, {status: entry.status, headers: entry.headers, body});
-        bytes += body.length;
-        if (entries.size > maxEntries || bytes > maxBytes) throw new Error(`browser response cache manifest exceeds limits: ${persistentPath}`);
+      if (manifest.acquisition_barriers !== undefined && (!Array.isArray(manifest.acquisition_barriers) || manifest.acquisition_barriers.some((key) => typeof key !== "string" || !/^https?:\/\//u.test(key)))) {
+        throw new Error(`browser response cache acquisition barriers are malformed: ${persistentPath}`);
       }
+      for (const entry of manifest.entries) {
+        const decoded = decodeManifestEntry(entry, persistentPath);
+        if (entries.has(decoded.key)) throw new Error(`browser response cache entry exceeds limits or is duplicated: ${persistentPath}`);
+        mergeRetainedEntry(decoded.key, decoded.value, persistentPath);
+        if (decoded.canonicalized) mutationGeneration += 1;
+      }
+      acquisitionBarriers = new Set((manifest.acquisition_barriers ?? []).map(responseCacheKey));
       loadedEntries = entries.size;
       loaded = true;
     },
     async flush() {
-      if (persistentPath === null || !dirty) return;
-      await writePrivateCacheManifest(persistentPath, {
-        schema: RESPONSE_CACHE_STORE_SCHEMA,
-        identity: persistentIdentity,
-        entries: [...entries].map(([key, entry]) => ({key, status: entry.status, headers: entry.headers, body_base64: entry.body.toString("base64")})),
+      if (persistentPath === null || mutationGeneration <= persistedGeneration) return;
+      const turn = flushQueue.then(async () => {
+        if (mutationGeneration <= persistedGeneration) return;
+        const generation = mutationGeneration;
+        await withPrivateCacheManifestLock(persistentPath, async () => {
+          await mergeCurrentManifest();
+          await writeCurrentManifest();
+        });
+        persistedGeneration = Math.max(generation, mutationGeneration);
       });
-      dirty = false;
+      flushQueue = turn.catch(() => {});
+      await turn;
+    },
+    async withFill(key, options, producer) {
+      if (!loaded) throw new Error("persistent browser response cache must be loaded before fill");
+      if (typeof options === "function") {
+        producer = options;
+        options = {};
+      }
+      if (typeof producer !== "function") throw new Error("browser response cache fill producer must be a function");
+      const cacheKey = responseCacheKey(key);
+      const requestHeaders = options?.requestHeaders ?? null;
+      const retained = matchingRetainedEntry(cacheKey, requestHeaders, {count: false});
+      if (retained) return retained;
+      const fillIdentity = `${cacheKey}\0${JSON.stringify(normalizedHeaderRecord(requestHeaders ?? {}))}`;
+      const active = fills.get(fillIdentity);
+      if (active) return await active;
+      const fill = persistentPath === null
+        ? Promise.resolve().then(() => producer({deferFlush: false, markAcquisitionStarted: async () => {}}))
+        : withPrivateCacheManifestLock(persistentPath, async () => {
+            await mergeCurrentManifest();
+            const diskRetained = matchingRetainedEntry(cacheKey, requestHeaders, {count: false});
+            if (diskRetained) {
+              hits += 1;
+              if (varyHeaderNames(diskRetained.headers).length > 0) exactVariantHits += 1;
+              return diskRetained;
+            }
+            if (acquisitionBarriers.has(cacheKey)) {
+              throw new Error(`browser response cache refuses to reacquire an identity with uncertain prior acquisition: ${cacheKey}`);
+            }
+            let acquisitionStarted = false;
+            const markAcquisitionStarted = async () => {
+              if (acquisitionStarted) return;
+              acquisitionBarriers.add(cacheKey);
+              mutationGeneration += 1;
+              await writeCurrentManifest();
+              persistedGeneration = mutationGeneration;
+              acquisitionStarted = true;
+            };
+            const value = await producer({deferFlush: true, markAcquisitionStarted});
+            if (acquisitionStarted) {
+              acquisitionBarriers.delete(cacheKey);
+              mutationGeneration += 1;
+            }
+            await writeCurrentManifest();
+            persistedGeneration = mutationGeneration;
+            return value;
+          });
+      fills.set(fillIdentity, fill);
+      try {
+        return await fill;
+      } finally {
+        if (fills.get(fillIdentity) === fill) fills.delete(fillIdentity);
+      }
+    },
+    lookup(key, {requestHeaders = null} = {}) {
+      if (!loaded) throw new Error("persistent browser response cache must be loaded before lookup");
+      return matchingRetainedEntry(responseCacheKey(key), requestHeaders);
     },
     get(key) {
       if (!loaded) throw new Error("persistent browser response cache must be loaded before lookup");
-      const cacheKey = responseCacheKey(key);
-      const entry = entries.get(cacheKey);
-      if (!entry) {
-        misses += 1;
-        return null;
-      }
-      entries.delete(cacheKey);
-      entries.set(cacheKey, entry);
-      hits += 1;
-      return entry;
+      return matchingRetainedEntry(responseCacheKey(key), null);
     },
-    store(key, entry) {
+    store(key, entry, {requestHeaders = null} = {}) {
       if (!loaded) throw new Error("persistent browser response cache must be loaded before storage");
-      if (!Buffer.isBuffer(entry?.body) || entry.body.length > maxEntryBytes) {
+      if (!Buffer.isBuffer(entry?.body) || entry.body.length > retainedEntryMaxBytes) {
         bypasses += 1;
         return false;
       }
-      const cacheKey = responseCacheKey(key);
+      const baseKey = responseCacheKey(key);
+      const headers = reusableStoredHeaders(entry.headers ?? {});
+      const varyNames = varyHeaderNames(headers);
+      let varyBinding = null;
+      if (varyNames.length > 0) {
+        if (requestHeaders === null) {
+          bypasses += 1;
+          return false;
+        }
+        varyBinding = varyBindingForRequest(varyNames, requestHeaders);
+      }
+      const cacheKey = retainedEntryIdentity(baseKey, varyBinding);
+      const normalizedEntry = {baseKey, status: entry.status, headers, body: entry.body, varyBinding};
       const existing = entries.get(cacheKey);
       if (existing) {
-        entries.delete(key);
+        if (persistentPath !== null && !entriesEqual(existing, normalizedEntry)) {
+          bypasses += 1;
+          return false;
+        }
+        entries.delete(cacheKey);
         bytes -= existing.body.length;
       }
-      while (entries.size >= maxEntries || bytes + entry.body.length > maxBytes) {
+      while (persistentPath === null && (entries.size >= maxEntries || bytes + normalizedEntry.body.length > maxBytes)) {
         const oldestKey = entries.keys().next().value;
         if (oldestKey === undefined) break;
         const oldest = entries.get(oldestKey);
@@ -205,10 +676,11 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
         bytes -= oldest.body.length;
         evictions += 1;
       }
-      entries.set(cacheKey, entry);
-      bytes += entry.body.length;
+      entries.set(cacheKey, normalizedEntry);
+      bytes += normalizedEntry.body.length;
       stores += 1;
-      if (persistentPath !== null) dirty = true;
+      if (varyBinding !== null) variantStores += 1;
+      mutationGeneration += 1;
       return true;
     },
     recordBypass() {
@@ -226,12 +698,20 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
         evictions,
         max_entries: maxEntries,
         max_bytes: maxBytes,
-        max_entry_bytes: maxEntryBytes,
-        lookup_key: "exact_url",
+        max_entry_bytes: retainedEntryMaxBytes,
+        lookup_key: evidenceReplay ? "exact_url_method_range_conditional_vary" : "exact_url",
         lifetime: persistentPath === null ? "browser_context" : "persistent",
         documents_cached: cacheDocuments,
         evidence_replay: evidenceReplay,
-        ...(persistentPath === null ? {} : {persistent_identity: persistentIdentity, persistent_entries_loaded: loadedEntries}),
+        retention_policy: persistentPath === null ? "bounded_lru" : "append_only_no_eviction",
+        exact_variant_hits: exactVariantHits,
+        legacy_variant_misses: legacyVariantMisses,
+        variant_stores: variantStores,
+        ...(persistentPath === null ? {} : {
+          acquisition_barriers: acquisitionBarriers.size,
+          persistent_identity: persistentIdentity,
+          persistent_entries_loaded: loadedEntries,
+        }),
       };
     },
   };
@@ -531,20 +1011,48 @@ async function abortRoute(route) {
   }
 }
 
-function requestCanUseResponseCache(request, responseCache) {
-  if (request.method() !== "GET" || (request.resourceType() === "document" && !responseCache.cacheDocuments)) return false;
-  const headers = request.headers();
-  return headers.range === undefined && headers.authorization === undefined && headers.cookie === undefined;
+async function requestHeadersForResponseCache(request) {
+  return normalizedHeaderRecord(
+    typeof request.allHeaders === "function"
+      ? await request.allHeaders()
+      : typeof request.headers === "function"
+        ? request.headers()
+        : request.headers ?? {},
+  );
+}
+
+async function requestCanUseResponseCache(request, responseCache, requestHeaders = null) {
+  const method = request.method();
+  if (
+    (method !== "GET" && !(responseCache.evidenceReplay && method === "HEAD")) ||
+    (request.resourceType() === "document" && !responseCache.cacheDocuments)
+  ) return false;
+  const requestUrl = new URL(request.url());
+  if (requestUrl.username || requestUrl.password) return false;
+  const headers = requestHeaders ?? await requestHeadersForResponseCache(request);
+  if (headers.authorization !== undefined || headers.cookie !== undefined) return false;
+  return headers.range === undefined || responseCache.evidenceReplay;
+}
+
+export async function lookupBrowserEvidenceResponse({responseCache, request, targetUrl = request.url()}) {
+  const target = new URL(targetUrl);
+  if (target.username || target.password) return null;
+  const requestHeaders = await requestHeadersForResponseCache(request);
+  if (!await requestCanUseResponseCache(request, responseCache, requestHeaders)) return null;
+  const cacheKey = responseCacheRequestKey(request, target.href, requestHeaders);
+  return responseCache.lookup(cacheKey, {requestHeaders});
 }
 
 function isCacheableResponseStatus(status, {evidenceReplay = false} = {}) {
   if (status === 200 || (status >= 400 && status < 500)) return true;
-  return evidenceReplay && RESPONSE_CACHE_REDIRECT_STATUSES.has(status);
+  return evidenceReplay && status >= 200 && status < 600;
 }
 
-function responseCanBeCached(response, cache) {
+async function responseCanBeCached(response, cache) {
   if (!isCacheableResponseStatus(response.status(), {evidenceReplay: cache.evidenceReplay})) return false;
-  const headers = response.headers();
+  const headers = typeof response.allHeaders === "function"
+    ? await response.allHeaders()
+    : response.headers();
   const contentLength = headers["content-length"];
   if (contentLength !== undefined && (!/^\d+$/u.test(contentLength) || Number(contentLength) > cache.maxEntryBytes)) return false;
   if (cache.evidenceReplay) return true;
@@ -582,12 +1090,10 @@ function responseCanBeCached(response, cache) {
   return true;
 }
 
-function reusableResponseHeaders(response) {
-  const headers = {...response.headers()};
-  delete headers["content-encoding"];
-  delete headers["content-length"];
-  delete headers["transfer-encoding"];
-  return headers;
+async function reusableResponseHeaders(response) {
+  return reusableStoredHeaders(typeof response.allHeaders === "function"
+    ? await response.allHeaders()
+    : response.headers());
 }
 
 function redirectTarget(entry, baseUrl) {
@@ -605,16 +1111,51 @@ function redirectTarget(entry, baseUrl) {
   return target;
 }
 
-async function retainedEntryFromResponse(responseCache, key, response) {
-  if (!responseCanBeCached(response, responseCache)) return null;
+async function retainedEntryFromResponse(responseCache, key, response, {deferFlush = false, requestHeaders = null} = {}) {
+  if (!await responseCanBeCached(response, responseCache)) return null;
   const body = await response.body();
   if (body.length > responseCache.maxEntryBytes) return null;
   const entry = {
     status: response.status(),
-    headers: reusableResponseHeaders(response),
+    headers: await reusableResponseHeaders(response),
     body,
   };
-  return responseCache.store(key, entry) ? entry : null;
+  if (!responseCache.store(key, entry, {requestHeaders})) return null;
+  if (!deferFlush) await responseCache.flush();
+  return entry;
+}
+
+export async function fetchBrowserEvidenceResponse({
+  route,
+  gate,
+  responseCache,
+  request = route.request(),
+  targetUrl = request.url(),
+}) {
+  const target = new URL(targetUrl);
+  if (target.username || target.password) {
+    throw new Error(`browser response cache cannot retain credential-bearing URL ${target.href}`);
+  }
+  const requestHeaders = await requestHeadersForResponseCache(request);
+  if (responseCache === null || !await requestCanUseResponseCache(request, responseCache, requestHeaders)) {
+    throw new Error(`browser response cache cannot retain ${target.href}`);
+  }
+  const cacheKey = responseCacheRequestKey(request, target.href, requestHeaders);
+  return await responseCache.withFill(cacheKey, {requestHeaders}, async ({deferFlush, markAcquisitionStarted}) => {
+    await gate.acquire();
+    await markAcquisitionStarted();
+    const response = await route.fetch(
+      target.href === request.url()
+        ? {maxRedirects: 0}
+        : {url: target.href, maxRedirects: 0},
+    );
+    const entry = await retainedEntryFromResponse(responseCache, cacheKey, response, {deferFlush, requestHeaders});
+    if (entry === null) {
+      responseCache.recordBypass();
+      throw new Error(`browser response cache could not retain ${target.href}`);
+    }
+    return entry;
+  });
 }
 
 export async function resolveEvidenceReplaySubresourceRedirect({
@@ -624,6 +1165,8 @@ export async function resolveEvidenceReplaySubresourceRedirect({
   resourceType,
   sourceUrl,
   entry,
+  request = route.request(),
+  fetchRetainedEntry = null,
 }) {
   if (
     !responseCache?.evidenceReplay ||
@@ -634,6 +1177,8 @@ export async function resolveEvidenceReplaySubresourceRedirect({
   }
 
   const visited = new Set([sourceUrl]);
+  const requestHeaders = await requestHeadersForResponseCache(request);
+  if (!await requestCanUseResponseCache(request, responseCache, requestHeaders)) return null;
   let currentUrl = sourceUrl;
   let currentEntry = entry;
   for (let redirects = 0; redirects < MAX_RESPONSE_CACHE_REDIRECTS; redirects += 1) {
@@ -644,18 +1189,26 @@ export async function resolveEvidenceReplaySubresourceRedirect({
     }
     visited.add(target.href);
 
-    let targetEntry = responseCache.get(target.href);
+    const targetCacheKey = responseCacheRequestKey(request, target.href, requestHeaders);
+    let targetEntry = responseCache.lookup(targetCacheKey, {requestHeaders});
     if (targetEntry === null) {
-      await gate.acquire();
-      const response = await route.fetch({ url: target.href, maxRedirects: 0 });
-      targetEntry = await retainedEntryFromResponse(responseCache, target.href, response);
-      if (targetEntry === null) {
-        if (RESPONSE_CACHE_REDIRECT_STATUSES.has(response.status())) {
+      if (fetchRetainedEntry !== null) {
+        targetEntry = await fetchRetainedEntry(target.href);
+      } else {
+        await gate.acquire();
+        const response = await route.fetch({ url: target.href, maxRedirects: 0 });
+        targetEntry = await retainedEntryFromResponse(responseCache, targetCacheKey, response, {requestHeaders});
+        if (targetEntry === null) {
+          if (RESPONSE_CACHE_REDIRECT_STATUSES.has(response.status())) {
+            responseCache.recordBypass();
+            throw new Error(`browser response cache could not retain redirect target: ${target.href}`);
+          }
           responseCache.recordBypass();
-          throw new Error(`browser response cache could not retain redirect target: ${target.href}`);
+          return { finalUrl: target.href, entry: null, response };
         }
-        responseCache.recordBypass();
-        return { finalUrl: target.href, entry: null, response };
+      }
+      if (targetEntry === null) {
+        throw new Error(`browser response cache could not retain redirect target: ${target.href}`);
       }
     }
 
@@ -685,7 +1238,7 @@ export function evidenceReplaySubresourceFulfillment(resourceType, resolved) {
   };
 }
 
-async function fulfillRetainedEntry(route, { gate, responseCache, request, entry }) {
+async function fulfillRetainedEntry(route, { gate, responseCache, request, entry, fetchRetainedEntry = null }) {
   const resolved = await resolveEvidenceReplaySubresourceRedirect({
     route,
     gate,
@@ -693,6 +1246,8 @@ async function fulfillRetainedEntry(route, { gate, responseCache, request, entry
     resourceType: request.resourceType(),
     sourceUrl: request.url(),
     entry,
+    request,
+    fetchRetainedEntry,
   });
   if (resolved === null) {
     await route.fulfill(entry);
@@ -707,51 +1262,49 @@ async function fulfillRetainedEntry(route, { gate, responseCache, request, entry
   await route.fulfill({ response: resolved.response });
 }
 
-async function servePublicRoute(route, {gate, responseCache, cacheOnly = false}) {
+async function servePublicRoute(route, {gate, responseCache, cacheOnly = false, fetchRetainedEntry = null}) {
   const request = route.request();
+  const requestHeaders = await requestHeadersForResponseCache(request);
   if (cacheOnly) {
-    if (!responseCache || !requestCanUseResponseCache(request, responseCache)) {
+    if (!responseCache || !await requestCanUseResponseCache(request, responseCache, requestHeaders)) {
       responseCache?.recordBypass();
       throw new Error(`candidate response cache cannot serve ${request.url()}`);
     }
-    const cached = responseCache.get(request.url());
+    const cached = responseCache.lookup(responseCacheRequestKey(request, null, requestHeaders), {requestHeaders});
     if (cached === null) throw new Error(`candidate response cache miss: ${request.url()}`);
-    await fulfillRetainedEntry(route, { gate, responseCache, request, entry: cached });
+    await fulfillRetainedEntry(route, { gate, responseCache, request, entry: cached, fetchRetainedEntry });
     return;
   }
-  if (!responseCache || !requestCanUseResponseCache(request, responseCache)) {
+  if (!responseCache || !await requestCanUseResponseCache(request, responseCache, requestHeaders)) {
     responseCache?.recordBypass();
     await gate.acquire();
     await route.continue();
     return;
   }
 
-  const cacheKey = request.url();
-  const cached = responseCache.get(cacheKey);
+  const cacheKey = responseCacheRequestKey(request, null, requestHeaders);
+  const cached = responseCache.lookup(cacheKey, {requestHeaders});
   if (cached) {
-    await fulfillRetainedEntry(route, { gate, responseCache, request, entry: cached });
+    await fulfillRetainedEntry(route, { gate, responseCache, request, entry: cached, fetchRetainedEntry });
+    return;
+  }
+
+  if (fetchRetainedEntry !== null) {
+    const entry = await fetchRetainedEntry(request.url());
+    await fulfillRetainedEntry(route, { gate, responseCache, request, entry, fetchRetainedEntry });
     return;
   }
 
   await gate.acquire();
   const response = await route.fetch({maxRedirects: 0});
-  if (!responseCanBeCached(response, responseCache)) {
+  if (!await responseCanBeCached(response, responseCache)) {
     responseCache.recordBypass();
     await route.fulfill({response});
     return;
   }
-  const body = await response.body();
-  if (body.length > responseCache.maxEntryBytes) {
+  const entry = await retainedEntryFromResponse(responseCache, cacheKey, response, {requestHeaders});
+  if (entry === null) {
     responseCache.recordBypass();
-    await route.fulfill({response});
-    return;
-  }
-  const entry = {
-    status: response.status(),
-    headers: reusableResponseHeaders(response),
-    body,
-  };
-  if (!responseCache.store(cacheKey, entry)) {
     await route.fulfill({response});
     return;
   }
@@ -770,7 +1323,7 @@ async function servePublicRoute(route, {gate, responseCache, cacheOnly = false})
 export async function installBrowserRequestGate(context, {gate, exemptOrigins = [], responseCache = null, publicOriginPredicate = null, cacheOnly = false, cacheOnlyAllowedOrigins = []} = {}) {
   if (!gate || typeof gate.acquire !== "function" || typeof gate.deferForRetryAfter !== "function" || typeof gate.failClosed !== "function" || typeof gate.recordLocalExempt !== "function" || typeof gate.recordUnsupportedRequestBlocked !== "function" || typeof gate.recordWebSocketBlocked !== "function") throw new Error("browser request gate is malformed");
   if (!context || typeof context.route !== "function" || typeof context.routeWebSocket !== "function" || typeof context.on !== "function") throw new Error("browser context cannot enforce request-level capture controls");
-  if (responseCache !== null && (typeof responseCache.get !== "function" || typeof responseCache.store !== "function" || typeof responseCache.recordBypass !== "function" || typeof responseCache.snapshot !== "function")) throw new Error("browser response cache is malformed");
+  if (responseCache !== null && (typeof responseCache.get !== "function" || typeof responseCache.lookup !== "function" || typeof responseCache.store !== "function" || typeof responseCache.withFill !== "function" || typeof responseCache.recordBypass !== "function" || typeof responseCache.snapshot !== "function")) throw new Error("browser response cache is malformed");
   if (publicOriginPredicate !== null && typeof publicOriginPredicate !== "function") throw new Error("browser request-gate public origin predicate is malformed");
   const exempt = normalizedOrigins(exemptOrigins);
   const cacheOnlyAllowed = normalizedOrigins(cacheOnlyAllowedOrigins);
@@ -795,6 +1348,13 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
     }));
     if (!(await abortRoute(route))) attributedAborts.delete(request);
   };
+  const fetchRetainedEntry = (route, request, targetUrl = request.url()) => fetchBrowserEvidenceResponse({
+    route,
+    gate,
+    responseCache,
+    request,
+    targetUrl,
+  });
   const routePattern = exempt.size === 0
     ? "**/*"
     : (url) => !exempt.has(url.origin);
@@ -823,7 +1383,15 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
         );
         return;
       }
-      await servePublicRoute(route, {gate, responseCache, cacheOnly});
+      const request = route.request();
+      await servePublicRoute(route, {
+        gate,
+        responseCache,
+        cacheOnly,
+        fetchRetainedEntry: cacheOnly || responseCache?.evidenceReplay
+          ? (targetUrl) => fetchRetainedEntry(route, request, targetUrl)
+          : null,
+      });
     } catch (error) {
       let cacheOnlyAllowedMiss = false;
       try {
@@ -833,37 +1401,26 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
         const initiatorUrl = typeof request.frame === "function" ? request.frame()?.url() : null;
         const wikidotPublicOrigin = isWikidotCapturePublicOrigin(url, request.resourceType(), request.method(), initiatorUrl);
         const nonWikidotDependency = isCaptureDependencyResourceType(request.resourceType()) && !wikidotPublicOrigin;
-        cacheOnlyAllowedMiss = cacheOnly && cacheMiss && (cacheOnlyAllowed.has(url.origin) || wikidotPublicOrigin || nonWikidotDependency);
+        cacheOnlyAllowedMiss = cacheOnly &&
+          cacheMiss &&
+          responseCache !== null &&
+          await requestCanUseResponseCache(request, responseCache) &&
+          (cacheOnlyAllowed.has(url.origin) || wikidotPublicOrigin || nonWikidotDependency);
       } catch {
         cacheOnlyAllowedMiss = false;
       }
       if (cacheOnlyAllowedMiss) {
         try {
           const request = route.request();
-          await gate.acquire();
-          const response = await route.fetch({maxRedirects: 0});
-          if (
-            responseCache !== null &&
-            requestCanUseResponseCache(request, responseCache) &&
-            responseCanBeCached(response, responseCache)
-          ) {
-            const entry = await retainedEntryFromResponse(
-              responseCache,
-              request.url(),
-              response,
-            );
-            if (entry !== null) {
-              await fulfillRetainedEntry(route, {
-                gate,
-                responseCache,
-                request,
-                entry,
-              });
-              return;
-            }
-          }
-          responseCache?.recordBypass();
-          await route.fulfill({response});
+          const entry = await fetchRetainedEntry(route, request);
+          await fulfillRetainedEntry(route, {
+            gate,
+            responseCache,
+            request,
+            entry,
+            fetchRetainedEntry: (targetUrl) => fetchRetainedEntry(route, request, targetUrl),
+          });
+          return;
         } catch (continueError) {
           gate.failClosed(continueError);
           await abortRoute(route);

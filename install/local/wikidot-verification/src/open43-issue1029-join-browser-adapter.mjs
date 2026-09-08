@@ -154,7 +154,7 @@ export class Open43Issue1029JoinBrowserAdapter {
     const handler = async (route) => {
       observed();
       await hold;
-      await route.continue();
+      await route.fallback();
     };
     await page.route(matcher, handler, { times: 1 });
     try {
