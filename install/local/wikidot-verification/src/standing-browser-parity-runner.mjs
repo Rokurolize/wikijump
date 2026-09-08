@@ -151,6 +151,9 @@ export function parseStandingBrowserParityArgs(argv) {
     } else if (flag === "--live-completion-policy") {
       args.liveCompletionPolicy = path.resolve(nextArgument(argv, index, flag));
       index += 1;
+    } else if (flag === "--live-reference-capture-policy") {
+      args.liveReferenceCapturePolicy = path.resolve(nextArgument(argv, index, flag));
+      index += 1;
     } else if (flag === "--candidate-identity") {
       args.candidateIdentity = path.resolve(nextArgument(argv, index, flag));
       index += 1;
@@ -434,6 +437,7 @@ async function sealLiveReference({
 async function collectCandidateParity({
   args,
   policy,
+  referencePolicy,
   candidateIdentity,
   browser,
 }) {
@@ -451,6 +455,9 @@ async function collectCandidateParity({
     policy: policy.value,
     policySha256: policy.sha256,
     policyFilePath: policy.filePath,
+    referencePolicy: referencePolicy.value,
+    referencePolicySha256: referencePolicy.sha256,
+    referencePolicyFilePath: referencePolicy.filePath,
   });
   const captures = await captureSet({ browser, pairs, label: "local", args });
   for (const [index, capture] of captures.entries()) {
@@ -575,6 +582,9 @@ async function sealCandidateParity({
 
 export async function runStandingBrowserParity(args) {
   const policy = await readPolicy(args.liveCompletionPolicy);
+  const referencePolicy = args.liveReferenceCapturePolicy
+    ? await readPolicy(args.liveReferenceCapturePolicy)
+    : policy;
   const candidateIdentity =
     args.mode === "candidate"
       ? await readCandidateIdentity(args.candidateIdentity)
@@ -627,6 +637,7 @@ export async function runStandingBrowserParity(args) {
         : await collectCandidateParity({
             args,
             policy,
+            referencePolicy,
             candidateIdentity,
             browser,
           });
