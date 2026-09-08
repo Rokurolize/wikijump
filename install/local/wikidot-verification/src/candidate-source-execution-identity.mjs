@@ -91,13 +91,14 @@ async function git(args) {
   return stdout.trim();
 }
 
-async function assertCandidateRuntimeUnchanged(candidateCommit, head) {
+async function assertCandidateRuntimeUnchanged(candidateCommit, candidateTree, head, tree) {
   if (candidateCommit === head) return;
   try {
     await git(["merge-base", "--is-ancestor", candidateCommit, head]);
   } catch {
     throw new Error("candidate source execution identity does not bind the sealed candidate source identity");
   }
+  if (candidateTree === tree) return;
   const changed = (await git(["diff", "--name-only", `${candidateCommit}..${head}`])).split("\n").filter(Boolean);
   if (changed.length === 0 || changed.some((file) => !VERIFICATION_ONLY_PREFIXES.some((prefix) => file.startsWith(prefix)))) {
     throw new Error("candidate source execution identity does not bind the sealed candidate runtime");
@@ -112,7 +113,7 @@ export async function collectCandidateSourceExecutionIdentity(candidateIdentity,
     git(["rev-parse", "HEAD^{tree}"]),
     fs.readFile(path.join(REPOSITORY_ROOT, "deepwell", "Cargo.lock"), "utf8"),
   ]);
-  await assertCandidateRuntimeUnchanged(candidateIdentity.candidate.wikijump_commit, head);
+  await assertCandidateRuntimeUnchanged(candidateIdentity.candidate.wikijump_commit, candidateIdentity.candidate.wikijump_tree, head, tree);
   if (status !== "") throw new Error("candidate source execution checkout must be clean");
   const manifest = [];
   for (const relativePath of sourceFiles) {
