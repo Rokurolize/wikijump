@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-09-05",
-  "catalog_sha256": "1590b17869bc8dce525c9021a9b25af58ddc4aa6aec8cfb1f1e79d5a7372a18b",
+  "catalog_sha256": "dbd10194c8b5e4d92d8a4b723ba73a460219efa0d89a6dd65e7e4fb1967d0d33",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -3301,7 +3301,8 @@
     "module-sitechanges": {
       "status": "in_progress",
       "confirmed_public_seams": [
-        "Live anonymous Wikidot edit/PagePreviewModule capture for the standalone default module form, category selector, initial revision rows, flags, dates, users, comments, and pager DOM",
+      "Live anonymous Wikidot edit/PagePreviewModule capture for the standalone default module form, category selector, initial revision rows, flags, dates, users, comments, and pager DOM",
+      "Authenticated run-owned sandbox lifecycle for SiteChanges create, source/title, parent metadata, rename/move, and cleanup deletion observation",
         "Deepwell wikidot_page_preview and request-time page_view rendering against the real revision, category, user, and permission services",
         "Deepwell wikidot_site_changes_module read endpoint with request-context actor and host-page visibility enforcement",
         "Framerail POST /ajax-module-connector.php for the exact changes/SiteChangesListModule read form"
@@ -3332,11 +3333,12 @@
       ],
       "live_oracle_evidence": [
         "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl::module-own-line-sitechanges",
-        "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json::E_OPEN43_SITECHANGES_AMC_20260810"
+      "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json::E_OPEN43_SITECHANGES_AMC_20260810"
+      ,"install/local/wikidot-verification/artifacts/sitechanges-mutation-live-20260908.json::q1035 mutation lifecycle"
       ],
       "unresolved_ambiguities_or_blockers": [
         "The observed read-only Ajax slice implements pages 1 through 3, an out-of-range empty result, source and files filters, empty options, and a missing category at the exact perpage 20 boundary. Other per-page values and option shapes fail closed because live evidence does not establish them.",
-        "Stored file revisions now participate in the observed files read filter with the F flag. Exact file revision numbering and generated comments, parent metadata changes, page delete and restore rows, mutation convergence, and browser intermediate states remain unimplemented or unproved.",
+      "Fresh run-owned live authority establishes N for create, S/T for a combined source/title edit, M for parent metadata, and R for rename/move. The renderer now uses the observed R rename flag, but Wikijump parent_set still stores only the page_parent relation and does not yet create the observed metadata page revision. Exact file mutation revision/comment behavior, restore semantics, broader delete behavior, mutation convergence, and browser intermediate states remain unimplemented or unproved.",
         "The captured Ajax response establishes the replacement body and metadata but not loading, failure, history, focus, keyboard, or temporal browser behavior.",
         "The permission-first query renders only authorized rows and hidden rows never determine an exposed count or pager. If the bounded raw scan saturates before the requested visible window is established, the Ajax endpoint returns not_ok and the initial snapshot remains unexpanded rather than exposing partial rows; large-site completeness beyond that local safety bound remains unproved."
       ]

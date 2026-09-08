@@ -115,7 +115,7 @@
     },
     "canonical_live_observations": {
       "path": "scripts/data/wikidot-live-observations.json",
-      "sha256": "5e07694b531d570ced2276e9fe301b380155ea806bcb3ebfd4dde33a6110b386"
+      "sha256": "d5affc891570e50aa11a74976172db8474c8a29addc2c38b9795bb6e5e98422d"
     }
   },
   "redaction": {

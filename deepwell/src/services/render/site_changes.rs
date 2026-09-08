@@ -645,7 +645,7 @@ fn push_site_changes_flags(output: &mut String, revision: &SiteChangesRevisionRo
         output.push_str(r#"<span class="spantip" title="title changed">T</span>"#);
     }
     if has_change("slug") {
-        output.push_str(r#"<span class="spantip" title="page name changed">M</span>"#);
+        output.push_str(r#"<span class="spantip" title="page name changed">R</span>"#);
     }
     if has_change("tags") {
         output.push_str(r#"<span class="spantip" title="tags changed">A</span>"#);
@@ -736,7 +736,7 @@ mod tests {
         );
         assert!(output.contains("content source text changed\">S"));
         assert!(output.contains("title changed\">T"));
-        assert!(output.contains("page name changed\">M"));
+        assert!(output.contains("page name changed\">R"));
         assert!(output.contains("tags changed\">A"));
 
         output.clear();

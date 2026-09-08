@@ -148,6 +148,36 @@
       ]
     },
     {
+      "id": "sitechanges-run-owned-mutation-flags-20260908",
+      "title": "SiteChanges mutation revisions use distinct N, S/T, M, and R flags",
+      "feature_ids": [
+        "module-sitechanges"
+      ],
+      "classification": "documentation-omission",
+      "observed_at": "2026-09-08",
+      "analysis": "One authenticated run-owned lifecycle on sandbox-for-codex established the revision and flag sequence for page creation, a combined source/title edit, setting a parent page, and rename/move. The page was then deleted as cleanup and verified absent. The immediately following all-changes read did not add a delete-specific run row, but one run does not establish the general delete/restore contract. No file mutation or restore was attempted.",
+      "normative_behavior": [
+        "A new page row uses the N flag and the visible revision marker (new).",
+        "A combined source and title edit produces one revision carrying S then T; in the observed sequence it is revision 1.",
+        "Setting the page parent produces its own revision carrying M; in the observed sequence it advances the page to revision 2.",
+        "Renaming or moving the page produces its own revision carrying R, not M; in the observed sequence it advances the page to revision 3.",
+        "Attached-file mutations, restore/undelete behavior, and browser temporal behavior remain unestablished. The cleanup delete did not create a new run-owned row in the immediate follow-up observation, but this single lifecycle is not promoted to a general delete rule."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/sitechanges-mutation-live-20260908.json",
+          "sha256": "b9113e57c7fc00cab25af89a146822d0112ad6e9f1acf7430226db7fc0225603",
+          "case_ids": [
+            "q1035-sitechanges-create",
+            "q1035-sitechanges-source-title",
+            "q1035-sitechanges-parent",
+            "q1035-sitechanges-rename",
+            "q1035-sitechanges-delete-cleanup-observation"
+          ]
+        }
+      ]
+    },
+    {
       "id": "forum-q1034-readonly-surfaces-20260809",
       "title": "RecentThreads currently renders one site-independent placeholder",
       "feature_ids": [
