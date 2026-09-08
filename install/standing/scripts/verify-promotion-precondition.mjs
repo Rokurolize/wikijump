@@ -28,6 +28,7 @@ const REQUIRED_ARGUMENTS = Object.freeze([
   "staging-home",
   "output",
 ]);
+const OPTIONAL_ARGUMENTS = Object.freeze(["live-reference-capture-policy"]);
 
 const REQUIRED_IMAGE_ROLES = Object.freeze([
   "cache",
@@ -673,6 +674,7 @@ export async function verifyStandingPromotionPrecondition({
   candidateIdentityPath,
   liveReferencePath,
   liveCompletionPolicyPath,
+  liveReferenceCapturePolicyPath = null,
   buildEvidencePath,
   stagingHomePath,
   outputPath,
@@ -695,13 +697,15 @@ export async function verifyStandingPromotionPrecondition({
       { name: "live completion policy", value: liveCompletionPolicyPath },
     ],
   });
-  const admission = await verifyAdmission({
+  const admissionArgs = {
     receiptPath,
     candidateIdentityPath,
     liveReferencePath,
     liveCompletionPolicyPath,
     now,
-  });
+  };
+  if (liveReferenceCapturePolicyPath) admissionArgs.liveReferenceCapturePolicyPath = liveReferenceCapturePolicyPath;
+  const admission = await verifyAdmission(admissionArgs);
   const binding = await readPromotionBinding({
     candidateIdentityPath,
     buildEvidenceRoot,
@@ -782,7 +786,7 @@ function parseArgs(argv) {
     const flag = argv[index];
     if (!flag.startsWith("--")) throw new Error(`unknown argument: ${flag}`);
     const key = flag.slice(2);
-    if (!REQUIRED_ARGUMENTS.includes(key))
+    if (!REQUIRED_ARGUMENTS.includes(key) && !OPTIONAL_ARGUMENTS.includes(key))
       throw new Error(`unknown argument: ${flag}`);
     const value = argv[index + 1];
     if (!value || value.startsWith("--")) {
@@ -799,7 +803,7 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log(`Usage: verify-promotion-precondition.mjs --receipt FILE --final-frozen-receipt FILE --candidate-identity FILE --live-reference FILE --live-completion-policy FILE --build-evidence DIRECTORY --staging-home DIRECTORY --output FILE
+  console.log(`Usage: verify-promotion-precondition.mjs --receipt FILE --final-frozen-receipt FILE --candidate-identity FILE --live-reference FILE --live-completion-policy FILE [--live-reference-capture-policy FILE] --build-evidence DIRECTORY --staging-home DIRECTORY --output FILE
 
 Verifies the reviewed source browser-parity admission and binds it to the exact sealed build and rendered standing topology. It has no Docker, maintenance, canonical-home, or network side effects.`);
 }
@@ -816,6 +820,7 @@ async function main() {
     candidateIdentityPath: args["candidate-identity"],
     liveReferencePath: args["live-reference"],
     liveCompletionPolicyPath: args["live-completion-policy"],
+    liveReferenceCapturePolicyPath: args["live-reference-capture-policy"] ?? args["live-completion-policy"],
     buildEvidencePath: args["build-evidence"],
     stagingHomePath: args["staging-home"],
     outputPath: args.output,

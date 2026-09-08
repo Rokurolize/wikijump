@@ -24,6 +24,7 @@ const REQUIRED = Object.freeze([
   "runtime-home",
   "standing-receipt",
 ]);
+const OPTIONAL = Object.freeze(["live-reference-capture-policy"]);
 
 const ADMISSION_SCRIPT = "install/local/wikidot-verification/scripts/verify-standing-candidate-parity-admission.mjs";
 const PREPARE_SCRIPT = "install/standing/prepare.py";
@@ -38,7 +39,7 @@ export function parseArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === "--help" || flag === "-h") return {help: true};
-    if (!flag?.startsWith("--") || !REQUIRED.includes(flag.slice(2))) {
+    if (!flag?.startsWith("--") || (!REQUIRED.includes(flag.slice(2)) && !OPTIONAL.includes(flag.slice(2)))) {
       throw new Error(`unknown argument: ${flag}`);
     }
     const key = flag.slice(2);
@@ -53,7 +54,7 @@ export function parseArgs(argv) {
 }
 
 export function usage() {
-  return `Usage: promote.mjs --source-root DIR --candidate-receipt FILE --final-frozen-receipt FILE --candidate-identity FILE --live-reference FILE --live-completion-policy FILE --build-evidence DIR --staging-home DIR --admission-output FILE --promotion-precondition FILE --prepared-receipt FILE --runtime-home DIR --standing-receipt FILE`;
+  return `Usage: promote.mjs --source-root DIR --candidate-receipt FILE --final-frozen-receipt FILE --candidate-identity FILE --live-reference FILE --live-completion-policy FILE [--live-reference-capture-policy FILE] --build-evidence DIR --staging-home DIR --admission-output FILE --promotion-precondition FILE --prepared-receipt FILE --runtime-home DIR --standing-receipt FILE`;
 }
 
 function sha256(bytes) {
@@ -106,8 +107,11 @@ export async function runPromotion(rawArgs, {
   let stage = "candidate-admission";
   try {
     const admissionOutput = path.join(sourceRoot, ADMISSION_SCRIPT);
+    const admissionArgs = [admissionOutput, "--receipt", args.candidateReceipt, "--candidate-identity", args.candidateIdentity, "--live-reference", args.liveReference, "--live-completion-policy", args.liveCompletionPolicy];
+    if (args.liveReferenceCapturePolicy) admissionArgs.push("--live-reference-capture-policy", args.liveReferenceCapturePolicy);
+    admissionArgs.push("--output", args.admissionOutput);
     const admissionResult = cliResult(
-      run(node, [admissionOutput, "--receipt", args.candidateReceipt, "--candidate-identity", args.candidateIdentity, "--live-reference", args.liveReference, "--live-completion-policy", args.liveCompletionPolicy, "--output", args.admissionOutput], {cwd: sourceRoot}),
+      run(node, admissionArgs, {cwd: sourceRoot}),
       "candidate admission",
       args.admissionOutput,
     );
@@ -115,7 +119,7 @@ export async function runPromotion(rawArgs, {
     if (sha256(admissionBytes) !== admissionResult.sha256) throw new Error("candidate admission receipt changed");
     const admission = JSON.parse(admissionBytes);
     stage = "promotion-precondition";
-    const promotion = await verifyPromotion({
+    const promotionArgs = {
       receiptPath: args.candidateReceipt,
       finalFrozenReceiptPath: args.finalFrozenReceipt,
       candidateIdentityPath: args.candidateIdentity,
@@ -125,7 +129,9 @@ export async function runPromotion(rawArgs, {
       stagingHomePath: args.stagingHome,
       outputPath: args.promotionPrecondition,
       verifyAdmission: async () => admission,
-    });
+    };
+    if (args.liveReferenceCapturePolicy) promotionArgs.liveReferenceCapturePolicyPath = args.liveReferenceCapturePolicy;
+    const promotion = await verifyPromotion(promotionArgs);
     if (
       path.resolve(promotion.output.path) !== path.resolve(args.promotionPrecondition) &&
       path.basename(promotion.output.path) !== path.basename(args.promotionPrecondition)
