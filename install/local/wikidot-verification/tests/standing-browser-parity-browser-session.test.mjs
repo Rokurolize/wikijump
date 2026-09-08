@@ -11,12 +11,20 @@ import {
   createParityBrowserControls,
   isParityBrowserPublicOrigin,
   installCandidateFilePortRoute,
+  parityBrowserLaunchOptions,
   parityBrowserExecutionMode,
   parityBrowserRequestIntervalMs,
   parityBrowserThrottleConfig,
 } from "../src/standing-browser-parity-browser-session.mjs";
 
 const hash = (character) => character.repeat(64);
+
+test("parity browser starts with a cold native HTTP cache", () => {
+  assert.deepEqual(parityBrowserLaunchOptions("/browser/chrome"), {
+    executablePath: "/browser/chrome",
+    args: ["--disable-http-cache"],
+  });
+});
 
 test("candidate browser local origins include every sealed site on an editable candidate", () => {
   const sets = candidateLocalOriginSets({

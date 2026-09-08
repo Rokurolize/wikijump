@@ -38,6 +38,11 @@ export const DEFAULT_PARITY_BROWSER_ROOT = path.resolve(
 const THROTTLE_CONFIG_SCHEMA = "wikijump.standing_browser_throttle_config.v1";
 const MAX_CANDIDATE_FILE_REDIRECTS = 10;
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+const PARITY_BROWSER_LAUNCH_ARGS = ["--disable-http-cache"];
+
+export function parityBrowserLaunchOptions(executable) {
+  return {executablePath: executable, args: [...PARITY_BROWSER_LAUNCH_ARGS]};
+}
 
 export function parityBrowserExecutionMode(mode) {
   if (mode === "live-reference") return "live";
@@ -555,7 +560,7 @@ export async function launchParityBrowser({
     chromium,
     browserExecutable,
   );
-  const browser = await chromium.launch({ executablePath: executable });
+  const browser = await chromium.launch(parityBrowserLaunchOptions(executable));
   let context = null;
   try {
     context = await browser.newContext({
