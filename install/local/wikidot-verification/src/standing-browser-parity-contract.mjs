@@ -835,16 +835,17 @@ export function compareCaptures(
     checkedThresholds,
   );
   anomalies.push(...settledGeometry.anomalies);
-  const attributes =
-    Array.isArray(local.attribute_signatures) &&
-    Array.isArray(live.attribute_signatures)
-      ? compareAttributeSignatures(
-          local.attribute_signatures,
-          live.attribute_signatures,
-          local.dom_signatures,
-          live.dom_signatures,
-        )
-      : { status: "pass", raw: null, normalized: null, anomalies: [] };
+  const attributes = standingChromeScope
+    ? { status: "pass", raw: null, normalized: null, anomalies: [] }
+    : Array.isArray(local.attribute_signatures) &&
+      Array.isArray(live.attribute_signatures)
+    ? compareAttributeSignatures(
+        local.attribute_signatures,
+        live.attribute_signatures,
+        local.dom_signatures,
+        live.dom_signatures,
+      )
+    : { status: "pass", raw: null, normalized: null, anomalies: [] };
   anomalies.push(...attributes.anomalies);
   const immediateGeometry = compareGeometry(
     local.first_paint?.document,

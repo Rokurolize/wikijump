@@ -45,6 +45,8 @@ pub struct CreatePageRevisionBody {
     pub alt_title: Maybe<Option<String>>,
     pub slug: Maybe<String>,
     pub tags: Maybe<Vec<String>>,
+    #[serde(skip)]
+    pub(crate) parent_changed: bool,
 }
 
 #[derive(Deserialize, Debug, Clone)]

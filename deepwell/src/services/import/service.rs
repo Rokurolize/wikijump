@@ -452,6 +452,7 @@ impl ImportService {
                             // NOTE: We set tags here so the "changes" value
                             //       is correct for this revision.
                             tags: Maybe::Set(tags.clone()),
+                            parent_changed: false,
                         },
                     },
                     prev_revision,

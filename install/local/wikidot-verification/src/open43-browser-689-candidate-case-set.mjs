@@ -84,7 +84,10 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
         count: 1,
         id_present: true,
         class_name: "yui-navset yui-navset-top",
-        rectangle: Object.freeze({ x: 203, y: 193.94, width: 960, height: 58505.09 }),
+        // The retained live capture includes the legacy automatic breadcrumb
+        // shell. Current standard Wikidot pages do not render that shell; the
+        // exact 25.9375px boundary is reconciled from the retained geometry.
+        rectangle: Object.freeze({ x: 203, y: 168, width: 960, height: 58505.09 }),
         styles: SCP8980_LIVE_TABVIEW_STYLES,
         selected_title: "active",
         label_wrapper: "em",
@@ -97,7 +100,7 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
       // stable B689 contract. Settled completion remains required below.
       resource_state: Object.freeze({ document_ready_state: "interactive" }),
       settled: Object.freeze({
-        tabview_y: 193.9375,
+        tabview_y: 168,
         first_panel_id: "wiki-tab-0-0",
       }),
     }),

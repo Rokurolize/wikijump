@@ -650,6 +650,9 @@ fn push_site_changes_flags(output: &mut String, revision: &SiteChangesRevisionRo
     if has_change("tags") {
         output.push_str(r#"<span class="spantip" title="tags changed">A</span>"#);
     }
+    if has_change("parent") {
+        output.push_str(r#"<span class="spantip" title="metadata changed">M</span>"#);
+    }
 }
 
 fn push_site_changes_user(output: &mut String, revision: &SiteChangesRevisionRow) {
@@ -732,12 +735,17 @@ mod tests {
         let mut output = String::new();
         push_site_changes_flags(
             &mut output,
-            &revision(false, false, &["wikitext", "title", "slug", "tags"]),
+            &revision(
+                false,
+                false,
+                &["wikitext", "title", "slug", "tags", "parent"],
+            ),
         );
         assert!(output.contains("content source text changed\">S"));
         assert!(output.contains("title changed\">T"));
         assert!(output.contains("page name changed\">R"));
         assert!(output.contains("tags changed\">A"));
+        assert!(output.contains("metadata changed\">M"));
 
         output.clear();
         push_site_changes_flags(&mut output, &revision(true, false, &[]));

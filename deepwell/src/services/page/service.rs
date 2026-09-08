@@ -463,6 +463,71 @@ WHERE page.site_id = $1
         Ok(revision_output)
     }
 
+    /// Record the evidenced Wikidot metadata revision created when a parent
+    /// relationship is newly assigned through the legacy parent-set action.
+    pub(crate) async fn record_parent_metadata_revision(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        child_reference: Reference<'_>,
+        parent_reference: Reference<'_>,
+        user_id: i64,
+    ) -> Result<CreatePageRevisionOutput> {
+        let txn = ctx.transaction();
+        let make_error = || {
+            Error::new(
+                "failed to record parent metadata revision",
+                ErrorType::PageRevision,
+            )
+        };
+
+        let child = Self::get(ctx, site_id, child_reference)
+            .await
+            .or_raise(make_error)?;
+        let parent = Self::get(ctx, site_id, parent_reference)
+            .await
+            .or_raise(make_error)?;
+        let id = PageId::from_page_model(&child);
+        let last_revision = PageRevisionService::get_latest(ctx, site_id, child.page_id)
+            .await
+            .or_raise(make_error)?;
+        let persisted_revision = PageRevisionService::create(
+            ctx,
+            id,
+            CreatePageRevision {
+                user_id,
+                comments: format!("Parent page set to: \"{}\".", parent.slug),
+                revision_type: PageRevisionType::Regular,
+                body: CreatePageRevisionBody {
+                    parent_changed: true,
+                    ..Default::default()
+                },
+            },
+            last_revision,
+        )
+        .await
+        .or_raise(make_error)?;
+        let Some(persisted_revision) = persisted_revision else {
+            bail!(Error::new(
+                "parent metadata revision unexpectedly had no changes",
+                ErrorType::PageRevision,
+            ));
+        };
+
+        let revision_id = persisted_revision.output.revision_id;
+        let model = page::ActiveModel {
+            page_id: Set(child.page_id),
+            latest_revision_id: Set(Some(revision_id)),
+            updated_at: Set(Some(now())),
+            ..Default::default()
+        };
+        let page = model.update(txn).await.or_raise(make_error)?;
+        assert_latest_revision(&page);
+
+        PageRevisionService::apply_followups(ctx, id, persisted_revision)
+            .await
+            .or_raise(make_error)
+    }
+
     /// Moves a page from from one slug to another.
     pub async fn r#move(
         ctx: &ServiceContext<'_>,
@@ -981,6 +1046,7 @@ WHERE page.site_id = $1
                     Maybe::Set(tags)
                 },
                 slug: Maybe::Unset, // rollbacks should never move a page
+                parent_changed: false,
             },
         };
 

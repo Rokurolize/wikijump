@@ -13,6 +13,7 @@ const REQUIRED = Object.freeze([
   "live-completion-policy",
   "output",
 ]);
+const OPTIONAL = Object.freeze(["live-reference-capture-policy"]);
 
 export function parseArgs(argv) {
   const values = {};
@@ -20,7 +21,7 @@ export function parseArgs(argv) {
     const flag = argv[index];
     if (!flag.startsWith("--")) throw new Error(`unknown argument: ${flag}`);
     const key = flag.slice(2);
-    if (!REQUIRED.includes(key)) throw new Error(`unknown argument: ${flag}`);
+    if (!REQUIRED.includes(key) && !OPTIONAL.includes(key)) throw new Error(`unknown argument: ${flag}`);
     const value = argv[index + 1];
     if (!value || value.startsWith("--")) throw new Error(`${flag} requires a value`);
     if (values[key]) throw new Error(`${flag} may be supplied only once`);
@@ -34,7 +35,7 @@ export function parseArgs(argv) {
 }
 
 export function usage() {
-  return `Usage: verify-standing-candidate-parity-admission.mjs --receipt FILE --candidate-identity FILE --live-reference FILE --live-completion-policy FILE --output FILE
+  return `Usage: verify-standing-candidate-parity-admission.mjs --receipt FILE --candidate-identity FILE --live-reference FILE --live-completion-policy FILE [--live-reference-capture-policy FILE] --output FILE
 
 Verifies a passing candidate-parity receipt against the exact source-owned runner and observation modules, the sealed candidate identity, and the sealed live reference. It writes a no-replace source verification receipt. It does not publish port 443, start a container, or run CWG01.`;
 }
@@ -56,6 +57,7 @@ export async function main(argv, {
       candidateIdentityPath: args["candidate-identity"],
       liveReferencePath: args["live-reference"],
       liveCompletionPolicyPath: args["live-completion-policy"],
+      liveReferenceCapturePolicyPath: args["live-reference-capture-policy"] ?? args["live-completion-policy"],
     });
     const sealed = await seal(args.output, admission);
     stdout(JSON.stringify({

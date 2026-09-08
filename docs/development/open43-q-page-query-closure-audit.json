@@ -131,7 +131,8 @@
     },
     {
       "path": "docs/development/open43-q-page-graph-residual-case-manifest.json",
-      "sha256": "68d197f553b642998adea35a072b223d0bc732e4e709bd5209b4fa16a352b52e",
+      "sha256": "ffe8d07cb1a283db1f1ea1ac36f91cfac69acbee94f40c304566442a8d945e93",
+      "source_revision": "b9d20a6c94e92ccfa16ceb3ae07f9d1fae146de7",
       "issues": [1028, 1035]
     },
     {
@@ -345,7 +346,8 @@
       "module": "Categories",
       "authoritative_manifest": {
         "path": "docs/development/open43-q-page-graph-residual-case-manifest.json",
-        "sha256": "68d197f553b642998adea35a072b223d0bc732e4e709bd5209b4fa16a352b52e"
+        "sha256": "ffe8d07cb1a283db1f1ea1ac36f91cfac69acbee94f40c304566442a8d945e93",
+        "source_revision": "b9d20a6c94e92ccfa16ceb3ae07f9d1fae146de7"
       },
       "subrows": [
         {"case_id": "Q1028_INITIAL_CATEGORY_DOM_AND_ARGUMENTS", "status": "source_ready"},
@@ -360,7 +362,8 @@
       "module": "SiteChanges and ListDrafts",
       "authoritative_manifest": {
         "path": "docs/development/open43-q-page-graph-residual-case-manifest.json",
-        "sha256": "68d197f553b642998adea35a072b223d0bc732e4e709bd5209b4fa16a352b52e"
+        "sha256": "ffe8d07cb1a283db1f1ea1ac36f91cfac69acbee94f40c304566442a8d945e93",
+        "source_revision": "b9d20a6c94e92ccfa16ceb3ae07f9d1fae146de7"
       },
       "subrows": [
         {"case_id": "Q1035_SITECHANGES_DEFAULT_INITIAL_SNAPSHOT", "status": "source_ready"},
@@ -381,9 +384,14 @@
         },
         {
           "case_id": "Q1035_SITECHANGES_FILE_META_DELETE_RESTORE",
-          "status": "needs_source",
+          "status": "blocked_evidence",
+          "owner": "deepwell",
+          "tests": [
+            "deepwell/src/services/render/site_changes.rs::tests::site_changes_flags_derive_from_revision_authority",
+            "deepwell/tests/parent.rs::changed_parent_relationships_queue_parent_rerenders"
+          ],
           "evidence_ids": ["E_Q1035_SITECHANGES_MUTATIONS_20260908"],
-          "result": "Run-owned live authority establishes the create N, combined source/title S/T, parent metadata M, and rename/move R revision sequence. The rename flag source mismatch is corrected. Parent mutation still lacks the observed metadata revision in Wikijump. File mutation/restore and the broader delete contract remain evidence-blocked; the cleanup delete observation is retained but not generalized."
+          "result": "Run-owned live authority establishes the create N, combined source/title S/T, parent metadata M, and rename/move R revision sequence. Wikijump now creates the observed parent metadata revision and renders M, while rename renders R. File mutation/restore and the broader delete contract remain evidence-blocked; the cleanup delete observation is retained but not generalized."
         },
         {
           "case_id": "Q1035_LISTDRAFTS_EMPTY_STATE_MATRIX",
@@ -459,9 +467,9 @@
     "subrow_count": 33,
     "classification_counts": {
       "source_ready": 18,
-      "needs_source": 1,
+      "needs_source": 0,
       "candidate_required": 7,
-      "blocked_evidence": 7
+      "blocked_evidence": 8
     },
     "duplicate_issue_numbers": 0,
     "duplicate_case_ids": 0,
