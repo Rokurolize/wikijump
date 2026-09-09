@@ -220,3 +220,31 @@ test("candidate capture requires its sealed identity and exact live reference di
   assert.equal(args.mode, "candidate");
   assert.equal(args.liveReferenceSha256, "a".repeat(64));
 });
+
+test("standing capture binds the canonical refresh and persistent replay cache", () => {
+  assert.throws(
+    () => parseStandingBrowserParityArgs([
+      "node", "runner", "--mode", "standing", "--output-dir", "/tmp/standing",
+      "--live-completion-policy", policy, "--live-reference-ledger", "/tmp/reference.json",
+      "--live-reference-sha256", "a".repeat(64),
+    ]),
+    /standing-refresh/u,
+  );
+  assert.throws(
+    () => parseStandingBrowserParityArgs([
+      "node", "runner", "--mode", "standing", "--output-dir", "/tmp/standing",
+      "--live-completion-policy", policy, "--standing-refresh", "/tmp/refresh.json",
+      "--live-reference-ledger", "/tmp/reference.json", "--live-reference-sha256", "a".repeat(64),
+    ]),
+    /source-response-cache-dir/u,
+  );
+  const args = parseStandingBrowserParityArgs([
+    "node", "runner", "--mode", "standing", "--output-dir", "/tmp/standing",
+    "--live-completion-policy", policy, "--standing-refresh", "/tmp/refresh.json",
+    "--live-reference-ledger", "/tmp/reference.json", "--live-reference-sha256", "a".repeat(64),
+    "--source-response-cache-dir", "/tmp/cache", "--source-response-cache-identity", "identity",
+  ]);
+  assert.equal(args.mode, "standing");
+  assert.equal(args.standingRefresh, "/tmp/refresh.json");
+  assert.equal(args.sourceResponseCacheIdentity, "identity");
+});
