@@ -46,7 +46,7 @@ export function parityBrowserLaunchOptions(executable) {
 
 export function parityBrowserExecutionMode(mode) {
   if (mode === "live-reference") return "live";
-  if (mode === "candidate" || mode === "candidate-case") return "candidate";
+  if (mode === "candidate" || mode === "candidate-case" || mode === "standing") return "candidate";
   throw new Error(`unsupported parity browser mode: ${mode}`);
 }
 
@@ -102,7 +102,11 @@ function localConnectLookup(address, allowedOrigins, fallback = dns.lookup) {
 export async function installCandidateFilePortRoute(
   context,
   localOrigins,
-  { sourceRequestGate = null, responseCache = null } = {},
+  {
+    sourceRequestGate = null,
+    responseCache = null,
+    allowDefaultHttpsPort = false,
+  } = {},
 ) {
   if (!Array.isArray(localOrigins) || localOrigins.length !== 2) {
     throw new Error(
@@ -128,15 +132,19 @@ export async function installCandidateFilePortRoute(
       "candidate page and file origins must use the same site slug",
     );
   }
+  const explicitCandidatePort =
+    page.port && page.port !== "443" && files.port === page.port;
+  const canonicalStandingPort =
+    allowDefaultHttpsPort && !page.port && !files.port;
   if (
     page.protocol !== "https:" ||
     files.protocol !== "https:" ||
-    !page.port ||
-    page.port === "443" ||
-    files.port !== page.port
+    (!explicitCandidatePort && !canonicalStandingPort)
   ) {
     throw new Error(
-      "candidate page and file origins must use the same explicit non-443 port",
+      allowDefaultHttpsPort
+        ? "local page and file origins must use the same explicit non-443 port or canonical HTTPS port"
+        : "candidate page and file origins must use the same explicit non-443 port",
     );
   }
   const canonicalFilesOrigin = `https://${files.hostname}`;
@@ -152,7 +160,7 @@ export async function installCandidateFilePortRoute(
       await route.fallback();
       return;
     }
-    if (requestUrl.origin === canonicalFilesOrigin) requestUrl.port = files.port;
+    if (requestUrl.origin === canonicalFilesOrigin && files.port) requestUrl.port = files.port;
     const sourcePath = requestUrl.pathname;
     let response;
     for (let redirects = 0; ; redirects += 1) {
@@ -299,7 +307,9 @@ export async function installCandidateFilePortRoute(
   // otherwise already-localized assets bypass the source request gate and can
   // complete before Wikidot's DOMContentLoaded-immediate observation.
   await context.route(`${canonicalFilesOrigin}/**`, fileRouteHandler);
-  await context.route(`${files.origin}/**`, fileRouteHandler);
+  if (files.origin !== canonicalFilesOrigin) {
+    await context.route(`${files.origin}/**`, fileRouteHandler);
+  }
   if (responseCache !== null) {
     await context.route(`${page.origin}/local--files/**`, fileRouteHandler);
     await context.route(`${page.origin}/local--code/**`, fileRouteHandler);
@@ -492,6 +502,7 @@ export async function createParityBrowserControls({
       responseCache,
       localOrigins,
       fileRouteOriginSets,
+      allowDefaultHttpsFileRoute: args.mode === "standing",
       publicOrigins: caseSetPublicOrigins,
       async close() {
         let failure = null;
@@ -593,6 +604,7 @@ export async function launchParityBrowser({
         await installCandidateFilePortRoute(context, originSet, {
           sourceRequestGate: controls.gate,
           responseCache,
+          allowDefaultHttpsPort: controls.allowDefaultHttpsFileRoute === true,
         });
       }
     }

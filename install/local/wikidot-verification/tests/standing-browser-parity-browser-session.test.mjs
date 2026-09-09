@@ -890,3 +890,27 @@ test("candidate file routing refuses malformed or ambiguous local origin declara
     /same explicit non-443 port/u,
   );
 });
+
+test("standing file routing preserves canonical HTTPS origins while replaying source redirects", async () => {
+  const installed = [];
+  const context = {
+    async route(pattern, handler) {
+      installed.push({pattern, handler});
+    },
+  };
+  assert.equal(
+    await installCandidateFilePortRoute(
+      context,
+      [
+        "https://scp-wiki.wikijump.localhost",
+        "https://scp-wiki.wjfiles.localhost",
+      ],
+      {allowDefaultHttpsPort: true},
+    ),
+    true,
+  );
+  assert.deepEqual(
+    installed.map(({pattern}) => pattern),
+    ["https://scp-wiki.wjfiles.localhost/**"],
+  );
+});
