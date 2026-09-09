@@ -17,20 +17,20 @@
   "closure_audits": [
     {
       "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-      "sha256": "b0333713dfc58671905f0c73e302dba04dd932a22a6980c18124e204f41f077d",
+      "sha256": "3aab9ab6d3375ee9161cd3ee0222073424138278662ca0b09b66220a5913fc2f",
       "source_revision": "d3f1c4dce427b72911c0cb2a1eda4adb14143959",
       "issue_count": 9,
       "case_count": 64,
-      "classification_counts": {"source_ready": 27, "needs_source": 0, "candidate_required": 18, "blocked_evidence": 19},
+      "classification_counts": {"source_ready": 29, "needs_source": 0, "candidate_required": 18, "blocked_evidence": 17},
       "issue_summaries": [
         {"issue": 775, "case_count": 4, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
         {"issue": 777, "case_count": 4, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
-        {"issue": 1029, "case_count": 8, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 2}},
+        {"issue": 1029, "case_count": 8, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 1}},
         {"issue": 1030, "case_count": 9, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 2}},
         {"issue": 1033, "case_count": 6, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 3}},
         {"issue": 1037, "case_count": 10, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 3}},
         {"issue": 1038, "case_count": 10, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 0, "blocked_evidence": 6}},
-        {"issue": 1041, "case_count": 8, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 1}},
+        {"issue": 1041, "case_count": 8, "classification_counts": {"source_ready": 5, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 0}},
         {"issue": 1060, "case_count": 5, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 0}}
       ]
     },
@@ -139,7 +139,7 @@
     "duplicate_case_ids": [],
     "unknown_classifications": [],
     "closure_claims": 0,
-    "classification_counts": {"source_ready": 130, "needs_source": 0, "candidate_required": 84, "blocked_evidence": 71}
+    "classification_counts": {"source_ready": 132, "needs_source": 0, "candidate_required": 84, "blocked_evidence": 69}
   },
   "validation": {
     "jq_structural_assertions": "pass",
@@ -148,7 +148,7 @@
       "command": "node install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs --root . --output docs/development/compatibility-surface-inventory.json",
       "audit_count": 7,
       "case_count": 285,
-      "blocked_routing_count": 71,
+      "blocked_routing_count": 69,
       "authoritative_manifest_count": 3,
       "open_issue_snapshot_count": 43,
       "nontracking_open_issue_count": 42,

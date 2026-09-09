@@ -8180,6 +8180,39 @@ async fn wikidot_set_tags_action_resolves_server_descriptor_and_is_revision_idem
     );
     assert!(repeated.is_none(), "same action should be idempotent");
 
+    // The forged descriptor above must not consume the local action bucket.
+    // The state-changing activation plus nine valid idempotent repeats are
+    // accepted without leaking page or actor state through the throttle; the
+    // next valid renderer-bound activation is denied.
+    for _ in 0..8 {
+        let repeated = run_endpoint!(
+            runner,
+            wikidot_legacy_set_tags,
+            json!({
+                "page_id": created.page_id,
+                "last_revision_id": changed.revision_id,
+                "action_index": 0,
+                "action_fingerprint": action_fingerprint.clone(),
+                "user_id": ADMIN_USER_ID,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert!(repeated.is_none(), "same action should remain idempotent");
+    }
+    let throttled = run_endpoint_err!(
+        runner,
+        wikidot_legacy_set_tags,
+        json!({
+            "page_id": created.page_id,
+            "last_revision_id": changed.revision_id,
+            "action_index": 0,
+            "action_fingerprint": action_fingerprint.clone(),
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(throttled, ErrorType::Page);
+
     let stale = run_endpoint_err!(
         runner,
         wikidot_legacy_set_tags,

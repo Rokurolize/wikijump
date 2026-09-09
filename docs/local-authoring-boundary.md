@@ -20,6 +20,12 @@ That local authority must remain behind a replaceable seam. Page mutation code s
 
 Future work can replace the local admin actor with a Wikidot-like account/permission provider without changing which site owns editable drafts.
 
+## Local compatibility action throttle
+
+Mutable compatibility actions use a Wikijump deployment-security throttle rather than pretending that an unobserved Wikidot threshold is known. A valid renderer-bound self-membership action and a valid renderer-bound set-tags action each permit ten dispatches per site, actor, and action in a rolling sixty-second window. The two actions use separate server-owned partitions.
+
+Malformed descriptors, route mismatches, stale revisions, failed permission checks, and unsupported site policy are rejected before the counter is touched. Throttle exhaustion uses the same non-disclosing permission boundary as an unavailable action and exposes no client-selectable partition key or retry oracle. Site, actor, action key, limit, and window are all server-owned; client page, revision, token, policy, or route fields cannot create another bucket.
+
 ## Isolation rules
 
 A slug created in `scpaiueouiuiuiui` must not appear in `scp-wiki` or `scp-jp` unless a separate explicit import step creates that page in a mirror site.

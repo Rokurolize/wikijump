@@ -11201,8 +11201,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "a4b5ac7a0308b05420bd7f18fb3827d918321aa0",
-      "tree": "21d6b1759c9e05f8582f3aec23c0529ad6ad0c65"
+      "commit": "f1519fcd6972df6660550ea153e779813514e2ff",
+      "tree": "f010f7770a86fbb0935cbe1c27eec29147987aaf"
     },
     "ftml": {
       "commit": "c37c8360a2ac304eb1de06942465e1c8b9ad737a",
@@ -11371,7 +11371,7 @@
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "b0333713dfc58671905f0c73e302dba04dd932a22a6980c18124e204f41f077d"
+        "sha256": "3aab9ab6d3375ee9161cd3ee0222073424138278662ca0b09b66220a5913fc2f"
       },
       {
         "path": "docs/development/open43-a-authoring-closure-audit.json",
@@ -11379,11 +11379,11 @@
       },
       {
         "path": "docs/development/open43-blocked-evidence-routing.json",
-        "sha256": "861a579a48ca6c2e23d652533c99a9f4af529e1e3b5043c9f105b162243d86eb"
+        "sha256": "1ffdacf40b757a12ee552569259a4555becc6f191896000d0ff0fcbb542abab3"
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "b3cc84f677392866937a98cc1fa1a962bea1a3b0b86137abab8096ad443e49bf"
+        "sha256": "c7a6d861510e4e54395b882f7b030debddafbb059a304920399c05c7165bd3f1"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -11419,7 +11419,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "8d00c0d5c2cc341e5339a62a2353a863d5665fb51c6afb8b407e4c9787fa47be"
+        "sha256": "85f43b5da6f6c7aee1113c14f0bad722f0e89dd28ea31ce6c87c7b6dfe950f23"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -36824,10 +36824,12 @@
         "cases": [
           "A1029_RATE_LIMIT_POLICY"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -36835,15 +36837,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1029_RATE_LIMIT_POLICY",
@@ -38411,10 +38413,12 @@
         "cases": [
           "A1041_ACTION_RATE_LIMIT_POLICY"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#wikidot_set_tags_action_resolves_server_descriptor_and_is_revision_idempotent"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -38422,15 +38426,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1041_ACTION_RATE_LIMIT_POLICY",

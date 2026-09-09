@@ -274,6 +274,19 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
     );
     let repeated = run_endpoint!(runner, membership_join, join_request.clone(),);
     assert_eq!(repeated, MembershipJoinOutcome::AlreadyMember);
+    // The forged descriptor above must not consume the local security bucket.
+    // One successful join plus nine idempotent renderer-bound repeats are
+    // accepted; the next valid dispatch is denied through the same outward
+    // permission boundary as every other unavailable membership action.
+    for _ in 0..8 {
+        let repeated = run_endpoint!(runner, membership_join, join_request.clone(),);
+        assert_eq!(repeated, MembershipJoinOutcome::AlreadyMember);
+    }
+    let throttled = run_endpoint_err!(runner, membership_join, join_request.clone(),);
+    assert_contains_error!(throttled, ErrorType::PermissionDenied);
+    let throttled_again =
+        run_endpoint_err!(runner, membership_join, join_request.clone(),);
+    assert_contains_error!(throttled_again, ErrorType::PermissionDenied);
     let role_names = RoleService::get_all_roles_for_user_and_site(
         runner.context(),
         GetUserRolesInput {

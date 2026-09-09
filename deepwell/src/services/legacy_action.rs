@@ -11,10 +11,12 @@
  */
 
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
+use crate::services::action_throttle::LEGACY_SET_TAGS_THROTTLE;
 use crate::services::page::{EditPage, EditPageBody, EditPageOutput};
 use crate::services::render::LegacyActionRegistry;
 use crate::services::{
-    PageLockService, PageRevisionService, PageService, ServiceContext, TextService,
+    ActionThrottleService, PageLockService, PageRevisionService, PageService,
+    ServiceContext, TextService,
 };
 use crate::types::{Maybe, Reference};
 use std::net::IpAddr;
@@ -157,6 +159,26 @@ impl LegacyActionService {
                     ErrorType::BadRequest,
                 )
             })?;
+
+        // Route, actor permission, page lock, current revision, descriptor,
+        // and the server-owned tag operation have all been resolved before
+        // this counter is touched. The bucket is keyed only by action, site,
+        // and authenticated actor; client page/revision values cannot select
+        // a separate bucket or learn target state through the throttle.
+        if !ActionThrottleService::consume(
+            ctx,
+            LEGACY_SET_TAGS_THROTTLE,
+            site_id,
+            input.user_id,
+        )
+        .await?
+        {
+            return Err(Error::new(
+                "legacy action is unavailable",
+                ErrorType::PermissionDenied,
+            )
+            .into());
+        }
 
         PageService::edit(
             ctx,

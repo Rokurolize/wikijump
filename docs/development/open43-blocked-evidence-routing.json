@@ -29,8 +29,8 @@
     "live_browser_only": 12,
     "missing_public_producer": 12,
     "missing_architecture_domain_authority": 12,
-    "missing_security_policy": 6,
-    "total": 71
+    "missing_security_policy": 4,
+    "total": 69
   },
   "rows": [
     {"case_id":"Q748_PERMISSION_FILTERED_RESULTS","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"Live Search has no successful result producer or public/private result pair."},
@@ -61,7 +61,6 @@
     {"case_id":"A775_EXACT_LIVE_TEMPORAL_EDIT","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Edit navigation, focus, loading, cancellation, and intermediate frames require a browser."},
     {"case_id":"A777_EXACT_LIVE_PRINT_TRANSITIONS","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Print dialog handoff and before/after-print intervals require a browser."},
     {"case_id":"A1029_ANONYMOUS_AND_INVITED_ACTIONS","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Join and invitation resolution alter membership state."},
-    {"case_id":"A1029_RATE_LIMIT_POLICY","route_class":"missing_security_policy","status":"not_attempted_not_safe","reason":"The product needs a local rate-limit policy rather than a copied live threshold."},
     {"case_id":"A1030_ACTOR_AND_EXISTING_VOTE_DOM","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No controlled public existing-vote page spans the required actors without voting."},
     {"case_id":"A1030_STAR_CANCEL","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Cancel behavior requires creating and removing a run-owned vote."},
     {"case_id":"A1033_PASSWORD_SUBMISSION","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Password membership submission changes membership state."},
@@ -76,7 +75,6 @@
     {"case_id":"A1038_CLONE_ACTION","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Eligibility, collision, copy, rollback, replay, and navigation require a run-owned destination."},
     {"case_id":"A1038_SITEGRID_POPULATED","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No controlled public populated/private SiteGrid pair supplies selection and disclosure boundaries."},
     {"case_id":"A1038_THEMEPREVIEWER_ACTIVE","route_class":"missing_security_policy","status":"not_attempted_not_safe","reason":"External theme fetch allowlist, CSP, size, timeout, and cleanup policy are unresolved."},
-    {"case_id":"A1041_ACTION_RATE_LIMIT_POLICY","route_class":"missing_security_policy","status":"not_attempted_not_safe","reason":"Action rate limiting is a local security policy, not a read-only live contract."},
 
     {"case_id":"A1061_PRIVATE_DENIED_CROSS_SITE_MATRIX","route_class":"local_candidate","status":"not_attempted_not_safe","reason":"Private, denied, cross-site, rollback, and concurrent include transitions need exact local fixtures."},
     {"case_id":"A1061_PAGE_LOCAL_CACHE_IDENTITY","route_class":"missing_architecture_domain_authority","status":"not_attempted_not_safe","reason":"The established architecture uses a site-wide fence and no authority requires a narrower identity."},
