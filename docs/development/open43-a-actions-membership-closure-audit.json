@@ -330,6 +330,18 @@
             "docs/local-authoring-boundary.md"
           ],
           "result": "The client cannot select actor, site, policy, token, relation state, page state, or revision source. First join and same-state idempotency use the existing current-membership uniqueness authority."
+        },
+        {
+          "case_id": "A1029_RATE_LIMIT_POLICY",
+          "acceptance": "Apply a non-oracular membership action rate limit.",
+          "owner": "security-policy",
+          "evidence": [
+            "deepwell/src/services/action_throttle.rs",
+            "deepwell/src/services/membership/service.rs",
+            "deepwell/tests/role.rs::ordinary_user_joins_only_the_editable_site_then_creates_a_page",
+            "docs/local-authoring-boundary.md"
+          ],
+          "result": "Wikijump now applies a server-owned deployment-security throttle only after route, actor, site policy, current revision, and renderer binding are established. The action/site/actor partition permits ten valid dispatches per rolling sixty seconds, forged descriptors do not consume it, and exhaustion reuses the same non-disclosing permission boundary as every other unavailable membership action. The threshold is explicitly local policy rather than a claimed Wikidot threshold."
         }
       ],
       "needs_source": [],
@@ -359,12 +371,6 @@
           "acceptance": "Match anonymous account-creation and invited-user membership transitions without a site or token oracle.",
           "owner": "live-evidence-and-domain-model",
           "result": "No frozen click timeline or local invitation entity defines recipient, digest, expiry, cancellation, one-use consumption, or actor transition. The controls remain non-authoritative."
-        },
-        {
-          "case_id": "A1029_RATE_LIMIT_POLICY",
-          "acceptance": "Apply a non-oracular membership action rate limit.",
-          "owner": "security-policy",
-          "result": "No project action-throttling authority, threshold, partition key, or retry contract exists. An arbitrary value would be an invented behavior; authentication, permission, row locks, and uniqueness remain enforced."
         }
       ],
       "exact_commands": [
@@ -661,6 +667,18 @@
             "deepwell/tests/page.rs::wikidot_set_tags_denials_preserve_public_page_state"
           ],
           "result": "The table-driven public mutation matrix rejects all six identities. Each case compares administrator-visible tags, current revision identity and count, updated/deleted timestamps, and compiled HTML before and after; the page.edit audit count is a secondary no-side-effect check. The locked case reuses PageLockService::can_user_bypass_lock rather than adding a second lock policy. Rust execution remains assigned to the central Cargo broker."
+        },
+        {
+          "case_id": "A1041_ACTION_RATE_LIMIT_POLICY",
+          "acceptance": "Rate-limit mutable standalone actions without exposing page or actor state.",
+          "owner": "security-policy",
+          "evidence": [
+            "deepwell/src/services/action_throttle.rs",
+            "deepwell/src/services/legacy_action.rs",
+            "deepwell/tests/page.rs::wikidot_set_tags_action_resolves_server_descriptor_and_is_revision_idempotent",
+            "docs/local-authoring-boundary.md"
+          ],
+          "result": "The mutable set-tags action shares the server-owned deployment-security throttle service with a distinct action key. Permission, page lock, current revision, renderer descriptor, and tag operation are resolved before the bucket is touched; forged or stale requests cannot consume or select a partition. Ten valid dispatches per rolling sixty seconds are accepted and exhaustion returns the same non-disclosing permission boundary rather than exposing a page, actor, or retry oracle."
         }
       ],
       "needs_source": [],
@@ -684,14 +702,7 @@
           "result": "Local Node tests prove the action state machine, not every served browser interval."
         }
       ],
-      "blocked_evidence": [
-        {
-          "case_id": "A1041_ACTION_RATE_LIMIT_POLICY",
-          "acceptance": "Rate-limit mutable standalone actions without exposing page or actor state.",
-          "owner": "security-policy",
-          "result": "No project-wide action-throttling authority, threshold, partition key, or retry contract exists. Do not invent a one-off set-tags limit."
-        }
-      ],
+      "blocked_evidence": [],
       "exact_commands": [
         "cargo test --manifest-path deepwell/Cargo.toml --lib services::render::legacy_actions::tests -- --nocapture",
         "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars -- --exact --nocapture",

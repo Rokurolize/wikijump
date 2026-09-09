@@ -39,6 +39,7 @@ mod macros;
 
 mod context;
 
+pub mod action_throttle;
 pub mod alias;
 pub mod audit;
 pub mod authentication;
@@ -90,6 +91,7 @@ pub mod user;
 pub mod view;
 pub mod vote;
 
+pub use self::action_throttle::ActionThrottleService;
 pub use self::alias::AliasService;
 pub use self::audit::AuditService;
 pub use self::authentication::AuthenticationService;

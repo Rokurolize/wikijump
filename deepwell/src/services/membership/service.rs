@@ -17,13 +17,14 @@ use super::structs::{
 use crate::constants::ADMIN_USER_ID;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::models::site::{Entity as Site, Model as SiteModel};
+use crate::services::action_throttle::MEMBERSHIP_SELF_JOIN_THROTTLE;
 use crate::services::relation::{
     CreateSiteMember, GetSiteBan, GetSiteMember, SiteMemberAccepted, SiteMemberData,
 };
 use crate::services::render::MembershipActionRegistry;
 use crate::services::{
-    MutationAuthorization, PageRevisionService, PageService, RelationService,
-    ServiceContext, TextService,
+    ActionThrottleService, MutationAuthorization, PageRevisionService, PageService,
+    RelationService, ServiceContext, TextService,
 };
 use crate::types::{Action, Permission, Reference, RelationType, Resource};
 use sea_orm::{EntityTrait, QuerySelect};
@@ -181,6 +182,22 @@ impl MembershipService {
             .or_raise(Self::denied)?;
         if !MembershipActionRegistry::from_wikidot_source(&source)
             .resolve(input.action_index, &input.action_fingerprint)
+        {
+            return Err(Self::denied().into());
+        }
+
+        // Only a request that has already proved its route, actor, site
+        // policy, current revision, and renderer binding can consume this
+        // server-owned bucket. Exhaustion is deliberately indistinguishable
+        // from every other unavailable membership action.
+        if !ActionThrottleService::consume(
+            ctx,
+            MEMBERSHIP_SELF_JOIN_THROTTLE,
+            site_id,
+            actor_user_id,
+        )
+        .await
+        .or_raise(Self::denied)?
         {
             return Err(Self::denied().into());
         }
