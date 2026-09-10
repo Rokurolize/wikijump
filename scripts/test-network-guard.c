@@ -92,9 +92,42 @@ static void append_block_log(const char *operation, const char *target) {
     if (fd < 0) {
         return;
     }
-    char line[512];
-    const int length = snprintf(line, sizeof(line), "%s\t%s\n", operation,
-                                target == NULL ? "<unknown>" : target);
+    char executable[256] = {0};
+    const ssize_t executable_length =
+        (ssize_t)syscall(SYS_readlinkat, AT_FDCWD, "/proc/self/exe", executable,
+                         sizeof(executable) - 1);
+    if (executable_length <= 0) {
+        snprintf(executable, sizeof(executable), "<unknown-executable>");
+    } else {
+        executable[executable_length] = '\0';
+    }
+
+    char command[512] = {0};
+    const int command_fd = (int)syscall(SYS_openat, AT_FDCWD, "/proc/self/cmdline",
+                                        O_RDONLY | O_CLOEXEC, 0);
+    if (command_fd >= 0) {
+        const ssize_t command_length =
+            (ssize_t)syscall(SYS_read, command_fd, command, sizeof(command) - 1);
+        (void)syscall(SYS_close, command_fd);
+        if (command_length > 0) {
+            for (ssize_t index = 0; index < command_length; index++) {
+                if (command[index] == '\0' || command[index] == '\n' ||
+                    command[index] == '\r' || command[index] == '\t') {
+                    command[index] = ' ';
+                }
+            }
+            command[command_length] = '\0';
+        }
+    }
+    if (command[0] == '\0') {
+        snprintf(command, sizeof(command), "<unknown-command>");
+    }
+
+    char line[1024];
+    const int length = snprintf(
+        line, sizeof(line), "%s\t%s\tpid=%ld\texe=%s\tcmd=%s\n", operation,
+        target == NULL ? "<unknown>" : target, (long)getpid(), executable,
+        command);
     if (length > 0) {
         const size_t count = (size_t)length < sizeof(line) ? (size_t)length
                                                            : sizeof(line) - 1;

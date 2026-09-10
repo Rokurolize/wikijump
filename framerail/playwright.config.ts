@@ -23,18 +23,12 @@ const config: PlaywrightTestConfig = {
   testMatch: "**/*.spec.ts",
   // The Deepwell fixture server keeps shared request and mutation state.
   workers: 1,
-  use: {
-    launchOptions: {
-      proxy: {
-        server: `http://127.0.0.1:${fixturePort}`,
-        bypass: "localhost,127.0.0.1,*.localhost"
-      }
-    }
-  },
+  use: {},
   webServer: {
-    command: `sh -c 'node tests/xmlrpc-deepwell-fixture-server.js & fixture=$!; trap "kill $fixture" EXIT INT TERM; DEEPWELL_HOST=127.0.0.1 DEEPWELL_PORT=${fixturePort} DEEPWELL_RPC_TOKEN=${deepwellRpcToken} pnpm dev --host 127.0.0.1 --port ${appPort}'`,
+    command: `sh -c 'node tests/xmlrpc-deepwell-fixture-server.js & fixture=$!; trap "kill $fixture" EXIT INT TERM; DEEPWELL_HOST=127.0.0.1 DEEPWELL_PORT=${fixturePort} DEEPWELL_RPC_TOKEN=${deepwellRpcToken} ./node_modules/.bin/vite dev --host 127.0.0.1 --port ${appPort}'`,
     env: {
       PLAYWRIGHT_FIXTURE_PORT: String(fixturePort),
+      FRAMERAIL_VITE_TEST_CACHE: "1",
       XML_RPC_WRITE_PASSWORD: xmlRpcWritePassword,
       XML_RPC_WRITE_USERNAME: xmlRpcWriteUsername,
       WIKIDOT_API_KEY: wikidotApiKey,

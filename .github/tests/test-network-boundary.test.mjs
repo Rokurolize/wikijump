@@ -69,20 +69,25 @@ test("maintained local test entrypoints are network-hermetic", () => {
   const preflight = read("scripts/preflight.sh")
   const playwright = read("framerail/playwright.config.ts")
   const browserSupport = read("framerail/playwright.browser-support.config.ts")
+  const browserGuard = read("scripts/run-browser-test-no-external-network.sh")
   const wikidotPyContractTest = read("install/local/wikidot-verification/tests/wikidot-py-amc-transport-contract.test.mjs")
   const wikidotPyHermeticWrapper = read("install/local/wikidot-verification/fixtures/wikidot-python-hermetic-test-wrapper.sh")
 
   for (const name of ["test", "test:ci"]) {
     assert.match(verification.scripts[name], /run-test-no-external-network\.sh/u, name)
   }
-  for (const name of ["test", "test:browser-support", "test:unit"]) {
-    assert.match(framerail.scripts[name], /run-test-no-external-network\.sh/u, name)
+  assert.match(framerail.scripts["test:unit"], /run-test-no-external-network\.sh/u)
+  for (const name of ["test", "test:browser-support"]) {
+    assert.match(framerail.scripts[name], /run-browser-test-no-external-network\.sh/u, name)
   }
   assert.match(preflight, /TEST_NETWORK_GUARD=/u)
   assert.match(preflight, /run_test/u)
   assert.doesNotMatch(playwright, /WIKIJUMP_CI_OFFLINE_EGRESS/u)
-  assert.match(playwright, /server: `http:\/\/127\.0\.0\.1:\$\{fixturePort\}`/u)
+  assert.match(playwright, /use: \{\}/u)
   assert.match(browserSupport, /baseConfig\.use/u)
+  assert.doesNotMatch(playwright, /\bpnpm\s+dev\b/u)
+  assert.match(playwright, /\.\/node_modules\/\.bin\/vite dev/u)
+  assert.match(browserGuard, /--unshare-net/u)
   assert.match(wikidotPyContractTest, /wikidot-python-hermetic-test-wrapper\.sh/u)
   assert.doesNotMatch(wikidotPyHermeticWrapper, /\buv\s+run\b/u)
   assert.match(wikidotPyHermeticWrapper, /\.venv\/bin\/python/u)

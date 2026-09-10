@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Route } from "@playwright/test"
+import { expect, test, type Page, type Route } from "./hermetic-playwright"
 
 const SITE_HEADERS = {
   "X-Wikijump-Site-Id": "6000005",

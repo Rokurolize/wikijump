@@ -43,6 +43,9 @@ export LD_PRELOAD="${SO}${LD_PRELOAD:+:${LD_PRELOAD}}"
 export CARGO_NET_OFFLINE=true
 export PIP_NO_INDEX=1
 export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+export PNPM_CONFIG_OFFLINE=true
+export npm_config_offline=true
+export npm_config_update_notifier=false
 unset HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
 export NO_PROXY="localhost,127.0.0.1,::1,.localhost"
 export no_proxy="${NO_PROXY}"

@@ -169,7 +169,10 @@ test("Framerail unit and browser scripts remain available for local validation",
   assert.match(pkg.scripts["test:unit"], /run-test-no-external-network\.sh/u)
   assert.match(pkg.scripts["test:unit"], /svelte-kit sync && node --test/u)
   assert.doesNotMatch(pkg.scripts["test:unit"], /\.spec\.(?:js|ts)/u)
-  assert.equal(pkg.scripts.test, "../scripts/run-test-no-external-network.sh node tests/playwright-runner.js")
+  assert.equal(
+    pkg.scripts.test,
+    "../scripts/run-browser-test-no-external-network.sh node tests/playwright-runner.js"
+  )
   assert.doesNotMatch(pkg.scripts.test, /test:unit/u)
   assert.doesNotMatch(playwright, /\.test\.(?:js|ts)/u)
 })

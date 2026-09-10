@@ -1,4 +1,4 @@
-import { test } from "@playwright/test"
+import { test } from "./hermetic-playwright"
 
 import { OPEN43_MEDIA_BROWSER_CASE_IDS } from "../../install/local/wikidot-verification/src/open43-media-browser-candidate.mjs"
 

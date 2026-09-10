@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test } from "./hermetic-playwright"
 
 const SITE_HEADERS = {
   "X-Wikijump-Site-Id": "6000005",
@@ -69,6 +69,16 @@ const installHashMagicTimeline = async (page: import("@playwright/test").Page) =
 const timeline = (page: import("@playwright/test").Page) =>
   page.evaluate(() => (window as HashMagicWindow).__hashMagicTimeline ?? [])
 
+const waitForWikidotHydration = (page: import("@playwright/test").Page) =>
+  page.waitForFunction(() => {
+    const pageContent = document.querySelector("#page-content")
+    return (
+      pageContent !== null &&
+      pageContent.firstChild?.nodeType !== Node.COMMENT_NODE &&
+      pageContent.lastChild?.nodeType !== Node.COMMENT_NODE
+    )
+  })
+
 test.beforeEach(async ({ page }) => {
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   await installHashMagicTimeline(page)
@@ -115,6 +125,7 @@ test("same-document hash history is inert but full-document navigation evaluates
 }) => {
   await page.goto("/scp-173")
   await expect(page.locator("#action-area")).toHaveClass(/hidden/u)
+  await waitForWikidotHydration(page)
 
   await page.evaluate(() => {
     location.hash = "_history"
@@ -125,9 +136,11 @@ test("same-document hash history is inert but full-document navigation evaluates
   await page.goBack()
   await expect(page).toHaveURL(/\/scp-173$/u)
   await expect(page.locator("#action-area")).toHaveClass(/hidden/u)
+  await waitForWikidotHydration(page)
 
   await page.goForward()
   await expect(page).toHaveURL(/\/scp-173#_history$/u)
+  await waitForWikidotHydration(page)
   await page.waitForTimeout(250)
   await expect(page.locator("#action-area")).toHaveClass(/hidden/u)
 

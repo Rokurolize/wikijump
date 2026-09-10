@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test } from "./hermetic-playwright"
 
 test("Wikidot-compatible collapsibles preserve legacy interaction", async ({ page }) => {
   const consoleErrors: string[] = []

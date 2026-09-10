@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test } from "./hermetic-playwright"
 
 test("Wikidot code highlighting applies and restores token markup", async ({ page }) => {
   await page.setExtraHTTPHeaders({
