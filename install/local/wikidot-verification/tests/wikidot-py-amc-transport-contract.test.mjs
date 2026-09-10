@@ -14,6 +14,7 @@ const localControlsEvidencePath = path.join(root, "install/local/wikidot-verific
 const localControlsTestPath = path.join(root, "install/local/wikidot-verification/tests/test_wikidot_py_amc_local_controls.py")
 const sourceRoot = process.env.WIKIDOT_PY_CHECKOUT ?? path.resolve(root, "../wikidot.py")
 const wrapperPath = process.env.WIKIDOT_PY_WRAPPER ?? path.join(root, "install/local/wikidot-verification/fixtures/wikidot-python-wrapper.sh")
+const hermeticTestWrapperPath = path.join(root, "install/local/wikidot-verification/fixtures/wikidot-python-hermetic-test-wrapper.sh")
 const gitEnvironment = {
   GIT_CONFIG_GLOBAL: "/dev/null",
   GIT_CONFIG_NOSYSTEM: "1",
@@ -64,8 +65,8 @@ test("AMC transport contract is complete and bound to the supported wikidot.py s
   assert.match(result.stdout, /verified 19 AMC transport records with 4 live-current, 6 controlled-local, and 9 source-and-unit-only bindings/u)
 })
 
-test("AMC verifier invokes the controlled-local Python regression through the pinned wrapper", () => {
-  const result = spawnSync(wrapperPath, [localControlsTestPath], {
+test("AMC verifier exercises the controlled-local Python regression without package resolution", () => {
+  const result = spawnSync(hermeticTestWrapperPath, [localControlsTestPath], {
     cwd: root,
     encoding: "utf8",
     env: {

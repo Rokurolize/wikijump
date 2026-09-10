@@ -2,25 +2,31 @@ import { devices, type PlaywrightTestConfig } from "@playwright/test"
 
 import baseConfig from "./playwright.config"
 
+const withOfflineEgress = (device: (typeof devices)[keyof typeof devices]) => ({
+  ...(baseConfig.use ?? {}),
+  ...device,
+  launchOptions: baseConfig.use?.launchOptions
+})
+
 const config: PlaywrightTestConfig = {
   ...baseConfig,
   testMatch: "**/browser-support.spec.ts",
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] }
+      use: withOfflineEgress(devices["Desktop Chrome"])
     },
     {
       name: "firefox",
-      use: { ...devices["Desktop Firefox"] }
+      use: withOfflineEgress(devices["Desktop Firefox"])
     },
     {
       name: "webkit",
-      use: { ...devices["Desktop Safari"] }
+      use: withOfflineEgress(devices["Desktop Safari"])
     },
     {
       name: "mobile-chromium",
-      use: { ...devices["Pixel 7"] }
+      use: withOfflineEgress(devices["Pixel 7"])
     }
   ]
 }

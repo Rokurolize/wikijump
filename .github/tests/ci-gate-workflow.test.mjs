@@ -166,9 +166,10 @@ test("Framerail unit and browser scripts remain available for local validation",
   const pkg = JSON.parse(read("framerail/package.json"))
   const playwright = read("framerail/playwright.config.ts")
 
-  assert.match(pkg.scripts["test:unit"], /^svelte-kit sync && node --test(?: tests\/(?:\*|[\w-]+)\.test\.(?:js|ts))+$/u)
+  assert.match(pkg.scripts["test:unit"], /run-test-no-external-network\.sh/u)
+  assert.match(pkg.scripts["test:unit"], /svelte-kit sync && node --test/u)
   assert.doesNotMatch(pkg.scripts["test:unit"], /\.spec\.(?:js|ts)/u)
-  assert.equal(pkg.scripts.test, "node tests/playwright-runner.js")
+  assert.equal(pkg.scripts.test, "../scripts/run-test-no-external-network.sh node tests/playwright-runner.js")
   assert.doesNotMatch(pkg.scripts.test, /test:unit/u)
   assert.doesNotMatch(playwright, /\.test\.(?:js|ts)/u)
 })
