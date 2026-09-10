@@ -355,7 +355,7 @@ async function verifyCandidateRuntimeDelta(repositoryPath, candidateCommit, merg
   if (candidateCommit === mergeCommit) fail("candidate commit must differ from merge commit");
   const changed = (await git(repositoryPath, "diff", "--name-only", `${candidateCommit}..${mergeCommit}`)).split("\n").filter(Boolean);
   const allowed = [".github/", "docs/development/candidate-case-set-manifest.json", "install/local/wikidot-verification/", "install/standing/"];
-  if (changed.length === 0 || changed.some((file) => !allowed.some((prefix) => file.startsWith(prefix)))) fail("merged source changed runtime inputs after candidate proof");
+  if (changed.some((file) => !allowed.some((prefix) => file.startsWith(prefix)))) fail("merged source changed runtime inputs after candidate proof");
 }
 
 async function verifyRepositoryMerge(repositoryPath, mergeCommit, mergeTree, candidateCommit) {

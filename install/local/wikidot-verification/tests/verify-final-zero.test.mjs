@@ -54,7 +54,7 @@ async function git(repository, ...arguments_) {
   return stdout.trim();
 }
 
-async function createMergeRepository(root) {
+async function createMergeRepository(root, {identicalMergedTree = false} = {}) {
   const repository = path.join(root, "repository");
   await fs.mkdir(repository);
   await git(repository, "init", "--quiet", "--initial-branch=develop");
@@ -70,10 +70,12 @@ async function createMergeRepository(root) {
   await git(repository, "commit", "--quiet", "-m", "candidate");
   const candidateCommit = await git(repository, "rev-parse", "HEAD");
   await git(repository, "switch", "--quiet", "develop");
-  await fs.mkdir(path.join(repository, "install", "standing"), {recursive: true});
-  await fs.writeFile(path.join(repository, "install", "standing", "develop.txt"), "develop\n");
-  await git(repository, "add", "install/standing/develop.txt");
-  await git(repository, "commit", "--quiet", "-m", "develop");
+  if (!identicalMergedTree) {
+    await fs.mkdir(path.join(repository, "install", "standing"), {recursive: true});
+    await fs.writeFile(path.join(repository, "install", "standing", "develop.txt"), "develop\n");
+    await git(repository, "add", "install/standing/develop.txt");
+    await git(repository, "commit", "--quiet", "-m", "develop");
+  }
   const developCommit = await git(repository, "rev-parse", "HEAD");
   await git(repository, "merge", "--quiet", "--no-ff", "candidate", "-m", "merge candidate");
   return {
@@ -110,10 +112,10 @@ function promotionPrecondition({candidateCommit, tree}) {
   };
 }
 
-async function fixtures(t) {
+async function fixtures(t, options = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "final-zero-"));
   t.after(() => fs.rm(root, {recursive: true, force: true}));
-  const repository = await createMergeRepository(root);
+  const repository = await createMergeRepository(root, options);
   const wikijumpCommit = repository.mergeCommit;
   const wikijumpTree = repository.mergeTree;
   const promotion = promotionPrecondition({candidateCommit: repository.candidateCommit, tree: wikijumpTree});
@@ -259,6 +261,14 @@ test("final-zero reconciles the exact denominator, row artifacts, deferred union
   const args = ["--ledger", fixture.paths.ledger, "--denominator", fixture.paths.denominator, "--deferred-denominator", fixture.paths.deferredDenominator, "--deferred-ledger", fixture.paths.deferredLedger, "--standing-matrix", fixture.paths.standingMatrix, "--final-frozen", fixture.paths.finalFrozen, "--open-issues", fixture.paths.openIssues, "--repository", fixture.paths.repository, "--output", output];
   assert.equal(await main(args, {stdout: () => {}}), 0);
   assert.equal(await main(args, {stdout: () => {}}), 0);
+});
+
+test("final-zero accepts a normal merge whose tree is identical to the candidate tree", async (t) => {
+  const fixture = await fixtures(t, {identicalMergedTree: true});
+  assert.equal(fixture.repository.mergeTree, await git(fixture.repository.path, "rev-parse", `${fixture.repository.candidateCommit}^{tree}`));
+  const receipt = await verifyFinalZero(inputMap(fixture));
+  assert.equal(receipt.status, "pass");
+  assert.equal(receipt.merge_commit, fixture.repository.mergeCommit);
 });
 
 test("final-zero rejects a currently open product issue even when its ledger row says closed", async (t) => {
