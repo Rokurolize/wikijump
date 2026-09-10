@@ -173,6 +173,7 @@ function fakeBrowserOwner() {
         pendingNavigation = { expected, resolve };
       });
     },
+    async waitForLoadState() {},
     async waitForTimeout() {},
     async close() {
       events.push("page-close");
