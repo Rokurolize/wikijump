@@ -23,7 +23,6 @@ use ftml::render::html::HtmlOutput;
 use quick_xml::{Reader, events::Event};
 use reqwest::Url;
 use std::collections::HashSet;
-use std::str;
 
 const WIKIDOT_EMBED_VIDEO_MARKER: &str = "wj-embed-video";
 const WIKIDOT_EMBED_VIDEO_NO_MATCH: &str =
@@ -107,27 +106,25 @@ fn parse_single_iframe(payload: &str) -> Option<Vec<(String, String)>> {
     let Event::Start(start) = reader.read_event().ok()? else {
         return None;
     };
-    if !start.name().as_ref().eq_ignore_ascii_case(b"iframe") {
+    if !start.name().as_ref().eq_ignore_ascii_case("iframe") {
         return None;
     }
 
     let mut attributes = Vec::new();
     for attribute in start.html_attributes() {
         let attribute = attribute.ok()?;
-        let key = str::from_utf8(attribute.key.as_ref())
-            .ok()?
-            .to_ascii_lowercase();
+        let key = attribute.key.as_ref().to_ascii_lowercase();
         if key.starts_with("on") || attributes.iter().any(|(seen, _)| seen == &key) {
             return None;
         }
-        let value = str::from_utf8(attribute.value.as_ref()).ok()?.to_owned();
+        let value = attribute.value.as_ref().to_owned();
         attributes.push((key, value));
     }
 
     let Event::End(end) = reader.read_event().ok()? else {
         return None;
     };
-    if !end.name().as_ref().eq_ignore_ascii_case(b"iframe") {
+    if !end.name().as_ref().eq_ignore_ascii_case("iframe") {
         return None;
     }
     if !matches!(reader.read_event().ok()?, Event::Eof) {
