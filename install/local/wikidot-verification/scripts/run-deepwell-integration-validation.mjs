@@ -37,7 +37,7 @@ function command(commandName, args, {env = process.env, capture = false} = {}) {
     child.on("exit", (code, signal) => {
       if (code === 0) return resolve({stdout, stderr});
       const detail = signal ? `signal ${signal}` : `status ${code}`;
-      reject(new Error(`${commandName} ${args.join(" ")} failed with ${detail}${capture && stderr ? `: ${stderr.trim()}` : ""}`));
+      reject(new Error(`${commandName} failed with ${detail}${capture && stderr ? `: ${stderr.trim()}` : ""}`));
     });
   });
 }
