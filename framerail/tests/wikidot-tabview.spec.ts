@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test } from "./hermetic-playwright"
 
 const headers = {
   "X-Wikijump-Site-Id": "6000005",

@@ -27,6 +27,7 @@ cd "${REPO_ROOT}" || exit 1
 BASE="origin/develop"
 MODE="checkpoint"
 LIST=false
+TEST_NETWORK_GUARD="${REPO_ROOT}/scripts/run-test-no-external-network.sh"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -94,15 +95,20 @@ run() {
   fi
 }
 
+run_test() {
+  local name="$1"; shift
+  run "${name}" "${TEST_NETWORK_GUARD}" "$@"
+}
+
 if group_selected workflow; then
   run "actionlint" bash -c \
     'command -v actionlint >/dev/null && actionlint || echo "actionlint not installed; skipped"'
-  run "workflow policy" bash -c 'node --test .github/tests/*.test.mjs'
+  run_test "workflow policy" bash -c 'node --test .github/tests/*.test.mjs'
 fi
 
 if group_selected verification && [[ "${MODE}" == "final" ]]; then
-  run "wikidot verification tests" pnpm --dir install/local/wikidot-verification test
-  run "standing promotion precondition" node --test install/standing/tests/verify-promotion-precondition.test.mjs
+  run_test "wikidot verification tests" pnpm --dir install/local/wikidot-verification test
+  run_test "standing promotion precondition" node --test install/standing/tests/verify-promotion-precondition.test.mjs
   run "wikidot specification generator" node scripts/generate-wikidot-specifications.mjs --check
   run "wikidot implementation ledger" node scripts/initialize-wikidot-implementation-ledger.mjs --check
 fi
@@ -112,7 +118,8 @@ if group_selected deepwell; then
   if [[ "${MODE}" == "final" ]]; then
     run "deepwell dependencies" cargo machete deepwell
     run "deepwell clippy" cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps -- -D warnings
-    run "deepwell full tests" cargo test --manifest-path deepwell/Cargo.toml
+    run_test "deepwell full tests" env RUST_MIN_STACK=8388608 \
+      cargo test --manifest-path deepwell/Cargo.toml -- --test-threads 1
   fi
 fi
 
@@ -121,14 +128,14 @@ if group_selected wws; then
   if [[ "${MODE}" == "final" ]]; then
     run "wws dependencies" cargo machete wws
     run "wws clippy" cargo clippy --manifest-path wws/Cargo.toml --tests --no-deps -- -D warnings
-    run "wws full tests" cargo test --manifest-path wws/Cargo.toml --locked --all-features -- --nocapture --test-threads 1
-    run "wws resize iframe tests" node --test wws/tests/resize-iframe.test.mjs
+    run_test "wws full tests" cargo test --manifest-path wws/Cargo.toml --locked --all-features -- --nocapture --test-threads 1
+    run_test "wws resize iframe tests" node --test wws/tests/resize-iframe.test.mjs
   fi
 fi
 
 if group_selected framerail; then
   run "framerail lint" pnpm --dir framerail lint
-  run "framerail unit tests" pnpm --dir framerail test:unit
+  run_test "framerail unit tests" pnpm --dir framerail test:unit
   if [[ "${MODE}" == "final" ]]; then
     run "framerail build" pnpm --dir framerail build
   fi

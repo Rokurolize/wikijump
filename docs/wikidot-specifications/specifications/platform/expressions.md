@@ -41,7 +41,7 @@ Evidence basis:
 
 ### P1 - invocation grammar and scalar interpretation
 
-- Support the documented expression grammar and parser functions, including #expr, #if, #ifexpr, arithmetic/comparison/boolean operators, variables/coercions, and abs/min/max. The frozen documentation states a 256-character expression maximum, but live Wikidot evaluates expressions of at least 131072 bytes; see the expressions-size-boundary-unenforced-20260817 live observation. The local runtime deliberately keeps its deterministic 256-byte fail-closed budget as a documented resource/security divergence and does not guess a higher live boundary.
+- Support the documented expression grammar and parser functions, including #expr, #if, #ifexpr, arithmetic/comparison/boolean operators, variables/coercions, and abs/min/max. The frozen documentation states a 256-character expression maximum, but live Wikidot evaluates expressions of at least 131072 bytes; see the expressions-size-boundary-unenforced-20260817 live observation. The local runtime deliberately keeps a deterministic 16 KiB fail-closed budget as a documented resource/security divergence after the FTML syntax-budget remediation removed the obsolete 256-byte cliff; it does not claim that 16 KiB is the live boundary.
 
 ### P2 - parser stage, nesting, and composition
 
@@ -69,7 +69,7 @@ Evidence basis:
 
 ### P8 - temporal behavior, failure atomicity, limits, and resource bounds
 
-- The local 256-byte expression bound and malformed-expression handling are deterministic resource/safety constraints. An over-budget or non-ASCII expression renders as literal source (fails closed) instead of evaluating. This is a deliberate stricter local divergence from live Wikidot, which evaluates far larger expressions; the divergence must remain documented and tested and must not be widened without new bounded live evidence. Divide-by-zero, invalid tokens, and unsupported operations MUST follow live/FTML error behavior without hanging or widening evaluation.
+- The local 16 KiB expression bound and malformed-expression handling are deterministic resource/safety constraints. An over-budget or non-ASCII expression renders as literal source (fails closed) instead of evaluating. This remains a deliberate stricter local divergence from live Wikidot, which evaluates the retained 131072-byte probe; the 16 KiB value is an implementation safety budget, not an inferred live limit, and any further widening must preserve bounded evaluator work/stack behavior. Divide-by-zero, invalid tokens, and unsupported operations MUST follow live/FTML error behavior without hanging or widening evaluation.
 
 ## Live-Wikidot behavioral corrections
 
@@ -81,13 +81,13 @@ incomplete documentation-derived evidence below.
 - Observation ID: `expressions-size-boundary-unenforced-20260817`
 - Classification: `documentation-correction`
 - Observed at: `2026-08-17`
-- Analysis: Anonymous edit/PagePreviewModule probes isolate the expression-size boundary on sandbox-for-codex. Repeated-addition chains of exactly 255, 256, and 257 bytes all evaluate. One-operation expressions padded with ASCII spaces to 257, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, and 131072 bytes all evaluate to <p>1</p>; a 4-byte control evaluates identically. Current live Wikidot therefore does not enforce the frozen documentation's 256-character expression maximum within the bounded probe envelope. The local FTML runtime deliberately keeps its deterministic 256-byte fail-closed budget as a documented resource/security divergence: over-budget expressions remain literal instead of evaluating. No raised replacement boundary is inferred from these observations.
+- Analysis: Anonymous edit/PagePreviewModule probes isolate the expression-size boundary on sandbox-for-codex. Repeated-addition chains of exactly 255, 256, and 257 bytes all evaluate. One-operation expressions padded with ASCII spaces to 257, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, and 131072 bytes all evaluate to <p>1</p>; a 4-byte control evaluates identically. Current live Wikidot therefore does not enforce the frozen documentation's 256-character expression maximum within the bounded probe envelope. After FTML's syntax-budget remediation removed the obsolete 256-byte cliff, the local runtime keeps a deterministic 16 KiB fail-closed budget as a documented resource/security divergence: over-budget expressions remain literal instead of evaluating. No live 16 KiB boundary is inferred from these observations.
 
 Normative behavior:
 
 - Anonymous live Wikidot evaluates #expr expressions of at least 131072 bytes; the documented 256-character maximum is not enforced at the observed live boundary.
-- The local runtime keeps a deterministic 256-byte expression budget. An over-budget #expr invocation renders as literal source (fails closed) rather than evaluating.
-- The divergence is a deliberate stricter local resource/security bound, not exact live parity; it must not be silently widened without new bounded live evidence.
+- The local runtime keeps a deterministic 16 KiB expression budget after removing the obsolete 256-byte syntax cliff. An over-budget #expr invocation renders as literal source (fails closed) rather than evaluating.
+- The divergence is a deliberate stricter local resource/security bound, not exact live parity or an inferred live boundary; further widening must preserve bounded evaluator work and stack behavior.
 - Operation, parenthesis, document-candidate, and non-ASCII budgets remain unchanged and independent of the byte-size bound.
 
 Evidence:

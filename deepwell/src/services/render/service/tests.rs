@@ -2036,32 +2036,26 @@ fn capped_random_scan_remains_literal_for_privacy() {
 
 #[test]
 fn list_pages_scan_target_covers_requested_page_within_the_safety_ceiling() {
-    assert_eq!(list_pages_row_scan_target(100, Some(100), 0, 0, false), 100);
-    assert_eq!(list_pages_row_scan_target(100, Some(100), 25, 0, true), 126);
+    assert_eq!(list_pages_row_scan_target(Some(100), 0, false), 100);
+    assert_eq!(list_pages_row_scan_target(Some(100), 25, true), 126);
     assert_eq!(
-        list_pages_row_scan_target(250, None, 0, 0, false),
+        list_pages_row_scan_target(None, 0, false),
         u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS),
         "an unbounded paginated ListPages module needs the bounded safety window to determine pager totals",
     );
     assert_eq!(
-        list_pages_row_scan_target(250, Some(1_000), 0, 250, false),
-        500,
-        "page 2 must extend the explicit-limit scan through the requested page window",
-    );
-    assert_eq!(
-        list_pages_row_scan_target(250, Some(1_000), 0, 750, false),
+        list_pages_row_scan_target(Some(1_000), 0, false),
         1_000,
-        "the requested page window must not exceed the module's explicit overall limit",
+        "an explicit overall limit must remain available when computing the pager total",
     );
     assert_eq!(
-        list_pages_row_scan_target(1, Some(5_000), 0, 0, false),
-        1,
-        "an explicit overall limit must not force scans beyond the requested page window",
-    );
-    assert_eq!(
-        list_pages_row_scan_target(1, None, 0, 0, false),
+        list_pages_row_scan_target(
+            Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS).saturating_add(1)),
+            0,
+            false,
+        ),
         u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS),
-        "an unbounded pager uses the existing safety ceiling even for a one-row page",
+        "an explicit overall limit must still obey the render safety ceiling",
     );
 }
 

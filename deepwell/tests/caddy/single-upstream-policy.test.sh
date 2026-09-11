@@ -18,9 +18,9 @@ trap cleanup EXIT INT TERM
 for fixture in \
   "$repo_root/deepwell/tests/caddy/Caddyfile.basic_local" \
   "$repo_root/deepwell/tests/caddy/Caddyfile.basic_localdev"; do
-  docker run --rm -v "$fixture:/etc/caddy/Caddyfile:ro" caddy:alpine \
+  docker run --pull=never --rm -v "$fixture:/etc/caddy/Caddyfile:ro" caddy:alpine \
     caddy adapt --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1
-  docker run --rm -v "$fixture:/etc/caddy/Caddyfile:ro" caddy:alpine \
+  docker run --pull=never --rm -v "$fixture:/etc/caddy/Caddyfile:ro" caddy:alpine \
     caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1
 done
 
@@ -31,12 +31,12 @@ cat >"$temporary/Caddyfile" <<'EOF'
 EOF
 
 docker network create "$network" >/dev/null
-docker run -d --name "$upstream_container" --network "$network" \
+docker run --pull=never -d --name "$upstream_container" --network "$network" \
   python:3-alpine sleep infinity >/dev/null
 upstream_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$upstream_container")
 sed "s/recovery-upstream/$upstream_ip/" "$temporary/Caddyfile" >"$temporary/Caddyfile.resolved"
 mv "$temporary/Caddyfile.resolved" "$temporary/Caddyfile"
-docker run -d --name "$caddy_container" --network "$network" \
+docker run --pull=never -d --name "$caddy_container" --network "$network" \
   -v "$temporary/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:alpine >/dev/null
 
 if docker exec "$caddy_container" wget -qO- http://127.0.0.1/ >/dev/null 2>&1; then

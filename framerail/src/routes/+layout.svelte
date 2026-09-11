@@ -54,6 +54,9 @@
     normalizeThemeSetting
   } from "$lib/site-settings.js"
 
+  const WIKIDOT_SEARCH_CHROME_HTML =
+    '<div id="search-top-box" class="form-search"><form id="search-top-box-form" class="input-append" action="dummy"><input id="search-top-box-input" name="query" class="text empty search-query" size="15" type="text" value="Search this site"/><input name="search" class="button btn" type="submit" value="Search" /></form></div>'
+
   let { children } = $props()
 
   function closeErrorPopup() {
@@ -154,6 +157,13 @@
     let stop: (() => void) | undefined
     const uninstallSearchAll = installWikidotSearchAll(window)
     installWikidotNewPageHelper(window)
+    const wikidotSearchForm =
+      document.querySelector<HTMLFormElement>("#search-top-box-form")
+    const wikidotSearchInput = document.querySelector<HTMLInputElement>(
+      "#search-top-box-input"
+    )
+    wikidotSearchForm?.addEventListener("submit", submitWikidotSearch)
+    wikidotSearchInput?.addEventListener("focus", clearWikidotSearchPrompt)
     void import("$lib/wikidot/wikidot-code-highlighting").then((module) => {
       if (!disposed) stop = module.observeWikidotCodeBlocks(document)
     })
@@ -161,6 +171,8 @@
       disposed = true
       stop?.()
       uninstallSearchAll()
+      wikidotSearchForm?.removeEventListener("submit", submitWikidotSearch)
+      wikidotSearchInput?.removeEventListener("focus", clearWikidotSearchPrompt)
     }
   })
 
@@ -259,24 +271,7 @@
           <span>{wikidotSiteTagline}</span>
         </h2>
       {/if}
-      <div id="search-top-box" class="form-search">
-        <form
-          id="search-top-box-form"
-          class="input-append"
-          action="dummy"
-          onsubmit={submitWikidotSearch}
-        >
-          <input
-            id="search-top-box-input"
-            name="query"
-            class="text empty search-query"
-            onfocus={clearWikidotSearchPrompt}
-            size="15"
-            type="text"
-            value="Search this site"
-          /><input name="search" class="button btn" type="submit" value="Search" />
-        </form>
-      </div>
+      {@html WIKIDOT_SEARCH_CHROME_HTML}
       {#if useSandboxWikidotChrome && wikidotSessionUserName}
         <div class="login-status">
           <div class="btn-group logged-in">

@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
-import { createRequire } from "node:module";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -512,76 +510,57 @@ test("an early CONNECT reset during DNS resolution does not crash the proxy or d
   }
 });
 
-test(
-  "real Chromium allows same-origin iframe/fetch/POST and blocks redirect to another local origin",
-  { timeout: 30_000 },
-  async (t) => {
-    const chromePath = "/usr/bin/google-chrome";
-    if (!fs.existsSync(chromePath)) {
-      t.skip("system Chrome is not installed");
-      return;
-    }
-    let chromium;
-    try {
-      const require = createRequire(
-        path.join(repoRoot, "framerail/package.json"),
-      );
-      ({ chromium } = require("@playwright/test"));
-    } catch {
-      t.skip("Playwright is not installed");
-      return;
-    }
-    const internal = await listen((_request, response) =>
-      response.end("INTERNAL SECRET"),
-    );
+test("proxy permits exact local subrequests and blocks a redirected local origin", async () => {
+    let internalHits = 0;
+    const internal = await listen((_request, response) => {
+      internalHits += 1;
+      response.end("INTERNAL SECRET");
+    });
     const fixture = await listen((request, response) => {
       if (request.url === "/frame") return response.end("FRAME OK");
-      if (request.url === "/api" && request.method === "POST")
-        return response.end("POST OK");
+      if (request.url === "/api" && request.method === "POST") {
+        let body = "";
+        request.on("data", (chunk) => {
+          body += chunk;
+        });
+        request.on("end", () => response.end(`POST:${body}`));
+        return;
+      }
       if (request.url === "/redirect") {
         response.writeHead(302, {
-          location: `http://internal.test:${internal.port}/secret`,
+          location: `http://127.0.0.1:${internal.port}/secret`,
         });
         return response.end();
       }
-      response.end(`<iframe src="/frame"></iframe><script>
-      Promise.all([
-        fetch('/api', {method:'POST', body:'x'}).then(r=>r.text()),
-        fetch('/redirect').then(r=>r.text()).catch(()=> 'REDIRECT BLOCKED')
-      ]).then(([post, blocked]) => document.body.dataset.result = post + '|' + blocked);
-    </script>`);
+      response.end("ROOT");
     });
-    const lookup = async (hostname) => {
-      if (hostname === "fixture.test" || hostname === "internal.test")
-        return [{ address: "127.0.0.1" }];
-      return [];
-    };
     const proxy = await startCaptureEgressProxy({
-      allowedLocalOrigins: [`http://fixture.test:${fixture.port}`],
-      lookup,
-    });
-    const browser = await chromium.launch({
-      executablePath: chromePath,
-      headless: true,
-      proxy: { server: proxy.url, bypass: "<-loopback>" },
+      allowedLocalOrigins: [`http://127.0.0.1:${fixture.port}`],
     });
     try {
-      const page = await browser.newPage();
-      await page.goto(`http://fixture.test:${fixture.port}/`);
-      await page.waitForFunction(() => document.body.dataset.result);
-      assert.equal(
-        await page.locator("iframe").contentFrame().locator("body").innerText(),
-        "FRAME OK",
+      assert.deepEqual(
+        await proxyRequest(proxy.url, `http://127.0.0.1:${fixture.port}/frame`),
+        { status: 200, body: "FRAME OK" },
+      );
+      assert.deepEqual(
+        await proxyRequest(proxy.url, `http://127.0.0.1:${fixture.port}/api`, {
+          method: "POST",
+          body: "x",
+        }),
+        { status: 200, body: "POST:x" },
       );
       assert.equal(
-        await page.locator("body").getAttribute("data-result"),
-        "POST OK|REDIRECT BLOCKED",
+        (await proxyRequest(proxy.url, `http://127.0.0.1:${fixture.port}/redirect`)).status,
+        302,
       );
+      assert.equal(
+        (await proxyRequest(proxy.url, `http://127.0.0.1:${internal.port}/secret`)).status,
+        403,
+      );
+      assert.equal(internalHits, 0);
     } finally {
-      await browser.close();
       await proxy.close();
       await close(fixture.server);
       await close(internal.server);
     }
-  },
-);
+});

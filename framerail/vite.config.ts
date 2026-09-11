@@ -11,9 +11,10 @@ const pnpmVersion = pkg.packageManager?.startsWith("pnpm@")
   ? pkg.packageManager.slice("pnpm@".length)
   : null
 
-const testCacheDir = process.env.NODE_TEST_CONTEXT
-  ? resolve(tmpdir(), `wikijump-framerail-vite-test-${process.pid}`)
-  : null
+const testCacheDir =
+  process.env.NODE_TEST_CONTEXT || process.env.FRAMERAIL_VITE_TEST_CACHE
+    ? resolve(tmpdir(), `wikijump-framerail-vite-test-${process.pid}`)
+    : null
 
 if (testCacheDir) {
   process.on("exit", () => rmSync(testCacheDir, { recursive: true, force: true }))

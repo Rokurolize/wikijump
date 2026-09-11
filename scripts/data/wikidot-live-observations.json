@@ -3126,11 +3126,11 @@
       ],
       "classification": "documentation-correction",
       "observed_at": "2026-08-17",
-      "analysis": "Anonymous edit/PagePreviewModule probes isolate the expression-size boundary on sandbox-for-codex. Repeated-addition chains of exactly 255, 256, and 257 bytes all evaluate. One-operation expressions padded with ASCII spaces to 257, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, and 131072 bytes all evaluate to <p>1</p>; a 4-byte control evaluates identically. Current live Wikidot therefore does not enforce the frozen documentation's 256-character expression maximum within the bounded probe envelope. The local FTML runtime deliberately keeps its deterministic 256-byte fail-closed budget as a documented resource/security divergence: over-budget expressions remain literal instead of evaluating. No raised replacement boundary is inferred from these observations.",
+      "analysis": "Anonymous edit/PagePreviewModule probes isolate the expression-size boundary on sandbox-for-codex. Repeated-addition chains of exactly 255, 256, and 257 bytes all evaluate. One-operation expressions padded with ASCII spaces to 257, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, and 131072 bytes all evaluate to <p>1</p>; a 4-byte control evaluates identically. Current live Wikidot therefore does not enforce the frozen documentation's 256-character expression maximum within the bounded probe envelope. After FTML's syntax-budget remediation removed the obsolete 256-byte cliff, the local runtime keeps a deterministic 16 KiB fail-closed budget as a documented resource/security divergence: over-budget expressions remain literal instead of evaluating. No live 16 KiB boundary is inferred from these observations.",
       "normative_behavior": [
         "Anonymous live Wikidot evaluates #expr expressions of at least 131072 bytes; the documented 256-character maximum is not enforced at the observed live boundary.",
-        "The local runtime keeps a deterministic 256-byte expression budget. An over-budget #expr invocation renders as literal source (fails closed) rather than evaluating.",
-        "The divergence is a deliberate stricter local resource/security bound, not exact live parity; it must not be silently widened without new bounded live evidence.",
+        "The local runtime keeps a deterministic 16 KiB expression budget after removing the obsolete 256-byte syntax cliff. An over-budget #expr invocation renders as literal source (fails closed) rather than evaluating.",
+        "The divergence is a deliberate stricter local resource/security bound, not exact live parity or an inferred live boundary; further widening must preserve bounded evaluator work and stack behavior.",
         "Operation, parenthesis, document-candidate, and non-ASCII budgets remain unchanged and independent of the byte-size bound."
       ],
       "evidence": [

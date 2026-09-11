@@ -212,7 +212,7 @@ test("final preflight is the single explicit full-check barrier", (t) => {
     "cargo fmt --manifest-path deepwell/Cargo.toml --check",
     "cargo machete deepwell",
     "cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps -- -D warnings",
-    "cargo test --manifest-path deepwell/Cargo.toml",
+    "cargo test --manifest-path deepwell/Cargo.toml -- --test-threads 1",
     "cargo fmt --manifest-path wws/Cargo.toml --check",
     "cargo machete wws",
     "cargo clippy --manifest-path wws/Cargo.toml --tests --no-deps -- -D warnings",
@@ -233,6 +233,12 @@ test("final preflight is the single explicit full-check barrier", (t) => {
   assert.doesNotMatch(help.stdout, /--full/)
   assert.doesNotMatch(help.stdout, /set -uo pipefail/)
   assert.equal(harness.runPreflight(["--full"]).status, 2)
+
+  const source = readFileSync(path.join(root, "scripts/preflight.sh"), "utf8")
+  assert.match(
+    source,
+    /run_test "deepwell full tests" env RUST_MIN_STACK=8388608[\s\\]+cargo test --manifest-path deepwell\/Cargo\.toml -- --test-threads 1/u
+  )
 })
 
 test("verification and specification inputs run only the final verification barrier", async (t) => {

@@ -89,10 +89,13 @@ This does not seem to work with Docker, so you should instead manually stop the 
 
 ### Testing
 
-The service has both unit tests and integration tests. Both can be run using:
+The service has both unit tests and integration tests. Run the complete suite
+serially with an enlarged Rust test-thread stack because the integration tests
+share the seeded local database and some renderer regressions exercise deep
+debug-build call stacks:
 
 ```sh
-$ cargo test
+$ RUST_MIN_STACK=8388608 cargo test -- --test-threads 1
 ```
 
 Add `-- --nocapture` to the end if you want to see test output.

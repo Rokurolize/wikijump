@@ -11201,8 +11201,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "e2c2b73b6f80f4f7741063e8c1868953b14523a3",
-      "tree": "84797d9a3164126f6af3a8acd9ebae947b76716c"
+      "commit": "c1021124f539fa408b1144d34b2c58d0bd13672f",
+      "tree": "3bd86c15cd705505f48b6d534cd70beb8da7dcf7"
     },
     "ftml": {
       "commit": "c37c8360a2ac304eb1de06942465e1c8b9ad737a",
@@ -11351,7 +11351,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "6de3ad89266a92528fc543f6e4991b903cfe118423606b1ae4eae447f974a19a"
+        "sha256": "8542ab0ed6475e1c90d44136dfd0e77c0cae8777eddb85315afeea86799ae6c6"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11359,7 +11359,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "29baf35ea9e49cbb9962f46dcfe5746231d618fecba0656535efd6171fb33afe"
+        "sha256": "f3da9d97dfb307fd62245371261ee7ad73e1a5c3d42e961cad80c9bccfc84fc4"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11419,7 +11419,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "c95d2c69c98329e18d4298c8225737955740f7de14c440c357a5353cab47293e"
+        "sha256": "b2aa24b9c27dcef7f3c84d446ef8d77c4524dfd5ed9a6c0020a024ae197682da"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11431,7 +11431,7 @@
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "d5affc891570e50aa11a74976172db8474c8a29addc2c38b9795bb6e5e98422d"
+        "sha256": "0704b2cd3a282b1f36a86045fe065fc86ed7af3a3758dd2e970414dc5bc95100"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -14249,7 +14249,7 @@
         "cases": [],
         "tests": [
           "deepwell/tests/page.rs#documented_expression_parser_functions_render_at_the_public_preview_seam",
-          "deepwell/tests/page.rs#expression_size_boundary_fails_closed_at_the_public_preview_seam"
+          "deepwell/tests/page.rs#expression_size_budget_matches_the_public_preview_seam"
         ]
       },
       "evidence": {

@@ -13,7 +13,7 @@
   } from "$lib/wikidot/wikidot-data-form.js"
   import WikidotDataFormMatchWorker from "$lib/wikidot/wikidot-data-form-match.worker.ts?worker"
   import { superForm } from "sveltekit-superforms"
-  import { onDestroy, onMount, untrack } from "svelte"
+  import { onDestroy, onMount, tick, untrack } from "svelte"
   import { SvelteMap } from "svelte/reactivity"
   import { mountWikidotDatePicker } from "$lib/wikidot/wikidot-date-picker.js"
 
@@ -101,6 +101,10 @@
     }
     return groups
   })
+
+  function preserveCheckedAttribute(node: HTMLInputElement) {
+    void tick().then(() => node.setAttribute("checked", "checked"))
+  }
 
   function setPagepathValue(fieldName: string, parent: string, selected: string) {
     if (selected === "+") {
@@ -654,6 +658,7 @@
                     onchange={(event) =>
                       (values[field.name] = event.currentTarget.checked ? "1" : "0")}
                     type="checkbox"
+                    use:preserveCheckedAttribute
                   />
                 {:else}
                   <input

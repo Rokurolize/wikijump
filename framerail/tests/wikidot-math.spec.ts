@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test } from "./hermetic-playwright"
 
 const MATH_SOURCE = String.raw`\begin{equation} x^2 + y^2 = z^2 \end{equation}`
 

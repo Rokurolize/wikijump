@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test } from "./hermetic-playwright"
 
 const fixtureUrl = process.env.WIKIJUMP_FILES_THEME_FIXTURE_URL
 

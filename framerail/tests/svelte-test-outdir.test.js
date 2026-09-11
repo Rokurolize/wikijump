@@ -14,7 +14,7 @@ test("unit test entrypoint generates the shared SvelteKit tsconfig before isolat
   const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"))
   assert.equal(
     pkg.scripts["test:unit"],
-    "svelte-kit sync && node --test tests/*.test.js tests/*.test.ts"
+    "../scripts/run-test-no-external-network.sh sh -c 'svelte-kit sync && node --test tests/*.test.js tests/*.test.ts'"
   )
 })
 

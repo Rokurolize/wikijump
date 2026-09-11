@@ -2768,16 +2768,18 @@ async fn documented_expression_parser_functions_render_at_the_public_preview_sea
 }
 
 #[tokio::test]
-async fn expression_size_boundary_fails_closed_at_the_public_preview_seam() {
+async fn expression_size_budget_matches_the_public_preview_seam() {
     let runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
         .expect("seeded test site should exist")
         .site;
 
-    let at_bound = format!("[[#expr 1{}+0]]", " ".repeat(253));
-    let over_bound = format!("[[#expr 1{}+0]]", " ".repeat(254));
-    assert_eq!(at_bound.len() - 10, 256);
-    assert_eq!(over_bound.len() - 10, 257);
+    let old_boundary_control = format!("[[#expr 1{}+0]]", " ".repeat(254));
+    let at_bound = format!("[[#expr 1{}+0]]", " ".repeat(16 * 1024 - 3));
+    let over_bound = format!("[[#expr 1{}+0]]", " ".repeat(16 * 1024 - 2));
+    assert_eq!(old_boundary_control.len() - 10, 257);
+    assert_eq!(at_bound.len() - 10, 16 * 1024);
+    assert_eq!(over_bound.len() - 10, 16 * 1024 + 1);
 
     let preview = run_endpoint!(
         runner,
@@ -2785,23 +2787,31 @@ async fn expression_size_boundary_fails_closed_at_the_public_preview_seam() {
         json!({
             "site_id": site.site_id,
             "title": "Expression size boundary",
-            "wikitext": format!("AT_BOUND={at_bound}\nOVER_BOUND={over_bound}"),
+            "wikitext": format!(
+                "OLD_BOUNDARY_CONTROL={old_boundary_control}\nAT_BOUND={at_bound}\nOVER_BOUND={over_bound}"
+            ),
         }),
     );
 
     assert!(
+        preview.body.contains("OLD_BOUNDARY_CONTROL=1"),
+        "the retained live 257-byte control must evaluate after removing the obsolete 256-byte cliff:\n{}",
+        preview.body,
+    );
+    assert!(
         preview.body.contains("AT_BOUND=1"),
-        "the 256-byte expression must still evaluate:\n{}",
+        "the local 16 KiB expression budget must still evaluate at its boundary:\n{}",
         preview.body,
     );
     assert!(
         !preview.body.contains("OVER_BOUND=1"),
-        "the 257-byte expression must not evaluate:\n{}",
+        "the expression one byte beyond the local 16 KiB safety budget must not evaluate:\n{}",
         preview.body,
     );
     assert!(
-        preview.body.contains("OVER_BOUND=[[#expr 1 +0]]"),
-        "the 257-byte expression must remain literal and unevaluated (fail closed):\n{}",
+        preview.body.contains("OVER_BOUND=[<a href=\"#expr\">1")
+            && preview.body.contains("+0</a>]"),
+        "the expression beyond the local 16 KiB safety budget must remain unevaluated and continue through the ordinary literal-wikitext public seam:\n{}",
         preview.body,
     );
 }

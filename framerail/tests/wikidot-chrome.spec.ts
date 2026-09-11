@@ -1,4 +1,9 @@
-import { expect, test } from "@playwright/test"
+import {
+  expect,
+  installNativeEventListenerProbe,
+  test,
+  waitForNativeEventListener
+} from "./hermetic-playwright"
 
 const headers = {
   "X-Wikijump-Site-Id": "6000005",
@@ -40,12 +45,15 @@ test("Wikidot header extension hooks exist at the initial no-script paint", asyn
 test("Wikidot-compatible search chrome preserves its two inputs and focus behavior", async ({
   page
 }) => {
+  await installNativeEventListenerProbe(page)
   const pageErrors: string[] = []
   page.on("pageerror", (error) => pageErrors.push(error.message))
 
   await page.setExtraHTTPHeaders(headers)
 
   await page.goto("/wikidot-tabview")
+  await waitForNativeEventListener(page, "#search-top-box-input", "focus")
+  await waitForNativeEventListener(page, "#search-top-box-form", "submit")
 
   const searchBox = page.locator("#search-top-box")
   const form = page.locator("#search-top-box-form")
@@ -82,9 +90,11 @@ test("Wikidot-compatible search chrome preserves its two inputs and focus behavi
 })
 
 test("SearchAll module submits the selected live area route", async ({ page }) => {
+  await installNativeEventListenerProbe(page)
   await page.setExtraHTTPHeaders(headers)
 
   await page.goto("/search:all")
+  await waitForNativeEventListener(page, null, "submit")
 
   const form = page.locator("#search-form-all")
   await expect(form).toHaveCount(1)

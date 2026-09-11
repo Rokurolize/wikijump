@@ -51,6 +51,8 @@ test("deploy proxy strips mixed-case and repeated Wikijump trust headers", async
     "docker",
     [
       "run",
+      "--pull",
+      "never",
       "--detach",
       "--rm",
       "--network",

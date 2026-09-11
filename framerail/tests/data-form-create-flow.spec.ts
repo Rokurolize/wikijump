@@ -1,4 +1,21 @@
-import { expect, test } from "@playwright/test"
+import { expect, test, type Page } from "./hermetic-playwright"
+
+const waitForHydration = async (page: Page) => {
+  await page.waitForFunction(() => {
+    const element = document.querySelector<HTMLAnchorElement>("#edit-save-button")
+    if (!element) return false
+    return Object.getOwnPropertySymbols(element).some((symbol) => {
+      if (symbol.description !== "events") return false
+      const handlers = (element as unknown as Record<symbol, { click?: unknown }>)[symbol]
+      return typeof handlers?.click === "function"
+    })
+  })
+}
+
+const gotoHydratedEditor = async (page: Page, url: string) => {
+  await page.goto(url)
+  await waitForHydration(page)
+}
 
 const FIXTURE_URL = `http://127.0.0.1:${process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747"}`
 const AUTHENTICATED_HEADERS = {
@@ -21,6 +38,7 @@ test("data-form create flow renders controls and stores Wikidot source", async (
   await expect(page.locator("#create-it-now-link")).toHaveText("Create page")
   await page.locator("#create-it-now-link a").click()
   await expect(page).toHaveURL(/data-form-create-flow:example\/edit\/true$/u)
+  await waitForHydration(page)
 
   await expect(page.locator("#action-area h1")).toHaveText("Create Data-form-create-flow")
   await expect(page.locator("textarea.debug")).toHaveCount(0)
@@ -89,6 +107,7 @@ test("data-form date field renders its basic control and preserves submitted sca
   expect(missingResponse?.status()).toBe(404)
   await page.locator("#create-it-now-link a").click()
   await expect(page).toHaveURL(/data-form-date-field-flow:example\/edit\/true$/u)
+  await waitForHydration(page)
   const date = page.locator("input[name='field-date']")
   await expect(date).toHaveAttribute("type", "text")
   await expect(date).toHaveClass(/form-control form-date/u)
@@ -125,7 +144,7 @@ test("data-form datepicker selections save the evidenced Unix-second scalar", as
 }) => {
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/data-form-date-field-flow:example/edit/true")
+  await gotoHydratedEditor(page, "/data-form-date-field-flow:example/edit/true")
 
   const date = page.locator("input[name='field-date']")
   const dateTrigger = page.locator("button.ui-datepicker-trigger")
@@ -154,7 +173,7 @@ test("pagepath Create new matches the immediate Wikidot tree mutation and surviv
 }) => {
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/data-form-pagepath-flow:example/edit/true")
+  await gotoHydratedEditor(page, "/data-form-pagepath-flow:example/edit/true")
 
   const hidden = page.locator("input[name='field-origin']")
   await expect(hidden).toHaveClass("dataform-pagepath-value")
@@ -249,7 +268,7 @@ test("pagepath first root child bootstraps _root and remains selected in the edi
 }) => {
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/data-form-pagepath-root-flow:example/edit/true")
+  await gotoHydratedEditor(page, "/data-form-pagepath-root-flow:example/edit/true")
 
   const hidden = page.locator("input[name='field-origin']")
   const root = page.locator(
@@ -329,7 +348,7 @@ test("date options edit reload formats stored seconds and serializes alt fields"
 }) => {
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/data-form-date-options-flow:example/edit")
+  await gotoHydratedEditor(page, "/data-form-date-options-flow:example/edit")
 
   const primary = page.locator("input[name='field-date-primary']")
   const secondary = page.locator("input[name='field-date-secondary']")
@@ -375,7 +394,7 @@ test("data-form text and select controls match live validation and storage", asy
 }) => {
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/data-form-controls-flow:example/edit/true")
+  await gotoHydratedEditor(page, "/data-form-controls-flow:example/edit/true")
 
   const plain = page.locator("input[name='field-plain']")
   await expect(plain).toHaveAttribute("size", "1")
@@ -457,7 +476,7 @@ test("data-form text and select controls match live validation and storage", asy
       }
     })
 
-  await page.goto("/data-form-controls-flow:example/edit")
+  await gotoHydratedEditor(page, "/data-form-controls-flow:example/edit")
   await expect(page.locator("input[name='field-plain']")).toHaveValue(
     `O'Brien: # [x] \\ slash "quote"`
   )
@@ -476,7 +495,7 @@ test("data-form checkbox and wiki controls match live DOM and storage", async ({
 }) => {
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/data-form-checkbox-wiki-flow:example/edit/true")
+  await gotoHydratedEditor(page, "/data-form-checkbox-wiki-flow:example/edit/true")
 
   const unchecked = page.locator("input[name='field-checkbox_unchecked']")
   await expect(unchecked).toHaveAttribute("type", "checkbox")
@@ -560,7 +579,7 @@ test("empty and unselected select fields save and restore as Wikidot null", asyn
 }) => {
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/data-form-empty-select-flow:example/edit/true")
+  await gotoHydratedEditor(page, "/data-form-empty-select-flow:example/edit/true")
 
   await expect(page.locator("[name='field-missing_values']")).toHaveCount(0)
   await expect(page.locator("[name='field-empty_values']")).toHaveCount(0)
@@ -597,7 +616,7 @@ test("empty and unselected select fields save and restore as Wikidot null", asyn
       }
     })
 
-  await page.goto("/data-form-empty-select-flow:example/edit")
+  await gotoHydratedEditor(page, "/data-form-empty-select-flow:example/edit")
   await expect(page.locator("[name='field-missing_values']")).toHaveCount(0)
   await expect(page.locator("[name='field-empty_values']")).toHaveCount(0)
   await expect(page.locator("input[name='field-select_one']")).not.toBeChecked()
@@ -616,7 +635,7 @@ test("data-form field properties and PCRE-style match behavior follow live Wikid
 }) => {
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/data-form-properties-flow:example/edit/true")
+  await gotoHydratedEditor(page, "/data-form-properties-flow:example/edit/true")
 
   const base = page.locator("input[name='field-base']")
   const joined = page.locator("input[name='field-joined']")
@@ -728,7 +747,7 @@ test("pathological data-form match patterns fail closed without blocking the edi
   test.setTimeout(15_000)
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/data-form-regex-budget-flow:example/edit/true")
+  await gotoHydratedEditor(page, "/data-form-regex-budget-flow:example/edit/true")
 
   const matched = page.locator("input[name='field-matched']")
   const matchedTwo = page.locator("input[name='field-matched_two']")
@@ -761,7 +780,7 @@ test("a new data-form submission cancels stale validation and saves its own snap
 }) => {
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/data-form-regex-budget-flow:example/edit/true")
+  await gotoHydratedEditor(page, "/data-form-regex-budget-flow:example/edit/true")
 
   const matched = page.locator("input[name='field-matched']")
   const matchedTwo = page.locator("input[name='field-matched_two']")
@@ -799,7 +818,7 @@ test("invalid data-form match patterns use a host-owned diagnostic", async ({
 }) => {
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/data-form-invalid-regex-flow:example/edit/true")
+  await gotoHydratedEditor(page, "/data-form-invalid-regex-flow:example/edit/true")
 
   await page.locator("input[name='field-matched']").fill("anything")
   await page.locator("#edit-save-button").click()
@@ -824,7 +843,7 @@ test("data-form edit flow restores and updates saved field values", async ({
 }) => {
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/data-form-edit-flow:example/edit")
+  await gotoHydratedEditor(page, "/data-form-edit-flow:example/edit")
 
   await expect(page.locator("#action-area h1")).toHaveText("Edit Data-form-edit-flow")
   await expect(page.locator("#page-content")).toBeHidden()
@@ -861,7 +880,10 @@ test("data-form create rejects NewPage tags without creating a page", async ({
 }) => {
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/data-form-create-flow:example/edit/true/tags/rock%20live")
+  await gotoHydratedEditor(
+    page,
+    "/data-form-create-flow:example/edit/true/tags/rock%20live"
+  )
 
   await page.locator("input[name='field-name']").fill("Tagged Value")
   await page.locator("input[name='field-choice'][value='a']").check()
@@ -888,7 +910,8 @@ test("data-form create applies the NewPage parent after saving", async ({
 }) => {
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto(
+  await gotoHydratedEditor(
+    page,
     "/data-form-create-flow:example/edit/true/parentPage/data-form-create-flow%3Aparent"
   )
 

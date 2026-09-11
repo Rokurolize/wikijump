@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test } from "./hermetic-playwright"
 
 const SITE_HEADERS = {
   "X-Wikijump-Site-Id": "6000005",
@@ -13,11 +13,19 @@ const AUTHENTICATED_HEADERS = {
 const FIXTURE_URL = `http://127.0.0.1:${process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747"}`
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")
 
+const waitForNewPageHelper = (page: import("@playwright/test").Page) =>
+  page.waitForFunction(
+    () =>
+      (window as Window & { __wikijumpNewPageHelperSubmitListenerInstalled?: boolean })
+        .__wikijumpNewPageHelperSubmitListenerInstalled === true
+  )
+
 test("NewPage default submit posts Wikidot helper action and navigates to edit URL", async ({
   page
 }) => {
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   await page.goto("/newpage-helper")
+  await waitForNewPageHelper(page)
   await page.evaluate(() => {
     document.cookie = "wikijump_token=fixture-session-token; path=/"
     document.cookie = "wikidot_token7=fixture-wikidot-token7; path=/"
@@ -57,6 +65,7 @@ test("NewPage default submit posts Wikidot helper action and navigates to edit U
 test("NewPage anonymous default submit still navigates to edit URL", async ({ page }) => {
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   await page.goto("/newpage-helper")
+  await waitForNewPageHelper(page)
   await page.evaluate(() => {
     document.cookie = "wikidot_token7=fixture-wikidot-token7; path=/"
   })
@@ -92,6 +101,7 @@ test("NewPage template submit includes template, tags, and parent in edit URL", 
 }) => {
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   await page.goto("/newpage-helper")
+  await waitForNewPageHelper(page)
   await page.evaluate(() => {
     document.cookie = "wikidot_token7=fixture-wikidot-token7; path=/"
   })
@@ -134,6 +144,7 @@ test("NewPage save-and-go creates an empty page and navigates to it", async ({
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto("/newpage-helper")
+  await waitForNewPageHelper(page)
 
   const submittedName = `run-owned:newpage-autosave-${Date.now()}`
   await page.locator("#autosave-newpage input[name='pageName']").fill(submittedName)

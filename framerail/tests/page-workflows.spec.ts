@@ -1,6 +1,12 @@
-import { expect, test } from "@playwright/test"
+import {
+  expect,
+  installNativeEventListenerProbe,
+  test,
+  waitForNativeEventListener,
+  waitForSvelteDelegatedHandler
+} from "./hermetic-playwright"
 
-import type { APIResponse } from "@playwright/test"
+import type { APIResponse } from "./hermetic-playwright"
 
 const SITE_HEADERS = {
   "X-Wikijump-Site-Id": "6000005",
@@ -208,8 +214,10 @@ test("article routes carry load and mutation context through Deepwell", async ({
 })
 
 test("autonumbered page creation follows the assigned slug", async ({ page }) => {
+  await installNativeEventListenerProbe(page)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto("/autonumber-requested/edit/true")
+  await waitForNativeEventListener(page, "#editor", "submit")
 
   await page.locator("input[name='title']").fill("Autonumber browser test")
   await page.locator("textarea[name='wikitext']").fill("Assigned page body")
@@ -224,6 +232,7 @@ test("history ignores a stale revision diff response", async ({ page, request })
   await request.get(`${FIXTURE_URL}/last-page-read-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto("/authoring-history-probe")
+  await waitForSvelteDelegatedHandler(page, "#history-button")
   await page.getByRole("link", { name: "history", exact: true }).click()
   await expect(page.locator(".revision-diff-controls")).toBeVisible()
 
@@ -284,6 +293,7 @@ test("history ignores a stale successful diff after page navigation", async ({
   await request.get(`${FIXTURE_URL}/last-page-read-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto("/authoring-history-probe")
+  await waitForSvelteDelegatedHandler(page, "#history-button")
   await page.getByRole("link", { name: "history", exact: true }).click()
   await expect(page.locator(".revision-diff-controls")).toBeVisible()
   await page.locator(".revision-diff-controls button").nth(1).click()
@@ -314,6 +324,7 @@ test("history ignores a stale failure after page navigation", async ({
   await request.get(`${FIXTURE_URL}/last-page-read-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto("/authoring-history-probe")
+  await waitForSvelteDelegatedHandler(page, "#history-button")
   await page.getByRole("link", { name: "history", exact: true }).click()
   await expect(page.locator(".revision-diff-controls")).toBeVisible()
   await page.locator(".revision-diff-controls button").nth(1).click()
