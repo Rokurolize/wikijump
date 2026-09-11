@@ -35,7 +35,7 @@ test("candidate proof map covers every current semantic row and uses exact case 
     schema: "wikijump.compatibility_surface_inventory.v2",
     counts: {total: 2},
     surfaces: [
-      {surface_id: "open43-audit-case:CASE_ONE", kind: "open43_audit_case", existing_refs: {issues: [1], cases: ["CASE_ONE"], tests: []}},
+      {surface_id: "open43-audit-case:CASE_ONE", kind: "open43_audit_case", existing_refs: {issues: [1], cases: ["CASE_ONE"], tests: []}, candidate: {status: "pending", references: ["candidate-case:CASE_ONE"]}},
       {surface_id: "catalog-feature:feature-two", kind: "catalog_feature", existing_refs: {issues: [2], cases: [], tests: ["tests/two.test.js#feature two"]}},
     ],
   };
@@ -76,18 +76,54 @@ test("candidate proof map covers every current semantic row and uses exact case 
   });
 
   const auditCase = structuredClone(inventory);
-  auditCase.surfaces[0].existing_refs.cases = ["AUDIT_CONTRACT_CASE"];
-  const auditMapped = buildCompatibilityCandidateMap({
+  auditCase.surfaces[0].candidate = {status: "pending", references: ["candidate-case:AUDIT_CONTRACT_CASE"]};
+  assert.throws(
+    () => buildCompatibilityCandidateMap({
+      denominator,
+      denominatorReference: {path: denominatorInput.path, sha256: denominatorInput.sha256},
+      inventory: auditCase,
+      inventoryReference: {path: inventoryInput.path, sha256: inventoryInput.sha256},
+      aggregate,
+      aggregateReference: {path: aggregateInput.path, sha256: aggregateInput.sha256},
+    }),
+    /candidate map has no exact candidate artifact for open43-audit-case:CASE_ONE: AUDIT_CONTRACT_CASE/u,
+  );
+
+  const blocked = structuredClone(inventory);
+  blocked.surfaces[0].candidate = {status: "blocked", references: []};
+  assert.throws(
+    () => buildCompatibilityCandidateMap({
+      denominator,
+      denominatorReference: {path: denominatorInput.path, sha256: denominatorInput.sha256},
+      inventory: blocked,
+      inventoryReference: {path: inventoryInput.path, sha256: inventoryInput.sha256},
+      aggregate,
+      aggregateReference: {path: aggregateInput.path, sha256: aggregateInput.sha256},
+    }),
+    /candidate map cannot pass blocked candidate row open43-audit-case:CASE_ONE/u,
+  );
+
+  const browserRequired = structuredClone(inventory);
+  browserRequired.surfaces[0].candidate = {status: "pending", references: ["candidate-case:B610_CHROME_INITIAL", "C_BROWSER_PARITY_CANDIDATE"]};
+  const parityAdmission = {
+    schema: "wikijump.standing_candidate_parity_admission.v1",
+    status: "pass",
+    candidate: {...aggregate.candidate},
+    candidate_parity_receipt_sha256: "f".repeat(64),
+    parity: {pairs_total: 6},
+  };
+  const parityInput = await writeJson(root, "candidate-parity-admission.json", parityAdmission);
+  const browserMapped = buildCompatibilityCandidateMap({
     denominator,
     denominatorReference: {path: denominatorInput.path, sha256: denominatorInput.sha256},
-    inventory: auditCase,
+    inventory: browserRequired,
     inventoryReference: {path: inventoryInput.path, sha256: inventoryInput.sha256},
     aggregate,
     aggregateReference: {path: aggregateInput.path, sha256: aggregateInput.sha256},
+    browserParityAdmission: parityAdmission,
+    browserParityAdmissionReference: {path: parityInput.path, sha256: parityInput.sha256},
   });
-  assert.deepEqual(auditMapped.rows[0].artifacts, [
-    {path: aggregateInput.path, sha256: aggregateInput.sha256},
-  ]);
+  assert.deepEqual(browserMapped.rows[0].artifacts, [{path: parityInput.path, sha256: parityInput.sha256}]);
 });
 
 test("standing matrix binds the post-merge runtime to the exact candidate tree and every current row", () => {

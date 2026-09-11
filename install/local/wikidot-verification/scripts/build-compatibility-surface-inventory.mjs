@@ -3219,7 +3219,7 @@ async function authoritativeAuditTests(root, auditPath, issue, sourceRevision) {
   return testsByCase
 }
 
-function auditCompletion(classification) {
+function auditCompletion(classification, row) {
   if (!AUDIT_CLASSIFICATIONS.has(classification)) {
     throw new Error(`unknown Open43 audit classification: ${classification}`)
   }
@@ -3232,10 +3232,16 @@ function auditCompletion(classification) {
       closure: phase("blocked")
     }
   }
+  const candidateReferences = classification === "candidate_required"
+    ? uniqueSortedStrings([
+        `candidate-case:${row.case_id}`,
+        ...(Array.isArray(row.next_command_ids) ? row.next_command_ids : [])
+      ])
+    : []
   return {
     evidence: phase("available"),
     source: phase(classification === "needs_source" ? "pending" : "implemented"),
-    candidate: phase("pending"),
+    candidate: phase("pending", candidateReferences),
     standing: phase("pending"),
     closure: phase("open")
   }
@@ -3396,7 +3402,7 @@ async function discoverOpen43AuditCases(root) {
                 ? [registeredCandidateTests.get(row.case_id)]
                 : [])
             ]),
-            ...auditCompletion(classification)
+            ...auditCompletion(classification, row)
           })
         )
       }
