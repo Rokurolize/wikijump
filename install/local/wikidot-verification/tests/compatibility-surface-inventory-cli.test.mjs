@@ -799,7 +799,10 @@ test("CLI discovers declared public surfaces and writes deterministic completion
     },
     evidence: { status: "available", references: [] },
     source: { status: "implemented", references: [] },
-    candidate: { status: "pending", references: [] },
+    candidate: {
+      status: "pending",
+      references: ["candidate-case:F123_PUBLIC_CASE"]
+    },
     standing: { status: "pending", references: [] },
     closure: { status: "open", references: [] }
   })
