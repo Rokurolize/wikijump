@@ -118,7 +118,8 @@ if group_selected deepwell; then
   if [[ "${MODE}" == "final" ]]; then
     run "deepwell dependencies" cargo machete deepwell
     run "deepwell clippy" cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps -- -D warnings
-    run_test "deepwell full tests" cargo test --manifest-path deepwell/Cargo.toml
+    run_test "deepwell full tests" env RUST_MIN_STACK=8388608 \
+      cargo test --manifest-path deepwell/Cargo.toml -- --test-threads 1
   fi
 fi
 

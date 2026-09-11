@@ -15,9 +15,26 @@ To give a simple example, we can test that basic page operations work through a 
 
 Integration testing runs real deepwell processing code when it receives requests, and so needs a local database, Redis/Valkey instance, and S3-compatible object store. All changes to the database are reverted, but reverting changes to the remaining two are not yet implemented. The code assumes that database migrations and seeding have already been run.
 
-If you are running Wikijump locally, then all three are provided for you, and you should be able to run `cargo test` in the crate root with no other modifications. (Or more specifically, it only needs `wikijump-database-1`, `wikijump-cache-1`, `wikijump-files-1`)
+Run the full integration suite with one Rust test thread and an 8 MiB test-thread
+stack:
 
-These tests are also configured to run in a [GitHub Workflow](../../.github/workflows/deepwell.yaml), and will be kicked off when you make a PR that changes something in deepwell.
+```sh
+RUST_MIN_STACK=8388608 cargo test -- --test-threads 1
+```
+
+The tests deliberately share the seeded database and exercise row-locking paths,
+so running stateful integration cases concurrently can deadlock otherwise. Some
+renderer compatibility regressions also exceed Rust's default test-thread stack
+in debug builds. The repository preflight uses the same command.
+
+If you are running Wikijump locally, all three backing services are provided for
+you. Use the serial command above rather than an unconstrained `cargo test`.
+More specifically, the suite needs the local database, cache, and files
+services plus completed migrations and seeding.
+
+GitHub Actions intentionally does not execute this integration suite. The
+maintained WSL preflight is the validation authority and runs the same
+network-guarded serial command before merge.
 
 ### Quickstart Examples
 
