@@ -315,6 +315,14 @@
             "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
           ],
           "result": "The public saved-page test covers recent and active thread order, routes, dates, reply counts, recent reply order, page and forum anchors, plain excerpts, printuser output, and standalone root exclusion."
+        },
+        {
+          "case_id": "Q778_FULL_ACTOR_AND_DELETION_MATRIX",
+          "status": "implemented_local_pass",
+          "public_tests": [
+            "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
+          ],
+          "result": "A task-owned seeded integration database now seals anonymous, member, moderator, and administrator reads together with private page-discussion visibility, hidden forum state, deleted threads, and deleted posts. Permission filtering runs before the requested Mini module limit, and permission-cache invalidation is exercised before the moderator read. The focused exact test passed on 2026-09-12 under a bounded task-owned PostgreSQL, Valkey, and MinIO stack."
         }
       ],
       "needs_source": [],
@@ -333,11 +341,6 @@
         }
       ],
       "blocked_evidence": [
-        {
-          "case_id": "Q778_FULL_ACTOR_AND_DELETION_MATRIX",
-          "missing": "No sealed anonymous, member, moderator, administrator, private, hidden, and deleted transition matrix exists.",
-          "forbidden_inference": "Do not infer actor visibility from the anonymous fixture or apply filtering after a row limit."
-        },
         {
           "case_id": "Q778_EXCERPT_AND_TIE_BOUNDARIES",
           "missing": "Live evidence does not define rich-markup reduction, missing-title text, exact truncation, timestamp ties, or activity ties.",
