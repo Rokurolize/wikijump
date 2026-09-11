@@ -25,12 +25,12 @@
     "anonymous_read_only": 5,
     "authenticated_read_only": 3,
     "run_owned_mutation": 19,
-    "local_candidate": 2,
+    "local_candidate": 1,
     "live_browser_only": 12,
     "missing_public_producer": 12,
     "missing_architecture_domain_authority": 12,
     "missing_security_policy": 4,
-    "total": 69
+    "total": 68
   },
   "rows": [
     {"case_id":"Q748_PERMISSION_FILTERED_RESULTS","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"Live Search has no successful result producer or public/private result pair."},
@@ -42,7 +42,6 @@
     {"case_id":"Q1036_ACTIVE_SEARCH_BACKEND","route_class":"missing_architecture_domain_authority","status":"not_attempted_not_safe","reason":"No local permission-aware active search authority, ranking contract, or count owner exists."},
     {"case_id":"Q1036_SUCCESSFUL_FEED_ADAPTER","route_class":"missing_security_policy","status":"not_attempted_not_safe","reason":"Provider allowlisting, SSRF, response budgets, caching, and deterministic failure policy are unresolved."},
 
-    {"case_id":"Q778_FULL_ACTOR_AND_DELETION_MATRIX","route_class":"local_candidate","status":"not_attempted_not_safe","reason":"Actor visibility and deletion transitions need exact local forum fixtures."},
     {"case_id":"Q778_EXCERPT_AND_TIE_BOUNDARIES","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"Existing public forum data does not provide controlled rich excerpts and timestamp/activity ties."},
     {"case_id":"Q778_MUTATION_REFRESH","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Create, edit, delete, restore, cache, and concurrent-read transitions are mutating."},
     {"case_id":"Q1034_POPULATED_READ_MODEL_COVERAGE","route_class":"anonymous_read_only","status":"partial_evidence_acquired","reason":"Multiple-category and offset scalar behavior is implemented. Custom templates, feed argument shapes, and relative-link switches were captured but remain unimplemented; private visibility, deletion, feed delivery, and complete new-thread states remain."},
