@@ -1705,8 +1705,6 @@ impl RenderService {
             .unwrap_or(DEFAULT_LISTPAGES_PER_PAGE)
             .clamp(1, MAX_LISTPAGES_RENDER_LIMIT);
         let url_page = url.page_for_prefix(url_attr_prefix.as_deref());
-        let requested_page_skip =
-            u64::from(url_page.unwrap_or(1).saturating_sub(1)).saturating_mul(per_page);
         let oversized_offset_initial_page =
             offset_beyond_render_window.is_some() && url_page.unwrap_or(1) <= 1;
         let offset = match (offset_beyond_render_window, url_page) {
@@ -1714,14 +1712,12 @@ impl RenderService {
             _ => offset,
         };
         let query_limit = list_pages_row_scan_target(
-            per_page,
             if relative_range.is_some() {
                 None
             } else {
                 limit
             },
             offset,
-            requested_page_skip,
             exclude_current_page,
         );
         let wants_content = template.uses_content();
