@@ -25,7 +25,12 @@
   } from "$lib/wikidot/wikidot-legacy-action-request"
   import { wikidotMembershipActions } from "$lib/wikidot/wikidot-membership-actions"
   import { wikidotGalleryLightbox } from "$lib/wikidot/wikidot-gallery-lightbox"
-  import { requestMembershipJoin } from "$lib/wikidot/wikidot-membership-action-request"
+  import {
+    requestMembershipApplication,
+    requestMembershipEmailInvitation,
+    requestMembershipJoin,
+    requestMembershipPassword
+  } from "$lib/wikidot/wikidot-membership-action-request"
   import { toggleWikidotEditSections } from "$lib/wikidot/wikidot-edit-sections"
   import { wikidotTabviews } from "$lib/wikidot/wikidot-tabviews"
   import { resolveWikidotHashMagicPagePane } from "$lib/wikidot/wikidot-hash-magic"
@@ -277,12 +282,7 @@
     }
   }
 
-  function joinFromLegacyControl(
-    pageId: number,
-    revisionId: number,
-    actionIndex: number,
-    actionFingerprint: string
-  ) {
+  function requireCurrentMembershipAction(pageId: number, revisionId: number, label: string) {
     if (
       !data.page ||
       !data.page_revision ||
@@ -290,8 +290,17 @@
       data.page.page_id !== pageId ||
       data.page_revision.revision_id !== revisionId
     ) {
-      throw new Error("This Join action is not available for the displayed revision.")
+      throw new Error(`${label} is not available for the displayed revision.`)
     }
+  }
+
+  function joinFromLegacyControl(
+    pageId: number,
+    revisionId: number,
+    actionIndex: number,
+    actionFingerprint: string
+  ) {
+    requireCurrentMembershipAction(pageId, revisionId, "This Join action")
     return requestMembershipJoin(legacyRequestRuntime, {
       pageId,
       lastRevisionId: revisionId,
@@ -300,8 +309,60 @@
     })
   }
 
+  function applicationFromLegacyControl(
+    pageId: number,
+    revisionId: number,
+    actionIndex: number,
+    actionFingerprint: string,
+    comment: string
+  ) {
+    requireCurrentMembershipAction(pageId, revisionId, "This membership application")
+    return requestMembershipApplication(legacyRequestRuntime, {
+      pageId,
+      lastRevisionId: revisionId,
+      actionIndex,
+      actionFingerprint,
+      comment
+    })
+  }
+
+  function passwordFromLegacyControl(
+    pageId: number,
+    revisionId: number,
+    actionIndex: number,
+    actionFingerprint: string,
+    password: string
+  ) {
+    requireCurrentMembershipAction(pageId, revisionId, "This membership password action")
+    return requestMembershipPassword(legacyRequestRuntime, {
+      pageId,
+      lastRevisionId: revisionId,
+      actionIndex,
+      actionFingerprint,
+      password
+    })
+  }
+
+  function invitationFromLegacyControl(
+    pageId: number,
+    revisionId: number,
+    actionIndex: number,
+    actionFingerprint: string
+  ) {
+    requireCurrentMembershipAction(pageId, revisionId, "This membership invitation")
+    return requestMembershipEmailInvitation(legacyRequestRuntime, {
+      pageId,
+      lastRevisionId: revisionId,
+      actionIndex,
+      actionFingerprint
+    })
+  }
+
   const membershipActionRuntime = {
+    application: applicationFromLegacyControl,
+    invitation: invitationFromLegacyControl,
     join: joinFromLegacyControl,
+    password: passwordFromLegacyControl,
     reload: () => window.location.reload(),
     error: legacyActionRuntime.error
   }

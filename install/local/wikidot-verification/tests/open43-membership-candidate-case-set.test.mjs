@@ -26,7 +26,7 @@ const ANONYMOUS_STATIC_BODY = [
   '<div id="membership-apply-box">You need to have a Wikidot.com account and be signed to apply for membership.</div>',
   "MEMBERSHIP_APPLY_END",
   "MEMBERSHIP_PASSWORD_START",
-  '<div id="membership-by-password-box">Please create an account and/or sign in first.</div>',
+  '<div id="membership-by-password-box">Membership via password is not enabled for this site.</div>',
   "MEMBERSHIP_PASSWORD_END",
   "INVITATION_START",
   '<div id="membership-email-invitation-box">Sorry, the invitation could not be found.</div>',
@@ -39,7 +39,7 @@ const ANONYMOUS_STATIC_BODY = [
   "SEND_INVITATIONS_END",
 ].join("\n");
 const MEMBER_STATIC_BODY = ANONYMOUS_STATIC_BODY.replace(
-  "Please create an account and/or sign in first.",
+  "Membership via password is not enabled for this site.",
   "You can not apply.<br/> It seems you already are a member of this site.",
 );
 
@@ -82,7 +82,18 @@ function candidateIdentity() {
 }
 
 async function createFakeDeepwell() {
-  const state = { membership: null, page: null, calls: [] };
+  const state = {
+    membership: null,
+    page: null,
+    calls: [],
+    site: {
+      site_id: 7,
+      slug: "scpaiueouiuiuiui",
+      settings_revision: 11,
+      membership_by_application: false,
+      membership_by_password: false,
+    },
+  };
   const server = http.createServer(async (request, response) => {
     try {
       assert.equal(request.method, "POST");
@@ -98,7 +109,22 @@ async function createFakeDeepwell() {
       let result;
       if (payload.method === "session_get") result = { user_id: 91 };
       else if (payload.method === "user_get") result = { user_id: 91, user_type: "regular" };
-      else if (payload.method === "site_get") result = { site_id: 7, slug: "scpaiueouiuiuiui" };
+      else if (payload.method === "site_get") result = structuredClone(state.site);
+      else if (payload.method === "site_update") {
+        assert.equal(actor, "administrator");
+        assert.equal(payload.params.site, 7);
+        assert.equal(payload.params.expected_settings_revision, state.site.settings_revision);
+        assert.equal(payload.params.user_id, -1);
+        assert.equal(payload.params.ip_address, "127.0.0.1");
+        assert.equal(payload.params.membership.password, null);
+        state.site = {
+          ...state.site,
+          settings_revision: state.site.settings_revision + 1,
+          membership_by_application: payload.params.membership.application_enabled,
+          membership_by_password: payload.params.membership.password_enabled,
+        };
+        result = structuredClone(state.site);
+      }
       else if (payload.method === "member_get") result = state.membership === null ? null : structuredClone(state.membership);
       else if (payload.method === "page_get") result = state.page === null ? null : structuredClone(state.page);
       else if (payload.method === "page_view" && payload.params.route.slug === "system:join") {
@@ -206,6 +232,7 @@ test("the membership candidate proves ordinary page creation and the #1033 stati
   ]);
   assert.equal(aggregate.cleanup.page_absent, true);
   assert.equal(aggregate.cleanup.membership_absent, true);
+  assert.equal(aggregate.cleanup.membership_policy_restored, true);
   assert.equal(aggregate.resources.length, 2);
   assert.equal(aggregate.resources.every(({ released }) => released), true);
   const receipt = JSON.parse(await fs.readFile(aggregate.cases[0].path, "utf8"));
@@ -240,9 +267,16 @@ test("the membership candidate proves ordinary page creation and the #1033 stati
     ],
   );
   assert.deepEqual(
-    deepwell.state.calls.filter(({ operation }) => ["page_delete", "member_remove"].includes(operation)).map(({ operation, actor }) => [operation, actor]),
-    [["page_delete", "administrator"], ["member_remove", "administrator"]],
+    deepwell.state.calls.filter(({ operation }) => ["site_update", "page_delete", "member_remove"].includes(operation)).map(({ operation, actor }) => [operation, actor]),
+    [
+      ["site_update", "administrator"],
+      ["page_delete", "administrator"],
+      ["member_remove", "administrator"],
+      ["site_update", "administrator"],
+    ],
   );
   assert.equal(deepwell.state.page, null);
   assert.equal(deepwell.state.membership, null);
+  assert.equal(deepwell.state.site.membership_by_application, false);
+  assert.equal(deepwell.state.site.membership_by_password, false);
 });

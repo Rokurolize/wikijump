@@ -8,6 +8,8 @@ import {
   licenseAction,
   layoutAction,
   loadAdminPage,
+  membershipAction,
+  membershipReviewAction,
   navigationAction,
   ratingAction,
   themeAction,
@@ -30,6 +32,8 @@ export const actions = {
   license: licenseAction,
   rating: ratingAction,
   siteLayout: layoutAction,
+  membership: membershipAction,
+  membershipReview: membershipReviewAction,
   theme: themeAction,
   toolbar: toolbarAction,
   template: templateAction

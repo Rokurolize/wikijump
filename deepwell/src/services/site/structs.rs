@@ -24,6 +24,7 @@ use crate::models::site::Model as SiteModel;
 use crate::models::site_domain::Model as SiteDomainModel;
 use crate::services::settings::{
     SiteSettings, ToolbarSettings, UpdateGoogleAnalyticsSettings,
+    UpdateMembershipSettings,
 };
 use crate::types::{Maybe, Reference};
 use ftml::layout::Layout;
@@ -108,5 +109,6 @@ pub struct UpdateSiteBody {
     pub windows_tile_source: Maybe<Option<String>>,
     pub google_analytics: Maybe<UpdateGoogleAnalyticsSettings>,
     pub toolbars: Maybe<ToolbarSettings>,
+    pub membership: Maybe<UpdateMembershipSettings>,
     pub educational_upgrade: Maybe<EducationalUpgrade>,
 }

@@ -113,13 +113,28 @@ export interface RateBrowserActionRegistry {
   actions: RateBrowserAction[]
 }
 
-export type MembershipBrowserAction = {
-  type: "join"
-  page_id: number
-  revision_id: number
-  index: number
-  fingerprint: string
-}
+export type MembershipBrowserAction =
+  | {
+      type: "join"
+      page_id: number
+      revision_id: number
+      index: number
+      fingerprint: string
+    }
+  | {
+      type: "application"
+      page_id: number
+      revision_id: number
+      index: number
+      fingerprint: string
+    }
+  | {
+      type: "password"
+      page_id: number
+      revision_id: number
+      index: number
+      fingerprint: string
+    }
 
 interface PageViewFound {
   type: "found"

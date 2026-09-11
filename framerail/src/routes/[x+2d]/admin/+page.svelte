@@ -4,6 +4,7 @@
   import ForumSettings from "./ForumSettings.svelte"
   import LicenseSettings from "./LicenseSettings.svelte"
   import LayoutSettings from "./LayoutSettings.svelte"
+  import MembershipSettings from "./MembershipSettings.svelte"
   import NavigationSettings from "./NavigationSettings.svelte"
   import RatingSettings from "./RatingSettings.svelte"
   import SiteIconSettings from "./SiteIconSettings.svelte"
@@ -22,6 +23,7 @@
 <AnalyticsSettings {data} />
 <ThemeSettings {data} />
 <ToolbarSettings {data} />
+<MembershipSettings {data} />
 <AutonumberSettings {data} />
 <NavigationSettings {data} />
 <TemplateSettings {data} />

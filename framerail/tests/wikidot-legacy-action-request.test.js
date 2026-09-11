@@ -8,7 +8,12 @@ import {
   requestLegacyScore,
   requestLegacySetTags
 } from "../src/lib/wikidot/wikidot-legacy-action-request.js"
-import { requestMembershipJoin } from "../src/lib/wikidot/wikidot-membership-action-request.js"
+import {
+  requestMembershipApplication,
+  requestMembershipEmailInvitation,
+  requestMembershipJoin,
+  requestMembershipPassword
+} from "../src/lib/wikidot/wikidot-membership-action-request.js"
 
 const success = (res) => ({ type: "success", data: { res } })
 
@@ -145,4 +150,77 @@ test("Join submits only the server registry and revision binding", async () => {
       ]
     ]
   )
+})
+
+test("membership application and password requests keep secrets in same-origin action bodies", async () => {
+  const fingerprint = "0123456789abcdef0123456789abcdef"
+  const application = requestRecorder(success("submitted"))
+  assert.equal(
+    await requestMembershipApplication(application, {
+      pageId: 42,
+      lastRevisionId: 90,
+      actionIndex: 1,
+      actionFingerprint: fingerprint,
+      comment: "application text"
+    }),
+    "submitted"
+  )
+  assert.deepEqual(JSON.parse(application.requests[0].init.body), {
+    pageId: 42,
+    lastRevisionId: 90,
+    actionIndex: 1,
+    actionFingerprint: fingerprint,
+    comment: "application text"
+  })
+  assert.equal(application.requests[0].url, "?/membershipApplication")
+  assert.equal(application.requests[0].init.credentials, "same-origin")
+
+  const password = requestRecorder(success("wrong_password"))
+  assert.equal(
+    await requestMembershipPassword(password, {
+      pageId: 42,
+      lastRevisionId: 90,
+      actionIndex: 2,
+      actionFingerprint: fingerprint,
+      password: "not-the-membership-password"
+    }),
+    "wrong_password"
+  )
+  assert.deepEqual(JSON.parse(password.requests[0].init.body), {
+    pageId: 42,
+    lastRevisionId: 90,
+    actionIndex: 2,
+    actionFingerprint: fingerprint,
+    password: "not-the-membership-password"
+  })
+  assert.equal(password.requests[0].url, "?/membershipPassword")
+  assert.equal(password.requests[0].init.credentials, "same-origin")
+})
+
+test("membership email invitation keeps the opaque route hash out of the action body", async () => {
+  const fingerprint = "0123456789abcdef0123456789abcdef"
+  const recorder = requestRecorder(
+    success({ status: "accepted", site_name: "Test Wiki", site_slug: "test" })
+  )
+  const result = await requestMembershipEmailInvitation(recorder, {
+    pageId: 42,
+    lastRevisionId: 90,
+    actionIndex: 3,
+    actionFingerprint: fingerprint,
+    hash: "browser-must-not-forward-this"
+  })
+
+  assert.deepEqual(result, { status: "accepted", site_name: "Test Wiki", site_slug: "test" })
+  assert.equal(recorder.requests.length, 1)
+  assert.equal(recorder.requests[0].url, "?/membershipEmailInvitation")
+  assert.equal(recorder.requests[0].init.method, "POST")
+  assert.equal(recorder.requests[0].init.credentials, "same-origin")
+  const body = JSON.parse(recorder.requests[0].init.body)
+  assert.deepEqual(body, {
+    pageId: 42,
+    lastRevisionId: 90,
+    actionIndex: 3,
+    actionFingerprint: fingerprint
+  })
+  assert.equal(JSON.stringify(body).includes("browser-must-not-forward-this"), false)
 })

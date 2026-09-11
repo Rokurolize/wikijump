@@ -10,69 +10,139 @@
     "referent_table_sha256": "ab3706804b3c59b4db5aa9216648779e256888df3e093857a7a4f8f49292aca8"
   },
   "authoritative_manifests": [
-    {"path": "docs/development/open43-q-page-graph-residual-case-manifest.json", "sha256": "ffe8d07cb1a283db1f1ea1ac36f91cfac69acbee94f40c304566442a8d945e93", "issues": [1028, 1035]},
-    {"path": "docs/development/open43-a-forms-residual-case-manifest.json", "sha256": "d436874d0fe892a88039b0018ffbd1cdaff7846fb299774386c440b78cfc80ff", "issues": [1037]},
-    {"path": "docs/development/open43-a-utilities-case-manifest.json", "sha256": "36c7453edef01644edf574bfcb01858abfe3d4a09d8dbf19f11afab9c6f0d4b3", "issues": [1037, 1038]}
+    {
+      "path": "docs/development/open43-q-page-graph-residual-case-manifest.json",
+      "sha256": "ffe8d07cb1a283db1f1ea1ac36f91cfac69acbee94f40c304566442a8d945e93",
+      "issues": [
+        1028,
+        1035
+      ]
+    },
+    {
+      "path": "docs/development/open43-a-forms-residual-case-manifest.json",
+      "sha256": "d436874d0fe892a88039b0018ffbd1cdaff7846fb299774386c440b78cfc80ff",
+      "issues": [
+        1037
+      ]
+    },
+    {
+      "path": "docs/development/open43-a-utilities-case-manifest.json",
+      "sha256": "36c7453edef01644edf574bfcb01858abfe3d4a09d8dbf19f11afab9c6f0d4b3",
+      "issues": [
+        1037,
+        1038
+      ]
+    }
   ],
   "closure_audits": [
     {
-      "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-      "sha256": "3aab9ab6d3375ee9161cd3ee0222073424138278662ca0b09b66220a5913fc2f",
-      "source_revision": "d3f1c4dce427b72911c0cb2a1eda4adb14143959",
-      "issue_count": 9,
-      "case_count": 64,
-      "classification_counts": {"source_ready": 29, "needs_source": 0, "candidate_required": 18, "blocked_evidence": 17},
+      "path": "docs/development/open43-q-search-users-closure-audit.json",
+      "sha256": "ab0f5a355c3e00efffc4b9207ed24c7359ecfbaf120983b86cdd5957f6dff470",
+      "source_revision": "e98edcc6910c54b844d1d4c0767502a8500437ae",
+      "issue_count": 6,
+      "case_count": 30,
+      "classification_counts": {
+        "source_ready": 12,
+        "needs_source": 0,
+        "candidate_required": 11,
+        "blocked_evidence": 7
+      },
       "issue_summaries": [
-        {"issue": 775, "case_count": 4, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
-        {"issue": 777, "case_count": 4, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
-        {"issue": 1029, "case_count": 8, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 1}},
-        {"issue": 1030, "case_count": 9, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 2}},
-        {"issue": 1033, "case_count": 6, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 3}},
-        {"issue": 1037, "case_count": 10, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 3}},
-        {"issue": 1038, "case_count": 10, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 0, "blocked_evidence": 6}},
-        {"issue": 1041, "case_count": 8, "classification_counts": {"source_ready": 5, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 0}},
-        {"issue": 1060, "case_count": 5, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 0}}
-      ]
-    },
-    {
-      "path": "docs/development/open43-a-authoring-closure-audit.json",
-      "sha256": "94a2d6631bc49db77275aafac991b002b05d1de005016b4eaff67708c6658eb8",
-      "source_revision": "18a2baf0d8c3fc1f3167e286740dc303dbdd5b2d",
-      "issue_count": 2,
-      "case_count": 22,
-      "classification_counts": {"source_ready": 11, "needs_source": 0, "candidate_required": 6, "blocked_evidence": 5},
-      "issue_summaries": [
-        {"issue": 1061, "case_count": 11, "classification_counts": {"source_ready": 5, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 3}},
-        {"issue": 1063, "case_count": 11, "classification_counts": {"source_ready": 6, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 2}}
-      ]
-    },
-    {
-      "path": "docs/development/open43-m-closure-audit.json",
-      "sha256": "5bfbe49b85830b896a80015e11f8eff859f19c203ad8d935ded42ab8cdf13c82",
-      "source_revision": "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
-      "issue_count": 7,
-      "case_count": 48,
-      "classification_counts": {"source_ready": 24, "needs_source": 0, "candidate_required": 11, "blocked_evidence": 13},
-      "issue_summaries": [
-        {"issue": 756, "case_count": 6, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 2}},
-        {"issue": 776, "case_count": 5, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
-        {"issue": 806, "case_count": 5, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
-        {"issue": 1039, "case_count": 12, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 7}},
-        {"issue": 1042, "case_count": 5, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 0}},
-        {"issue": 1043, "case_count": 9, "classification_counts": {"source_ready": 6, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 1}},
-        {"issue": 1062, "case_count": 6, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 1}}
+        {
+          "issue": 748,
+          "case_count": 4,
+          "classification_counts": {
+            "source_ready": 1,
+            "needs_source": 0,
+            "candidate_required": 2,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 807,
+          "case_count": 3,
+          "classification_counts": {
+            "source_ready": 1,
+            "needs_source": 0,
+            "candidate_required": 1,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 810,
+          "case_count": 3,
+          "classification_counts": {
+            "source_ready": 1,
+            "needs_source": 0,
+            "candidate_required": 1,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 1026,
+          "case_count": 6,
+          "classification_counts": {
+            "source_ready": 2,
+            "needs_source": 0,
+            "candidate_required": 3,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 1032,
+          "case_count": 9,
+          "classification_counts": {
+            "source_ready": 5,
+            "needs_source": 0,
+            "candidate_required": 3,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 1036,
+          "case_count": 5,
+          "classification_counts": {
+            "source_ready": 2,
+            "needs_source": 0,
+            "candidate_required": 1,
+            "blocked_evidence": 2
+          }
+        }
       ]
     },
     {
       "path": "docs/development/open43-q-forum-closure-audit.json",
-      "sha256": "1d34c30ab1f23fa3d3990996d4f013c7625ff547ad036059a904a5f8ea05fa9c",
+      "sha256": "431abaaa154a1186f3f0cc70416e52758c0a5d03d1bf7d89d9bc22af823b3c43",
       "source_revision": "eee723e8be459cbe890b739b6f833dfde6435c9f",
       "issue_count": 2,
       "case_count": 28,
-      "classification_counts": {"source_ready": 15, "needs_source": 0, "candidate_required": 6, "blocked_evidence": 7},
+      "classification_counts": {
+        "source_ready": 16,
+        "needs_source": 0,
+        "candidate_required": 6,
+        "blocked_evidence": 6
+      },
       "issue_summaries": [
-        {"issue": 778, "case_count": 9, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 3}},
-        {"issue": 1034, "case_count": 19, "classification_counts": {"source_ready": 12, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 4}}
+        {
+          "issue": 778,
+          "case_count": 9,
+          "classification_counts": {
+            "source_ready": 4,
+            "needs_source": 0,
+            "candidate_required": 3,
+            "blocked_evidence": 2
+          }
+        },
+        {
+          "issue": 1034,
+          "case_count": 19,
+          "classification_counts": {
+            "source_ready": 12,
+            "needs_source": 0,
+            "candidate_required": 3,
+            "blocked_evidence": 4
+          }
+        }
       ]
     },
     {
@@ -81,31 +151,308 @@
       "source_revision": "f14c4986abbe47214026d9f00e672db39efa677f",
       "issue_count": 7,
       "case_count": 33,
-      "classification_counts": {"source_ready": 18, "needs_source": 0, "candidate_required": 7, "blocked_evidence": 8},
+      "classification_counts": {
+        "source_ready": 18,
+        "needs_source": 0,
+        "candidate_required": 7,
+        "blocked_evidence": 8
+      },
       "issue_summaries": [
-        {"issue": 779, "case_count": 4, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
-        {"issue": 809, "case_count": 5, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 1}},
-        {"issue": 811, "case_count": 4, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
-        {"issue": 1027, "case_count": 5, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
-        {"issue": 1028, "case_count": 4, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
-        {"issue": 1035, "case_count": 6, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 0, "blocked_evidence": 2}},
-        {"issue": 1040, "case_count": 5, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}}
+        {
+          "issue": 779,
+          "case_count": 4,
+          "classification_counts": {
+            "source_ready": 2,
+            "needs_source": 0,
+            "candidate_required": 1,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 809,
+          "case_count": 5,
+          "classification_counts": {
+            "source_ready": 2,
+            "needs_source": 0,
+            "candidate_required": 2,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 811,
+          "case_count": 4,
+          "classification_counts": {
+            "source_ready": 2,
+            "needs_source": 0,
+            "candidate_required": 1,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 1027,
+          "case_count": 5,
+          "classification_counts": {
+            "source_ready": 3,
+            "needs_source": 0,
+            "candidate_required": 1,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 1028,
+          "case_count": 4,
+          "classification_counts": {
+            "source_ready": 2,
+            "needs_source": 0,
+            "candidate_required": 1,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 1035,
+          "case_count": 6,
+          "classification_counts": {
+            "source_ready": 4,
+            "needs_source": 0,
+            "candidate_required": 0,
+            "blocked_evidence": 2
+          }
+        },
+        {
+          "issue": 1040,
+          "case_count": 5,
+          "classification_counts": {
+            "source_ready": 3,
+            "needs_source": 0,
+            "candidate_required": 1,
+            "blocked_evidence": 1
+          }
+        }
       ]
     },
     {
-      "path": "docs/development/open43-q-search-users-closure-audit.json",
-      "sha256": "ab0f5a355c3e00efffc4b9207ed24c7359ecfbaf120983b86cdd5957f6dff470",
-      "source_revision": "e98edcc6910c54b844d1d4c0767502a8500437ae",
-      "issue_count": 6,
-      "case_count": 30,
-      "classification_counts": {"source_ready": 12, "needs_source": 0, "candidate_required": 11, "blocked_evidence": 7},
+      "path": "docs/development/open43-a-actions-membership-closure-audit.json",
+      "sha256": "4122f4eb1ecbadbe67962cfd6f093625892920606bf8784065b23b06c7ece2a6",
+      "source_revision": "d3f1c4dce427b72911c0cb2a1eda4adb14143959",
+      "issue_count": 9,
+      "case_count": 64,
+      "classification_counts": {
+        "source_ready": 32,
+        "needs_source": 0,
+        "candidate_required": 18,
+        "blocked_evidence": 14
+      },
       "issue_summaries": [
-        {"issue": 748, "case_count": 4, "classification_counts": {"source_ready": 1, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 1}},
-        {"issue": 807, "case_count": 3, "classification_counts": {"source_ready": 1, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
-        {"issue": 810, "case_count": 3, "classification_counts": {"source_ready": 1, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
-        {"issue": 1026, "case_count": 6, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 1}},
-        {"issue": 1032, "case_count": 9, "classification_counts": {"source_ready": 5, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 1}},
-        {"issue": 1036, "case_count": 5, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 2}}
+        {
+          "issue": 775,
+          "case_count": 4,
+          "classification_counts": {
+            "source_ready": 2,
+            "needs_source": 0,
+            "candidate_required": 1,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 777,
+          "case_count": 4,
+          "classification_counts": {
+            "source_ready": 2,
+            "needs_source": 0,
+            "candidate_required": 1,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 1029,
+          "case_count": 8,
+          "classification_counts": {
+            "source_ready": 4,
+            "needs_source": 0,
+            "candidate_required": 3,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 1030,
+          "case_count": 9,
+          "classification_counts": {
+            "source_ready": 4,
+            "needs_source": 0,
+            "candidate_required": 3,
+            "blocked_evidence": 2
+          }
+        },
+        {
+          "issue": 1033,
+          "case_count": 6,
+          "classification_counts": {
+            "source_ready": 5,
+            "needs_source": 0,
+            "candidate_required": 1,
+            "blocked_evidence": 0
+          }
+        },
+        {
+          "issue": 1037,
+          "case_count": 10,
+          "classification_counts": {
+            "source_ready": 4,
+            "needs_source": 0,
+            "candidate_required": 3,
+            "blocked_evidence": 3
+          }
+        },
+        {
+          "issue": 1038,
+          "case_count": 10,
+          "classification_counts": {
+            "source_ready": 4,
+            "needs_source": 0,
+            "candidate_required": 0,
+            "blocked_evidence": 6
+          }
+        },
+        {
+          "issue": 1041,
+          "case_count": 8,
+          "classification_counts": {
+            "source_ready": 5,
+            "needs_source": 0,
+            "candidate_required": 3,
+            "blocked_evidence": 0
+          }
+        },
+        {
+          "issue": 1060,
+          "case_count": 5,
+          "classification_counts": {
+            "source_ready": 2,
+            "needs_source": 0,
+            "candidate_required": 3,
+            "blocked_evidence": 0
+          }
+        }
+      ]
+    },
+    {
+      "path": "docs/development/open43-a-authoring-closure-audit.json",
+      "sha256": "94a2d6631bc49db77275aafac991b002b05d1de005016b4eaff67708c6658eb8",
+      "source_revision": "18a2baf0d8c3fc1f3167e286740dc303dbdd5b2d",
+      "issue_count": 2,
+      "case_count": 22,
+      "classification_counts": {
+        "source_ready": 11,
+        "needs_source": 0,
+        "candidate_required": 6,
+        "blocked_evidence": 5
+      },
+      "issue_summaries": [
+        {
+          "issue": 1061,
+          "case_count": 11,
+          "classification_counts": {
+            "source_ready": 5,
+            "needs_source": 0,
+            "candidate_required": 3,
+            "blocked_evidence": 3
+          }
+        },
+        {
+          "issue": 1063,
+          "case_count": 11,
+          "classification_counts": {
+            "source_ready": 6,
+            "needs_source": 0,
+            "candidate_required": 3,
+            "blocked_evidence": 2
+          }
+        }
+      ]
+    },
+    {
+      "path": "docs/development/open43-m-closure-audit.json",
+      "sha256": "5bfbe49b85830b896a80015e11f8eff859f19c203ad8d935ded42ab8cdf13c82",
+      "source_revision": "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
+      "issue_count": 7,
+      "case_count": 48,
+      "classification_counts": {
+        "source_ready": 24,
+        "needs_source": 0,
+        "candidate_required": 11,
+        "blocked_evidence": 13
+      },
+      "issue_summaries": [
+        {
+          "issue": 756,
+          "case_count": 6,
+          "classification_counts": {
+            "source_ready": 2,
+            "needs_source": 0,
+            "candidate_required": 2,
+            "blocked_evidence": 2
+          }
+        },
+        {
+          "issue": 776,
+          "case_count": 5,
+          "classification_counts": {
+            "source_ready": 3,
+            "needs_source": 0,
+            "candidate_required": 1,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 806,
+          "case_count": 5,
+          "classification_counts": {
+            "source_ready": 3,
+            "needs_source": 0,
+            "candidate_required": 1,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 1039,
+          "case_count": 12,
+          "classification_counts": {
+            "source_ready": 4,
+            "needs_source": 0,
+            "candidate_required": 1,
+            "blocked_evidence": 7
+          }
+        },
+        {
+          "issue": 1042,
+          "case_count": 5,
+          "classification_counts": {
+            "source_ready": 4,
+            "needs_source": 0,
+            "candidate_required": 1,
+            "blocked_evidence": 0
+          }
+        },
+        {
+          "issue": 1043,
+          "case_count": 9,
+          "classification_counts": {
+            "source_ready": 6,
+            "needs_source": 0,
+            "candidate_required": 2,
+            "blocked_evidence": 1
+          }
+        },
+        {
+          "issue": 1062,
+          "case_count": 6,
+          "classification_counts": {
+            "source_ready": 2,
+            "needs_source": 0,
+            "candidate_required": 3,
+            "blocked_evidence": 1
+          }
+        }
       ]
     },
     {
@@ -114,17 +461,103 @@
       "source_revision": "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
       "issue_count": 9,
       "case_count": 60,
-      "classification_counts": {"source_ready": 23, "needs_source": 0, "candidate_required": 25, "blocked_evidence": 12},
+      "classification_counts": {
+        "source_ready": 23,
+        "needs_source": 0,
+        "candidate_required": 25,
+        "blocked_evidence": 12
+      },
       "issue_summaries": [
-        {"issue": 610, "case_count": 7, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 4, "blocked_evidence": 0}},
-        {"issue": 689, "case_count": 6, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 4, "blocked_evidence": 0}},
-        {"issue": 690, "case_count": 7, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 4, "blocked_evidence": 0}},
-        {"issue": 754, "case_count": 7, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 2}},
-        {"issue": 755, "case_count": 7, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 3}},
-        {"issue": 757, "case_count": 6, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 2}},
-        {"issue": 758, "case_count": 7, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 2}},
-        {"issue": 822, "case_count": 3, "classification_counts": {"source_ready": 1, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 0}},
-        {"issue": 1046, "case_count": 10, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 3}}
+        {
+          "issue": 610,
+          "case_count": 7,
+          "classification_counts": {
+            "source_ready": 3,
+            "needs_source": 0,
+            "candidate_required": 4,
+            "blocked_evidence": 0
+          }
+        },
+        {
+          "issue": 689,
+          "case_count": 6,
+          "classification_counts": {
+            "source_ready": 2,
+            "needs_source": 0,
+            "candidate_required": 4,
+            "blocked_evidence": 0
+          }
+        },
+        {
+          "issue": 690,
+          "case_count": 7,
+          "classification_counts": {
+            "source_ready": 3,
+            "needs_source": 0,
+            "candidate_required": 4,
+            "blocked_evidence": 0
+          }
+        },
+        {
+          "issue": 754,
+          "case_count": 7,
+          "classification_counts": {
+            "source_ready": 3,
+            "needs_source": 0,
+            "candidate_required": 2,
+            "blocked_evidence": 2
+          }
+        },
+        {
+          "issue": 755,
+          "case_count": 7,
+          "classification_counts": {
+            "source_ready": 2,
+            "needs_source": 0,
+            "candidate_required": 2,
+            "blocked_evidence": 3
+          }
+        },
+        {
+          "issue": 757,
+          "case_count": 6,
+          "classification_counts": {
+            "source_ready": 2,
+            "needs_source": 0,
+            "candidate_required": 2,
+            "blocked_evidence": 2
+          }
+        },
+        {
+          "issue": 758,
+          "case_count": 7,
+          "classification_counts": {
+            "source_ready": 3,
+            "needs_source": 0,
+            "candidate_required": 2,
+            "blocked_evidence": 2
+          }
+        },
+        {
+          "issue": 822,
+          "case_count": 3,
+          "classification_counts": {
+            "source_ready": 1,
+            "needs_source": 0,
+            "candidate_required": 2,
+            "blocked_evidence": 0
+          }
+        },
+        {
+          "issue": 1046,
+          "case_count": 10,
+          "classification_counts": {
+            "source_ready": 4,
+            "needs_source": 0,
+            "candidate_required": 3,
+            "blocked_evidence": 3
+          }
+        }
       ]
     }
   ],
@@ -139,7 +572,12 @@
     "duplicate_case_ids": [],
     "unknown_classifications": [],
     "closure_claims": 0,
-    "classification_counts": {"source_ready": 132, "needs_source": 0, "candidate_required": 84, "blocked_evidence": 69}
+    "classification_counts": {
+      "source_ready": 136,
+      "needs_source": 0,
+      "candidate_required": 84,
+      "blocked_evidence": 65
+    }
   },
   "validation": {
     "jq_structural_assertions": "pass",
@@ -148,12 +586,15 @@
       "command": "node install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs --root . --output docs/development/compatibility-surface-inventory.json",
       "audit_count": 7,
       "case_count": 285,
-      "blocked_routing_count": 69,
+      "blocked_routing_count": 65,
       "authoritative_manifest_count": 3,
       "open_issue_snapshot_count": 43,
       "nontracking_open_issue_count": 42,
       "manifest_inventory_missing_case_ids": [],
-      "output_embedded_in": ["closure_audits", "after"]
+      "output_embedded_in": [
+        "closure_audits",
+        "after"
+      ]
     }
   }
 }

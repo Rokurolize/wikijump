@@ -159,19 +159,22 @@ async fn membership_browser_actions_for_page(
         return Ok(Vec::new());
     };
     let site = SiteService::get(ctx, Reference::Id(page.site_id)).await?;
-    if MembershipService::policy(&site) != MembershipPolicy::Open
-        || MembershipService::actor_state(ctx, page.site_id, Some(user_id)).await?
-            != JoinActorState::Eligible
-    {
-        return Ok(Vec::new());
-    }
-
-    Ok(MembershipActionRegistry::from_wikidot_source(wikitext)
+    let join_enabled = MembershipService::policy(&site) == MembershipPolicy::Open
+        && MembershipService::actor_state(ctx, page.site_id, Some(user_id)).await?
+            == JoinActorState::Eligible;
+    let mut actions = MembershipActionRegistry::from_wikidot_source(wikitext)
         .browser_actions_for_saved_wikidot_html(
             compiled_body_html,
             page.page_id,
             page_revision.revision_id,
-        ))
+        );
+    actions.retain(|action| match action {
+        MembershipBrowserAction::Join { .. } => join_enabled,
+        MembershipBrowserAction::Application { .. }
+        | MembershipBrowserAction::Password { .. }
+        | MembershipBrowserAction::Invitation { .. } => true,
+    });
+    Ok(actions)
 }
 
 fn wikidot_redirect_module_allowed(

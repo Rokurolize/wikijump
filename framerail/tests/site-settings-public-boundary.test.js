@@ -24,6 +24,7 @@ let adminData
 let siteSettingsComponent
 let layoutSettingsComponent
 let analyticsSettingsComponent
+let membershipSettingsComponent
 let rootLayoutComponent
 let canonicalAdminPage
 let legacyAdminPage
@@ -104,6 +105,7 @@ before(async () => {
     if (method === "admin_view") {
       return { type: "site_found", data: { categories: [], page_templates: [] } }
     }
+    if (method === "membership_application_list") return []
     if (method === "translate") return {}
     throw new Error(`Unexpected Deepwell method ${method}`)
   }
@@ -128,7 +130,13 @@ before(async () => {
     })
     adminData = await loadAdminPage(request, { get: () => sessionToken }, async () => ({
       site,
-      site_settings: {},
+      site_settings: {
+        membership: {
+          application_enabled: false,
+          password_enabled: false,
+          password_configured: false
+        }
+      },
       site_file_domain: "test.wjfiles.localhost",
       license_name: "CC BY-SA 3.0",
       license_url: "https://creativecommons.org/licenses/by-sa/3.0/",
@@ -149,6 +157,9 @@ before(async () => {
   ))
   ;({ default: analyticsSettingsComponent } = await vite.ssrLoadModule(
     "/src/routes/[x+2d]/admin/AnalyticsSettings.svelte"
+  ))
+  ;({ default: membershipSettingsComponent } = await vite.ssrLoadModule(
+    "/src/routes/[x+2d]/admin/MembershipSettings.svelte"
   ))
   ;({ default: rootLayoutComponent } = await vite.ssrLoadModule(
     "/src/routes/+layout.svelte"
@@ -335,7 +346,12 @@ describe("Wikidot site settings public boundaries", () => {
       },
       site_settings: {
         google_analytics: { enabled: true, profile: "UA-1-2" },
-        toolbars: { top: true, bottom: false }
+        toolbars: { top: true, bottom: false },
+        membership: {
+          application_enabled: false,
+          password_enabled: false,
+          password_configured: false
+        }
       },
       theme: { type: "external", url: "https://cdn.scpwiki.com/site.css" },
       license_name: "CC BY-SA 3.0",
@@ -396,7 +412,12 @@ describe("Wikidot site settings public boundaries", () => {
         layout: "wikidot"
       },
       site_settings: {
-        google_analytics: { enabled: true, profile: "UA-1-2" }
+        google_analytics: { enabled: true, profile: "UA-1-2" },
+        membership: {
+          application_enabled: false,
+          password_enabled: false,
+          password_configured: false
+        }
       },
       theme: { type: "built_in", id: 1 },
       license_name: "CC BY-SA 3.0",
@@ -448,7 +469,12 @@ describe("Wikidot site settings public boundaries", () => {
           },
           site_settings: {
             google_analytics: { enabled: true, profile: "UA-1-2" },
-            toolbars: { top: true, bottom: false }
+            toolbars: { top: true, bottom: false },
+            membership: {
+              application_enabled: false,
+              password_enabled: false,
+              password_configured: false
+            }
           },
           site_file_domain: "test.wjfiles.localhost",
           license_name: "CC BY-SA 3.0",
@@ -594,6 +620,24 @@ describe("Wikidot site settings public boundaries", () => {
         expected: { toolbars: { top: true, bottom: false } }
       },
       {
+        action: "membership",
+        fields: {
+          siteId,
+          expectedSettingsRevision: settingsRevision,
+          applicationEnabled: true,
+          passwordEnabled: true,
+          password: "membership-password"
+        },
+        method: "site_update",
+        expected: {
+          membership: {
+            application_enabled: true,
+            password_enabled: true,
+            password: "membership-password"
+          }
+        }
+      },
+      {
         action: "theme",
         fields: {
           siteId,
@@ -737,6 +781,59 @@ describe("Wikidot site settings public boundaries", () => {
         expected_settings_revision: 4,
         current_settings_revision: 5
       })
+    } finally {
+      client.request = originalClientRequest
+    }
+  })
+
+  it("renders membership policy without exposing a configured password and binds review actions", async () => {
+    const data = structuredClone(adminData)
+    data.site_settings.membership = {
+      application_enabled: true,
+      password_enabled: true,
+      password_configured: true
+    }
+    data.membershipApplications = [
+      { user_id: 91, user_name: "Applicant", comment: "Please let me in" }
+    ]
+    const body = renderComponent(membershipSettingsComponent, { data }).body
+    assert.match(body, /Allow membership applications/u)
+    assert.match(body, /Allow membership by password/u)
+    assert.match(body, /Leave blank to keep the configured password\./u)
+    assert.match(body, /Membership application from Applicant/u)
+    assert.match(body, /Please let me in/u)
+    assert.match(
+      body,
+      /id="membership-password"[^>]*type="password"[^>]*value=""/u
+    )
+    assert.equal(Object.hasOwn(data.site_settings.membership, "password"), false)
+    assert.equal(Object.hasOwn(data.site_settings.membership, "password_hash"), false)
+
+    const calls = []
+    client.request = async (method, params, context) => {
+      calls.push({ method, params, context })
+      if (method === "session_get") return { user_id: 41 }
+      if (method === "membership_application_review") return "accepted"
+      throw new Error(`Unexpected Deepwell method ${method}`)
+    }
+    try {
+      const result = await canonicalAdminServer.actions.membershipReview(
+        actionEvent("membershipReview", {
+          siteId,
+          userId: 91,
+          decision: "accept",
+          reply: "welcome"
+        })
+      )
+      assert.equal(result.form.valid, true)
+      assert.deepEqual(calls, [
+        { method: "session_get", params: [sessionToken], context: undefined },
+        {
+          method: "membership_application_review",
+          params: { site_id: siteId, user_id: 91, decision: "accept", reply: "welcome" },
+          context: { sessionToken, siteId }
+        }
+      ])
     } finally {
       client.request = originalClientRequest
     }

@@ -15,6 +15,11 @@ mod structs;
 
 pub use self::service::MembershipService;
 pub use self::structs::{
-    JoinActorState, JoinMembership, JoinModuleState, MembershipBrowserAction,
-    MembershipJoinOutcome, MembershipPolicy,
+    AcceptMembershipEmailInvitation, CreateMembershipEmailInvitation, JoinActorState,
+    JoinMembership, JoinModuleState, ListMembershipApplications, MembershipApplicationData,
+    MembershipApplicationOutcome, MembershipApplicationReviewDecision,
+    MembershipApplicationStatus, MembershipApplicationView, MembershipBrowserAction,
+    MembershipEmailInvitationOutcome, MembershipEmailInvitationView, MembershipJoinOutcome,
+    MembershipPasswordOutcome, MembershipPolicy, ReviewMembershipApplication,
+    SubmitMembershipApplication, SubmitMembershipPassword,
 };

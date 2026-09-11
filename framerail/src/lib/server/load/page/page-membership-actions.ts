@@ -1,4 +1,9 @@
-import { membershipJoin } from "$lib/server/deepwell/membership"
+import {
+  membershipApplicationSubmit,
+  membershipEmailInvitationAccept,
+  membershipJoin,
+  membershipPasswordSubmit
+} from "$lib/server/deepwell/membership"
 import {
   failForActionError,
   readActionJson
@@ -21,6 +26,35 @@ const membershipJoinSchema = object({
   actionFingerprint: string()
 })
 
+const membershipPasswordSchema = object({
+  pageId: number(),
+  lastRevisionId: number(),
+  actionIndex: pipe(number(), integer(), minValue(0)),
+  actionFingerprint: string(),
+  password: string()
+})
+
+const membershipApplicationSchema = object({
+  pageId: number(),
+  lastRevisionId: number(),
+  actionIndex: pipe(number(), integer(), minValue(0)),
+  actionFingerprint: string(),
+  comment: string()
+})
+
+const membershipEmailInvitationSchema = membershipJoinSchema
+
+function routeArgument(extra: string | undefined, name: string): string {
+  const segments = (extra ?? "").replace(/^\//u, "").split("/")
+  let value = ""
+  for (let index = 0; index + 1 < segments.length; index += 1) {
+    if (segments[index]?.toLowerCase() === name.toLowerCase()) {
+      value = segments[index + 1] ?? ""
+    }
+  }
+  return value
+}
+
 export function membershipJoinAction(event: RequestEvent) {
   return executePageAction(async () => {
     const { pageId, lastRevisionId, actionIndex, actionFingerprint } =
@@ -33,6 +67,60 @@ export function membershipJoinAction(event: RequestEvent) {
       lastRevisionId,
       actionIndex,
       actionFingerprint,
+      context.requestContext
+    )
+  }, failForActionError)
+}
+
+export function membershipPasswordAction(event: RequestEvent) {
+  return executePageAction(async () => {
+    const { pageId, lastRevisionId, actionIndex, actionFingerprint, password } =
+      await readActionJson(event.request, membershipPasswordSchema)
+    const context = await resolvePageActionRequestContext(event, {
+      session: "required"
+    })
+    return membershipPasswordSubmit(
+      pageId,
+      lastRevisionId,
+      actionIndex,
+      actionFingerprint,
+      password,
+      context.requestContext
+    )
+  }, failForActionError)
+}
+
+export function membershipApplicationAction(event: RequestEvent) {
+  return executePageAction(async () => {
+    const { pageId, lastRevisionId, actionIndex, actionFingerprint, comment } =
+      await readActionJson(event.request, membershipApplicationSchema)
+    const context = await resolvePageActionRequestContext(event, {
+      session: "required"
+    })
+    return membershipApplicationSubmit(
+      pageId,
+      lastRevisionId,
+      actionIndex,
+      actionFingerprint,
+      comment,
+      context.requestContext
+    )
+  }, failForActionError)
+}
+
+export function membershipEmailInvitationAction(event: RequestEvent) {
+  return executePageAction(async () => {
+    const { pageId, lastRevisionId, actionIndex, actionFingerprint } =
+      await readActionJson(event.request, membershipEmailInvitationSchema)
+    const context = await resolvePageActionRequestContext(event, {
+      session: "required"
+    })
+    return membershipEmailInvitationAccept(
+      pageId,
+      lastRevisionId,
+      actionIndex,
+      actionFingerprint,
+      routeArgument(event.params.extra, "hash"),
       context.requestContext
     )
   }, failForActionError)
