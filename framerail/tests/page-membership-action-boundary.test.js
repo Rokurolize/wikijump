@@ -289,7 +289,9 @@ test("email invitation action derives the opaque hash from the trusted route, no
     calls.push({ method, params, context })
     if (method === "session_get") return { user_id: 91 }
     if (method === "membership_email_invitation_accept") {
-      return { status: "accepted", site_name: "Test Wiki", site_slug: "test" }
+      return params.hash === ""
+        ? { status: "unavailable" }
+        : { status: "accepted", site_name: "Test Wiki", site_slug: "test" }
     }
     throw new Error(`Unexpected Deepwell method ${method}`)
   }
@@ -327,4 +329,15 @@ test("email invitation action derives the opaque hash from the trusted route, no
     page: "main",
     sessionToken: "membership-session"
   })
+
+  calls.length = 0
+  const rootResult = await rootActions.membershipEmailInvitation(
+    typedMembershipEvent("membershipEmailInvitation", body)
+  )
+  assert.deepEqual(rootResult, { res: { status: "unavailable" } })
+  const rootMutation = calls.find(
+    ({ method }) => method === "membership_email_invitation_accept"
+  )
+  assert.equal(rootMutation.params.hash, "")
+  assert.equal(JSON.stringify(rootMutation.params).includes("forged-body-hash"), false)
 })
