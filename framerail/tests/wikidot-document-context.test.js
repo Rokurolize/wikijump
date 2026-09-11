@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url"
 import { after, before, test } from "node:test"
 
 import { createServer as createViteServer } from "vite"
+import { resetDevelopmentArticleResponseCacheStores } from "../src/lib/server/cache/article-response/runtime.js"
 
 const root = fileURLToPath(new URL("..", import.meta.url))
 const siteHeaders = {
@@ -275,6 +276,7 @@ after(async () => {
     await new Promise((resolve) => framerailServer.close(resolve))
   }
   if (vite) await vite.close()
+  resetDevelopmentArticleResponseCacheStores()
   if (deepwellServer) {
     await new Promise((resolve) => deepwellServer.close(resolve))
   }
