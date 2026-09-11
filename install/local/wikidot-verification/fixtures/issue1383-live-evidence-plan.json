@@ -23,7 +23,7 @@
     "public_regression_commit": "ce9f61a66a711165cfe0a1e608a7870b1f4ff901",
     "public_regression_tree": "7598f5dee9f2f775ad585a987126841e557d1f18",
     "test_path": "deepwell/tests/page.rs",
-    "test_sha256": "845c549ac84f69e653f7ca5890e8240bda22bf0606209f0821375a2f8b816ffc",
+    "test_sha256": "7252afebdc10d9ea05e49fd55108b9bf0b420838d463946aa1681cff30ea4722",
     "test_anchor": "listpages_generated_html_preview_saved_section_controls",
     "test_body_sha256": "650187fc93f4b6a653d38b3756eaf6f6e4fb377e37f86345e831fa4267871561"
   },
@@ -180,7 +180,7 @@
     "package_path": "framerail/package.json",
     "package_sha256": "1dd11d1a0b1dad89080ccaa0637e6d10da4dd23a64d7032839873146b12692a4",
     "lock_path": "framerail/pnpm-lock.yaml",
-    "lock_sha256": "70f57bbddfaaaa09085156ef9089c5128577291347b5364019d57f7df9983a5d",
+    "lock_sha256": "a114f85e67b8c2209e7d5014887280ab945fb60436c68415281fee4b8d9377ad",
     "executable_path": "/opt/google/chrome/google-chrome",
     "executable_sha256": "aea09d69ce7f24d5901f6bfb15dd44d0c856e793e0a498f8d8393ec7d2c308ec",
     "version": "152.0.7977.64",
