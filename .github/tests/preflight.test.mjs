@@ -212,7 +212,7 @@ test("final preflight is the single explicit full-check barrier", (t) => {
     "cargo fmt --manifest-path deepwell/Cargo.toml --check",
     "cargo machete deepwell",
     "cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps -- -D warnings",
-    "cargo test --manifest-path deepwell/Cargo.toml -- --test-threads 1",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs",
     "cargo fmt --manifest-path wws/Cargo.toml --check",
     "cargo machete wws",
     "cargo clippy --manifest-path wws/Cargo.toml --tests --no-deps -- -D warnings",
@@ -237,7 +237,7 @@ test("final preflight is the single explicit full-check barrier", (t) => {
   const source = readFileSync(path.join(root, "scripts/preflight.sh"), "utf8")
   assert.match(
     source,
-    /run_test "deepwell full tests" env RUST_MIN_STACK=8388608[\s\\]+cargo test --manifest-path deepwell\/Cargo\.toml -- --test-threads 1/u
+    /run_test "deepwell full tests" node[\s\\]+install\/local\/wikidot-verification\/scripts\/run-deepwell-integration-validation\.mjs/u
   )
 })
 

@@ -23,7 +23,13 @@ const DEFERRED_DENOMINATOR_SCHEMA = "wikijump.compatibility_deferred_denominator
 const DEFERRED_LEDGER_SCHEMA = "wikijump.compatibility_deferred_ledger.v1";
 const STANDING_MATRIX_SCHEMA = "wikijump.compatibility_standing_matrix.v2";
 const CURRENT_OPEN_ISSUES_SCHEMA = "wikijump.current_open_issues.v1";
+const CONSOLIDATED_VALIDATION_SCHEMA = "wikijump.consolidated_validation_receipt.v1";
 const TRACKING_ISSUE = 1089;
+const CONSOLIDATED_VALIDATION_SOURCE_FILES = Object.freeze([
+  "scripts/preflight.sh",
+  "scripts/run-test-no-external-network.sh",
+  "install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs",
+]);
 const LEDGER_FIELDS = ["schema", "counts", "inputs", "source_manifests", "raw_source_records", "source_local_identities", "surface_assignments", "relationships", "deferred_exclusions", "rows"];
 const LEDGER_COUNT_FIELDS = ["raw_records", "public_inventory_records", "canonical_surfaces", "input_alias_edges", "deduplication_relationships"];
 const LEDGER_INPUT_FIELDS = ["inventory", "wikijump", "ftml"];
@@ -457,6 +463,24 @@ async function verifyStandingRefresh(matrix, promotion) {
   return refresh;
 }
 
+async function verifyConsolidatedValidation(input, matrix, repositoryPath) {
+  const value = input.value;
+  exactKeys(value, ["schema", "status", "completed_at", "wikijump_commit", "wikijump_tree", "base_commit", "preflight"], "consolidated validation receipt");
+  if (value.schema !== CONSOLIDATED_VALIDATION_SCHEMA || value.status !== "pass") fail("consolidated validation receipt is not passing");
+  if (value.wikijump_commit !== matrix.merge_commit || value.wikijump_tree !== matrix.merge_tree) fail("consolidated validation receipt is not bound to the merge source");
+  if (Number.isNaN(Date.parse(value.completed_at))) fail("consolidated validation receipt has invalid completion time");
+  if (!HEX40.test(value.base_commit ?? "")) fail("consolidated validation receipt has invalid base commit");
+  exactKeys(value.preflight, ["mode", "source_sha256"], "consolidated validation preflight");
+  if (value.preflight.mode !== "final") fail("consolidated validation did not run the final preflight");
+  exactKeys(value.preflight.source_sha256, CONSOLIDATED_VALIDATION_SOURCE_FILES, "consolidated validation source hashes");
+  const {stdout: parentStdout} = await execFile("git", ["-C", repositoryPath, "rev-parse", `${matrix.merge_commit}^1`], {encoding: "utf8"});
+  if (parentStdout.trim() !== value.base_commit) fail("consolidated validation base is not the merge first parent");
+  for (const relative of CONSOLIDATED_VALIDATION_SOURCE_FILES) {
+    const {stdout} = await execFile("git", ["-C", repositoryPath, "show", `${matrix.merge_commit}:${relative}`], {encoding: null, maxBuffer: 16 * 1024 * 1024});
+    if (sha256Hex(stdout) !== value.preflight.source_sha256[relative]) fail(`consolidated validation source hash drifted for ${relative}`);
+  }
+}
+
 function finalZeroCounts(ledger, finalFrozen, openIssues) {
   const rows = ledger.rows;
   const count = (predicate) => rows.reduce((total, row) => total + (predicate(row) ? 1 : 0), 0);
@@ -485,7 +509,7 @@ function finalZeroCounts(ledger, finalFrozen, openIssues) {
 }
 
 export function parseArgs(argv) {
-  const names = new Set(["ledger", "denominator", "deferred-denominator", "deferred-ledger", "standing-matrix", "final-frozen", "open-issues", "repository", "output"]);
+  const names = new Set(["ledger", "denominator", "deferred-denominator", "deferred-ledger", "standing-matrix", "final-frozen", "consolidated-validation", "open-issues", "repository", "output"]);
   const args = {};
   for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index];
@@ -500,17 +524,18 @@ export function parseArgs(argv) {
 }
 
 export function usage() {
-  return "Usage: verify-final-zero.mjs --ledger FILE --denominator FILE --deferred-denominator FILE --deferred-ledger FILE --standing-matrix FILE --final-frozen FILE --open-issues FILE --repository DIRECTORY --output FILE";
+  return "Usage: verify-final-zero.mjs --ledger FILE --denominator FILE --deferred-denominator FILE --deferred-ledger FILE --standing-matrix FILE --final-frozen FILE --consolidated-validation FILE --open-issues FILE --repository DIRECTORY --output FILE";
 }
 
-export async function verifyFinalZero({ledger, denominator, deferredDenominator, deferredLedger, standingMatrix, finalFrozen, openIssues, repository}) {
+export async function verifyFinalZero({ledger, denominator, deferredDenominator, deferredLedger, standingMatrix, finalFrozen, consolidatedValidation, openIssues, repository}) {
   const repositoryPath = await requireRepository(repository);
-  const [ledgerInput, denominatorInput, deferredDenominatorInput, deferredLedgerInput, standingInput, openIssuesInput] = await Promise.all([
+  const [ledgerInput, denominatorInput, deferredDenominatorInput, deferredLedgerInput, standingInput, consolidatedValidationInput, openIssuesInput] = await Promise.all([
     readJsonInput(ledger, "canonical compatibility ledger"),
     readJsonInput(denominator, "current denominator"),
     readJsonInput(deferredDenominator, "deferred denominator"),
     readJsonInput(deferredLedger, "deferred ledger"),
     readJsonInput(standingMatrix, "standing compatibility matrix"),
+    readJsonInput(consolidatedValidation, "consolidated validation receipt"),
     readJsonInput(openIssues, "current open issues"),
   ]);
   const ledgerValue = completeLedger(ledgerInput.value);
@@ -533,6 +558,7 @@ export async function verifyFinalZero({ledger, denominator, deferredDenominator,
   reconcileRows(ledgerValue, denominatorRows, matrixRows);
   await verifyStandingRefresh(standingInput.value, promotion);
   await verifyRepositoryMerge(repositoryPath, standingInput.value.merge_commit, standingInput.value.merge_tree, standingInput.value.candidate_commit);
+  await verifyConsolidatedValidation(consolidatedValidationInput, standingInput.value, repositoryPath);
   const counts = finalZeroCounts(ledgerValue, frozen, currentOpenIssues);
   const nonzero = Object.entries(counts).filter(([, value]) => value !== 0);
   if (nonzero.length > 0) fail(`final-zero check failed: ${nonzero.map(([name, value]) => `${name}=${value}`).join(", ")}`);
@@ -549,6 +575,7 @@ export async function verifyFinalZero({ledger, denominator, deferredDenominator,
       standing_matrix: standingInput.reference,
       standing_refresh: standingInput.value.standing_refresh,
       final_frozen: {path: frozen.path, sha256: frozen.sha256},
+      consolidated_validation: consolidatedValidationInput.reference,
       open_issues: openIssuesInput.reference,
       repository: repositoryPath,
     },
@@ -561,7 +588,7 @@ export async function main(argv, {stdout = console.log} = {}) {
     stdout(usage());
     return 0;
   }
-  const receipt = await verifyFinalZero({ledger: args.ledger, denominator: args.denominator, deferredDenominator: args["deferred-denominator"], deferredLedger: args["deferred-ledger"], standingMatrix: args["standing-matrix"], finalFrozen: args["final-frozen"], openIssues: args["open-issues"], repository: args.repository});
+  const receipt = await verifyFinalZero({ledger: args.ledger, denominator: args.denominator, deferredDenominator: args["deferred-denominator"], deferredLedger: args["deferred-ledger"], standingMatrix: args["standing-matrix"], finalFrozen: args["final-frozen"], consolidatedValidation: args["consolidated-validation"], openIssues: args["open-issues"], repository: args.repository});
   const sealed = await sealJsonNoReplace(args.output, receipt);
   stdout(JSON.stringify({schema: receipt.schema, status: receipt.status, output: sealed.path, sha256: sealed.sha256}));
   return 0;
