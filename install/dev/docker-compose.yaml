@@ -25,11 +25,11 @@ services:
       - "6379"
     environment:
       - "VALKEY_PASSWORD=${VALKEY_PASSWORD:?set VALKEY_PASSWORD for the dev cache}"
-      - "VALKEYCLI_AUTH=${VALKEY_PASSWORD:?set VALKEY_PASSWORD for the dev cache}"
+      - "REDISCLI_AUTH=${VALKEY_PASSWORD:?set VALKEY_PASSWORD for the dev cache}"
     command:
       - "sh"
       - "-c"
-      - 'case "$$VALKEY_PASSWORD" in *[!A-Za-z0-9._~-]*) echo "VALKEY_PASSWORD must use URL-safe characters" >&2; exit 64;; esac; [ "$${#VALKEY_PASSWORD}" -ge 16 ] || { echo "VALKEY_PASSWORD must be at least 16 characters" >&2; exit 64; }; cp /usr/local/etc/valkey.conf /tmp/valkey.conf && printf "\nrequirepass %s\n" "$$VALKEY_PASSWORD" >> /tmp/valkey.conf && unset VALKEY_PASSWORD VALKEYCLI_AUTH && exec valkey-server /tmp/valkey.conf'
+      - 'case "$$VALKEY_PASSWORD" in *[!A-Za-z0-9._~-]*) echo "VALKEY_PASSWORD must use URL-safe characters" >&2; exit 64;; esac; [ "$${#VALKEY_PASSWORD}" -ge 16 ] || { echo "VALKEY_PASSWORD must be at least 16 characters" >&2; exit 64; }; cp /usr/local/etc/valkey.conf /tmp/valkey.conf && printf "\nrequirepass %s\n" "$$VALKEY_PASSWORD" >> /tmp/valkey.conf && unset VALKEY_PASSWORD REDISCLI_AUTH && exec valkey-server /tmp/valkey.conf'
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 10s

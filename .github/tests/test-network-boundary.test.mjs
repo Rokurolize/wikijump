@@ -108,3 +108,19 @@ test("test shell sources contain no literal external curl or wget targets", () =
     }
   }
 })
+
+test("Docker-backed tests cannot implicitly pull images", () => {
+  const caddyShell = read("deepwell/tests/caddy/single-upstream-policy.test.sh")
+  const caddyCanary = read("deepwell/tests/caddy/deploy-header-canary.test.mjs")
+  const valkey = read("install/dev/tests/valkey-auth.test.sh")
+
+  assert.equal((caddyShell.match(/\bdocker run\b/gu) ?? []).length, 4)
+  assert.equal((caddyShell.match(/\bdocker run --pull=never\b/gu) ?? []).length, 4)
+  assert.match(caddyCanary, /"run",\s*"--pull",\s*"never"/u)
+
+  assert.doesNotMatch(valkey, /\bdocker\s+(?:pull|build)\b/u)
+  assert.doesNotMatch(valkey, /\bdocker compose\b[^\n]*\bup\b[^\n]*--build/u)
+  assert.equal((valkey.match(/\bdocker run --pull=never\b/gu) ?? []).length, 2)
+  assert.equal((valkey.match(/--network none/gu) ?? []).length, 2)
+  assert.match(valkey, /docker image inspect "\$base_image"/u)
+})
