@@ -61,7 +61,17 @@ async function createMergeRepository(root, {identicalMergedTree = false} = {}) {
   await git(repository, "config", "user.email", "test@example.invalid");
   await git(repository, "config", "user.name", "Final Zero Test");
   await fs.writeFile(path.join(repository, "README"), "base\n");
-  await git(repository, "add", "README");
+  const validationSources = {
+    "scripts/preflight.sh": "preflight\n",
+    "scripts/run-test-no-external-network.sh": "network guard\n",
+    "install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs": "deepwell validation\n",
+  };
+  for (const [relative, contents] of Object.entries(validationSources)) {
+    const file = path.join(repository, relative);
+    await fs.mkdir(path.dirname(file), {recursive: true});
+    await fs.writeFile(file, contents);
+  }
+  await git(repository, "add", "README", ...Object.keys(validationSources));
   await git(repository, "commit", "--quiet", "-m", "base");
   await git(repository, "switch", "--quiet", "-c", "candidate");
   await fs.mkdir(path.join(repository, "install", "standing"), {recursive: true});
@@ -226,6 +236,22 @@ async function fixtures(t, options = {}) {
     standing_refresh: standingRefresh,
     rows: [{surface_id: surfaceId, source_local_id: sourceLocalId, kind: "catalog_feature", status: "pass", artifacts: [standingArtifact]}],
   };
+  const consolidatedValidation = {
+    schema: "wikijump.consolidated_validation_receipt.v1",
+    status: "pass",
+    completed_at: "2026-09-12T00:00:00.000Z",
+    wikijump_commit: wikijumpCommit,
+    wikijump_tree: wikijumpTree,
+    base_commit: await git(repository.path, "rev-parse", `${wikijumpCommit}^1`),
+    preflight: {
+      mode: "final",
+      source_sha256: Object.fromEntries(await Promise.all([
+        "scripts/preflight.sh",
+        "scripts/run-test-no-external-network.sh",
+        "install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs",
+      ].map(async (relative) => [relative, sha256(await fs.readFile(path.join(repository.path, relative)))]))),
+    },
+  };
   const openIssues = {
     schema: "wikijump.current_open_issues.v1",
     repository: "Rokurolize/wikijump",
@@ -241,14 +267,15 @@ async function fixtures(t, options = {}) {
     deferredLedger: (await writeJson(root, "deferred-ledger.json", deferredLedger)).path,
     standingMatrix: (await writeJson(root, "standing-matrix.json", matrix)).path,
     finalFrozen: finalFrozen.path,
+    consolidatedValidation: (await writeJson(root, "consolidated-validation.json", consolidatedValidation)).path,
     openIssues: (await writeJson(root, "open-issues.json", openIssues)).path,
     repository: repository.path,
   };
-  return {paths, ledger, denominator, deferredDenominator, deferredLedger, matrix, openIssues, repository};
+  return {paths, ledger, denominator, deferredDenominator, deferredLedger, matrix, consolidatedValidation, openIssues, repository};
 }
 
 function inputMap(fixture) {
-  return {repository: fixture.paths.repository, ledger: fixture.paths.ledger, denominator: fixture.paths.denominator, deferredDenominator: fixture.paths.deferredDenominator, deferredLedger: fixture.paths.deferredLedger, standingMatrix: fixture.paths.standingMatrix, finalFrozen: fixture.paths.finalFrozen, openIssues: fixture.paths.openIssues};
+  return {repository: fixture.paths.repository, ledger: fixture.paths.ledger, denominator: fixture.paths.denominator, deferredDenominator: fixture.paths.deferredDenominator, deferredLedger: fixture.paths.deferredLedger, standingMatrix: fixture.paths.standingMatrix, finalFrozen: fixture.paths.finalFrozen, consolidatedValidation: fixture.paths.consolidatedValidation, openIssues: fixture.paths.openIssues};
 }
 
 test("final-zero reconciles the exact denominator, row artifacts, deferred union, and canonical promotion", async (t) => {
@@ -256,9 +283,9 @@ test("final-zero reconciles the exact denominator, row artifacts, deferred union
   const receipt = await verifyFinalZero(inputMap(fixture));
   assert.equal(receipt.status, "pass");
   assert.equal(receipt.merge_commit, fixture.repository.mergeCommit);
-  assert.deepEqual(Object.keys(receipt.inputs).sort(), ["deferred_denominator", "deferred_ledger", "denominator", "final_frozen", "ledger", "open_issues", "repository", "standing_matrix", "standing_refresh"]);
+  assert.deepEqual(Object.keys(receipt.inputs).sort(), ["consolidated_validation", "deferred_denominator", "deferred_ledger", "denominator", "final_frozen", "ledger", "open_issues", "repository", "standing_matrix", "standing_refresh"]);
   const output = path.join(fixture.paths.root, "receipt.json");
-  const args = ["--ledger", fixture.paths.ledger, "--denominator", fixture.paths.denominator, "--deferred-denominator", fixture.paths.deferredDenominator, "--deferred-ledger", fixture.paths.deferredLedger, "--standing-matrix", fixture.paths.standingMatrix, "--final-frozen", fixture.paths.finalFrozen, "--open-issues", fixture.paths.openIssues, "--repository", fixture.paths.repository, "--output", output];
+  const args = ["--ledger", fixture.paths.ledger, "--denominator", fixture.paths.denominator, "--deferred-denominator", fixture.paths.deferredDenominator, "--deferred-ledger", fixture.paths.deferredLedger, "--standing-matrix", fixture.paths.standingMatrix, "--final-frozen", fixture.paths.finalFrozen, "--consolidated-validation", fixture.paths.consolidatedValidation, "--open-issues", fixture.paths.openIssues, "--repository", fixture.paths.repository, "--output", output];
   assert.equal(await main(args, {stdout: () => {}}), 0);
   assert.equal(await main(args, {stdout: () => {}}), 0);
 });
@@ -397,6 +424,23 @@ test("final-zero rejects a standing refresh with stale saved pages", async (t) =
   );
 });
 
+test("final-zero rejects missing, stale, or non-final consolidated validation", async (t) => {
+  const stale = await fixtures(t);
+  stale.consolidatedValidation.wikijump_commit = stale.repository.candidateCommit;
+  await writeJson(stale.paths.root, "consolidated-validation.json", stale.consolidatedValidation);
+  await assert.rejects(verifyFinalZero(inputMap(stale)), /not bound to the merge source/u);
+
+  const wrongBase = await fixtures(t);
+  wrongBase.consolidatedValidation.base_commit = wrongBase.repository.candidateCommit;
+  await writeJson(wrongBase.paths.root, "consolidated-validation.json", wrongBase.consolidatedValidation);
+  await assert.rejects(verifyFinalZero(inputMap(wrongBase)), /base is not the merge first parent/u);
+
+  const checkpoint = await fixtures(t);
+  checkpoint.consolidatedValidation.preflight.mode = "checkpoint";
+  await writeJson(checkpoint.paths.root, "consolidated-validation.json", checkpoint.consolidatedValidation);
+  await assert.rejects(verifyFinalZero(inputMap(checkpoint)), /did not run the final preflight/u);
+});
+
 test("final-zero rejects symlinked input and artifact paths", async (t) => {
   const fixture = await fixtures(t);
   const symlink = path.join(fixture.paths.root, "standing-matrix-link.json");
@@ -413,6 +457,6 @@ test("final-zero rejects symlinked input and artifact paths", async (t) => {
 });
 
 test("final-zero CLI requires every frozen input", () => {
-  assert.deepEqual(parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--final-frozen", "/f", "--open-issues", "/i", "--repository", "/g", "--output", "/h"]), {ledger: "/a", denominator: "/b", "deferred-denominator": "/c", "deferred-ledger": "/d", "standing-matrix": "/e", "final-frozen": "/f", "open-issues": "/i", repository: "/g", output: "/h"});
-  assert.throws(() => parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--final-frozen", "/f", "--repository", "/g", "--output", "/h"]), /--open-issues is required/u);
+  assert.deepEqual(parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--final-frozen", "/f", "--consolidated-validation", "/j", "--open-issues", "/i", "--repository", "/g", "--output", "/h"]), {ledger: "/a", denominator: "/b", "deferred-denominator": "/c", "deferred-ledger": "/d", "standing-matrix": "/e", "final-frozen": "/f", "consolidated-validation": "/j", "open-issues": "/i", repository: "/g", output: "/h"});
+  assert.throws(() => parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--final-frozen", "/f", "--open-issues", "/i", "--repository", "/g", "--output", "/h"]), /--consolidated-validation is required/u);
 });

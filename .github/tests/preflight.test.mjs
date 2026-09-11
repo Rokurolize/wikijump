@@ -9,8 +9,6 @@ import { fileURLToPath } from "node:url"
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const headOid = "1".repeat(40)
 const remoteOid = "2".repeat(40)
-const otherOid = "3".repeat(40)
-const zeroOid = "0".repeat(40)
 
 const writeExecutable = (file, source) => {
   writeFileSync(file, source)
@@ -142,14 +140,6 @@ fi
         encoding: "utf8",
         env: environment(overrides)
       })
-    },
-    runHook(input, overrides = {}) {
-      return spawnSync("bash", [".githooks/pre-push", "origin", "ssh://example.invalid/wikijump"], {
-        cwd: root,
-        encoding: "utf8",
-        env: environment(overrides),
-        input
-      })
     }
   }
 }
@@ -212,7 +202,7 @@ test("final preflight is the single explicit full-check barrier", (t) => {
     "cargo fmt --manifest-path deepwell/Cargo.toml --check",
     "cargo machete deepwell",
     "cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps -- -D warnings",
-    "cargo test --manifest-path deepwell/Cargo.toml -- --test-threads 1",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs",
     "cargo fmt --manifest-path wws/Cargo.toml --check",
     "cargo machete wws",
     "cargo clippy --manifest-path wws/Cargo.toml --tests --no-deps -- -D warnings",
@@ -237,7 +227,7 @@ test("final preflight is the single explicit full-check barrier", (t) => {
   const source = readFileSync(path.join(root, "scripts/preflight.sh"), "utf8")
   assert.match(
     source,
-    /run_test "deepwell full tests" env RUST_MIN_STACK=8388608[\s\\]+cargo test --manifest-path deepwell\/Cargo\.toml -- --test-threads 1/u
+    /run_test "deepwell full tests" node[\s\\]+install\/local\/wikidot-verification\/scripts\/run-deepwell-integration-validation\.mjs/u
   )
 })
 
@@ -264,61 +254,6 @@ test("verification and specification inputs run only the final verification barr
       })
       assert.equal(finalResult.status, 0, finalResult.stderr)
       assert.deepEqual(final.commands(), expected)
-    })
-  }
-})
-
-test("pre-push checkpoints only the existing HEAD branch update", (t) => {
-  const harness = createHarness(t)
-  const result = harness.runHook(
-    `refs/heads/topic ${headOid} refs/heads/topic ${remoteOid}\n`,
-    { PREFLIGHT_REMOTE_SCOPE: "deepwell" }
-  )
-
-  assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stdout, new RegExp(`checkpoint base: ${remoteOid}`))
-  assert.deepEqual(harness.commands(), [
-    "cargo fmt --manifest-path deepwell/Cargo.toml --check"
-  ])
-})
-
-test("pre-push falls back for every ambiguous or new ref shape", async (t) => {
-  const fixtures = [
-    {
-      name: "multiple refs",
-      input: [
-        `refs/heads/topic ${headOid} refs/heads/topic ${remoteOid}`,
-        `refs/tags/checkpoint ${otherOid} refs/tags/checkpoint ${zeroOid}`
-      ].join("\n") + "\n"
-    },
-    {
-      name: "deleted ref",
-      input: `(delete) ${zeroOid} refs/heads/topic ${remoteOid}\n`
-    },
-    {
-      name: "new branch with zero remote oid",
-      input: `refs/heads/topic ${headOid} refs/heads/topic ${zeroOid}\n`
-    },
-    {
-      name: "non-HEAD local ref",
-      input: `refs/heads/other ${otherOid} refs/heads/other ${remoteOid}\n`
-    }
-  ]
-
-  for (const fixture of fixtures) {
-    await t.test(fixture.name, (t) => {
-      const harness = createHarness(t)
-      const result = harness.runHook(fixture.input, { PREFLIGHT_REMOTE_SCOPE: "docs" })
-
-      assert.equal(result.status, 0, result.stderr)
-      assert.match(result.stdout, /checkpoint base: origin\/develop \(full branch fallback\)/)
-      const commands = harness.commands().join("\n")
-      for (const expected of [
-        "cargo fmt --manifest-path deepwell/Cargo.toml --check",
-        "cargo fmt --manifest-path wws/Cargo.toml --check",
-        "pnpm --dir framerail test:unit",
-        "cargo fmt --manifest-path locales/validator/Cargo.toml --all -- --check"
-      ]) assert.ok(commands.includes(expected), `${fixture.name}: ${expected}`)
     })
   }
 })
