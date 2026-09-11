@@ -57,7 +57,7 @@ use deepwell::services::forum::{
     GetForumStructure,
 };
 use deepwell::services::forum_post::{
-    CreateForumPost, UpdateForumPost, UpdateForumPostBody,
+    CreateForumPost, DeleteForumPost, UpdateForumPost, UpdateForumPostBody,
 };
 use deepwell::services::forum_thread::CreateForumThread;
 use deepwell::services::page::{CreatePage, GetPageOutput};
@@ -12574,16 +12574,24 @@ async fn hardened_www_special_modules_execute_only_on_their_system_pages() {
 #[tokio::test]
 async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries() {
     async fn load_forum_mini_page_view(
-        runner: &TestRunner,
+        runner: &mut TestRunner,
         site_id: i64,
         slug: &str,
+        user_id: Option<i64>,
+        session_token: Option<&str>,
     ) -> String {
+        runner.set_request_context(RequestContext {
+            user_id,
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Slug(Cow::Owned(slug.to_owned()))),
+            ..Default::default()
+        });
         match run_endpoint!(
             runner,
             page_view,
             json!({
                 "site_id": site_id,
-                "session_token": null,
+                "session_token": session_token,
                 "route": {"slug": slug, "extra": ""},
                 "locales": ["en-US", "en"],
             }),
@@ -12858,8 +12866,14 @@ async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries(
 
     runner.set_request_context(RequestContext::default());
 
-    let recent_threads =
-        load_forum_mini_page_view(&runner, site_id, "fixture-mini-recent-threads").await;
+    let recent_threads = load_forum_mini_page_view(
+        &mut runner,
+        site_id,
+        "fixture-mini-recent-threads",
+        None,
+        None,
+    )
+    .await;
     let low_recent_position = recent_threads
         .find("Low Recent Thread")
         .expect("newer visible thread should render");
@@ -12884,8 +12898,14 @@ async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries(
         "{recent_threads}",
     );
 
-    let active_threads =
-        load_forum_mini_page_view(&runner, site_id, "fixture-mini-active-threads").await;
+    let active_threads = load_forum_mini_page_view(
+        &mut runner,
+        site_id,
+        "fixture-mini-active-threads",
+        None,
+        None,
+    )
+    .await;
     let high_active_position = active_threads
         .find("High Activity Thread")
         .expect("more active visible thread should render");
@@ -12906,8 +12926,14 @@ async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries(
     );
     assert!(active_threads.contains("</span> ,"), "{active_threads}",);
 
-    let recent_posts =
-        load_forum_mini_page_view(&runner, site_id, "fixture-mini-recent-posts").await;
+    let recent_posts = load_forum_mini_page_view(
+        &mut runner,
+        site_id,
+        "fixture-mini-recent-posts",
+        None,
+        None,
+    )
+    .await;
     let low_reply_id = low_reply_ids[0];
     assert!(
         recent_posts.contains(&format!(
@@ -12925,6 +12951,226 @@ async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries(
             && recent_posts.contains(&format!("#post-{}", high_reply_ids[2])),
         "{recent_posts}",
     );
+
+    // Seal the actor and deletion boundary independently of the small live-observation
+    // limits above. The matrix holder deliberately requests a large local limit so
+    // permission filtering must happen before row limiting and cannot be hidden by a
+    // coincidentally full public prefix.
+    const MATRIX_HOLDER: &str = "fixture-forum-mini-actor-deletion-matrix";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        MATRIX_HOLDER,
+        "Forum Mini Actor Deletion Matrix",
+        concat!(
+            "[[module MiniRecentThreads limit=\"100\"]]\n",
+            "[[module MiniActiveThreads limit=\"100\"]]\n",
+            "[[module MiniRecentPosts limit=\"100\"]]",
+        ),
+    )
+    .await;
+
+    let (deleted_thread_id, _) = create_thread_with_replies(
+        &runner,
+        visible_category.forum_category_id,
+        "Deleted Thread Marker",
+        "Deleted Thread Root",
+        &["Deleted Thread Reply Marker"],
+    )
+    .await;
+    let deleted_thread = ForumThreadTable::find_by_id(deleted_thread_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("forum-mini deleted-thread fixture lookup should succeed")
+        .expect("forum-mini deleted-thread fixture should exist");
+    let mut deleted_thread = deleted_thread.into_active_model();
+    deleted_thread.deleted_by = Set(Some(ADMIN_USER_ID));
+    deleted_thread.deleted_at = Set(Some(OffsetDateTime::now_utc()));
+    deleted_thread.updated_by = Set(Some(ADMIN_USER_ID));
+    deleted_thread.updated_at = Set(Some(OffsetDateTime::now_utc()));
+    deleted_thread
+        .update(runner.context().transaction())
+        .await
+        .expect("forum-mini deleted-thread fixture should be soft-deleted");
+
+    let (post_delete_thread_id, post_delete_reply_ids) = create_thread_with_replies(
+        &runner,
+        visible_category.forum_category_id,
+        "Deleted Post Control Thread",
+        "Deleted Post Control Root",
+        &["Deleted Post Marker"],
+    )
+    .await;
+    let deleted_post_id = post_delete_reply_ids[0];
+    ForumPostService::delete(
+        runner.context(),
+        DeleteForumPost {
+            forum_post_id: deleted_post_id,
+            user_id: ADMIN_USER_ID,
+        },
+    )
+    .await
+    .expect("forum-mini deleted-post fixture should be soft-deleted");
+    assert!(
+        ForumThreadTable::find_by_id(post_delete_thread_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("deleted-post control thread lookup should succeed")
+            .is_some(),
+        "deleting one post must not delete its control thread",
+    );
+
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id: SAMPLE_USER_ID,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::Accepted(SYSTEM_USER_ID),
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+    )
+    .await
+    .expect("forum-mini member actor should be created");
+    let member_session = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: SAMPLE_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "forum-mini actor matrix member".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("forum-mini member session should be created");
+    let admin_session = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "forum-mini actor matrix administrator".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("forum-mini administrator session should be created");
+
+    let anonymous_matrix =
+        load_forum_mini_page_view(&mut runner, site_id, MATRIX_HOLDER, None, None).await;
+    let member_matrix = load_forum_mini_page_view(
+        &mut runner,
+        site_id,
+        MATRIX_HOLDER,
+        Some(SAMPLE_USER_ID),
+        Some(member_session.as_str()),
+    )
+    .await;
+    for (actor, body) in [("anonymous", &anonymous_matrix), ("member", &member_matrix)] {
+        assert!(
+            !body.contains("Private Page Activity Marker")
+                && !body.contains("Private Page Reply Marker"),
+            "{actor} must not receive private page forum activity:\n{body}",
+        );
+    }
+
+    let moderator_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("moderator")),
+    )
+    .await
+    .expect("seeded moderator role should exist");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            user_id: SAMPLE_USER_ID,
+            role_id: moderator_role.role_id,
+            site_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("forum-mini member should become a moderator");
+    let private_category_id =
+        CategoryService::get_or_create(runner.context(), site_id, PRIVATE_PAGE_CATEGORY)
+            .await
+            .expect("forum-mini private category should still exist")
+            .category_id;
+    role_permission::ActiveModel {
+        role_id: Set(moderator_role.role_id),
+        site_id: Set(site_id),
+        resource_type: Set(Resource::Page),
+        resource_category_id: Set(Some(private_category_id)),
+        action: Set(Action::View),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("forum-mini moderator private-view permission should be inserted");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("forum-mini actor permission cache should invalidate");
+
+    let moderator_matrix = load_forum_mini_page_view(
+        &mut runner,
+        site_id,
+        MATRIX_HOLDER,
+        Some(SAMPLE_USER_ID),
+        Some(member_session.as_str()),
+    )
+    .await;
+    let administrator_matrix = load_forum_mini_page_view(
+        &mut runner,
+        site_id,
+        MATRIX_HOLDER,
+        Some(ADMIN_USER_ID),
+        Some(admin_session.as_str()),
+    )
+    .await;
+    for (actor, body) in [
+        ("moderator", &moderator_matrix),
+        ("administrator", &administrator_matrix),
+    ] {
+        assert!(
+            body.contains("Private Page Activity Marker")
+                && body.contains("Private Page Reply Marker"),
+            "{actor} with explicit page visibility must receive private page forum activity:\n{body}",
+        );
+    }
+    for (actor, body) in [
+        ("anonymous", &anonymous_matrix),
+        ("member", &member_matrix),
+        ("moderator", &moderator_matrix),
+        ("administrator", &administrator_matrix),
+    ] {
+        assert!(
+            !body.contains("Hidden Newest Thread")
+                && !body.contains("Hidden Reply")
+                && !body.contains("Deleted Thread Marker")
+                && !body.contains("Deleted Thread Reply Marker")
+                && !body.contains("Deleted Post Marker")
+                && !body.contains(&format!("#post-{deleted_post_id}")),
+            "{actor} must not receive hidden or deleted forum activity:\n{body}",
+        );
+    }
+    let post_delete_control = ForumThreadTable::find_by_id(post_delete_thread_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("deleted-post control thread lookup should succeed after matrix")
+        .expect("deleted-post control thread should still exist after matrix");
+    let mut post_delete_control = post_delete_control.into_active_model();
+    post_delete_control.deleted_by = Set(Some(ADMIN_USER_ID));
+    post_delete_control.deleted_at = Set(Some(OffsetDateTime::now_utc()));
+    post_delete_control.updated_by = Set(Some(ADMIN_USER_ID));
+    post_delete_control.updated_at = Set(Some(OffsetDateTime::now_utc()));
+    post_delete_control
+        .update(runner.context().transaction())
+        .await
+        .expect("deleted-post control thread should be retired after matrix");
+    runner.set_request_context(RequestContext::default());
 
     for (case_id, source, expected_items) in [
         (
