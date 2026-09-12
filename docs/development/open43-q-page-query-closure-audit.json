@@ -355,7 +355,18 @@
       "subrows": [
         {"case_id": "Q1028_INITIAL_CATEGORY_DOM_AND_ARGUMENTS", "status": "source_ready"},
         {"case_id": "Q1028_ACTOR_SCOPED_RUNTIME_INVENTORY", "status": "source_ready"},
-        {"case_id": "Q1028_EXPAND_LIST_ACTION", "status": "blocked_evidence"},
+        {
+          "case_id": "Q1028_EXPAND_LIST_ACTION",
+          "status": "candidate_required",
+          "owner": "deepwell-framerail-candidate",
+          "tests": [
+            "deepwell/src/services/render/categories.rs::tests::category_page_list_matches_wikidot_shape_and_escapes_values",
+            "framerail/tests/wikidot-categories.test.js",
+            "framerail/tests/ajax-module-connector.test.js#WikiCategoriesPageListModule",
+            "install/local/wikidot-verification/tests/open43-categories-candidate-case-set.test.mjs"
+          ],
+          "result": "The pinned Wikidot server source establishes first-click loading, one WikiCategoriesPageListModule request, title-sorted page rows, and subsequent local hide/re-open without another request. Wikijump implements that action through an actor-scoped Deepwell read and Framerail listener. The exact candidate must still prove the anonymous and administrator browser intervals, permission-filtered page list, one-request cache behavior, and cleanup with no external request."
+        },
         {"case_id": "Q1028_CATEGORY_LIFECYCLE_AND_CACHE", "status": "candidate_required"}
       ]
     },
@@ -471,8 +482,8 @@
     "classification_counts": {
       "source_ready": 19,
       "needs_source": 0,
-      "candidate_required": 7,
-      "blocked_evidence": 7
+      "candidate_required": 8,
+      "blocked_evidence": 6
     },
     "duplicate_issue_numbers": 0,
     "duplicate_case_ids": 0,
