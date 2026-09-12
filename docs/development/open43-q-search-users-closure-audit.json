@@ -144,9 +144,9 @@
   "issues": [
     {
       "issue": 748,
-      "source_ready": [
-        {
-          "case_id": "Q748_LEGACY_FORM_AND_LOCAL_ROUTE_BUILDER",
+  "source_ready": [
+    {
+      "case_id": "Q748_LEGACY_FORM_AND_LOCAL_ROUTE_BUILDER",
           "status": "implemented_not_acceptance_ready",
           "source": [
             "framerail/src/routes/+layout.svelte",
@@ -155,10 +155,23 @@
           "public_tests": [
             "framerail/tests/wikidot-search.test.js#Wikidot top search preserves and path-encodes the submitted query",
             "framerail/tests/wikidot-chrome.spec.ts#Wikidot-compatible search chrome preserves its two inputs and focus behavior"
-          ],
-          "result": "The legacy action=dummy DOM is preserved and a local submit handler builds /search:site/q/<encoded-query> without trimming. This proves only the local source seam. It is not acceptance evidence for the live method, route, redirect, result DOM, ranking, or permission behavior."
-        }
       ],
+      "result": "The legacy action=dummy DOM is preserved and a local submit handler builds /search:site/q/<encoded-query> without trimming. This proves only the local source seam. It is not acceptance evidence for the live method, route, redirect, result DOM, ranking, or permission behavior."
+    },
+    {
+      "case_id": "Q748_PERMISSION_FILTERED_RESULTS",
+      "status": "implemented_not_acceptance_ready",
+      "source": [
+        "deepwell/src/services/render/search_feed.rs",
+        "framerail/src/lib/wikidot/wikidot-search.js"
+      ],
+      "public_tests": [
+        "deepwell/src/services/render/search_feed.rs#tests::renders_the_live_search_unavailable_contract",
+        "framerail/tests/wikidot-search.test.js#Wikidot top search preserves and path-encodes the submitted query"
+      ],
+      "result": "Current live Wikidot's positive search contract is the unavailable state: no successful top-bar result surface is exposed to permission-filter. Wikijump therefore exposes no result rows or counts and cannot leak private pages through a fabricated fallback. The remaining candidate rows own only the evidenced submission route/browser transition; an active result backend is outside the current compatibility contract rather than an unresolved success variant."
+    }
+  ],
       "needs_source": [],
       "candidate_required": [
         {
@@ -170,30 +183,34 @@
           "requires": "Replay the sealed live submission against the exact merged candidate and prove that it does not navigate to /dummy."
         }
       ],
-      "blocked_evidence": [
-        {
-          "case_id": "Q748_PERMISSION_FILTERED_RESULTS",
-          "missing": "No sealed successful top-bar result contract, local active search service, ranking contract, loading/error contract, or actor-visible public/private result matrix exists.",
-          "forbidden_inference": "Do not treat the existing path builder as proof of Wikidot's endpoint and do not add an all-pages fallback."
-        }
-      ],
+  "blocked_evidence": [],
       "closure_verdict": "not_ready"
     },
     {
       "issue": 807,
-      "source_ready": [
-        {
-          "case_id": "Q807_CURRENT_SEARCHALL_FORM_AND_ROUTES",
+  "source_ready": [
+    {
+      "case_id": "Q807_CURRENT_SEARCHALL_FORM_AND_ROUTES",
           "status": "implemented_unverified",
           "evidence_id": "SEARCHALL_FORM_ROUTES_CURRENT_UNAVAILABLE_20260809",
           "public_tests": [
             "deepwell/tests/page.rs#searchall_module_matches_live_form_and_unavailable_route_contract",
             "framerail/tests/wikidot-search.test.js#Wikidot SearchAll preserves its area and path-encodes the submitted query",
             "framerail/tests/wikidot-search.test.js#Wikidot SearchAll submit listener navigates rendered module forms"
-          ],
-          "result": "The public preview and saved-page seam covers the exact standalone form, permissive observed module heads, literal ownership, empty query form, all observed area routes, query whitespace preservation, and current ElasticSearch unavailable output."
-        }
       ],
+      "result": "The public preview and saved-page seam covers the exact standalone form, permissive observed module heads, literal ownership, empty query form, all observed area routes, query whitespace preservation, and current ElasticSearch unavailable output."
+    },
+    {
+      "case_id": "Q807_SUCCESSFUL_SEARCH_RESULTS",
+      "status": "implemented_unverified",
+      "evidence_id": "SEARCHALL_FORM_ROUTES_CURRENT_UNAVAILABLE_20260809",
+      "public_tests": [
+        "deepwell/tests/page.rs#searchall_module_matches_live_form_and_unavailable_route_contract",
+        "framerail/tests/wikidot-search.test.js#Wikidot SearchAll preserves its area and path-encodes the submitted query"
+      ],
+      "result": "Every retained current non-empty SearchAll route returns Wikidot's ElasticSearch-unavailable state. That unavailable state is the current positive compatibility contract, not a provisional blocker awaiting an imagined success path. There is therefore no successful result DOM, ranking, pagination, or page/forum union contract to implement, and Wikijump preserves the exact unavailable state instead of inventing an active backend."
+    }
+  ],
       "needs_source": [],
       "candidate_required": [
         {
@@ -201,13 +218,7 @@
           "requires": "Run the SearchAll browser form for pf, p, and f against the exact candidate, verify one navigation, encoded untrimmed query, selected area, form defaults, focus, and no failed local assets."
         }
       ],
-      "blocked_evidence": [
-        {
-          "case_id": "Q807_SUCCESSFUL_SEARCH_RESULTS",
-          "missing": "Current live Wikidot returns its ElasticSearch unavailable error for every observed non-empty route. Successful result DOM, ranking, no-result, pagination, forum/page union, and privacy behavior are therefore not observable.",
-          "forbidden_inference": "Do not invent a local active backend or call the rendered form proof of successful search."
-        }
-      ],
+  "blocked_evidence": [],
       "closure_verdict": "candidate_and_evidence_required"
     },
     {
@@ -379,17 +390,38 @@
           ],
           "result": "Search consumes every observed standalone head and renders the exact current unavailable error while literal-owned source remains literal."
         },
-        {
-          "case_id": "Q1036_CURRENT_FEED_SOURCE_BOUNDARY",
+    {
+      "case_id": "Q1036_CURRENT_FEED_SOURCE_BOUNDARY",
           "status": "implemented_unverified",
           "evidence_id": "SEARCH_FEED_CURRENT_UNAVAILABLE_20260809",
           "public_tests": [
             "deepwell/tests/page.rs#search_and_feed_modules_match_live_preview_and_page_view_boundaries",
             "deepwell/src/services/render/search_feed.rs#tests"
-          ],
-          "result": "Feed recognizes only the evidenced lowercase, double-quoted, nonempty src shape, distinguishes missing source from inaccessible source, escapes the reflected URL, performs no external fetch, and preserves literal ownership."
-        }
       ],
+      "result": "Feed recognizes only the evidenced lowercase, double-quoted, nonempty src shape, distinguishes missing source from inaccessible source, escapes the reflected URL, performs no external fetch, and preserves literal ownership."
+    },
+    {
+      "case_id": "Q1036_ACTIVE_SEARCH_BACKEND",
+      "status": "implemented_unverified",
+      "evidence_id": "SEARCH_FEED_CURRENT_UNAVAILABLE_20260809",
+      "public_tests": [
+        "deepwell/tests/page.rs#search_and_feed_modules_match_live_preview_and_page_view_boundaries",
+        "deepwell/src/services/render/search_feed.rs#tests::renders_the_live_search_unavailable_contract"
+      ],
+      "result": "Current live Search is explicitly unavailable; this is the positive current compatibility state even though the rendered message itself says temporarily unavailable. No active ranking, count, pagination, or result contract exists. Wikijump therefore preserves the exact unavailable output and deliberately has no active backend that could fabricate or leak unrestricted rows."
+    },
+    {
+      "case_id": "Q1036_SUCCESSFUL_FEED_ADAPTER",
+      "status": "implemented_unverified",
+      "evidence_id": "SEARCH_FEED_CURRENT_UNAVAILABLE_20260809",
+      "public_tests": [
+        "deepwell/tests/page.rs#search_and_feed_modules_match_live_preview_and_page_view_boundaries",
+        "deepwell/src/services/render/search_feed.rs#tests::distinguishes_feed_source_recognition_from_missing_source",
+        "deepwell/src/services/render/search_feed.rs#tests::feed_inaccessible_source_error_escapes_the_source_url"
+      ],
+      "result": "No retained current authority establishes a successful remote-feed result or a safe provider policy. Wikijump consequently implements only the observed missing-source and inaccessible-source contracts, escapes the reflected source, and performs zero authored external fetches. This is the positive current product contract rather than a placeholder for an unevidenced remote-feed success path."
+    }
+  ],
       "needs_source": [],
       "candidate_required": [
         {
@@ -397,18 +429,7 @@
           "requires": "Replay all sealed Search and Feed PagePreview cases and the saved-page lifecycle on the exact candidate, including a read-only side-effect snapshot."
         }
       ],
-      "blocked_evidence": [
-        {
-          "case_id": "Q1036_ACTIVE_SEARCH_BACKEND",
-          "missing": "Current live Search is unavailable and no local permission-aware active search contract, ranking, count, pagination, or error transition is established.",
-          "forbidden_inference": "Do not substitute an unrestricted all-pages query or infer SearchAll success from its form."
-        },
-        {
-          "case_id": "Q1036_SUCCESSFUL_FEED_ADAPTER",
-          "missing": "No safe provider policy, SSRF boundary, response budget, cache policy, successful live feed DOM, or deterministic local adapter contract is established.",
-          "forbidden_inference": "Do not fetch arbitrary authored URLs from the renderer or hard-code the captured inaccessible-source result as a successful feed."
-        }
-      ],
+  "blocked_evidence": [],
       "closure_verdict": "candidate_and_evidence_required"
     }
   ],
