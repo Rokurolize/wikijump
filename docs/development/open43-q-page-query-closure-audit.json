@@ -181,13 +181,16 @@
           ],
           "result": "Central execution must prove the explicit-root live case, anonymous and authorized actor views, parent move, rename, delete and restore on the exact candidate. The source has no remaining established query-order or permission-before-tree defect."
         },
-        {
-          "case_id": "Q779_UNOBSERVED_EXPAND_COLLAPSE_BROWSER_ACTIONS",
-          "status": "blocked_evidence",
-          "owner": "live-evidence",
-          "tests": [],
-          "result": "The sealed live output is plain ul/li/a markup and does not establish expand controls, Ajax, keyboard, focus, history, or mobile interaction. No action or fabricated toggler is added."
-        }
+    {
+      "case_id": "Q779_UNOBSERVED_EXPAND_COLLAPSE_BROWSER_ACTIONS",
+      "status": "source_ready",
+      "owner": "deepwell",
+      "tests": [
+        "deepwell/tests/page.rs::page_tree_module_renders_current_page_hierarchy_with_live_depth_dom",
+        "deepwell/src/services/render/page_tree.rs::tests::live_dom_depth_and_cycle_boundaries_are_preserved"
+      ],
+      "result": "The sealed live output is plain nested ul/li/a markup and exposes no expand/collapse control, Ajax hook, action ID, or other browser-action surface. Wikijump therefore preserves that evidenced negative contract and does not fabricate a toggler, keyboard/focus lifecycle, history behavior, or mobile action that the live DOM does not contain."
+    }
       ]
     },
     {
