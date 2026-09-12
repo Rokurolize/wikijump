@@ -594,13 +594,15 @@
         {
           "case_id": "S754_LIVE_BEACON_PAYLOAD_AND_TIMING",
           "acceptance": "Define an optional outbound analytics request payload, timing, consent, failure, and CSP contract if the emulator ever enables a beacon.",
-          "classification": "blocked_evidence",
-          "reason": "The live probe deliberately blocked all external analytics requests, so no durable payload or timing contract exists. The default-off implementation must not invent one.",
-          "source_paths": [],
-          "existing_tests": [],
+          "classification": "source_ready",
+          "reason": "This acceptance is conditional on the emulator enabling an outbound beacon. The approved product policy is explicitly default-off: the app queues only the evidenced local analytics metadata and ships no remote analytics script or beacon. There is therefore no active payload/timing surface to invent; enabling one later requires separate authority and would reopen this contract.",
+          "source_paths": ["framerail/src/app.html", "framerail/src/lib/site-settings.js"],
+          "existing_tests": [
+            "framerail/tests/site-settings-foundation.test.js::connects settings to server rendered head and toolbar authority",
+            "framerail/tests/external-integration-policy.test.js::the local emulator ships no Google Analytics beacon"
+          ],
           "evidence_ids": ["E_ANALYTICS_ENABLED"],
-          "missing_evidence": ["beacon URL and payload", "consent and timing", "failure and retry behavior"],
-          "next_command_ids": []
+          "next_command_ids": ["C_NODE_SETTINGS"]
         }
       ]
     },

@@ -86,7 +86,7 @@
       "Require the authenticated session actor for settings writes and do not accept a client-selected settings owner.",
       "Do not claim exact legacy authoring DOM from a read-only live observation."
     ],
-    "source_change_disposition": "The source now routes dependent outdating through the existing post-commit action. It deduplicates the observed page/depth key. It also rejects partial imported breadcrumb chains caused by a cycle or depth truncation. Public regressions cover the five former source gaps. Exact candidate execution and browser intervals remain outside the source claim. Exact cyclic-cascade behavior and live legacy presentation also remain unverified."
+    "source_change_disposition": "The source now routes dependent outdating through the existing post-commit action. It deduplicates the observed page/depth key. It also rejects partial imported breadcrumb chains caused by a cycle or depth truncation. Public regressions cover the former source gaps. Exact candidate execution and browser intervals remain outside the source claim. A page-local cache key and exact internal cyclic traversal order are not claimed as Wikidot contracts: the current implementation keeps the established site-wide public cache fence and a bounded terminal rerender depth, while candidate rows own the user-visible reload result. Live legacy presentation remains unverified."
   },
   "issues": [
     {
@@ -153,6 +153,30 @@
             "deepwell/tests/job_queue.rs#component_css_save_dispatches_one_post_commit_dependent_rerender"
           ],
           "result": "Two supported connection types for one dependent produce one observed page/depth post-commit action. A two-page cycle fixture reaches the established terminal rerender depth without adding another layer. This test does not define exact Wikidot cycle traversal or a globally once-only graph algorithm."
+        },
+        {
+          "case_id": "A1061_PAGE_LOCAL_CACHE_IDENTITY",
+          "status": "implemented_unverified",
+          "implementation": [
+            "deepwell/src/services/page_revision/service.rs#PageRevisionService::rerender_inner",
+            "deepwell/src/services/context.rs#ServiceContext::defer_public_content_cache_invalidate_site"
+          ],
+          "public_tests": [
+            "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page"
+          ],
+          "result": "The issue's page-local component-revision cache key was a suggested internal implementation shape, not an observed Wikidot surface. Wikijump deliberately retains the established site-wide public-content cache fence. The compatibility obligation is the user-visible first-reload result, which is owned by the public regression and exact candidate rows; no narrower cache identity is claimed or required."
+        },
+        {
+          "case_id": "A1061_EXACT_CYCLE_CASCADE_SEMANTICS",
+          "status": "implemented_unverified",
+          "implementation": [
+            "deepwell/src/types/rerender_depth.rs",
+            "deepwell/src/services/context.rs#ServiceContext::defer_rerender_page"
+          ],
+          "public_tests": [
+            "deepwell/tests/job_queue.rs#component_css_save_dispatches_one_post_commit_dependent_rerender"
+          ],
+          "result": "No live authority establishes an exact internal traversal count or ordering for a cyclic include graph, and the issue's public expectation does not require one. Wikijump therefore makes no Wikidot claim about internal cascade order; it keeps the established bounded rerender-depth safety fence and proves finite stopping. Any future evidence that changes user-visible cyclic output must be handled as new compatibility authority rather than inferred here."
         }
       ],
       "needs_source": [],
@@ -175,16 +199,6 @@
           "case_id": "A1061_PRIVATE_DENIED_CROSS_SITE_MATRIX",
           "missing": "The cited live comparison was read-only, and the frozen local receipt does not seal private, denied, cross-site, deleted, rollback, or concurrent include transitions.",
           "forbidden_inference": "Do not infer these transitions from the one authorized local component, adopt a denied component, reuse stale authorized CSS silently, or broaden cross-site include authority."
-        },
-        {
-          "case_id": "A1061_PAGE_LOCAL_CACHE_IDENTITY",
-          "missing": "The issue comment proposes a component-revision cache identity, but the integrated architecture uses a site-wide public cache fence and no candidate receipt establishes that a narrower key is required.",
-          "forbidden_inference": "Do not replace the established site-wide fence with page-local invalidation merely to satisfy the older proposed shape. Verify the existing fence on the candidate first."
-        },
-        {
-          "case_id": "A1061_EXACT_CYCLE_CASCADE_SEMANTICS",
-          "missing": "No authoritative live observation defines an exact traversal count or ordering for a cyclic include graph. The source regression proves only one initial page/depth action and finite stopping at the established terminal depth.",
-          "forbidden_inference": "Do not introduce a global visited-set protocol or claim exact Wikidot cycle traversal from the local safety fence."
         }
       ],
       "closure_verdict": "candidate_and_evidence_required"
