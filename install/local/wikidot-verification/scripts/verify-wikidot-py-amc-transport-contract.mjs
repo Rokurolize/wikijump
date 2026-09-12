@@ -6,6 +6,7 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
+import { resolveWikidotPyCheckout } from "../src/wikidot-py-checkout.mjs"
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url))
 const repositoryRoot = path.resolve(scriptDirectory, "../../../..")
@@ -152,7 +153,7 @@ const expectedContractSha256 = "f6d6b22de6b69f689e746b198680a5d1ca547d69ac32bb61
 
 function parseArgs(argv) {
   let contract = path.join(repositoryRoot, "docs/development/wikidot-py-amc-transport-contract.json")
-  let sourceRoot = process.env.WIKIDOT_PY_CHECKOUT ?? path.resolve(repositoryRoot, "../wikidot.py")
+  let sourceRoot = resolveWikidotPyCheckout(repositoryRoot)
   let evidenceRoot = repositoryRoot
   let wrapper = process.env.WIKIDOT_PY_WRAPPER ?? path.join(repositoryRoot, "install/local/wikidot-verification/fixtures/wikidot-python-wrapper.sh")
   for (let index = 0; index < argv.length; index += 1) {

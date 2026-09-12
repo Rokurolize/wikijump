@@ -5,6 +5,7 @@ import os from "node:os"
 import path from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
+import { resolveWikidotPyCheckout } from "../src/wikidot-py-checkout.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..")
 const cli = path.join(root, "install/local/wikidot-verification/scripts/verify-wikidot-py-amc-transport-contract.mjs")
@@ -12,7 +13,7 @@ const contractPath = path.join(root, "docs/development/wikidot-py-amc-transport-
 const evidencePath = path.join(root, "install/local/wikidot-verification/artifacts/wikidot-py-amc-authenticated-live-20260815.json")
 const localControlsEvidencePath = path.join(root, "install/local/wikidot-verification/artifacts/issue1374-amc-local-controls-20260815.json")
 const localControlsTestPath = path.join(root, "install/local/wikidot-verification/tests/test_wikidot_py_amc_local_controls.py")
-const sourceRoot = process.env.WIKIDOT_PY_CHECKOUT ?? path.resolve(root, "../wikidot.py")
+const sourceRoot = resolveWikidotPyCheckout(root)
 const wrapperPath = process.env.WIKIDOT_PY_WRAPPER ?? path.join(root, "install/local/wikidot-verification/fixtures/wikidot-python-wrapper.sh")
 const hermeticTestWrapperPath = path.join(root, "install/local/wikidot-verification/fixtures/wikidot-python-hermetic-test-wrapper.sh")
 const gitEnvironment = {

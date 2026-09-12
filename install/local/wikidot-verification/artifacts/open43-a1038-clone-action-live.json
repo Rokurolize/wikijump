@@ -9,7 +9,8 @@
     {
       "path": "docs/development/open43-blocked-evidence-routing.json",
       "role": "sealed routing record for the run-owned mutation requirement",
-      "sha256": "1ffdacf40b757a12ee552569259a4555becc6f191896000d0ff0fcbb542abab3"
+      "sha256": "1ffdacf40b757a12ee552569259a4555becc6f191896000d0ff0fcbb542abab3",
+      "source_revision": "e2c2b73b6f80f4f7741063e8c1868953b14523a3"
     },
     {
       "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
@@ -165,7 +166,7 @@
     "title": "Open43 A1038 Clone action authority preflight"
   },
   "fixture_path": "install/local/wikidot-verification/fixtures/open43-a1038-clone-action.json",
-  "fixture_sha256": "f9d9bfc9d563bf76ad12db7431b9cf0669ed557b40b026396fe5aeaf4e89d756",
+  "fixture_sha256": "1d0130b64530f22d65a96da1e90bd53147aff04352c192c2844e7f22d5d75965",
   "integration_base": "43471ea5a4759e3cf855bf3a3ec5456d0901ce01",
   "local_observations": 0,
   "mutation_seam": null,

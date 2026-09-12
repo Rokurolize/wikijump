@@ -86,8 +86,10 @@ function validateFixture(fixture) {
     nonpublic_content_reads: 0,
   });
   for (const authority of fixture.authority_sources) {
-    const absolute = path.isAbsolute(authority.path) ? authority.path : path.join(root, authority.path);
-    assert.equal(crypto.createHash("sha256").update(fs.readFileSync(absolute)).digest("hex"), authority.sha256);
+    const actualSha256 = authority.source_revision
+      ? historicalSha256(authority.source_revision, authority.path)
+      : crypto.createHash("sha256").update(fs.readFileSync(path.isAbsolute(authority.path) ? authority.path : path.join(root, authority.path))).digest("hex");
+    assert.equal(actualSha256, authority.sha256);
   }
   validateNoSensitiveKeys(fixture);
 }
