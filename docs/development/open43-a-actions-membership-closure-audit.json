@@ -342,6 +342,18 @@
             "docs/local-authoring-boundary.md"
           ],
           "result": "Wikijump now applies a server-owned deployment-security throttle only after route, actor, site policy, current revision, and renderer binding are established. The action/site/actor partition permits ten valid dispatches per rolling sixty seconds, forged descriptors do not consume it, and exhaustion reuses the same non-disclosing permission boundary as every other unavailable membership action. The threshold is explicitly local policy rather than a claimed Wikidot threshold."
+        },
+        {
+          "case_id": "A1029_ANONYMOUS_AND_INVITED_ACTIONS",
+          "acceptance": "Match anonymous account-creation and invited-user membership transitions without a site or token oracle.",
+          "owner": "deepwell-and-framerail",
+          "evidence": [
+            "install/local/wikidot-verification/artifacts/open43-a1033-membership-authority-20260912.json",
+            "deepwell/tests/page.rs::membership_email_invitation_matches_hash_one_use_and_cancel_contract",
+            "framerail/tests/wikidot-legacy-actions.test.js::MembershipEmailInvitation replaces only the live box after accepted token consumption",
+            "framerail/tests/wikidot-legacy-actions.test.js::MembershipEmailInvitation maps used, canceled, and missing tokens to one visible unavailable error"
+          ],
+          "result": "Pinned public Wikidot server source and retained live authority establish hash-selected, no-expiry, recipient-nonbinding, one-use invitation acceptance plus cancellation-to-unavailable behavior. The merged public regression proves anonymous visitors receive the observed create-account/login state without an accept action, while an authenticated actor holding the route hash receives the renderer-bound accept action; the browser regressions replace only the invitation box and collapse used, canceled, and missing hashes to the same unavailable state."
         }
       ],
       "needs_source": [],
@@ -365,14 +377,7 @@
           "result": "The local Node seam proves dispatch and double-submit suppression, but not the served temporal behavior."
         }
       ],
-      "blocked_evidence": [
-        {
-          "case_id": "A1029_ANONYMOUS_AND_INVITED_ACTIONS",
-          "acceptance": "Match anonymous account-creation and invited-user membership transitions without a site or token oracle.",
-          "owner": "live-evidence-and-domain-model",
-          "result": "No frozen click timeline or local invitation entity defines recipient, digest, expiry, cancellation, one-use consumption, or actor transition. The controls remain non-authoritative."
-        }
-      ],
+      "blocked_evidence": [],
       "exact_commands": [
         "cargo test --manifest-path deepwell/Cargo.toml --lib services::render::membership_actions::tests -- --nocapture",
         "cargo test --manifest-path deepwell/Cargo.toml --test page public_membership_module_states_are_distinct_and_opaque -- --exact --nocapture",
