@@ -2551,6 +2551,7 @@
     "deepwell-browser-candidate": ["wikijump.deepwell", "wikijump.runtime:browser-candidate"],
     "deepwell-candidate": ["wikijump.deepwell", "wikijump.runtime:candidate"],
     "deepwell-framerail": ["wikijump.deepwell", "wikijump.framerail"],
+    "deepwell-framerail-candidate": ["wikijump.deepwell", "wikijump.framerail", "wikijump.runtime:candidate"],
     "deepwell-ftml-boundary": ["ftml", "wikijump.deepwell"],
     "deepwell-public-integration-tests": ["wikijump.deepwell", "wikijump.runtime:public-integration-tests"],
     "deepwell-public-preview-and-page-view": ["wikijump.deepwell", "wikijump.runtime:public-preview-page-view"],
