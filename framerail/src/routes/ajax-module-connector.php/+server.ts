@@ -53,6 +53,10 @@ interface WikidotListPagesModuleOutput {
   body: string
 }
 
+interface WikidotCategoriesPageListModuleOutput {
+  body: string
+}
+
 const pageSlugFromReferer = (request: Request): string | undefined => {
   const referer = request.headers.get("referer")
   if (!referer) return undefined
@@ -288,6 +292,26 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
       siteId: number
       parameters: Record<string, string>
     }) => wikidotMembersListModule(siteId, parameters, requestContext),
+    renderCategoriesPageList: ({
+      siteId,
+      categoryId
+    }: {
+      siteId: number
+      categoryId: number
+    }) =>
+      Promise.resolve(
+        client.request(
+          "wikidot_categories_page_list_module",
+          {
+            site_id: siteId,
+            category_id: categoryId
+          },
+          requestContext
+        )
+      ).then((output) => ({
+        status: "ok",
+        body: (output as WikidotCategoriesPageListModuleOutput).body
+      })),
     renderManageSiteGeneralModule: async ({ siteId }: { siteId: number }) => {
       const locales = getPreloadBackendLocales(getPreloadRequestLocales(request))
       const authorization = await adminView(siteId, locales, sessionToken)

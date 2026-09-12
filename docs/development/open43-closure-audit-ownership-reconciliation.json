@@ -147,15 +147,15 @@
     },
     {
       "path": "docs/development/open43-q-page-query-closure-audit.json",
-      "sha256": "f4ec7b9eebfb756460484bc8ba4fc10a270855eb7ba3fab789a72d6f827fae05",
+      "sha256": "85d4e0856ef28a9685099c45bc38c2026bcf8bba19f838186e3fbcea327987c7",
       "source_revision": "f14c4986abbe47214026d9f00e672db39efa677f",
       "issue_count": 7,
       "case_count": 33,
       "classification_counts": {
         "source_ready": 19,
         "needs_source": 0,
-        "candidate_required": 7,
-        "blocked_evidence": 7
+        "candidate_required": 8,
+        "blocked_evidence": 6
       },
       "issue_summaries": [
         {
@@ -204,8 +204,8 @@
           "classification_counts": {
             "source_ready": 2,
             "needs_source": 0,
-            "candidate_required": 1,
-            "blocked_evidence": 1
+            "candidate_required": 2,
+            "blocked_evidence": 0
           }
         },
         {
@@ -575,8 +575,8 @@
     "classification_counts": {
       "source_ready": 146,
       "needs_source": 0,
-      "candidate_required": 84,
-      "blocked_evidence": 55
+      "candidate_required": 85,
+      "blocked_evidence": 54
     }
   },
   "validation": {
@@ -586,7 +586,7 @@
       "command": "node install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs --root . --output docs/development/compatibility-surface-inventory.json",
       "audit_count": 7,
       "case_count": 285,
-      "blocked_routing_count": 55,
+      "blocked_routing_count": 54,
       "authoritative_manifest_count": 3,
       "open_issue_snapshot_count": 43,
       "nontracking_open_issue_count": 42,

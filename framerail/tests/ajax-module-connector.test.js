@@ -2487,3 +2487,53 @@ test("dispatches NewPage autosave modes through the injected create callback", a
     }
   ])
 })
+
+test("dispatches WikiCategoriesPageListModule through the actor-scoped read callback", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "list/WikiCategoriesPageListModule",
+      category_id: "17",
+      callbackIndex: "4"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderCategoriesPageList: async (input) => {
+        received = input
+        return {
+          status: "ok",
+          body: '<ul><li><a href="/alpha">Alpha</a></li></ul>'
+        }
+      }
+    }
+  )
+
+  assert.equal(response.status, 200)
+  const body = await response.json()
+  assert.equal(body.status, "ok")
+  assert.equal(body.body, '<ul><li><a href="/alpha">Alpha</a></li></ul>')
+  assert.equal(body.categoryId, 17)
+  assert.equal(body.callbackIndex, "4")
+  assert.deepEqual(received, { siteId: 6000006, categoryId: 17 })
+})
+
+test("WikiCategoriesPageListModule rejects forged or malformed category selectors", async () => {
+  for (const form of [
+    { moduleName: "list/WikiCategoriesPageListModule", category_id: "0" },
+    { moduleName: "list/WikiCategoriesPageListModule", category_id: "17", extra: "x" }
+  ]) {
+    let called = false
+    const response = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderCategoriesPageList: async () => {
+        called = true
+        return { status: "ok", body: "unexpected" }
+      }
+    })
+    const body = await response.json()
+    assert.equal(body.status, "not_ok")
+    assert.equal(called, false)
+  }
+})

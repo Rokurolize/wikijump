@@ -100,6 +100,16 @@ run_test() {
   run "${name}" "${TEST_NETWORK_GUARD}" "$@"
 }
 
+if group_selected verification || group_selected deepwell || group_selected wws || group_selected framerail; then
+  if [[ "${MODE}" == "final" ]]; then
+    run_test "source-bound generated contracts" node \
+      install/local/wikidot-verification/scripts/verify-repository-generated-contracts.mjs --full
+  else
+    run_test "source-bound generated contracts" node \
+      install/local/wikidot-verification/scripts/verify-repository-generated-contracts.mjs
+  fi
+fi
+
 if group_selected workflow; then
   run "actionlint" bash -c \
     'command -v actionlint >/dev/null && actionlint || echo "actionlint not installed; skipped"'

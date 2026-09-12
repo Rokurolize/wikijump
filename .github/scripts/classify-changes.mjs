@@ -23,9 +23,13 @@ const metadataOnly = (file) =>
   file.startsWith("docs/") ||
   ["AGENTS.md", "CLAUDE.md", "CODEOWNERS", "LICENSE.md", "README.md", "SECURITY.md"].includes(file)
 
+const machineAuthorityDocument = (file) =>
+  file.startsWith("docs/development/") && file.endsWith(".json")
+
 const verificationInput = (file) =>
   file.startsWith("install/local/wikidot-verification/") ||
   file.startsWith("install/standing/") ||
+  machineAuthorityDocument(file) ||
   file.startsWith("docs/wikidot-specifications/") ||
   [
     ".github/workflows/wikidot-verification.yaml",

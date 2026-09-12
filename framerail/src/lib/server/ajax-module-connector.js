@@ -25,6 +25,7 @@ const FORUM_READ_MODULE_PARAMETERS = new Map([
 const FORUM_POSITIVE_DECIMAL_FIELDS = new Set(["pageId", "c", "p", "t", "pageNo", "page"])
 const SITE_CHANGES_MODULE = "changes/SiteChangesListModule"
 const MEMBERS_LIST_MODULE = "membership/MembersListModule"
+const CATEGORIES_PAGE_LIST_MODULE = "list/WikiCategoriesPageListModule"
 const USERINFO_MODULE = "profile/UserInfoModule"
 const USERINFO_NO_USER_BODY = '<div class="error-block">No user specified.</div>'
 const MANAGE_SITE_GENERAL_MODULE = "managesite/ManageSiteGeneralModule"
@@ -213,6 +214,10 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *   renderMembersList?: (
  *     input: MembersListRenderInput
  *   ) => Promise<{ status: string; body: string }>
+ *   renderCategoriesPageList?: (input: {
+ *     siteId: number
+ *     categoryId: number
+ *   }) => Promise<{ status: string; body: string }>
  *   renderManageSiteGeneralModule?: (input: {
  *     siteId: number
  *   }) => Promise<{
@@ -695,6 +700,7 @@ export const handleAjaxModuleConnectorRequest = async (
     renderForumModule,
     renderSiteChangesModule,
     renderMembersList,
+    renderCategoriesPageList,
     renderManageSiteGeneralModule,
     renderManageSiteEducationalModule,
     upgradeEducationalSite,
@@ -1305,6 +1311,51 @@ export const handleAjaxModuleConnectorRequest = async (
       })
     } catch (error) {
       console.error("AJAX MembersListModule rendering failed", error)
+      return jsonResponse({
+        status: "not_ok",
+        body: "",
+        ...responseMetadata()
+      })
+    }
+  }
+
+  if (moduleName === CATEGORIES_PAGE_LIST_MODULE) {
+    const supportedFields = new Set([
+      "moduleName",
+      "category_id",
+      "wikidot_token7",
+      "callbackIndex"
+    ])
+    const categoryIdValue = fieldValue(fields, "category_id")
+    if (
+      !renderCategoriesPageList ||
+      [...fields.keys()].some((field) => !supportedFields.has(field)) ||
+      !isPositiveSafeDecimal(categoryIdValue)
+    ) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
+    const categoryId = Number.parseInt(categoryIdValue, 10)
+    const responseMetadata = () => ({
+      categoryId,
+      callbackIndex: fields.has("callbackIndex")
+        ? fieldValue(fields, "callbackIndex")
+        : null,
+      CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+      cssInclude: [],
+      jsInclude: []
+    })
+    try {
+      const output = await renderCategoriesPageList({ siteId, categoryId })
+      return jsonResponse({
+        status: output.status,
+        body: output.body,
+        ...responseMetadata()
+      })
+    } catch (error) {
+      console.error("AJAX WikiCategoriesPageListModule rendering failed", error)
       return jsonResponse({
         status: "not_ok",
         body: "",
