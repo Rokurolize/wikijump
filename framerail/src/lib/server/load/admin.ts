@@ -17,9 +17,14 @@ import {
   siteAnalyticsUpdate,
   siteForumNestingUpdate,
   siteIconsUpdate,
+  siteMembershipUpdate,
   siteToolbarsUpdate,
   siteUpdate
 } from "$lib/server/deepwell/admin"
+import {
+  membershipApplicationList,
+  membershipApplicationReview
+} from "$lib/server/deepwell/membership"
 import { translate } from "$lib/server/deepwell/translate"
 import {
   failForActionError,
@@ -135,9 +140,27 @@ export async function loadAdminPage(
   const discussionForm = await superValidate(request, valibot(discussionSchema))
   const analyticsForm = await superValidate(request, valibot(analyticsSchema))
   const toolbarForm = await superValidate(request, valibot(toolbarSchema))
+  const membershipForm = await superValidate(
+    {
+      siteId,
+      expectedSettingsRevision: parentData.site.settings_revision,
+      applicationEnabled: parentData.site_settings.membership.application_enabled,
+      passwordEnabled: parentData.site_settings.membership.password_enabled,
+      password: ""
+    },
+    valibot(membershipSchema)
+  )
+  const membershipReviewForm = await superValidate(
+    request,
+    valibot(membershipReviewSchema)
+  )
   const themeForm = await superValidate(request, valibot(themeSchema))
   const autonumberForm = await superValidate(request, valibot(autonumberSchema))
   const layoutForm = await superValidate(request, valibot(layoutSchema))
+  const membershipApplications =
+    response.type === "site_found" && sessionToken
+      ? await membershipApplicationList(siteId, { sessionToken, siteId })
+      : []
 
   const viewData = {
     view: response.type,
@@ -153,6 +176,9 @@ export async function loadAdminPage(
     discussionForm,
     analyticsForm,
     toolbarForm,
+    membershipForm,
+    membershipReviewForm,
+    membershipApplications,
     themeForm,
     autonumberForm,
     layoutForm,
@@ -544,6 +570,65 @@ export async function toolbarAction({
   }
 }
 
+export async function membershipAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const form = await superValidate(request, valibot(membershipSchema))
+  if (!form.valid) return fail(400, { form })
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, {
+      form,
+      message: "user does not have permission to edit membership"
+    })
+  }
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+    const session = requireActionSession(await authGetSession(sessionToken))
+    const res = await siteMembershipUpdate(
+      siteId,
+      form.data.expectedSettingsRevision,
+      session.user_id,
+      getClientAddress(),
+      form.data.applicationEnabled,
+      form.data.passwordEnabled,
+      form.data.password.trim() === "" ? null : form.data.password,
+      { sessionToken, siteId }
+    )
+    return { form, res }
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+}
+
+export async function membershipReviewAction({ request, cookies }: RequestEvent) {
+  const form = await superValidate(request, valibot(membershipReviewSchema))
+  if (!form.valid) return fail(400, { form })
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, {
+      form,
+      message: "user does not have permission to review membership applications"
+    })
+  }
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+    requireActionSession(await authGetSession(sessionToken))
+    const res = await membershipApplicationReview(
+      siteId,
+      form.data.userId,
+      form.data.decision,
+      form.data.reply,
+      { sessionToken, siteId }
+    )
+    return { form, res }
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+}
+
 export async function themeAction({ request, getClientAddress, cookies }: RequestEvent) {
   const form = await superValidate(request, valibot(themeSchema))
   if (!form.valid) return fail(400, { form })
@@ -747,6 +832,21 @@ const toolbarSchema = object({
   expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
   top: boolean(),
   bottom: boolean()
+})
+
+const membershipSchema = object({
+  siteId: number(),
+  expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
+  applicationEnabled: boolean(),
+  passwordEnabled: boolean(),
+  password: pipe(string(), maxLength(50))
+})
+
+const membershipReviewSchema = object({
+  siteId: number(),
+  userId: number(),
+  decision: vEnum({ ACCEPT: "accept", DECLINE: "decline" }),
+  reply: pipe(string(), maxLength(200))
 })
 
 const themeSchema = object({

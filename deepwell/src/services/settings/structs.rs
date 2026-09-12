@@ -71,12 +71,28 @@ pub struct ToolbarSettings {
     pub bottom: bool,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+pub struct MembershipSettings {
+    pub application_enabled: bool,
+    pub password_enabled: bool,
+    pub password_configured: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+pub struct UpdateMembershipSettings {
+    pub application_enabled: bool,
+    pub password_enabled: bool,
+    /// A replacement membership password. `None` preserves the current secret.
+    pub password: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct SiteSettings {
     pub revision: i64,
     pub welcome_page: String,
     pub google_analytics: GoogleAnalyticsSettings,
     pub toolbars: ToolbarSettings,
+    pub membership: MembershipSettings,
 }
 
 impl Default for SiteSettings {
@@ -86,6 +102,7 @@ impl Default for SiteSettings {
             welcome_page: String::from("system:welcome"),
             google_analytics: GoogleAnalyticsSettings::default(),
             toolbars: ToolbarSettings::default(),
+            membership: MembershipSettings::default(),
         }
     }
 }
@@ -382,6 +399,7 @@ mod tests {
                 welcome_page: String::from("system:welcome"),
                 google_analytics: GoogleAnalyticsSettings::default(),
                 toolbars: ToolbarSettings::default(),
+                membership: MembershipSettings::default(),
             }
         );
     }

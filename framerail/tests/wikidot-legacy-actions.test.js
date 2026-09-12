@@ -543,6 +543,149 @@ test("Join binds exact renderer DOM out of band and remains busy through reload"
   assert.equal(reloads, 1)
 })
 
+test("MembershipApply submits the current comment and reloads only after a server transition", async () => {
+  const control = actionElement()
+  control.closest = (selector) =>
+    selector === "#membership-by-apply-form"
+      ? {
+          querySelector: (query) =>
+            query === '[name="comment"]' ? { value: "apply me" } : null
+        }
+      : null
+  const fingerprint = "0123456789abcdef0123456789abcdef"
+  const calls = []
+  let reloads = 0
+  let errors = 0
+
+  assert.equal(
+    await performWikidotMembershipAction(
+      control,
+      { type: "application", page_id: 42, revision_id: 90, index: 1, fingerprint },
+      {
+        application: (...args) => {
+          calls.push(args)
+          return "submitted"
+        },
+        reload: () => (reloads += 1),
+        error: () => (errors += 1)
+      }
+    ),
+    true
+  )
+  assert.deepEqual(calls, [[42, 90, 1, fingerprint, "apply me"]])
+  assert.equal(reloads, 1)
+  assert.equal(errors, 0)
+
+  reloads = 0
+  assert.equal(
+    await performWikidotMembershipAction(
+      control,
+      { type: "application", page_id: 42, revision_id: 90, index: 1, fingerprint },
+      {
+        application: () => "no_text",
+        reload: () => (reloads += 1),
+        error: (error) => {
+          errors += 1
+          assert.match(error.message, /write something/u)
+        }
+      }
+    ),
+    true
+  )
+  assert.equal(reloads, 0)
+  assert.equal(errors, 1)
+})
+
+test("MembershipByPassword exposes the live inline wrong-password state without reloading", async () => {
+  const control = actionElement()
+  const error = { style: { display: "none" } }
+  const form = {
+    querySelector: (query) => (query === '[name="password"]' ? { value: "wrong" } : null)
+  }
+  const box = { querySelector: (query) => (query === "#mbp-error" ? error : null) }
+  control.closest = (selector) => {
+    if (selector === "#membership-by-password-form") return form
+    if (selector === "#membership-by-password-box") return box
+    return null
+  }
+  const fingerprint = "0123456789abcdef0123456789abcdef"
+  let reloads = 0
+  const calls = []
+
+  assert.equal(
+    await performWikidotMembershipAction(
+      control,
+      { type: "password", page_id: 42, revision_id: 90, index: 2, fingerprint },
+      {
+        password: (...args) => {
+          calls.push(args)
+          return "wrong_password"
+        },
+        reload: () => (reloads += 1)
+      }
+    ),
+    true
+  )
+  assert.deepEqual(calls, [[42, 90, 2, fingerprint, "wrong"]])
+  assert.equal(error.style.display, "")
+  assert.equal(reloads, 0)
+})
+
+test("MembershipEmailInvitation replaces only the live box after accepted token consumption", async () => {
+  const control = actionElement()
+  const box = { innerHTML: "before" }
+  control.closest = (selector) =>
+    selector === "#membership-email-invitation-box" ? box : null
+  const fingerprint = "0123456789abcdef0123456789abcdef"
+  const calls = []
+  let reloads = 0
+  let errors = 0
+
+  assert.equal(
+    await performWikidotMembershipAction(
+      control,
+      { type: "invitation", page_id: 42, revision_id: 90, index: 3, fingerprint },
+      {
+        invitation: (...args) => {
+          calls.push(args)
+          return { status: "accepted", site_name: "Test <Wiki>", site_slug: "test&site" }
+        },
+        reload: () => (reloads += 1),
+        error: () => (errors += 1)
+      }
+    ),
+    true
+  )
+  assert.deepEqual(calls, [[42, 90, 3, fingerprint]])
+  assert.equal(reloads, 0)
+  assert.equal(errors, 0)
+  assert.match(box.innerHTML, /<h1>Congratulations!<\/h1>/u)
+  assert.match(box.innerHTML, /Test &lt;Wiki&gt;/u)
+  assert.match(box.innerHTML, /test&amp;site\.wikidot\.com/u)
+})
+
+test("MembershipEmailInvitation maps used, canceled, and missing tokens to one visible unavailable error", async () => {
+  const control = actionElement()
+  const fingerprint = "0123456789abcdef0123456789abcdef"
+  const errors = []
+  let reloads = 0
+
+  assert.equal(
+    await performWikidotMembershipAction(
+      control,
+      { type: "invitation", page_id: 42, revision_id: 90, index: 3, fingerprint },
+      {
+        invitation: () => ({ status: "unavailable" }),
+        reload: () => (reloads += 1),
+        error: (error) => errors.push(error.message)
+      }
+    ),
+    true
+  )
+  assert.deepEqual(errors, ["Sorry, no invitation can be found."])
+  assert.equal(reloads, 0)
+})
+
 test("unsupported membership descriptors and authored lookalikes fail closed", async () => {
   const lookalike = actionElement()
   lookalike.matches = () => false

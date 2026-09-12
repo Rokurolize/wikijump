@@ -20,7 +20,13 @@
 
 use super::prelude::*;
 use crate::models::relation::Model as RelationModel;
-use crate::services::membership::{MembershipJoinOutcome, MembershipService};
+use crate::services::membership::{
+    AcceptMembershipEmailInvitation, ListMembershipApplications,
+    MembershipApplicationOutcome, MembershipApplicationStatus, MembershipApplicationView,
+    MembershipEmailInvitationOutcome, MembershipJoinOutcome, MembershipPasswordOutcome,
+    MembershipService, ReviewMembershipApplication, SubmitMembershipApplication,
+    SubmitMembershipPassword,
+};
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::{CreateSiteMember, GetSiteMember, RemoveSiteMember};
 use crate::types::{Action, Permission, Resource};
@@ -30,6 +36,48 @@ pub async fn membership_join(
     params: Params<'static>,
 ) -> Result<MembershipJoinOutcome> {
     MembershipService::join(ctx, parse!(params, SiteMembership)).await
+}
+
+pub async fn membership_password_submit(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<MembershipPasswordOutcome> {
+    let input: SubmitMembershipPassword = parse!(params, SiteMembership);
+    MembershipService::submit_password(ctx, input).await
+}
+
+pub async fn membership_application_submit(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<MembershipApplicationOutcome> {
+    let input: SubmitMembershipApplication = parse!(params, SiteMembership);
+    MembershipService::submit_application(ctx, input).await
+}
+
+pub async fn membership_application_review(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<MembershipApplicationStatus> {
+    let input: ReviewMembershipApplication = parse!(params, SiteMembership);
+    let reviewer_user_id = require_role_assign_permission(ctx, input.site_id).await?;
+    MembershipService::review_application(ctx, input, reviewer_user_id).await
+}
+
+pub async fn membership_application_list(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Vec<MembershipApplicationView>> {
+    let input: ListMembershipApplications = parse!(params, SiteMembership);
+    require_role_assign_permission(ctx, input.site_id).await?;
+    MembershipService::pending_applications(ctx, input.site_id).await
+}
+
+pub async fn membership_email_invitation_accept(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<MembershipEmailInvitationOutcome> {
+    let input: AcceptMembershipEmailInvitation = parse!(params, SiteMembership);
+    MembershipService::accept_email_invitation(ctx, input).await
 }
 
 async fn require_role_assign_permission(

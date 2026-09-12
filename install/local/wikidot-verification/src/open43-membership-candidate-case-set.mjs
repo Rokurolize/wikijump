@@ -41,7 +41,6 @@ const PAGE_SOURCE = [
 const JOIN_PAGE = "system:join";
 const JOIN_CONTROL = "WIKIDOT.page.listeners.join";
 const EXPECTED_REQUESTS = Object.freeze([
-  ["site_get", "anonymous"],
   ["member_get", "registered"],
   ["page_get", "registered"],
   ["page_view", "registered"],
@@ -206,7 +205,7 @@ function staticModuleEvidence(value, name, actorState) {
     if (!body.includes(expected)) throw new Error(`${name} omitted the observed ${expected} output`);
   }
   if (actorState === "anonymous") {
-    if (!body.includes('<div id="membership-apply-box">') || !body.includes("You need to have a Wikidot.com account and be signed to apply for membership.") || !body.includes("Please create an account and/or sign in first.")) {
+    if (!body.includes('<div id="membership-apply-box">') || !body.includes("You need to have a Wikidot.com account and be signed to apply for membership.") || !body.includes("Membership via password is not enabled for this site.")) {
       throw new Error(`${name} omitted the observed anonymous membership state`);
     }
   } else if (actorState === "member") {
@@ -237,6 +236,8 @@ class Open43MembershipRun {
   #pageCreateAttempted = false;
   #membershipResource = null;
   #pageResource = null;
+  #originalMembershipPolicy = null;
+  #membershipPolicyChanged = false;
   #ownedPage = null;
 
   constructor({ session, resources, pageSlug: slug }) {
@@ -277,10 +278,34 @@ class Open43MembershipRun {
 
   async execute() {
     const actor = await this.#session.verifyRegisteredSession();
-    const eventStart = this.#session.events.length;
     const site = await this.#rpc("site_get", { site: SITE_SLUG }, { actor: "anonymous" });
     if (!Number.isSafeInteger(site?.site_id) || site.slug !== SITE_SLUG) throw new Error("editable membership candidate site is missing");
     this.#siteId = site.site_id;
+    if (!Number.isSafeInteger(site.settings_revision) || typeof site.membership_by_application !== "boolean" || typeof site.membership_by_password !== "boolean") {
+      throw new Error("editable membership candidate site omitted its membership policy identity");
+    }
+    this.#originalMembershipPolicy = {
+      application_enabled: site.membership_by_application,
+      password_enabled: site.membership_by_password,
+    };
+    if (!site.membership_by_application) {
+      const updated = await this.#rpc("site_update", {
+        site: this.#siteId,
+        expected_settings_revision: site.settings_revision,
+        user_id: this.#session.administratorUserId,
+        membership: {
+          application_enabled: true,
+          password_enabled: site.membership_by_password,
+          password: null,
+        },
+        ip_address: "127.0.0.1",
+      }, { actor: "administrator" });
+      if (updated?.membership_by_application !== true || updated.membership_by_password !== site.membership_by_password) {
+        throw new Error("candidate membership policy setup did not preserve the intended application/password boundary");
+      }
+      this.#membershipPolicyChanged = true;
+    }
+    const eventStart = this.#session.events.length;
     if (await this.#membership() !== null) throw new Error("registered candidate actor is already a site member");
     if (await this.#page() !== null) throw new Error("run-owned membership page namespace already exists");
 
@@ -391,6 +416,7 @@ class Open43MembershipRun {
     const failures = [];
     let pageAfter = null;
     let membershipAfter = null;
+    let membershipPolicyRestored = !this.#membershipPolicyChanged;
     try {
       if (this.#siteId !== null && this.#pageCreateAttempted) {
         const page = await this.#page({ actor: "administrator", cleanup: true });
@@ -424,8 +450,31 @@ class Open43MembershipRun {
     } catch (error) {
       failures.push(error);
     }
+    try {
+      if (this.#siteId !== null && this.#membershipPolicyChanged && this.#originalMembershipPolicy !== null) {
+        const site = await this.#rpc("site_get", { site: SITE_SLUG }, { actor: "anonymous", cleanup: true });
+        if (!Number.isSafeInteger(site?.settings_revision)) throw new Error("membership policy cleanup could not read the current site revision");
+        const restored = await this.#rpc("site_update", {
+          site: this.#siteId,
+          expected_settings_revision: site.settings_revision,
+          user_id: this.#session.administratorUserId,
+          membership: {
+            application_enabled: this.#originalMembershipPolicy.application_enabled,
+            password_enabled: this.#originalMembershipPolicy.password_enabled,
+            password: null,
+          },
+          ip_address: "127.0.0.1",
+        }, { actor: "administrator", cleanup: true });
+        membershipPolicyRestored =
+          restored?.membership_by_application === this.#originalMembershipPolicy.application_enabled
+          && restored?.membership_by_password === this.#originalMembershipPolicy.password_enabled;
+        if (!membershipPolicyRestored) throw new Error("membership candidate policy cleanup did not restore the original policy");
+      }
+    } catch (error) {
+      failures.push(error);
+    }
     if (failures.length > 0) throw new AggregateError(failures, "membership candidate cleanup failed");
-    return { page_get: pageAfter, member_get: membershipAfter };
+    return { page_get: pageAfter, member_get: membershipAfter, membership_policy_restored: membershipPolicyRestored };
   }
 }
 
@@ -461,10 +510,10 @@ function verifyCase(caseId, observations) {
 }
 
 function verifyCleanup(proof, resources) {
-  if (proof?.page_get !== null || proof?.member_get !== null || !Array.isArray(resources) || resources.length !== 2 || resources.some(({ released }) => released !== true)) {
+  if (proof?.page_get !== null || proof?.member_get !== null || proof?.membership_policy_restored !== true || !Array.isArray(resources) || resources.length !== 2 || resources.some(({ released }) => released !== true)) {
     throw new Error("membership cleanup did not prove page and membership absence");
   }
-  return { public_absence_verified: true, page_absent: true, membership_absent: true, resource_count: resources.length };
+  return { public_absence_verified: true, page_absent: true, membership_absent: true, membership_policy_restored: true, resource_count: resources.length };
 }
 
 export function createOpen43MembershipCandidateCaseSet({
@@ -484,6 +533,7 @@ export function createOpen43MembershipCandidateCaseSet({
     "deepwell/src/endpoints/site_member.rs",
     "deepwell/src/services/membership/service.rs",
     "deepwell/src/services/render/runtime_modules.rs",
+    "deepwell/src/services/site/service.rs",
     "deepwell/src/services/view/service.rs",
     "docs/wikidot-specifications/specifications/module/module-anonymousnotificationsunsubscribe.md",
     "docs/wikidot-specifications/specifications/module/module-membershipapply.md",

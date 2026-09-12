@@ -19,10 +19,10 @@
  */
 
 use super::structs::{
-    ForumStructureSettings, GoogleAnalyticsSettings, NavigationPage, NavigationPageHtml,
-    NavigationPageSlugs, NavigationPageWikitext, PageDiscussionSettings,
-    PageRatingPermission, PageRatingSettings, PageRatingType, PageRatingVisibility,
-    SiteSettings, ThemeSetting, ToolbarSettings,
+    ForumStructureSettings, GoogleAnalyticsSettings, MembershipSettings, NavigationPage,
+    NavigationPageHtml, NavigationPageSlugs, NavigationPageWikitext,
+    PageDiscussionSettings, PageRatingPermission, PageRatingSettings, PageRatingType,
+    PageRatingVisibility, SiteSettings, ThemeSetting, ToolbarSettings,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::license::WikidotLicense;
@@ -53,6 +53,11 @@ impl SettingsService {
             toolbars: ToolbarSettings {
                 top: site.show_top_toolbar,
                 bottom: site.show_bottom_toolbar,
+            },
+            membership: MembershipSettings {
+                application_enabled: site.membership_by_application,
+                password_enabled: site.membership_by_password,
+                password_configured: site.membership_password_hash.is_some(),
             },
         }
     }

@@ -3,7 +3,7 @@
   "source_identities": {
     "jsonrpc_registry": {
       "path": "deepwell/src/api.rs",
-      "sha256": "0644bf0531be22b911006a21d93746e886104d5a49ac456347a23c6a5d71c364"
+      "sha256": "cc3d856b24e5701084ef181cf3e787d02b2eb6efb7308b978e3e0197443ecf8d"
     },
     "request_context_middleware": {
       "path": "deepwell/src/middleware.rs",
@@ -26,7 +26,7 @@
       "classification": "historical"
     }
   ],
-  "method_count": 167,
+  "method_count": 172,
   "methods": [
     {
       "method": "admin_view",
@@ -3740,7 +3740,7 @@
         "component": "deepwell",
         "handler": "membership_get",
         "source": "deepwell/src/endpoints/site_member.rs#membership_get",
-        "source_sha256": "9a421c90f0358343906de94ba08b33eefd9cbdf712707a12e70d8bae69a820e8",
+        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
         "function_sha256": "d2ae061a8ff993bcce1490c760551503aa1862d668c141846220ad777bc74eb8"
       },
       "params_schema": {
@@ -3795,7 +3795,7 @@
         "component": "deepwell",
         "handler": "membership_remove",
         "source": "deepwell/src/endpoints/site_member.rs#membership_remove",
-        "source_sha256": "9a421c90f0358343906de94ba08b33eefd9cbdf712707a12e70d8bae69a820e8",
+        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
         "function_sha256": "9723b1832797babdf639013c3bca891d616c79a80625bc15b32762128175b51e"
       },
       "params_schema": {
@@ -3854,7 +3854,7 @@
         "component": "deepwell",
         "handler": "membership_set",
         "source": "deepwell/src/endpoints/site_member.rs#membership_set",
-        "source_sha256": "9a421c90f0358343906de94ba08b33eefd9cbdf712707a12e70d8bae69a820e8",
+        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
         "function_sha256": "8b5e5e8990322fd5424fa1756188e97a91580c7aa833ac643537bf9d724a75b7"
       },
       "params_schema": {
@@ -3911,12 +3911,244 @@
       }
     },
     {
+      "method": "membership_application_list",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "membership_application_list",
+        "source": "deepwell/src/endpoints/site_member.rs#membership_application_list",
+        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
+        "function_sha256": "ece11bacf9ae0d230c0dd32b9f2826ce2721f462032d90250ee2414a5b87deb5"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params, SiteMembership)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [
+          "authenticated_user",
+          "permission_check"
+        ],
+        "requirement_sources": [
+          "deepwell/src/endpoints/site_member.rs#membership_application_list",
+          "deepwell/src/endpoints/site_member.rs#require_role_assign_permission"
+        ]
+      },
+      "mutation_class": {
+        "classification": "read_only",
+        "source_signals": []
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "source_contract_only",
+        "reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract",
+        "coverage_gap": {
+          "searched_root": "deepwell/tests",
+          "reason": "no direct run_endpoint handler invocation or rpc_request method invocation was found",
+          "searched_invocations": [
+            "run_endpoint!(runner, handler, ...)",
+            "rpc_request(\"method\", ...)"
+          ]
+        }
+      }
+    },
+    {
+      "method": "membership_application_review",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "membership_application_review",
+        "source": "deepwell/src/endpoints/site_member.rs#membership_application_review",
+        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
+        "function_sha256": "3775afc22633325528f021e33f527ed85313ddb927bafef8eb6c213132c32312"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params, SiteMembership)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [
+          "authenticated_user",
+          "permission_check"
+        ],
+        "requirement_sources": [
+          "deepwell/src/endpoints/site_member.rs#membership_application_review",
+          "deepwell/src/endpoints/site_member.rs#require_role_assign_permission"
+        ]
+      },
+      "mutation_class": {
+        "classification": "mutating",
+        "source_signals": [
+          "MembershipService::review_application"
+        ]
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "endpoint_behavioral",
+        "reference": "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract",
+        "alternatives": [],
+        "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+      }
+    },
+    {
+      "method": "membership_application_submit",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "membership_application_submit",
+        "source": "deepwell/src/endpoints/site_member.rs#membership_application_submit",
+        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
+        "function_sha256": "17797fef1ea4bd49dee92a39b164eb3a6e272df980bf2025bcefa29e776ed2ce"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params, SiteMembership)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [],
+        "requirement_sources": [
+          "deepwell/src/endpoints/site_member.rs#membership_application_submit"
+        ]
+      },
+      "mutation_class": {
+        "classification": "mutating",
+        "source_signals": [
+          "MembershipService::submit_application"
+        ]
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "endpoint_behavioral",
+        "reference": "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract",
+        "alternatives": [],
+        "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+      }
+    },
+    {
+      "method": "membership_email_invitation_accept",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "membership_email_invitation_accept",
+        "source": "deepwell/src/endpoints/site_member.rs#membership_email_invitation_accept",
+        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
+        "function_sha256": "f31569ee838578b10eb34af98a7766fdc76171451a90bb9936fd33b2765e2725"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params, SiteMembership)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [],
+        "requirement_sources": [
+          "deepwell/src/endpoints/site_member.rs#membership_email_invitation_accept"
+        ]
+      },
+      "mutation_class": {
+        "classification": "mutating",
+        "source_signals": [
+          "MembershipService::accept_email_invitation"
+        ]
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "endpoint_behavioral",
+        "reference": "deepwell/tests/page.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract",
+        "alternatives": [],
+        "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+      }
+    },
+    {
       "method": "membership_join",
       "endpoint_owner": {
         "component": "deepwell",
         "handler": "membership_join",
         "source": "deepwell/src/endpoints/site_member.rs#membership_join",
-        "source_sha256": "9a421c90f0358343906de94ba08b33eefd9cbdf712707a12e70d8bae69a820e8",
+        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
         "function_sha256": "214a40c3d690616c0dcd6101fb03b5447b8f179356364a98130895bd63987187"
       },
       "params_schema": {
@@ -3961,6 +4193,61 @@
       "test_witness": {
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page",
+        "alternatives": [],
+        "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+      }
+    },
+    {
+      "method": "membership_password_submit",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "membership_password_submit",
+        "source": "deepwell/src/endpoints/site_member.rs#membership_password_submit",
+        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
+        "function_sha256": "3882c8069b98e5d2a49a9bb0ebaef27df326cf2358906ef2bd4cc86a82c62d23"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params, SiteMembership)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [],
+        "requirement_sources": [
+          "deepwell/src/endpoints/site_member.rs#membership_password_submit"
+        ]
+      },
+      "mutation_class": {
+        "classification": "mutating",
+        "source_signals": [
+          "MembershipService::submit_password"
+        ]
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "endpoint_behavioral",
+        "reference": "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract",
         "alternatives": [],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -7170,7 +7457,9 @@
           "deepwell/tests/page.rs#listusers_module_matches_live_preview_and_runtime_viewer",
           "deepwell/tests/page.rs#mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views",
           "deepwell/tests/page.rs#members_module_ssr_and_ajax_share_100_row_duplicate_relation_boundary",
+          "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract",
           "deepwell/tests/page.rs#membership_by_password_module_matches_live_anonymous_and_member_output",
+          "deepwell/tests/page.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract",
           "deepwell/tests/page.rs#nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
           "deepwell/tests/page.rs#orphanedpages_module_refreshes_after_linker_soft_delete",
           "deepwell/tests/page.rs#page_move_renders_with_destination_category_context",
@@ -8793,7 +9082,9 @@
           "deepwell/tests/page.rs#members_list_ajax_paginates_only_filtered_site_identities",
           "deepwell/tests/page.rs#members_module_queries_only_visible_site_members_and_roles",
           "deepwell/tests/page.rs#members_module_ssr_and_ajax_share_100_row_duplicate_relation_boundary",
+          "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract",
           "deepwell/tests/page.rs#membership_by_password_module_matches_live_anonymous_and_member_output",
+          "deepwell/tests/page.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract",
           "deepwell/tests/page.rs#missing_remote_site_include_does_not_fall_back_to_same_slug_local_page",
           "deepwell/tests/page.rs#nested_include_image_blocks_keep_their_attachment_page_owner",
           "deepwell/tests/page.rs#newpage_module_resolves_existing_templates_in_rendered_pages",

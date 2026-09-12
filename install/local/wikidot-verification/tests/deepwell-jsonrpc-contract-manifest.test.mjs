@@ -44,7 +44,7 @@ test("Deepwell JSON-RPC manifest exactly covers the current registered contract"
   assert.equal(result.status, 0, result.stderr)
   const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"))
   assert.equal(manifest.schema, "wikijump.deepwell_jsonrpc_contract_manifest.v1")
-  assert.equal(manifest.method_count, 167)
+  assert.equal(manifest.method_count, 172)
   assert.equal(manifest.methods.length, manifest.method_count)
   assert.equal(new Set(manifest.methods.map(({ method }) => method)).size, manifest.method_count)
   for (const method of manifest.methods) {
@@ -70,6 +70,15 @@ test("Deepwell JSON-RPC manifest exactly covers the current registered contract"
   ])
   assert.deepEqual(byMethod.get("membership_join").actor_context.requirements, [])
   assert.equal(byMethod.get("membership_join").params_schema.decoder, "parse!(params, SiteMembership)")
+  assert.equal(byMethod.get("membership_application_list").mutation_class.classification, "read_only")
+  for (const method of [
+    "membership_password_submit",
+    "membership_application_submit",
+    "membership_application_review",
+    "membership_email_invitation_accept"
+  ]) {
+    assert.equal(byMethod.get(method).mutation_class.classification, "mutating")
+  }
   assert.equal(byMethod.get("blob_blacklist_add").params_schema.decoder, "params.parse()")
   for (const method of [
     "blob_blacklist_add",

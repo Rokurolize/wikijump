@@ -99,6 +99,22 @@ function testEnvironment({databasePort, cachePort, filesPort}) {
 }
 
 async function run() {
+  if (process.argv.slice(2).some((argument) => argument === "--help" || argument === "-h")) {
+    process.stdout.write(
+      [
+        "Usage: run-deepwell-integration-validation.mjs [cargo-test-args...] [-- harness-args...]",
+        "",
+        "Runs Deepwell tests against a task-owned PostgreSQL/Valkey/MinIO stack.",
+        "Arguments before -- are forwarded to `cargo test`; arguments after -- are forwarded",
+        "to the Rust test harness after the runner's mandatory `--test-threads 1` argument.",
+        "",
+      ].join("\n"),
+    );
+    return;
+  }
+  const separator = process.argv.indexOf("--", 2);
+  const cargoTestArgs = process.argv.slice(2, separator === -1 ? undefined : separator);
+  const harnessArgs = separator === -1 ? [] : process.argv.slice(separator + 1);
   const images = Object.fromEntries(Object.keys(DEFAULT_IMAGES).map((role) => [role, imageName(role)]));
   await Promise.all(Object.entries(images).map(([role, image]) => requireLocalImage(image, role)));
 
@@ -172,7 +188,8 @@ async function run() {
       "install/local/deepwell/config.toml",
     ], {env: {...env, DEEPWELL_RUNTIME_ACTION: "seeder"}});
     await command("cargo", [
-      "test", "--manifest-path", "deepwell/Cargo.toml", "--", "--test-threads", "1",
+      "test", "--manifest-path", "deepwell/Cargo.toml", ...cargoTestArgs,
+      "--", "--test-threads", "1", ...harnessArgs,
     ], {env});
   } finally {
     process.removeListener("SIGINT", onSignal);
