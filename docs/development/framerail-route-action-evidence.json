@@ -606,6 +606,30 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-server-action:/_admin?/membership",
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::renders membership policy without exposing a configured password and binds review actions"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/membershipReview",
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::renders membership policy without exposing a configured password and binds review actions"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-server-action:/_admin?/navigation",
       "tests": [
         "framerail/tests/admin-navigation.test.js::maps the inheritance control to nullable category overrides"
@@ -753,6 +777,30 @@
       "surface_id": "framerail-server-action:/-/admin?/license",
       "tests": [
         "framerail/tests/admin-license.test.js::returns explicit and inherited custom licenses as stable sanitizer input"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/-/admin?/membership",
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::renders membership policy without exposing a configured password and binds review actions"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/-/admin?/membershipReview",
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::renders membership policy without exposing a configured password and binds review actions"
       ],
       "tracking": [
         {
@@ -1162,9 +1210,45 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-server-action:/?/membershipApplication",
+      "tests": [
+        "framerail/tests/page-membership-action-boundary.test.js::application and password actions preserve actor-bound page context"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/?/membershipEmailInvitation",
+      "tests": [
+        "framerail/tests/page-membership-action-boundary.test.js::email invitation action derives the opaque hash from the trusted route, not the request body"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-server-action:/?/membershipJoin",
       "tests": [
         "framerail/tests/page-membership-action-boundary.test.js::root and slug page routes bind actor-verified membership Join"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/?/membershipPassword",
+      "tests": [
+        "framerail/tests/page-membership-action-boundary.test.js::application and password actions preserve actor-bound page context"
       ],
       "tracking": [
         {
@@ -1558,9 +1642,45 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/membershipApplication",
+      "tests": [
+        "framerail/tests/page-membership-action-boundary.test.js::application and password actions preserve actor-bound page context"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/membershipEmailInvitation",
+      "tests": [
+        "framerail/tests/page-membership-action-boundary.test.js::email invitation action derives the opaque hash from the trusted route, not the request body"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/membershipJoin",
       "tests": [
         "framerail/tests/page-membership-action-boundary.test.js::root and slug page routes bind actor-verified membership Join"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/membershipPassword",
+      "tests": [
+        "framerail/tests/page-membership-action-boundary.test.js::application and password actions preserve actor-bound page context"
       ],
       "tracking": [
         {

@@ -113,9 +113,9 @@ const AUDITED_CURRENT_CATALOG_ISSUES = Object.freeze({
   fallback_mapping_sha256: "9a7489f1083ef9a114f95221997194afcb6eb1b957ad36f307e309a3a3668ff7"
 })
 const AUDITED_ISSUE_GROUPS = Object.freeze({
-  deepwell_jsonrpc_method: Object.freeze({ count: 167, surface_ids_sha256: "aa5de1edfe523bc181082f65888db2d16ac5359f2d22e7fedc9a612a737dedb5", mapping_sha256: "cc2723e21bc7dfadb3fd233dfe4ae4b1a0f303b00966d12e2b6e79c77a74c38a" }),
+  deepwell_jsonrpc_method: Object.freeze({ count: 172, surface_ids_sha256: "ccc174c9d7382ddf097898408cc150aa83a4b939ad2f6f642893cd47172f06db", mapping_sha256: "b2e191bd414d2f5b6f291a61157dc141c14d79abd920e07d50aff7c42a0adc45" }),
   framerail_route: Object.freeze({ count: 28, surface_ids_sha256: "df0699905bb6b1c0a333c910f934d96d9ef1914a0d71e00659522d6be17280cc", mapping_sha256: "51b480159bbc424faf3199e75f50650b1f23d9a3eea0bdee1682ae89adc47a3d" }),
-  framerail_server_action: Object.freeze({ count: 97, surface_ids_sha256: "f1d6baa4652c07e181839c8efb90709c35c76154e95f0b71f15c94c0cd9f2dfc", mapping_sha256: "3cc1f313532c1664c989c02e121b4476f25642b48f55a6f5958fc92c97d513a3" }),
+  framerail_server_action: Object.freeze({ count: 107, surface_ids_sha256: "2d24668b2c1a9c5dd03f76aeba6e4ebe40127e0570bf0b788bec5d980cefd836", mapping_sha256: "03447d40bc082d4b323530ec2abf0b57ad3906fac5ef268cb1bb344e8e9fa0fd" }),
   framerail_amc_action_shape: Object.freeze({ count: 2, surface_ids_sha256: "69e643ef40a7efffbcc2cea03dc0f864aa0fb62d51ab8fd0c6062c74af9bee49", mapping_sha256: "945b06829bdf00f44c78040b1b2a4f793bb3e67325c98a94cffee4079c008646" }),
   framerail_amc_module_shape: Object.freeze({ count: 27, surface_ids_sha256: "4f2f2705c525444287f6d2f2835903263953f78d8d2d830f46b296e139de8b13", mapping_sha256: "90c279280479e68e0227a8c4d26ececa5a74b0f0ef8937abeac548dcffc89b61" }),
   page_action: Object.freeze({ count: 25, surface_ids_sha256: "7650ecd18142446eb1c4f557ad13bc525cdd541b31dcbc982ea1f92288f0e206", mapping_sha256: "98ebacfd535793c5c4996797ea2c206f3edea85852520705b01a3f9dd03faad6" }),
@@ -1725,7 +1725,11 @@ async function applyFramerailRouteActionEvidence(root, records, sourceRevision) 
     !Array.isArray(registry.records) ||
     registry.records.length !== records.length
   ) {
-    throw new Error(`${registryPath} has an invalid route/action evidence contract`)
+    throw new Error(
+      `${registryPath} has an invalid route/action evidence contract ` +
+        `(registry_records=${Array.isArray(registry.records) ? registry.records.length : "invalid"}, ` +
+        `discovered_records=${records.length})`
+    )
   }
   const recordIds = records.map(({ surface_id: surfaceId }) => surfaceId).sort()
   const evidenceIds = registry.records.map(({ surface_id: surfaceId }) => surfaceId).sort()
@@ -1787,7 +1791,7 @@ async function applyFramerailRouteActionEvidence(root, records, sourceRevision) 
       }
     })
   }
-  if (linked !== 125 || gaps !== 0) {
+  if (linked !== records.length || gaps !== 0) {
     throw new Error(`${registryPath} current test-link counts drifted`)
   }
   return projected
