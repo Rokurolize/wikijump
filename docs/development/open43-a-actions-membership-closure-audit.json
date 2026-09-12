@@ -429,6 +429,16 @@
             "framerail/tests/wikidot-legacy-actions.test.js::Rate controls share one busy boundary across the page runtime"
           ],
           "result": "No client-computed score, count, actor, policy, site, page, revision, or vote value is accepted as authority."
+        },
+        {
+          "case_id": "A1030_STAR_CANCEL",
+          "acceptance": "Expose a star-mode cancel control only if Wikidot has an observed cancel gesture or control.",
+          "owner": "deepwell",
+          "evidence": [
+            "install/local/wikidot-verification/artifacts/rate-module-live-stars-and-body.json",
+            "deepwell/src/services/render/rate_actions.rs::star_registry_owns_only_values_one_through_five"
+          ],
+          "result": "The live post-vote five-star DOM contains five star controls and no cancel control; the same retained evidence shows cancelVote only in plus-minus mode. The star action registry therefore exposes values one through five and no cancel descriptor."
         }
       ],
       "needs_source": [],
@@ -458,12 +468,6 @@
           "acceptance": "Match anonymous, non-member, member, moderator, administrator, and existing-vote control state in all rating modes.",
           "owner": "live-evidence",
           "result": "The frozen live capture does not establish the full actor and existing-vote DOM matrix. No control difference is invented."
-        },
-        {
-          "case_id": "A1030_STAR_CANCEL",
-          "acceptance": "Expose a star-mode cancel control only if Wikidot has an observed cancel gesture or control.",
-          "owner": "live-evidence",
-          "result": "The capture proves five selectable stars but no star cancel control. Star cancel remains unavailable."
         }
       ],
       "exact_commands": [

@@ -274,6 +274,13 @@ mod tests {
                 .collect::<Vec<_>>(),
             [1, 2, 3, 4, 5],
         );
+        assert!(
+            browser
+                .actions
+                .iter()
+                .all(|action| matches!(action, RateBrowserAction::Rate { .. })),
+            "the evidenced five-star widget has no cancel control",
+        );
         for (index, action) in browser.actions.iter().enumerate() {
             let fingerprint = match action {
                 RateBrowserAction::Rate { fingerprint, .. }
