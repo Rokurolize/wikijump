@@ -243,8 +243,14 @@ test("application and password actions preserve actor-bound page context", async
     )
   }
 
-  assert.equal(calls.filter(({ method }) => method === "membership_application_submit").length, 2)
-  assert.equal(calls.filter(({ method }) => method === "membership_password_submit").length, 2)
+  assert.equal(
+    calls.filter(({ method }) => method === "membership_application_submit").length,
+    2
+  )
+  assert.equal(
+    calls.filter(({ method }) => method === "membership_password_submit").length,
+    2
+  )
   for (const call of calls.filter(({ method }) => method.startsWith("membership_"))) {
     assert.deepEqual(call.context, {
       siteId: 17,
@@ -315,7 +321,9 @@ test("email invitation action derives the opaque hash from the trusted route, no
   assert.deepEqual(result, {
     res: { status: "accepted", site_name: "Test Wiki", site_slug: "test" }
   })
-  const mutation = calls.find(({ method }) => method === "membership_email_invitation_accept")
+  const mutation = calls.find(
+    ({ method }) => method === "membership_email_invitation_accept"
+  )
   assert.deepEqual(mutation.params, {
     page_id: 42,
     last_revision_id: 90,

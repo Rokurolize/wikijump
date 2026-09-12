@@ -5,10 +5,7 @@ import type { RequestContext } from "$lib/server/request-context"
 export type MembershipJoinOutcome = "joined" | "already_member"
 export type MembershipPasswordOutcome = "joined" | "already_member" | "wrong_password"
 export type MembershipApplicationOutcome =
-  | "submitted"
-  | "already_applied"
-  | "already_member"
-  | "no_text"
+  "submitted" | "already_applied" | "already_member" | "no_text"
 
 export type MembershipEmailInvitationOutcome =
   | { status: "accepted"; site_name: string; site_slug: string }

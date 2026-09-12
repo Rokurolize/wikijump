@@ -43,8 +43,7 @@
 const JOIN_SELECTOR = `div > a[href="javascript:;"][onclick="WIKIDOT.page.listeners.join(event, 'unified')"]`
 const APPLICATION_SELECTOR = `#membership-by-apply-form #mba-apply`
 const PASSWORD_SELECTOR = `#membership-by-password-form #mbp-apply`
-const INVITATION_SELECTOR =
-  `#membership-email-invitation-box a[href="javascript:;"][onclick^="WIKIDOT.modules.MembershipEmailInvitationModule.listeners.accept"]`
+const INVITATION_SELECTOR = `#membership-email-invitation-box a[href="javascript:;"][onclick^="WIKIDOT.modules.MembershipEmailInvitationModule.listeners.accept"]`
 
 /** @type {WeakMap<HTMLElement, MembershipBrowserAction>} */
 const boundActions = new WeakMap()
@@ -84,7 +83,7 @@ export const membershipEmailInvitationCongratulationsHtml = (siteName, siteSlug)
   const domain = escapeHtml(`${siteSlug}.wikidot.com`)
   return [
     "<h1>Congratulations!</h1>",
-    `<p>You now a member of the site \"${name}\". Please click on the link below to go to this Site.</p>`,
+    `<p>You now a member of the site "${name}". Please click on the link below to go to this Site.</p>`,
     `<p style="text-align: center; font-weigh: bold; font-size: 140%;"><a href="http://${domain}">${domain}</a></p>`
   ].join("")
 }
@@ -188,7 +187,9 @@ export const performWikidotMembershipAction = async (element, action, runtime) =
       }
       if (result?.status === "already_member") {
         runtime.error?.(
-          new Error("It seems you already are a member of this site! Congratulations anyway ;-)")
+          new Error(
+            "It seems you already are a member of this site! Congratulations anyway ;-)"
+          )
         )
         return true
       }

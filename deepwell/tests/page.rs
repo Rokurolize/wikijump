@@ -78,9 +78,9 @@ use deepwell::services::permission::{
 };
 use deepwell::services::public_cache::PublicContentCache;
 use deepwell::services::relation::{
-    CreatePageWatch, CreateSiteBan, CreateSiteMember, PageAttribution, PageAttributionKind,
-    RelationObject, RelationReference, RemovePageWatch, SiteMemberAccepted,
-    SiteBanData, SiteMemberData,
+    CreatePageWatch, CreateSiteBan, CreateSiteMember, PageAttribution,
+    PageAttributionKind, RelationObject, RelationReference, RemovePageWatch, SiteBanData,
+    SiteMemberAccepted, SiteMemberData,
 };
 use deepwell::services::render::{LegacyActionRegistry, UrlArgumentPair, UrlArguments};
 use deepwell::services::role::{
@@ -105,8 +105,8 @@ use deepwell::types::{
 use futures::FutureExt;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseBackend, EntityTrait,
-    FromQueryResult, IntoActiveModel, PaginatorTrait, QueryFilter, QueryOrder, Set, Statement,
-    TransactionTrait, Value,
+    FromQueryResult, IntoActiveModel, PaginatorTrait, QueryFilter, QueryOrder, Set,
+    Statement, TransactionTrait, Value,
 };
 use serde_json::{Value as JsonValue, json};
 use sha1::{Digest as Sha1Digest, Sha1};
@@ -16713,13 +16713,13 @@ async fn membership_application_and_password_mutations_match_disposable_live_con
     let site = site_output.site;
     let site_id = site.site_id;
     let reviewer_user_id = ADMIN_USER_ID;
-    const MEMBERSHIP_PASSWORD: &str = "a1033-live-contract-password";
+    let membership_password = format!("a1033-live-contract-{}", cuid());
 
     let mut site_model = site.into_active_model();
     site_model.membership_by_application = Set(true);
     site_model.membership_by_password = Set(true);
     site_model.membership_password_hash = Set(Some(
-        PasswordService::new_hash(MEMBERSHIP_PASSWORD)
+        PasswordService::new_hash(&membership_password)
             .expect("membership password fixture should hash"),
     ));
     let configured_site = site_model
@@ -16741,7 +16741,7 @@ async fn membership_application_and_password_mutations_match_disposable_live_con
                 name: format!("A1033 {label} {}", cuid()),
                 email: format!("a1033-{label}-{}@example.invalid", cuid()),
                 locales: vec!["en".to_owned()],
-                password: "membership-fixture-password".to_owned(),
+                password: format!("membership-fixture-{}", cuid()),
                 bypass_filter: true,
                 bypass_email_verification: true,
                 override_user_id: None,
@@ -16948,7 +16948,7 @@ async fn membership_application_and_password_mutations_match_disposable_live_con
             "last_revision_id": password.1,
             "action_index": password.2,
             "action_fingerprint": password.3,
-            "password": MEMBERSHIP_PASSWORD,
+            "password": membership_password,
         }),
     );
     assert_eq!(
@@ -16963,7 +16963,7 @@ async fn membership_application_and_password_mutations_match_disposable_live_con
             "last_revision_id": password.1,
             "action_index": password.2,
             "action_fingerprint": password.3,
-            "password": MEMBERSHIP_PASSWORD,
+            "password": membership_password,
         }),
     );
     assert_eq!(
@@ -17165,7 +17165,7 @@ async fn membership_email_invitation_matches_hash_one_use_and_cancel_contract() 
             name: format!("A1033 invitation actor {}", cuid()),
             email: format!("a1033-invitation-{}@example.invalid", cuid()),
             locales: vec!["en".to_owned()],
-            password: "membership-fixture-password".to_owned(),
+            password: format!("membership-fixture-{}", cuid()),
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
@@ -17175,19 +17175,20 @@ async fn membership_email_invitation_matches_hash_one_use_and_cancel_contract() 
     .await
     .expect("invitation actor should be created");
 
-    let (invitation_id, token) = deepwell::services::membership::MembershipService::create_email_invitation(
-        runner.context(),
-        CreateMembershipEmailInvitation {
-            site_id,
-            sender_user_id: ADMIN_USER_ID,
-            email: "intended-recipient@example.invalid",
-            recipient_name: "Intended Recipient",
-            message: "A1033 invitation fixture",
-            to_contacts: false,
-        },
-    )
-    .await
-    .expect("invitation should be created");
+    let (invitation_id, token) =
+        deepwell::services::membership::MembershipService::create_email_invitation(
+            runner.context(),
+            CreateMembershipEmailInvitation {
+                site_id,
+                sender_user_id: ADMIN_USER_ID,
+                email: "intended-recipient@example.invalid",
+                recipient_name: "Intended Recipient",
+                message: "A1033 invitation fixture",
+                to_contacts: false,
+            },
+        )
+        .await
+        .expect("invitation should be created");
 
     let stored = InvitationStorageRow::find_by_statement(Statement::from_sql_and_values(
         runner.context().transaction().get_database_backend(),
@@ -17198,8 +17199,14 @@ async fn membership_email_invitation_matches_hash_one_use_and_cancel_contract() 
     .await
     .expect("invitation storage lookup should succeed")
     .expect("invitation row should exist");
-    assert_ne!(stored.token_digest, token, "raw invitation token must not be stored");
-    assert_eq!(stored.token_digest, hex::encode(Sha256::digest(token.as_bytes())));
+    assert_ne!(
+        stored.token_digest, token,
+        "raw invitation token must not be stored"
+    );
+    assert_eq!(
+        stored.token_digest,
+        hex::encode(Sha256::digest(token.as_bytes()))
+    );
 
     runner
         .context()
@@ -17220,7 +17227,10 @@ async fn membership_email_invitation_matches_hash_one_use_and_cancel_contract() 
     .await
     .expect("aged invitation storage lookup should succeed")
     .expect("aged invitation row should exist");
-    assert!(aged.created_at < stored.created_at, "fixture must actually age the invitation");
+    assert!(
+        aged.created_at < stored.created_at,
+        "fixture must actually age the invitation"
+    );
     assert_eq!(aged.token_digest, stored.token_digest);
     assert!(
         deepwell::services::membership::MembershipService::resolve_email_invitation(
@@ -17249,7 +17259,11 @@ async fn membership_email_invitation_matches_hash_one_use_and_cancel_contract() 
         }),
     );
     let anonymous_body = match anonymous_view {
-        GetPageViewOutput::Found { compiled_body_html, membership_actions, .. } => {
+        GetPageViewOutput::Found {
+            compiled_body_html,
+            membership_actions,
+            ..
+        } => {
             assert!(membership_actions.is_empty());
             compiled_body_html
         }
@@ -17284,7 +17298,9 @@ async fn membership_email_invitation_matches_hash_one_use_and_cancel_contract() 
         common::IP_ADDRESS,
     )
     .await
-    .expect("invitation actor should be banned for the Wikidot permission-boundary fixture");
+    .expect(
+        "invitation actor should be banned for the Wikidot permission-boundary fixture",
+    );
     assert!(
         RelationService::active_site_ban_exists(
             runner.context(),
@@ -17314,7 +17330,11 @@ async fn membership_email_invitation_matches_hash_one_use_and_cancel_contract() 
         }),
     );
     let (actor_body, invitation_action) = match actor_view {
-        GetPageViewOutput::Found { compiled_body_html, membership_actions, .. } => {
+        GetPageViewOutput::Found {
+            compiled_body_html,
+            membership_actions,
+            ..
+        } => {
             let action = membership_actions
                 .iter()
                 .find_map(|action| match action {
@@ -17380,26 +17400,28 @@ async fn membership_email_invitation_matches_hash_one_use_and_cancel_contract() 
         "accepted invitation must be one-use",
     );
 
-    let (_cancel_id_unused, cancel_token) = deepwell::services::membership::MembershipService::create_email_invitation(
-        runner.context(),
-        CreateMembershipEmailInvitation {
-            site_id,
-            sender_user_id: ADMIN_USER_ID,
-            email: "cancel-recipient@example.invalid",
-            recipient_name: "Cancel Recipient",
-            message: "cancel fixture",
-            to_contacts: false,
-        },
-    )
-    .await
-    .expect("cancel invitation should be created");
-    let cancel_view = deepwell::services::membership::MembershipService::resolve_email_invitation(
-        runner.context(),
-        &cancel_token,
-    )
-    .await
-    .expect("cancel invitation lookup should succeed")
-    .expect("cancel invitation should exist before cancellation");
+    let (_cancel_id_unused, cancel_token) =
+        deepwell::services::membership::MembershipService::create_email_invitation(
+            runner.context(),
+            CreateMembershipEmailInvitation {
+                site_id,
+                sender_user_id: ADMIN_USER_ID,
+                email: "cancel-recipient@example.invalid",
+                recipient_name: "Cancel Recipient",
+                message: "cancel fixture",
+                to_contacts: false,
+            },
+        )
+        .await
+        .expect("cancel invitation should be created");
+    let cancel_view =
+        deepwell::services::membership::MembershipService::resolve_email_invitation(
+            runner.context(),
+            &cancel_token,
+        )
+        .await
+        .expect("cancel invitation lookup should succeed")
+        .expect("cancel invitation should exist before cancellation");
     assert!(
         deepwell::services::membership::MembershipService::cancel_email_invitation(
             runner.context(),

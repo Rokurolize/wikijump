@@ -802,10 +802,7 @@ describe("Wikidot site settings public boundaries", () => {
     assert.match(body, /Leave blank to keep the configured password\./u)
     assert.match(body, /Membership application from Applicant/u)
     assert.match(body, /Please let me in/u)
-    assert.match(
-      body,
-      /id="membership-password"[^>]*type="password"[^>]*value=""/u
-    )
+    assert.match(body, /id="membership-password"[^>]*type="password"[^>]*value=""/u)
     assert.equal(Object.hasOwn(data.site_settings.membership, "password"), false)
     assert.equal(Object.hasOwn(data.site_settings.membership, "password_hash"), false)
 

@@ -282,7 +282,11 @@
     }
   }
 
-  function requireCurrentMembershipAction(pageId: number, revisionId: number, label: string) {
+  function requireCurrentMembershipAction(
+    pageId: number,
+    revisionId: number,
+    label: string
+  ) {
     if (
       !data.page ||
       !data.page_revision ||

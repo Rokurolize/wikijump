@@ -150,7 +150,10 @@ export async function loadAdminPage(
     },
     valibot(membershipSchema)
   )
-  const membershipReviewForm = await superValidate(request, valibot(membershipReviewSchema))
+  const membershipReviewForm = await superValidate(
+    request,
+    valibot(membershipReviewSchema)
+  )
   const themeForm = await superValidate(request, valibot(themeSchema))
   const autonumberForm = await superValidate(request, valibot(autonumberSchema))
   const layoutForm = await superValidate(request, valibot(layoutSchema))
@@ -576,7 +579,10 @@ export async function membershipAction({
   if (!form.valid) return fail(400, { form })
   const sessionToken = cookies.get("wikijump_token")
   if (!sessionToken) {
-    return fail(401, { form, message: "user does not have permission to edit membership" })
+    return fail(401, {
+      form,
+      message: "user does not have permission to edit membership"
+    })
   }
   try {
     const siteId = loadTrustedAdminSiteId(request, form.data.siteId)

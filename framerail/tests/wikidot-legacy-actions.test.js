@@ -547,7 +547,10 @@ test("MembershipApply submits the current comment and reloads only after a serve
   const control = actionElement()
   control.closest = (selector) =>
     selector === "#membership-by-apply-form"
-      ? { querySelector: (query) => (query === '[name="comment"]' ? { value: "apply me" } : null) }
+      ? {
+          querySelector: (query) =>
+            query === '[name="comment"]' ? { value: "apply me" } : null
+        }
       : null
   const fingerprint = "0123456789abcdef0123456789abcdef"
   const calls = []

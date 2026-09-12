@@ -161,12 +161,14 @@ impl MembershipActionRegistry {
                         index,
                         fingerprint,
                     },
-                    MembershipActionKind::Invitation => MembershipBrowserAction::Invitation {
-                        page_id,
-                        revision_id,
-                        index,
-                        fingerprint,
-                    },
+                    MembershipActionKind::Invitation => {
+                        MembershipBrowserAction::Invitation {
+                            page_id,
+                            revision_id,
+                            index,
+                            fingerprint,
+                        }
+                    }
                 });
             }
         }

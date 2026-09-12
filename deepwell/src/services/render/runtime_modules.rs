@@ -174,7 +174,12 @@ fn render_membership_email_invitation_valid(
     let authenticated = viewer.is_some();
     let greeting = match viewer {
         Some((user_id, name, profile_url)) => {
-            render_membership_email_invitation_print_user(user_id, &name, &profile_url, false)
+            render_membership_email_invitation_print_user(
+                user_id,
+                &name,
+                &profile_url,
+                false,
+            )
         }
         None => escape_list_pages_html_text(&invitation.recipient_name),
     };
@@ -712,12 +717,10 @@ pub(crate) fn membership_email_invitation_action_count(wikitext: &str) -> usize 
                 .get(0)
                 .expect("a static account module capture always has a complete match");
             !literal_regions.contains(matched.start())
-                && captures
-                    .name("name")
-                    .is_some_and(|name| {
-                        name.as_str()
-                            .eq_ignore_ascii_case("MembershipEmailInvitation")
-                    })
+                && captures.name("name").is_some_and(|name| {
+                    name.as_str()
+                        .eq_ignore_ascii_case("MembershipEmailInvitation")
+                })
                 && captures
                     .name("head")
                     .is_none_or(|head| head.as_str().trim().is_empty())
@@ -2230,7 +2233,9 @@ impl RenderService {
         url: UrlArguments<'_>,
         compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
-        if !settings.enable_page_syntax || !STATIC_ACCOUNT_MODULE_REGEX.is_match(&wikitext) {
+        if !settings.enable_page_syntax
+            || !STATIC_ACCOUNT_MODULE_REGEX.is_match(&wikitext)
+        {
             return Ok(wikitext);
         }
         let hash = url
@@ -2263,7 +2268,8 @@ impl RenderService {
             _ => MEMBERSHIP_EMAIL_INVITATION_MISSING_HTML.to_owned(),
         };
 
-        let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
         let mut output = String::with_capacity(wikitext.len());
         let mut cursor = 0;
         for captures in STATIC_ACCOUNT_MODULE_REGEX.captures_iter(&wikitext) {
@@ -2271,12 +2277,10 @@ impl RenderService {
                 .get(0)
                 .expect("a static account module capture always has a complete match");
             if literal_regions.contains(matched.start())
-                || !captures
-                    .name("name")
-                    .is_some_and(|name| {
-                        name.as_str()
-                            .eq_ignore_ascii_case("MembershipEmailInvitation")
-                    })
+                || !captures.name("name").is_some_and(|name| {
+                    name.as_str()
+                        .eq_ignore_ascii_case("MembershipEmailInvitation")
+                })
                 || captures
                     .name("head")
                     .is_some_and(|head| !head.as_str().trim().is_empty())

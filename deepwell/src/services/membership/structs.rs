@@ -37,7 +37,10 @@ pub enum MembershipApplicationOutcome {
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "snake_case", tag = "status")]
 pub enum MembershipEmailInvitationOutcome {
-    Accepted { site_name: String, site_slug: String },
+    Accepted {
+        site_name: String,
+        site_slug: String,
+    },
     AlreadyMember,
     Unavailable,
 }

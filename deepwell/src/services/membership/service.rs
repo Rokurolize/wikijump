@@ -12,12 +12,12 @@
 
 use super::structs::{
     AcceptMembershipEmailInvitation, CreateMembershipEmailInvitation, JoinActorState,
-    JoinMembership, JoinModuleState, MembershipApplicationData, MembershipApplicationOutcome,
-    MembershipApplicationReviewDecision, MembershipApplicationStatus,
-    MembershipApplicationView, MembershipEmailInvitationOutcome,
-    MembershipEmailInvitationView, MembershipJoinOutcome, MembershipPasswordOutcome,
-    MembershipPolicy, ReviewMembershipApplication, SubmitMembershipApplication,
-    SubmitMembershipPassword,
+    JoinMembership, JoinModuleState, MembershipApplicationData,
+    MembershipApplicationOutcome, MembershipApplicationReviewDecision,
+    MembershipApplicationStatus, MembershipApplicationView,
+    MembershipEmailInvitationOutcome, MembershipEmailInvitationView,
+    MembershipJoinOutcome, MembershipPasswordOutcome, MembershipPolicy,
+    ReviewMembershipApplication, SubmitMembershipApplication, SubmitMembershipPassword,
 };
 use crate::constants::ADMIN_USER_ID;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
@@ -84,8 +84,8 @@ impl MembershipService {
         let token = Self::generate_email_invitation_token();
         let digest = Self::email_invitation_token_digest(&token);
         let transaction = ctx.transaction();
-        let row = EmailInvitationCreatedRow::find_by_statement(
-            Statement::from_sql_and_values(
+        let row =
+            EmailInvitationCreatedRow::find_by_statement(Statement::from_sql_and_values(
                 transaction.get_database_backend(),
                 r#"
 INSERT INTO membership_email_invitation (
@@ -109,22 +109,21 @@ RETURNING invitation_id
                     Value::from(input.message.to_owned()),
                     Value::from(input.to_contacts),
                 ],
-            ),
-        )
-        .one(transaction)
-        .await
-        .or_raise(|| {
-            Error::new(
-                "failed to create membership email invitation",
-                ErrorType::SiteMembership,
-            )
-        })?
-        .ok_or_raise(|| {
-            Error::new(
-                "membership email invitation insert returned no row",
-                ErrorType::SiteMembership,
-            )
-        })?;
+            ))
+            .one(transaction)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to create membership email invitation",
+                    ErrorType::SiteMembership,
+                )
+            })?
+            .ok_or_raise(|| {
+                Error::new(
+                    "membership email invitation insert returned no row",
+                    ErrorType::SiteMembership,
+                )
+            })?;
         Ok((row.invitation_id, token))
     }
 
@@ -171,7 +170,8 @@ RETURNING invitation_id
         ctx: &ServiceContext<'_>,
         token: &str,
     ) -> Result<Option<MembershipEmailInvitationView>> {
-        let Some(invitation) = Self::email_invitation_row(ctx, token, false).await? else {
+        let Some(invitation) = Self::email_invitation_row(ctx, token, false).await?
+        else {
             return Ok(None);
         };
         let site = Site::find_by_id(invitation.site_id)
@@ -218,7 +218,8 @@ RETURNING invitation_id
             &input.action_fingerprint,
         )
         .await?;
-        let Some(invitation) = Self::email_invitation_row(ctx, &input.hash, true).await? else {
+        let Some(invitation) = Self::email_invitation_row(ctx, &input.hash, true).await?
+        else {
             return Ok(MembershipEmailInvitationOutcome::Unavailable);
         };
         if RelationService::site_member_exists(

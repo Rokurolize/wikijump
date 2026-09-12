@@ -210,7 +210,11 @@ test("membership email invitation keeps the opaque route hash out of the action 
     hash: "browser-must-not-forward-this"
   })
 
-  assert.deepEqual(result, { status: "accepted", site_name: "Test Wiki", site_slug: "test" })
+  assert.deepEqual(result, {
+    status: "accepted",
+    site_name: "Test Wiki",
+    site_slug: "test"
+  })
   assert.equal(recorder.requests.length, 1)
   assert.equal(recorder.requests[0].url, "?/membershipEmailInvitation")
   assert.equal(recorder.requests[0].init.method, "POST")

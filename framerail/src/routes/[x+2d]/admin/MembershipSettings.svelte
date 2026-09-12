@@ -117,8 +117,11 @@
                     >accept</button
                   >
                   <span> or </span>
-                  <button class="link-button" type="submit" name="decision" value="decline"
-                    >decline</button
+                  <button
+                    class="link-button"
+                    type="submit"
+                    name="decision"
+                    value="decline">decline</button
                   >
                 </form>
               </td>

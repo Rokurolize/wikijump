@@ -97,9 +97,9 @@ export const requestMembershipApplication = async (runtime, input) => {
 }
 
 /**
- * Accept the invitation named by the current page route. The opaque hash is
- * deliberately absent from the browser payload; the server resolves it from
- * the request route before calling Deepwell.
+ * Accept the invitation named by the current page route. The opaque hash
+ * is deliberately absent from the browser payload; the server resolves it
+ * from the request route before calling Deepwell.
  *
  * @param {Parameters<typeof requestMembershipJoin>[0]} runtime
  * @param {{
