@@ -529,7 +529,6 @@
       "wikijump.runtime:central-candidate",
       "wikijump.runtime:central-cargo-broker",
       "wikijump.runtime:central-production-browser",
-      "wikijump.runtime:domain-model",
       "wikijump.runtime:expressions",
       "wikijump.runtime:forum",
       "wikijump.runtime:layout-custom",
@@ -3728,6 +3727,11 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:wikidot_categories_page_list_module",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:wikidot_forum_module",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
@@ -4930,12 +4934,12 @@
     {
       "source": "open43-audit-case:A1029_ANONYMOUS_AND_INVITED_ACTIONS",
       "type": "implemented_by",
-      "target": "evidence.live"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:A1029_ANONYMOUS_AND_INVITED_ACTIONS",
       "type": "implemented_by",
-      "target": "wikijump.runtime:domain-model"
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:A1029_CENTRAL_PUBLIC_SEAMS",
@@ -5015,7 +5019,7 @@
     {
       "source": "open43-audit-case:A1030_STAR_CANCEL",
       "type": "implemented_by",
-      "target": "evidence.live"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:A1030_TWO_TRANSACTION_CONTENTION",
@@ -5860,7 +5864,17 @@
     {
       "source": "open43-audit-case:Q1028_EXPAND_LIST_ACTION",
       "type": "implemented_by",
-      "target": "wikijump.runtime:page-query"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "open43-audit-case:Q1028_EXPAND_LIST_ACTION",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "open43-audit-case:Q1028_EXPAND_LIST_ACTION",
+      "type": "implemented_by",
+      "target": "wikijump.runtime:candidate"
     },
     {
       "source": "open43-audit-case:Q1028_INITIAL_CATEGORY_DOM_AND_ARGUMENTS",
@@ -6200,7 +6214,7 @@
     {
       "source": "open43-audit-case:Q779_UNOBSERVED_EXPAND_COLLAPSE_BROWSER_ACTIONS",
       "type": "implemented_by",
-      "target": "evidence.live"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:Q807_CURRENT_SEARCHALL_FORM_AND_ROUTES",
@@ -11276,8 +11290,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "63b3d0eeb8897a00d04ce5de2d7a7adab4cb368e",
-      "tree": "ffdd3fc6d4498dd17d3aa3f791e648659bd3bbac"
+      "commit": "b000c309f3186de3573c2f8d2db0fd1440071760",
+      "tree": "88e23898ade5b11d458006c45e3ddb537fb9f7d8"
     },
     "ftml": {
       "commit": "c37c8360a2ac304eb1de06942465e1c8b9ad737a",
@@ -11294,7 +11308,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "cc3d856b24e5701084ef181cf3e787d02b2eb6efb7308b978e3e0197443ecf8d"
+        "sha256": "87c84ef5b994fb664718aab05779215145d4b7ea9d4dc93219a205932d729dea"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11378,7 +11392,7 @@
       },
       {
         "path": "deepwell/src/endpoints/page.rs",
-        "sha256": "d2416304cb98c201a9404e5827ab422fcc6e6a00a304505e298b56a352e9e333"
+        "sha256": "d84ee44bf7325ffc6ca19bd24b4c007f513940a03789197a2b475dce1a907aa2"
       },
       {
         "path": "deepwell/src/endpoints/parent.rs",
@@ -11430,11 +11444,11 @@
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
-        "sha256": "a0e881675df55f39db8f99d8d342113ceb5b7eefae15bffb98988128035c528a"
+        "sha256": "7733e2cb1a5b8e5890f82bac8409ca21649a9500fd70c6e1cb0ca24908eea978"
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "5dfad0079ce50daaec440dbf141b739f69f8a5690c9690931e890f756223798a"
+        "sha256": "54485bba1b642330b724d0d6d384ca0868a05cc853f468ed12617f5e9f43e414"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11446,19 +11460,19 @@
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "4122f4eb1ecbadbe67962cfd6f093625892920606bf8784065b23b06c7ece2a6"
+        "sha256": "1b8f00ebee6e5c09f56c5d3dee85354daf1d190d2a62358af10df925593f945f"
       },
       {
         "path": "docs/development/open43-a-authoring-closure-audit.json",
-        "sha256": "94a2d6631bc49db77275aafac991b002b05d1de005016b4eaff67708c6658eb8"
+        "sha256": "3e5523f1c2fd2494162a869bee6ed697a99951119b8a5082defd59694fa96090"
       },
       {
         "path": "docs/development/open43-blocked-evidence-routing.json",
-        "sha256": "47895edb872a8a700384cb6651d0e813c882c03a4668585e7f80b4b1a1d51526"
+        "sha256": "42ccfa8bf3521abd0b8bb59cc6d025c3da7a4014f4c34210f34815637bb93be0"
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "8cf355af26147f533b750b906e719dce1bbcf2be1d692724af384cd35adf0e23"
+        "sha256": "8c78bb6e59874011f7f22ef21b9f99f9bad824ca18ff4e3c994612f9f0eaf5fb"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -11470,15 +11484,15 @@
       },
       {
         "path": "docs/development/open43-q-page-query-closure-audit.json",
-        "sha256": "101c84ac464e1b6569900019b41c08a370a4273f2914c90143fec5a6d9372597"
+        "sha256": "85d4e0856ef28a9685099c45bc38c2026bcf8bba19f838186e3fbcea327987c7"
       },
       {
         "path": "docs/development/open43-q-search-users-closure-audit.json",
-        "sha256": "ab0f5a355c3e00efffc4b9207ed24c7359ecfbaf120983b86cdd5957f6dff470"
+        "sha256": "a764254328e9b4ff4314e90f1ebab03f9a2f7069d500b2947e0a73f4cbe343ee"
       },
       {
         "path": "docs/development/open43-s-settings-browser-closure-audit.json",
-        "sha256": "cbb4745de921496478585fd2f080ef4c4805098c91ff71f1faf17c62fed964f5"
+        "sha256": "805547e60be56fc2abe745faca2e46fc1d84eb212d0f955f0082abafb7a70ad6"
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
@@ -11494,7 +11508,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "380eac2dd75bbdf53ec2bbdf8b7da6f20b35d03701c569a3691fdcd3b7eb370a"
+        "sha256": "9f92c0ca590408c80356597b384d2712e3aff4404d785eedb2f9eea798557796"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11514,7 +11528,7 @@
       },
       {
         "path": "framerail/src/lib/server/ajax-module-connector.js",
-        "sha256": "3ec7458841fb0a2b082192d8402be692092037400adc79f381bf357ce9000f7d"
+        "sha256": "92eb6812c009db1d6231b81a000efa6c2a7d89827218e8a021987b27088d5631"
       },
       {
         "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -11650,7 +11664,7 @@
       },
       {
         "path": "framerail/src/routes/ajax-module-connector.php/+server.ts",
-        "sha256": "157ca69c54035d9c0b6d8e8ff2a08f52d11ef140b5346d5be5cf83493609aa68"
+        "sha256": "0a83aa2c8842f889955c3d2eeb3347edc9f34d375e15bcb3eed9fc81065402b1"
       },
       {
         "path": "framerail/src/routes/common--images/jquery-raty/[asset]/+server.ts",
@@ -11817,10 +11831,10 @@
     ]
   },
   "counts": {
-    "total": 947,
+    "total": 948,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 172,
+      "deepwell_jsonrpc_method": 173,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
       "framerail_route": 28,
@@ -29397,6 +29411,51 @@
       ]
     },
     {
+      "surface_id": "deepwell-jsonrpc:wikidot_categories_page_list_module",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:wikidot_categories_page_list_module",
+        "deepwell/src/endpoints/page.rs#wikidot_categories_page_list_module"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/page.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
       "surface_id": "deepwell-jsonrpc:wikidot_forum_module",
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
@@ -37365,10 +37424,14 @@
         "cases": [
           "A1029_ANONYMOUS_AND_INVITED_ACTIONS"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract",
+          "framerail/tests/wikidot-legacy-actions.test.js#MembershipEmailInvitation maps used, canceled, and missing tokens to one visible unavailable error",
+          "framerail/tests/wikidot-legacy-actions.test.js#MembershipEmailInvitation replaces only the live box after accepted token consumption"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -37376,21 +37439,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1029_ANONYMOUS_AND_INVITED_ACTIONS",
       "implementation_owners": [
-        "evidence.live",
-        "wikijump.runtime:domain-model"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -37968,7 +38031,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -37976,20 +38039,20 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1030_STAR_CANCEL",
       "implementation_owners": [
-        "evidence.live"
+        "wikijump.deepwell"
       ]
     },
     {
@@ -39799,10 +39862,12 @@
         "cases": [
           "A1061_EXACT_CYCLE_CASCADE_SEMANTICS"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/job_queue.rs#component_css_save_dispatches_one_post_commit_dependent_rerender"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -39810,15 +39875,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1061_EXACT_CYCLE_CASCADE_SEMANTICS",
@@ -39971,10 +40036,12 @@
         "cases": [
           "A1061_PAGE_LOCAL_CACHE_IDENTITY"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -39982,15 +40049,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1061_PAGE_LOCAL_CACHE_IDENTITY",
@@ -44650,10 +44717,15 @@
         "cases": [
           "Q1028_EXPAND_LIST_ACTION"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/render/categories.rs::tests::category_page_list_matches_wikidot_shape_and_escapes_values",
+          "framerail/tests/ajax-module-connector.test.js#WikiCategoriesPageListModule",
+          "framerail/tests/wikidot-categories.test.js",
+          "install/local/wikidot-verification/tests/open43-categories-candidate-case-set.test.mjs"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -44661,20 +44733,24 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
-        "references": []
+        "status": "pending",
+        "references": [
+          "candidate-case:Q1028_EXPAND_LIST_ACTION"
+        ]
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q1028_EXPAND_LIST_ACTION",
       "implementation_owners": [
-        "wikijump.runtime:page-query"
+        "wikijump.deepwell",
+        "wikijump.framerail",
+        "wikijump.runtime:candidate"
       ]
     },
     {
@@ -46190,10 +46266,13 @@
         "cases": [
           "Q1036_ACTIVE_SEARCH_BACKEND"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/render/search_feed.rs#tests::renders_the_live_search_unavailable_contract",
+          "deepwell/tests/page.rs#search_and_feed_modules_match_live_preview_and_page_view_boundaries"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -46201,15 +46280,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q1036_ACTIVE_SEARCH_BACKEND",
@@ -46360,10 +46439,14 @@
         "cases": [
           "Q1036_SUCCESSFUL_FEED_ADAPTER"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/render/search_feed.rs#tests::distinguishes_feed_source_recognition_from_missing_source",
+          "deepwell/src/services/render/search_feed.rs#tests::feed_inaccessible_source_error_escapes_the_source_url",
+          "deepwell/tests/page.rs#search_and_feed_modules_match_live_preview_and_page_view_boundaries"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -46371,15 +46454,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q1036_SUCCESSFUL_FEED_ADAPTER",
@@ -46745,10 +46828,13 @@
         "cases": [
           "Q748_PERMISSION_FILTERED_RESULTS"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/render/search_feed.rs#tests::renders_the_live_search_unavailable_contract",
+          "framerail/tests/wikidot-search.test.js#Wikidot top search preserves and path-encodes the submitted query"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -46756,15 +46842,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q748_PERMISSION_FILTERED_RESULTS",
@@ -47301,10 +47387,13 @@
         "cases": [
           "Q779_UNOBSERVED_EXPAND_COLLAPSE_BROWSER_ACTIONS"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/render/page_tree.rs::tests::live_dom_depth_and_cycle_boundaries_are_preserved",
+          "deepwell/tests/page.rs::page_tree_module_renders_current_page_hierarchy_with_live_depth_dom"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -47312,20 +47401,20 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q779_UNOBSERVED_EXPAND_COLLAPSE_BROWSER_ACTIONS",
       "implementation_owners": [
-        "evidence.live"
+        "wikijump.deepwell"
       ]
     },
     {
@@ -47429,10 +47518,13 @@
         "cases": [
           "Q807_SUCCESSFUL_SEARCH_RESULTS"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#searchall_module_matches_live_form_and_unavailable_route_contract",
+          "framerail/tests/wikidot-search.test.js#Wikidot SearchAll preserves its area and path-encodes the submitted query"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -47440,15 +47532,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q807_SUCCESSFUL_SEARCH_RESULTS",
@@ -48586,10 +48678,13 @@
         "cases": [
           "S754_LIVE_BEACON_PAYLOAD_AND_TIMING"
         ],
-        "tests": []
+        "tests": [
+          "framerail/tests/external-integration-policy.test.js::the local emulator ships no Google Analytics beacon",
+          "framerail/tests/site-settings-foundation.test.js::connects settings to server rendered head and toolbar authority"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -48597,15 +48692,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:S754_LIVE_BEACON_PAYLOAD_AND_TIMING",
