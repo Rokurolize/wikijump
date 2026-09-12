@@ -118,7 +118,40 @@ function fakeBrowser(session) {
   return {
     setActiveFixture() {},
     async newCandidateContext() {
-      const page = { async evaluate() { return fakeSections(session.categories); }, async close() {} };
+      const requestListeners = new Set();
+      const actionState = new Map();
+      const stateFor = (categoryId) => {
+        if (!actionState.has(categoryId)) actionState.set(categoryId, { control_text: "+ list pages", display: "none", html: "" });
+        return actionState.get(categoryId);
+      };
+      const page = {
+        on(type, listener) { if (type === "request") requestListeners.add(listener); },
+        off(type, listener) { if (type === "request") requestListeners.delete(listener); },
+        locator(selector) {
+          const match = /^#category-pages-toggler-(\d+)$/u.exec(selector);
+          if (!match) throw new Error(`unexpected locator ${selector}`);
+          const categoryId = Number(match[1]);
+          return { first() { return { async click() {
+            const state = stateFor(categoryId);
+            if (state.display === "block") {
+              state.display = "none";
+              state.control_text = "+ list pages";
+              return;
+            }
+            if (state.html === "") {
+              const request = { method: () => "POST", url: () => `${PAGE_ORIGIN}/ajax-module-connector.php`, postData: () => `moduleName=list%2FWikiCategoriesPageListModule&category_id=${categoryId}` };
+              for (const listener of requestListeners) listener(request);
+              const pages = [...session.pages.values()].filter((entry) => entry.page_category_id === categoryId).sort((left, right) => left.title.localeCompare(right.title) || left.slug.localeCompare(right.slug));
+              state.html = `<ul>\n${pages.map((entry) => `\t\t<li>\n\t\t\t<a href=\"/${entry.slug}\">${entry.title}</a>\n\t\t</li>`).join("\n")}\n</ul>`;
+            }
+            state.display = "block";
+            state.control_text = "- hide pages";
+          } }; } };
+        },
+        async waitForFunction() {},
+        async evaluate(_fn, argument) { return Array.isArray(argument) ? fakeSections(session.categories) : structuredClone(stateFor(argument)); },
+        async close() {},
+      };
       return { context: { async newPage() { return page; } } };
     },
     async captureCandidateObservation() { return { navigation_status: 200, failures: [], document: { resource_completion: { status: "complete" } } }; },

@@ -37,6 +37,11 @@ const MARKERS = Object.freeze([
 const SOURCE_FILES = Object.freeze([
   ...STANDING_BROWSER_EXECUTION_MODULES,
   "deepwell/src/services/render/categories.rs",
+  "deepwell/src/endpoints/page.rs",
+  "framerail/src/lib/server/ajax-module-connector.js",
+  "framerail/src/lib/wikidot/wikidot-categories.js",
+  "framerail/src/routes/+layout.svelte",
+  "framerail/src/routes/ajax-module-connector.php/+server.ts",
   "deepwell/tests/page.rs",
   "docs/wikidot-specifications/specifications/module/module-categories.md",
   LIVE_EVIDENCE.path,
@@ -82,6 +87,40 @@ function extractSections(page, markers) {
     };
     return Object.fromEntries(selectedMarkers.map(([name, start, end]) => [name, read(start, end)]));
   }, markers);
+}
+
+async function exerciseCategoryPageList(page, categoryId) {
+  let requestCount = 0;
+  const observeRequest = (request) => {
+    if (request.method() !== "POST") return;
+    const url = new URL(request.url());
+    if (url.pathname !== "/ajax-module-connector.php") return;
+    const body = new URLSearchParams(request.postData() ?? "");
+    if (body.get("moduleName") === "list/WikiCategoriesPageListModule" && body.get("category_id") === String(categoryId)) requestCount += 1;
+  };
+  const readState = () => page.evaluate((id) => {
+    const control = document.getElementById(`category-pages-toggler-${id}`);
+    const list = document.getElementById(`category-pages-${id}`);
+    if (!(control instanceof HTMLAnchorElement) || !(list instanceof HTMLDivElement)) throw new Error(`Q1028 category ${id} control is missing`);
+    return { control_text: control.textContent, display: list.style.display, html: list.innerHTML };
+  }, categoryId);
+  const control = page.locator(`#category-pages-toggler-${categoryId}`).first();
+  page.on("request", observeRequest);
+  try {
+    await control.click();
+    await page.waitForFunction((id) => {
+      const list = document.getElementById(`category-pages-${id}`);
+      return list instanceof HTMLDivElement && list.innerHTML !== "" && !list.innerHTML.includes("loading page list...");
+    }, categoryId);
+    const loaded = await readState();
+    await control.click();
+    const hidden = await readState();
+    await control.click();
+    const reopened = await readState();
+    return { request_count: requestCount, loaded, hidden, reopened };
+  } finally {
+    page.off("request", observeRequest);
+  }
 }
 
 function assertPage(entry, page, name) {
@@ -218,7 +257,9 @@ class Open43CategoriesRun {
           settleMs: 0,
           navigate: ({ page: targetPage, url: targetUrl, timeoutMs }) => targetPage.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs }),
         });
-        views[actor] = { capture, sections: await extractSections(page, MARKERS) };
+        const sections = await extractSections(page, MARKERS);
+        const defaultAction = await exerciseCategoryPageList(page, defaultCategory.id);
+        views[actor] = { capture, sections, default_action: defaultAction };
       } finally {
         await page.close();
       }
@@ -293,8 +334,14 @@ class Open43CategoriesRun {
         });
         if (section.html.includes("[[module")) throw new Error(`Q1028 ${actor} ${name} leaked raw module source`);
       }
+      const action = view.default_action;
+      const holderHref = `href=\"/${observations.fixture.holder.slug}\"`;
+      if (action?.request_count !== 1) throw new Error(`Q1028 ${actor} category action did not issue exactly one first-load request`);
+      if (action.loaded?.control_text !== "- hide pages" || action.loaded.display !== "block" || !action.loaded.html.includes("<ul") || !action.loaded.html.includes(holderHref)) throw new Error(`Q1028 ${actor} first category expansion is wrong`);
+      if (action.hidden?.control_text !== "+ list pages" || action.hidden.display !== "none" || action.hidden.html !== action.loaded.html) throw new Error(`Q1028 ${actor} category hide transition is wrong`);
+      if (action.reopened?.control_text !== "- hide pages" || action.reopened.display !== "block" || action.reopened.html !== action.loaded.html) throw new Error(`Q1028 ${actor} category re-open transition is wrong`);
     }
-    return { verified: true, actors: Object.keys(observations.views).sort(), exact_initial_dom: true, include_hidden_argument_matrix: true, public_seam: "framerail.browser-with-deepwell-rpc-fixture", live_evidence: LIVE_EVIDENCE };
+    return { verified: true, actors: Object.keys(observations.views).sort(), exact_initial_dom: true, include_hidden_argument_matrix: true, first_load_then_local_toggle: true, public_seam: "framerail.browser-with-deepwell-rpc-fixture", live_evidence: LIVE_EVIDENCE };
   }
 
   verifyCleanup(proof, resources) {
