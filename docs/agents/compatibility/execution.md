@@ -34,6 +34,8 @@ Local WSL services do not need artificial pacing. External origins do: eliminate
 
 Develop with focused RED/GREEN tests, then validate the coherent batch once. Keep `RUSTFLAGS` stable within the batch so Cargo does not rebuild the world. Run warnings-as-errors clippy once per source batch before push, not once per individual edit. Run full candidate/standing suffix once the material identity is frozen.
 
+On this WSL host, do not interpret a cold `rustc` SIGTERM as a product or test failure until the user memory guard has been checked. Processes in `init.scope` are terminated above the guard's 4 GiB RSS threshold even when system memory remains available. Run a necessary cold heavy Rust validation in its own bounded user scope, for example `systemd-run --user --scope -p MemoryMax=6G --setenv=CARGO_BUILD_JOBS=1 <cargo command>`, and serialize heavy Rust invocations across worktrees. Keep the guard enabled; the scoped 6 GiB ceiling is the deliberate escape hatch, not a reason to remove memory protection.
+
 Before changing high-touch render code, search the focused helpers and existing regression seams first. Reuse the narrow owner instead of adding another parser/rewriter in a nearby layer.
 
 When an integration test fails because the environment is absent or shared fixtures race, reproduce the failing test alone and on a clean baseline before editing source. Distinguish product regression, baseline regression, and test-environment failure explicitly so expensive suites do not drive unrelated fixes.
