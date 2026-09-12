@@ -3100,7 +3100,6 @@
     "wikijump.runtime:central-candidate",
     "wikijump.runtime:central-cargo-broker",
     "wikijump.runtime:central-production-browser",
-    "wikijump.runtime:domain-model",
     "wikijump.runtime:expressions",
     "wikijump.runtime:forum",
     "wikijump.runtime:layout-custom",
