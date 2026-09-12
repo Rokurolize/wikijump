@@ -33,7 +33,7 @@ const forbiddenCiCommands = [
   /\bpnpm\s+[^\n]*\blint\b/u
 ]
 
-test("central CI publishes only a no-op gate", () => {
+test("central CI runs only repository-local generated-contract consistency", () => {
   const source = workflow("ci-gate.yaml")
   const trigger = triggerBlock(source)
 
@@ -41,13 +41,17 @@ test("central CI publishes only a no-op gate", () => {
   assert.match(trigger, /^\s*merge_group:\s*$/mu)
   assert.match(trigger, /^\s*push:$/mu)
   assert.match(trigger, /^\s*workflow_dispatch:\s*$/mu)
-  assert.match(source, /^permissions: \{\}$/mu)
+  assert.match(source, /^permissions:\n  contents: read$/mu)
   assert.match(source, /^  gate:$/mu)
   assert.match(source, /^    name: CI \/ gate$/mu)
-  assert.match(source, /Local-validation-only policy/u)
-  assert.match(source, /GitHub CI intentionally runs no tests/u)
+  assert.match(source, /actions\/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10/u)
+  assert.match(
+    source,
+    /node install\/local\/wikidot-verification\/scripts\/verify-repository-generated-contracts\.mjs/u
+  )
+  assert.match(source, /installs no packages and performs no live compatibility acquisition/u)
   assert.doesNotMatch(source, /^  (?:classify|workflow_policy|deepwell|wws|framerail|locales|verification):$/mu)
-  assert.doesNotMatch(source, /^\s*uses:/mu)
+  assert.equal((source.match(/^\s*uses:/gmu) ?? []).length, 1)
 })
 
 test("Browser CI is manual-only and runs no browser validation", () => {
@@ -127,6 +131,19 @@ test("local classifier keeps workflow and verification ownership", () => {
   const manual = classifyChanges([], true)
   for (const group of GROUPS) assert.equal(manual[group], true, group)
   assert.equal(manual.verification, true, "verification")
+})
+
+test("machine-readable development authorities select local verification", () => {
+  for (const file of [
+    "docs/development/compatibility-surface-semantics.json",
+    "docs/development/deepwell-jsonrpc-contract-manifest.json",
+    "docs/development/open43-a-authoring-closure-audit.json",
+    "docs/development/wws-route-registration-denominator.json"
+  ]) {
+    const selected = classifyChanges([file])
+    for (const group of GROUPS) assert.equal(selected[group], false, `${file}: ${group}`)
+    assert.equal(selected.verification, true, `${file}: verification`)
+  }
 })
 
 test("documentation stays cheap and unknown local-preflight paths fail closed", () => {

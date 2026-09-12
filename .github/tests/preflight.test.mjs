@@ -150,6 +150,7 @@ test("checkpoint preflight avoids compiled checks for every selected group", (t)
 
   assert.equal(result.status, 0, result.stderr)
   assert.deepEqual(harness.commands(), [
+    "node install/local/wikidot-verification/scripts/verify-repository-generated-contracts.mjs",
     "cargo fmt --manifest-path deepwell/Cargo.toml --check",
     "cargo fmt --manifest-path wws/Cargo.toml --check",
     "pnpm --dir framerail lint",
@@ -167,6 +168,7 @@ test("preflight preserves changed path boundaries", (t) => {
   assert.equal(result.status, 0, result.stderr)
   assert.deepEqual(harness.receivedPaths(), ["deepwell/src/file with space.rs"])
   assert.deepEqual(harness.commands(), [
+    "node install/local/wikidot-verification/scripts/verify-repository-generated-contracts.mjs",
     "cargo fmt --manifest-path deepwell/Cargo.toml --check"
   ])
 })
@@ -199,6 +201,7 @@ test("final preflight is the single explicit full-check barrier", (t) => {
 
   assert.equal(result.status, 0, result.stderr)
   assert.deepEqual(harness.commands(), [
+    "node install/local/wikidot-verification/scripts/verify-repository-generated-contracts.mjs --full",
     "cargo fmt --manifest-path deepwell/Cargo.toml --check",
     "cargo machete deepwell",
     "cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps -- -D warnings",
@@ -232,7 +235,11 @@ test("final preflight is the single explicit full-check barrier", (t) => {
 })
 
 test("verification and specification inputs run only the final verification barrier", async (t) => {
-  const expected = [
+  const checkpointExpected = [
+    "node install/local/wikidot-verification/scripts/verify-repository-generated-contracts.mjs"
+  ]
+  const finalExpected = [
+    "node install/local/wikidot-verification/scripts/verify-repository-generated-contracts.mjs --full",
     "pnpm --dir install/local/wikidot-verification test",
     "node --test install/standing/tests/verify-promotion-precondition.test.mjs",
     "node scripts/generate-wikidot-specifications.mjs --check",
@@ -246,14 +253,14 @@ test("verification and specification inputs run only the final verification barr
         PREFLIGHT_REMOTE_SCOPE: scope
       })
       assert.equal(checkpointResult.status, 0, checkpointResult.stderr)
-      assert.deepEqual(checkpoint.commands(), [])
+      assert.deepEqual(checkpoint.commands(), checkpointExpected)
 
       const final = createHarness(t)
       const finalResult = final.runPreflight(["--base", remoteOid, "--final"], {
         PREFLIGHT_REMOTE_SCOPE: scope
       })
       assert.equal(finalResult.status, 0, finalResult.stderr)
-      assert.deepEqual(final.commands(), expected)
+      assert.deepEqual(final.commands(), finalExpected)
     })
   }
 })
