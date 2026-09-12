@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import secrets
@@ -21,10 +20,6 @@ MAX_WRONG_SUBMISSIONS = 3
 
 def now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-
-def sha256(value: str) -> str:
-    return hashlib.sha256(value.encode()).hexdigest()
 
 
 def required_env(name: str) -> str:
@@ -106,8 +101,8 @@ def main() -> None:
         "password_fixture": {
             "generated": True,
             "byte_length": len(password.encode()),
-            "sha256": sha256(password),
             "raw_material_recorded": False,
+            "derived_material_recorded": False,
         },
         "bounded_failure_attempts": {
             "maximum_wrong_submissions_per_actor": MAX_WRONG_SUBMISSIONS,
