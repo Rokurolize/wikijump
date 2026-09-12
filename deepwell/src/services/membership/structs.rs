@@ -17,6 +17,125 @@ pub enum MembershipJoinOutcome {
     AlreadyMember,
 }
 
+#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MembershipPasswordOutcome {
+    Joined,
+    AlreadyMember,
+    WrongPassword,
+}
+
+#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MembershipApplicationOutcome {
+    Submitted,
+    AlreadyApplied,
+    AlreadyMember,
+    NoText,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case", tag = "status")]
+pub enum MembershipEmailInvitationOutcome {
+    Accepted {
+        site_name: String,
+        site_slug: String,
+    },
+    AlreadyMember,
+    Unavailable,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct MembershipEmailInvitationView {
+    pub invitation_id: i64,
+    pub site_id: i64,
+    pub site_name: String,
+    pub site_slug: String,
+    pub sender_user_id: i64,
+    pub sender_user_name: String,
+    pub sender_profile_url: String,
+    pub recipient_name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CreateMembershipEmailInvitation<'a> {
+    pub site_id: i64,
+    pub sender_user_id: i64,
+    pub email: &'a str,
+    pub recipient_name: &'a str,
+    pub message: &'a str,
+    pub to_contacts: bool,
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct AcceptMembershipEmailInvitation {
+    pub page_id: i64,
+    pub last_revision_id: i64,
+    pub action_index: usize,
+    pub action_fingerprint: String,
+    pub hash: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MembershipApplicationStatus {
+    Pending,
+    Accepted,
+    Declined,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct MembershipApplicationView {
+    pub user_id: i64,
+    pub user_name: String,
+    pub comment: String,
+}
+
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ListMembershipApplications {
+    pub site_id: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct MembershipApplicationData {
+    pub status: MembershipApplicationStatus,
+    pub comment: String,
+    pub reply: Option<String>,
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct SubmitMembershipApplication {
+    pub page_id: i64,
+    pub last_revision_id: i64,
+    pub action_index: usize,
+    pub action_fingerprint: String,
+    pub comment: String,
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct SubmitMembershipPassword {
+    pub page_id: i64,
+    pub last_revision_id: i64,
+    pub action_index: usize,
+    pub action_fingerprint: String,
+    pub password: String,
+}
+
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MembershipApplicationReviewDecision {
+    Accept,
+    Decline,
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct ReviewMembershipApplication {
+    pub site_id: i64,
+    pub user_id: i64,
+    pub decision: MembershipApplicationReviewDecision,
+    pub reply: String,
+}
+
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct JoinMembership {
     pub page_id: i64,
@@ -34,6 +153,24 @@ pub struct JoinMembership {
 #[serde(rename_all = "kebab-case", tag = "type")]
 pub enum MembershipBrowserAction {
     Join {
+        page_id: i64,
+        revision_id: i64,
+        index: usize,
+        fingerprint: String,
+    },
+    Application {
+        page_id: i64,
+        revision_id: i64,
+        index: usize,
+        fingerprint: String,
+    },
+    Password {
+        page_id: i64,
+        revision_id: i64,
+        index: usize,
+        fingerprint: String,
+    },
+    Invitation {
         page_id: i64,
         revision_id: i64,
         index: usize,

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { readFileSync } from "node:fs"
+import { readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 import { spawnSync } from "node:child_process"
 import test from "node:test"
@@ -8,6 +8,11 @@ import { fileURLToPath } from "node:url"
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const read = (file) => readFileSync(path.join(root, file), "utf8")
 const guard = path.join(root, "scripts/run-test-no-external-network.sh")
+const shellSourcesUnder = (directory) =>
+  readdirSync(path.join(root, directory), { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && (entry.name.endsWith(".sh") || entry.name.endsWith(".bash")))
+    .map((entry) => path.relative(root, path.join(entry.parentPath, entry.name)))
+    .sort()
 const independentGuardEnvironment = () => {
   const environment = { ...process.env }
   delete environment.WIKIJUMP_TEST_NETWORK_GUARD_ACTIVE
@@ -70,13 +75,17 @@ test("maintained local test entrypoints are network-hermetic", () => {
   const playwright = read("framerail/playwright.config.ts")
   const browserSupport = read("framerail/playwright.browser-support.config.ts")
   const browserGuard = read("scripts/run-browser-test-no-external-network.sh")
+  const unitRunner = read("scripts/run-framerail-unit-tests.sh")
   const wikidotPyContractTest = read("install/local/wikidot-verification/tests/wikidot-py-amc-transport-contract.test.mjs")
   const wikidotPyHermeticWrapper = read("install/local/wikidot-verification/fixtures/wikidot-python-hermetic-test-wrapper.sh")
 
   for (const name of ["test", "test:ci"]) {
     assert.match(verification.scripts[name], /run-test-no-external-network\.sh/u, name)
   }
-  assert.match(framerail.scripts["test:unit"], /run-test-no-external-network\.sh/u)
+  assert.equal(framerail.scripts["test:unit"], "../scripts/run-framerail-unit-tests.sh")
+  assert.match(unitRunner, /run-test-no-external-network\.sh/u)
+  assert.match(unitRunner, /svelte-kit sync/u)
+  assert.match(unitRunner, /node --test/u)
   for (const name of ["test", "test:browser-support"]) {
     assert.match(framerail.scripts[name], /run-browser-test-no-external-network\.sh/u, name)
   }
@@ -94,10 +103,12 @@ test("maintained local test entrypoints are network-hermetic", () => {
 })
 
 test("test shell sources contain no literal external curl or wget targets", () => {
-  for (const file of [
-    "deepwell/tests/caddy/single-upstream-policy.test.sh",
-    "install/local/caddy/generate-caddyfile.user-test.sh"
-  ]) {
+  const files = [
+    ...shellSourcesUnder("deepwell/tests"),
+    ...shellSourcesUnder("install/dev/tests")
+  ]
+  assert.ok(files.length > 0, "expected maintained shell test sources")
+  for (const file of files) {
     const source = read(file)
     for (const match of source.matchAll(/\b(?:curl|wget)\b[^\n]*(https?:\/\/[^\s'"]+)/gu)) {
       const url = new URL(match[1])

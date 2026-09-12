@@ -52,6 +52,11 @@ pub struct Model {
     pub google_analytics_profile: Option<String>,
     pub show_top_toolbar: bool,
     pub show_bottom_toolbar: bool,
+    pub membership_by_application: bool,
+    pub membership_by_password: bool,
+    #[sea_orm(column_type = "Text", nullable)]
+    #[serde(skip_serializing)]
+    pub membership_password_hash: Option<String>,
     #[serde(skip_serializing)]
     pub master_admin_user_id: Option<i64>,
     pub educational: bool,

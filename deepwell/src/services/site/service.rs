@@ -29,7 +29,9 @@ use crate::services::audit::{AuditEvent, AuditService, SiteFields};
 use crate::services::domain::{DEFAULT_SITE_SLUG, DomainService};
 use crate::services::relation::CreateSiteUser;
 use crate::services::user::{CreateUser, UpdateUserBody};
-use crate::services::{AliasService, OutdateService, RelationService, UserService};
+use crate::services::{
+    AliasService, OutdateService, PasswordService, RelationService, UserService,
+};
 use crate::types::{AliasType, UserType};
 use crate::types::{Maybe, Reference, RerenderDepth};
 use crate::utils::now;
@@ -353,6 +355,25 @@ impl SiteService {
         if let Maybe::Set(analytics) = &input.google_analytics {
             analytics.validate()?;
         }
+        let membership_password_hash = match &input.membership {
+            Maybe::Set(membership) => {
+                if membership.password_enabled
+                    && membership.password.is_none()
+                    && site.membership_password_hash.is_none()
+                {
+                    bail!(Error::new(
+                        "membership password must be configured before password membership is enabled",
+                        ErrorType::BadRequest,
+                    ));
+                }
+                membership
+                    .password
+                    .as_deref()
+                    .map(PasswordService::new_hash)
+                    .transpose()?
+            }
+            Maybe::Unset => None,
+        };
         if let Maybe::Set(page_slug) = &input.default_page
             && page_slug != &site.default_page
         {
@@ -485,6 +506,22 @@ impl SiteService {
                 changed_fields.show_top_toolbar = Maybe::Set(toolbars.top);
                 changed_fields.show_bottom_toolbar = Maybe::Set(toolbars.bottom);
             }
+            if let Maybe::Set(membership) = &input.membership {
+                previous_fields.membership_by_application =
+                    Maybe::Set(site.membership_by_application);
+                previous_fields.membership_by_password =
+                    Maybe::Set(site.membership_by_password);
+                previous_fields.membership_password_configured =
+                    Maybe::Set(site.membership_password_hash.is_some());
+                changed_fields.membership_by_application =
+                    Maybe::Set(membership.application_enabled);
+                changed_fields.membership_by_password =
+                    Maybe::Set(membership.password_enabled);
+                changed_fields.membership_password_configured = Maybe::Set(
+                    membership.password.is_some()
+                        || site.membership_password_hash.is_some(),
+                );
+            }
 
             if let Maybe::Set(value) = input.forum_max_nest_level {
                 previous_fields.forum_max_nest_level =
@@ -580,6 +617,14 @@ impl SiteService {
         if let Maybe::Set(toolbars) = input.toolbars {
             model.show_top_toolbar = Set(toolbars.top);
             model.show_bottom_toolbar = Set(toolbars.bottom);
+        }
+
+        if let Maybe::Set(membership) = input.membership {
+            model.membership_by_application = Set(membership.application_enabled);
+            model.membership_by_password = Set(membership.password_enabled);
+            if let Some(password_hash) = membership_password_hash {
+                model.membership_password_hash = Set(Some(password_hash));
+            }
         }
 
         if let Maybe::Set(preferred_domain) = input.preferred_domain {

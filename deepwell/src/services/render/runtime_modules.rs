@@ -46,7 +46,7 @@ use super::site_utility_modules::expand_site_utility_modules;
 use super::url_arguments::UrlArguments;
 use super::user_directory::{MEMBERS_MODULE_REGEX, render_members_module};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
-use crate::services::membership::{JoinModuleState, MembershipPolicy, MembershipService};
+use crate::services::membership::{JoinModuleState, MembershipService};
 use crate::services::page_query::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DateSelector,
     FoundPageFields, IncludedCategories, OrderBySelector, OrderProperty,
@@ -54,7 +54,7 @@ use crate::services::page_query::{
     ScoreSelector, TagCondition,
 };
 use crate::services::permission::{CheckPermissionContext, PermissionService};
-use crate::services::relation::GetSiteMember;
+use crate::services::relation::{GetSiteMember, RelationObject, RelationReference};
 use crate::services::score::ScoreValue;
 use crate::services::settings::PageRatingType;
 use crate::services::user::User;
@@ -64,7 +64,7 @@ use crate::services::{
     UserService,
 };
 use crate::types::Reference;
-use crate::types::{Action, Permission, Resource};
+use crate::types::{Action, Permission, RelationType, Resource};
 use crate::utils::now;
 use ftml::data::PageInfo;
 use ftml::settings::WikitextSettings;
@@ -125,6 +125,114 @@ const MEMBERSHIP_EMAIL_INVITATION_MISSING_HTML: &str = concat!(
     "\n\t\t\tfrom the invitation email might be corrupted somehow.",
     "\n\t\t</p>\t\n\t</div>",
 );
+
+fn render_membership_email_invitation_print_user(
+    user_id: i64,
+    name: &str,
+    profile_url: &str,
+    image: bool,
+) -> String {
+    let name_text = escape_list_pages_html_text(name);
+    if profile_url.is_empty() {
+        return format!(r#"<span class="printuser">{name_text}</span>"#);
+    }
+    let profile = escape_list_pages_html_attr(profile_url);
+    if !image {
+        return format!(
+            concat!(
+                r#"<span class="printuser"><a href="{profile}" "#,
+                r#"onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">"#,
+                "{name_text}</a></span>",
+            ),
+            profile = profile,
+            user_id = user_id,
+            name_text = name_text,
+        );
+    }
+    let name_attr = escape_list_pages_html_attr(name);
+    format!(
+        concat!(
+            r#"<span class="printuser avatarhover"><a href="{profile}" "#,
+            r#"onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">"#,
+            r#"<img class="small" src="https://www.wikidot.com/avatar.php?userid={user_id}&amp;size=small" "#,
+            r#"alt="{name_attr}" style="background-image:url(https://www.wikidot.com/userkarma.php?u={user_id})"/></a>"#,
+            r#"<a href="{profile}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">"#,
+            "{name_text}</a></span>",
+        ),
+        profile = profile,
+        user_id = user_id,
+        name_attr = name_attr,
+        name_text = name_text,
+    )
+}
+
+fn render_membership_email_invitation_valid(
+    invitation: &crate::services::membership::MembershipEmailInvitationView,
+    viewer: Option<(i64, String, String)>,
+    hash: &str,
+) -> String {
+    let authenticated = viewer.is_some();
+    let greeting = match viewer {
+        Some((user_id, name, profile_url)) => {
+            render_membership_email_invitation_print_user(
+                user_id,
+                &name,
+                &profile_url,
+                false,
+            )
+        }
+        None => escape_list_pages_html_text(&invitation.recipient_name),
+    };
+    let sender = render_membership_email_invitation_print_user(
+        invitation.sender_user_id,
+        &invitation.sender_user_name,
+        &invitation.sender_profile_url,
+        true,
+    );
+    let site_name = escape_list_pages_html_text(&invitation.site_name);
+    let site_domain = format!("{}.wikidot.com", invitation.site_slug);
+    let site_domain_attr = escape_list_pages_html_attr(&site_domain);
+    let hash = escape_list_pages_html_attr(hash);
+    let actor_control = if authenticated {
+        format!(
+            concat!(
+                r#"<p style="padding: 1em; font-size: 180%; text-align: center;font-weight: bold;line-spacing: 120%;">"#,
+                r#"<a href="javascript:;" onclick="WIKIDOT.modules.MembershipEmailInvitationModule.listeners.accept(event, '{hash}')">accept invitation</a>"#,
+                "</p>",
+            ),
+            hash = hash,
+        )
+    } else {
+        concat!(
+            "<p>Please create an account (or log in) before you can accept the invitation.</p>",
+            r#"<table style="margin: 1em auto"><tr>"#,
+            r#"<td style="text-align: center; padding: 1em"><div style="font-size: 180%; font-weight: bold;">"#,
+            r#"<a href="javascript:;" onclick="WIKIREQUEST.createAccountSkipCongrats=true;WIKIDOT.page.listeners.loginClick(event)">log in</a>"#,
+            "</div><p>if you already have an account at Wikidot</p></td>",
+            r#"<td style="padding: 1em; font-size: 140%">or</td>"#,
+            r#"<td style="text-align: center; padding: 1em"><div style="font-size: 180%; font-weight: bold;">"#,
+            r#"<a href="javascript:;" onclick="WIKIREQUEST.createAccountSkipCongrats=true; WIKIDOT.page.listeners.createAccount(event)">create a new account</a>"#,
+            "</div></td></tr></table>",
+        )
+        .to_owned()
+    };
+    format!(
+        concat!(
+            r#"<div id="membership-email-invitation-box">"#,
+            "<h2><span>Hi, {greeting}!</span></h2>",
+            "<p>It seems you got an invitation from our user {sender} to become a member of his/her Wiki Website ",
+            r#"<b>{site_name}</b> at <a href="http://{site_domain_attr}" target="_blank">http://{site_domain}</a>.</p>"#,
+            "<p>All you have to do is to accept the invitation and we will instantly add you to members of this Site.</p>",
+            "{actor_control}</div>",
+        ),
+        greeting = greeting,
+        sender = sender,
+        site_name = site_name,
+        site_domain_attr = site_domain_attr,
+        site_domain = escape_list_pages_html_text(&site_domain),
+        actor_control = actor_control,
+    )
+}
 const WHOINVITED_FORM_HTML: &str = concat!(
     r#"<form action="dummy" id="who-invited-form" onsubmit="WIKIDOT.modules.WhoInvitedModule.listeners.lookUp(event)">"#,
     "\n\t",
@@ -173,6 +281,16 @@ const MEMBERSHIP_BY_PASSWORD_MEMBER_HTML: &str = concat!(
     r#"<div class="error-block">"#,
     "\n\t\t\tYou can not apply.<br/>\n\t\t\t\t\t\t\t\t\t\tIt seems you already are a member of this site.\t\t\t\t\t\t\t\t</div>\n\t\n</div>",
 );
+const MEMBERSHIP_BY_PASSWORD_FORM_HTML: &str = concat!(
+    "<div id=\"membership-by-password-box\">\n",
+    "<div id=\"mbp-error\" class=\"error-block\" style=\"display: none;\">\n",
+    "\t<div>\n\t\tThe password is not valid.\t</div>\n</div>\n\n",
+    "<form id=\"membership-by-password-form\" onsubmit=\"return false;\" action=\"dummy.html\" method=\"get\">\n",
+    "\t<table class=\"form\">\n\t\t<tr>\n\t\t\t<td>\n\t\t\t\tPassword:\n\t\t\t</td>\n",
+    "\t\t\t<td>\n\t\t\t\t<input class=\"text\" type=\"password\" name=\"password\" size=\"40\" maxlength=\"50\"/><br/>\n\t\t\t</td>\n\t\t</tr>\n\t</table>\n",
+    "\t<div class=\"buttons\">\n\t\t<input id=\"mbp-apply\" type=\"button\" value=\"Apply\" onclick=\"WIKIDOT.modules.MembershipByPasswordModule.listeners.apply(event)\"/>\n\t</div>\n",
+    "</form>\n\n</div>",
+);
 const MEMBERSHIP_BY_PASSWORD_DISABLED_HTML: &str = concat!(
     r#"<div id="membership-by-password-box">"#,
     "\n\t\t\t",
@@ -190,6 +308,30 @@ const MEMBERSHIP_APPLY_ANONYMOUS_HTML: &str = concat!(
     r#"<td style="text-align: center; padding: 1em"><div style="font-size: 180%; font-weight: bold;">"#,
     r#"<a href="javascript:;" onclick="WIKIREQUEST.createAccountSkipCongrats=true; WIKIDOT.page.listeners.createAccount(event)">Create a new account</a>"#,
     "</div><p>it is worth it and is free</p></td></tr></table>\n</div>",
+);
+const MEMBERSHIP_APPLY_FORM_HTML: &str = concat!(
+    "<div id=\"membership-apply-box\">\n\n",
+    "<form id=\"membership-by-apply-form\">\n",
+    "\t<table class=\"form\">\n\t\t<tr>\n\t\t\t<td>\n\t\t\t\tApplication text:\n\t\t\t</td>\n",
+    "\t\t\t<td>\n\t\t\t\t<textarea name=\"comment\" rows=\"5\" cols=\"50\" id=\"membership-by-apply-text\"></textarea>\n",
+    "\t\t\t\t<div class=\"sub\" style=\"text-align: center;\">\n\t\t\t\t\t(<span id=\"membership-by-apply-text-left\"></span> characters left)\n\t\t\t\t</div>\n\t\t\t</td>\n\t\t</tr>\n\t</table>\n\n",
+    "\t<div class=\"buttons\">\n\t\t<input id=\"mba-apply\" type=\"button\" value=\"Apply\"/>\n\t</div>\n",
+    "</form>\n</div>",
+);
+const MEMBERSHIP_APPLY_DISABLED_HTML: &str = concat!(
+    "<div id=\"membership-apply-box\"><div class=\"error-block\">",
+    "You can not apply.<br/>Membership via application is not enabled for this site.",
+    "</div></div>",
+);
+const MEMBERSHIP_APPLY_MEMBER_HTML: &str = concat!(
+    "<div id=\"membership-apply-box\"><div class=\"error-block\">",
+    "You can not apply.<br/>It seems you already are a member of this site.",
+    "</div></div>",
+);
+const MEMBERSHIP_APPLY_ALREADY_APPLIED_HTML: &str = concat!(
+    "<div id=\"membership-apply-box\"><div class=\"error-block\">",
+    "You can not apply.<br/>It seems you have already applied for membership.",
+    "</div></div>",
 );
 
 static LISTUSERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -530,6 +672,58 @@ pub(crate) fn join_module_action_count(wikitext: &str) -> usize {
                 && captures
                     .name("name")
                     .is_some_and(|name| name.as_str().eq_ignore_ascii_case("Join"))
+        })
+        .count()
+}
+
+pub(crate) fn membership_apply_action_count(wikitext: &str) -> usize {
+    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
+    MEMBERSHIPAPPLY_MODULE_REGEX
+        .captures_iter(wikitext)
+        .filter(|captures| {
+            let matched = captures
+                .get(0)
+                .expect("a MembershipApply capture always has a complete match");
+            !literal_regions.contains(matched.start())
+                && captures
+                    .name("head")
+                    .is_none_or(|head| head.as_str().trim().is_empty())
+        })
+        .count()
+}
+
+pub(crate) fn membership_by_password_action_count(wikitext: &str) -> usize {
+    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
+    MEMBERSHIPBYPASSWORD_MODULE_REGEX
+        .captures_iter(wikitext)
+        .filter(|captures| {
+            let matched = captures
+                .get(0)
+                .expect("a MembershipByPassword capture always has a complete match");
+            !literal_regions.contains(matched.start())
+                && captures
+                    .name("head")
+                    .is_none_or(|head| head.as_str().trim().is_empty())
+        })
+        .count()
+}
+
+pub(crate) fn membership_email_invitation_action_count(wikitext: &str) -> usize {
+    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
+    STATIC_ACCOUNT_MODULE_REGEX
+        .captures_iter(wikitext)
+        .filter(|captures| {
+            let matched = captures
+                .get(0)
+                .expect("a static account module capture always has a complete match");
+            !literal_regions.contains(matched.start())
+                && captures.name("name").is_some_and(|name| {
+                    name.as_str()
+                        .eq_ignore_ascii_case("MembershipEmailInvitation")
+                })
+                && captures
+                    .name("head")
+                    .is_none_or(|head| head.as_str().trim().is_empty())
         })
         .count()
 }
@@ -1694,17 +1888,50 @@ impl RenderService {
         Ok(output)
     }
 
-    fn expand_membership_apply_modules(
+    async fn expand_membership_apply_modules(
+        ctx: &ServiceContext<'_>,
         wikitext: String,
         settings: &WikitextSettings,
+        current_site_id: Option<i64>,
         viewer_user_id: Option<i64>,
         compat_html: &mut CompatHtmlFragments,
-    ) -> String {
+    ) -> Result<String> {
         if !settings.enable_page_syntax
             || !MEMBERSHIPAPPLY_MODULE_REGEX.is_match(&wikitext)
         {
-            return wikitext;
+            return Ok(wikitext);
         }
+        let Some(site_id) = current_site_id else {
+            return Ok(wikitext);
+        };
+        let site = SiteService::get(ctx, Reference::Id(site_id)).await?;
+        let rendered = if !site.membership_by_application {
+            MEMBERSHIP_APPLY_DISABLED_HTML
+        } else if let Some(user_id) = viewer_user_id {
+            if RelationService::site_member_exists(
+                ctx,
+                GetSiteMember { site_id, user_id },
+            )
+            .await?
+            {
+                MEMBERSHIP_APPLY_MEMBER_HTML
+            } else if RelationService::exists(
+                ctx,
+                RelationReference::Relationship {
+                    relation_type: RelationType::SiteApplication,
+                    dest: RelationObject::Site(site_id),
+                    from: RelationObject::User(user_id),
+                },
+            )
+            .await?
+            {
+                MEMBERSHIP_APPLY_ALREADY_APPLIED_HTML
+            } else {
+                MEMBERSHIP_APPLY_FORM_HTML
+            }
+        } else {
+            MEMBERSHIP_APPLY_ANONYMOUS_HTML
+        };
         let literal_regions =
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
         let mut output = String::with_capacity(wikitext.len());
@@ -1721,19 +1948,14 @@ impl RenderService {
                 continue;
             }
             output.push_str(&wikitext[cursor..matched.start()]);
-            if viewer_user_id.is_none() {
-                output.push_str(
-                    &compat_html
-                        .push_block_html(MEMBERSHIP_APPLY_ANONYMOUS_HTML.to_owned()),
-                );
-            }
+            output.push_str(&compat_html.push_block_html(rendered.to_owned()));
             cursor = matched.end();
         }
         if cursor == 0 {
-            return wikitext;
+            return Ok(wikitext);
         }
         output.push_str(&wikitext[cursor..]);
-        output
+        Ok(output)
     }
 
     async fn expand_members_modules_with_directory(
@@ -2003,6 +2225,79 @@ impl RenderService {
         output
     }
 
+    async fn expand_membership_email_invitation_modules(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        settings: &WikitextSettings,
+        viewer_user_id: Option<i64>,
+        url: UrlArguments<'_>,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> Result<String> {
+        if !settings.enable_page_syntax
+            || !STATIC_ACCOUNT_MODULE_REGEX.is_match(&wikitext)
+        {
+            return Ok(wikitext);
+        }
+        let hash = url
+            .path_arguments
+            .iter()
+            .rfind(|argument| argument.name.eq_ignore_ascii_case("hash"))
+            .and_then(|argument| argument.value.as_deref())
+            .filter(|value| !value.is_empty());
+        let invitation = match hash {
+            Some(hash) => MembershipService::resolve_email_invitation(ctx, hash).await?,
+            None => None,
+        };
+        let viewer = match viewer_user_id {
+            Some(user_id) => UserService::get(ctx, Reference::Id(user_id))
+                .await?
+                .into_public_identity()
+                .map(|identity| {
+                    (
+                        user_id,
+                        identity.user_name.into_owned(),
+                        identity.user_profile_url.into_owned(),
+                    )
+                }),
+            None => None,
+        };
+        let rendered = match (hash, invitation.as_ref()) {
+            (Some(hash), Some(invitation)) => {
+                render_membership_email_invitation_valid(invitation, viewer, hash)
+            }
+            _ => MEMBERSHIP_EMAIL_INVITATION_MISSING_HTML.to_owned(),
+        };
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for captures in STATIC_ACCOUNT_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a static account module capture always has a complete match");
+            if literal_regions.contains(matched.start())
+                || !captures.name("name").is_some_and(|name| {
+                    name.as_str()
+                        .eq_ignore_ascii_case("MembershipEmailInvitation")
+                })
+                || captures
+                    .name("head")
+                    .is_some_and(|head| !head.as_str().trim().is_empty())
+            {
+                continue;
+            }
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(&compat_html.push_block_html(rendered.clone()));
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return Ok(wikitext);
+        }
+        output.push_str(&wikitext[cursor..]);
+        Ok(output)
+    }
+
     async fn render_membership_by_password_module(
         ctx: &ServiceContext<'_>,
         current_site_id: Option<i64>,
@@ -2012,7 +2307,7 @@ impl RenderService {
             return Ok(None);
         };
         let site = SiteService::get(ctx, Reference::Id(current_site_id)).await?;
-        if MembershipService::policy(&site) == MembershipPolicy::Closed {
+        if !site.membership_by_password || site.membership_password_hash.is_none() {
             return Ok(Some(MEMBERSHIP_BY_PASSWORD_DISABLED_HTML));
         }
         let Some(viewer_user_id) = viewer_user_id else {
@@ -2026,9 +2321,11 @@ impl RenderService {
             },
         )
         .await?;
-        Ok(membership
-            .is_some()
-            .then_some(MEMBERSHIP_BY_PASSWORD_MEMBER_HTML))
+        Ok(Some(if membership.is_some() {
+            MEMBERSHIP_BY_PASSWORD_MEMBER_HTML
+        } else {
+            MEMBERSHIP_BY_PASSWORD_FORM_HTML
+        }))
     }
 
     async fn expand_membership_by_password_modules(
@@ -2453,11 +2750,15 @@ impl RenderService {
         .await
         .or_raise(make_error)?;
         wikitext = Self::expand_membership_apply_modules(
+            ctx,
             wikitext,
             settings,
+            options.current_site_id,
             options.viewer_user_id,
             compat_html,
-        );
+        )
+        .await
+        .or_raise(make_error)?;
         wikitext = Self::expand_members_modules_with_directory(
             ctx,
             wikitext,
@@ -2524,6 +2825,16 @@ impl RenderService {
             expand_search_feed_modules(wikitext, settings, options.url, compat_html);
         wikitext = Self::expand_simpletodo_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_send_invitations_modules(wikitext, settings, compat_html);
+        wikitext = Self::expand_membership_email_invitation_modules(
+            ctx,
+            wikitext,
+            settings,
+            options.viewer_user_id,
+            options.url,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
         wikitext = Self::expand_static_account_modules(wikitext, settings, compat_html);
         wikitext = expand_site_utility_modules(
             ctx,
@@ -3181,52 +3492,29 @@ mod membership_by_password_tests {
 
 #[cfg(test)]
 mod membership_apply_tests {
-    use super::RenderService;
-    use crate::services::render::compat::CompatHtmlFragments;
-    use ftml::layout::Layout;
-    use ftml::settings::{WikitextMode, WikitextSettings};
-
-    fn preview_membership_apply(source: &str, viewer_user_id: Option<i64>) -> String {
-        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
-        let mut compat_html = CompatHtmlFragments::new(source);
-        let expanded = RenderService::expand_membership_apply_modules(
-            source.to_owned(),
-            &settings,
-            viewer_user_id,
-            &mut compat_html,
-        );
-        compat_html.restore(&expanded)
-    }
+    use super::membership_apply_action_count;
 
     #[test]
-    fn membership_apply_argument_bearing_preview_stays_literal_without_prompt() {
-        // Retained #1033 contract: the spec requires no attributes and the
-        // live anonymous probe covers only the bare opener, so the bare
-        // opener renders the sign-in prompt while argument-bearing
-        // invocations stay byte-literal (later unknown-module) for every
-        // actor instead of rendering a prompt or an apply control.
-        let bare_anonymous = preview_membership_apply("[[module MembershipApply]]", None);
-        assert!(
-            bare_anonymous.contains(
-                "You need to have a Wikidot.com account and be signed to apply for membership.",
-            ),
-            "bare MembershipApply must keep the live anonymous prompt:\n{bare_anonymous}",
+    fn membership_apply_registry_accepts_only_bare_nonliteral_modules() {
+        assert_eq!(
+            membership_apply_action_count("[[module MembershipApply]]"),
+            1
         );
-
-        for source in [
-            "[[module MembershipApply foo=\"bar\"]]",
-            "[[module MembershipApply limit=\"5\"]]",
-        ] {
-            for viewer in [None, Some(1)] {
-                let rendered = preview_membership_apply(source, viewer);
-                assert_eq!(rendered, source, "{source} for {viewer:?}");
-            }
-        }
-
-        let bare_member = preview_membership_apply("[[module MembershipApply]]", Some(1));
-        assert!(
-            !bare_member.contains("You need to have a Wikidot.com account and be signed"),
-            "the anonymous prompt must not leak to signed-in viewers:\n{bare_member}",
+        assert_eq!(
+            membership_apply_action_count("[[module MEMBERSHIPAPPLY]]"),
+            1
+        );
+        assert_eq!(
+            membership_apply_action_count("[[module MembershipApply foo=\"bar\"]]"),
+            0,
+        );
+        assert_eq!(
+            membership_apply_action_count("[[module MembershipApply limit=\"5\"]]"),
+            0,
+        );
+        assert_eq!(
+            membership_apply_action_count("[[code]][[module MembershipApply]][[/code]]"),
+            0,
         );
     }
 }

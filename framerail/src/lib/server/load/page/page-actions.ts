@@ -40,7 +40,12 @@ import {
   pageLockHistoryAction,
   pageLockRemoveAction
 } from "$lib/server/load/page/page-lock-actions"
-import { membershipJoinAction } from "$lib/server/load/page/page-membership-actions"
+import {
+  membershipApplicationAction,
+  membershipEmailInvitationAction,
+  membershipJoinAction,
+  membershipPasswordAction
+} from "$lib/server/load/page/page-membership-actions"
 
 export const pageActions = {
   backlinks: pageBacklinksAction,
@@ -73,7 +78,10 @@ export const pageActions = {
   watchers: pageWatchersAction,
   legacyRate: wikidotLegacyRateAction,
   legacySetTags: wikidotLegacySetTagsAction,
+  membershipApplication: membershipApplicationAction,
+  membershipEmailInvitation: membershipEmailInvitationAction,
   membershipJoin: membershipJoinAction,
+  membershipPassword: membershipPasswordAction,
   deletedGet: pageDeletedGetAction,
   restore: pageRestoreAction
 }

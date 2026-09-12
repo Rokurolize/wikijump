@@ -484,12 +484,50 @@
         },
         {
           "case_id": "A1033_MEMBERSHIPBYPASSWORD_OBSERVED_ACTORS",
-          "acceptance": "Preserve the observed anonymous sign-in and current-member output while keeping unsupported policy unavailable.",
+          "acceptance": "Preserve the observed disabled, anonymous sign-in, registered non-member form, wrong-password inline error, and current-member output without exposing the configured password.",
           "owner": "deepwell",
           "evidence": [
-            "deepwell/tests/page.rs::membership_by_password_module_matches_live_anonymous_and_member_output"
+            "deepwell/tests/page.rs::membership_by_password_module_matches_live_anonymous_and_member_output",
+            "framerail/tests/wikidot-legacy-actions.test.js::MembershipByPassword exposes the live inline wrong-password state without reloading"
           ],
-          "result": "The read-only module distinguishes only frozen observed states and does not add a password mutation."
+          "result": "The renderer is policy-aware, the configured digest never serializes to the public site/admin model, and wrong_password keeps the live inline error state without inventing a reload or lockout."
+        },
+        {
+          "case_id": "A1033_PASSWORD_SUBMISSION",
+          "acceptance": "Validate the configured membership password and atomically create the evidenced membership transition without inventing a Wikidot password-failure lockout.",
+          "owner": "deepwell-and-framerail",
+          "evidence": [
+            "install/local/wikidot-verification/artifacts/open43-a1033-membership-authority-20260912.json",
+            "/home/roku/wjlab/evidence/disposable-a1033-password-20260912-r7/artifact.json",
+            "deepwell/tests/page.rs::membership_application_and_password_mutations_match_disposable_live_contract",
+            "framerail/tests/page-membership-action-boundary.test.js::application and password actions preserve actor-bound page context",
+            "framerail/tests/wikidot-legacy-action-request.test.js::membership application and password requests keep secrets in same-origin action bodies"
+          ],
+          "result": "Fresh disposable live evidence and the retained Wikidot server action agree on wrong_password, correct-password membership, and already_member. Wikijump stores only an Argon2 digest, binds the mutation to the renderer/page/session authority, removes an existing application on password success, and deliberately adds no compatibility-visible failure counter because Wikidot's action has none."
+        },
+        {
+          "case_id": "A1033_APPLICATION_SUBMISSION_AND_REVIEW",
+          "acceptance": "Submit, deduplicate, review, accept, and decline membership applications while preserving the evidenced reviewed-history duplicate rule and administrator authority.",
+          "owner": "deepwell-and-framerail",
+          "evidence": [
+            "install/local/wikidot-verification/artifacts/open43-a1033-membership-authority-20260912.json",
+            "/home/roku/wjlab/evidence/disposable-a1033-application-20260912-r3/artifact.json",
+            "deepwell/tests/page.rs::membership_application_and_password_mutations_match_disposable_live_contract",
+            "framerail/tests/site-settings-public-boundary.test.js::renders membership policy without exposing a configured password and binds review actions"
+          ],
+          "result": "Fresh disposable live evidence proves submit, already_applied, accept, decline, pending disappearance, and the persistent reviewed-history duplicate rule. Wikijump now keeps SiteApplication history after review, creates membership only on accept, and exposes policy/review through the trusted revision-, site-, session-, and Role.Assign-bound admin seam."
+        },
+        {
+          "case_id": "A1033_INVITATION_RESOLUTION_AND_CONSUMPTION",
+          "acceptance": "Resolve opaque email invitations by hash plus unused state, preserve Wikidot's no-expiry and no-recipient-binding contract, consume once on accept, and collapse canceled, used, unknown, and malformed hashes to the unavailable state.",
+          "owner": "deepwell-and-framerail",
+          "evidence": [
+            "install/local/wikidot-verification/artifacts/open43-a1033-membership-authority-20260912.json",
+            "/home/roku/wjlab/evidence/disposable-a1033-internal-invite-20260907-r1/artifact.json",
+            "/home/roku/wjlab/evidence/disposable-a1033-internal-invite-cleanup-20260907-r1/artifact.json",
+            "deepwell/tests/page.rs::membership_email_invitation_matches_hash_one_use_and_cancel_contract"
+          ],
+          "result": "The public Wikidot server source and current module/action surface show that email invitations are selected by hash plus accepted=false, have no expiry check, are not bound to the invitation email at acceptance, become one-use by setting accepted, and are canceled by deleting the row. Wikijump stores only a SHA-256 token digest, renders the observed valid/invalid actor states, accepts through the actor-bound saved-page action, and proves old-token, non-recipient actor, one-use, ban-boundary, and cancel behavior locally."
         }
       ],
       "needs_source": [],
@@ -501,30 +539,14 @@
           "result": "Rust execution was forbidden in this lane."
         }
       ],
-      "blocked_evidence": [
-        {
-          "case_id": "A1033_PASSWORD_SUBMISSION",
-          "acceptance": "Validate a membership password, apply failure limits, and atomically create the evidenced membership transition.",
-          "owner": "live-evidence-and-domain-model",
-          "result": "No safe password-enabled non-member fixture or local password policy, storage, digest, rotation, validation, or failure-limit authority exists. No endpoint or form is added."
-        },
-        {
-          "case_id": "A1033_APPLICATION_SUBMISSION_AND_REVIEW",
-          "acceptance": "Submit, deduplicate, review, accept, and reject membership applications with exact authority and visible states.",
-          "owner": "live-evidence-and-domain-model",
-          "result": "A generic pending relation exists, but no evidenced application-enabled policy, payload, review authority, duplicate rule, or acceptance transition exists. It is not treated as a wire contract."
-        },
-        {
-          "case_id": "A1033_INVITATION_RESOLUTION_AND_CONSUMPTION",
-          "acceptance": "Resolve recipient-bound opaque invitations with expiry, cancellation, one-use consumption, and no existence oracle.",
-          "owner": "live-evidence-and-domain-model",
-          "result": "No invitation entity or live fixture defines recipient, site, digest, expiry, used, canceled, or accepted state. All token values remain non-authoritative and unavailable."
-        }
-      ],
+      "blocked_evidence": [],
       "exact_commands": [
         "cargo test --manifest-path deepwell/Cargo.toml --test page static_account_modules_match_live_preview_and_page_view_basics -- --exact --nocapture",
         "cargo test --manifest-path deepwell/Cargo.toml --test page membership_by_password_module_matches_live_anonymous_and_member_output -- --exact --nocapture",
-        "cargo test --manifest-path deepwell/Cargo.toml --test page public_membership_module_states_are_distinct_and_opaque -- --exact --nocapture"
+        "cargo test --manifest-path deepwell/Cargo.toml --test page public_membership_module_states_are_distinct_and_opaque -- --exact --nocapture",
+        "cargo test --manifest-path deepwell/Cargo.toml --test page membership_application_and_password_mutations_match_disposable_live_contract -- --exact --nocapture",
+        "cargo test --manifest-path deepwell/Cargo.toml --test page membership_email_invitation_matches_hash_one_use_and_cancel_contract -- --exact --nocapture",
+        "scripts/run-framerail-unit-tests.sh tests/page-membership-action-boundary.test.js tests/site-settings-public-boundary.test.js tests/wikidot-legacy-action-request.test.js tests/wikidot-legacy-actions.test.js"
       ]
     },
     {

@@ -165,9 +165,12 @@ test("verification inputs remain selected by the local preflight classifier", ()
 test("Framerail unit and browser scripts remain available for local validation", () => {
   const pkg = JSON.parse(read("framerail/package.json"))
   const playwright = read("framerail/playwright.config.ts")
+  const unitRunner = read("scripts/run-framerail-unit-tests.sh")
 
-  assert.match(pkg.scripts["test:unit"], /run-test-no-external-network\.sh/u)
-  assert.match(pkg.scripts["test:unit"], /svelte-kit sync && node --test/u)
+  assert.equal(pkg.scripts["test:unit"], "../scripts/run-framerail-unit-tests.sh")
+  assert.match(unitRunner, /run-test-no-external-network\.sh/u)
+  assert.match(unitRunner, /svelte-kit sync/u)
+  assert.match(unitRunner, /node --test/u)
   assert.doesNotMatch(pkg.scripts["test:unit"], /\.spec\.(?:js|ts)/u)
   assert.equal(
     pkg.scripts.test,

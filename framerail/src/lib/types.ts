@@ -77,6 +77,11 @@ export interface SiteSettings {
     top: boolean
     bottom: boolean
   }
+  membership: {
+    application_enabled: boolean
+    password_enabled: boolean
+    password_configured: boolean
+  }
 }
 
 export type ThemeSetting =

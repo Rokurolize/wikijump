@@ -327,6 +327,33 @@ export async function siteToolbarsUpdate(
   )
 }
 
+export async function siteMembershipUpdate(
+  siteId: number,
+  expectedSettingsRevision: number,
+  userId: number,
+  userIpAddr: string,
+  applicationEnabled: boolean,
+  passwordEnabled: boolean,
+  password: string | null,
+  requestContext: SiteUpdateRequestContext
+): Promise<SiteModel> {
+  return client.request(
+    "site_update",
+    {
+      site: siteId,
+      expected_settings_revision: expectedSettingsRevision,
+      user_id: userId,
+      membership: {
+        application_enabled: applicationEnabled,
+        password_enabled: passwordEnabled,
+        password
+      },
+      ip_address: userIpAddr
+    },
+    requestContext
+  )
+}
+
 export async function categoryThemeUpdate(
   siteId: number,
   categoryId: number,

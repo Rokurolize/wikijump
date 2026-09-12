@@ -97,7 +97,7 @@ pub use self::legacy_actions::{
     LegacyActionDescriptor, LegacyActionRegistry, LegacyBrowserAction,
 };
 pub(crate) use self::literal_regions::LiteralRegionIndex;
-pub use self::membership_actions::MembershipActionRegistry;
+pub use self::membership_actions::{MembershipActionKind, MembershipActionRegistry};
 pub use self::rate_actions::{
     RateActionRegistry, RateBrowserAction, RateBrowserActionRegistry,
 };

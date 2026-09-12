@@ -60,6 +60,10 @@ use deepwell::services::forum_post::{
     CreateForumPost, DeleteForumPost, UpdateForumPost, UpdateForumPostBody,
 };
 use deepwell::services::forum_thread::CreateForumThread;
+use deepwell::services::membership::{
+    CreateMembershipEmailInvitation, MembershipBrowserAction,
+    MembershipEmailInvitationOutcome,
+};
 use deepwell::services::page::{CreatePage, GetPageOutput};
 use deepwell::services::page_lock::{CreatePageLockInput, PageLockService};
 use deepwell::services::page_query::{
@@ -74,8 +78,9 @@ use deepwell::services::permission::{
 };
 use deepwell::services::public_cache::PublicContentCache;
 use deepwell::services::relation::{
-    CreatePageWatch, CreateSiteMember, PageAttribution, PageAttributionKind,
-    RemovePageWatch, SiteMemberAccepted, SiteMemberData,
+    CreatePageWatch, CreateSiteBan, CreateSiteMember, PageAttribution,
+    PageAttributionKind, RelationObject, RelationReference, RemovePageWatch, SiteBanData,
+    SiteMemberAccepted, SiteMemberData,
 };
 use deepwell::services::render::{LegacyActionRegistry, UrlArgumentPair, UrlArguments};
 use deepwell::services::role::{
@@ -85,23 +90,23 @@ use deepwell::services::score::ScoreValue as QueryScoreValue;
 use deepwell::services::session::CreateSession;
 use deepwell::services::site::UpdateSiteBody;
 use deepwell::services::text_block::{MIME_HTML, TextBlock};
-use deepwell::services::user::UpdateUserBody;
+use deepwell::services::user::{CreateUser, UpdateUserBody};
 use deepwell::services::view::{GetArticleViewOutput, GetPageViewOutput};
 use deepwell::services::{
     FileRevisionService, ForumPostService, ForumService, ForumThreadService, LinkService,
-    PageService, RelationService, RenderService, RequestContext, ServiceContext,
-    SessionService, SettingsService, SiteService, TextBlockService, TextService,
-    ThemeSetting, UserService,
+    PageService, PasswordService, RelationService, RenderService, RequestContext,
+    ServiceContext, SessionService, SettingsService, SiteService, TextBlockService,
+    TextService, ThemeSetting, UserService,
 };
 use deepwell::types::{
     Action, ConnectionType, Maybe, PageId, PageLockType, PageRevisionType, Permission,
-    Reference, RerenderDepth, Resource, TextBlockType,
+    Reference, RelationType, RerenderDepth, Resource, TextBlockType, UserType,
 };
 use futures::FutureExt;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseBackend, EntityTrait,
-    IntoActiveModel, PaginatorTrait, QueryFilter, QueryOrder, Set, Statement,
-    TransactionTrait, Value,
+    FromQueryResult, IntoActiveModel, PaginatorTrait, QueryFilter, QueryOrder, Set,
+    Statement, TransactionTrait, Value,
 };
 use serde_json::{Value as JsonValue, json};
 use sha1::{Digest as Sha1Digest, Sha1};
@@ -125,6 +130,16 @@ async fn public_membership_module_states_are_distinct_and_opaque() {
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded mirror site should exist")
         .site;
+    // This public-state fixture combines observations captured from the
+    // application-enabled sandbox with password-disabled output. Make that
+    // policy explicit instead of depending on the pre-policy renderer's
+    // historical unconditional MembershipApply form.
+    let mut site_model = site.clone().into_active_model();
+    site_model.membership_by_application = Set(true);
+    site_model
+        .update(runner.context().transaction())
+        .await
+        .expect("membership public-state fixture should enable applications");
     let source = concat!(
         "[[module Join button=\"one\" button=\"two\" class=\"membership-join-fixture\"]]\n",
         "[[module JOIN BUTTON='single-quoted-is-ignored']]\n",
@@ -16686,6 +16701,745 @@ async fn membership_by_password_module_matches_live_anonymous_and_member_output(
         !anonymous_body.contains("[[module MembershipByPassword")
             && !member_body.contains("[[module MembershipByPassword"),
         "saved page views should consume MembershipByPassword:\nanonymous={anonymous_body}\nmember={member_body}",
+    );
+}
+
+#[tokio::test]
+async fn membership_application_and_password_mutations_match_disposable_live_contract() {
+    let mut runner = TestRunner::setup().await;
+    let site_output =
+        run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}))
+            .expect("seeded editable site should exist");
+    let site = site_output.site;
+    let site_id = site.site_id;
+    let reviewer_user_id = ADMIN_USER_ID;
+    let membership_password = format!("a1033-live-contract-{}", cuid());
+
+    let mut site_model = site.into_active_model();
+    site_model.membership_by_application = Set(true);
+    site_model.membership_by_password = Set(true);
+    site_model.membership_password_hash = Set(Some(
+        PasswordService::new_hash(&membership_password)
+            .expect("membership password fixture should hash"),
+    ));
+    let configured_site = site_model
+        .update(runner.context().transaction())
+        .await
+        .expect("membership policy fixture should update");
+    let public_site =
+        serde_json::to_value(&configured_site).expect("site should serialize");
+    assert!(
+        public_site.get("membership_password_hash").is_none(),
+        "membership password digest must not serialize through the public site model",
+    );
+
+    async fn create_membership_actor(runner: &TestRunner, label: &str) -> i64 {
+        UserService::create(
+            runner.context(),
+            CreateUser {
+                user_type: UserType::Regular,
+                name: format!("A1033 {label} {}", cuid()),
+                email: format!("a1033-{label}-{}@example.invalid", cuid()),
+                locales: vec!["en".to_owned()],
+                password: format!("membership-fixture-{}", cuid()),
+                bypass_filter: true,
+                bypass_email_verification: true,
+                override_user_id: None,
+                ip_address: common::IP_ADDRESS,
+            },
+        )
+        .await
+        .expect("membership fixture user should be created")
+        .user_id
+    }
+
+    let accept_user_id = create_membership_actor(&runner, "accept").await;
+    let decline_user_id = create_membership_actor(&runner, "decline").await;
+    let page_slug = format!("a1033-membership-{}", cuid());
+    let page = PageService::create(
+        runner.context(),
+        CreatePage {
+            site_id,
+            wikitext: concat!(
+                "[[module MembershipApply]]\n",
+                "[[module MembershipByPassword]]",
+            )
+            .to_owned(),
+            title: "A1033 membership mutation fixture".to_owned(),
+            alt_title: None,
+            tags: Vec::new(),
+            slug: page_slug.clone(),
+            layout: None,
+            revision_comments: "Create A1033 membership mutation fixture".to_owned(),
+            user_id: SYSTEM_USER_ID,
+            bypass_filter: true,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("membership action page should be created");
+
+    async fn membership_actions_for_actor(
+        runner: &mut TestRunner,
+        site_id: i64,
+        page_slug: &str,
+        user_id: i64,
+    ) -> (String, Vec<MembershipBrowserAction>) {
+        let session_token = SessionService::create(
+            runner.context(),
+            CreateSession {
+                user_id,
+                ip_address: common::IP_ADDRESS,
+                user_agent: "A1033 membership mutation fixture".to_owned(),
+                restricted: false,
+            },
+        )
+        .await
+        .expect("membership fixture session should be created");
+        runner.set_request_context(RequestContext {
+            user_id: Some(user_id),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Slug(page_slug.to_owned().into())),
+            ..Default::default()
+        });
+        let view = run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": session_token,
+                "route": {"slug": page_slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        match view {
+            GetPageViewOutput::Found {
+                compiled_body_html,
+                membership_actions,
+                ..
+            } => (compiled_body_html, membership_actions),
+            other => panic!("expected membership action page, got {other:?}"),
+        }
+    }
+
+    fn application_binding(
+        actions: &[MembershipBrowserAction],
+    ) -> (i64, i64, usize, String) {
+        actions
+            .iter()
+            .find_map(|action| match action {
+                MembershipBrowserAction::Application {
+                    page_id,
+                    revision_id,
+                    index,
+                    fingerprint,
+                } => Some((*page_id, *revision_id, *index, fingerprint.clone())),
+                _ => None,
+            })
+            .expect("registered nonmember should receive MembershipApply action binding")
+    }
+
+    fn password_binding(
+        actions: &[MembershipBrowserAction],
+    ) -> (i64, i64, usize, String) {
+        actions
+            .iter()
+            .find_map(|action| match action {
+                MembershipBrowserAction::Password {
+                    page_id,
+                    revision_id,
+                    index,
+                    fingerprint,
+                } => Some((*page_id, *revision_id, *index, fingerprint.clone())),
+                _ => None,
+            })
+            .expect(
+                "registered nonmember should receive MembershipByPassword action binding",
+            )
+    }
+
+    let (accept_body, accept_actions) =
+        membership_actions_for_actor(&mut runner, site_id, &page_slug, accept_user_id)
+            .await;
+    assert!(
+        accept_body.contains(r#"id="membership-by-apply-form""#)
+            && accept_body.contains(r#"id="mba-apply""#)
+            && accept_body.contains(r#"id="membership-by-password-form""#)
+            && accept_body.contains(r#"id="mbp-apply""#)
+            && accept_body.contains("The password is not valid."),
+        "registered nonmember should receive the evidenced interactive forms:\n{accept_body}",
+    );
+    let application = application_binding(&accept_actions);
+    let password = password_binding(&accept_actions);
+    assert_eq!(application.0, page.page_id);
+    assert_eq!(password.0, page.page_id);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(accept_user_id),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(page_slug.clone().into())),
+        ..Default::default()
+    });
+    let submitted = run_endpoint!(
+        runner,
+        membership_application_submit,
+        json!({
+            "page_id": application.0,
+            "last_revision_id": application.1,
+            "action_index": application.2,
+            "action_fingerprint": application.3,
+            "comment": "A1033 live-compatible application",
+        }),
+    );
+    assert_eq!(
+        submitted,
+        deepwell::services::membership::MembershipApplicationOutcome::Submitted
+    );
+    let duplicate = run_endpoint!(
+        runner,
+        membership_application_submit,
+        json!({
+            "page_id": application.0,
+            "last_revision_id": application.1,
+            "action_index": application.2,
+            "action_fingerprint": application.3,
+            "comment": "duplicate",
+        }),
+    );
+    assert_eq!(
+        duplicate,
+        deepwell::services::membership::MembershipApplicationOutcome::AlreadyApplied
+    );
+
+    for wrong in ["wrong-one", "wrong-two", "wrong-three"] {
+        let outcome = run_endpoint!(
+            runner,
+            membership_password_submit,
+            json!({
+                "page_id": password.0,
+                "last_revision_id": password.1,
+                "action_index": password.2,
+                "action_fingerprint": password.3,
+                "password": wrong,
+            }),
+        );
+        assert_eq!(
+            outcome,
+            deepwell::services::membership::MembershipPasswordOutcome::WrongPassword,
+        );
+        assert!(
+            !RelationService::site_member_exists(
+                runner.context(),
+                deepwell::services::relation::GetSiteMember {
+                    site_id,
+                    user_id: accept_user_id,
+                },
+            )
+            .await
+            .expect("membership lookup should succeed"),
+            "bounded wrong-password attempts must not create membership",
+        );
+    }
+    let joined = run_endpoint!(
+        runner,
+        membership_password_submit,
+        json!({
+            "page_id": password.0,
+            "last_revision_id": password.1,
+            "action_index": password.2,
+            "action_fingerprint": password.3,
+            "password": membership_password,
+        }),
+    );
+    assert_eq!(
+        joined,
+        deepwell::services::membership::MembershipPasswordOutcome::Joined
+    );
+    let joined_retry = run_endpoint!(
+        runner,
+        membership_password_submit,
+        json!({
+            "page_id": password.0,
+            "last_revision_id": password.1,
+            "action_index": password.2,
+            "action_fingerprint": password.3,
+            "password": membership_password,
+        }),
+    );
+    assert_eq!(
+        joined_retry,
+        deepwell::services::membership::MembershipPasswordOutcome::AlreadyMember,
+    );
+    let application_reference = RelationReference::Relationship {
+        relation_type: RelationType::SiteApplication,
+        dest: RelationObject::Site(site_id),
+        from: RelationObject::User(accept_user_id),
+    };
+    assert!(
+        !RelationService::exists(runner.context(), application_reference)
+            .await
+            .expect("application relation lookup should succeed"),
+        "password join should remove an existing application like Wikidot",
+    );
+
+    RelationService::remove(
+        runner.context(),
+        RelationReference::Relationship {
+            relation_type: RelationType::SiteMember,
+            dest: RelationObject::Site(site_id),
+            from: RelationObject::User(accept_user_id),
+        },
+        reviewer_user_id,
+    )
+    .await
+    .expect("accepted password membership fixture should be removable");
+    let resubmitted = run_endpoint!(
+        runner,
+        membership_application_submit,
+        json!({
+            "page_id": application.0,
+            "last_revision_id": application.1,
+            "action_index": application.2,
+            "action_fingerprint": application.3,
+            "comment": "A1033 accepted application",
+        }),
+    );
+    assert_eq!(
+        resubmitted,
+        deepwell::services::membership::MembershipApplicationOutcome::Submitted
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(reviewer_user_id),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let accepted = run_endpoint!(
+        runner,
+        membership_application_review,
+        json!({
+            "site_id": site_id,
+            "user_id": accept_user_id,
+            "decision": "accept",
+            "reply": "accepted",
+        }),
+    );
+    assert_eq!(
+        accepted,
+        deepwell::services::membership::MembershipApplicationStatus::Accepted
+    );
+    RelationService::remove(
+        runner.context(),
+        RelationReference::Relationship {
+            relation_type: RelationType::SiteMember,
+            dest: RelationObject::Site(site_id),
+            from: RelationObject::User(accept_user_id),
+        },
+        reviewer_user_id,
+    )
+    .await
+    .expect("accepted application membership fixture should be removable");
+    runner.set_request_context(RequestContext {
+        user_id: Some(accept_user_id),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(page_slug.clone().into())),
+        ..Default::default()
+    });
+    let reapply_after_accept = run_endpoint!(
+        runner,
+        membership_application_submit,
+        json!({
+            "page_id": application.0,
+            "last_revision_id": application.1,
+            "action_index": application.2,
+            "action_fingerprint": application.3,
+            "comment": "should remain already applied",
+        }),
+    );
+    assert_eq!(
+        reapply_after_accept,
+        deepwell::services::membership::MembershipApplicationOutcome::AlreadyApplied,
+    );
+
+    let (_decline_body, decline_actions) =
+        membership_actions_for_actor(&mut runner, site_id, &page_slug, decline_user_id)
+            .await;
+    let decline_application = application_binding(&decline_actions);
+    runner.set_request_context(RequestContext {
+        user_id: Some(decline_user_id),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(page_slug.clone().into())),
+        ..Default::default()
+    });
+    assert_eq!(
+        run_endpoint!(
+            runner,
+            membership_application_submit,
+            json!({
+                "page_id": decline_application.0,
+                "last_revision_id": decline_application.1,
+                "action_index": decline_application.2,
+                "action_fingerprint": decline_application.3,
+                "comment": "A1033 declined application",
+            }),
+        ),
+        deepwell::services::membership::MembershipApplicationOutcome::Submitted,
+    );
+    runner.set_request_context(RequestContext {
+        user_id: Some(reviewer_user_id),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    assert_eq!(
+        run_endpoint!(
+            runner,
+            membership_application_review,
+            json!({
+                "site_id": site_id,
+                "user_id": decline_user_id,
+                "decision": "decline",
+                "reply": "declined",
+            }),
+        ),
+        deepwell::services::membership::MembershipApplicationStatus::Declined,
+    );
+    runner.set_request_context(RequestContext {
+        user_id: Some(decline_user_id),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(page_slug.into())),
+        ..Default::default()
+    });
+    assert_eq!(
+        run_endpoint!(
+            runner,
+            membership_application_submit,
+            json!({
+                "page_id": decline_application.0,
+                "last_revision_id": decline_application.1,
+                "action_index": decline_application.2,
+                "action_fingerprint": decline_application.3,
+                "comment": "still already applied",
+            }),
+        ),
+        deepwell::services::membership::MembershipApplicationOutcome::AlreadyApplied,
+    );
+}
+
+#[tokio::test]
+async fn membership_email_invitation_matches_hash_one_use_and_cancel_contract() {
+    #[derive(Debug, FromQueryResult)]
+    struct InvitationStorageRow {
+        token_digest: String,
+        created_at: OffsetDateTime,
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}))
+        .expect("seeded editable site should exist")
+        .site;
+    let site_id = site.site_id;
+    let page_slug = format!("a1033-email-invitation-{}", cuid());
+    let page = PageService::create(
+        runner.context(),
+        CreatePage {
+            site_id,
+            wikitext: "[[module MembershipEmailInvitation]]".to_owned(),
+            title: "A1033 email invitation fixture".to_owned(),
+            alt_title: None,
+            tags: Vec::new(),
+            slug: page_slug.clone(),
+            layout: None,
+            revision_comments: "Create A1033 email invitation fixture".to_owned(),
+            user_id: SYSTEM_USER_ID,
+            bypass_filter: true,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("invitation page should be created");
+
+    let actor = UserService::create(
+        runner.context(),
+        CreateUser {
+            user_type: UserType::Regular,
+            name: format!("A1033 invitation actor {}", cuid()),
+            email: format!("a1033-invitation-{}@example.invalid", cuid()),
+            locales: vec!["en".to_owned()],
+            password: format!("membership-fixture-{}", cuid()),
+            bypass_filter: true,
+            bypass_email_verification: true,
+            override_user_id: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("invitation actor should be created");
+
+    let (invitation_id, token) =
+        deepwell::services::membership::MembershipService::create_email_invitation(
+            runner.context(),
+            CreateMembershipEmailInvitation {
+                site_id,
+                sender_user_id: ADMIN_USER_ID,
+                email: "intended-recipient@example.invalid",
+                recipient_name: "Intended Recipient",
+                message: "A1033 invitation fixture",
+                to_contacts: false,
+            },
+        )
+        .await
+        .expect("invitation should be created");
+
+    let stored = InvitationStorageRow::find_by_statement(Statement::from_sql_and_values(
+        runner.context().transaction().get_database_backend(),
+        "SELECT token_digest, created_at FROM membership_email_invitation WHERE invitation_id = $1",
+        [Value::from(invitation_id)],
+    ))
+    .one(runner.context().transaction())
+    .await
+    .expect("invitation storage lookup should succeed")
+    .expect("invitation row should exist");
+    assert_ne!(
+        stored.token_digest, token,
+        "raw invitation token must not be stored"
+    );
+    assert_eq!(
+        stored.token_digest,
+        hex::encode(Sha256::digest(token.as_bytes()))
+    );
+
+    runner
+        .context()
+        .transaction()
+        .execute_raw(Statement::from_sql_and_values(
+            runner.context().transaction().get_database_backend(),
+            "UPDATE membership_email_invitation SET created_at = NOW() - INTERVAL '10 years' WHERE invitation_id = $1",
+            [Value::from(invitation_id)],
+        ))
+        .await
+        .expect("old invitation timestamp fixture should update");
+    let aged = InvitationStorageRow::find_by_statement(Statement::from_sql_and_values(
+        runner.context().transaction().get_database_backend(),
+        "SELECT token_digest, created_at FROM membership_email_invitation WHERE invitation_id = $1",
+        [Value::from(invitation_id)],
+    ))
+    .one(runner.context().transaction())
+    .await
+    .expect("aged invitation storage lookup should succeed")
+    .expect("aged invitation row should exist");
+    assert!(
+        aged.created_at < stored.created_at,
+        "fixture must actually age the invitation"
+    );
+    assert_eq!(aged.token_digest, stored.token_digest);
+    assert!(
+        deepwell::services::membership::MembershipService::resolve_email_invitation(
+            runner.context(),
+            &token,
+        )
+        .await
+        .expect("old invitation should resolve")
+        .is_some(),
+        "Wikidot invitation contract has no expiry check",
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(page_slug.clone().into())),
+        ..Default::default()
+    });
+    let anonymous_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "route": {"slug": page_slug, "extra": format!("/hash/{token}")},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let anonymous_body = match anonymous_view {
+        GetPageViewOutput::Found {
+            compiled_body_html,
+            membership_actions,
+            ..
+        } => {
+            assert!(membership_actions.is_empty());
+            compiled_body_html
+        }
+        other => panic!("expected anonymous invitation page, got {other:?}"),
+    };
+    assert!(anonymous_body.contains("Hi, Intended Recipient!"));
+    assert!(anonymous_body.contains("Please create an account (or log in)"));
+    assert!(!anonymous_body.contains("accept invitation"));
+
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: actor.user_id,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "A1033 invitation fixture".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("invitation actor session should be created");
+    RelationService::create_site_ban(
+        runner.context(),
+        CreateSiteBan {
+            site_id,
+            user_id: actor.user_id,
+            created_by: ADMIN_USER_ID,
+            metadata: SiteBanData {
+                banned_until: None,
+                reason: "A1033 invitation authority fixture".to_owned(),
+            },
+        },
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect(
+        "invitation actor should be banned for the Wikidot permission-boundary fixture",
+    );
+    assert!(
+        RelationService::active_site_ban_exists(
+            runner.context(),
+            deepwell::services::relation::GetSiteBan {
+                site_id,
+                user_id: actor.user_id,
+            },
+        )
+        .await
+        .expect("invitation actor ban lookup should succeed"),
+        "fixture must prove the invitation accept path is distinct from Wikidot's become_member gate",
+    );
+    runner.set_request_context(RequestContext {
+        user_id: Some(actor.user_id),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(page_slug.clone().into())),
+        ..Default::default()
+    });
+    let actor_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": {"slug": page_slug, "extra": format!("/hash/{token}")},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let (actor_body, invitation_action) = match actor_view {
+        GetPageViewOutput::Found {
+            compiled_body_html,
+            membership_actions,
+            ..
+        } => {
+            let action = membership_actions
+                .iter()
+                .find_map(|action| match action {
+                    MembershipBrowserAction::Invitation {
+                        page_id,
+                        revision_id,
+                        index,
+                        fingerprint,
+                    } => Some((*page_id, *revision_id, *index, fingerprint.clone())),
+                    _ => None,
+                })
+                .expect("valid authenticated invitation should expose one typed action");
+            (compiled_body_html, action)
+        }
+        other => panic!("expected authenticated invitation page, got {other:?}"),
+    };
+    assert!(actor_body.contains("accept invitation"));
+    assert!(actor_body.contains(&token));
+    assert!(
+        !actor_body.contains("intended-recipient@example.invalid"),
+        "recipient email must not be reflected by the module",
+    );
+    assert_eq!(invitation_action.0, page.page_id);
+
+    let accepted = run_endpoint!(
+        runner,
+        membership_email_invitation_accept,
+        json!({
+            "page_id": invitation_action.0,
+            "last_revision_id": invitation_action.1,
+            "action_index": invitation_action.2,
+            "action_fingerprint": invitation_action.3,
+            "hash": token,
+        }),
+    );
+    assert_eq!(
+        accepted,
+        MembershipEmailInvitationOutcome::Accepted {
+            site_name: site.name.clone(),
+            site_slug: site.slug.clone(),
+        },
+        "Wikidot binds possession of the invitation hash, not recipient identity",
+    );
+    assert!(
+        RelationService::site_member_exists(
+            runner.context(),
+            deepwell::services::relation::GetSiteMember {
+                site_id,
+                user_id: actor.user_id,
+            },
+        )
+        .await
+        .expect("accepted invitation membership lookup should succeed"),
+    );
+    assert!(
+        deepwell::services::membership::MembershipService::resolve_email_invitation(
+            runner.context(),
+            &token,
+        )
+        .await
+        .expect("consumed invitation lookup should succeed")
+        .is_none(),
+        "accepted invitation must be one-use",
+    );
+
+    let (_cancel_id_unused, cancel_token) =
+        deepwell::services::membership::MembershipService::create_email_invitation(
+            runner.context(),
+            CreateMembershipEmailInvitation {
+                site_id,
+                sender_user_id: ADMIN_USER_ID,
+                email: "cancel-recipient@example.invalid",
+                recipient_name: "Cancel Recipient",
+                message: "cancel fixture",
+                to_contacts: false,
+            },
+        )
+        .await
+        .expect("cancel invitation should be created");
+    let cancel_view =
+        deepwell::services::membership::MembershipService::resolve_email_invitation(
+            runner.context(),
+            &cancel_token,
+        )
+        .await
+        .expect("cancel invitation lookup should succeed")
+        .expect("cancel invitation should exist before cancellation");
+    assert!(
+        deepwell::services::membership::MembershipService::cancel_email_invitation(
+            runner.context(),
+            site_id,
+            cancel_view.invitation_id,
+        )
+        .await
+        .expect("cancel should succeed"),
+    );
+    assert!(
+        deepwell::services::membership::MembershipService::resolve_email_invitation(
+            runner.context(),
+            &cancel_token,
+        )
+        .await
+        .expect("canceled invitation lookup should succeed")
+        .is_none(),
+        "canceled invitation must collapse to the same unavailable state",
     );
 }
 

@@ -64,6 +64,32 @@ const membershipEvent = () => ({
   }
 })
 
+const typedMembershipEvent = (
+  action,
+  body,
+  sessionToken = "membership-session",
+  extra = undefined
+) => ({
+  request: new Request(`https://wikijump.test/?/${action}`, {
+    method: "POST",
+    body: JSON.stringify(body),
+    headers: {
+      "content-type": "application/json",
+      "X-Wikijump-Site-Id": "17",
+      "X-Wikijump-Site-Slug": "test"
+    }
+  }),
+  params: { slug: "main", extra },
+  cookies: { get: () => sessionToken },
+  locals: {
+    requestContext: {
+      siteId: 17,
+      page: "main",
+      sessionToken
+    }
+  }
+})
+
 test("root and slug page routes bind actor-verified membership Join", async () => {
   const calls = []
   client.request = async (method, params, context) => {
@@ -165,4 +191,161 @@ test("malformed and unauthenticated membership Join requests fail without mutati
     [],
     "validation failures must not reach the mutation endpoint"
   )
+})
+
+test("application and password actions preserve actor-bound page context", async () => {
+  const calls = []
+  client.request = async (method, params, context) => {
+    calls.push({ method, params, context })
+    if (method === "session_get") {
+      return {
+        session_token: "membership-session",
+        user_id: 91,
+        created_at: "2026-08-10T00:00:00Z",
+        expires_at: "2026-08-11T00:00:00Z",
+        ip_address: "192.0.2.91",
+        user_agent: "membership route test",
+        restricted: false
+      }
+    }
+    if (method === "membership_application_submit") return "submitted"
+    if (method === "membership_password_submit") return "wrong_password"
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+
+  const fingerprint = "0123456789abcdef0123456789abcdef"
+  for (const actions of [rootActions, slugActions]) {
+    assert.equal(typeof actions.membershipApplication, "function")
+    assert.equal(typeof actions.membershipPassword, "function")
+    assert.deepEqual(
+      await actions.membershipApplication(
+        typedMembershipEvent("membershipApplication", {
+          pageId: 42,
+          lastRevisionId: 90,
+          actionIndex: 1,
+          actionFingerprint: fingerprint,
+          comment: "application text"
+        })
+      ),
+      { res: "submitted" }
+    )
+    assert.deepEqual(
+      await actions.membershipPassword(
+        typedMembershipEvent("membershipPassword", {
+          pageId: 42,
+          lastRevisionId: 90,
+          actionIndex: 2,
+          actionFingerprint: fingerprint,
+          password: "wrong password"
+        })
+      ),
+      { res: "wrong_password" }
+    )
+  }
+
+  assert.equal(
+    calls.filter(({ method }) => method === "membership_application_submit").length,
+    2
+  )
+  assert.equal(
+    calls.filter(({ method }) => method === "membership_password_submit").length,
+    2
+  )
+  for (const call of calls.filter(({ method }) => method.startsWith("membership_"))) {
+    assert.deepEqual(call.context, {
+      siteId: 17,
+      page: "main",
+      sessionToken: "membership-session"
+    })
+  }
+})
+
+test("malformed application and password action bodies fail before Deepwell mutation", async () => {
+  const calls = []
+  client.request = async (method, params, context) => {
+    calls.push({ method, params, context })
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+  const fingerprint = "0123456789abcdef0123456789abcdef"
+  const invalid = [
+    [
+      "membershipApplication",
+      { pageId: 42, lastRevisionId: 90, actionIndex: 1, actionFingerprint: fingerprint }
+    ],
+    [
+      "membershipPassword",
+      { pageId: 42, lastRevisionId: 90, actionIndex: 2, actionFingerprint: fingerprint }
+    ]
+  ]
+  for (const [action, body] of invalid) {
+    const result = await rootActions[action](typedMembershipEvent(action, body))
+    assert.equal(result.status, 400)
+  }
+  assert.deepEqual(
+    calls.filter(({ method }) =>
+      ["membership_application_submit", "membership_password_submit"].includes(method)
+    ),
+    []
+  )
+})
+
+test("email invitation action derives the opaque hash from the trusted route, not the request body", async () => {
+  const calls = []
+  client.request = async (method, params, context) => {
+    calls.push({ method, params, context })
+    if (method === "session_get") return { user_id: 91 }
+    if (method === "membership_email_invitation_accept") {
+      return params.hash === ""
+        ? { status: "unavailable" }
+        : { status: "accepted", site_name: "Test Wiki", site_slug: "test" }
+    }
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+  const fingerprint = "0123456789abcdef0123456789abcdef"
+  const body = {
+    pageId: 42,
+    lastRevisionId: 90,
+    actionIndex: 3,
+    actionFingerprint: fingerprint,
+    hash: "forged-body-hash"
+  }
+
+  const result = await slugActions.membershipEmailInvitation(
+    typedMembershipEvent(
+      "membershipEmailInvitation",
+      body,
+      "membership-session",
+      "/hash/route-authority-hash"
+    )
+  )
+  assert.deepEqual(result, {
+    res: { status: "accepted", site_name: "Test Wiki", site_slug: "test" }
+  })
+  const mutation = calls.find(
+    ({ method }) => method === "membership_email_invitation_accept"
+  )
+  assert.deepEqual(mutation.params, {
+    page_id: 42,
+    last_revision_id: 90,
+    action_index: 3,
+    action_fingerprint: fingerprint,
+    hash: "route-authority-hash"
+  })
+  assert.equal(JSON.stringify(mutation.params).includes("forged-body-hash"), false)
+  assert.deepEqual(mutation.context, {
+    siteId: 17,
+    page: "main",
+    sessionToken: "membership-session"
+  })
+
+  calls.length = 0
+  const rootResult = await rootActions.membershipEmailInvitation(
+    typedMembershipEvent("membershipEmailInvitation", body)
+  )
+  assert.deepEqual(rootResult, { res: { status: "unavailable" } })
+  const rootMutation = calls.find(
+    ({ method }) => method === "membership_email_invitation_accept"
+  )
+  assert.equal(rootMutation.params.hash, "")
+  assert.equal(JSON.stringify(rootMutation.params).includes("forged-body-hash"), false)
 })
