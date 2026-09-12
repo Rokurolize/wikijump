@@ -3248,7 +3248,32 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:membership_application_list",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:membership_application_review",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:membership_application_submit",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:membership_email_invitation_accept",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:membership_join",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:membership_password_submit",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
     },
@@ -4058,6 +4083,16 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-server-action:/_admin?/membership",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/_admin?/membershipReview",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-server-action:/_admin?/navigation",
       "type": "implemented_by",
       "target": "wikijump.framerail"
@@ -4119,6 +4154,16 @@
     },
     {
       "source": "framerail-server-action:/-/admin?/license",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/-/admin?/membership",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/-/admin?/membershipReview",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -4288,7 +4333,22 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-server-action:/?/membershipApplication",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/?/membershipEmailInvitation",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-server-action:/?/membershipJoin",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/?/membershipPassword",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -4453,7 +4513,22 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-server-action:/{slug}/{*extra}?/membershipApplication",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/{slug}/{*extra}?/membershipEmailInvitation",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-server-action:/{slug}/{*extra}?/membershipJoin",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/{slug}/{*extra}?/membershipPassword",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -4950,12 +5025,12 @@
     {
       "source": "open43-audit-case:A1033_APPLICATION_SUBMISSION_AND_REVIEW",
       "type": "implemented_by",
-      "target": "evidence.live"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:A1033_APPLICATION_SUBMISSION_AND_REVIEW",
       "type": "implemented_by",
-      "target": "wikijump.runtime:domain-model"
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:A1033_CENTRAL_STATIC_MODULE_MATRIX",
@@ -4965,12 +5040,12 @@
     {
       "source": "open43-audit-case:A1033_INVITATION_RESOLUTION_AND_CONSUMPTION",
       "type": "implemented_by",
-      "target": "evidence.live"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:A1033_INVITATION_RESOLUTION_AND_CONSUMPTION",
       "type": "implemented_by",
-      "target": "wikijump.runtime:domain-model"
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:A1033_MEMBERSHIPBYPASSWORD_OBSERVED_ACTORS",
@@ -4980,12 +5055,12 @@
     {
       "source": "open43-audit-case:A1033_PASSWORD_SUBMISSION",
       "type": "implemented_by",
-      "target": "evidence.live"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:A1033_PASSWORD_SUBMISSION",
       "type": "implemented_by",
-      "target": "wikijump.runtime:domain-model"
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:A1033_STATIC_ANONYMOUS_MODULE_CONTRACTS",
@@ -11201,8 +11276,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "c1021124f539fa408b1144d34b2c58d0bd13672f",
-      "tree": "3bd86c15cd705505f48b6d534cd70beb8da7dcf7"
+      "commit": "46aa542166f7b9d77be9bf790776425f21285c7b",
+      "tree": "0b0516b1ae52c5290b53d0349f160a9cc86ef08c"
     },
     "ftml": {
       "commit": "c37c8360a2ac304eb1de06942465e1c8b9ad737a",
@@ -11219,7 +11294,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "0644bf0531be22b911006a21d93746e886104d5a49ac456347a23c6a5d71c364"
+        "sha256": "cc3d856b24e5701084ef181cf3e787d02b2eb6efb7308b978e3e0197443ecf8d"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11319,7 +11394,7 @@
       },
       {
         "path": "deepwell/src/endpoints/site_member.rs",
-        "sha256": "9a421c90f0358343906de94ba08b33eefd9cbdf712707a12e70d8bae69a820e8"
+        "sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532"
       },
       {
         "path": "deepwell/src/endpoints/site.rs",
@@ -11359,7 +11434,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "f3da9d97dfb307fd62245371261ee7ad73e1a5c3d42e961cad80c9bccfc84fc4"
+        "sha256": "5dfad0079ce50daaec440dbf141b739f69f8a5690c9690931e890f756223798a"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11367,11 +11442,11 @@
       },
       {
         "path": "docs/development/framerail-route-action-evidence.json",
-        "sha256": "4ae3ccbaeb7f19466e5c010c99d2eb5af6627023661de7dfd0c5d58f5ec6b814"
+        "sha256": "afd8dcd748f4abf2f3cf6397325280ddbf185aad6341864dc63bf880ad19ae63"
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "3aab9ab6d3375ee9161cd3ee0222073424138278662ca0b09b66220a5913fc2f"
+        "sha256": "4122f4eb1ecbadbe67962cfd6f093625892920606bf8784065b23b06c7ece2a6"
       },
       {
         "path": "docs/development/open43-a-authoring-closure-audit.json",
@@ -11379,11 +11454,11 @@
       },
       {
         "path": "docs/development/open43-blocked-evidence-routing.json",
-        "sha256": "1ffdacf40b757a12ee552569259a4555becc6f191896000d0ff0fcbb542abab3"
+        "sha256": "47895edb872a8a700384cb6651d0e813c882c03a4668585e7f80b4b1a1d51526"
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "c7a6d861510e4e54395b882f7b030debddafbb059a304920399c05c7165bd3f1"
+        "sha256": "8cf355af26147f533b750b906e719dce1bbcf2be1d692724af384cd35adf0e23"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -11391,7 +11466,7 @@
       },
       {
         "path": "docs/development/open43-q-forum-closure-audit.json",
-        "sha256": "1d34c30ab1f23fa3d3990996d4f013c7625ff547ad036059a904a5f8ea05fa9c"
+        "sha256": "431abaaa154a1186f3f0cc70416e52758c0a5d03d1bf7d89d9bc22af823b3c43"
       },
       {
         "path": "docs/development/open43-q-page-query-closure-audit.json",
@@ -11407,7 +11482,7 @@
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
-        "sha256": "6d711246684a0868d7e3b15907ef46c8dec0318e71272aaec49f1e4ee543f95a"
+        "sha256": "77661ed3c274d5891a89d037f0af3adf6ab362c2ddd409c746b638eedd87f120"
       },
       {
         "path": "docs/development/wikidot-py-amc-client-parity.json",
@@ -11419,7 +11494,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "b2aa24b9c27dcef7f3c84d446ef8d77c4524dfd5ed9a6c0020a024ae197682da"
+        "sha256": "04e1587e8ad1fd2ba7e2509d154ae8b2301870bcfe8043facd5988be266bec54"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11443,7 +11518,7 @@
       },
       {
         "path": "framerail/src/lib/server/load/page/page-actions.ts",
-        "sha256": "c70af3d435e123cef92bf02b9a499af3a5c59548a5130efd4e292b16d214b34e"
+        "sha256": "13bfc494f60d509442ab91ae58fdfc0b8509c281bb992d78cdfea4ea55adf813"
       },
       {
         "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
@@ -11495,11 +11570,11 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/admin/+page.server.ts",
-        "sha256": "70072f029d2ca846c4ad6754bbf1df612e8be1f2bac70199a28f045b878d2399"
+        "sha256": "705a9d08fe69896da730457ea6a045c445af7d9d26ca5b7aaf446ea732017407"
       },
       {
         "path": "framerail/src/routes/[x+2d]/admin/+page.svelte",
-        "sha256": "36ce552349dc828f0aeb2f5e51fe67d754397870413671ced58b440a98e77f4b"
+        "sha256": "989b2320857aec2124bd4284ba4e8b2f2d64c047264e609a065de3a5d9adcd95"
       },
       {
         "path": "framerail/src/routes/[x+2d]/login/+page.server.ts",
@@ -11742,14 +11817,14 @@
     ]
   },
   "counts": {
-    "total": 932,
+    "total": 947,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 167,
+      "deepwell_jsonrpc_method": 172,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
       "framerail_route": 28,
-      "framerail_server_action": 97,
+      "framerail_server_action": 107,
       "framerail_xmlrpc_method": 17,
       "missing_page_control": 2,
       "open43_audit_case": 285,
@@ -25002,6 +25077,186 @@
       ]
     },
     {
+      "surface_id": "deepwell-jsonrpc:membership_application_list",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:membership_application_list",
+        "deepwell/src/endpoints/site_member.rs#membership_application_list"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/site_member.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:membership_application_review",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:membership_application_review",
+        "deepwell/src/endpoints/site_member.rs#membership_application_review"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/site_member.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:membership_application_submit",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:membership_application_submit",
+        "deepwell/src/endpoints/site_member.rs#membership_application_submit"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/site_member.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:membership_email_invitation_accept",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:membership_email_invitation_accept",
+        "deepwell/src/endpoints/site_member.rs#membership_email_invitation_accept"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/page.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/site_member.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
       "surface_id": "deepwell-jsonrpc:membership_join",
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
@@ -25015,6 +25270,51 @@
         "cases": [],
         "tests": [
           "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/site_member.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:membership_password_submit",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:membership_password_submit",
+        "deepwell/src/endpoints/site_member.rs#membership_password_submit"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract"
         ]
       },
       "evidence": {
@@ -32029,6 +32329,88 @@
       ]
     },
     {
+      "surface_id": "framerail-server-action:/_admin?/membership",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/admin/+page.server.ts#action:membership",
+        "framerail/src/routes/_admin/+page.server.ts#action:membership"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/site-settings-public-boundary.test.js#renders membership policy without exposing a configured password and binds review actions"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/membershipReview",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/admin/+page.server.ts#action:membershipReview",
+        "framerail/src/routes/_admin/+page.server.ts#action:membershipReview"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/site-settings-public-boundary.test.js#renders membership policy without exposing a configured password and binds review actions"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-server-action:/_admin?/navigation",
       "kind": "framerail_server_action",
       "public_reference": [
@@ -32529,6 +32911,86 @@
         "cases": [],
         "tests": [
           "framerail/tests/admin-license.test.js#returns explicit and inherited custom licenses as stable sanitizer input"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/-/admin?/membership",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/admin/+page.server.ts#action:membership"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/site-settings-public-boundary.test.js#renders membership policy without exposing a configured password and binds review actions"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/-/admin?/membershipReview",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/admin/+page.server.ts#action:membershipReview"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/site-settings-public-boundary.test.js#renders membership policy without exposing a configured password and binds review actions"
         ]
       },
       "evidence": {
@@ -33897,6 +34359,88 @@
       ]
     },
     {
+      "surface_id": "framerail-server-action:/?/membershipApplication",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:membershipApplication",
+        "framerail/src/routes/+page.server.ts#action:membershipApplication"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/page-membership-action-boundary.test.js#application and password actions preserve actor-bound page context"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/?/membershipEmailInvitation",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:membershipEmailInvitation",
+        "framerail/src/routes/+page.server.ts#action:membershipEmailInvitation"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/page-membership-action-boundary.test.js#email invitation action derives the opaque hash from the trusted route, not the request body"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-server-action:/?/membershipJoin",
       "kind": "framerail_server_action",
       "public_reference": [
@@ -33910,6 +34454,47 @@
         "cases": [],
         "tests": [
           "framerail/tests/page-membership-action-boundary.test.js#root and slug page routes bind actor-verified membership Join"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/?/membershipPassword",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:membershipPassword",
+        "framerail/src/routes/+page.server.ts#action:membershipPassword"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/page-membership-action-boundary.test.js#application and password actions preserve actor-bound page context"
         ]
       },
       "evidence": {
@@ -35250,6 +35835,88 @@
       ]
     },
     {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/membershipApplication",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:membershipApplication",
+        "framerail/src/routes/[slug]/[...extra]/+page.server.ts#action:membershipApplication"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/page-membership-action-boundary.test.js#application and password actions preserve actor-bound page context"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/membershipEmailInvitation",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:membershipEmailInvitation",
+        "framerail/src/routes/[slug]/[...extra]/+page.server.ts#action:membershipEmailInvitation"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/page-membership-action-boundary.test.js#email invitation action derives the opaque hash from the trusted route, not the request body"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/membershipJoin",
       "kind": "framerail_server_action",
       "public_reference": [
@@ -35263,6 +35930,47 @@
         "cases": [],
         "tests": [
           "framerail/tests/page-membership-action-boundary.test.js#root and slug page routes bind actor-verified membership Join"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/membershipPassword",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:membershipPassword",
+        "framerail/src/routes/[slug]/[...extra]/+page.server.ts#action:membershipPassword"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/page-membership-action-boundary.test.js#application and password actions preserve actor-bound page context"
         ]
       },
       "evidence": {
@@ -36500,7 +37208,7 @@
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
-          "sha256": "c70af3d435e123cef92bf02b9a499af3a5c59548a5130efd4e292b16d214b34e"
+          "sha256": "13bfc494f60d509442ab91ae58fdfc0b8509c281bb992d78cdfea4ea55adf813"
         }
       ],
       "specification_owner": "wikijump.registry:missing-page-control",
@@ -36590,7 +37298,7 @@
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
-          "sha256": "c70af3d435e123cef92bf02b9a499af3a5c59548a5130efd4e292b16d214b34e"
+          "sha256": "13bfc494f60d509442ab91ae58fdfc0b8509c281bb992d78cdfea4ea55adf813"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
@@ -36712,7 +37420,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1029_CENTRAL_PUBLIC_SEAMS"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -36754,7 +37464,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1029_EXACT_BROWSER_TRANSITIONS"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -36924,7 +37636,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1029_TWO_TRANSACTION_CONTENTION"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -37132,7 +37846,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1030_CENTRAL_RUST_MATRIX"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -37174,7 +37890,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1030_EXACT_CANDIDATE_BROWSER"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -37301,7 +38019,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1030_TWO_TRANSACTION_CONTENTION"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -37329,10 +38049,13 @@
         "cases": [
           "A1033_APPLICATION_SUBMISSION_AND_REVIEW"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract",
+          "framerail/tests/site-settings-public-boundary.test.js#renders membership policy without exposing a configured password and binds review actions"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -37340,21 +38063,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1033_APPLICATION_SUBMISSION_AND_REVIEW",
       "implementation_owners": [
-        "evidence.live",
-        "wikijump.runtime:domain-model"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -37384,7 +38107,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1033_CENTRAL_STATIC_MODULE_MATRIX"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -37412,10 +38137,12 @@
         "cases": [
           "A1033_INVITATION_RESOLUTION_AND_CONSUMPTION"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -37423,21 +38150,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1033_INVITATION_RESOLUTION_AND_CONSUMPTION",
       "implementation_owners": [
-        "evidence.live",
-        "wikijump.runtime:domain-model"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -37454,7 +38181,8 @@
           "A1033_MEMBERSHIPBYPASSWORD_OBSERVED_ACTORS"
         ],
         "tests": [
-          "deepwell/tests/page.rs#membership_by_password_module_matches_live_anonymous_and_member_output"
+          "deepwell/tests/page.rs#membership_by_password_module_matches_live_anonymous_and_member_output",
+          "framerail/tests/wikidot-legacy-actions.test.js#MembershipByPassword exposes the live inline wrong-password state without reloading"
         ]
       },
       "evidence": {
@@ -37495,10 +38223,14 @@
         "cases": [
           "A1033_PASSWORD_SUBMISSION"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract",
+          "framerail/tests/page-membership-action-boundary.test.js#application and password actions preserve actor-bound page context",
+          "framerail/tests/wikidot-legacy-action-request.test.js#membership application and password requests keep secrets in same-origin action bodies"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -37506,21 +38238,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1033_PASSWORD_SUBMISSION",
       "implementation_owners": [
-        "evidence.live",
-        "wikijump.runtime:domain-model"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -37633,7 +38365,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1037_MAILFORM_FAIL_CLOSED_SERVED"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -37757,7 +38491,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1037_NEWPAGE_EXACT_CANDIDATE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -37842,7 +38578,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1037_REDIRECT_EXACT_CANDIDATE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -38469,7 +39207,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1041_CENTRAL_REGISTRY_AND_MUTATION"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -38556,7 +39296,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1041_EXACT_BROWSER_LIFECYCLE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -38641,7 +39383,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1041_SET_TAGS_CONTENTION"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -38768,7 +39512,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1060_BROWSER_REGISTER_JOIN_CREATE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -38810,7 +39556,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1060_CONCURRENT_SELF_JOIN_AND_CREATE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -38895,7 +39643,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1060_FRESH_SEED_CARGO_MATRIX"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -39103,7 +39853,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1061_EXACT_POST_COMMIT_WORKER_CANDIDATE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -39145,7 +39897,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1061_EXACT_PUBLIC_SLICE_CANDIDATE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -39187,7 +39941,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1061_FIRST_RELOAD_INTERVALS"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -39517,7 +40273,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1063_DIFF_BROWSER_WORKFLOW"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -39601,7 +40359,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1063_EXACT_PUBLIC_SOURCE_CANDIDATE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -39809,7 +40569,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A1063_SETTINGS_BROWSER_WORKFLOW"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -39894,7 +40656,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A775_ACTOR_NAVIGATION_BROWSER"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -40062,7 +40826,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:A777_BROWSER_PRINT_LIFECYCLE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -40229,7 +40995,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_BROWSER_PARITY_CANDIDATE",
+          "candidate-case:B610_CHROME_INITIAL"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -40271,7 +41040,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_BROWSER_PARITY_CANDIDATE",
+          "candidate-case:B610_CHROME_SETTLED"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -40311,7 +41083,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_BROWSER_PARITY_CANDIDATE",
+          "candidate-case:B610_EXACT_SERVED_IDENTITIES"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -40351,7 +41126,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_BROWSER_PARITY_CANDIDATE",
+          "candidate-case:B610_FAVICON_ARTICLE_SIDEBAR_THEME_NETWORK"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -40560,7 +41338,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_BROWSER_PARITY_CANDIDATE",
+          "candidate-case:B689_SCP8980_AND_NAVIGATION_LIFECYCLE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -40603,7 +41384,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_BROWSER_PARITY_CANDIDATE",
+          "candidate-case:B689_TABVIEW_INITIAL"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -40646,7 +41430,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_BROWSER_PARITY_CANDIDATE",
+          "candidate-case:B689_TABVIEW_SETTLED"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -40686,7 +41473,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_BROWSER_PARITY_CANDIDATE",
+          "candidate-case:B689_THEME_BASALT_GEOMETRY"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -40771,7 +41561,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_BROWSER_PARITY_CANDIDATE",
+          "candidate-case:B690_FIXED_SIX_PAGE_DENOMINATOR"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -40856,7 +41649,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_BROWSER_PARITY_CANDIDATE",
+          "candidate-case:B690_GEOMETRY_INITIAL"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -40899,7 +41695,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_BROWSER_PARITY_CANDIDATE",
+          "candidate-case:B690_GEOMETRY_SETTLED"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -40939,7 +41738,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_BROWSER_PARITY_CANDIDATE",
+          "candidate-case:B690_PILOT_SCALE_COMPARE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -41066,7 +41868,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_BROWSER_PARITY_CANDIDATE",
+          "candidate-case:B822_PAGE_TAGS_INITIAL"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -41108,7 +41913,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_BROWSER_PARITY_CANDIDATE",
+          "candidate-case:B822_PAGE_TAGS_SETTLED"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -41581,7 +42389,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_MEDIA_RUNTIME_CANDIDATE",
+          "candidate-case:M1039_MUTATION_TO_NEXT_READ"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -41711,7 +42522,11 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_MEDIA_BROWSER_CANDIDATE",
+          "C_MEDIA_RUNTIME_CANDIDATE",
+          "candidate-case:M1042_BROWSER_LIFECYCLE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -41924,7 +42739,11 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_MEDIA_BROWSER_CANDIDATE",
+          "C_MEDIA_RUNTIME_CANDIDATE",
+          "candidate-case:M1043_BROWSER_RENDER_AND_VIEWER"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -42141,7 +42960,14 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_DEEPWELL_GALLERY",
+          "C_MEDIA_RUNTIME_CANDIDATE",
+          "C_WWS",
+          "C_WWS_LOCK_AND_CHECK",
+          "C_WWS_RESIZED",
+          "candidate-case:M1043_RESIZED_BLOB_IDENTITY"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -42308,7 +43134,11 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_MEDIA_BROWSER_CANDIDATE",
+          "C_MEDIA_RUNTIME_CANDIDATE",
+          "candidate-case:M1062_BROWSER_UPLOAD_FLOW"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -42482,7 +43312,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_MEDIA_RUNTIME_CANDIDATE",
+          "candidate-case:M1062_SERIALIZABLE_ACTION_RESPONSE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -42527,7 +43360,11 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_FRAMERAIL_MEDIA_UNIT",
+          "C_MEDIA_RUNTIME_CANDIDATE",
+          "candidate-case:M1062_UPLOAD_TRANSACTION_ORDER"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -42569,7 +43406,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_MEDIA_BROWSER_CANDIDATE",
+          "candidate-case:M756_BROWSER_CACHE_TRANSITIONS"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -42654,7 +43494,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_MEDIA_RUNTIME_CANDIDATE",
+          "candidate-case:M756_LOCAL_ROUTE_BYTES"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -42820,7 +43663,11 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_MEDIA_BROWSER_CANDIDATE",
+          "C_MEDIA_RUNTIME_CANDIDATE",
+          "candidate-case:M776_BROWSER_GEOMETRY_AND_NETWORK"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -43036,7 +43883,11 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_MEDIA_BROWSER_CANDIDATE",
+          "C_MEDIA_RUNTIME_CANDIDATE",
+          "candidate-case:M806_BROWSER_GEOMETRY_AND_NETWORK"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -43253,7 +44104,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q1026_ACTOR_SPECIAL_IDENTITY_MATRIX"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -43295,7 +44148,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q1026_BROWSER_PRINTUSER_INTERVALS"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -43337,7 +44192,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -43631,7 +44488,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q1027_RENAME_DELETE_RESTORE_CACHE_AND_SERVED_CANDIDATE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -43761,7 +44620,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q1028_CATEGORY_LIFECYCLE_AND_CACHE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -43886,7 +44747,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q1032_BROWSER_DIRECTORY_ACTIONS"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -43928,7 +44791,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q1032_EXACT_CANDIDATE_DIRECTORY_MATRIX"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -44012,7 +44877,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q1032_MEMBERS_AJAX_EXACT_CANDIDATE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -44444,7 +45311,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q1034_EXACT_CANDIDATE_FORUM_ROUTES_AND_AJAX"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -44486,7 +45355,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q1034_EXACT_CANDIDATE_PUBLIC_READ_MODELS"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -44528,7 +45399,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q1034_EXACT_CANDIDATE_RECENTTHREADS"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -45457,7 +46330,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q1036_EXACT_CANDIDATE_PREVIEW_SAVED_BOUNDARIES"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -45540,7 +46415,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q1040_DEFAULT_AUTHOR_DATE_AND_SERVED_MUTATION_CANDIDATE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -45751,7 +46628,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -45836,7 +46715,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q748_LIVE_TOPBAR_SUBMISSION_CONTRACT"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -45918,7 +46799,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q778_BROWSER_ROUTE_IDENTITY_AND_SETTLING"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -45960,7 +46843,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q778_EXACT_CANDIDATE_24_CASE_REPLAY"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -46002,7 +46887,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q778_EXACT_CANDIDATE_SAVED_PAGE_RUNTIME"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -46070,10 +46957,12 @@
         "cases": [
           "Q778_FULL_ACTOR_AND_DELETION_MATRIX"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -46081,15 +46970,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q778_FULL_ACTOR_AND_DELETION_MATRIX",
@@ -46291,7 +47180,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q779_EXPLICIT_ROOT_ACTOR_AND_LIFECYCLE_CANDIDATE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -46508,7 +47399,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q807_EXACT_CANDIDATE_FORM_ROUTE_BROWSER"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -46673,7 +47566,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q809_PERMISSION_BEFORE_LIMIT_CANDIDATE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -46761,7 +47656,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q809_SERVED_MUTATION_AND_BROWSER_CANDIDATE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -46844,7 +47741,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q810_CANDIDATE_FAIL_CLOSED_NETWORK"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -46930,7 +47829,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:Q811_DEFAULT_AUTHOR_DATE_AND_SERVED_MUTATION_CANDIDATE"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -47099,7 +48000,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_SETTINGS_CANDIDATE",
+          "candidate-case:S1046_ADMIN_INITIAL"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -47141,7 +48045,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_SETTINGS_CANDIDATE",
+          "candidate-case:S1046_ADMIN_SETTLED"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -47392,7 +48299,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_SETTINGS_CANDIDATE",
+          "candidate-case:S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -47560,7 +48470,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_SETTINGS_CANDIDATE",
+          "candidate-case:S754_ANALYTICS_INITIAL"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -47602,7 +48515,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_SETTINGS_CANDIDATE",
+          "candidate-case:S754_ANALYTICS_SETTLED"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -47972,7 +48888,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_SETTINGS_CANDIDATE",
+          "candidate-case:S755_THEME_INITIAL"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -48014,7 +48933,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_SETTINGS_CANDIDATE",
+          "candidate-case:S755_THEME_SETTLED"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -48222,7 +49144,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_SETTINGS_CANDIDATE",
+          "candidate-case:S757_TOOLBAR_INITIAL"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -48264,7 +49189,10 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "C_SETTINGS_CANDIDATE",
+          "candidate-case:S757_TOOLBAR_SETTLED"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -48430,7 +49358,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:S758_CREATE_INITIAL"
+        ]
       },
       "standing": {
         "status": "pending",
@@ -48472,7 +49402,9 @@
       },
       "candidate": {
         "status": "pending",
-        "references": []
+        "references": [
+          "candidate-case:S758_CREATE_SETTLED"
+        ]
       },
       "standing": {
         "status": "pending",
