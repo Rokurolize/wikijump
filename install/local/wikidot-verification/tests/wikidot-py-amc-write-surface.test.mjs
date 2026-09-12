@@ -5,9 +5,10 @@ import fs from "node:fs"
 import path from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
+import { resolveWikidotPyCheckout } from "../src/wikidot-py-checkout.mjs"
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..")
-const wikidotPyRoot = process.env.WIKIDOT_PY_CHECKOUT ?? path.resolve(repositoryRoot, "../wikidot.py")
+const wikidotPyRoot = resolveWikidotPyCheckout(repositoryRoot)
 const contractPath = path.join(repositoryRoot, "docs/development/wikidot-py-amc-write-surface.json")
 const authorityPath = path.join(repositoryRoot, "docs/development/wikidot-py-amc-client-parity.json")
 const contract = JSON.parse(fs.readFileSync(contractPath, "utf8"))

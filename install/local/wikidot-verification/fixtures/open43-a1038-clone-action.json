@@ -39,6 +39,7 @@
     {
       "path": "docs/development/open43-blocked-evidence-routing.json",
       "sha256": "1ffdacf40b757a12ee552569259a4555becc6f191896000d0ff0fcbb542abab3",
+      "source_revision": "e2c2b73b6f80f4f7741063e8c1868953b14523a3",
       "role": "sealed routing record for the run-owned mutation requirement"
     },
     {
