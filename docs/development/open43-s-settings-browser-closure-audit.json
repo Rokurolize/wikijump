@@ -994,43 +994,43 @@
       "exists_now": true
     },
     "C_DEEPWELL_SETTINGS": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test site site_settings_update_round_trips_and_rejects_stale_revision -- --exact --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test site site_settings_update_round_trips_and_rejects_stale_revision -- --exact --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
     "C_DEEPWELL_FRAGMENT_HREF": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page -- --exact --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page -- --exact --nocapture",
       "phase": "source_barrier",
       "exists_now": true,
       "lane_execution": "not run because this source-residual lane prohibits Cargo; run once at the central Deepwell source barrier"
     },
     "C_DEEPWELL_TABVIEW": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml tabview -- --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs tabview -- --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
     "C_DEEPWELL_SELECTED_CONTENT": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page listpages_plain_content_ -- --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page listpages_plain_content_ -- --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
     "C_DEEPWELL_UTILITIES": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page layout_only_modules_page_source_match_live_unavailable_module -- --exact --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page layout_only_modules_page_source_match_live_unavailable_module -- --exact --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
     "C_DEEPWELL_AUTONUMBER": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page normal_page_create_allocates_category_numbers_without_consuming_conflicts -- --exact --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page normal_page_create_allocates_category_numbers_without_consuming_conflicts -- --exact --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
     "C_DEEPWELL_AUTONUMBER_LOCK": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page autonumber_allocator_holds_the_category_lock_until_request_completion -- --exact --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page autonumber_allocator_holds_the_category_lock_until_request_completion -- --exact --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
     "C_DEEPWELL_AUTONUMBER_ROLLBACK": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page failed_page_create_rolls_back_its_allocated_number -- --exact --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page failed_page_create_rolls_back_its_allocated_number -- --exact --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },

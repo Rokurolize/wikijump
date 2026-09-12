@@ -177,6 +177,20 @@
             "deepwell/tests/job_queue.rs#component_css_save_dispatches_one_post_commit_dependent_rerender"
           ],
           "result": "No live authority establishes an exact internal traversal count or ordering for a cyclic include graph, and the issue's public expectation does not require one. Wikijump therefore makes no Wikidot claim about internal cascade order; it keeps the established bounded rerender-depth safety fence and proves finite stopping. Any future evidence that changes user-visible cyclic output must be handled as new compatibility authority rather than inferred here."
+        },
+        {
+          "case_id": "A1061_PRIVATE_DENIED_CROSS_SITE_MATRIX",
+          "status": "implemented_unverified",
+          "implementation": [
+            "deepwell/src/services/render/runtime.rs#RenderRuntime::fetch_include_source_from_site",
+            "deepwell/src/services/outdate.rs#OutdateService::outdate",
+            "deepwell/src/services/context.rs#ServiceContext::defer_rerender_page"
+          ],
+          "public_tests": [
+            "deepwell/tests/page.rs#component_css_include_visibility_and_lifecycle_matrix",
+            "deepwell/tests/job_queue.rs#component_css_save_refreshes_direct_dependent_before_rpc_returns"
+          ],
+          "result": "Task-owned integration fixtures prove that denied/private include sources are resolved under anonymous page:view authority and cannot leak privileged CSS, explicit public cross-site CSS includes continue to propagate, deleted sources do not leave stale CSS after rerender, rolled-back outdating reaches no queue, and concurrent edits from one source revision commit exactly one winner whose CSS alone appears on the first public read. Exact user-visible happy-path timing remains owned by the existing candidate rows."
         }
       ],
       "needs_source": [],
@@ -194,14 +208,8 @@
           "requires": "Against the exact candidate, save the component in the editable local site and capture the dependent article from navigation start through settled layout. The first reload must contain no old red computed style and must not require an article edit or cache-bypass reload."
         }
       ],
-      "blocked_evidence": [
-        {
-          "case_id": "A1061_PRIVATE_DENIED_CROSS_SITE_MATRIX",
-          "missing": "The cited live comparison was read-only, and the frozen local receipt does not seal private, denied, cross-site, deleted, rollback, or concurrent include transitions.",
-          "forbidden_inference": "Do not infer these transitions from the one authorized local component, adopt a denied component, reuse stale authorized CSS silently, or broaden cross-site include authority."
-        }
-      ],
-      "closure_verdict": "candidate_and_evidence_required"
+      "blocked_evidence": [],
+      "closure_verdict": "candidate_required"
     },
     {
       "issue": 1063,
@@ -356,12 +364,12 @@
   },
   "central_commands": [
     "cargo fmt --manifest-path deepwell/Cargo.toml --check",
-    "cargo test --manifest-path deepwell/Cargo.toml --test page component_css_edit_refreshes_only_the_recorded_dependent_page -- --exact --nocapture",
-    "cargo test --manifest-path deepwell/Cargo.toml --test job_queue component_css_save_dispatches_one_post_commit_dependent_rerender -- --exact --nocapture",
-    "cargo test --manifest-path deepwell/Cargo.toml --test page revision_diff_returns_typed_lines_without_exposing_hidden_source -- --exact --nocapture",
-    "cargo test --manifest-path deepwell/Cargo.toml --test page imported_breadcrumbs_hide_private_and_deleted_ancestors -- --exact --nocapture",
-    "cargo test --manifest-path deepwell/Cargo.toml --test authoring_boundaries -- --nocapture",
-    "cargo test --manifest-path deepwell/Cargo.toml --test user display_locale_preferences_round_trip_only_for_the_session_actor -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page component_css_edit_refreshes_only_the_recorded_dependent_page -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test job_queue component_css_save_dispatches_one_post_commit_dependent_rerender -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page revision_diff_returns_typed_lines_without_exposing_hidden_source -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page imported_breadcrumbs_hide_private_and_deleted_ancestors -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test authoring_boundaries -- --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test user display_locale_preferences_round_trip_only_for_the_session_actor -- --exact --nocapture",
     "node --test framerail/tests/authoring-workflows.test.js framerail/tests/user-settings-action-boundary.test.js",
     "RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps",
     "node scripts/initialize-wikidot-implementation-ledger.mjs --check",
@@ -375,7 +383,7 @@
         "A1061_COMPONENT_TO_PUBLIC_READ",
         "A1061_UNRELATED_PAGE_STAYS_UNCHANGED"
       ],
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page component_css_edit_refreshes_only_the_recorded_dependent_page -- --exact --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page component_css_edit_refreshes_only_the_recorded_dependent_page -- --exact --nocapture",
       "status": "existing_public_test",
       "limitation": "This test calls the rerender service explicitly. It does not prove post-commit queue or worker execution."
     },
@@ -384,7 +392,7 @@
         "A1061_POST_COMMIT_RERENDER_DISPATCH",
         "A1061_DEPENDENT_DEDUPLICATION_AND_CYCLES"
       ],
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test job_queue component_css_save_dispatches_one_post_commit_dependent_rerender -- --exact --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test job_queue component_css_save_dispatches_one_post_commit_dependent_rerender -- --exact --nocapture",
       "status": "source_added_candidate_unverified",
       "limitation": "The lane did not run Cargo or Redis. Central validation must bind the result to the exact candidate and isolated namespace. Exact live Wikidot cycle traversal remains unobserved."
     },
@@ -394,7 +402,7 @@
         "A1063_BREADCRUMB_PUBLIC_PAYLOAD",
         "A1063_SELF_SETTINGS_WORKFLOW"
       ],
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page revision_diff_returns_typed_lines_without_exposing_hidden_source -- --exact --nocapture && cargo test --manifest-path deepwell/Cargo.toml --test page imported_breadcrumbs_hide_private_and_deleted_ancestors -- --exact --nocapture && cargo test --manifest-path deepwell/Cargo.toml --test user display_locale_preferences_round_trip_only_for_the_session_actor -- --exact --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page revision_diff_returns_typed_lines_without_exposing_hidden_source -- --exact --nocapture && node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page imported_breadcrumbs_hide_private_and_deleted_ancestors -- --exact --nocapture && node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test user display_locale_preferences_round_trip_only_for_the_session_actor -- --exact --nocapture",
       "status": "existing_public_tests"
     },
     {
@@ -403,7 +411,7 @@
         "A1063_BREADCRUMB_RELATION_BOUNDARIES",
         "A1063_SETTINGS_ACTION_BOUNDARY_REGRESSION"
       ],
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test authoring_boundaries -- --nocapture && node --test framerail/tests/user-settings-action-boundary.test.js",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test authoring_boundaries -- --nocapture && node --test framerail/tests/user-settings-action-boundary.test.js",
       "status": "source_added_candidate_unverified",
       "limitation": "The Node server-action regression passed locally. The Rust integration binary and exact combined candidate identity remain central-owned. Browser cancel, origin/CSRF, focus, paint, and exact legacy presentation remain separate candidate rows."
     }

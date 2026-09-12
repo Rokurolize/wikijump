@@ -740,17 +740,17 @@
         "secret_scan": "pass"
       },
       "cargo_runtime_browser": "not_run_by_delegation",
-      "central_rust_command": "cargo test --manifest-path deepwell/Cargo.toml --test page forum_start_and_recent_posts_filter_before_counts_order_and_pagination -- --exact --nocapture"
+      "central_rust_command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page forum_start_and_recent_posts_filter_before_counts_order_and_pagination -- --exact --nocapture"
     }
   },
   "central_commands": [
     "cargo fmt --manifest-path deepwell/Cargo.toml --check",
-    "cargo test --manifest-path deepwell/Cargo.toml --test page forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries -- --exact --nocapture",
-    "cargo test --manifest-path deepwell/Cargo.toml --test page forum_modules_match_live_missing_context_and_owner_boundaries -- --exact --nocapture",
-    "cargo test --manifest-path deepwell/Cargo.toml --test page forum_start_and_recent_posts_filter_before_counts_order_and_pagination -- --exact --nocapture",
-    "cargo test --manifest-path deepwell/Cargo.toml --test page forum_comments_list_resolves_only_visible_page_discussions -- --exact --nocapture",
-    "cargo test --manifest-path deepwell/Cargo.toml --test page recent_threads_matches_live_placeholder_and_owner_boundaries -- --exact --nocapture",
-    "cargo test --manifest-path deepwell/Cargo.toml services::render::url_arguments::tests::forum_modules_require_runtime_rendering_and_only_recent_posts_reads_page -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page forum_modules_match_live_missing_context_and_owner_boundaries -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page forum_start_and_recent_posts_filter_before_counts_order_and_pagination -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page forum_comments_list_resolves_only_visible_page_discussions -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page recent_threads_matches_live_placeholder_and_owner_boundaries -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs services::render::url_arguments::tests::forum_modules_require_runtime_rendering_and_only_recent_posts_reads_page -- --exact --nocapture",
     "node --test framerail/tests/ajax-module-connector.test.js",
     "pnpm --dir framerail check",
     "pnpm --dir framerail build",

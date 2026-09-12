@@ -902,6 +902,354 @@ async fn component_css_edit_refreshes_only_the_recorded_dependent_page() {
 }
 
 #[tokio::test]
+async fn component_css_include_visibility_and_lifecycle_matrix() {
+    const SITE_SLUG: &str = "scpaiueouiuiuiui";
+    const CROSS_SITE_SLUG: &str = "test";
+    const PRIVATE_CATEGORY: &str = "privatea1061";
+    const PRIVATE_COMPONENT_SLUG: &str = "privatea1061:component";
+    const PRIVATE_DEPENDENT_SLUG: &str = "a1061-private-dependent";
+    const CROSS_COMPONENT_SLUG: &str = "component:a1061-cross-site";
+    const CROSS_DEPENDENT_SLUG: &str = "a1061-cross-dependent";
+    const DELETED_COMPONENT_SLUG: &str = "component:a1061-deleted";
+    const DELETED_DEPENDENT_SLUG: &str = "a1061-deleted-dependent";
+    const PRIVATE_RED: &str =
+        "[[module CSS]]\n.a1061-private { color: rgb(101, 1, 1); }\n[[/module]]";
+    const PRIVATE_BLUE: &str =
+        "[[module CSS]]\n.a1061-private { color: rgb(1, 1, 101); }\n[[/module]]";
+    const CROSS_RED: &str =
+        "[[module CSS]]\n.a1061-cross { color: rgb(102, 2, 2); }\n[[/module]]";
+    const CROSS_BLUE: &str =
+        "[[module CSS]]\n.a1061-cross { color: rgb(2, 2, 102); }\n[[/module]]";
+    const DELETED_RED: &str =
+        "[[module CSS]]\n.a1061-deleted { color: rgb(103, 3, 3); }\n[[/module]]";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("editable A1061 site should exist")
+        .site;
+    let cross_site = run_endpoint!(runner, site_get, json!({"site": CROSS_SITE_SLUG}))
+        .expect("cross-site A1061 fixture site should exist")
+        .site;
+
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site.site_id,
+        PRIVATE_CATEGORY,
+        ADMIN_USER_ID,
+        &[Action::View, Action::Create, Action::Edit, Action::Delete],
+        "a1061-private-admin",
+    )
+    .await;
+    PermissionCache::invalidate_site(runner.context(), site.site_id)
+        .await
+        .expect("A1061 private permission cache should invalidate");
+
+    let create = async |runner: &mut TestRunner,
+                        site_id: i64,
+                        slug: &str,
+                        title: &str,
+                        wikitext: &str| {
+        set_mutation_request_context(
+            runner,
+            ADMIN_USER_ID,
+            site_id,
+            Reference::Slug(Cow::Owned(slug.to_owned())),
+        );
+        run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": wikitext,
+                "title": title,
+                "alt_title": null,
+                "slug": slug,
+                "layout": "wikidot",
+                "revision_comments": "A1061 visibility and lifecycle fixture",
+                "user_id": ADMIN_USER_ID,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        )
+    };
+
+    let private_component = create(
+        &mut runner,
+        site.site_id,
+        PRIVATE_COMPONENT_SLUG,
+        "A1061 private component",
+        PRIVATE_RED,
+    )
+    .await;
+    let private_dependent = create(
+        &mut runner,
+        site.site_id,
+        PRIVATE_DEPENDENT_SLUG,
+        "A1061 private dependent",
+        &format!("[[include {PRIVATE_COMPONENT_SLUG}]]\nPrivate dependent"),
+    )
+    .await;
+    let private_before = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site.site_id,
+            "page": private_dependent.page_id,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("private dependent should exist");
+    let private_before_styles = private_before
+        .compiled_body_styles
+        .as_ref()
+        .expect("private dependent styles should be populated");
+    assert!(
+        private_before_styles
+            .iter()
+            .all(|style| !style.contains("a1061-private")),
+        "a public dependent must not adopt CSS from an anonymously denied include",
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(private_component.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site.site_id,
+            "page": private_component.page_id,
+            "last_revision_id": private_component.revision_id,
+            "revision_comments": "A1061 denied component edit",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": PRIVATE_BLUE,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("private component edit should succeed for its authorized actor");
+    let private_dependent_page = PageService::get(
+        runner.context(),
+        site.site_id,
+        Reference::Id(private_dependent.page_id),
+    )
+    .await
+    .expect("private dependent identity should remain available");
+    PageRevisionService::rerender(
+        runner.context(),
+        PageId::from_page_model(&private_dependent_page),
+        RerenderDepth::default(),
+        RerenderType::Full,
+    )
+    .await
+    .expect("private dependent rerender should succeed");
+    let private_after = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site.site_id,
+            "page": private_dependent.page_id,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("private dependent should remain readable");
+    assert!(
+        private_after
+            .compiled_body_styles
+            .as_ref()
+            .is_some_and(|styles| styles
+                .iter()
+                .all(|style| !style.contains("a1061-private"))),
+        "editing a denied component must not make its CSS visible or reuse a privileged compile",
+    );
+
+    let cross_component = create(
+        &mut runner,
+        cross_site.site_id,
+        CROSS_COMPONENT_SLUG,
+        "A1061 cross-site component",
+        CROSS_RED,
+    )
+    .await;
+    let cross_dependent = create(
+        &mut runner,
+        site.site_id,
+        CROSS_DEPENDENT_SLUG,
+        "A1061 cross-site dependent",
+        &format!(
+            "[[include :{CROSS_SITE_SLUG}:{CROSS_COMPONENT_SLUG}]]\nCross-site dependent"
+        ),
+    )
+    .await;
+    let cross_before = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site.site_id,
+            "page": cross_dependent.page_id,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("cross-site dependent should exist");
+    assert!(
+        cross_before
+            .compiled_body_styles
+            .as_ref()
+            .is_some_and(|styles| styles
+                .iter()
+                .any(|style| style.contains("rgb(102, 2, 2)"))),
+        "an explicit public cross-site include should retain its documented CSS behavior",
+    );
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        cross_site.site_id,
+        Reference::Id(cross_component.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": cross_site.site_id,
+            "page": cross_component.page_id,
+            "last_revision_id": cross_component.revision_id,
+            "revision_comments": "A1061 cross-site component edit",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": CROSS_BLUE,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("cross-site component edit should succeed");
+    let cross_dependent_page = PageService::get(
+        runner.context(),
+        site.site_id,
+        Reference::Id(cross_dependent.page_id),
+    )
+    .await
+    .expect("cross-site dependent identity should remain available");
+    PageRevisionService::rerender(
+        runner.context(),
+        PageId::from_page_model(&cross_dependent_page),
+        RerenderDepth::default(),
+        RerenderType::Full,
+    )
+    .await
+    .expect("cross-site dependent rerender should succeed");
+    let cross_after = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site.site_id,
+            "page": cross_dependent.page_id,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("cross-site dependent should remain readable");
+    let cross_after_styles = cross_after
+        .compiled_body_styles
+        .as_ref()
+        .expect("cross-site dependent styles should be populated");
+    assert!(
+        cross_after_styles
+            .iter()
+            .any(|style| style.contains("rgb(2, 2, 102)"))
+            && cross_after_styles
+                .iter()
+                .all(|style| !style.contains("rgb(102, 2, 2)")),
+        "an explicit cross-site include may update only through its public source without stale CSS",
+    );
+
+    let deleted_component = create(
+        &mut runner,
+        site.site_id,
+        DELETED_COMPONENT_SLUG,
+        "A1061 deleted component",
+        DELETED_RED,
+    )
+    .await;
+    let deleted_dependent = create(
+        &mut runner,
+        site.site_id,
+        DELETED_DEPENDENT_SLUG,
+        "A1061 deleted dependent",
+        &format!("[[include {DELETED_COMPONENT_SLUG}]]\nDeleted dependent"),
+    )
+    .await;
+    let deleted_before = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site.site_id,
+            "page": deleted_dependent.page_id,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("deleted-source dependent should exist");
+    assert!(
+        deleted_before
+            .compiled_body_styles
+            .as_ref()
+            .is_some_and(|styles| styles
+                .iter()
+                .any(|style| style.contains("a1061-deleted"))),
+        "deleted-source fixture should begin with the component CSS",
+    );
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(deleted_component.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site.site_id,
+            "page": deleted_component.page_id,
+            "last_revision_id": deleted_component.revision_id,
+            "revision_comments": "A1061 deleted component",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let deleted_dependent_page = PageService::get(
+        runner.context(),
+        site.site_id,
+        Reference::Id(deleted_dependent.page_id),
+    )
+    .await
+    .expect("deleted-source dependent identity should remain available");
+    PageRevisionService::rerender(
+        runner.context(),
+        PageId::from_page_model(&deleted_dependent_page),
+        RerenderDepth::default(),
+        RerenderType::Full,
+    )
+    .await
+    .expect("deleted-source dependent rerender should succeed");
+    let deleted_after = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site.site_id,
+            "page": deleted_dependent.page_id,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("deleted-source dependent should remain readable");
+    assert!(
+        deleted_after
+            .compiled_body_styles
+            .as_ref()
+            .is_some_and(|styles| styles
+                .iter()
+                .all(|style| !style.contains("a1061-deleted"))),
+        "a deleted component must not leave stale CSS in a rerendered dependent",
+    );
+}
+
+#[tokio::test]
 async fn revision_diff_returns_typed_lines_without_exposing_hidden_source() {
     const SITE_SLUG: &str = "scpaiueouiuiuiui";
     const PAGE_SLUG: &str = "authoring-revision-diff";

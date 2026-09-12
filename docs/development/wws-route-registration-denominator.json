@@ -50,8 +50,8 @@
       },
       {
         "path": "deepwell/tests/page.rs",
-        "git_blob": "30718a5d2c5d3baf367d2ff51d3d3e7b792b65ba",
-        "sha256": "fb1af146d4ea54e752d43aca176db825344ebd268e2d821d85660d9a31900bd1"
+        "git_blob": "bf32064f515fab580e44932004ea74dfeeb32f4a",
+        "sha256": "3ba98ea4dd7be299150781ca1f52e3af20b7825a813d653601029205f3de864a"
       },
       {
         "path": "wws/Cargo.lock",
@@ -122,7 +122,7 @@
   },
   "generator": {
     "path": "install/local/wikidot-verification/scripts/build-wws-route-registration-denominator.mjs",
-    "sha256": "c1faa664d8ed269a08f6ea5fa08192b4bc65554fe29308025cc2eeba05482642"
+    "sha256": "1ed1f1af82d70881cc9b771743878fec1ed3890be4f943b34ec172f632637706"
   },
   "historical_artifact": {
     "path": "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json",

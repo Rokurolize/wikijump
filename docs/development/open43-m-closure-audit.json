@@ -342,27 +342,27 @@
       "exists_now": true
     },
     "C_DEEPWELL_MEDIA": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test media -- --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test media -- --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
     "C_DEEPWELL_GALLERY": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_gallery -- --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page wikidot_gallery -- --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
     "C_DEEPWELL_FILES": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts -- --exact --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts -- --exact --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
     "C_DEEPWELL_FILES_ROWS": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_files_saved_view_hides_rows_without_module_instance_authority -- --exact --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page wikidot_files_saved_view_hides_rows_without_module_instance_authority -- --exact --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
     "C_DEEPWELL_BLOB_DESCRIPTOR": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml mime_request -- --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs mime_request -- --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
@@ -379,17 +379,17 @@
       "current_blocker": "The pre-run denominator is 50,301 active latest standing files versus 24,454 descriptor-bearing corpus snapshots; metadata_preflight must return blocked with zero staging and zero rerenders until provenance is repaired."
     },
     "C_DEEPWELL_SITE_ICONS": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test site site_update_restricts_icon_sources_to_site_owned_routes -- --exact --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test site site_update_restricts_icon_sources_to_site_owned_routes -- --exact --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
     "C_DEEPWELL_FILE_ACL": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page file_mutations_require_parent_page_edit_permission -- --exact --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page file_mutations_require_parent_page_edit_permission -- --exact --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
     "C_DEEPWELL_UPLOAD_OWNERSHIP": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml --test page file_create_commits_only_its_actor_and_route_owned_pending_blob -- --exact --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page file_create_commits_only_its_actor_and_route_owned_pending_blob -- --exact --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
@@ -400,7 +400,7 @@
       "required_environment": "An isolated task-owned PostgreSQL DATABASE_URL at the exact candidate revision."
     },
     "C_RENDER_EPOCH": {
-      "command": "cargo test --manifest-path deepwell/Cargo.toml renderer_epoch_invalidates_pre_freeze_compiled_artifacts -- --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs renderer_epoch_invalidates_pre_freeze_compiled_artifacts -- --nocapture",
       "phase": "source_freeze",
       "exists_now": true
     },

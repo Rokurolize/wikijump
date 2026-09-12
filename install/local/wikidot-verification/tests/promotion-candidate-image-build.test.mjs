@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import {spawnSync} from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -13,6 +14,26 @@ import {
 } from "../scripts/build-promotion-candidate-images.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
+
+function git(root, ...args) {
+  const result = spawnSync("git", ["-C", root, ...args], {encoding: "utf8"});
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.trim();
+}
+
+async function createPromotionSourceFixture(t) {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "promotion-source-"));
+  t.after(() => fs.rm(root, {recursive: true, force: true}));
+  await fs.mkdir(path.join(root, "deepwell"), {recursive: true});
+  await fs.copyFile(path.join(repositoryRoot, "deepwell/Cargo.lock"), path.join(root, "deepwell/Cargo.lock"));
+  await fs.writeFile(path.join(root, "tracked.txt"), "tracked\n");
+  git(root, "init", "--quiet");
+  git(root, "config", "user.email", "promotion-source@example.invalid");
+  git(root, "config", "user.name", "Promotion Source Test");
+  git(root, "add", ".");
+  git(root, "commit", "--quiet", "-m", "fixture");
+  return root;
+}
 
 test("promotion candidate image build seals all seven production runtime roles", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "promotion-build-"));
@@ -58,10 +79,24 @@ test("promotion image plan uses production application images and a candidate-se
   assert.match(deepwellDockerfile, /COPY \.\/deepwell\/seeder \/opt\/deepwell\/seeder/u);
 });
 
-test("promotion source identity ignores unrelated operator overlays but rejects build-input dirt", async () => {
-  const sourceRoot = repositoryRoot;
+test("promotion source identity ignores unrelated operator overlays but rejects build-input dirt", async (t) => {
+  const sourceRoot = await createPromotionSourceFixture(t);
+  await fs.writeFile(path.join(sourceRoot, "operator-overlay.txt"), "untracked operator state\n");
   const identity = await promotionSourceIdentity(sourceRoot);
   assert.match(identity.wikijump_commit, /^[0-9a-f]{40}$/u);
   assert.match(identity.wikijump_tree, /^[0-9a-f]{40}$/u);
   assert.match(identity.ftml_sha, /^[0-9a-f]{40}$/u);
+
+  await fs.writeFile(path.join(sourceRoot, "deepwell/untracked.rs"), "// build input dirt\n");
+  await assert.rejects(
+    promotionSourceIdentity(sourceRoot),
+    /promotion candidate build inputs contain untracked files: deepwell\/untracked\.rs/u,
+  );
+  await fs.rm(path.join(sourceRoot, "deepwell/untracked.rs"));
+
+  await fs.appendFile(path.join(sourceRoot, "tracked.txt"), "dirty\n");
+  await assert.rejects(
+    promotionSourceIdentity(sourceRoot),
+    /promotion candidate tracked source must be clean/u,
+  );
 });
