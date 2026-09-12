@@ -37,35 +37,35 @@
   "closure_audits": [
     {
       "path": "docs/development/open43-q-search-users-closure-audit.json",
-      "sha256": "ab0f5a355c3e00efffc4b9207ed24c7359ecfbaf120983b86cdd5957f6dff470",
+      "sha256": "a764254328e9b4ff4314e90f1ebab03f9a2f7069d500b2947e0a73f4cbe343ee",
       "source_revision": "e98edcc6910c54b844d1d4c0767502a8500437ae",
       "issue_count": 6,
       "case_count": 30,
       "classification_counts": {
-        "source_ready": 12,
+        "source_ready": 16,
         "needs_source": 0,
         "candidate_required": 11,
-        "blocked_evidence": 7
+        "blocked_evidence": 3
       },
       "issue_summaries": [
         {
           "issue": 748,
           "case_count": 4,
           "classification_counts": {
-            "source_ready": 1,
+            "source_ready": 2,
             "needs_source": 0,
             "candidate_required": 2,
-            "blocked_evidence": 1
+            "blocked_evidence": 0
           }
         },
         {
           "issue": 807,
           "case_count": 3,
           "classification_counts": {
-            "source_ready": 1,
+            "source_ready": 2,
             "needs_source": 0,
             "candidate_required": 1,
-            "blocked_evidence": 1
+            "blocked_evidence": 0
           }
         },
         {
@@ -102,10 +102,10 @@
           "issue": 1036,
           "case_count": 5,
           "classification_counts": {
-            "source_ready": 2,
+            "source_ready": 4,
             "needs_source": 0,
             "candidate_required": 1,
-            "blocked_evidence": 2
+            "blocked_evidence": 0
           }
         }
       ]
@@ -147,25 +147,25 @@
     },
     {
       "path": "docs/development/open43-q-page-query-closure-audit.json",
-      "sha256": "101c84ac464e1b6569900019b41c08a370a4273f2914c90143fec5a6d9372597",
+      "sha256": "f4ec7b9eebfb756460484bc8ba4fc10a270855eb7ba3fab789a72d6f827fae05",
       "source_revision": "f14c4986abbe47214026d9f00e672db39efa677f",
       "issue_count": 7,
       "case_count": 33,
       "classification_counts": {
-        "source_ready": 18,
+        "source_ready": 19,
         "needs_source": 0,
         "candidate_required": 7,
-        "blocked_evidence": 8
+        "blocked_evidence": 7
       },
       "issue_summaries": [
         {
           "issue": 779,
           "case_count": 4,
           "classification_counts": {
-            "source_ready": 2,
+            "source_ready": 3,
             "needs_source": 0,
             "candidate_required": 1,
-            "blocked_evidence": 1
+            "blocked_evidence": 0
           }
         },
         {
@@ -232,15 +232,15 @@
     },
     {
       "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-      "sha256": "e51baa5f576cc8cf8a9e59ffd5eb14d934c3f587c0a7f201dd347c371e8f9a03",
+      "sha256": "1b8f00ebee6e5c09f56c5d3dee85354daf1d190d2a62358af10df925593f945f",
       "source_revision": "d3f1c4dce427b72911c0cb2a1eda4adb14143959",
       "issue_count": 9,
       "case_count": 64,
       "classification_counts": {
-        "source_ready": 33,
+        "source_ready": 34,
         "needs_source": 0,
         "candidate_required": 18,
-        "blocked_evidence": 13
+        "blocked_evidence": 12
       },
       "issue_summaries": [
         {
@@ -267,10 +267,10 @@
           "issue": 1029,
           "case_count": 8,
           "classification_counts": {
-            "source_ready": 4,
+            "source_ready": 5,
             "needs_source": 0,
             "candidate_required": 3,
-            "blocked_evidence": 1
+            "blocked_evidence": 0
           }
         },
         {
@@ -337,25 +337,25 @@
     },
     {
       "path": "docs/development/open43-a-authoring-closure-audit.json",
-      "sha256": "94a2d6631bc49db77275aafac991b002b05d1de005016b4eaff67708c6658eb8",
+      "sha256": "3e5523f1c2fd2494162a869bee6ed697a99951119b8a5082defd59694fa96090",
       "source_revision": "18a2baf0d8c3fc1f3167e286740dc303dbdd5b2d",
       "issue_count": 2,
       "case_count": 22,
       "classification_counts": {
-        "source_ready": 11,
+        "source_ready": 13,
         "needs_source": 0,
         "candidate_required": 6,
-        "blocked_evidence": 5
+        "blocked_evidence": 3
       },
       "issue_summaries": [
         {
           "issue": 1061,
           "case_count": 11,
           "classification_counts": {
-            "source_ready": 5,
+            "source_ready": 7,
             "needs_source": 0,
             "candidate_required": 3,
-            "blocked_evidence": 3
+            "blocked_evidence": 1
           }
         },
         {
@@ -457,15 +457,15 @@
     },
     {
       "path": "docs/development/open43-s-settings-browser-closure-audit.json",
-      "sha256": "cbb4745de921496478585fd2f080ef4c4805098c91ff71f1faf17c62fed964f5",
+      "sha256": "805547e60be56fc2abe745faca2e46fc1d84eb212d0f955f0082abafb7a70ad6",
       "source_revision": "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
       "issue_count": 9,
       "case_count": 60,
       "classification_counts": {
-        "source_ready": 23,
+        "source_ready": 24,
         "needs_source": 0,
         "candidate_required": 25,
-        "blocked_evidence": 12
+        "blocked_evidence": 11
       },
       "issue_summaries": [
         {
@@ -502,10 +502,10 @@
           "issue": 754,
           "case_count": 7,
           "classification_counts": {
-            "source_ready": 3,
+            "source_ready": 4,
             "needs_source": 0,
             "candidate_required": 2,
-            "blocked_evidence": 2
+            "blocked_evidence": 1
           }
         },
         {
@@ -573,10 +573,10 @@
     "unknown_classifications": [],
     "closure_claims": 0,
     "classification_counts": {
-      "source_ready": 137,
+      "source_ready": 146,
       "needs_source": 0,
       "candidate_required": 84,
-      "blocked_evidence": 64
+      "blocked_evidence": 55
     }
   },
   "validation": {
@@ -586,7 +586,7 @@
       "command": "node install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs --root . --output docs/development/compatibility-surface-inventory.json",
       "audit_count": 7,
       "case_count": 285,
-      "blocked_routing_count": 64,
+      "blocked_routing_count": 55,
       "authoritative_manifest_count": 3,
       "open_issue_snapshot_count": 43,
       "nontracking_open_issue_count": 42,

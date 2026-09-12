@@ -469,10 +469,10 @@
     "issue_count": 7,
     "subrow_count": 33,
     "classification_counts": {
-      "source_ready": 18,
+      "source_ready": 19,
       "needs_source": 0,
       "candidate_required": 7,
-      "blocked_evidence": 8
+      "blocked_evidence": 7
     },
     "duplicate_issue_numbers": 0,
     "duplicate_case_ids": 0,

@@ -1180,10 +1180,10 @@
     "subrow_count": 60,
     "issue_owned_needs_source_count": 0,
     "classification_counts": {
-      "source_ready": 23,
+      "source_ready": 24,
       "needs_source": 0,
       "candidate_required": 25,
-      "blocked_evidence": 12
+      "blocked_evidence": 11
     },
     "duplicate_case_ids": 0,
     "unknown_classifications": 0,
