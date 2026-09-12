@@ -475,6 +475,10 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("page_select", page_select);
     register!("wikidot_list_pages_feed", wikidot_list_pages_feed);
     register!("wikidot_list_pages_module", wikidot_list_pages_module);
+    register!(
+        "wikidot_categories_page_list_module",
+        wikidot_categories_page_list_module
+    );
     register!("wikidot_site_changes_module", wikidot_site_changes_module);
     register!("wikidot_forum_module", wikidot_forum_module);
     register!("wikidot_members_list_module", wikidot_members_list_module);

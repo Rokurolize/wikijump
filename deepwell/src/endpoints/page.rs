@@ -72,6 +72,13 @@ struct WikidotListPagesModuleInput {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct WikidotCategoriesPageListModuleInput {
+    site_id: i64,
+    category_id: i64,
+}
+
+#[derive(Deserialize)]
 struct WikidotForumModuleInput {
     site_id: i64,
     module_name: String,
@@ -97,6 +104,11 @@ struct WikidotMembersListModuleInput {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct WikidotListPagesModuleOutput {
+    pub body: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct WikidotCategoriesPageListModuleOutput {
     pub body: String,
 }
 
@@ -329,6 +341,33 @@ pub async fn wikidot_list_pages_module(
             &normalize_wikidot_list_pages_set_pairs(&output.html_output.body),
         ),
     })
+}
+
+pub async fn wikidot_categories_page_list_module(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<WikidotCategoriesPageListModuleOutput> {
+    let input: WikidotCategoriesPageListModuleInput = parse!(params, Page);
+    if ctx
+        .request()
+        .site_id
+        .is_some_and(|request_site_id| request_site_id != input.site_id)
+    {
+        return Err(Error::new(
+            "Categories page-list site does not match the request context",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+    let body = RenderService::render_wikidot_categories_page_list_module(
+        ctx,
+        input.site_id,
+        input.category_id,
+        ctx.request().user_id,
+    )
+    .await
+    .or_raise(|| Error::new("failed to render Categories page list", ErrorType::Page))?;
+    Ok(WikidotCategoriesPageListModuleOutput { body })
 }
 
 pub async fn wikidot_site_changes_module(

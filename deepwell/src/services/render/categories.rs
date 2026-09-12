@@ -20,15 +20,23 @@
 
 //! The Wikidot `Categories` module.
 
+use super::authorized_page_selector::AuthorizedPageSelector;
 use super::compat::CompatHtmlFragments;
 use super::literal_regions::LiteralRegionIndex;
-use super::service::{RenderService, escape_list_pages_html_text};
-use crate::error::prelude::Result;
+use super::service::{
+    MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService, escape_list_pages_html_attr,
+    escape_list_pages_html_text,
+};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::models::page::{self, Entity as Page};
+use crate::models::page_revision::{self, Entity as PageRevision};
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{CategoryService, ServiceContext};
 use crate::types::{Action, Permission, Reference, Resource};
 use ftml::settings::WikitextSettings;
 use regex::Regex;
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
+use std::collections::HashMap;
 use std::sync::LazyLock;
 
 static CATEGORIES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -87,7 +95,99 @@ fn render_categories_module<'a>(
     output
 }
 
+fn render_category_page_list<'a>(
+    pages: impl IntoIterator<Item = (&'a str, &'a str)>,
+) -> String {
+    let mut output = String::from("<ul>\n");
+    for (slug, title) in pages {
+        output.push_str("\t\t<li>\n\t\t\t<a href=\"/");
+        output.push_str(&escape_list_pages_html_attr(slug));
+        output.push_str("\">");
+        output.push_str(&escape_list_pages_html_text(title));
+        output.push_str("</a>\n\t\t</li>\n");
+    }
+    output.push_str("</ul>\n");
+    output
+}
+
 impl RenderService {
+    pub async fn render_wikidot_categories_page_list_module(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        category_id: i64,
+        viewer_user_id: Option<i64>,
+    ) -> Result<String> {
+        let make_error =
+            || Error::new("failed to render Categories page list", ErrorType::Render);
+        let category = CategoryService::get(ctx, site_id, Reference::Id(category_id))
+            .await
+            .or_raise(make_error)?;
+        let can_view_category = PermissionService::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id: viewer_user_id,
+                site_id,
+                page_reference: None,
+            },
+            Permission {
+                resource_type: Resource::Page,
+                resource_category: Some(Reference::Id(category.category_id)),
+                action: Action::View,
+            },
+        )
+        .await?;
+        if !can_view_category {
+            return Err(Error::new(
+                "Categories page-list category is not viewable",
+                ErrorType::PermissionDenied,
+            )
+            .into());
+        }
+
+        let txn = ctx.transaction();
+        let pages = Page::find()
+            .filter(page::Column::SiteId.eq(site_id))
+            .filter(page::Column::PageCategoryId.eq(category_id))
+            .filter(page::Column::DeletedAt.is_null())
+            .limit(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS) + 1)
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        if pages.len() > MAX_LISTPAGES_RENDER_SCAN_ROWS as usize {
+            return Err(make_error().into());
+        }
+        let mut authorized = AuthorizedPageSelector::new(ctx, viewer_user_id);
+        let pages = authorized.filter_models(pages).await?;
+        let revision_ids = pages
+            .iter()
+            .filter_map(|page| page.latest_revision_id)
+            .collect::<Vec<_>>();
+        let revisions = PageRevision::find()
+            .filter(page_revision::Column::RevisionId.is_in(revision_ids))
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        let titles = revisions
+            .into_iter()
+            .map(|revision| (revision.revision_id, revision.title))
+            .collect::<HashMap<_, _>>();
+        let mut rows = pages
+            .into_iter()
+            .filter_map(|page| {
+                let revision_id = page.latest_revision_id?;
+                let title = titles.get(&revision_id)?.clone();
+                Some((page.slug, title))
+            })
+            .collect::<Vec<_>>();
+        rows.sort_by(|(slug_a, title_a), (slug_b, title_b)| {
+            title_a.cmp(title_b).then_with(|| slug_a.cmp(slug_b))
+        });
+        Ok(render_category_page_list(
+            rows.iter()
+                .map(|(slug, title)| (slug.as_str(), title.as_str())),
+        ))
+    }
+
     pub(super) async fn expand_categories_modules(
         ctx: &ServiceContext<'_>,
         wikitext: String,
@@ -167,7 +267,7 @@ impl RenderService {
 mod tests {
     use super::{
         CATEGORIES_MODULE_REGEX, category_is_visible, include_hidden_categories,
-        render_categories_module, wikidot_category_sort_key,
+        render_categories_module, render_category_page_list, wikidot_category_sort_key,
     };
 
     #[test]
@@ -261,5 +361,18 @@ mod tests {
         assert!(html.contains(
             r#"<div style="display: none" id="category-pages-31-options">1</div>"#,
         ));
+    }
+
+    #[test]
+    fn category_page_list_matches_wikidot_shape_and_escapes_values() {
+        assert_eq!(
+            render_category_page_list([("alpha", "Alpha"), ("x<&", "X <&")]),
+            concat!(
+                "<ul>\n",
+                "\t\t<li>\n\t\t\t<a href=\"/alpha\">Alpha</a>\n\t\t</li>\n",
+                "\t\t<li>\n\t\t\t<a href=\"/x&lt;&amp;\">X &lt;&amp;</a>\n\t\t</li>\n",
+                "</ul>\n",
+            ),
+        );
     }
 }

@@ -43,6 +43,7 @@
     faviconDeclaration,
     hasIosIcons
   } from "$lib/site-icons"
+  import { installWikidotCategories } from "$lib/wikidot/wikidot-categories.js"
   import { installWikidotNewPageHelper } from "$lib/wikidot/wikidot-new-page-helper"
   import {
     installWikidotSearchAll,
@@ -156,6 +157,7 @@
     let disposed = false
     let stop: (() => void) | undefined
     const uninstallSearchAll = installWikidotSearchAll(window)
+    installWikidotCategories(window)
     installWikidotNewPageHelper(window)
     const wikidotSearchForm =
       document.querySelector<HTMLFormElement>("#search-top-box-form")
