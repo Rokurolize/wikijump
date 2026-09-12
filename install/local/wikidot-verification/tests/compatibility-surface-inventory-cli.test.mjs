@@ -1210,12 +1210,12 @@ test("CLI projects the current Deepwell contract evidence without promoting sour
   assert.equal(result.status, 0, result.stderr)
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
   const rows = inventory.surfaces.filter((record) => record.kind === "deepwell_jsonrpc_method")
-  assert.equal(rows.length, 167)
+  assert.equal(rows.length, 172)
   assert.equal(rows.every(({ evidence }) => evidence.status === "available"), true)
   assert.equal(rows.every(({ evidence }) =>
     evidence.references.includes("docs/development/deepwell-jsonrpc-contract-manifest.json")
   ), true)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 167)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 172)
   assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 0)
   assert.deepEqual(
     rows.find(({ surface_id: surfaceId }) => surfaceId === "deepwell-jsonrpc:authorization_token_issue")
@@ -1233,6 +1233,11 @@ test("CLI projects the current Deepwell contract evidence without promoting sour
     rows.find(({ surface_id: surfaceId }) => surfaceId === "deepwell-jsonrpc:category_get")
       .existing_refs.tests,
     ["deepwell/tests/page.rs#page_move_render_failure_rolls_back_destination_identity"]
+  )
+  assert.deepEqual(
+    rows.find(({ surface_id: surfaceId }) => surfaceId === "deepwell-jsonrpc:membership_email_invitation_accept")
+      .existing_refs.tests,
+    ["deepwell/tests/page.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract"]
   )
 })
 
@@ -1299,8 +1304,8 @@ test("CLI projects current Framerail route-action tests without inventing browse
   const rows = inventory.surfaces.filter(({ kind }) =>
     kind === "framerail_route" || kind === "framerail_server_action"
   )
-  assert.equal(rows.length, 125)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 125)
+  assert.equal(rows.length, 135)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 135)
   assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 0)
   assert.equal(rows.every(({ evidence }) => evidence.status === "missing"), true)
   assert.deepEqual(
@@ -1312,6 +1317,20 @@ test("CLI projects current Framerail route-action tests without inventing browse
       .existing_refs.tests,
     [
       "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
+    ]
+  )
+  assert.deepEqual(
+    rows.find(({ surface_id: surfaceId }) => surfaceId === "framerail-server-action:/?/membershipEmailInvitation")
+      .existing_refs.tests,
+    [
+      "framerail/tests/page-membership-action-boundary.test.js#email invitation action derives the opaque hash from the trusted route, not the request body"
+    ]
+  )
+  assert.deepEqual(
+    rows.find(({ surface_id: surfaceId }) => surfaceId === "framerail-server-action:/_admin?/membershipReview")
+      .existing_refs.tests,
+    [
+      "framerail/tests/site-settings-public-boundary.test.js#renders membership policy without exposing a configured password and binds review actions"
     ]
   )
 })
