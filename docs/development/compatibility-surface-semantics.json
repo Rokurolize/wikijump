@@ -2562,7 +2562,6 @@
     "ftml-and-deepwell": ["ftml", "wikijump.deepwell"],
     "ftml-deepwell-framerail": ["ftml", "wikijump.deepwell", "wikijump.framerail"],
     "live-evidence": ["evidence.live"],
-    "live-evidence-and-domain-model": ["evidence.live", "wikijump.runtime:domain-model"],
     "security-policy": ["wikijump.policy:security"],
     "wikijump.open43.a_actions_membership_closure_audit.v1": ["wikijump.runtime:actions-membership"],
     "wikijump.open43.a_authoring_closure_audit.v1": ["wikijump.runtime:authoring"],
