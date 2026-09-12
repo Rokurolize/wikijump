@@ -123,9 +123,11 @@
     },
     {
       "case_id": "A1030_STAR_CANCEL",
-      "status": "unimplemented",
-      "tests": [],
-      "result": "The live star capture proves five selectable stars but does not prove a star-mode cancel control or gesture. No cancel UI is invented for star mode."
+      "status": "implemented_unverified",
+      "tests": [
+        "deepwell/src/services/render/rate_actions.rs#star_registry_owns_only_values_one_through_five"
+      ],
+      "result": "The live post-vote star DOM contains exactly five selectable stars and no cancel control, while the paired plus-minus evidence contains an explicit cancelVote control. The star registry therefore owns only values one through five and emits no RateCancel descriptor."
     },
     {
       "case_id": "A1030_BROWSER_TRANSITIONS_AND_NAVIGATION",
