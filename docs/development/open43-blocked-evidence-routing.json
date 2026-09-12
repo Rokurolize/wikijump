@@ -24,13 +24,13 @@
   "counts": {
     "anonymous_read_only": 5,
     "authenticated_read_only": 3,
-    "run_owned_mutation": 16,
+    "run_owned_mutation": 15,
     "local_candidate": 1,
     "live_browser_only": 12,
     "missing_public_producer": 12,
     "missing_architecture_domain_authority": 12,
     "missing_security_policy": 4,
-    "total": 65
+    "total": 64
   },
   "rows": [
     {"case_id":"Q748_PERMISSION_FILTERED_RESULTS","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"Live Search has no successful result producer or public/private result pair."},
@@ -58,7 +58,6 @@
     {"case_id":"A777_EXACT_LIVE_PRINT_TRANSITIONS","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Print dialog handoff and before/after-print intervals require a browser."},
     {"case_id":"A1029_ANONYMOUS_AND_INVITED_ACTIONS","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Join and invitation resolution alter membership state."},
     {"case_id":"A1030_ACTOR_AND_EXISTING_VOTE_DOM","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No controlled public existing-vote page spans the required actors without voting."},
-    {"case_id":"A1030_STAR_CANCEL","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Cancel behavior requires creating and removing a run-owned vote."},
     {"case_id":"A1037_MAILFORM_INITIAL_DOM_AND_SUBMIT","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"The acceptance row joins initial DOM to message submission and delivery state."},
     {"case_id":"A1037_SIMPLETODO_MUTATION","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Task create/update/delete is mutating."},
     {"case_id":"A1037_BROWSER_LIFECYCLE","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Focus, navigation, errors, loading, and intermediate paint require a browser."},
