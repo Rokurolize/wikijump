@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { syncOpen43AuditMetadata } from "../scripts/sync-open43-audit-metadata.mjs";
+
+const scriptPath = fileURLToPath(new URL("../scripts/sync-open43-audit-metadata.mjs", import.meta.url));
 
 const auditPath = "docs/development/audit.json";
 const routingPath = "docs/development/open43-blocked-evidence-routing.json";
@@ -94,4 +98,22 @@ test("audit metadata sync refuses to invent routing for a newly blocked case", a
     syncOpen43AuditMetadata(root),
     /new blocked evidence requires an explicit routing decision.*NEW_BLOCKER/u,
   );
+});
+
+test("audit metadata sync help and usage errors are side-effect-free", async (t) => {
+  const root = await fixture();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const beforeRouting = await fs.readFile(path.join(root, routingPath));
+  const beforeReconciliation = await fs.readFile(path.join(root, reconciliationPath));
+
+  const help = spawnSync(process.execPath, [scriptPath, "--help", "--root", root], { encoding: "utf8" });
+  assert.equal(help.status, 0, help.stderr);
+  assert.match(help.stdout, /^Usage: sync-open43-audit-metadata\.mjs/u);
+
+  const unknown = spawnSync(process.execPath, [scriptPath, "--unknown", "--root", root], { encoding: "utf8" });
+  assert.equal(unknown.status, 2);
+  assert.match(unknown.stderr, /unknown option: --unknown/u);
+
+  assert.deepEqual(await fs.readFile(path.join(root, routingPath)), beforeRouting);
+  assert.deepEqual(await fs.readFile(path.join(root, reconciliationPath)), beforeReconciliation);
 });

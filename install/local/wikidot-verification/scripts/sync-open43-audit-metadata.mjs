@@ -21,6 +21,33 @@ const sha256 = (text) => createHash("sha256").update(text).digest("hex");
 
 const sortedUnique = (values) => [...new Set(values)].sort();
 
+function usage() {
+  return "Usage: sync-open43-audit-metadata.mjs [--root REPOSITORY]\n";
+}
+
+function usageError(message) {
+  const error = new Error(message);
+  error.exitCode = 2;
+  return error;
+}
+
+function parseArguments(args) {
+  let root = ".";
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    if (argument === "--help" || argument === "-h") return { help: true, root: null };
+    if (argument === "--root") {
+      const value = args[index + 1];
+      if (!value || value.startsWith("--")) throw usageError("--root requires a repository path");
+      root = value;
+      index += 1;
+      continue;
+    }
+    throw usageError(`unknown option: ${argument}`);
+  }
+  return { help: false, root: path.resolve(root) };
+}
+
 function zeroCounts() {
   return Object.fromEntries(CLASSIFICATIONS.map((classification) => [classification, 0]));
 }
@@ -200,8 +227,12 @@ export async function syncOpen43AuditMetadata(root, { write = true } = {}) {
 }
 
 async function main() {
-  const rootArgument = process.argv.indexOf("--root");
-  const root = path.resolve(rootArgument === -1 ? "." : process.argv[rootArgument + 1]);
+  const options = parseArguments(process.argv.slice(2));
+  if (options.help) {
+    process.stdout.write(usage());
+    return;
+  }
+  const root = options.root;
   const result = await syncOpen43AuditMetadata(root);
   process.stdout.write(
     `${JSON.stringify({
@@ -216,7 +247,7 @@ async function main() {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((error) => {
-    console.error(error?.stack ?? error?.message ?? String(error));
-    process.exitCode = 1;
+    console.error(error?.exitCode === 2 ? `${error.message}\n${usage().trimEnd()}` : (error?.stack ?? error?.message ?? String(error)));
+    process.exitCode = error?.exitCode ?? 1;
   });
 }

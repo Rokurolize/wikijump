@@ -1,6 +1,9 @@
 {
   "schema": "wikijump.open43.a_authoring_case_manifest.v1",
-  "scope": [1061, 1063],
+  "scope": [
+    1061,
+    1063
+  ],
   "source": {
     "wikijump_base": "475cf350d433d5f3d67ea58180966360d0084ac3",
     "wikijump_base_tree": "354b9c1717a5dd8b2821273b334ccc574eb29d71",
@@ -115,6 +118,14 @@
       "owner": "live-evidence",
       "test": null,
       "result": "No authorized live Wikidot authoring capture establishes exact diff or user-settings DOM, messages, keyboard flow, or intermediate frames. This lane implements an accessible Wikijump vertical slice and makes no exact legacy DOM claim."
+    },
+    {
+      "case_id": "A1061_PRIVATE_DENIED_CROSS_SITE_MATRIX",
+      "issue": 1061,
+      "status": "implemented_unverified",
+      "owner": "deepwell-runtime",
+      "test": "deepwell/tests/page.rs::component_css_include_visibility_and_lifecycle_matrix; deepwell/tests/job_queue.rs::component_css_save_refreshes_direct_dependent_before_rpc_returns",
+      "result": "The task-owned integration stack covers anonymous-denied/private include non-disclosure, authorized cross-site CSS propagation, deleted-source stale-style removal, transaction rollback queue isolation, and same-revision concurrent edit winner isolation. Candidate rows continue to own exact served first-reload timing."
     }
   ],
   "local_validation": [
@@ -141,15 +152,17 @@
   ],
   "central_commands": [
     "cargo fmt --manifest-path deepwell/Cargo.toml --check",
-    "cargo test --manifest-path deepwell/Cargo.toml --test page component_css_edit_refreshes_only_the_recorded_dependent_page -- --exact --nocapture",
-    "cargo test --manifest-path deepwell/Cargo.toml --test page revision_diff_returns_typed_lines_without_exposing_hidden_source -- --exact --nocapture",
-    "cargo test --manifest-path deepwell/Cargo.toml --test page imported_breadcrumbs_hide_private_and_deleted_ancestors -- --exact --nocapture",
-    "cargo test --manifest-path deepwell/Cargo.toml --test user display_locale_preferences_round_trip_only_for_the_session_actor -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page component_css_edit_refreshes_only_the_recorded_dependent_page -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page revision_diff_returns_typed_lines_without_exposing_hidden_source -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page imported_breadcrumbs_hide_private_and_deleted_ancestors -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test user display_locale_preferences_round_trip_only_for_the_session_actor -- --exact --nocapture",
     "node --test framerail/tests/authoring-workflows.test.js",
     "RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps",
     "pnpm --dir framerail lint",
     "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus <fixed-campaign-reference.jsonl>",
-    "pnpm --dir install/local/wikidot-verification wikijump-identifier-leaks -- --site scpaiueouiuiuiui --rpc-url <candidate-deepwell-jsonrpc>"
+    "pnpm --dir install/local/wikidot-verification wikijump-identifier-leaks -- --site scpaiueouiuiuiui --rpc-url <candidate-deepwell-jsonrpc>",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page component_css_include_visibility_and_lifecycle_matrix -- --exact --nocapture",
+    "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test job_queue component_css_save_refreshes_direct_dependent_before_rpc_returns -- --exact --nocapture"
   ],
   "dependency_ordering": [
     "This lane has no FTML dependency and keeps the pinned FTML revision unchanged.",

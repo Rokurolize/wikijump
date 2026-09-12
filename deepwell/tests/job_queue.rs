@@ -324,6 +324,35 @@ async fn rpc_request(
     method: &str,
     params: Value,
 ) -> Value {
+    let response = rpc_page_response(
+        client,
+        address,
+        session_token,
+        site_id,
+        page,
+        method,
+        params,
+    )
+    .await;
+    assert!(
+        response.get("error").is_none(),
+        "public Deepwell method {method} failed: {response}",
+    );
+    response
+        .get("result")
+        .cloned()
+        .expect("public Deepwell response should contain a result")
+}
+
+async fn rpc_page_response(
+    client: &reqwest::Client,
+    address: SocketAddr,
+    session_token: Option<&str>,
+    site_id: Option<i64>,
+    page: Option<&str>,
+    method: &str,
+    params: Value,
+) -> Value {
     let mut request = client
         .post(format!("http://{address}"))
         .bearer_auth(
@@ -345,21 +374,13 @@ async fn rpc_request(
         request = request.header("X-Deepwell-Page", page);
     }
 
-    let response: Value = request
+    request
         .send()
         .await
         .expect("public Deepwell request should complete")
         .json()
         .await
-        .expect("public Deepwell response should be JSON");
-    assert!(
-        response.get("error").is_none(),
-        "public Deepwell method {method} failed: {response}",
-    );
-    response
-        .get("result")
-        .cloned()
-        .expect("public Deepwell response should contain a result")
+        .expect("public Deepwell response should be JSON")
 }
 
 async fn add_duplicate_and_cycle_connections(
@@ -1073,6 +1094,7 @@ async fn component_css_save_refreshes_direct_dependent_before_rpc_returns() {
     let dependent_slug = format!("authoring-post-commit-dependent-{run_id}");
     let red_css = "[[module CSS]]\n.authoring-color { color: red; }\n[[/module]]";
     let blue_css = "[[module CSS]]\n.authoring-color { color: blue; }\n[[/module]]";
+    let green_css = "[[module CSS]]\n.authoring-color { color: green; }\n[[/module]]";
 
     let component = rpc_request(
         &client,
@@ -1175,7 +1197,7 @@ async fn component_css_save_refreshes_direct_dependent_before_rpc_returns() {
     );
 
     let component_page_header = component_id.to_string();
-    rpc_request(
+    let blue_edit = rpc_page_response(
         &client,
         address,
         Some(&session_token),
@@ -1191,8 +1213,35 @@ async fn component_css_save_refreshes_direct_dependent_before_rpc_returns() {
             "wikitext": blue_css,
             "ip_address": "192.0.2.61",
         }),
-    )
-    .await;
+    );
+    let green_edit = rpc_page_response(
+        &client,
+        address,
+        Some(&session_token),
+        Some(site_id),
+        Some(&component_page_header),
+        "page_edit",
+        json!({
+            "site_id": site_id,
+            "page": component_id,
+            "last_revision_id": component_revision_id,
+            "revision_comments": "change issue 1061 component to green",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": green_css,
+            "ip_address": "192.0.2.61",
+        }),
+    );
+    let (blue_response, green_response) = tokio::join!(blue_edit, green_edit);
+    let blue_succeeded =
+        blue_response.get("result").is_some() && blue_response.get("error").is_none();
+    let green_succeeded =
+        green_response.get("result").is_some() && green_response.get("error").is_none();
+    assert_ne!(
+        blue_succeeded, green_succeeded,
+        "A1061_CONCURRENT_COMPONENT_SAVE: exactly one edit from the same source revision must commit; blue={blue_response} green={green_response}",
+    );
+    let winning_color = if blue_succeeded { "blue" } else { "green" };
+    let losing_color = if blue_succeeded { "green" } else { "blue" };
     assert_eq!(
         queued_job_count(&mut rsmq).await,
         0,
@@ -1221,17 +1270,18 @@ async fn component_css_save_refreshes_direct_dependent_before_rpc_returns() {
         styles.iter().any(|style| {
             style
                 .as_str()
-                .is_some_and(|style| style.contains("color: blue"))
+                .is_some_and(|style| style.contains(&format!("color: {winning_color}")))
         }),
-        "the first article_view after component save should contain blue CSS",
+        "the first article_view after concurrent component save should contain only the winning CSS",
     );
     assert!(
         styles.iter().all(|style| {
-            style
-                .as_str()
-                .is_none_or(|style| !style.contains("color: red"))
+            style.as_str().is_none_or(|style| {
+                !style.contains("color: red")
+                    && !style.contains(&format!("color: {losing_color}"))
+            })
         }),
-        "the first article_view after component save must not contain red CSS",
+        "the first article_view after concurrent component save must contain neither stale nor losing CSS",
     );
 
     handle.stop().expect("public Deepwell server should stop");

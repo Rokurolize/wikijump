@@ -557,10 +557,14 @@ async function resolveHandlerDefinitions(root, symbols) {
   return { definitions, bytesByPath }
 }
 
-function gitSourceIdentity(root, commit, relativePath, capturedBytes) {
-  const blob = git(root, "rev-parse", `${commit}:${relativePath}`)
-  const capturedBlob = gitWithInput(root, capturedBytes, "hash-object", "--stdin")
-  if (capturedBlob !== blob) throw new Error(`${relativePath} differs from pinned repository commit ${commit}`)
+function gitSourceIdentity(root, relativePath, capturedBytes) {
+  // The denominator is content-addressed per captured input, so generation must
+  // work before the source commit exists. Requiring working-tree bytes to equal
+  // HEAD made the pre-commit generated-contract gate impossible to satisfy for
+  // any legitimate change to a captured source path. `git hash-object` gives
+  // the exact blob identity the eventual commit will use without weakening the
+  // tracked source identity.
+  const blob = gitWithInput(root, capturedBytes, "hash-object", "--stdin")
   return { path: relativePath, git_blob: blob, sha256: sha256(capturedBytes) }
 }
 
@@ -651,11 +655,11 @@ async function buildDenominator(root) {
   verifyBehaviorSourceReferences(BEHAVIOR_RECORDS, registrationIds, inputContent)
   const inputs = [...inputContent]
     .sort(([left], [right]) => compareText(left, right))
-    .map(([relativePath, content]) => gitSourceIdentity(root, commit, relativePath, content))
+    .map(([relativePath, content]) => gitSourceIdentity(root, relativePath, content))
   const behaviorEvidenceBytes = await fs.readFile(path.join(root, LIVE_OBSERVATION_NOTE))
   const capturedSourceCommit = captureSourceCommit(behaviorEvidenceBytes.toString("utf8"))
   const behaviorEvidence = {
-    ...gitSourceIdentity(root, commit, LIVE_OBSERVATION_NOTE, behaviorEvidenceBytes),
+    ...gitSourceIdentity(root, LIVE_OBSERVATION_NOTE, behaviorEvidenceBytes),
     capture_source_commit: capturedSourceCommit,
     capture_source_status: capturedSourceCommit === commit ? "current" : "historical"
   }

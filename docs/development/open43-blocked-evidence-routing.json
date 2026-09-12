@@ -25,12 +25,12 @@
     "anonymous_read_only": 5,
     "authenticated_read_only": 3,
     "run_owned_mutation": 14,
-    "local_candidate": 1,
+    "local_candidate": 0,
     "live_browser_only": 10,
     "missing_public_producer": 9,
     "missing_architecture_domain_authority": 10,
     "missing_security_policy": 2,
-    "total": 54
+    "total": 53
   },
   "rows": [
     {"case_id":"Q810_ACTIVE_GLOBAL_ROTATION","route_class":"missing_architecture_domain_authority","status":"not_attempted_not_safe","reason":"No authorized global FeaturedSite data source or refresh owner exists."},
@@ -60,7 +60,6 @@
     {"case_id":"A1038_CLONE_ACTION","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Eligibility, collision, copy, rollback, replay, and navigation require a run-owned destination."},
     {"case_id":"A1038_SITEGRID_POPULATED","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No controlled public populated/private SiteGrid pair supplies selection and disclosure boundaries."},
     {"case_id":"A1038_THEMEPREVIEWER_ACTIVE","route_class":"missing_security_policy","status":"not_attempted_not_safe","reason":"External theme fetch allowlist, CSP, size, timeout, and cleanup policy are unresolved."},
-    {"case_id":"A1061_PRIVATE_DENIED_CROSS_SITE_MATRIX","route_class":"local_candidate","status":"not_attempted_not_safe","reason":"Private, denied, cross-site, rollback, and concurrent include transitions need exact local fixtures."},
     {"case_id":"A1063_LEGACY_AUTHORING_PRESENTATION","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Revision diff and settings messages, keyboard behavior, errors, and intermediate frames require browser observation."},
     {"case_id":"A1063_FULL_BREADCRUMB_LIVE_BOUNDARY","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"The standard saved-page shell is now authoritatively negative; the remaining unobserved authority is the separately documented Pro custom-layout [[breadcrumbs]] presentation."},
     {"case_id":"M756_WINDOWS_TILE_DECLARATION","route_class":"anonymous_read_only","status":"blocked_no_positive_fixture","reason":"The existing bounded public probe found no configured positive declaration; admin evidence proves only that the upload slot exists."},

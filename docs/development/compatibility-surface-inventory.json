@@ -11290,8 +11290,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "b000c309f3186de3573c2f8d2db0fd1440071760",
-      "tree": "88e23898ade5b11d458006c45e3ddb537fb9f7d8"
+      "commit": "dbea571d364135f4121d9639b09bc03deda196da",
+      "tree": "365d06b8661f03ecd10e5a12a6865ffcd14d9576"
     },
     "ftml": {
       "commit": "c37c8360a2ac304eb1de06942465e1c8b9ad737a",
@@ -11448,7 +11448,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "54485bba1b642330b724d0d6d384ca0868a05cc853f468ed12617f5e9f43e414"
+        "sha256": "68f78dfce87497acb89f39f4640687c2ef83dbab1da2ee7dd58df30fe5b128b1"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11460,39 +11460,39 @@
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "1b8f00ebee6e5c09f56c5d3dee85354daf1d190d2a62358af10df925593f945f"
+        "sha256": "aaf8519e2495881fcf630783404ccc730be90c09c4b307f629753f8ebdf5bcbc"
       },
       {
         "path": "docs/development/open43-a-authoring-closure-audit.json",
-        "sha256": "3e5523f1c2fd2494162a869bee6ed697a99951119b8a5082defd59694fa96090"
+        "sha256": "3303653618de786aab6a519cfde449b0b93a142cd48c06b71bcba91f4503ac7d"
       },
       {
         "path": "docs/development/open43-blocked-evidence-routing.json",
-        "sha256": "42ccfa8bf3521abd0b8bb59cc6d025c3da7a4014f4c34210f34815637bb93be0"
+        "sha256": "5ba684765e637dfef26e8780e4dfd22f9cebc1f4020b6d4de31c1813516549bc"
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "8c78bb6e59874011f7f22ef21b9f99f9bad824ca18ff4e3c994612f9f0eaf5fb"
+        "sha256": "2214b1cb8400b36b37381bb8bd5beffb720d35953c905e43e39da672e1b11c47"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
-        "sha256": "5bfbe49b85830b896a80015e11f8eff859f19c203ad8d935ded42ab8cdf13c82"
+        "sha256": "bb3d1889569d1f9e67b71448c6527f2d66bc5d3e9bf431952ccb7c90de50336c"
       },
       {
         "path": "docs/development/open43-q-forum-closure-audit.json",
-        "sha256": "431abaaa154a1186f3f0cc70416e52758c0a5d03d1bf7d89d9bc22af823b3c43"
+        "sha256": "9bf6fbdbd21cc9de47c07b1b9ecc25c4b83bbb47356f4fa9d5fe15cad83bc9b5"
       },
       {
         "path": "docs/development/open43-q-page-query-closure-audit.json",
-        "sha256": "85d4e0856ef28a9685099c45bc38c2026bcf8bba19f838186e3fbcea327987c7"
+        "sha256": "51015339a5afd1f3ca0f634e4be7ff541cce8014ce3fece694b525af5fe3b5c4"
       },
       {
         "path": "docs/development/open43-q-search-users-closure-audit.json",
-        "sha256": "a764254328e9b4ff4314e90f1ebab03f9a2f7069d500b2947e0a73f4cbe343ee"
+        "sha256": "550d39ef2311985c22a91e15f709005a0241306a56672f67fae3248d3486dfe2"
       },
       {
         "path": "docs/development/open43-s-settings-browser-closure-audit.json",
-        "sha256": "805547e60be56fc2abe745faca2e46fc1d84eb212d0f955f0082abafb7a70ad6"
+        "sha256": "2f7ef5b4699f68d6f02c39704801bc7d95b2a6cea2b4497a5ef8f7ff03ec17ab"
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
@@ -11508,7 +11508,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "9f92c0ca590408c80356597b384d2712e3aff4404d785eedb2f9eea798557796"
+        "sha256": "dd87d6e9ea06209f6b0d7fe5f9e36d5595d7b7f0f95b4fedbb7ed7b16d8d3db8"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11736,7 +11736,7 @@
       },
       {
         "path": "install/local/wikidot-verification/scripts/build-wws-route-registration-denominator.mjs",
-        "sha256": "c1faa664d8ed269a08f6ea5fa08192b4bc65554fe29308025cc2eeba05482642"
+        "sha256": "1ed1f1af82d70881cc9b771743878fec1ed3890be4f943b34ec172f632637706"
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
@@ -40120,10 +40120,13 @@
         "cases": [
           "A1061_PRIVATE_DENIED_CROSS_SITE_MATRIX"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/job_queue.rs#component_css_save_refreshes_direct_dependent_before_rpc_returns",
+          "deepwell/tests/page.rs#component_css_include_visibility_and_lifecycle_matrix"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -40131,15 +40134,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1061_PRIVATE_DENIED_CROSS_SITE_MATRIX",

@@ -251,6 +251,30 @@ test("CLI reproduces and verifies the exact committed denominator", async (t) =>
   )
 })
 
+test("CLI content-addresses dirty captured inputs before the source commit exists", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-dirty-source-"))
+  t.after(() => fs.rm(root, { recursive: true, force: true }))
+  await writeCommittedProductionFixture(root)
+  const sourcePath = "deepwell/tests/page.rs"
+  const absoluteSource = path.join(root, sourcePath)
+  await fs.appendFile(absoluteSource, "\n// pre-commit denominator identity fixture\n")
+  const output = path.join(root, "denominator.json")
+
+  const result = runCli(root, output)
+
+  assert.equal(result.status, 0, result.stderr)
+  const manifest = JSON.parse(await fs.readFile(output, "utf8"))
+  const input = manifest.source.inputs.find(({ path: candidate }) => candidate === sourcePath)
+  assert.ok(input)
+  const workingBlob = spawnSync("git", ["-C", root, "hash-object", sourcePath], { encoding: "utf8" })
+  const committedBlob = spawnSync("git", ["-C", root, "rev-parse", `HEAD:${sourcePath}`], { encoding: "utf8" })
+  assert.equal(workingBlob.status, 0, workingBlob.stderr)
+  assert.equal(committedBlob.status, 0, committedBlob.stderr)
+  assert.equal(input.git_blob, workingBlob.stdout.trim())
+  assert.notEqual(input.git_blob, committedBlob.stdout.trim())
+  assert.equal(input.sha256, await sha256(absoluteSource))
+})
+
 test("CLI verify rejects a byte-drifted denominator", async (t) => {
   const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-stale-"))
   t.after(() => fs.rm(temporaryDirectory, { recursive: true, force: true }))
