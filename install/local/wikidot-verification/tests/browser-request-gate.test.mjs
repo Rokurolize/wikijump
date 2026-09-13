@@ -1738,6 +1738,7 @@ test("context-level response handling preserves Retry-After from a different pag
 
   context.events.get("response")({
     url: () => "https://scp-wiki.wikidot.com/popup-response",
+    status: () => 503,
     headers: () => ({"retry-after": "7"}),
   });
   await gate.flush();
@@ -1747,6 +1748,26 @@ test("context-level response handling preserves Retry-After from a different pag
   assert.deepEqual(route.actions, [{type: "continue"}]);
   assert.deepEqual(gate.snapshot().grants.map((grant) => grant.released_at_epoch_ms), [7_000]);
   assert.equal(gate.snapshot().retry_after_honored, 1);
+});
+
+test("a 200 cache-hint Retry-After does not throttle later browser captures", async () => {
+  const clock = createClock();
+  const gate = createBrowserRequestGate({intervalMs: 4_000, now: clock.now, sleep: clock.sleep});
+  const context = createContext();
+  await installBrowserRequestGate(context, {gate});
+
+  context.events.get("response")({
+    url: () => "https://sandbox-for-codex.wikidot.com/_admin",
+    status: () => 200,
+    headers: () => ({"retry-after": "600"}),
+  });
+  await gate.flush();
+  const route = createRoute("https://sandbox-for-codex.wikidot.com/next-page");
+  await context.routes[0].handler(route);
+
+  assert.deepEqual(route.actions, [{type: "continue"}]);
+  assert.deepEqual(gate.snapshot().grants.map((grant) => grant.released_at_epoch_ms), [0]);
+  assert.equal(gate.snapshot().retry_after_honored, 0);
 });
 
 test("uninspectable public response metadata latches the gate closed", async () => {
