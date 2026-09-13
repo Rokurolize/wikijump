@@ -269,6 +269,63 @@
         "m806-lookalike": "4b81255350dfb2398e2f3a140b403bbacde3536df90869514567f3a891c29631"
       }
     },
+    "E_OPEN43_IMAGE_ARGUMENT_BOUNDARY_20260913": {
+      "path": "install/local/wikidot-verification/artifacts/m776-m806-image-argument-boundary-live.jsonl",
+      "sha256": "3014b4f94fc5b2787f3fd0d97854b58baa6bf66db0fe2ef11d967baa7ceaa961",
+      "external_evidence_root": "/home/roku/wjlab/evidence/m776-m806-argument-boundary-20260913-r1",
+      "external_batch_roots": [
+        "/home/roku/wjlab/evidence/m776-m806-argument-boundary-20260913-r1",
+        "/home/roku/wjlab/evidence/m776-m806-local-size-boundary-20260913-r1"
+      ],
+      "external_batch_references_sha256": [
+        "76b7e9ff204277dc5cb3c71e911b8f08e8be256a994516ffa833abe6a01ac65d",
+        "1265c65015b0390be47bb157549c14f9365f398d1fb1da8c0d9fe3b2faeb932e"
+      ],
+      "raw_case_sha256s": {
+        "m776-float-left": "13a01a28b66af7b0b3c1aadcff2f64259a64843bcb245dc657757ebc1e8d39a7",
+        "m776-float-left-lookalike": "14c50c3c0b0f5c06a682c303f53eeaf96dd9aa8fae71b65163d042e00d2226a7",
+        "m776-float-right": "0098216f0a6d28165ceead80be31e47ad8f6eb1324dbc04fbb41be206f3c91ae",
+        "m776-float-token-separated": "ad4f36782a0ca7b6e09f76b8a653e49dc854eaf1a001f11896152c96e363a5aa",
+        "m776-local-size-empty": "af612e66160187b298fd85316cb52dfb6d6cf4ea7751049966d4cfbe1c10ea19",
+        "m776-local-size-invalid": "af612e66160187b298fd85316cb52dfb6d6cf4ea7751049966d4cfbe1c10ea19",
+        "m776-local-size-small": "16f9147a1e34760360afde09e94b631f9163e51db407feef3e8d01d7bfb84253",
+        "m776-local-size-square": "f043dd08e66881699f32283001538070731e52f192bf2a733751ae804b3bf9a2",
+        "m776-local-size-thumbnail": "cd163bf38e6a5f955c49d768f0e2eaa4d039452e8df0de97741142b47f60f4c9",
+        "m776-local-size-unquoted": "af612e66160187b298fd85316cb52dfb6d6cf4ea7751049966d4cfbe1c10ea19",
+        "m776-size-invalid": "c07075fe82f148939e432872ada75325191c9879e419f68d4aebc8c87ff89b05",
+        "m776-size-small-quoted": "c07075fe82f148939e432872ada75325191c9879e419f68d4aebc8c87ff89b05",
+        "m776-size-small-unquoted": "c07075fe82f148939e432872ada75325191c9879e419f68d4aebc8c87ff89b05",
+        "m776-size-thumbnail-quoted": "c07075fe82f148939e432872ada75325191c9879e419f68d4aebc8c87ff89b05",
+        "m776-source-double-quoted": "d95097d80ec115e77530cc069c2ead1d440bf24a64579376672101037a7b4f41",
+        "m776-source-single-quoted": "0c7dbbfe9522f281f07fa00acdc28a1ad639ea3370ea6236e3c180c7c68fd654",
+        "m776-width-doc-quoted-px": "bd1b1163d1f085aa5ed19a2da5513395c100be5b3aede9c8f7954d27bad914f0",
+        "m776-width-empty": "f0963a381d33117d85a65de2d7d22e0ac36909f51eb68fb476eb32d6ee108f5e",
+        "m776-width-percent": "8dc3425b609b4ca161e1ca86fac0afde861959a05246f732e20561b04560f4bd",
+        "m776-width-quoted-number": "30aeb3ffc8353a75b84ebfa01f18359fb0c8255fed4beeed86a9410b35e2631a",
+        "m776-width-unquoted-number": "c07075fe82f148939e432872ada75325191c9879e419f68d4aebc8c87ff89b05",
+        "m776-width-unquoted-px": "c07075fe82f148939e432872ada75325191c9879e419f68d4aebc8c87ff89b05",
+        "m806-center-double-token-separated": "3a9b7932cbeceb837f6a7f671bd385d214cb0cb89c15d9b7a55c8a15bb080233",
+        "m806-center-token-separated": "3179e3480eae1702a31efbd70563ba424b3cfeffccd0357aedca79bf06096a5b",
+        "m806-local-size-empty": "b075200166323e724125a4780a811a007dc594f1f05161d55e743146a76a2304",
+        "m806-local-size-invalid": "b075200166323e724125a4780a811a007dc594f1f05161d55e743146a76a2304",
+        "m806-local-size-small": "294093cd3f3078e18ff3240a7600212898334000fd191482474b3f87fe6867a9",
+        "m806-local-size-square": "8a2e59509ace031d9d8c3ecd8548f80f6869e50414a340d82e4d89fc37711aa0",
+        "m806-local-size-thumbnail": "2c25cff0498ca74204982eebf679fd1ad89779bb6eb60ea2317f77844eeb1e76",
+        "m806-local-size-unquoted": "b075200166323e724125a4780a811a007dc594f1f05161d55e743146a76a2304",
+        "m806-size-invalid": "bb214951a18e7b63226bcfb4c448135156819da973d30497b4241737cfd059fd",
+        "m806-size-small-quoted": "bb214951a18e7b63226bcfb4c448135156819da973d30497b4241737cfd059fd",
+        "m806-size-small-unquoted": "bb214951a18e7b63226bcfb4c448135156819da973d30497b4241737cfd059fd",
+        "m806-size-thumbnail-quoted": "bb214951a18e7b63226bcfb4c448135156819da973d30497b4241737cfd059fd",
+        "m806-source-double-quoted": "a7c0dd39e03ede112a109674ae13896bc2207ba9e91616b64d3ee96d01fdf853",
+        "m806-source-single-quoted": "30cda012e59ed49ce82904cc49c83296bb3024166b0a01f8bfaef36f6d76b007",
+        "m806-width-doc-quoted-px": "5f8a246dd8c711917aa454f3092b6a73bb861ca181fe111a02505b6d04b0b130",
+        "m806-width-empty": "4297045dfc1f3de69a951c169632188a57ca8755d9682d51fedd3f34dafdd7c3",
+        "m806-width-percent": "0a013d46e8bd008d2b95bb3918b758e75ae52aac72d21457624d9c18754aece5",
+        "m806-width-quoted-number": "036ff11d0a08568267eb9723bbf9aceb6f88b27e4de21e8c1bb5ced382882889",
+        "m806-width-unquoted-number": "bb214951a18e7b63226bcfb4c448135156819da973d30497b4241737cfd059fd",
+        "m806-width-unquoted-px": "bb214951a18e7b63226bcfb4c448135156819da973d30497b4241737cfd059fd"
+      }
+    },
     "E_ICON_SCOPE": {
       "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/icon-setting-v1/scoping-verdict.json",
       "sha256": "bb73af6a64011df8d87b0766032ae63c2cbdee4e0cb845b62bdb2e2bea38cd15"
@@ -873,15 +930,22 @@
         {
           "case_id": "M776_UNFROZEN_ARGUMENT_MATRIX",
           "acceptance": "Extend unqualified width, size alias, quoted filename, and remaining float spelling behavior beyond the frozen G06 and sealed image-head boundary cases.",
-          "classification": "blocked_evidence",
-          "reason": "The image-head spacing, tab, NBSP, and lookalike boundary is now sealed separately. The remaining proposed grammar still lacks the required two positive and two negative live boundary observations.",
-          "source_paths": [],
-          "existing_tests": [],
-          "evidence_ids": ["E_G06", "E_V7_CORPUS"],
-          "missing_evidence": [
-            "two stopping controls for every remaining width, size, quote, and float token rule"
+          "classification": "source_ready",
+          "reason": "The sealed 2026-09-13 anonymous PagePreview matrix adds quoted and unquoted width, external and local size, quoted-source, and float/center token boundaries for both f=image and =image. The merged FTML pin owns the boundary and one public Deepwell preview test exact-compares all 42 retained live cases.",
+          "source_paths": [
+            "deepwell/Cargo.toml",
+            "deepwell/Cargo.lock",
+            "deepwell/tests/media.rs",
+            "install/local/wikidot-verification/artifacts/m776-m806-image-argument-boundary-live.jsonl",
+            "install/local/wikidot-verification/fixtures/syntax-differential/m776-m806-image-argument-boundary-cases.jsonl",
+            "install/local/wikidot-verification/tests/m776-m806-image-argument-boundary-evidence.test.mjs"
           ],
-          "next_command_ids": []
+          "existing_tests": [
+            "deepwell/tests/media.rs::m776_m806_image_argument_boundary_matches_retained_live_preview",
+            "install/local/wikidot-verification/tests/m776-m806-image-argument-boundary-evidence.test.mjs"
+          ],
+          "evidence_ids": ["E_OPEN43_IMAGE_ARGUMENT_BOUNDARY_20260913"],
+          "next_command_ids": ["C_DEEPWELL_MEDIA"]
         },
         {
           "case_id": "M776_BROWSER_GEOMETRY_AND_NETWORK",
@@ -971,15 +1035,22 @@
         {
           "case_id": "M806_UNFROZEN_ARGUMENT_MATRIX",
           "acceptance": "Extend centered-image handling to unqualified width, size aliases, quoted filename, and remaining alignment-token forms beyond the sealed image-head boundary cases.",
-          "classification": "blocked_evidence",
-          "reason": "The image-head spacing, tab, NBSP, and lookalike boundary is now sealed separately. The remaining proposed grammar still lacks the required live boundary controls.",
-          "source_paths": [],
-          "existing_tests": [],
-          "evidence_ids": ["E_G61", "E_V7_CORPUS"],
-          "missing_evidence": [
-            "two stopping controls for every remaining width, size, quote, and centered token rule"
+          "classification": "source_ready",
+          "reason": "The sealed 2026-09-13 anonymous PagePreview matrix adds quoted and unquoted width, external and local size, quoted-source, and centered token boundaries for =image. The merged FTML pin owns the boundary and one public Deepwell preview test exact-compares all 42 retained live cases.",
+          "source_paths": [
+            "deepwell/Cargo.toml",
+            "deepwell/Cargo.lock",
+            "deepwell/tests/media.rs",
+            "install/local/wikidot-verification/artifacts/m776-m806-image-argument-boundary-live.jsonl",
+            "install/local/wikidot-verification/fixtures/syntax-differential/m776-m806-image-argument-boundary-cases.jsonl",
+            "install/local/wikidot-verification/tests/m776-m806-image-argument-boundary-evidence.test.mjs"
           ],
-          "next_command_ids": []
+          "existing_tests": [
+            "deepwell/tests/media.rs::m776_m806_image_argument_boundary_matches_retained_live_preview",
+            "install/local/wikidot-verification/tests/m776-m806-image-argument-boundary-evidence.test.mjs"
+          ],
+          "evidence_ids": ["E_OPEN43_IMAGE_ARGUMENT_BOUNDARY_20260913"],
+          "next_command_ids": ["C_DEEPWELL_MEDIA"]
         },
         {
           "case_id": "M806_BROWSER_GEOMETRY_AND_NETWORK",
@@ -2020,10 +2091,10 @@
     "issue_count": 7,
     "subrow_count": 48,
     "classification_counts": {
-      "source_ready": 24,
+      "source_ready": 26,
       "needs_source": 0,
       "candidate_required": 11,
-      "blocked_evidence": 13
+      "blocked_evidence": 11
     },
     "duplicate_case_ids": 0,
     "unknown_classifications": 0,

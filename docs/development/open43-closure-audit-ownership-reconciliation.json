@@ -372,15 +372,15 @@
     },
     {
       "path": "docs/development/open43-m-closure-audit.json",
-      "sha256": "bb3d1889569d1f9e67b71448c6527f2d66bc5d3e9bf431952ccb7c90de50336c",
+      "sha256": "c7cdd9508da93da831cfad0fc90994b72647647f5252219084493eee85abeb56",
       "source_revision": "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
       "issue_count": 7,
       "case_count": 48,
       "classification_counts": {
-        "source_ready": 24,
+        "source_ready": 26,
         "needs_source": 0,
         "candidate_required": 11,
-        "blocked_evidence": 13
+        "blocked_evidence": 11
       },
       "issue_summaries": [
         {
@@ -397,20 +397,20 @@
           "issue": 776,
           "case_count": 5,
           "classification_counts": {
-            "source_ready": 3,
+            "source_ready": 4,
             "needs_source": 0,
             "candidate_required": 1,
-            "blocked_evidence": 1
+            "blocked_evidence": 0
           }
         },
         {
           "issue": 806,
           "case_count": 5,
           "classification_counts": {
-            "source_ready": 3,
+            "source_ready": 4,
             "needs_source": 0,
             "candidate_required": 1,
-            "blocked_evidence": 1
+            "blocked_evidence": 0
           }
         },
         {
@@ -573,10 +573,10 @@
     "unknown_classifications": [],
     "closure_claims": 0,
     "classification_counts": {
-      "source_ready": 149,
+      "source_ready": 151,
       "needs_source": 0,
       "candidate_required": 85,
-      "blocked_evidence": 51
+      "blocked_evidence": 49
     }
   },
   "validation": {
@@ -586,7 +586,7 @@
       "command": "node install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs --root . --output docs/development/compatibility-surface-inventory.json",
       "audit_count": 7,
       "case_count": 285,
-      "blocked_routing_count": 51,
+      "blocked_routing_count": 49,
       "authoritative_manifest_count": 3,
       "open_issue_snapshot_count": 43,
       "nontracking_open_issue_count": 42,
