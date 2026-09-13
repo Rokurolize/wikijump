@@ -21,6 +21,7 @@
 export const buildPublicPreloadData = (response, userSession, locales) => ({
   site: response.site,
   site_settings: response.site_settings,
+  promoted_sites: response.promoted_sites,
   site_file_domain: response.site_file_domain,
   license_name: response.license_name,
   license_url: response.license_url,

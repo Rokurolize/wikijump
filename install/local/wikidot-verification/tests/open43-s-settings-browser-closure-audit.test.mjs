@@ -76,6 +76,13 @@ test("settings and browser closure audit is complete without promoting candidate
   assert.equal(rows.every(({ classification }) => allowed.has(classification)), true);
   const commandIds = new Set(Object.keys(audit.central_commands));
   const evidenceIds = new Set(Object.keys(audit.evidence_registry));
+  const s757Evidence = audit.evidence_registry.E_S757_TOOLBAR_PROMOTION_LIVE_20260913;
+  assert.ok(s757Evidence);
+  assert.equal(await sha256(s757Evidence.path), s757Evidence.sha256);
+  const s757Artifact = await json(s757Evidence.path);
+  assert.equal(s757Artifact.schema, "wikijump.s757.toolbar_promotion_live.v1");
+  assert.equal(s757Artifact.credentials_persisted, false);
+  assert.equal(s757Artifact.site_kind, "campaign-owned-disposable-wikidot-site");
   for (const row of rows) {
     for (const evidenceId of row.evidence_ids ?? []) {
       assert.equal(

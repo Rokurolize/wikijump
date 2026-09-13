@@ -1,0 +1,2 @@
+ALTER TABLE site
+    ADD COLUMN promote_on_other_sites BOOLEAN NOT NULL DEFAULT TRUE;

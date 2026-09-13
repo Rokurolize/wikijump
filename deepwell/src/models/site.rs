@@ -52,6 +52,7 @@ pub struct Model {
     pub google_analytics_profile: Option<String>,
     pub show_top_toolbar: bool,
     pub show_bottom_toolbar: bool,
+    pub promote_on_other_sites: bool,
     pub membership_by_application: bool,
     pub membership_by_password: bool,
     #[sea_orm(column_type = "Text", nullable)]

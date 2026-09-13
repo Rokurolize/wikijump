@@ -2,14 +2,26 @@
   "schema": "wikijump.open43.s_settings_browser_closure_audit.v1",
   "generated_on": "2026-08-13",
   "scope": {
-    "issues": [610, 689, 690, 754, 755, 757, 758, 822, 1046],
+    "issues": [
+      610,
+      689,
+      690,
+      754,
+      755,
+      757,
+      758,
+      822,
+      1046
+    ],
     "issue_count": 9,
     "purpose": "Classify every independently decidable settings and browser acceptance requirement without treating source inspection, an unexecuted test, the diagnostic standing runtime, or a settled screenshot as a pass."
   },
   "source_identity": {
     "lane_base_commit": "27e11850e80c532b90cc025e30196d2cadfaa5ea",
     "lane_base_tree": "dfe703fc40ff7f667aba07e9f11d185e3c268bfe",
-    "lane_source_commits": ["69111a70c6684eab1193b2f706445e27d6960345"],
+    "lane_source_commits": [
+      "69111a70c6684eab1193b2f706445e27d6960345"
+    ],
     "lane_source_tree_before_audit": "b377f707d88aa51405230edb375996486f33d399",
     "ftml_revision": "62ebba4efda1f10e82363c23c925061fbe939e49",
     "deepwell_cargo_lock_sha256": "a3c857b33911bd3420f773057fa08e8693170fd3047e6ea7ff3e127b77bb4dd9",
@@ -30,7 +42,9 @@
   "source_residual_lane": {
     "base_commit": "a4d162165a2c369a1d4c6f7738afae21333dd718",
     "base_tree": "e47c1d4da581c171147e411034878ef0e9c12725",
-    "source_commits": ["89dc1cd7b702915e6d7007bc9e3bee67342d5f28"],
+    "source_commits": [
+      "89dc1cd7b702915e6d7007bc9e3bee67342d5f28"
+    ],
     "referent_table_path": "docs/development/referent-table-open43-s-settings-source-residual-g5.md",
     "referent_table_sha256": "1783c9398f029816b1be878c7a92c19a6d0b2caff60c78bbe12a55025a92cb6d",
     "seam_map_path": "docs/development/open43-s-settings-source-residual-seam-map.md",
@@ -65,32 +79,47 @@
     {
       "path": "docs/wikidot-specifications/specifications/platform/web-statistics.md",
       "sha256": "a4f49e9bdeb9757fd3e7075016ac07e935fc1a2d8e072dacbc6defe835c84b74",
-      "issues": [754]
+      "issues": [
+        754
+      ]
     },
     {
       "path": "docs/wikidot-specifications/specifications/platform/site-themes.md",
       "sha256": "129f3615de9adb0245216a0d3cbd2a23b15c11965593b13f691bf9a7dfe80de4",
-      "issues": [755]
+      "issues": [
+        755
+      ]
     },
     {
       "path": "docs/wikidot-specifications/specifications/platform/site-navigation.md",
       "sha256": "19ead4b56b1baa7f1de21b649588e84330919e2148e1609dbf2f633f3ab9953e",
-      "issues": [610, 757]
+      "issues": [
+        610,
+        757
+      ]
     },
     {
       "path": "docs/wikidot-specifications/specifications/site-structure/content-pages.md",
       "sha256": "7d0c580dfa30ae947310aab9700b8a262d78de12a826e4c24cd018560bbfcf29",
-      "issues": [690, 758, 1046]
+      "issues": [
+        690,
+        758,
+        1046
+      ]
     },
     {
       "path": "docs/wikidot-specifications/specifications/site-structure/page-tags.md",
       "sha256": "3dee487b1509e41aed6770eefca2615dc35b269b1f22bfe5448b8ab032911b74",
-      "issues": [822]
+      "issues": [
+        822
+      ]
     },
     {
       "path": "docs/wikidot-specifications/specifications/wiki-syntax/syntax-layout.md",
       "sha256": "b155337a4f68ec1d222c7ea10036192bc06430c9b7bb5748558a9cff11a425e4",
-      "issues": [689]
+      "issues": [
+        689
+      ]
     }
   ],
   "github_issue_inputs": [
@@ -178,6 +207,10 @@
       "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/admin-panels-v3/observations.json",
       "sha256": "c1d5e0ccebe29384487a9d0c7a9fe0962d2a41a26569c5c084b65f23e7ef1299"
     },
+    "E_S757_TOOLBAR_PROMOTION_LIVE_20260913": {
+      "path": "install/local/wikidot-verification/artifacts/s757-toolbar-promotion-live-20260913.json",
+      "sha256": "c554f2a32c998d11bd973a9a52991fae3f3fe89847bbcecb635deb64a3c337ac"
+    },
     "E_AUTONUMBER_SCOPE": {
       "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/autonumbering-setting-v1/scoping-verdict.json",
       "sha256": "60bf8bb7141c98875b6330b7857d9347af295e48857bab2dde8777a4ae50b1f7"
@@ -209,13 +242,21 @@
     "E_BROWSER_LIVE_CORRECTIONS": {
       "path": "docs/development/open43-s-browser-case-manifest.json",
       "sha256": "2fb99409eca887d06f351f2f2b915714d6c86000b3a903e144c3663b62d2adc5",
-      "embedded_cases": ["B610_CURRENT_LIVE_CHROME", "B610_CURRENT_LIVE_TOPBAR_LABELS"]
+      "embedded_cases": [
+        "B610_CURRENT_LIVE_CHROME",
+        "B610_CURRENT_LIVE_TOPBAR_LABELS"
+      ]
     }
   },
   "classification_contract": {
     "referent_table_path": "docs/development/referent-table-open43-s-settings-browser-closure-audit.md",
     "referent_table_sha256": "93b6f784adc2190e6664fd75be00980a4e944ba7de803db572dcffd56bb7ff00",
-    "allowed": ["source_ready", "needs_source", "candidate_required", "blocked_evidence"],
+    "allowed": [
+      "source_ready",
+      "needs_source",
+      "candidate_required",
+      "blocked_evidence"
+    ],
     "source_ready_is_not_pass": true,
     "candidate_required_is_not_pass": true,
     "blocked_evidence_is_not_wontfix": true
@@ -312,73 +353,134 @@
           "acceptance": "Emit search-top-box, login-status, header-extra-div-1 through 3, and extrac-div-1 through 3 in the current live direct-child order.",
           "classification": "source_ready",
           "reason": "The Framerail shell owns the legacy extension nodes and source/initial-no-script tests cover their direct placement. This is source readiness, not a final-browser verdict.",
-          "source_paths": ["framerail/src/lib/sigma-esque/wikidot.svelte", "framerail/src/routes/+layout.svelte"],
-          "existing_tests": ["framerail/tests/wikidot-static-styles.test.ts::the Wikidot header exposes the three legacy extension hooks in source order", "framerail/tests/wikidot-chrome.spec.ts::Wikidot header extension hooks exist at the initial no-script paint"],
-          "evidence_ids": ["E_BROWSER_LIVE_CORRECTIONS"],
-          "next_command_ids": ["C_NODE_BROWSER_STATIC"]
+          "source_paths": [
+            "framerail/src/lib/sigma-esque/wikidot.svelte",
+            "framerail/src/routes/+layout.svelte"
+          ],
+          "existing_tests": [
+            "framerail/tests/wikidot-static-styles.test.ts::the Wikidot header exposes the three legacy extension hooks in source order",
+            "framerail/tests/wikidot-chrome.spec.ts::Wikidot header extension hooks exist at the initial no-script paint"
+          ],
+          "evidence_ids": [
+            "E_BROWSER_LIVE_CORRECTIONS"
+          ],
+          "next_command_ids": [
+            "C_NODE_BROWSER_STATIC"
+          ]
         },
         {
           "case_id": "B610_TOPNAV_CURRENT_LIVE_SHAPE",
           "acceptance": "Preserve current live dropdown parent anchors and direct top-navigation list structure instead of acting on the superseded plain-label claim.",
           "classification": "source_ready",
           "reason": "The 2026-08-09 live correction proves li > a[href='javascript:;'] + ul. No source removal is warranted; final DOM and geometry remain candidate work.",
-          "source_paths": ["docs/development/open43-s-browser-case-manifest.json", "framerail/src/routes/+layout.svelte"],
+          "source_paths": [
+            "docs/development/open43-s-browser-case-manifest.json",
+            "framerail/src/routes/+layout.svelte"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_BROWSER_LIVE_CORRECTIONS"],
-          "next_command_ids": ["C_BROWSER_PARITY_CANDIDATE"]
+          "evidence_ids": [
+            "E_BROWSER_LIVE_CORRECTIONS"
+          ],
+          "next_command_ids": [
+            "C_BROWSER_PARITY_CANDIDATE"
+          ]
         },
         {
           "case_id": "B610_FRAGMENT_DOUBLE_HASH_PUBLIC_REGRESSION",
           "acceptance": "Render the evidenced sidebar closer as exact href=\"##\" through public preview and saved-page seams without color-marker rewriting.",
           "classification": "source_ready",
           "reason": "One public integration test now renders the exact authored [[a href=\"##\"]] input through PagePreview, saves it as the latest nav:side revision, rerenders the dependent home page, and reads the exact href through page_view. Existing literal-region ownership is sufficient, so no production renderer rewrite was added. The lane did not run Cargo; source_ready remains subject to the exact central command.",
-          "source_paths": ["deepwell/src/services/render/service.rs", "deepwell/src/services/render/compat/wikidot_inline_markers.rs", "deepwell/tests/page.rs"],
-          "existing_tests": ["deepwell/tests/page.rs::wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page"],
-          "evidence_ids": ["E_610_FRAGMENT_METADATA", "E_BROWSER_LIVE_CORRECTIONS"],
-          "implementation_commits": ["89dc1cd7b702915e6d7007bc9e3bee67342d5f28"],
-          "next_command_ids": ["C_DEEPWELL_FRAGMENT_HREF"]
+          "source_paths": [
+            "deepwell/src/services/render/service.rs",
+            "deepwell/src/services/render/compat/wikidot_inline_markers.rs",
+            "deepwell/tests/page.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/page.rs::wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page"
+          ],
+          "evidence_ids": [
+            "E_610_FRAGMENT_METADATA",
+            "E_BROWSER_LIVE_CORRECTIONS"
+          ],
+          "implementation_commits": [
+            "89dc1cd7b702915e6d7007bc9e3bee67342d5f28"
+          ],
+          "next_command_ids": [
+            "C_DEEPWELL_FRAGMENT_HREF"
+          ]
         },
         {
           "case_id": "B610_CHROME_INITIAL",
           "acceptance": "Compare desktop, 767 px, and 479 px header, top-bar, sidebar, icons, stylesheet declarations, failures, and visible state at the immediate DOMContentLoaded interval.",
           "classification": "candidate_required",
           "reason": "The initial shell depends on the exact compiled navigation, CSS assets, images, viewport, runtime identity, and browser profile.",
-          "source_paths": ["install/local/wikidot-verification/src/standing-browser-parity-observation.mjs"],
-          "existing_tests": ["install/local/wikidot-verification/tests/standing-browser-parity-observation.test.mjs"],
-          "evidence_ids": ["E_BROWSER_LIVE_CORRECTIONS"],
-          "depends_on": ["B610_FRAGMENT_DOUBLE_HASH_PUBLIC_REGRESSION"],
-          "next_command_ids": ["C_BROWSER_PARITY_CANDIDATE"]
+          "source_paths": [
+            "install/local/wikidot-verification/src/standing-browser-parity-observation.mjs"
+          ],
+          "existing_tests": [
+            "install/local/wikidot-verification/tests/standing-browser-parity-observation.test.mjs"
+          ],
+          "evidence_ids": [
+            "E_BROWSER_LIVE_CORRECTIONS"
+          ],
+          "depends_on": [
+            "B610_FRAGMENT_DOUBLE_HASH_PUBLIC_REGRESSION"
+          ],
+          "next_command_ids": [
+            "C_BROWSER_PARITY_CANDIDATE"
+          ]
         },
         {
           "case_id": "B610_CHROME_SETTLED",
           "acceptance": "Compare desktop hover and both mobile open/close hit targets, focus, transition-complete geometry, images, CSP, mixed content, requests, and console state after the completion policy settles.",
           "classification": "candidate_required",
           "reason": "A settled screenshot or HTTP 200 does not prove hover, :target transitions, natural dimensions, active cascade, or console/network health.",
-          "source_paths": ["install/local/wikidot-verification/src/standing-browser-parity-observation.mjs"],
-          "existing_tests": ["install/local/wikidot-verification/tests/standing-browser-parity-contract.test.mjs"],
-          "evidence_ids": ["E_BROWSER_LIVE_CORRECTIONS"],
-          "depends_on": ["B610_FRAGMENT_DOUBLE_HASH_PUBLIC_REGRESSION"],
-          "next_command_ids": ["C_BROWSER_PARITY_CANDIDATE"]
+          "source_paths": [
+            "install/local/wikidot-verification/src/standing-browser-parity-observation.mjs"
+          ],
+          "existing_tests": [
+            "install/local/wikidot-verification/tests/standing-browser-parity-contract.test.mjs"
+          ],
+          "evidence_ids": [
+            "E_BROWSER_LIVE_CORRECTIONS"
+          ],
+          "depends_on": [
+            "B610_FRAGMENT_DOUBLE_HASH_PUBLIC_REGRESSION"
+          ],
+          "next_command_ids": [
+            "C_BROWSER_PARITY_CANDIDATE"
+          ]
         },
         {
           "case_id": "B610_FAVICON_ARTICLE_SIDEBAR_THEME_NETWORK",
           "acceptance": "Load the configured favicon, 19 article images, eight sidebar images, and two theme backgrounds with exact final URLs, MIME, natural dimensions, CSP, DNS, and TLS results.",
           "classification": "candidate_required",
           "reason": "The file bytes, site-icon state, cross-site theme localization, gateway, and browser resource policy exist only in the exact final candidate. Media source gaps remain tracked by the media closure audit.",
-          "source_paths": ["framerail/src/routes/+layout.svelte", "docs/development/open43-m-closure-audit.json"],
+          "source_paths": [
+            "framerail/src/routes/+layout.svelte",
+            "docs/development/open43-m-closure-audit.json"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_BROWSER_LIVE_CORRECTIONS"],
-          "next_command_ids": ["C_BROWSER_PARITY_CANDIDATE"]
+          "evidence_ids": [
+            "E_BROWSER_LIVE_CORRECTIONS"
+          ],
+          "next_command_ids": [
+            "C_BROWSER_PARITY_CANDIDATE"
+          ]
         },
         {
           "case_id": "B610_EXACT_SERVED_IDENTITIES",
           "acceptance": "Bind HTTPS response, gateway and upstream images, Wikijump tree, FTML pin, compiled generator, CSS assets, migration set, fixture state, and browser artifacts to one final candidate.",
           "classification": "candidate_required",
           "reason": "The diagnostic standing predates this lane and cannot supply an acceptance identity.",
-          "source_paths": ["docs/deployment/runtime-drift-policy.md"],
+          "source_paths": [
+            "docs/deployment/runtime-drift-policy.md"
+          ],
           "existing_tests": [],
           "evidence_ids": [],
-          "next_command_ids": ["C_BROWSER_PARITY_CANDIDATE"]
+          "next_command_ids": [
+            "C_BROWSER_PARITY_CANDIDATE"
+          ]
         }
       ]
     },
@@ -391,60 +493,107 @@
           "acceptance": "Consume FTML typed tabview requirements and emit the live yui-navset, yui-nav, selected item, yui-content, panel order, IDs, and initial visibility.",
           "classification": "source_ready",
           "reason": "The current FTML pin, Deepwell restoration tests, and Framerail initial no-script browser test cover the source seam. The old standing fixture was stale.",
-          "source_paths": ["deepwell/src/services/render/service.rs", "framerail/src/lib/wikidot/wikidot-tabviews.ts"],
-          "existing_tests": ["deepwell/src/services/render/service/tests.rs::restores_typed_wikidot_tabview_resource_requirements", "framerail/tests/wikidot-tabview.spec.ts::Wikidot-compatible tabviews are complete at the initial no-script paint"],
-          "evidence_ids": ["E_689_STALE_TABVIEW"],
-          "next_command_ids": ["C_DEEPWELL_TABVIEW", "C_NODE_BROWSER_STATIC"]
+          "source_paths": [
+            "deepwell/src/services/render/service.rs",
+            "framerail/src/lib/wikidot/wikidot-tabviews.ts"
+          ],
+          "existing_tests": [
+            "deepwell/src/services/render/service/tests.rs::restores_typed_wikidot_tabview_resource_requirements",
+            "framerail/tests/wikidot-tabview.spec.ts::Wikidot-compatible tabviews are complete at the initial no-script paint"
+          ],
+          "evidence_ids": [
+            "E_689_STALE_TABVIEW"
+          ],
+          "next_command_ids": [
+            "C_DEEPWELL_TABVIEW",
+            "C_NODE_BROWSER_STATIC"
+          ]
         },
         {
           "case_id": "B689_INTERACTION_SOURCE",
           "acceptance": "Switch panels on click and Enter while preserving focus, live selected/title state, inert ArrowRight and Space behavior, and no inline-script/CSP error.",
           "classification": "source_ready",
           "reason": "The Framerail click handler and Playwright source test cover the observed interactions without adding modern keyboard behavior absent from the evidence.",
-          "source_paths": ["framerail/src/lib/wikidot/wikidot-tabviews.ts"],
-          "existing_tests": ["framerail/tests/wikidot-tabview.spec.ts::Wikidot-compatible tabviews switch panels without inline script execution"],
-          "evidence_ids": ["E_689_STALE_TABVIEW"],
-          "next_command_ids": ["C_NODE_BROWSER_STATIC"]
+          "source_paths": [
+            "framerail/src/lib/wikidot/wikidot-tabviews.ts"
+          ],
+          "existing_tests": [
+            "framerail/tests/wikidot-tabview.spec.ts::Wikidot-compatible tabviews switch panels without inline script execution"
+          ],
+          "evidence_ids": [
+            "E_689_STALE_TABVIEW"
+          ],
+          "next_command_ids": [
+            "C_NODE_BROWSER_STATIC"
+          ]
         },
         {
           "case_id": "B689_TABVIEW_INITIAL",
           "acceptance": "Capture static tabview DOM, panel visibility, computed styles, fonts, resource state, and geometry at immediate DOMContentLoaded on theme:basalt and SCP-8980.",
           "classification": "candidate_required",
           "reason": "The initial state depends on recompiled page bodies and immutable CSS resources from the final candidate.",
-          "source_paths": ["install/local/wikidot-verification/src/standing-browser-canaries.mjs"],
-          "existing_tests": ["install/local/wikidot-verification/tests/standing-browser-canaries.test.mjs"],
-          "evidence_ids": ["E_689_STALE_TABVIEW"],
-          "next_command_ids": ["C_BROWSER_PARITY_CANDIDATE"]
+          "source_paths": [
+            "install/local/wikidot-verification/src/standing-browser-canaries.mjs"
+          ],
+          "existing_tests": [
+            "install/local/wikidot-verification/tests/standing-browser-canaries.test.mjs"
+          ],
+          "evidence_ids": [
+            "E_689_STALE_TABVIEW"
+          ],
+          "next_command_ids": [
+            "C_BROWSER_PARITY_CANDIDATE"
+          ]
         },
         {
           "case_id": "B689_TABVIEW_SETTLED",
           "acceptance": "Capture settled DOM, computed style, screenshot, selected changes, focus, click and keyboard results without widening the 8 px position or 12 px size thresholds.",
           "classification": "candidate_required",
           "reason": "Only an exact recompiled candidate can distinguish fixed source from stale compiled state and CSS geometry.",
-          "source_paths": ["install/local/wikidot-verification/src/standing-browser-parity-contract.mjs"],
-          "existing_tests": ["install/local/wikidot-verification/tests/standing-browser-parity-contract.test.mjs"],
-          "evidence_ids": ["E_689_STALE_TABVIEW"],
-          "next_command_ids": ["C_BROWSER_PARITY_CANDIDATE"]
+          "source_paths": [
+            "install/local/wikidot-verification/src/standing-browser-parity-contract.mjs"
+          ],
+          "existing_tests": [
+            "install/local/wikidot-verification/tests/standing-browser-parity-contract.test.mjs"
+          ],
+          "evidence_ids": [
+            "E_689_STALE_TABVIEW"
+          ],
+          "next_command_ids": [
+            "C_BROWSER_PARITY_CANDIDATE"
+          ]
         },
         {
           "case_id": "B689_THEME_BASALT_GEOMETRY",
           "acceptance": "Match live .yui-navset, nav row, selected tab, and visible panel geometry for theme:basalt with the fixed denominator and thresholds.",
           "classification": "candidate_required",
           "reason": "The issue's original measurements bind obsolete source and cannot close current source.",
-          "source_paths": ["install/local/wikidot-verification/src/standing-browser-canaries.mjs"],
+          "source_paths": [
+            "install/local/wikidot-verification/src/standing-browser-canaries.mjs"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_689_STALE_TABVIEW"],
-          "next_command_ids": ["C_BROWSER_PARITY_CANDIDATE"]
+          "evidence_ids": [
+            "E_689_STALE_TABVIEW"
+          ],
+          "next_command_ids": [
+            "C_BROWSER_PARITY_CANDIDATE"
+          ]
         },
         {
           "case_id": "B689_SCP8980_AND_NAVIGATION_LIFECYCLE",
           "acceptance": "Verify SCP-8980 tabview DOM and the documented return-to-first-tab behavior after navigation and back/forward.",
           "classification": "candidate_required",
           "reason": "The current focused fixture proves local switching but not the real page's recompiled body or navigation lifecycle.",
-          "source_paths": ["framerail/src/lib/wikidot/wikidot-tabviews.ts"],
+          "source_paths": [
+            "framerail/src/lib/wikidot/wikidot-tabviews.ts"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_689_STALE_TABVIEW"],
-          "next_command_ids": ["C_BROWSER_PARITY_CANDIDATE"]
+          "evidence_ids": [
+            "E_689_STALE_TABVIEW"
+          ],
+          "next_command_ids": [
+            "C_BROWSER_PARITY_CANDIDATE"
+          ]
         }
       ]
     },
@@ -457,71 +606,125 @@
           "acceptance": "Return one ordered first divergent element with stable fingerprints, style-before-geometry classification, bounded alignment, and incomplete-image gating.",
           "classification": "source_ready",
           "reason": "The verifier implementation and generic fixtures cover identical, missing, extra, style-only, incomplete-image, repeated-name, and volatile tabview-ID cases without page recognition or threshold changes.",
-          "source_paths": ["install/local/wikidot-verification/src/first-divergent-element.mjs", "install/local/wikidot-verification/src/standing-browser-parity-observation.mjs"],
-          "existing_tests": ["install/local/wikidot-verification/tests/first-divergent-element.test.mjs"],
-          "evidence_ids": ["E_690_FIRST_DIVERGENCE"],
-          "next_command_ids": ["C_NODE_FIRST_DIVERGENCE"]
+          "source_paths": [
+            "install/local/wikidot-verification/src/first-divergent-element.mjs",
+            "install/local/wikidot-verification/src/standing-browser-parity-observation.mjs"
+          ],
+          "existing_tests": [
+            "install/local/wikidot-verification/tests/first-divergent-element.test.mjs"
+          ],
+          "evidence_ids": [
+            "E_690_FIRST_DIVERGENCE"
+          ],
+          "next_command_ids": [
+            "C_NODE_FIRST_DIVERGENCE"
+          ]
         },
         {
           "case_id": "B690_PLAIN_FULL_CONTENT_INCLUDE",
           "acceptance": "Execute child includes in plain ListPages selected content through the public saved-page seam while preserving numbered-section literal behavior, include budgets, backlinks, and selected-page ownership.",
           "classification": "source_ready",
           "reason": "Commit 2edfc82b1 is an ancestor of the lane base and public page tests cover execution, non-recursive numbered sections, shared limits, backlinks, and row-owned files. No browser-specific rewrite is used.",
-          "source_paths": ["deepwell/src/services/render/list_pages/rendering/selected_content.rs", "deepwell/src/services/render/list_pages/rendering.rs"],
-          "existing_tests": ["deepwell/tests/page.rs::listpages_plain_content_executes_selected_page_includes_only", "deepwell/tests/page.rs::listpages_plain_content_shares_the_outer_include_budget"],
-          "evidence_ids": ["E_690_FIRST_DIVERGENCE"],
-          "next_command_ids": ["C_DEEPWELL_SELECTED_CONTENT"]
+          "source_paths": [
+            "deepwell/src/services/render/list_pages/rendering/selected_content.rs",
+            "deepwell/src/services/render/list_pages/rendering.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/page.rs::listpages_plain_content_executes_selected_page_includes_only",
+            "deepwell/tests/page.rs::listpages_plain_content_shares_the_outer_include_budget"
+          ],
+          "evidence_ids": [
+            "E_690_FIRST_DIVERGENCE"
+          ],
+          "next_command_ids": [
+            "C_DEEPWELL_SELECTED_CONTENT"
+          ]
         },
         {
           "case_id": "B690_THEME_PREVIEWER_FAIL_CLOSED",
           "acceptance": "Keep unsupported ThemePreviewer output in the frozen unavailable state rather than adding a false theme gallery or external authority.",
           "classification": "source_ready",
           "reason": "The site utility runtime module uses the established unavailable output through public preview. It is not treated as proof of an active theme previewer.",
-          "source_paths": ["deepwell/src/services/render/runtime_modules.rs", "docs/development/open43-a-utilities-case-manifest.json"],
-          "existing_tests": ["deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"],
+          "source_paths": [
+            "deepwell/src/services/render/runtime_modules.rs",
+            "docs/development/open43-a-utilities-case-manifest.json"
+          ],
+          "existing_tests": [
+            "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module"
+          ],
           "evidence_ids": [],
-          "next_command_ids": ["C_DEEPWELL_UTILITIES"]
+          "next_command_ids": [
+            "C_DEEPWELL_UTILITIES"
+          ]
         },
         {
           "case_id": "B690_GEOMETRY_INITIAL",
           "acceptance": "Capture ordered #page-content traces for SCP-744, SCP-2117, SCP-5516, SCP-8980, and theme:basalt at immediate DOMContentLoaded with fixed source, viewport, denominator, and resource state.",
           "classification": "candidate_required",
           "reason": "The diagnostic standing predates the include fix and current FTML pin; its first divergence cannot be an acceptance verdict.",
-          "source_paths": ["install/local/wikidot-verification/src/standing-browser-canaries.mjs"],
-          "existing_tests": ["install/local/wikidot-verification/tests/standing-browser-canaries.test.mjs"],
-          "evidence_ids": ["E_690_FIRST_DIVERGENCE"],
-          "next_command_ids": ["C_BROWSER_PARITY_CANDIDATE"]
+          "source_paths": [
+            "install/local/wikidot-verification/src/standing-browser-canaries.mjs"
+          ],
+          "existing_tests": [
+            "install/local/wikidot-verification/tests/standing-browser-canaries.test.mjs"
+          ],
+          "evidence_ids": [
+            "E_690_FIRST_DIVERGENCE"
+          ],
+          "next_command_ids": [
+            "C_BROWSER_PARITY_CANDIDATE"
+          ]
         },
         {
           "case_id": "B690_GEOMETRY_SETTLED",
           "acceptance": "Capture the same ordered traces after fonts, styles, and images settle and classify the first causal family before comparing total height.",
           "classification": "candidate_required",
           "reason": "A total-height or screenshot match cannot waive a style, missing-node, or initial-paint divergence.",
-          "source_paths": ["install/local/wikidot-verification/src/standing-browser-parity-observation.mjs"],
-          "existing_tests": ["install/local/wikidot-verification/tests/standing-browser-parity-observation.test.mjs"],
-          "evidence_ids": ["E_690_FIRST_DIVERGENCE"],
-          "next_command_ids": ["C_BROWSER_PARITY_CANDIDATE"]
+          "source_paths": [
+            "install/local/wikidot-verification/src/standing-browser-parity-observation.mjs"
+          ],
+          "existing_tests": [
+            "install/local/wikidot-verification/tests/standing-browser-parity-observation.test.mjs"
+          ],
+          "evidence_ids": [
+            "E_690_FIRST_DIVERGENCE"
+          ],
+          "next_command_ids": [
+            "C_BROWSER_PARITY_CANDIDATE"
+          ]
         },
         {
           "case_id": "B690_FIXED_SIX_PAGE_DENOMINATOR",
           "acceptance": "Run the complete six-page comparison against one sealed live reference, canary set, viewport, fonts, images, collapsed state, and tabview initial state.",
           "classification": "candidate_required",
           "reason": "The denominator and candidate identity must not move between cause isolation and acceptance.",
-          "source_paths": ["docs/development/open43-s-browser-case-manifest.json"],
+          "source_paths": [
+            "docs/development/open43-s-browser-case-manifest.json"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_690_FIRST_DIVERGENCE"],
-          "next_command_ids": ["C_BROWSER_PARITY_CANDIDATE"]
+          "evidence_ids": [
+            "E_690_FIRST_DIVERGENCE"
+          ],
+          "next_command_ids": [
+            "C_BROWSER_PARITY_CANDIDATE"
+          ]
         },
         {
           "case_id": "B690_PILOT_SCALE_COMPARE",
           "acceptance": "Rerun the unchanged first-divergence contract at pilot scale after the six-page causal families are terminal.",
           "classification": "candidate_required",
           "reason": "Pilot-scale evidence is a final-candidate regression gate, not a source-level substitute for root-cause diagnosis.",
-          "source_paths": ["install/local/wikidot-verification/src/first-divergent-element.mjs"],
+          "source_paths": [
+            "install/local/wikidot-verification/src/first-divergent-element.mjs"
+          ],
           "existing_tests": [],
           "evidence_ids": [],
-          "depends_on": ["B690_FIXED_SIX_PAGE_DENOMINATOR"],
-          "next_command_ids": ["C_BROWSER_PARITY_CANDIDATE"]
+          "depends_on": [
+            "B690_FIXED_SIX_PAGE_DENOMINATOR"
+          ],
+          "next_command_ids": [
+            "C_BROWSER_PARITY_CANDIDATE"
+          ]
         }
       ]
     },
@@ -534,41 +737,87 @@
           "acceptance": "Persist enabled/profile state through the trusted site boundary with administrator permission, audit, cache invalidation, and optimistic settings revision.",
           "classification": "source_ready",
           "reason": "The migration, site update service, public endpoint permission tests, audit fields, and stale-revision test exist.",
-          "source_paths": ["deepwell/migrations/20260809010000_site_settings_foundation.sql", "deepwell/src/services/site/service.rs"],
-          "existing_tests": ["deepwell/tests/site.rs::site_settings_update_round_trips_and_rejects_stale_revision", "deepwell/tests/site.rs::site_update_requires_site_edit_permission"],
-          "evidence_ids": ["E_ANALYTICS_PANEL", "E_ANALYTICS_ENABLED"],
-          "next_command_ids": ["C_DEEPWELL_SETTINGS"]
+          "source_paths": [
+            "deepwell/migrations/20260809010000_site_settings_foundation.sql",
+            "deepwell/src/services/site/service.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/site.rs::site_settings_update_round_trips_and_rejects_stale_revision",
+            "deepwell/tests/site.rs::site_update_requires_site_edit_permission"
+          ],
+          "evidence_ids": [
+            "E_ANALYTICS_PANEL",
+            "E_ANALYTICS_ENABLED"
+          ],
+          "next_command_ids": [
+            "C_DEEPWELL_SETTINGS"
+          ]
         },
         {
           "case_id": "S754_ADMIN_AND_FIXED_QUEUE_SOURCE",
           "acceptance": "Render the observed admin form and emit only userTracker._setAccount followed by userTracker._trackPageview for a valid enabled UA profile.",
           "classification": "source_ready",
           "reason": "The form, server action, validated meta value, nonce-bound fixed app template, and Node tests exist. Authored page source cannot supply script code.",
-          "source_paths": ["framerail/src/routes/[x+2d]/admin/AnalyticsSettings.svelte", "framerail/src/app.html", "framerail/src/routes/+layout.svelte"],
-          "existing_tests": ["framerail/tests/site-settings-foundation.test.js::keeps analytics disabled by default and emits only the observed queue entries", "framerail/tests/site-settings-foundation.test.js::connects settings to server rendered head and toolbar authority"],
-          "evidence_ids": ["E_ANALYTICS_PANEL", "E_ANALYTICS_ENABLED"],
-          "next_command_ids": ["C_NODE_SETTINGS"]
+          "source_paths": [
+            "framerail/src/routes/[x+2d]/admin/AnalyticsSettings.svelte",
+            "framerail/src/app.html",
+            "framerail/src/routes/+layout.svelte"
+          ],
+          "existing_tests": [
+            "framerail/tests/site-settings-foundation.test.js::keeps analytics disabled by default and emits only the observed queue entries",
+            "framerail/tests/site-settings-foundation.test.js::connects settings to server rendered head and toolbar authority"
+          ],
+          "evidence_ids": [
+            "E_ANALYTICS_PANEL",
+            "E_ANALYTICS_ENABLED"
+          ],
+          "next_command_ids": [
+            "C_NODE_SETTINGS"
+          ]
         },
         {
           "case_id": "S754_REMOTE_REQUEST_DEFAULT_OFF",
           "acceptance": "Keep all remote analytics scripts and beacons disabled unless a separately approved emulator policy explicitly enables them.",
           "classification": "source_ready",
           "reason": "The current app only queues the two site-specific entries and contains no remote script creation or analytics origin. This intentionally preserves the campaign's default-off policy.",
-          "source_paths": ["framerail/src/app.html", "framerail/src/lib/site-settings.js"],
-          "existing_tests": ["framerail/tests/site-settings-foundation.test.js::connects settings to server rendered head and toolbar authority", "framerail/tests/external-integration-policy.test.js"],
-          "evidence_ids": ["E_ANALYTICS_ENABLED"],
-          "next_command_ids": ["C_NODE_SETTINGS"]
+          "source_paths": [
+            "framerail/src/app.html",
+            "framerail/src/lib/site-settings.js"
+          ],
+          "existing_tests": [
+            "framerail/tests/site-settings-foundation.test.js::connects settings to server rendered head and toolbar authority",
+            "framerail/tests/external-integration-policy.test.js"
+          ],
+          "evidence_ids": [
+            "E_ANALYTICS_ENABLED"
+          ],
+          "next_command_ids": [
+            "C_NODE_SETTINGS"
+          ]
         },
         {
           "case_id": "S754_IMPORT_EXPORT_REPRESENTATION",
           "acceptance": "Round-trip analytics enabled/profile state with the same site identity through the repository's import and export representation.",
           "classification": "blocked_evidence",
           "reason": "The repository has no site export producer or restore format. ImportSite is a Deserialize-only initial Wikidot corpus input and the seeder is initial fixture configuration; neither can prove a round trip. The frozen backup specification covers page source and attached files only and does not define a settings schema, same-site identity, cross-site non-copy, or restore conflict policy. Extending either existing input would invent an export contract.",
-          "source_paths": ["deepwell/src/services/import/structs.rs", "deepwell/src/services/import/service.rs", "deepwell/src/database/seeder/data.rs", "deepwell/src/database/seeder/mod.rs", "docs/wikidot-specifications/specifications/platform/site-backups.md"],
+          "source_paths": [
+            "deepwell/src/services/import/structs.rs",
+            "deepwell/src/services/import/service.rs",
+            "deepwell/src/database/seeder/data.rs",
+            "deepwell/src/database/seeder/mod.rs",
+            "docs/wikidot-specifications/specifications/platform/site-backups.md"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_ANALYTICS_PANEL"],
+          "evidence_ids": [
+            "E_ANALYTICS_PANEL"
+          ],
           "blocker_kind": "missing_export_contract",
-          "missing_evidence": ["canonical settings export schema", "same-site identity rule", "cross-site non-copy rule", "restore conflict and revision policy"],
+          "missing_evidence": [
+            "canonical settings export schema",
+            "same-site identity rule",
+            "cross-site non-copy rule",
+            "restore conflict and revision policy"
+          ],
           "next_command_ids": []
         },
         {
@@ -576,33 +825,53 @@
           "acceptance": "Observe disabled and enabled server-rendered head, meta identity, queue order, CSP, and zero remote requests at immediate DOMContentLoaded.",
           "classification": "candidate_required",
           "reason": "Static source does not prove SSR output, nonce materialization, response cache invalidation, or request absence on the exact candidate.",
-          "source_paths": ["framerail/src/app.html", "framerail/src/routes/+layout.svelte"],
+          "source_paths": [
+            "framerail/src/app.html",
+            "framerail/src/routes/+layout.svelte"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_ANALYTICS_ENABLED"],
-          "next_command_ids": ["C_SETTINGS_CANDIDATE"]
+          "evidence_ids": [
+            "E_ANALYTICS_ENABLED"
+          ],
+          "next_command_ids": [
+            "C_SETTINGS_CANDIDATE"
+          ]
         },
         {
           "case_id": "S754_ANALYTICS_SETTLED",
           "acceptance": "Observe reload and client-navigation queue cardinality, admin save/error transition, CSP, console, and zero remote analytics requests after settle.",
           "classification": "candidate_required",
           "reason": "The browser lifecycle and cache transition require the exact migrated runtime and authenticated actor.",
-          "source_paths": ["framerail/src/routes/[x+2d]/admin/AnalyticsSettings.svelte"],
+          "source_paths": [
+            "framerail/src/routes/[x+2d]/admin/AnalyticsSettings.svelte"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_ANALYTICS_ENABLED"],
-          "next_command_ids": ["C_SETTINGS_CANDIDATE"]
+          "evidence_ids": [
+            "E_ANALYTICS_ENABLED"
+          ],
+          "next_command_ids": [
+            "C_SETTINGS_CANDIDATE"
+          ]
         },
         {
           "case_id": "S754_LIVE_BEACON_PAYLOAD_AND_TIMING",
           "acceptance": "Define an optional outbound analytics request payload, timing, consent, failure, and CSP contract if the emulator ever enables a beacon.",
           "classification": "source_ready",
           "reason": "This acceptance is conditional on the emulator enabling an outbound beacon. The approved product policy is explicitly default-off: the app queues only the evidenced local analytics metadata and ships no remote analytics script or beacon. There is therefore no active payload/timing surface to invent; enabling one later requires separate authority and would reopen this contract.",
-          "source_paths": ["framerail/src/app.html", "framerail/src/lib/site-settings.js"],
+          "source_paths": [
+            "framerail/src/app.html",
+            "framerail/src/lib/site-settings.js"
+          ],
           "existing_tests": [
             "framerail/tests/site-settings-foundation.test.js::connects settings to server rendered head and toolbar authority",
             "framerail/tests/external-integration-policy.test.js::the local emulator ships no Google Analytics beacon"
           ],
-          "evidence_ids": ["E_ANALYTICS_ENABLED"],
-          "next_command_ids": ["C_NODE_SETTINGS"]
+          "evidence_ids": [
+            "E_ANALYTICS_ENABLED"
+          ],
+          "next_command_ids": [
+            "C_NODE_SETTINGS"
+          ]
         }
       ]
     },
@@ -615,50 +884,97 @@
           "acceptance": "Resolve category override, then _default, then built-in Base as one typed effective theme descriptor.",
           "classification": "source_ready",
           "reason": "Deepwell's SettingsService implements the required order and the public article view test observes inherited and overridden external themes.",
-          "source_paths": ["deepwell/src/services/settings/service.rs", "deepwell/src/services/category/service.rs"],
-          "existing_tests": ["deepwell/tests/page.rs::normal_page_create_allocates_category_numbers_without_consuming_conflicts"],
-          "evidence_ids": ["E_THEME_PANEL", "E_THEME_SCOPE"],
-          "next_command_ids": ["C_DEEPWELL_AUTONUMBER"]
+          "source_paths": [
+            "deepwell/src/services/settings/service.rs",
+            "deepwell/src/services/category/service.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/page.rs::normal_page_create_allocates_category_numbers_without_consuming_conflicts"
+          ],
+          "evidence_ids": [
+            "E_THEME_PANEL",
+            "E_THEME_SCOPE"
+          ],
+          "next_command_ids": [
+            "C_DEEPWELL_AUTONUMBER"
+          ]
         },
         {
           "case_id": "S755_TYPED_SETTING_AND_SSR_HEAD",
           "acceptance": "Persist inherit, built-in ID, external HTTPS URL, and custom CSS as disjoint variants and emit the effective external/custom descriptor in the server-rendered head.",
           "classification": "source_ready",
           "reason": "The schema constraint, typed service validation, revision-bound admin action, SSR head projection, and focused Node test exist.",
-          "source_paths": ["deepwell/migrations/20260809010000_site_settings_foundation.sql", "framerail/src/lib/site-settings.js", "framerail/src/routes/+layout.svelte"],
-          "existing_tests": ["deepwell/src/services/settings/structs.rs::tests::theme_storage_keeps_each_variant_separate_and_rejects_unsafe_urls", "framerail/tests/site-settings-foundation.test.js::keeps effective theme variants separate for initial head rendering"],
-          "evidence_ids": ["E_THEME_PANEL", "E_THEME_SCOPE"],
-          "next_command_ids": ["C_DEEPWELL_SETTINGS", "C_NODE_SETTINGS"]
+          "source_paths": [
+            "deepwell/migrations/20260809010000_site_settings_foundation.sql",
+            "framerail/src/lib/site-settings.js",
+            "framerail/src/routes/+layout.svelte"
+          ],
+          "existing_tests": [
+            "deepwell/src/services/settings/structs.rs::tests::theme_storage_keeps_each_variant_separate_and_rejects_unsafe_urls",
+            "framerail/tests/site-settings-foundation.test.js::keeps effective theme variants separate for initial head rendering"
+          ],
+          "evidence_ids": [
+            "E_THEME_PANEL",
+            "E_THEME_SCOPE"
+          ],
+          "next_command_ids": [
+            "C_DEEPWELL_SETTINGS",
+            "C_NODE_SETTINGS"
+          ]
         },
         {
           "case_id": "S755_THEME_INITIAL",
           "acceptance": "Observe base, site theme, and page-authored CSS order at immediate DOMContentLoaded with no one-frame reuse of the previous category's theme.",
           "classification": "candidate_required",
           "reason": "Only exact SSR, immutable assets, cache state, external resource state, and client navigation can prove the initial cascade.",
-          "source_paths": ["framerail/src/routes/+layout.svelte"],
+          "source_paths": [
+            "framerail/src/routes/+layout.svelte"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_THEME_PANEL", "E_THEME_SCOPE"],
-          "next_command_ids": ["C_SETTINGS_CANDIDATE"]
+          "evidence_ids": [
+            "E_THEME_PANEL",
+            "E_THEME_SCOPE"
+          ],
+          "next_command_ids": [
+            "C_SETTINGS_CANDIDATE"
+          ]
         },
         {
           "case_id": "S755_THEME_SETTLED",
           "acceptance": "Observe settled stylesheet completion, computed body/font/background, resource failures, CSP, cache invalidation, and category navigation without threshold widening or fallback reuse.",
           "classification": "candidate_required",
           "reason": "The external stylesheet and page-authored cascade complete only in the served browser candidate.",
-          "source_paths": ["framerail/src/routes/+layout.svelte"],
+          "source_paths": [
+            "framerail/src/routes/+layout.svelte"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_THEME_PANEL", "E_THEME_SCOPE"],
-          "next_command_ids": ["C_SETTINGS_CANDIDATE"]
+          "evidence_ids": [
+            "E_THEME_PANEL",
+            "E_THEME_SCOPE"
+          ],
+          "next_command_ids": [
+            "C_SETTINGS_CANDIDATE"
+          ]
         },
         {
           "case_id": "S755_BUILT_IN_ASSET_MAPPING",
           "acceptance": "Map each persisted live built-in theme ID to the exact evidenced immutable stylesheet set and ordering.",
           "classification": "blocked_evidence",
           "reason": "The panel proves IDs and source groups but not the served asset URLs for each ID. Current source intentionally serves only the established Base assets.",
-          "source_paths": ["framerail/src/routes/+layout.svelte"],
+          "source_paths": [
+            "framerail/src/routes/+layout.svelte"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_THEME_PANEL", "E_THEME_SCOPE", "E_OPEN43_READONLY_LIVE_20260810"],
-          "missing_evidence": ["built-in ID to asset mapping", "asset order and version", "missing-resource fallback"],
+          "evidence_ids": [
+            "E_THEME_PANEL",
+            "E_THEME_SCOPE",
+            "E_OPEN43_READONLY_LIVE_20260810"
+          ],
+          "missing_evidence": [
+            "built-in ID to asset mapping",
+            "asset order and version",
+            "missing-resource fallback"
+          ],
           "next_command_ids": []
         },
         {
@@ -666,10 +982,18 @@
           "acceptance": "Match install, save, cancel, error, custom editing, and category switching in the legacy theme panel.",
           "classification": "blocked_evidence",
           "reason": "No live mutation sequence freezes these intermediate states. The foundation form must not be called gallery parity.",
-          "source_paths": ["framerail/src/routes/[x+2d]/admin/ThemeSettings.svelte"],
+          "source_paths": [
+            "framerail/src/routes/[x+2d]/admin/ThemeSettings.svelte"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_THEME_PANEL"],
-          "missing_evidence": ["install/save/cancel/error frames", "custom editor behavior", "category-switch lifecycle"],
+          "evidence_ids": [
+            "E_THEME_PANEL"
+          ],
+          "missing_evidence": [
+            "install/save/cancel/error frames",
+            "custom editor behavior",
+            "category-switch lifecycle"
+          ],
           "next_command_ids": []
         },
         {
@@ -677,10 +1001,20 @@
           "acceptance": "Define redirect, timeout, private-host, size, MIME, cache, and failure presentation for an external theme URL.",
           "classification": "blocked_evidence",
           "reason": "The live evidence proves an exact URL field but not fetch completion or failure policy. Browser-direct HTTPS emission is fail closed at the stored type boundary; no proxy or silent old-theme reuse is inferred.",
-          "source_paths": ["deepwell/src/services/settings/structs.rs", "framerail/src/lib/site-settings.js"],
+          "source_paths": [
+            "deepwell/src/services/settings/structs.rs",
+            "framerail/src/lib/site-settings.js"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_THEME_PANEL", "E_THEME_SCOPE"],
-          "missing_evidence": ["redirect and host policy", "timeout/size/MIME", "visible failure state and cache reuse rule"],
+          "evidence_ids": [
+            "E_THEME_PANEL",
+            "E_THEME_SCOPE"
+          ],
+          "missing_evidence": [
+            "redirect and host policy",
+            "timeout/size/MIME",
+            "visible failure state and cache reuse rule"
+          ],
           "next_command_ids": []
         }
       ]
@@ -693,63 +1027,122 @@
           "case_id": "S757_PERSISTENT_FLAGS_AND_AUTHORITY",
           "acceptance": "Persist independent top and bottom flags through trusted, revision-bound site updates and return them with public site settings.",
           "classification": "source_ready",
-          "reason": "The migration, site service, audit fields, endpoint permission, stale revision, admin form, and typed view data exist.",
-          "source_paths": ["deepwell/migrations/20260809010000_site_settings_foundation.sql", "deepwell/src/services/site/service.rs", "framerail/src/routes/[x+2d]/admin/ToolbarSettings.svelte"],
-          "existing_tests": ["deepwell/tests/site.rs::site_settings_update_round_trips_and_rejects_stale_revision", "framerail/tests/site-settings-foundation.test.js::routes admin writes through trusted site and revision-bound actions"],
-          "evidence_ids": ["E_TOOLBAR_SCOPE", "E_SETTINGS_OBSERVATIONS"],
-          "next_command_ids": ["C_DEEPWELL_SETTINGS", "C_NODE_SETTINGS"]
+          "reason": "The migration, site service, audit fields, endpoint permission, stale revision, admin form, and typed view data persist the independent top, bottom, and promotion flags. Live run-owned mutation receipts confirm bottom and promotion state round-trip and restoration.",
+          "source_paths": [
+            "deepwell/migrations/20260809010000_site_settings_foundation.sql",
+            "deepwell/migrations/20260913010000_site_toolbar_promotion.sql",
+            "deepwell/src/services/site/service.rs",
+            "framerail/src/routes/[x+2d]/admin/ToolbarSettings.svelte"
+          ],
+          "existing_tests": [
+            "deepwell/tests/site.rs::site_settings_update_round_trips_and_rejects_stale_revision",
+            "framerail/tests/site-settings-foundation.test.js::routes admin writes through trusted site and revision-bound actions"
+          ],
+          "evidence_ids": [
+            "E_TOOLBAR_SCOPE",
+            "E_SETTINGS_OBSERVATIONS",
+            "E_S757_TOOLBAR_PROMOTION_LIVE_20260913"
+          ],
+          "next_command_ids": [
+            "C_DEEPWELL_SETTINGS",
+            "C_NODE_SETTINGS"
+          ]
         },
         {
           "case_id": "S757_TOP_TOOLBAR_SETTING_OWNER",
           "acceptance": "Use the stored top flag as the server-rendered #navi-bar authority instead of the sandbox source-site heuristic.",
           "classification": "source_ready",
           "reason": "The Wikidot layout derives showTopToolbar only from site_settings.toolbars.top, and the static test rejects the old heuristic gate.",
-          "source_paths": ["framerail/src/routes/+layout.svelte"],
-          "existing_tests": ["framerail/tests/site-settings-foundation.test.js::connects settings to server rendered head and toolbar authority"],
-          "evidence_ids": ["E_TOOLBAR_SCOPE"],
-          "next_command_ids": ["C_NODE_SETTINGS"]
+          "source_paths": [
+            "framerail/src/routes/+layout.svelte"
+          ],
+          "existing_tests": [
+            "framerail/tests/site-settings-foundation.test.js::connects settings to server rendered head and toolbar authority"
+          ],
+          "evidence_ids": [
+            "E_TOOLBAR_SCOPE"
+          ],
+          "next_command_ids": [
+            "C_NODE_SETTINGS"
+          ]
         },
         {
           "case_id": "S757_BOTTOM_TOOLBAR_DOM",
           "acceptance": "Render the enabled bottom toolbar's exact container, order, links, interactions, and geometry while omitting it entirely when disabled.",
-          "classification": "blocked_evidence",
-          "reason": "The capture records bottom=false and contains no enabled bottom-toolbar DOM. The flag persists independently, but Framerail correctly does not invent a footer.",
-          "source_paths": ["framerail/src/routes/+layout.svelte"],
-          "existing_tests": [],
-          "evidence_ids": ["E_TOOLBAR_SCOPE", "E_SETTINGS_OBSERVATIONS"],
-          "missing_evidence": ["enabled bottom-toolbar DOM", "links and actor state", "initial, scroll, and settled geometry"],
-          "next_command_ids": []
+          "classification": "source_ready",
+          "reason": "The 2026-09-13 run-owned live capture proves the enabled #footer-bar DOM, heading, four promoted-site cards, link/thumbnail shapes, static positioning, and responsive 1280/767/479 geometry, while the mutation receipt proves restoration to bottom=false. Framerail now renders that structure only when the stored bottom flag is true.",
+          "source_paths": [
+            "framerail/src/lib/wikidot/WikidotBottomToolbar.svelte",
+            "framerail/src/routes/+layout.svelte"
+          ],
+          "existing_tests": [
+            "framerail/tests/site-settings-public-boundary.test.js::server-renders analytics, theme, and toolbar settings from the request view"
+          ],
+          "evidence_ids": [
+            "E_TOOLBAR_SCOPE",
+            "E_SETTINGS_OBSERVATIONS",
+            "E_S757_TOOLBAR_PROMOTION_LIVE_20260913"
+          ],
+          "next_command_ids": [
+            "C_NODE_SETTINGS"
+          ]
         },
         {
           "case_id": "S757_TOOLBAR_INITIAL",
-          "acceptance": "Observe top-enabled and disabled server-rendered DOM at desktop, 767 px, and 479 px immediately after DOMContentLoaded with no stale toolbar frame.",
+          "acceptance": "Observe top/bottom toolbar server-rendered DOM at desktop, 767 px, and 479 px immediately after DOMContentLoaded while recording the exact cache identity. Do not assume that a persisted setting mutation invalidates Wikidot's public static document on the first reload.",
           "classification": "candidate_required",
-          "reason": "The first visible response depends on the final settings row, cache key, SSR asset, viewport, and exact candidate.",
-          "source_paths": ["framerail/src/routes/+layout.svelte"],
+          "reason": "The 2026-09-13 live mutation proves that Site Manager state and the public document are distinct temporal states: after bottom=false was restored, the prior bottom-enabled document remained a static-cache HIT with the same ETag for at least 60 seconds. The final candidate must therefore bind initial DOM to its actual cache identity instead of enforcing the earlier immediate-freshness hypothesis.",
+          "source_paths": [
+            "framerail/src/routes/+layout.svelte"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_TOOLBAR_SCOPE"],
-          "next_command_ids": ["C_SETTINGS_CANDIDATE"]
+          "evidence_ids": [
+            "E_TOOLBAR_SCOPE",
+            "E_S757_TOOLBAR_PROMOTION_LIVE_20260913"
+          ],
+          "next_command_ids": [
+            "C_SETTINGS_CANDIDATE"
+          ]
         },
         {
           "case_id": "S757_TOOLBAR_SETTLED",
-          "acceptance": "Observe top-toolbar scroll, focus, hit targets, client navigation, setting change, and settled geometry without using the source-site heuristic.",
+          "acceptance": "Observe toolbar scroll, focus, hit targets, client navigation, setting change, cache convergence, and settled geometry without using the source-site heuristic. Preserve the distinction between persisted setting state and the served public document, and record rather than invent the convergence interval.",
           "classification": "candidate_required",
-          "reason": "Static source cannot prove served cache invalidation or temporal browser state.",
-          "source_paths": ["framerail/src/routes/+layout.svelte"],
+          "reason": "Static source cannot prove served cache invalidation or temporal browser state. Live Wikidot establishes stale public replay after restore for at least 60 seconds but does not establish the eventual deadline, so the candidate must capture its own exact transition and compare it as a temporal compatibility surface.",
+          "source_paths": [
+            "framerail/src/routes/+layout.svelte"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_TOOLBAR_SCOPE"],
-          "next_command_ids": ["C_SETTINGS_CANDIDATE"]
+          "evidence_ids": [
+            "E_TOOLBAR_SCOPE",
+            "E_S757_TOOLBAR_PROMOTION_LIVE_20260913"
+          ],
+          "next_command_ids": [
+            "C_SETTINGS_CANDIDATE"
+          ]
         },
         {
           "case_id": "S757_PROMOTION_FLAG_EFFECT",
           "acceptance": "Define whether the site-promotion toggle changes visible toolbar DOM or another user-visible surface.",
-          "classification": "blocked_evidence",
-          "reason": "The panel proves the control exists but no mutation or visible-effect observation exists. The disabled local control does not claim implementation.",
-          "source_paths": ["framerail/src/routes/[x+2d]/admin/ToolbarSettings.svelte"],
-          "existing_tests": [],
-          "evidence_ids": ["E_SETTINGS_OBSERVATIONS"],
-          "missing_evidence": ["persisted semantics", "visible effect or confirmed no-op", "actor and lifecycle behavior"],
-          "next_command_ids": []
+          "classification": "source_ready",
+          "reason": "A run-owned live mutation proves that the independently persisted control is labeled 'Promote this site on other sites' and round-trips true -> false -> true. The enabled bottom-toolbar capture proves the corresponding user-visible 'Other interesting sites' surface. Deepwell therefore treats the flag as eligibility for another imported site's footer, excludes the current site, and filters candidates through anonymous Page:View. The capture does not claim a random or weighted selection order.",
+          "source_paths": [
+            "deepwell/src/services/view/service.rs",
+            "framerail/src/routes/[x+2d]/admin/ToolbarSettings.svelte",
+            "framerail/src/lib/wikidot/WikidotBottomToolbar.svelte"
+          ],
+          "existing_tests": [
+            "deepwell/tests/site.rs::promoted_sites_are_public_imported_sites_and_fail_closed_after_anonymous_view_revocation",
+            "framerail/tests/site-settings-public-boundary.test.js::server-renders analytics, theme, and toolbar settings from the request view"
+          ],
+          "evidence_ids": [
+            "E_SETTINGS_OBSERVATIONS",
+            "E_S757_TOOLBAR_PROMOTION_LIVE_20260913"
+          ],
+          "next_command_ids": [
+            "C_DEEPWELL_SETTINGS",
+            "C_NODE_SETTINGS"
+          ]
         }
       ]
     },
@@ -762,39 +1155,76 @@
           "acceptance": "Persist a category-scoped autonumber flag with audit, site binding, administrator permission, cache invalidation, and optimistic category settings revision.",
           "classification": "source_ready",
           "reason": "The category migration/service/endpoint and Framerail action exist; generic category permission and stale-theme tests cover the same trusted update seam.",
-          "source_paths": ["deepwell/migrations/20260809010000_site_settings_foundation.sql", "deepwell/src/services/category/service.rs", "framerail/src/routes/[x+2d]/admin/AutonumberSettings.svelte"],
-          "existing_tests": ["deepwell/tests/site.rs::category_navigation_update_requires_site_edit_and_supports_inheritance", "deepwell/tests/page.rs::normal_page_create_allocates_category_numbers_without_consuming_conflicts"],
-          "evidence_ids": ["E_SETTINGS_OBSERVATIONS", "E_AUTONUMBER_SCOPE"],
-          "next_command_ids": ["C_DEEPWELL_AUTONUMBER", "C_NODE_SETTINGS"]
+          "source_paths": [
+            "deepwell/migrations/20260809010000_site_settings_foundation.sql",
+            "deepwell/src/services/category/service.rs",
+            "framerail/src/routes/[x+2d]/admin/AutonumberSettings.svelte"
+          ],
+          "existing_tests": [
+            "deepwell/tests/site.rs::category_navigation_update_requires_site_edit_and_supports_inheritance",
+            "deepwell/tests/page.rs::normal_page_create_allocates_category_numbers_without_consuming_conflicts"
+          ],
+          "evidence_ids": [
+            "E_SETTINGS_OBSERVATIONS",
+            "E_AUTONUMBER_SCOPE"
+          ],
+          "next_command_ids": [
+            "C_DEEPWELL_AUTONUMBER",
+            "C_NODE_SETTINGS"
+          ]
         },
         {
           "case_id": "S758_NORMAL_CREATE_ALLOCATOR",
           "acceptance": "Within normal page creation, ignore the suggested slug, allocate category:n, conflict-check it, advance the counter, create the page and first revision, and audit in the same request transaction.",
           "classification": "source_ready",
           "reason": "PageService locks the category row before conflict checking and allocation, and the public endpoint test observes issue:1, issue:2, ordinary category behavior, inheritance, and fail-closed conflict without counter advancement.",
-          "source_paths": ["deepwell/src/services/page/service.rs"],
-          "existing_tests": ["deepwell/tests/page.rs::normal_page_create_allocates_category_numbers_without_consuming_conflicts"],
-          "evidence_ids": ["E_SETTINGS_OBSERVATIONS", "E_AUTONUMBER_SCOPE"],
-          "next_command_ids": ["C_DEEPWELL_AUTONUMBER"]
+          "source_paths": [
+            "deepwell/src/services/page/service.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/page.rs::normal_page_create_allocates_category_numbers_without_consuming_conflicts"
+          ],
+          "evidence_ids": [
+            "E_SETTINGS_OBSERVATIONS",
+            "E_AUTONUMBER_SCOPE"
+          ],
+          "next_command_ids": [
+            "C_DEEPWELL_AUTONUMBER"
+          ]
         },
         {
           "case_id": "S758_LOCK_AND_ROLLBACK",
           "acceptance": "Serialize same-category allocators and roll back the allocation when a later page/revision step fails.",
           "classification": "source_ready",
           "reason": "Focused database integration cases prove the second transaction waits for the category row and a later revision failure restores the prior category state.",
-          "source_paths": ["deepwell/src/services/page/service.rs"],
-          "existing_tests": ["deepwell/tests/page.rs::autonumber_allocator_holds_the_category_lock_until_request_completion", "deepwell/tests/page.rs::failed_page_create_rolls_back_its_allocated_number"],
-          "evidence_ids": ["E_AUTONUMBER_SCOPE"],
-          "next_command_ids": ["C_DEEPWELL_AUTONUMBER_LOCK", "C_DEEPWELL_AUTONUMBER_ROLLBACK"]
+          "source_paths": [
+            "deepwell/src/services/page/service.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/page.rs::autonumber_allocator_holds_the_category_lock_until_request_completion",
+            "deepwell/tests/page.rs::failed_page_create_rolls_back_its_allocated_number"
+          ],
+          "evidence_ids": [
+            "E_AUTONUMBER_SCOPE"
+          ],
+          "next_command_ids": [
+            "C_DEEPWELL_AUTONUMBER_LOCK",
+            "C_DEEPWELL_AUTONUMBER_ROLLBACK"
+          ]
         },
         {
           "case_id": "S758_CREATE_INITIAL",
           "acceptance": "Observe the normal missing-page editor submit, redirect target, assigned slug, title, and first visible page state at immediate navigation commit.",
           "classification": "candidate_required",
           "reason": "A successful public create irreversibly advances the category's monotonic allocator. Deleting the page restores neither autonumber_next nor the exact pre-run public state, so the reversible nine-case Settings CaseSet cannot execute this row.",
-          "source_paths": ["deepwell/src/services/page/service.rs", "framerail/src/routes/[slug]/[...extra]/page.svelte"],
+          "source_paths": [
+            "deepwell/src/services/page/service.rs",
+            "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_AUTONUMBER_SCOPE"],
+          "evidence_ids": [
+            "E_AUTONUMBER_SCOPE"
+          ],
           "blocker_kind": "blocked_missing_disposable_autonumber_allocator_owner",
           "required_before_run": "Provide a disposable candidate stack lifecycle owner that discards the task database after capture, or a normal public category lifecycle authority whose owned category and allocator are created and removed with the run.",
           "next_command_ids": []
@@ -804,9 +1234,13 @@
           "acceptance": "Observe history, reload, next create, disable behavior, cache identity, and no half-committed side effects after settle.",
           "classification": "candidate_required",
           "reason": "The settled sequence requires successful creates, but each success irreversibly advances the category's monotonic allocator. Page deletion cannot restore the exact pre-run allocator state through a public seam.",
-          "source_paths": ["deepwell/src/services/page/service.rs"],
+          "source_paths": [
+            "deepwell/src/services/page/service.rs"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_AUTONUMBER_SCOPE"],
+          "evidence_ids": [
+            "E_AUTONUMBER_SCOPE"
+          ],
           "blocker_kind": "blocked_missing_disposable_autonumber_allocator_owner",
           "required_before_run": "Provide a disposable candidate stack lifecycle owner that discards the task database after capture, or a normal public category lifecycle authority whose owned category and allocator are created and removed with the run.",
           "next_command_ids": []
@@ -816,10 +1250,21 @@
           "acceptance": "Define live behavior for existing numeric collisions, deleted numeric pages, overflow, failed revisions, and disable/re-enable counter state.",
           "classification": "blocked_evidence",
           "reason": "No authorized live mutation establishes these semantics. Current source fails closed on collision and checked overflow; it must not infer reuse or skipping.",
-          "source_paths": ["deepwell/src/services/page/service.rs"],
-          "existing_tests": ["deepwell/tests/page.rs::normal_page_create_allocates_category_numbers_without_consuming_conflicts"],
-          "evidence_ids": ["E_AUTONUMBER_SCOPE"],
-          "missing_evidence": ["collision reuse/skip", "deleted page behavior", "overflow", "disable/re-enable state"],
+          "source_paths": [
+            "deepwell/src/services/page/service.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/page.rs::normal_page_create_allocates_category_numbers_without_consuming_conflicts"
+          ],
+          "evidence_ids": [
+            "E_AUTONUMBER_SCOPE"
+          ],
+          "missing_evidence": [
+            "collision reuse/skip",
+            "deleted page behavior",
+            "overflow",
+            "disable/re-enable state"
+          ],
           "next_command_ids": []
         },
         {
@@ -827,10 +1272,18 @@
           "acceptance": "Match the legacy add-category warning, confirmation, override, cancel, error, and result lifecycle.",
           "classification": "blocked_evidence",
           "reason": "The panel contains a warning modal but no authorized mutation freezes its result. The foundation supports only existing categories.",
-          "source_paths": ["framerail/src/routes/[x+2d]/admin/AutonumberSettings.svelte"],
+          "source_paths": [
+            "framerail/src/routes/[x+2d]/admin/AutonumberSettings.svelte"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_SETTINGS_OBSERVATIONS"],
-          "missing_evidence": ["warning and confirmation DOM", "category creation result", "cancel/error intervals"],
+          "evidence_ids": [
+            "E_SETTINGS_OBSERVATIONS"
+          ],
+          "missing_evidence": [
+            "warning and confirmation DOM",
+            "category creation result",
+            "cancel/error intervals"
+          ],
           "next_command_ids": []
         }
       ]
@@ -844,30 +1297,51 @@
           "acceptance": "Keep display:flex and justify-content:flex-start owned only by .sigma-esque-container .page-tags and never by unscoped imported Wikidot .page-tags.",
           "classification": "source_ready",
           "reason": "The SCSS is scoped and the PostCSS selector-owner test rejects an unscoped owner. PR #824's Docker context exclusions are present.",
-          "source_paths": ["framerail/src/routes/[slug]/[...extra]/page.scss", ".dockerignore"],
-          "existing_tests": ["framerail/tests/wikidot-static-styles.test.ts::the modern page-tag layout cannot override imported Wikidot theme CSS"],
-          "evidence_ids": ["E_822_PAGE_TAGS"],
-          "next_command_ids": ["C_NODE_BROWSER_STATIC"]
+          "source_paths": [
+            "framerail/src/routes/[slug]/[...extra]/page.scss",
+            ".dockerignore"
+          ],
+          "existing_tests": [
+            "framerail/tests/wikidot-static-styles.test.ts::the modern page-tag layout cannot override imported Wikidot theme CSS"
+          ],
+          "evidence_ids": [
+            "E_822_PAGE_TAGS"
+          ],
+          "next_command_ids": [
+            "C_NODE_BROWSER_STATIC"
+          ]
         },
         {
           "case_id": "B822_PAGE_TAGS_INITIAL",
           "acceptance": "Bind the exact candidate CSS asset hash and capture container/child display, alignment, active rule URL, geometry, and wrapping at immediate DOMContentLoaded.",
           "classification": "candidate_required",
           "reason": "The diagnostic standing settled match cannot prove that the initial page avoids a stale generated asset or flash of modern flex styling.",
-          "source_paths": ["framerail/src/routes/[slug]/[...extra]/page.scss"],
+          "source_paths": [
+            "framerail/src/routes/[slug]/[...extra]/page.scss"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_822_PAGE_TAGS"],
-          "next_command_ids": ["C_BROWSER_PARITY_CANDIDATE"]
+          "evidence_ids": [
+            "E_822_PAGE_TAGS"
+          ],
+          "next_command_ids": [
+            "C_BROWSER_PARITY_CANDIDATE"
+          ]
         },
         {
           "case_id": "B822_PAGE_TAGS_SETTLED",
           "acceptance": "Capture settled computed display, justify-content, text-align, active cascade, line wrapping, and geometry for SCP-9506 plus modern-layout and other-theme controls.",
           "classification": "candidate_required",
           "reason": "Only a clean immutable build and served browser candidate can close the stale-asset history.",
-          "source_paths": ["framerail/src/routes/[slug]/[...extra]/page.scss"],
+          "source_paths": [
+            "framerail/src/routes/[slug]/[...extra]/page.scss"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_822_PAGE_TAGS"],
-          "next_command_ids": ["C_BROWSER_PARITY_CANDIDATE"]
+          "evidence_ids": [
+            "E_822_PAGE_TAGS"
+          ],
+          "next_command_ids": [
+            "C_BROWSER_PARITY_CANDIDATE"
+          ]
         }
       ]
     },
@@ -880,52 +1354,108 @@
           "acceptance": "Persist, read, update, validate, audit, revision-bind, and invalidate default_page, welcome_page, locale, and adjacent site settings through the trusted public endpoint.",
           "classification": "source_ready",
           "reason": "The migration/model/site service and endpoint tests cover public updates, same-site live page validation, permission denial, audit fields, stale revision, and deferred site cache invalidation.",
-          "source_paths": ["deepwell/migrations/20260809010000_site_settings_foundation.sql", "deepwell/src/services/site/service.rs"],
-          "existing_tests": ["deepwell/tests/site.rs::site_settings_update_round_trips_and_rejects_stale_revision", "deepwell/tests/site.rs::site_update_requires_site_edit_permission"],
-          "evidence_ids": ["E_GENERAL_PANEL"],
-          "next_command_ids": ["C_DEEPWELL_SETTINGS"]
+          "source_paths": [
+            "deepwell/migrations/20260809010000_site_settings_foundation.sql",
+            "deepwell/src/services/site/service.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/site.rs::site_settings_update_round_trips_and_rejects_stale_revision",
+            "deepwell/tests/site.rs::site_update_requires_site_edit_permission"
+          ],
+          "evidence_ids": [
+            "E_GENERAL_PANEL"
+          ],
+          "next_command_ids": [
+            "C_DEEPWELL_SETTINGS"
+          ]
         },
         {
           "case_id": "S1046_SEVEN_CONTROLS_AND_LANGUAGE",
           "acceptance": "Render unixName, name, subtitle, the 121-value language select, description textarea, default_page, and welcome_page in captured order while keeping Wikijump layout on a separate form.",
           "classification": "source_ready",
           "reason": "The captured language list, Deepwell allowlist, Wikidot form, separate layout form, and focused Node test exist.",
-          "source_paths": ["framerail/src/routes/[x+2d]/admin/SiteSettings.svelte", "framerail/src/lib/admin/wikidot-site-languages.js", "deepwell/src/utils/locale.rs"],
-          "existing_tests": ["framerail/tests/site-settings-foundation.test.js::uses the captured Wiki Settings language values in source order", "framerail/tests/site-settings-foundation.test.js::renders the seven general controls in captured order and keeps layout separate"],
-          "evidence_ids": ["E_GENERAL_PANEL"],
-          "next_command_ids": ["C_NODE_SETTINGS", "C_DEEPWELL_SETTINGS"]
+          "source_paths": [
+            "framerail/src/routes/[x+2d]/admin/SiteSettings.svelte",
+            "framerail/src/lib/admin/wikidot-site-languages.js",
+            "deepwell/src/utils/locale.rs"
+          ],
+          "existing_tests": [
+            "framerail/tests/site-settings-foundation.test.js::uses the captured Wiki Settings language values in source order",
+            "framerail/tests/site-settings-foundation.test.js::renders the seven general controls in captured order and keeps layout separate"
+          ],
+          "evidence_ids": [
+            "E_GENERAL_PANEL"
+          ],
+          "next_command_ids": [
+            "C_NODE_SETTINGS",
+            "C_DEEPWELL_SETTINGS"
+          ]
         },
         {
           "case_id": "S1046_PAGE_TARGET_VALIDATION",
           "acceptance": "When changed, require default and welcome targets to name a live page in the same site and reject missing, deleted, or cross-site targets through the service boundary.",
           "classification": "source_ready",
           "reason": "SiteService validates changed target slugs using same-site live page lookup before persistence. Exact private/empty live errors remain outside this source-ready claim.",
-          "source_paths": ["deepwell/src/services/site/service.rs"],
-          "existing_tests": ["deepwell/tests/site.rs::site_settings_update_round_trips_and_rejects_stale_revision"],
-          "evidence_ids": ["E_GENERAL_PANEL"],
-          "next_command_ids": ["C_DEEPWELL_SETTINGS"]
+          "source_paths": [
+            "deepwell/src/services/site/service.rs"
+          ],
+          "existing_tests": [
+            "deepwell/tests/site.rs::site_settings_update_round_trips_and_rejects_stale_revision"
+          ],
+          "evidence_ids": [
+            "E_GENERAL_PANEL"
+          ],
+          "next_command_ids": [
+            "C_DEEPWELL_SETTINGS"
+          ]
         },
         {
           "case_id": "S1046_LEGACY_ADMIN_ROUTE",
           "acceptance": "Serve the administrator-only Wiki Settings surface at the observed /_admin route instead of exposing only /-/admin or the ordinary seeded _admin page.",
           "classification": "source_ready",
           "reason": "The static /_admin route reuses the same server load/actions, page component, and error boundary as /-/admin without redirecting to the seeded _admin content page. The focused source test is green and svelte-kit sync generates the exact /_admin route ID; served actor and temporal verdicts remain candidate work.",
-          "source_paths": ["framerail/src/routes/_admin/+page.server.ts", "framerail/src/routes/_admin/+page.svelte", "framerail/src/routes/_admin/+error.svelte"],
-          "existing_tests": ["framerail/tests/site-settings-foundation.test.js::serves the observed legacy admin path through the same SSR and action seam"],
-          "evidence_ids": ["E_GENERAL_PANEL"],
-          "implementation_commits": ["69111a70c6684eab1193b2f706445e27d6960345"],
-          "next_command_ids": ["C_NODE_SETTINGS", "C_SETTINGS_CANDIDATE"]
+          "source_paths": [
+            "framerail/src/routes/_admin/+page.server.ts",
+            "framerail/src/routes/_admin/+page.svelte",
+            "framerail/src/routes/_admin/+error.svelte"
+          ],
+          "existing_tests": [
+            "framerail/tests/site-settings-foundation.test.js::serves the observed legacy admin path through the same SSR and action seam"
+          ],
+          "evidence_ids": [
+            "E_GENERAL_PANEL"
+          ],
+          "implementation_commits": [
+            "69111a70c6684eab1193b2f706445e27d6960345"
+          ],
+          "next_command_ids": [
+            "C_NODE_SETTINGS",
+            "C_SETTINGS_CANDIDATE"
+          ]
         },
         {
           "case_id": "S1046_IMPORT_EXPORT_REPRESENTATION",
           "acceptance": "Round-trip welcome_page and the settings revision with the same site identity through import and export representation.",
           "classification": "blocked_evidence",
           "reason": "The repository has no site export producer, canonical settings representation, or restore consumer. Existing public settings tests prove persistence and stale revision rejection, not export or restore. No frozen or live evidence defines whether settings_revision is preserved, regenerated, or conflict-checked during restore, so adding welcome_page to the seeder or corpus importer would invent the required policy.",
-          "source_paths": ["deepwell/src/services/import/structs.rs", "deepwell/src/services/import/service.rs", "deepwell/src/database/seeder/data.rs", "deepwell/src/database/seeder/mod.rs", "docs/wikidot-specifications/specifications/platform/site-backups.md"],
+          "source_paths": [
+            "deepwell/src/services/import/structs.rs",
+            "deepwell/src/services/import/service.rs",
+            "deepwell/src/database/seeder/data.rs",
+            "deepwell/src/database/seeder/mod.rs",
+            "docs/wikidot-specifications/specifications/platform/site-backups.md"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_GENERAL_PANEL"],
+          "evidence_ids": [
+            "E_GENERAL_PANEL"
+          ],
           "blocker_kind": "missing_export_contract",
-          "missing_evidence": ["canonical settings export schema", "same-site identity rule", "welcome_page restore behavior", "settings revision restore policy"],
+          "missing_evidence": [
+            "canonical settings export schema",
+            "same-site identity rule",
+            "welcome_page restore behavior",
+            "settings revision restore policy"
+          ],
           "next_command_ids": []
         },
         {
@@ -933,10 +1463,19 @@
           "acceptance": "Apply the observed welcome-page effect for invited/new/existing/banned members and missing/private/deleted targets.",
           "classification": "blocked_evidence",
           "reason": "No durable live membership transition establishes whether the value redirects, notifies, injects content, or has no visible effect. Current source only persists and returns the setting.",
-          "source_paths": ["deepwell/src/services/site/service.rs"],
+          "source_paths": [
+            "deepwell/src/services/site/service.rs"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_GENERAL_PANEL"],
-          "missing_evidence": ["new-member visible effect", "actor matrix", "missing/private/deleted target behavior", "membership transition timing"],
+          "evidence_ids": [
+            "E_GENERAL_PANEL"
+          ],
+          "missing_evidence": [
+            "new-member visible effect",
+            "actor matrix",
+            "missing/private/deleted target behavior",
+            "membership transition timing"
+          ],
           "next_command_ids": []
         },
         {
@@ -944,11 +1483,19 @@
           "acceptance": "Match default/welcome autocomplete request, results, keyboard, focus, loading, save error, success, cancel, reload, and client-navigation frames.",
           "classification": "blocked_evidence",
           "reason": "The settled panel and new read-only lookup matrix prove the field, container, request, and JSON response shapes, but not keyboard, focus, loading, save, cancel, or navigation frames.",
-          "source_paths": ["framerail/src/routes/[x+2d]/admin/SiteSettings.svelte"],
+          "source_paths": [
+            "framerail/src/routes/[x+2d]/admin/SiteSettings.svelte"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_GENERAL_PANEL", "E_OPEN43_READONLY_LIVE_20260810"],
+          "evidence_ids": [
+            "E_GENERAL_PANEL",
+            "E_OPEN43_READONLY_LIVE_20260810"
+          ],
           "observed": "PageLookupQModule requests for home, system, a one-character query, and a missing query returned exact JSON result shapes.",
-          "missing_evidence": ["keyboard/focus", "loading/error/success/cancel transitions"],
+          "missing_evidence": [
+            "keyboard/focus",
+            "loading/error/success/cancel transitions"
+          ],
           "next_command_ids": []
         },
         {
@@ -956,33 +1503,64 @@
           "acceptance": "Capture /_admin authorization result and seven-control DOM at immediate DOMContentLoaded for administrator and denied actors with exact route, session, CSRF, site, and revision identities.",
           "classification": "candidate_required",
           "reason": "Source fields do not prove the public route, SSR values, denial non-disclosure, first paint, or stale-cache behavior.",
-          "source_paths": ["framerail/src/routes/[x+2d]/admin/SiteSettings.svelte", "framerail/svelte.config.js"],
+          "source_paths": [
+            "framerail/src/routes/[x+2d]/admin/SiteSettings.svelte",
+            "framerail/svelte.config.js"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_GENERAL_PANEL"],
-          "depends_on": ["S1046_LEGACY_ADMIN_ROUTE"],
-          "next_command_ids": ["C_SETTINGS_CANDIDATE"]
+          "evidence_ids": [
+            "E_GENERAL_PANEL"
+          ],
+          "depends_on": [
+            "S1046_LEGACY_ADMIN_ROUTE"
+          ],
+          "next_command_ids": [
+            "C_SETTINGS_CANDIDATE"
+          ]
         },
         {
           "case_id": "S1046_ADMIN_SETTLED",
           "acceptance": "Capture edit, revision-bound save, stale error, success, reload, and client-navigation DOM after the completion policy settles without using direct DB rows as the verdict.",
           "classification": "candidate_required",
           "reason": "The exact authenticated browser and public endpoint must prove the visible mutation lifecycle; DB setup may only seed fixtures.",
-          "source_paths": ["framerail/src/routes/[x+2d]/admin/SiteSettings.svelte", "framerail/src/lib/server/load/admin.ts"],
+          "source_paths": [
+            "framerail/src/routes/[x+2d]/admin/SiteSettings.svelte",
+            "framerail/src/lib/server/load/admin.ts"
+          ],
           "existing_tests": [],
-          "evidence_ids": ["E_GENERAL_PANEL"],
-          "depends_on": ["S1046_LEGACY_ADMIN_ROUTE"],
-          "next_command_ids": ["C_SETTINGS_CANDIDATE"]
+          "evidence_ids": [
+            "E_GENERAL_PANEL"
+          ],
+          "depends_on": [
+            "S1046_LEGACY_ADMIN_ROUTE"
+          ],
+          "next_command_ids": [
+            "C_SETTINGS_CANDIDATE"
+          ]
         },
         {
           "case_id": "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
           "acceptance": "Prove anonymous, non-admin, cross-site, stale-revision, wrong-origin, expired-session, and administrator outcomes through the served action and subsequent public read.",
           "classification": "candidate_required",
           "reason": "Deepwell permission/revision tests and SvelteKit origin checking are source-ready components, but acceptance requires the exact HTTPS route, cookie, host, origin, and user-visible result.",
-          "source_paths": ["deepwell/src/endpoints/site.rs", "framerail/src/lib/server/load/admin.ts", "framerail/svelte.config.js"],
-          "existing_tests": ["deepwell/tests/site.rs::site_update_requires_site_edit_permission", "framerail/tests/deployment-environment.test.js::defaults CSRF origin checks from deployment environment"],
-          "evidence_ids": ["E_GENERAL_PANEL"],
-          "depends_on": ["S1046_LEGACY_ADMIN_ROUTE"],
-          "next_command_ids": ["C_SETTINGS_CANDIDATE"]
+          "source_paths": [
+            "deepwell/src/endpoints/site.rs",
+            "framerail/src/lib/server/load/admin.ts",
+            "framerail/svelte.config.js"
+          ],
+          "existing_tests": [
+            "deepwell/tests/site.rs::site_update_requires_site_edit_permission",
+            "framerail/tests/deployment-environment.test.js::defaults CSRF origin checks from deployment environment"
+          ],
+          "evidence_ids": [
+            "E_GENERAL_PANEL"
+          ],
+          "depends_on": [
+            "S1046_LEGACY_ADMIN_ROUTE"
+          ],
+          "next_command_ids": [
+            "C_SETTINGS_CANDIDATE"
+          ]
         }
       ]
     }
@@ -1088,25 +1666,58 @@
       "command": "node install/local/wikidot-verification/scripts/run-standing-browser-parity.mjs --mode candidate --output-dir /home/roku/wjlab/evidence/open43-final/settings-browser/browser --live-completion-policy /home/roku/wjlab/evidence/open43-final/settings-browser/sealed-live-completion-policy.json --candidate-identity /home/roku/wjlab/evidence/open43-final/settings-browser/sealed-candidate-parity-identity.json --live-reference-ledger /home/roku/wjlab/evidence/open43-final/settings-browser/standing-browser-live-reference.json --live-reference-sha256 <sealed-reference-sha256> --browser-root framerail --browser-executable /usr/bin/google-chrome",
       "phase": "final_candidate",
       "exists_now": true,
-      "requirements": ["clean final source tree", "non-443 isolated candidate", "recompiled canary pages and navigation dependencies", "separate initial and settled artifacts", "fixed thresholds and denominator"]
+      "requirements": [
+        "clean final source tree",
+        "non-443 isolated candidate",
+        "recompiled canary pages and navigation dependencies",
+        "separate initial and settled artifacts",
+        "fixed thresholds and denominator"
+      ]
     },
     "C_SETTINGS_CANDIDATE": {
       "command": "pnpm --dir install/local/wikidot-verification candidate-cases -- --case-set open43-settings-browser --candidate-identity /home/roku/wjlab/evidence/open43-final/settings-browser/sealed-candidate-parity-identity.json --private-input /home/roku/wjlab/private/open43-settings-candidate.json --output-dir /home/roku/wjlab/evidence/open43-final/settings-browser/settings",
       "phase": "final_candidate",
       "exists_now": true,
-      "coverage_case_ids": ["S754_ANALYTICS_INITIAL", "S754_ANALYTICS_SETTLED", "S755_THEME_INITIAL", "S755_THEME_SETTLED", "S757_TOOLBAR_INITIAL", "S757_TOOLBAR_SETTLED", "S1046_ADMIN_INITIAL", "S1046_ADMIN_SETTLED", "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX"],
-      "requirements": ["clean final source tree", "sealed exact non-443 scpaiueouiuiuiui.wikijump.localhost candidate", "private administrator, non-administrator, expired actor, and task fixture inputs", "publicly absent cross-site sentinel", "runner-owned browser contexts", "distinct immediate and settled artifacts", "exact public settings restoration"]
+      "coverage_case_ids": [
+        "S754_ANALYTICS_INITIAL",
+        "S754_ANALYTICS_SETTLED",
+        "S755_THEME_INITIAL",
+        "S755_THEME_SETTLED",
+        "S757_TOOLBAR_INITIAL",
+        "S757_TOOLBAR_SETTLED",
+        "S1046_ADMIN_INITIAL",
+        "S1046_ADMIN_SETTLED",
+        "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX"
+      ],
+      "requirements": [
+        "clean final source tree",
+        "sealed exact non-443 scpaiueouiuiuiui.wikijump.localhost candidate",
+        "private administrator, non-administrator, expired actor, and task fixture inputs",
+        "publicly absent cross-site sentinel",
+        "runner-owned browser contexts",
+        "distinct immediate and settled artifacts",
+        "exact public settings restoration"
+      ]
     }
   },
   "candidate_harness_gap": {
     "classification": "needs_source",
     "outside_source_residual_scope": true,
     "blocker_kind": "blocked_missing_disposable_autonumber_allocator_owner",
-    "case_ids": ["S758_CREATE_INITIAL", "S758_CREATE_SETTLED"],
+    "case_ids": [
+      "S758_CREATE_INITIAL",
+      "S758_CREATE_SETTLED"
+    ],
     "reason": "The shared Settings CaseSet covers the nine reversible rows. Its only remaining harness gap is #758: each successful create advances a monotonic allocator that public page deletion cannot restore to the exact pre-run value.",
     "required_before_run": "Provide a disposable candidate stack lifecycle owner that discards the task database after capture, or a normal public category lifecycle authority whose owned category and allocator are created and removed with the run.",
     "required_commands": [],
-    "must_not_substitute": ["direct database assertions as pass", "the current standing runtime", "the mock-only default Framerail Playwright fixture", "a settled screenshot", "HTTP 200 without actor, cache, asset, and runtime identity"]
+    "must_not_substitute": [
+      "direct database assertions as pass",
+      "the current standing runtime",
+      "the mock-only default Framerail Playwright fixture",
+      "a settled screenshot",
+      "HTTP 200 without actor, cache, asset, and runtime identity"
+    ]
   },
   "lane_validation": {
     "passed": [
@@ -1120,7 +1731,14 @@
       "pnpm --dir framerail exec svelte-kit sync"
     ],
     "generated_route_identity": "/_admin",
-    "not_run_by_lane_policy": ["Cargo", "runtime", "browser", "Wikidot mutation", "GitHub mutation", "push"],
+    "not_run_by_lane_policy": [
+      "Cargo",
+      "runtime",
+      "browser",
+      "Wikidot mutation",
+      "GitHub mutation",
+      "push"
+    ],
     "preexisting_barriers": [
       {
         "command": "pnpm --dir framerail check",
@@ -1130,7 +1748,12 @@
       {
         "command": "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/focused-uncovered/live-references.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/v7-full-syntax/live-references.jsonl",
         "result": "failed on four existing Deepwell runtime-module method-name literals; this lane changes no Rust or renderer path",
-        "finding_paths": ["deepwell/src/services/render/runtime_modules.rs:1846", "deepwell/src/services/render/runtime_modules.rs:1858", "deepwell/src/services/render/runtime_modules.rs:1894", "deepwell/src/services/render/runtime_modules.rs:1895"]
+        "finding_paths": [
+          "deepwell/src/services/render/runtime_modules.rs:1846",
+          "deepwell/src/services/render/runtime_modules.rs:1858",
+          "deepwell/src/services/render/runtime_modules.rs:1894",
+          "deepwell/src/services/render/runtime_modules.rs:1895"
+        ]
       }
     ],
     "source_residual": {
@@ -1144,11 +1767,23 @@
         "cd docs/development && sha256sum -c referent-table-open43-s-settings-source-residual-g5.md.sha256",
         "git diff --check"
       ],
-      "not_run_by_lane_policy": ["C_DEEPWELL_FRAGMENT_HREF", "runtime", "browser", "Wikidot mutation", "GitHub mutation", "push"],
+      "not_run_by_lane_policy": [
+        "C_DEEPWELL_FRAGMENT_HREF",
+        "runtime",
+        "browser",
+        "Wikidot mutation",
+        "GitHub mutation",
+        "push"
+      ],
       "preexisting_barrier": {
         "command": "pnpm --dir install/local/wikidot-verification corpus-pinned-literals -- --strict --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/focused-uncovered/live-references.jsonl --corpus /mnt/oracle-store/wjlab/issue-scout-20260731/v7-full-syntax/live-references.jsonl",
         "result": "failed on the same four existing runtime-module method-name literals recorded by the prior lane; this lane changes only a Deepwell integration test, audit documents, and the audit validator",
-        "finding_paths": ["deepwell/src/services/render/runtime_modules.rs:1846", "deepwell/src/services/render/runtime_modules.rs:1858", "deepwell/src/services/render/runtime_modules.rs:1894", "deepwell/src/services/render/runtime_modules.rs:1895"]
+        "finding_paths": [
+          "deepwell/src/services/render/runtime_modules.rs:1846",
+          "deepwell/src/services/render/runtime_modules.rs:1858",
+          "deepwell/src/services/render/runtime_modules.rs:1894",
+          "deepwell/src/services/render/runtime_modules.rs:1895"
+        ]
       }
     }
   },
@@ -1180,10 +1815,10 @@
     "subrow_count": 60,
     "issue_owned_needs_source_count": 0,
     "classification_counts": {
-      "source_ready": 24,
+      "source_ready": 26,
       "needs_source": 0,
       "candidate_required": 25,
-      "blocked_evidence": 11
+      "blocked_evidence": 9
     },
     "duplicate_case_ids": 0,
     "unknown_classifications": 0,

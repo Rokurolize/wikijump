@@ -28,6 +28,7 @@ use deepwell::license::License;
 use deepwell::models::alias::{self, Entity as AliasTable};
 use deepwell::models::audit_log::{Column as AuditLogColumn, Entity as AuditLogTable};
 use deepwell::models::relation::{Column as RelationColumn, Entity as RelationTable};
+use deepwell::models::role_permission::{self, Entity as RolePermissionTable};
 use deepwell::models::site::Entity as SiteTable;
 use deepwell::models::user::{Column as UserColumn, Entity as UserTable};
 use deepwell::services::PageService;
@@ -36,7 +37,7 @@ use deepwell::services::ServiceContext;
 use deepwell::services::alias::{AliasService, CreateAlias};
 use deepwell::services::category::CategoryService;
 use deepwell::services::page::CreatePage;
-use deepwell::services::permission::PermissionService;
+use deepwell::services::permission::{PermissionCache, PermissionService};
 use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
@@ -912,7 +913,7 @@ async fn site_settings_update_round_trips_and_rejects_stale_revision() {
                 "enabled": true,
                 "profile": "UA-00000000-2"
             },
-            "toolbars": { "top": true, "bottom": false },
+            "toolbars": { "top": true, "bottom": false, "promote": true },
             "ip_address": common::IP_ADDRESS,
         }),
     );
@@ -929,6 +930,7 @@ async fn site_settings_update_round_trips_and_rejects_stale_revision() {
     );
     assert!(fetched.settings.toolbars.top);
     assert!(!fetched.settings.toolbars.bottom);
+    assert!(fetched.settings.toolbars.promote);
 
     let disabled = run_endpoint!(
         runner,
@@ -957,7 +959,7 @@ async fn site_settings_update_round_trips_and_rejects_stale_revision() {
             "site": site_id,
             "user_id": SYSTEM_USER_ID,
             "expected_settings_revision": 0,
-            "toolbars": { "top": false, "bottom": true },
+            "toolbars": { "top": false, "bottom": true, "promote": false },
             "ip_address": common::IP_ADDRESS,
         }),
     );
@@ -966,6 +968,157 @@ async fn site_settings_update_round_trips_and_rejects_stale_revision() {
         .expect("updated site should exist");
     assert!(fetched.settings.toolbars.top);
     assert!(!fetched.settings.toolbars.bottom);
+    assert!(fetched.settings.toolbars.promote);
+}
+
+#[tokio::test]
+async fn promoted_sites_are_public_imported_sites_and_fail_closed_after_anonymous_view_revocation()
+ {
+    let mut runner = TestRunner::setup().await;
+    let current = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let candidate = run_endpoint!(runner, site_get, json!({"site": "scp-jp"}))
+        .expect("seeded SCP-JP site should exist");
+
+    let mut current_model = SiteTable::find_by_id(current.site.site_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("current-site lookup should succeed")
+        .expect("current site should exist")
+        .into_active_model();
+    current_model.from_wikidot = Set(true);
+    current_model.show_bottom_toolbar = Set(true);
+    current_model
+        .update(runner.context().transaction())
+        .await
+        .expect("current bottom-toolbar fixture should update");
+
+    let mut candidate_model = SiteTable::find_by_id(candidate.site.site_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("candidate lookup should succeed")
+        .expect("candidate site should exist")
+        .into_active_model();
+    candidate_model.from_wikidot = Set(true);
+    candidate_model.promote_on_other_sites = Set(true);
+    candidate_model.name = Set(String::from("Promotion privacy fixture"));
+    candidate_model.description = Set(String::from("Promotion privacy secret marker"));
+    candidate_model
+        .update(runner.context().transaction())
+        .await
+        .expect("candidate promotion fixture should update");
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(current.site.site_id),
+        ..Default::default()
+    });
+    let before = run_endpoint!(
+        runner,
+        preload_view,
+        json!({
+            "site_id": current.site.site_id,
+            "session_token": null,
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(
+        before.viewer.promoted_sites.iter().any(|site| {
+            site.slug == "scp-jp"
+                && site.name == "Promotion privacy fixture"
+                && site.description == "Promotion privacy secret marker"
+        }),
+        "an anonymously viewable imported site with promotion enabled should be eligible",
+    );
+    assert!(
+        before
+            .viewer
+            .promoted_sites
+            .iter()
+            .all(|site| site.slug != "scp-wiki"),
+        "the current site must never promote itself",
+    );
+    let cache_metadata = run_endpoint!(
+        runner,
+        article_view_cache_metadata,
+        json!({
+            "site_id": current.site.site_id,
+            "session_token": null,
+            "route": null,
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert_eq!(cache_metadata.article_page_cache_key, None);
+    assert_eq!(cache_metadata.public_content_cache_fence, None);
+    assert_eq!(cache_metadata.anonymous_permission_cache_fence, None);
+    let article = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": current.site.site_id,
+            "session_token": null,
+            "route": null,
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert_eq!(article.article_page_cache_key, None);
+    assert_eq!(article.public_content_cache_fence, None);
+    assert_eq!(article.anonymous_permission_cache_fence, None);
+
+    let anonymous_role = RoleService::get(
+        runner.context(),
+        candidate.site.site_id,
+        Reference::Slug(Cow::Borrowed("anonymous")),
+    )
+    .await
+    .expect("anonymous role should exist");
+    let guest_role = RoleService::get(
+        runner.context(),
+        candidate.site.site_id,
+        Reference::Slug(Cow::Borrowed("guest")),
+    )
+    .await
+    .expect("guest role should exist");
+    let everyone_role = RoleService::get(
+        runner.context(),
+        candidate.site.site_id,
+        Reference::Slug(Cow::Borrowed("everyone")),
+    )
+    .await
+    .expect("everyone role should exist");
+    RolePermissionTable::delete_many()
+        .filter(role_permission::Column::RoleId.is_in([
+            anonymous_role.role_id,
+            guest_role.role_id,
+            everyone_role.role_id,
+        ]))
+        .filter(role_permission::Column::SiteId.eq(candidate.site.site_id))
+        .filter(role_permission::Column::ResourceType.eq(Resource::Page))
+        .filter(role_permission::Column::ResourceCategoryId.is_null())
+        .filter(role_permission::Column::Action.eq(Action::View))
+        .exec(runner.context().transaction())
+        .await
+        .expect("anonymous page-view permissions should be revoked");
+    PermissionCache::invalidate_site(runner.context(), candidate.site.site_id)
+        .await
+        .expect("candidate permission cache should invalidate");
+
+    let after = run_endpoint!(
+        runner,
+        preload_view,
+        json!({
+            "site_id": current.site.site_id,
+            "session_token": null,
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(
+        after
+            .viewer
+            .promoted_sites
+            .iter()
+            .all(|site| site.slug != "scp-jp"),
+        "promotion DTO must not disclose a site that anonymous Page:View cannot access",
+    );
 }
 
 #[tokio::test]

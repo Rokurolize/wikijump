@@ -120,7 +120,10 @@ before(async () => {
       default_page: "start",
       welcome_page: "welcome",
       locale: "en",
-      layout: "wikidot"
+      layout: "wikidot",
+      show_top_toolbar: false,
+      show_bottom_toolbar: false,
+      promote_on_other_sites: true
     }
     const request = new Request("https://wikijump.test/--/admin", {
       headers: {
@@ -131,12 +134,14 @@ before(async () => {
     adminData = await loadAdminPage(request, { get: () => sessionToken }, async () => ({
       site,
       site_settings: {
+        toolbars: { top: false, bottom: false, promote: true },
         membership: {
           application_enabled: false,
           password_enabled: false,
           password_configured: false
         }
       },
+      promoted_sites: [],
       site_file_domain: "test.wjfiles.localhost",
       license_name: "CC BY-SA 3.0",
       license_url: "https://creativecommons.org/licenses/by-sa/3.0/",
@@ -346,13 +351,25 @@ describe("Wikidot site settings public boundaries", () => {
       },
       site_settings: {
         google_analytics: { enabled: true, profile: "UA-1-2" },
-        toolbars: { top: true, bottom: false },
+        toolbars: { top: true, bottom: true, promote: true },
         membership: {
           application_enabled: false,
           password_enabled: false,
           password_configured: false
         }
       },
+      promoted_sites: [
+        {
+          slug: "alpha-site",
+          name: "Alpha Site",
+          description: "Alpha description"
+        },
+        {
+          slug: "beta-site",
+          name: "Beta & Site",
+          description: "Beta <description>"
+        }
+      ],
       theme: { type: "external", url: "https://cdn.scpwiki.com/site.css" },
       license_name: "CC BY-SA 3.0",
       license_url: "https://creativecommons.org/licenses/by-sa/3.0/",
@@ -375,10 +392,25 @@ describe("Wikidot site settings public boundaries", () => {
       /data-wikidot-site-theme="" href="https:\/\/cdn\.scpwiki\.com\/site\.css"/u
     )
     assert.match(enabled.body, /id="navi-bar"/u)
+    assert.match(enabled.body, /id="footer-bar"/u)
+    assert.match(enabled.body, />Other interesting sites<\/h2>/u)
+    assert.match(
+      enabled.body,
+      /href="http:\/\/alpha-site\.wikidot\.com"[^>]*><img class="thumbnail" alt="" src="http:\/\/thumbnails\.wdfiles\.com\/thumbnail\/site\/alpha-site\.wikidot\.com\/80\.jpg"/u
+    )
+    assert.match(enabled.body, />Alpha Site<\/a>/u)
+    assert.match(enabled.body, />Alpha description<\/div>/u)
+    assert.match(enabled.body, />Beta &amp; Site<\/a>/u)
+    assert.match(enabled.body, />Beta &lt;description><\/div>/u)
+    assert.ok(
+      enabled.body.indexOf('id="license-area"') < enabled.body.indexOf('id="footer-bar"'),
+      "bottom toolbar must follow the license and extra chrome like Wikidot"
+    )
 
     const disabledData = structuredClone(enabledData)
     disabledData.site_settings.google_analytics = { enabled: false, profile: null }
     disabledData.site_settings.toolbars.top = false
+    disabledData.site_settings.toolbars.bottom = false
     disabledData.theme = { type: "built_in", id: 1 }
     const disabled = renderComponent(
       rootLayoutComponent,
@@ -388,6 +420,7 @@ describe("Wikidot site settings public boundaries", () => {
     assert.doesNotMatch(disabled.head, /wikidot-site-analytics-profile/u)
     assert.doesNotMatch(disabled.head, /data-wikidot-site-theme/u)
     assert.doesNotMatch(disabled.body, /id="navi-bar"/u)
+    assert.doesNotMatch(disabled.body, /id="footer-bar"/u)
 
     const analyticsBody = renderComponent(analyticsSettingsComponent, {
       data: {
@@ -469,13 +502,14 @@ describe("Wikidot site settings public boundaries", () => {
           },
           site_settings: {
             google_analytics: { enabled: true, profile: "UA-1-2" },
-            toolbars: { top: true, bottom: false },
+            toolbars: { top: true, bottom: false, promote: true },
             membership: {
               application_enabled: false,
               password_enabled: false,
               password_configured: false
             }
           },
+          promoted_sites: [],
           site_file_domain: "test.wjfiles.localhost",
           license_name: "CC BY-SA 3.0",
           license_url: "https://creativecommons.org/licenses/by-sa/3.0/",
@@ -614,10 +648,11 @@ describe("Wikidot site settings public boundaries", () => {
           siteId,
           expectedSettingsRevision: settingsRevision,
           top: true,
-          bottom: false
+          bottom: false,
+          promote: false
         },
         method: "site_update",
-        expected: { toolbars: { top: true, bottom: false } }
+        expected: { toolbars: { top: true, bottom: false, promote: false } }
       },
       {
         action: "membership",

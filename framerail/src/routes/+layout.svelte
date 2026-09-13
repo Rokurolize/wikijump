@@ -45,6 +45,7 @@
   } from "$lib/site-icons"
   import { installWikidotCategories } from "$lib/wikidot/wikidot-categories.js"
   import { installWikidotNewPageHelper } from "$lib/wikidot/wikidot-new-page-helper"
+  import WikidotBottomToolbar from "$lib/wikidot/WikidotBottomToolbar.svelte"
   import {
     installWikidotSearchAll,
     submitWikidotTopSearch
@@ -114,6 +115,10 @@
   const showTopToolbar = $derived(
     currentLayout === Layout.WIKIDOT && viewData?.site_settings?.toolbars?.top === true
   )
+  const showBottomToolbar = $derived(
+    currentLayout === Layout.WIKIDOT && viewData?.site_settings?.toolbars?.bottom === true
+  )
+  const promotedSites = $derived(viewData?.promoted_sites ?? [])
   const analyticsSettings = $derived(
     currentLayout === Layout.WIKIDOT
       ? normalizeGoogleAnalyticsSettings(viewData?.site_settings?.google_analytics)
@@ -369,6 +374,11 @@
         {@html wikidotLicenseHtml}
       {:else}
         {@html viewData?.internationalization?.["footer-license-unless"] ?? ""}
+      {/if}
+    {/snippet}
+    {#snippet bottomToolbar()}
+      {#if showBottomToolbar}
+        <WikidotBottomToolbar sites={promotedSites} />
       {/if}
     {/snippet}
   </Wikidot>

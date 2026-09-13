@@ -1059,6 +1059,8 @@ pub struct SiteFields<'a> {
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub show_bottom_toolbar: Maybe<bool>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub promote_on_other_sites: Maybe<bool>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub membership_by_application: Maybe<bool>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub membership_by_password: Maybe<bool>,

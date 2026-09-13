@@ -54,9 +54,9 @@
     {
       "case_id": "S757_BOTTOM_TOOLBAR_DOM",
       "issue": 757,
-      "status": "unimplemented",
-      "evidence": "The capture records the bottom flag as false and contains no enabled bottom toolbar DOM.",
-      "result": "The bottom flag persists independently. Framerail does not invent the missing bottom toolbar DOM or geometry."
+      "status": "implemented",
+      "evidence": "install/local/wikidot-verification/artifacts/s757-toolbar-promotion-live-20260913.json",
+      "result": "A run-owned live mutation proves the enabled #footer-bar DOM, four promoted-site cards, static positioning, and 1280/767/479 responsive geometry. Framerail renders that structure only when the persisted bottom flag is enabled."
     },
     {
       "case_id": "S758_NORMAL_CREATE_ALLOCATOR",
