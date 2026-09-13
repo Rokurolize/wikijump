@@ -1459,13 +1459,19 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
       return;
     }
     if (!new Set(["http:", "https:"]).has(url.protocol) || exempt.has(url.origin)) return;
+    let status;
     let retryAfter;
     try {
+      status = response.status();
       retryAfter = response.headers()?.["retry-after"];
     } catch {
       gate.failClosed(new Error("browser response headers cannot be inspected for request-gate enforcement"));
       return;
     }
+    // Retry-After is a retry demand only on 429/503. Wikidot HTML pages also
+    // send it on 200 responses as a cache hint; treating that as a retry
+    // demand would stall every browser capture for the hinted interval.
+    if (status !== 429 && status !== 503) return;
     if (retryAfter !== undefined) void gate.deferForRetryAfter(retryAfter).catch((error) => gate.failClosed(error));
   });
   await context.routeWebSocket("**/*", () => {
