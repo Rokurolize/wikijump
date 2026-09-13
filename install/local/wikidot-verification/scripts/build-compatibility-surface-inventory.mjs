@@ -84,7 +84,7 @@ const AUDITED_OWNERSHIP_REPORTS = Object.freeze([
     sha256: "ef87c37c9bd2ebf661d003c361f386c5d979b30aeebb18a6b44c307124f0636c"
   }
 ])
-const AUDITED_CATALOG_SHA256 = "b859e997cfeb4e93c448ee6ba5505cb6dbdb8ba7e015337e1d104ff89ac545dd"
+const AUDITED_CATALOG_SHA256 = "67657059d4b30171fc595fbc447b2c8052c4575982082615210a40be843c2999"
 const AUDITED_CATALOG_FALLBACK = Object.freeze({
   count: 92,
   surface_ids_sha256: "08a6222562288778e1b0eb705a0281401424f514aeb542bedbabf37a0261a95e",
@@ -101,7 +101,7 @@ const AUDITED_CURRENT_CATALOG_ISSUES = Object.freeze({
 })
 const AUDITED_ISSUE_GROUPS = Object.freeze({
   deepwell_jsonrpc_method: Object.freeze({ count: 173, surface_ids_sha256: "8aed2e75bbc9dc53e3a0cff01bf9b25d24a8fb0d7d35405f7141977285f067c8", mapping_sha256: "2d3acb56bf21db9c7f7d4c5a19b7fa17b27219c8ecd0a211f0aa38d4fbd75020" }),
-  framerail_route: Object.freeze({ count: 28, surface_ids_sha256: "df0699905bb6b1c0a333c910f934d96d9ef1914a0d71e00659522d6be17280cc", mapping_sha256: "51b480159bbc424faf3199e75f50650b1f23d9a3eea0bdee1682ae89adc47a3d" }),
+  framerail_route: Object.freeze({ count: 29, surface_ids_sha256: "1c5d6d132bc51fb42816197d6e875bd38a332db852be2b5bad9b511e92645981", mapping_sha256: "7fef227b09d40997d9c2a95c912489f2671482ecf7277e94f2ae114f38bf2e78" }),
   framerail_server_action: Object.freeze({ count: 107, surface_ids_sha256: "2d24668b2c1a9c5dd03f76aeba6e4ebe40127e0570bf0b788bec5d980cefd836", mapping_sha256: "03447d40bc082d4b323530ec2abf0b57ad3906fac5ef268cb1bb344e8e9fa0fd" }),
   framerail_amc_action_shape: Object.freeze({ count: 2, surface_ids_sha256: "69e643ef40a7efffbcc2cea03dc0f864aa0fb62d51ab8fd0c6062c74af9bee49", mapping_sha256: "945b06829bdf00f44c78040b1b2a4f793bb3e67325c98a94cffee4079c008646" }),
   framerail_amc_module_shape: Object.freeze({ count: 27, surface_ids_sha256: "4f2f2705c525444287f6d2f2835903263953f78d8d2d830f46b296e139de8b13", mapping_sha256: "90c279280479e68e0227a8c4d26ececa5a74b0f0ef8937abeac548dcffc89b61" }),

@@ -26,6 +26,14 @@ test("imported site icons redirect only to site-owned Wikidot resources", () => 
   assert.equal(
     siteIconRedirectLocation(
       importedSite,
+      "https://scp-wiki.wikidot.com/local--wp8icon/wp8icon.png",
+      "windows"
+    ),
+    "https://scp-wiki.wikidot.com/local--wp8icon/wp8icon.png"
+  )
+  assert.equal(
+    siteIconRedirectLocation(
+      importedSite,
       "https://scp-wiki.wdfiles.com/local--files/site/favicon.gif",
       "favicon"
     ),
@@ -65,6 +73,23 @@ test("imported site icons redirect only to site-owned Wikidot resources", () => 
       importedSite,
       "https://scp-wiki.wikidot.com/local--favicon/favicon.gif",
       "windows"
+    ),
+    null
+  )
+  assert.equal(
+    siteIconRedirectLocation(
+      importedSite,
+      "https://scp-wiki.wikidot.com/local--wp8icon/wp8icon.png",
+      "favicon"
+    ),
+    null,
+    "a Windows tile route is not a favicon source"
+  )
+  assert.equal(
+    siteIconRedirectLocation(
+      importedSite,
+      "https://scp-wiki.wikidot.com/local--wp8icon/wp8icon.png",
+      "ios"
     ),
     null
   )

@@ -22,7 +22,7 @@
     "missing_security_policy": "The row needs a local security, rate-limit, fetch, or failure policy that Wikidot read-only output cannot safely authorize."
   },
   "counts": {
-    "anonymous_read_only": 3,
+    "anonymous_read_only": 2,
     "authenticated_read_only": 3,
     "run_owned_mutation": 13,
     "local_candidate": 0,
@@ -30,7 +30,7 @@
     "missing_public_producer": 9,
     "missing_architecture_domain_authority": 10,
     "missing_security_policy": 2,
-    "total": 49
+    "total": 48
   },
   "rows": [
     {"case_id":"Q810_ACTIVE_GLOBAL_ROTATION","route_class":"missing_architecture_domain_authority","status":"not_attempted_not_safe","reason":"No authorized global FeaturedSite data source or refresh owner exists."},
@@ -62,7 +62,6 @@
     {"case_id":"A1038_THEMEPREVIEWER_ACTIVE","route_class":"missing_security_policy","status":"not_attempted_not_safe","reason":"External theme fetch allowlist, CSP, size, timeout, and cleanup policy are unresolved."},
     {"case_id":"A1063_LEGACY_AUTHORING_PRESENTATION","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Revision diff and settings messages, keyboard behavior, errors, and intermediate frames require browser observation."},
     {"case_id":"A1063_FULL_BREADCRUMB_LIVE_BOUNDARY","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"The standard saved-page shell is now authoritatively negative; the remaining unobserved authority is the separately documented Pro custom-layout [[breadcrumbs]] presentation."},
-    {"case_id":"M756_WINDOWS_TILE_DECLARATION","route_class":"anonymous_read_only","status":"blocked_no_positive_fixture","reason":"The existing bounded public probe found no configured positive declaration; admin evidence proves only that the upload slot exists."},
     {"case_id":"M756_UPLOAD_MATERIALIZATION","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Upload-to-blob materialization and edge policy require a run-owned file mutation."},
     {"case_id":"M1039_FILES_PAGINATION_AND_HISTORY","route_class":"missing_public_producer","status":"partial_evidence_acquired","reason":"Three populated pages establish up to fifteen active rows, but no public fixture establishes later pages, duplicate-looking or Unicode names, deletion, or historical revisions."},
     {"case_id":"M1039_FILES_SAVED_EMPTY_AND_ACL","route_class":"missing_architecture_domain_authority","status":"blocked_missing_domain_authority","reason":"Saved output needs Wikidot's module-instance identity; using the page ID would fabricate DOM and JavaScript identity, so the module remains literal."},

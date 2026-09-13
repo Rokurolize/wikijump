@@ -1,0 +1,54 @@
+{
+  "schema": "wikijump.m756_windows_tile_live_observation.v1",
+  "observed_at": "2026-09-13",
+  "site": "sandbox-for-codex",
+  "site_origin": "http://sandbox-for-codex.wikidot.com",
+  "actor": "authenticated run-owned mutation account A",
+  "source_artifact": {
+    "path": "/home/roku/wjlab/evidence/m756-windows-tile-20260914-r1/verdict.json",
+    "sha256": "f11c7c2d0fa46e3a3986338d17544914a1a436ea9e528ff35e62da5a2d0d86ca"
+  },
+  "run_id": "b81ca161-a55b-4a5c-98ce-b161af078569",
+  "tile_source_png": "/home/roku/wjlab/evidence/m756-windows-tile-20260914-r1/tile-source.png",
+  "tile_source_sha256": "56e27a06d92ab9c0b9a19e5e05e927321a2f44e3e16d84fa6e149ecd3224ba01",
+  "head_declaration": "<meta name=\"msapplication-TileImage\" content=\"/local--wp8icon/wp8icon.png\"/>",
+  "head_declaration_order": {
+    "after": "apple-touch-icons",
+    "before": null
+  },
+  "negative_control": {
+    "before_head_has_msapplication": false,
+    "after_revert_head_has_msapplication": false,
+    "head_elements_equal_after_revert": true
+  },
+  "route": {
+    "url": "http://sandbox-for-codex.wikidot.com/local--wp8icon/wp8icon.png",
+    "get": {
+      "status": 200,
+      "content_type": "image/png; charset=utf-8",
+      "content_length": "287",
+      "etag": "\"49bc4af5fbdbc0fa2b2e30f3fe6e80af\"",
+      "cache_control": "maxage=3600, public max-age=3600",
+      "body_sha256": "56e27a06d92ab9c0b9a19e5e05e927321a2f44e3e16d84fa6e149ecd3224ba01",
+      "body_bytes": 287
+    },
+    "head": {
+      "status": 200,
+      "content_type": "image/png; charset=utf-8",
+      "content_length": "287",
+      "etag": "\"49bc4af5fbdbc0fa2b2e30f3fe6e80af\"",
+      "cache_control": "maxage=3600, public max-age=3600"
+    }
+  },
+  "cleanup": {
+    "delete_response_status": "ok",
+    "public_meta_absent_after_revert": true,
+    "mutation_left_active": false
+  },
+  "request_pacing": {
+    "public_requests": 198,
+    "retry_after_honored": 0,
+    "enforcement_failed": false
+  },
+  "credentials_in_evidence": false
+}

@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-09-05",
-  "catalog_sha256": "b859e997cfeb4e93c448ee6ba5505cb6dbdb8ba7e015337e1d104ff89ac545dd",
+  "catalog_sha256": "67657059d4b30171fc595fbc447b2c8052c4575982082615210a40be843c2999",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -3663,15 +3663,52 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "favicons": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
-      "documentation_evidence": [
-        "specifications/platform/favicons.md"
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous public page-view head declaration",
+        "Public site-local icon route GET and HEAD",
+        "Authenticated run-owned sandbox ManageSiteIconsAction mutation with delete restore"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "tests": [
+        {
+          "path": "framerail/tests/site-icons.test.js",
+          "name": "Windows 8 tile declaration keeps Wikidot's local route rather than the configured source",
+          "scope": "configured Windows tile declares the fixed /local--wp8icon/wp8icon.png head route while the configured source stays hidden"
+        },
+        {
+          "path": "framerail/tests/site-icons.test.js",
+          "name": "a site without a usable Windows 8 tile declares nothing",
+          "scope": "missing, empty, arbitrary external, and cross-kind Windows tile sources declare no meta element"
+        },
+        {
+          "path": "framerail/tests/site-icon-source.test.js",
+          "name": "imported site icons redirect only to site-owned Wikidot resources",
+          "scope": "the Windows tile route is accepted only for the windows kind and only for the site-owned Wikidot route or wdfiles file route"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/m756-windows-tile-evidence.test.mjs",
+          "name": "configured Windows tile declares the exact live meta and local route",
+          "scope": "byte-sealed binding of the 2026-09-13 run-owned capture declaration, route bytes, negative control, and cleanup"
+        }
+      ],
+      "implementation_files": [
+        "framerail/src/lib/site-icon-source.ts",
+        "framerail/src/lib/site-icons.ts",
+        "framerail/src/routes/+layout.svelte",
+        "framerail/src/routes/local--wp8icon/[filename]/+server.ts"
+      ],
+      "documentation_evidence": [
+        "specifications/platform/favicons.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "live-observations.json::windows-tile-declaration-20260913",
+        "install/local/wikidot-verification/artifacts/m756-windows-tile-live-20260914.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Icon bytes are not materialized into local ownership: the admin form still forwards only *_source strings, so slot-to-blob binding, replacement, deletion, MIME and size limits, and failure cleanup remain unproven.",
+        "Local route bytes and browser cache transitions require the exact merged candidate."
+      ]
     },
     "forum-signatures": {
       "status": "pending",

@@ -327,6 +327,16 @@
         "m806-width-unquoted-px": "bb214951a18e7b63226bcfb4c448135156819da973d30497b4241737cfd059fd"
       }
     },
+    "E_M756_WINDOWS_TILE_20260914": {
+      "path": "install/local/wikidot-verification/artifacts/m756-windows-tile-live-20260914.json",
+      "sha256": "20be4e14d8addc6340664e0ad765bb0eec85dcf047dbb0c7f1c203a34e3396d7",
+      "source_revision": "76a4c056f07055342673550026eda42607386122",
+      "external_evidence_root": "/home/roku/wjlab/evidence/m756-windows-tile-20260914-r1",
+      "external_run_receipt": {
+        "path": "/home/roku/wjlab/evidence/m756-windows-tile-20260914-r1/verdict.json",
+        "sha256": "f11c7c2d0fa46e3a3986338d17544914a1a436ea9e528ff35e62da5a2d0d86ca"
+      }
+    },
     "E_ICON_SCOPE": {
       "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/icon-setting-v1/scoping-verdict.json",
       "sha256": "bb73af6a64011df8d87b0766032ae63c2cbdee4e0cb845b62bdb2e2bea38cd15"
@@ -760,45 +770,23 @@
         {
           "case_id": "M756_WINDOWS_TILE_DECLARATION",
           "acceptance": "Project the configured Windows 8 tile through the exact live head declaration and local route instead of storing an unused setting.",
-          "classification": "blocked_evidence",
-          "reason": "The settings model and admin field prove that a Windows tile slot exists, but the frozen evidence and read-only public probes do not show a configured positive public-head shape or its site-local route. A source or test change would have to invent the meta declaration or pathname.",
+          "classification": "source_ready",
+          "reason": "The sealed 2026-09-13 run-owned mutation fixes the exact head meta declaration and the /local--wp8icon/wp8icon.png GET/HEAD behavior with an unconfigured negative control and a verified delete restore. Framerail declares the tile and exposes the same safe local redirect route.",
           "source_paths": [
             "framerail/src/routes/+layout.svelte",
             "framerail/src/lib/site-icons.ts",
-            "framerail/src/routes/[x+2d]/admin/SiteIconSettings.svelte"
+            "framerail/src/lib/site-icon-source.ts",
+            "framerail/src/routes/local--wp8icon/[filename]/+server.ts",
+            "install/local/wikidot-verification/artifacts/m756-windows-tile-live-20260914.json"
           ],
-          "existing_tests": [],
-          "evidence_ids": ["E_ICON_PANEL", "E_ICON_OBSERVATIONS"],
-          "seam_map": {
-            "path": "docs/development/open43-m-windows-tile-seam-map.md",
-            "sha256": "8f8767ce0a5ff0ab2b4acd18529c32f4bcd305a45dbeb0ed0bcda9664b2f68a7",
-            "referent_table_path": "docs/development/referent-table-open43-m-windows-tile-seam-map.md",
-            "referent_table_sha256": "86cc554e415f27a4c67602786fe1a2a9fac64fceb4f6e7bcb2a8859a372e9ae1"
-          },
-          "read_only_public_probe": {
-            "observed_on": "2026-08-09",
-            "routes": [
-              "http://sandbox-for-codex.wikidot.com/",
-              "https://scp-wiki.wikidot.com/scp-9506",
-              "http://community.wikidot.com/"
-            ],
-            "mutations_performed": false,
-            "configured_positive_shape_observed": false,
-            "acceptance_authority": false
-          },
-          "not_inferred": [
-            "meta name and attribute set",
-            "site-local route prefix and filename",
-            "Windows tile background color",
-            "generic modern web manifest"
+          "existing_tests": [
+            "framerail/tests/site-icons.test.js::Windows 8 tile declaration keeps Wikidot's local route rather than the configured source",
+            "framerail/tests/site-icons.test.js::a site without a usable Windows 8 tile declares nothing",
+            "framerail/tests/site-icon-source.test.js::imported site icons redirect only to site-owned Wikidot resources",
+            "install/local/wikidot-verification/tests/m756-windows-tile-evidence.test.mjs::configured Windows tile declares the exact live meta and local route"
           ],
-          "missing_evidence": [
-            "configured live public-page head declaration",
-            "the declaration's exact site-local route",
-            "GET and HEAD behavior for that route",
-            "same-site unconfigured negative control bound to the positive capture"
-          ],
-          "next_command_ids": []
+          "evidence_ids": ["E_M756_WINDOWS_TILE_20260914"],
+          "next_command_ids": ["C_FRAMERAIL_MEDIA_UNIT"]
         },
         {
           "case_id": "M756_UPLOAD_MATERIALIZATION",
@@ -2092,10 +2080,10 @@
     "issue_count": 7,
     "subrow_count": 48,
     "classification_counts": {
-      "source_ready": 26,
+      "source_ready": 27,
       "needs_source": 0,
       "candidate_required": 11,
-      "blocked_evidence": 11
+      "blocked_evidence": 10
     },
     "duplicate_case_ids": 0,
     "unknown_classifications": 0,

@@ -10,6 +10,12 @@ export const SITE_ICON_CACHE_CONTROL = "no-store"
 /** Wikidot serves a site's configured iOS icons from this fixed route. */
 export const IOS_ICON_ROUTE_PREFIX = "/local--iosicon/"
 
+/** Wikidot serves a site's configured Windows 8 tile from this fixed route. */
+export const WINDOWS_TILE_ROUTE_PREFIX = "/local--wp8icon/"
+
+/** The single Windows 8 tile filename Wikidot declares in the page head. */
+export const WINDOWS_TILE_FILENAME = "wp8icon.png"
+
 /**
  * The iOS icon filenames Wikidot derives from one uploaded icon, paired
  * with the `sizes` attribute it declares for each. The first has no
@@ -73,4 +79,26 @@ export function hasIosIcons(site: Nullable<SiteModel>): boolean {
   return (
     site !== null && siteIconRedirectLocation(site, site.ios_icon_source, "ios") !== null
   )
+}
+
+export interface WindowsTileDeclaration {
+  href: string
+}
+
+/**
+ * The Windows 8 tile declaration for a site, or null when it has no usable
+ * configured tile.
+ *
+ * The href keeps Wikidot's local route shape rather than the configured
+ * source, because that is what the live page declares regardless of
+ * whether the tile was uploaded or linked.
+ */
+export function windowsTileDeclaration(
+  site: Nullable<SiteModel>
+): Nullable<WindowsTileDeclaration> {
+  if (!site) return null
+  if (siteIconRedirectLocation(site, site.windows_tile_source, "windows") === null) {
+    return null
+  }
+  return { href: `${WINDOWS_TILE_ROUTE_PREFIX}${WINDOWS_TILE_FILENAME}` }
 }

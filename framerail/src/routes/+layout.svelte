@@ -41,7 +41,8 @@
     IOS_ICON_DECLARATIONS,
     IOS_ICON_ROUTE_PREFIX,
     faviconDeclaration,
-    hasIosIcons
+    hasIosIcons,
+    windowsTileDeclaration
   } from "$lib/site-icons"
   import { installWikidotCategories } from "$lib/wikidot/wikidot-categories.js"
   import { installWikidotNewPageHelper } from "$lib/wikidot/wikidot-new-page-helper"
@@ -140,6 +141,7 @@
   )
   const siteFavicon = $derived(faviconDeclaration(iconSite))
   const siteHasIosIcons = $derived(hasIosIcons(viewData?.site ?? null))
+  const siteWindowsTile = $derived(windowsTileDeclaration(iconSite))
   const wikidotSiteTagline = $derived(resolveWikidotSiteTagline(viewData))
   const wikidotSessionUserName = $derived(resolveWikidotSessionUserName(viewData))
   const styleFrameDeclarations = $derived(
@@ -218,6 +220,9 @@
         sizes={iosIcon.sizes ?? undefined}
       />
     {/each}
+  {/if}
+  {#if siteWindowsTile}
+    <meta name="msapplication-TileImage" content={siteWindowsTile.href} />
   {/if}
   {#if currentLayout === Layout.WIKIDOT}
     <link href="/wikidot/styles/wikidot-base-165bc434fd1d.css" rel="stylesheet" />
