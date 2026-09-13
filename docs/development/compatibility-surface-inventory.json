@@ -11290,8 +11290,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "dbea571d364135f4121d9639b09bc03deda196da",
-      "tree": "365d06b8661f03ecd10e5a12a6865ffcd14d9576"
+      "commit": "2eb5432181fd6d910ca5adae2e3947e8e5bd53ae",
+      "tree": "7dde2981a86b034a69b1aa4b870b765b835637b9"
     },
     "ftml": {
       "commit": "c37c8360a2ac304eb1de06942465e1c8b9ad737a",
@@ -11448,7 +11448,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "68f78dfce87497acb89f39f4640687c2ef83dbab1da2ee7dd58df30fe5b128b1"
+        "sha256": "adfbb53cc258d8384b96e8643f2bf1976c476ae8a4d928359cadee35b65c4bee"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11468,11 +11468,11 @@
       },
       {
         "path": "docs/development/open43-blocked-evidence-routing.json",
-        "sha256": "5ba684765e637dfef26e8780e4dfd22f9cebc1f4020b6d4de31c1813516549bc"
+        "sha256": "65729b9d816509c5ad63aab8eef8e364a88ab4f9a750a4e7df14c7f5de8814e6"
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "2214b1cb8400b36b37381bb8bd5beffb720d35953c905e43e39da672e1b11c47"
+        "sha256": "e4323010c186921b92516f913f7a3725954b126efede039199f6a5989a2460c3"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -11492,7 +11492,7 @@
       },
       {
         "path": "docs/development/open43-s-settings-browser-closure-audit.json",
-        "sha256": "2f7ef5b4699f68d6f02c39704801bc7d95b2a6cea2b4497a5ef8f7ff03ec17ab"
+        "sha256": "1c0fe0d517f4fb9d1d352384b50c7a3fe463cf1f04ddc3aa01b8711bce8d40f9"
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
@@ -28028,7 +28028,7 @@
         ],
         "cases": [],
         "tests": [
-          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+          "deepwell/tests/site.rs#promoted_sites_are_public_imported_sites_and_fail_closed_after_anonymous_view_revocation"
         ]
       },
       "evidence": {
@@ -49105,10 +49105,12 @@
         "cases": [
           "S757_BOTTOM_TOOLBAR_DOM"
         ],
-        "tests": []
+        "tests": [
+          "framerail/tests/site-settings-public-boundary.test.js::server-renders analytics, theme, and toolbar settings from the request view"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -49116,15 +49118,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:S757_BOTTOM_TOOLBAR_DOM",
@@ -49188,10 +49190,13 @@
         "cases": [
           "S757_PROMOTION_FLAG_EFFECT"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/site.rs::promoted_sites_are_public_imported_sites_and_fail_closed_after_anonymous_view_revocation",
+          "framerail/tests/site-settings-public-boundary.test.js::server-renders analytics, theme, and toolbar settings from the request view"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -49199,15 +49204,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:S757_PROMOTION_FLAG_EFFECT",
