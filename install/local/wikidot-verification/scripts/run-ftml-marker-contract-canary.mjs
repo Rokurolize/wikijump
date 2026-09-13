@@ -4,6 +4,7 @@
 // comparison implementation is the existing V3 Local Lab comparator.
 
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
@@ -164,6 +165,19 @@ function currentFtmlSha(repository) {
     path.join(repository, "deepwell/Cargo.lock"),
   ]);
   return sha(source);
+}
+
+// The renderer epoch advances with Deepwell render changes. Reading it from
+// the built worktree keeps the marker canary from silently requiring a stale
+// hardcoded epoch after an epoch bump.
+export function expectedDeepwellRendererEpoch(worktree) {
+  const source = readFileSync(
+    path.join(worktree, "deepwell/src/services/render/generator.rs"),
+    "utf8",
+  );
+  const match = source.match(/DEEPWELL_RENDERER_EPOCH\s*:\s*u32\s*=\s*(\d+)\s*;/u);
+  assert.ok(match, "Deepwell renderer epoch is missing from the worktree");
+  return match[1];
 }
 
 function currentImages() {
@@ -447,6 +461,7 @@ async function seedFixtures({
   rpcToken,
   fixtures,
   administrator,
+  expectedRendererEpoch,
 }) {
   const authenticatedRpc = (method, params = {}, headers = {}) =>
     rpc(
@@ -515,7 +530,7 @@ async function seedFixtures({
     });
     assert.match(
       page.compiled_generator ?? "",
-      /; deepwell-render\/v10$/u,
+      new RegExp(`; deepwell-render\\/v${expectedRendererEpoch}$`, "u"),
       `${fixture.fixture_id} generator does not identify the current renderer epoch`,
     );
     results.push({
@@ -844,6 +859,7 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
           rpcToken: credentials.rpcToken,
           fixtures,
           administrator,
+          expectedRendererEpoch: expectedDeepwellRendererEpoch(worktree),
         });
         records = await captureStage({
           baseUrl: `http://127.0.0.1:${ports.framerail}`,
