@@ -4052,6 +4052,11 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-route:/local--wp8icon/{filename}",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-route:/user:info/{target}",
       "type": "implemented_by",
       "target": "wikijump.framerail"
@@ -11290,8 +11295,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "24902470968a2e06ed9eb88b3769d49a6b83af1b",
-      "tree": "e7b9c926e0ce8ad8ce97a236e51a3a3bad383569"
+      "commit": "02cb13c083c3df9625cc53ba5f6ba3e9c3f892bc",
+      "tree": "cfce16e86b7b53c81d22ff53176f624625ee0976"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11456,7 +11461,7 @@
       },
       {
         "path": "docs/development/framerail-route-action-evidence.json",
-        "sha256": "f8adf7fd59bdda1f56151a8143fd60b901999bbbabbb6dd05090f0732f8497f7"
+        "sha256": "9596510a9c26468c5042f1ec74e7426decf87088001511a305f514b9bd89f4f6"
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
@@ -11468,15 +11473,15 @@
       },
       {
         "path": "docs/development/open43-blocked-evidence-routing.json",
-        "sha256": "b633d6a769b65e76d31f492e2ba5308517a84d5870ea6bce8dec5677d48c7d56"
+        "sha256": "ba2e65869cc03d13f29d49d0935098ad63b8ac9c07767718d66629e2bdf699bf"
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "5405d9e97363b5f6baa28ea0b379e894ce827dc6b92607efd134e77ace8ff3ea"
+        "sha256": "afc67ebacc53dc820ec47cf9bd7f48938fb563b05d3d8444656341cf5742252b"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
-        "sha256": "5f82eafcabfc893bb9f4ff1e80e47be84d4f8ab71869da542f0785a5a23cba5a"
+        "sha256": "1352345caebe3181e540ca52e7dfeab23da0c6990bf77c21619b2f9057a76b6f"
       },
       {
         "path": "docs/development/open43-q-forum-closure-audit.json",
@@ -11516,15 +11521,15 @@
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
-        "sha256": "b859e997cfeb4e93c448ee6ba5505cb6dbdb8ba7e015337e1d104ff89ac545dd"
+        "sha256": "67657059d4b30171fc595fbc447b2c8052c4575982082615210a40be843c2999"
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "1fb62ed63e1aa8ddeb0cb429d8c90a40264b66541996292b43f1ebb151f4a4bb"
+        "sha256": "b3fbf04daeea985b41de7e3c6e82e083fea3080d8cf444fc78260b4fcdee15dc"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "dc58af2d572f667e5ec952db7e92d6fdb43963d6138b292186f276a0f94ef327"
+        "sha256": "e5b36140f88e98e7034e03f7668fab0fc1e755289ca1f0bf0250b59d95f7abde"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -11719,6 +11724,10 @@
         "sha256": "9c5542121551d475bd64195ade3ef4b3cab7a08c6f0f6b6ee956f62dbc688ae6"
       },
       {
+        "path": "framerail/src/routes/local--wp8icon/[filename]/+server.ts",
+        "sha256": "f77680d24f23cd6bb3ab5ea1f4e37b31505af6c2bcf4a1755aba40245620b6da"
+      },
+      {
         "path": "framerail/src/routes/user[x+3a]info/[target]/+page.server.ts",
         "sha256": "8b19f2be3aaf05717b90b1707fc234aef18f155b493f3f1356c10257e1158740"
       },
@@ -11744,7 +11753,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "1fb62ed63e1aa8ddeb0cb429d8c90a40264b66541996292b43f1ebb151f4a4bb"
+        "sha256": "b3fbf04daeea985b41de7e3c6e82e083fea3080d8cf444fc78260b4fcdee15dc"
       },
       {
         "path": "wws/src/route.rs",
@@ -11835,13 +11844,13 @@
     ]
   },
   "counts": {
-    "total": 948,
+    "total": 949,
     "by_kind": {
       "catalog_feature": 210,
       "deepwell_jsonrpc_method": 173,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
-      "framerail_route": 28,
+      "framerail_route": 29,
       "framerail_server_action": 107,
       "framerail_xmlrpc_method": 17,
       "missing_page_control": 2,
@@ -14388,20 +14397,31 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/site-icons.test.js#favicon declaration keeps Wikidot's local route rather than the configured source"
+          "framerail/tests/site-icon-source.test.js#imported site icons redirect only to site-owned Wikidot resources",
+          "framerail/tests/site-icons.test.js#Windows 8 tile declaration keeps Wikidot's local route rather than the configured source",
+          "framerail/tests/site-icons.test.js#a site without a usable Windows 8 tile declares nothing",
+          "framerail/tests/site-icons.test.js#favicon declaration keeps Wikidot's local route rather than the configured source",
+          "install/local/wikidot-verification/tests/m756-windows-tile-evidence.test.mjs#configured Windows tile declares the exact live meta and local route"
         ]
       },
       "evidence": {
         "status": "available",
         "references": [
-          "docs/wikidot-specifications/specifications/platform/favicons.md"
+          "docs/wikidot-specifications/live-observations.json",
+          "docs/wikidot-specifications/specifications/platform/favicons.md",
+          "install/local/wikidot-verification/artifacts/m756-windows-tile-live-20260914.json",
+          "live-observations.json::windows-tile-declaration-20260913"
         ]
       },
       "source": {
         "status": "implemented",
         "references": [
           "deepwell/src/services/site/service.rs#fn validate_site_icon_source(",
-          "framerail/src/lib/site-icon-source.ts#export function siteIconRedirectLocation("
+          "framerail/src/lib/site-icon-source.ts",
+          "framerail/src/lib/site-icon-source.ts#export function siteIconRedirectLocation(",
+          "framerail/src/lib/site-icons.ts",
+          "framerail/src/routes/+layout.svelte",
+          "framerail/src/routes/local--wp8icon/[filename]/+server.ts"
         ]
       },
       "candidate": {
@@ -32110,6 +32130,46 @@
       ]
     },
     {
+      "surface_id": "framerail-route:/local--wp8icon/{filename}",
+      "kind": "framerail_route",
+      "public_reference": [
+        "framerail/src/routes/local--wp8icon/[filename]/+server.ts#methods:GET,HEAD"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/site-icons.test.js#Windows 8 tile declaration keeps Wikidot's local route rather than the configured source"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-route",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-route:/user:info/{target}",
       "kind": "framerail_route",
       "public_reference": [
@@ -43687,10 +43747,15 @@
         "cases": [
           "M756_WINDOWS_TILE_DECLARATION"
         ],
-        "tests": []
+        "tests": [
+          "framerail/tests/site-icon-source.test.js::imported site icons redirect only to site-owned Wikidot resources",
+          "framerail/tests/site-icons.test.js::Windows 8 tile declaration keeps Wikidot's local route rather than the configured source",
+          "framerail/tests/site-icons.test.js::a site without a usable Windows 8 tile declares nothing",
+          "install/local/wikidot-verification/tests/m756-windows-tile-evidence.test.mjs::configured Windows tile declares the exact live meta and local route"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -43698,15 +43763,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:M756_WINDOWS_TILE_DECLARATION",
