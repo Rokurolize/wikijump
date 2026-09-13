@@ -23,13 +23,13 @@ const REPOSITORY_ROOT = path.resolve(
 );
 const FIXTURE_INDEX =
   "install/local/wikidot-verification/fixtures/ftml-marker-contract/fixtures.json";
-const RETAINED_CANARY =
-  "install/local/wikidot-verification/fixtures/ftml-marker-contract-canary/canary-summary-7ce4f22b.json";
+export const RETAINED_CANARY =
+  "install/local/wikidot-verification/fixtures/ftml-marker-contract-canary/canary-summary-bf49d32f.json";
 const CASE_ID = "F1380_FTML_MARKER_CONTRACT";
 const SOURCE_FILES = Object.freeze([
   "deepwell/Cargo.lock",
   "install/local/wikidot-verification/fixtures/ftml-marker-contract/fixtures.json",
-  "install/local/wikidot-verification/fixtures/ftml-marker-contract-canary/canary-summary-7ce4f22b.json",
+  "install/local/wikidot-verification/fixtures/ftml-marker-contract-canary/canary-summary-bf49d32f.json",
   "install/local/wikidot-verification/scripts/run-candidate-cases.mjs",
   "install/local/wikidot-verification/scripts/run-ftml-marker-contract-canary.mjs",
   "install/local/wikidot-verification/src/atomic-no-replace.mjs",
@@ -155,6 +155,14 @@ export function createFtmlMarkerContractCandidateCaseSet() {
         "retained FTML marker canary",
       );
       assert.equal(retained.candidate_ftml, executionIdentity.ftml_sha);
+      assert.match(
+        retained.run_id ?? "",
+        new RegExp(
+          `^ftml-marker-${retained.candidate_ftml.slice(0, 8)}-`,
+          "u",
+        ),
+        "retained marker canary run_id must identify its own candidate revision",
+      );
       const retainedFixtures = expectedRecords(retained, fixtures);
       const fixtureSha256 = await sha256File(absolute(FIXTURE_INDEX));
       const retainedSha256 = await sha256File(absolute(RETAINED_CANARY));

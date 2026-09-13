@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-09-05",
-  "catalog_sha256": "dbd10194c8b5e4d92d8a4b723ba73a460219efa0d89a6dd65e7e4fb1967d0d33",
+  "catalog_sha256": "b859e997cfeb4e93c448ee6ba5505cb6dbdb8ba7e015337e1d104ff89ac545dd",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -4435,6 +4435,16 @@
       "tests": [
         {
           "path": "deepwell/tests/media.rs",
+          "name": "m776_m806_image_argument_boundary_matches_retained_live_preview",
+          "scope": "exact 42-case f=image and =image quoted/unquoted width, external and local size, quoted-source, and float/center token boundary through public wikidot_page_preview against the retained 2026-09-13 anonymous PagePreview evidence"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/m776-m806-image-argument-boundary-evidence.test.mjs",
+          "name": "retained image argument boundary evidence keeps its anonymous preview provenance",
+          "scope": "byte-sealed binding of the retained 42-case artifact and its boundary dispositions"
+        },
+        {
+          "path": "deepwell/tests/media.rs",
           "name": "image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page",
           "scope": "exact ten-case f=image and =image ASCII-space, tab, NBSP, and lookalike ownership boundary through public preview and saved page view"
         },
@@ -4461,10 +4471,13 @@
       ],
       "live_oracle_evidence": [
         "live-observations.json::image-head-ascii-whitespace-boundary-20260810",
-        "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json#E_OPEN43_IMAGE_WHITESPACE_BOUNDARY_20260810"
+        "live-observations.json::image-argument-boundary-20260913",
+        "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json#E_OPEN43_IMAGE_WHITESPACE_BOUNDARY_20260810",
+        "install/local/wikidot-verification/artifacts/m776-m806-image-argument-boundary-live.jsonl#E_OPEN43_IMAGE_ARGUMENT_BOUNDARY_20260913"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "The live ten-case matrix seals only horizontal separator and exact-head ownership. Remaining width, size, quote, alignment-token, local-file, geometry, and network behavior stays separately actionable."
+        "Browser geometry, network, and load/error intervals remain candidate-only proofs.",
+        "Explicit size=\"medium\" on a local attachment is not separately re-observed in this evidence set; it remains the documented resize and the implementation default."
       ]
     },
     "syntax-include": {

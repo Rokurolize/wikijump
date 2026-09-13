@@ -638,6 +638,244 @@ async fn image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_pag
 }
 
 #[tokio::test]
+async fn m776_m806_image_argument_boundary_matches_retained_live_preview() {
+    // Expected bodies are the 2026-09-13 anonymous PagePreview observations
+    // with only the documented Deepwell projections applied: scp-wiki
+    // wjfiles host/scheme, empty preview page for implicit attachments,
+    // and FTML's DOM-equivalent attribute order and quote spelling.
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (case_id, source, expected) in [
+        (
+            "m776-width-doc-quoted-px",
+            "[[f=image https://example.com/a.png width=\"200px\"]]",
+            r#"<div class="image-container"><img src="https://example.com/a.png" width="200px" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m776-width-unquoted-px",
+            "[[f=image https://example.com/a.png width=200px]]",
+            r#"<div class="image-container"><img src="https://example.com/a.png" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m776-width-quoted-number",
+            "[[f=image https://example.com/a.png width=\"200\"]]",
+            r#"<div class="image-container"><img src="https://example.com/a.png" width="200" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m776-width-unquoted-number",
+            "[[f=image https://example.com/a.png width=200]]",
+            r#"<div class="image-container"><img src="https://example.com/a.png" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m776-width-percent",
+            "[[f=image https://example.com/a.png width=\"50%\"]]",
+            r#"<div class="image-container"><img src="https://example.com/a.png" width="50%" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m776-width-empty",
+            "[[f=image https://example.com/a.png width=\"\"]]",
+            r#"<div class="image-container"><img src="https://example.com/a.png" width class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m776-size-small-quoted",
+            "[[f=image https://example.com/a.png size=\"small\"]]",
+            r#"<div class="image-container"><img src="https://example.com/a.png" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m776-size-small-unquoted",
+            "[[f=image https://example.com/a.png size=small]]",
+            r#"<div class="image-container"><img src="https://example.com/a.png" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m776-size-thumbnail-quoted",
+            "[[f=image https://example.com/a.png size=\"thumbnail\"]]",
+            r#"<div class="image-container"><img src="https://example.com/a.png" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m776-size-invalid",
+            "[[f=image https://example.com/a.png size=\"tiny\"]]",
+            r#"<div class="image-container"><img src="https://example.com/a.png" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m776-source-double-quoted",
+            "[[f=image \"https://example.com/a.png\"]]",
+            r#"<div class="image-container"><img src="&quot;https://example.com/a.png&quot;" class="image" alt="a.png&quot;"></div>"#,
+        ),
+        (
+            "m776-source-single-quoted",
+            "[[f=image 'https://example.com/a.png']]",
+            r#"<div class="image-container"><img src="&#39;https://example.com/a.png&#39;" class="image" alt="a.png&#39;"></div>"#,
+        ),
+        (
+            "m776-float-left",
+            "[[f<image https://example.com/a.png]]",
+            r#"<div class="image-container floatleft"><img src="https://example.com/a.png" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m776-float-right",
+            "[[f>image https://example.com/a.png]]",
+            r#"<div class="image-container floatright"><img src="https://example.com/a.png" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m776-float-left-lookalike",
+            "[[ff<image https://example.com/a.png]]",
+            r#"<p>[[ff&lt;image <a href="https://example.com/a.png">https://example.com/a.png</a>]]</p>"#,
+        ),
+        (
+            "m776-float-token-separated",
+            "[[f >image https://example.com/a.png]]",
+            r#"<p>[[f &gt;image <a href="https://example.com/a.png">https://example.com/a.png</a>]]</p>"#,
+        ),
+        (
+            "m806-width-doc-quoted-px",
+            "[[=image https://example.com/a.png width=\"200px\"]]",
+            r#"<div class="image-container aligncenter"><img src="https://example.com/a.png" width="200px" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m806-width-unquoted-px",
+            "[[=image https://example.com/a.png width=200px]]",
+            r#"<div class="image-container aligncenter"><img src="https://example.com/a.png" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m806-width-quoted-number",
+            "[[=image https://example.com/a.png width=\"200\"]]",
+            r#"<div class="image-container aligncenter"><img src="https://example.com/a.png" width="200" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m806-width-unquoted-number",
+            "[[=image https://example.com/a.png width=200]]",
+            r#"<div class="image-container aligncenter"><img src="https://example.com/a.png" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m806-width-percent",
+            "[[=image https://example.com/a.png width=\"50%\"]]",
+            r#"<div class="image-container aligncenter"><img src="https://example.com/a.png" width="50%" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m806-width-empty",
+            "[[=image https://example.com/a.png width=\"\"]]",
+            r#"<div class="image-container aligncenter"><img src="https://example.com/a.png" width class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m806-size-small-quoted",
+            "[[=image https://example.com/a.png size=\"small\"]]",
+            r#"<div class="image-container aligncenter"><img src="https://example.com/a.png" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m806-size-small-unquoted",
+            "[[=image https://example.com/a.png size=small]]",
+            r#"<div class="image-container aligncenter"><img src="https://example.com/a.png" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m806-size-thumbnail-quoted",
+            "[[=image https://example.com/a.png size=\"thumbnail\"]]",
+            r#"<div class="image-container aligncenter"><img src="https://example.com/a.png" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m806-size-invalid",
+            "[[=image https://example.com/a.png size=\"tiny\"]]",
+            r#"<div class="image-container aligncenter"><img src="https://example.com/a.png" class="image" alt="a.png"></div>"#,
+        ),
+        (
+            "m806-source-double-quoted",
+            "[[=image \"https://example.com/a.png\"]]",
+            r#"<div class="image-container aligncenter"><img src="&quot;https://example.com/a.png&quot;" class="image" alt="a.png&quot;"></div>"#,
+        ),
+        (
+            "m806-source-single-quoted",
+            "[[=image 'https://example.com/a.png']]",
+            r#"<div class="image-container aligncenter"><img src="&#39;https://example.com/a.png&#39;" class="image" alt="a.png&#39;"></div>"#,
+        ),
+        (
+            "m806-center-token-separated",
+            "[[= image https://example.com/a.png]]",
+            r#"<p>[[= image <a href="https://example.com/a.png">https://example.com/a.png</a>]]</p>"#,
+        ),
+        (
+            "m806-center-double-token-separated",
+            "[[== image https://example.com/a.png]]",
+            r#"<p>[[== image <a href="https://example.com/a.png">https://example.com/a.png</a>]]</p>"#,
+        ),
+        (
+            "m776-local-size-square",
+            "[[f=image photo.png size=\"square\"]]",
+            r#"<div class="image-container"><a href="https://scp-wiki.wjfiles.com/local--files//photo.png"><img src="https://scp-wiki.wjfiles.com/local--resized-images//photo.png/square.jpg" class="image" alt="photo.png"></a></div>"#,
+        ),
+        (
+            "m776-local-size-thumbnail",
+            "[[f=image photo.png size=\"thumbnail\"]]",
+            r#"<div class="image-container"><a href="https://scp-wiki.wjfiles.com/local--files//photo.png"><img src="https://scp-wiki.wjfiles.com/local--resized-images//photo.png/thumbnail.jpg" class="image" alt="photo.png"></a></div>"#,
+        ),
+        (
+            "m776-local-size-small",
+            "[[f=image photo.png size=\"small\"]]",
+            r#"<div class="image-container"><a href="https://scp-wiki.wjfiles.com/local--files//photo.png"><img src="https://scp-wiki.wjfiles.com/local--resized-images//photo.png/small.jpg" class="image" alt="photo.png"></a></div>"#,
+        ),
+        (
+            "m776-local-size-invalid",
+            "[[f=image photo.png size=\"tiny\"]]",
+            r#"<div class="image-container"><img src="https://scp-wiki.wjfiles.com/local--files//photo.png" class="image" alt="photo.png"></div>"#,
+        ),
+        (
+            "m776-local-size-empty",
+            "[[f=image photo.png size=\"\"]]",
+            r#"<div class="image-container"><img src="https://scp-wiki.wjfiles.com/local--files//photo.png" class="image" alt="photo.png"></div>"#,
+        ),
+        (
+            "m776-local-size-unquoted",
+            "[[f=image photo.png size=small]]",
+            r#"<div class="image-container"><img src="https://scp-wiki.wjfiles.com/local--files//photo.png" class="image" alt="photo.png"></div>"#,
+        ),
+        (
+            "m806-local-size-square",
+            "[[=image photo.png size=\"square\"]]",
+            r#"<div class="image-container aligncenter"><a href="https://scp-wiki.wjfiles.com/local--files//photo.png"><img src="https://scp-wiki.wjfiles.com/local--resized-images//photo.png/square.jpg" class="image" alt="photo.png"></a></div>"#,
+        ),
+        (
+            "m806-local-size-thumbnail",
+            "[[=image photo.png size=\"thumbnail\"]]",
+            r#"<div class="image-container aligncenter"><a href="https://scp-wiki.wjfiles.com/local--files//photo.png"><img src="https://scp-wiki.wjfiles.com/local--resized-images//photo.png/thumbnail.jpg" class="image" alt="photo.png"></a></div>"#,
+        ),
+        (
+            "m806-local-size-small",
+            "[[=image photo.png size=\"small\"]]",
+            r#"<div class="image-container aligncenter"><a href="https://scp-wiki.wjfiles.com/local--files//photo.png"><img src="https://scp-wiki.wjfiles.com/local--resized-images//photo.png/small.jpg" class="image" alt="photo.png"></a></div>"#,
+        ),
+        (
+            "m806-local-size-invalid",
+            "[[=image photo.png size=\"tiny\"]]",
+            r#"<div class="image-container aligncenter"><img src="https://scp-wiki.wjfiles.com/local--files//photo.png" class="image" alt="photo.png"></div>"#,
+        ),
+        (
+            "m806-local-size-empty",
+            "[[=image photo.png size=\"\"]]",
+            r#"<div class="image-container aligncenter"><img src="https://scp-wiki.wjfiles.com/local--files//photo.png" class="image" alt="photo.png"></div>"#,
+        ),
+        (
+            "m806-local-size-unquoted",
+            "[[=image photo.png size=small]]",
+            r#"<div class="image-container aligncenter"><img src="https://scp-wiki.wjfiles.com/local--files//photo.png" class="image" alt="photo.png"></div>"#,
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert_eq!(preview.body, expected, "{case_id}");
+        assert!(preview.styles.is_empty(), "{case_id}");
+        assert!(preview.legacy_actions.is_empty(), "{case_id}");
+    }
+}
+
+#[tokio::test]
 async fn source_less_local_images_keep_original_and_resized_asset_identities() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

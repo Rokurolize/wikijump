@@ -7,6 +7,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { RETAINED_CANARY } from "../src/ftml-marker-contract-candidate-case-set.mjs";
 import {
   composeDocument,
   pageMutationContext,
@@ -25,7 +26,7 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
-const currentFtml = "c37c8360a2ac304eb1de06942465e1c8b9ad737a";
+const currentFtml = "bf49d32fe980611fed368661396a3d6c1f02c51f";
 const ownershipCanaryFtml = "62ebba4efda1f10e82363c23c925061fbe939e49";
 const previousCanaryFtml = "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
@@ -49,6 +50,21 @@ const sanitizedEnvironment = Object.fromEntries(
       ].includes(key),
   ),
 );
+
+test("the retained marker canary summary identifies its own candidate run", () => {
+  const summary = JSON.parse(
+    readFileSync(path.join(repositoryRoot, RETAINED_CANARY), "utf8"),
+  );
+
+  assert.equal(summary.status, "pass");
+  assert.equal(summary.candidate_ftml, currentFtml);
+  assert.deepEqual(summary.required_surfaces, requiredSurfaces);
+  assert.match(
+    summary.run_id ?? "",
+    new RegExp(`^ftml-marker-${summary.candidate_ftml.slice(0, 8)}-`, "u"),
+    "a hand-edited candidate_ftml must not be accepted without a matching run",
+  );
+});
 
 test("committed manifest and lock pin the merged FTML revision", () => {
   const manifest = readFileSync(

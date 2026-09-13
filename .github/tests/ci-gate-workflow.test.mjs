@@ -170,6 +170,8 @@ test("verification inputs remain selected by the local preflight classifier", ()
     "install/standing/tests/verify-promotion-precondition.test.mjs",
     "scripts/data/wikidot-implementation-ledger.json",
     "scripts/data/wikidot-live-observations.json",
+    "scripts/data/wikidot-detailed-spec-evidence-20260816.json",
+    "scripts/data/wikidot-detailed-feature-contracts.json",
     "scripts/generate-wikidot-specifications.mjs",
     "docs/wikidot-specifications/catalog.json"
   ]) {

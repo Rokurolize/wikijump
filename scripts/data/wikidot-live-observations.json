@@ -114,6 +114,76 @@
       ]
     },
     {
+      "id": "image-argument-boundary-20260913",
+      "title": "Image width, size, source-quote, and float-token boundary",
+      "feature_ids": [
+        "syntax-images"
+      ],
+      "classification": "documentation-omission",
+      "observed_at": "2026-09-13",
+      "analysis": "A 30-case external/head/width/token batch and a 12-case local-source size= batch were captured anonymously through edit/PagePreviewModule on sandbox-for-codex. They isolate the unobserved width, size, source-quoting, and float-token forms that the earlier image-head observation deliberately left open.",
+      "normative_behavior": [
+        "width=\"200px\", width=\"200\", and width=\"50%\" emit the quoted value as the image width attribute. width=\"\" emits an empty width attribute.",
+        "Unquoted width=200px and width=200 are not image attributes. The image still renders, without a width attribute.",
+        "size only affects local (and Flickr) sources. On an external URL it is inert: size=\"small\", size=\"thumbnail\", size=\"tiny\", and size=small all leave the external source unchanged.",
+        "On a source-less current-page attachment (photo.png), a quoted size=\"square\", size=\"thumbnail\", or size=\"small\" selects the named resize (square.jpg, thumbnail.jpg, small.jpg) while the original /local--files/... file remains the implicit link target. medium remains the documented resize and the implementation default.",
+        "A quoted invalid (size=\"tiny\") or empty (size=\"\") size, and an unquoted size=small pair, neither resize nor synthesize the implicit original-file link; the original /local--files/... file renders directly.",
+        "Double or single quotes around a source are characters of the authored source value, not a quoting grammar. The source keeps the quote characters; the raw serializer spelling of ' (&#39; versus a literal apostrophe) is a comparison-normalization detail, not a behavior difference.",
+        "f<image and f>image are active floating heads. ff<image and f >image are not image heads; = image and == image are not centered-image heads. These lookalikes remain literal text and their URL-shaped substring keeps ordinary automatic-link ownership.",
+        "This observation defines only the listed width, size, source-quote, and float/center token forms. It does not widen other unobserved size (Flickr medium640, large, original), attribute, or malformed-head rules."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/m776-m806-image-argument-boundary-live.jsonl",
+          "sha256": "3014b4f94fc5b2787f3fd0d97854b58baa6bf66db0fe2ef11d967baa7ceaa961",
+          "case_ids": [
+            "m776-width-doc-quoted-px",
+            "m776-width-unquoted-px",
+            "m776-width-quoted-number",
+            "m776-width-unquoted-number",
+            "m776-width-percent",
+            "m776-width-empty",
+            "m776-size-small-quoted",
+            "m776-size-small-unquoted",
+            "m776-size-thumbnail-quoted",
+            "m776-size-invalid",
+            "m776-source-double-quoted",
+            "m776-source-single-quoted",
+            "m776-float-left",
+            "m776-float-right",
+            "m776-float-left-lookalike",
+            "m776-float-token-separated",
+            "m806-width-doc-quoted-px",
+            "m806-width-unquoted-px",
+            "m806-width-quoted-number",
+            "m806-width-unquoted-number",
+            "m806-width-percent",
+            "m806-width-empty",
+            "m806-size-small-quoted",
+            "m806-size-small-unquoted",
+            "m806-size-thumbnail-quoted",
+            "m806-size-invalid",
+            "m806-source-double-quoted",
+            "m806-source-single-quoted",
+            "m806-center-token-separated",
+            "m806-center-double-token-separated",
+            "m776-local-size-square",
+            "m776-local-size-thumbnail",
+            "m776-local-size-small",
+            "m776-local-size-invalid",
+            "m776-local-size-empty",
+            "m776-local-size-unquoted",
+            "m806-local-size-square",
+            "m806-local-size-thumbnail",
+            "m806-local-size-small",
+            "m806-local-size-invalid",
+            "m806-local-size-empty",
+            "m806-local-size-unquoted"
+          ]
+        }
+      ]
+    },
+    {
       "id": "sitechanges-readonly-ajax-contract-20260810",
       "title": "SiteChanges read pagination and filters use one exact Ajax contract",
       "feature_ids": [
