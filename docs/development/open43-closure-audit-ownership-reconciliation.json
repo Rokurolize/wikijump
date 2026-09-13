@@ -457,15 +457,15 @@
     },
     {
       "path": "docs/development/open43-s-settings-browser-closure-audit.json",
-      "sha256": "2f7ef5b4699f68d6f02c39704801bc7d95b2a6cea2b4497a5ef8f7ff03ec17ab",
-      "source_revision": "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
+      "sha256": "1c0fe0d517f4fb9d1d352384b50c7a3fe463cf1f04ddc3aa01b8711bce8d40f9",
+      "source_revision": "3f00b26efee25c63e94ec15d1178aedb179e2ff3",
       "issue_count": 9,
       "case_count": 60,
       "classification_counts": {
-        "source_ready": 24,
+        "source_ready": 26,
         "needs_source": 0,
         "candidate_required": 25,
-        "blocked_evidence": 11
+        "blocked_evidence": 9
       },
       "issue_summaries": [
         {
@@ -522,10 +522,10 @@
           "issue": 757,
           "case_count": 6,
           "classification_counts": {
-            "source_ready": 2,
+            "source_ready": 4,
             "needs_source": 0,
             "candidate_required": 2,
-            "blocked_evidence": 2
+            "blocked_evidence": 0
           }
         },
         {
@@ -573,10 +573,10 @@
     "unknown_classifications": [],
     "closure_claims": 0,
     "classification_counts": {
-      "source_ready": 147,
+      "source_ready": 149,
       "needs_source": 0,
       "candidate_required": 85,
-      "blocked_evidence": 53
+      "blocked_evidence": 51
     }
   },
   "validation": {
@@ -586,7 +586,7 @@
       "command": "node install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs --root . --output docs/development/compatibility-surface-inventory.json",
       "audit_count": 7,
       "case_count": 285,
-      "blocked_routing_count": 53,
+      "blocked_routing_count": 51,
       "authoritative_manifest_count": 3,
       "open_issue_snapshot_count": 43,
       "nontracking_open_issue_count": 42,

@@ -1,6 +1,6 @@
 {
   "schema": "wikijump.open43.s_settings_browser_closure_audit.v1",
-  "generated_on": "2026-08-13",
+  "generated_on": "2026-09-13",
   "scope": {
     "issues": [610, 689, 690, 754, 755, 757, 758, 822, 1046],
     "issue_count": 9,
@@ -22,9 +22,9 @@
     "selected_content_include_commit": "2edfc82b19d6198b0a3173985bf0f315df863134",
     "selected_content_include_commit_tree": "69a9267adb4cd0109c8e3d0d99141a1d56f2fc92",
     "selected_content_include_is_ancestor": true,
-    "observed_integration_head": "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
-    "observed_integration_tree": "69cd2a08ab345dd58571f0f6f594d0e45f57b367",
-    "final_source_freeze_reconciliation_required": true,
+    "observed_integration_head": "3f00b26efee25c63e94ec15d1178aedb179e2ff3",
+    "observed_integration_tree": "f6f47423da8ed3e6612d4fcb2fb06161084ec58f",
+    "final_source_freeze_reconciliation_required": false,
     "standing_is_acceptance_evidence": false
   },
   "source_residual_lane": {
@@ -49,7 +49,7 @@
   "input_manifests": [
     {
       "path": "docs/development/open43-s-settings-case-manifest.json",
-      "sha256": "d3f61374685945f53faf6ff03efcac14b0a00afea1b4ab0533bcb7d5d25eb13c"
+      "sha256": "01a21eb359d783b89e579c413fa0ceb380039cc913e6ff5796d2042d88925629"
     },
     {
       "path": "docs/development/open43-s-browser-case-manifest.json",
@@ -57,14 +57,14 @@
     },
     {
       "path": "docs/wikidot-specifications/live-observations.json",
-      "sha256": "9f805b4eae468371a63bc41165adb139bd8526ddb1b25e3fe6349aff08f95712",
+      "sha256": "0704b2cd3a282b1f36a86045fe065fc86ed7af3a3758dd2e970414dc5bc95100",
       "feature_specific_rows_for_scope": 1
     }
   ],
   "specification_inputs": [
     {
       "path": "docs/wikidot-specifications/specifications/platform/web-statistics.md",
-      "sha256": "a4f49e9bdeb9757fd3e7075016ac07e935fc1a2d8e072dacbc6defe835c84b74",
+      "sha256": "44d5d40c280c27201282de9e0aa1b044daa7670373b1e52a09961573256140ee",
       "issues": [754]
     },
     {
@@ -79,7 +79,7 @@
     },
     {
       "path": "docs/wikidot-specifications/specifications/site-structure/content-pages.md",
-      "sha256": "7d0c580dfa30ae947310aab9700b8a262d78de12a826e4c24cd018560bbfcf29",
+      "sha256": "4e2364cf50f33f17fa4ed95c0a14f187bbf72bfb8c498fd1d122ac4f412e6bc7",
       "issues": [690, 758, 1046]
     },
     {

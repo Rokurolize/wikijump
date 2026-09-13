@@ -25,13 +25,13 @@ test("settings and browser closure audit is complete without promoting candidate
   assert.equal(audit.source_identity.standing_is_acceptance_evidence, false);
   assert.equal(
     audit.source_identity.observed_integration_head,
-    "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
+    "3f00b26efee25c63e94ec15d1178aedb179e2ff3",
   );
   assert.equal(
     audit.source_identity.observed_integration_tree,
-    "69cd2a08ab345dd58571f0f6f594d0e45f57b367",
+    "f6f47423da8ed3e6612d4fcb2fb06161084ec58f",
   );
-  assert.equal(audit.source_identity.final_source_freeze_reconciliation_required, true);
+  assert.equal(audit.source_identity.final_source_freeze_reconciliation_required, false);
 
   for (const input of [
     ...audit.input_manifests,
