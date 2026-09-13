@@ -86,8 +86,8 @@ export interface WindowsTileDeclaration {
 }
 
 /**
- * The Windows 8 tile declaration for a site, or null when it has no
- * usable configured tile.
+ * The Windows 8 tile declaration for a site, or null when it has no usable
+ * configured tile.
  *
  * The href keeps Wikidot's local route shape rather than the configured
  * source, because that is what the live page declares regardless of
