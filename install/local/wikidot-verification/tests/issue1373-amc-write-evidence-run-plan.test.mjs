@@ -8,7 +8,9 @@ import { fileURLToPath } from "node:url"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..")
 const contract = JSON.parse(fs.readFileSync(path.join(root, "docs/development/wikidot-py-amc-write-surface.json"), "utf8"))
+const sourceLock = JSON.parse(fs.readFileSync(path.join(root, "docs/development/wikidot-py-supported-source.json"), "utf8"))
 const plan = JSON.parse(fs.readFileSync(new URL("../fixtures/issue1373-amc-write-evidence-run-plan.json", import.meta.url), "utf8"))
+assert.equal(sourceLock.schema, "wikijump.wikidot_py_supported_source.v1")
 
 const unresolvedRows = contract.authenticated_behavior_evidence.pair_evidence
   .filter(({ classification }) => classification !== "positive")
@@ -41,13 +43,14 @@ const evidencePath = path.join(root, relativePath(plan.evidence.path))
 const fileSha256 = value => sha256(path.join(root, relativePath(value)))
 
 const verifyIdentityBindings = (planValue, evidenceValue) => {
-  assert.equal(planValue.schema, "wikijump.issue1373_amc_write_evidence_run_plan.v3")
+  assert.equal(planValue.schema, "wikijump.issue1373_amc_write_evidence_run_plan.v4")
   assert.deepEqual(planValue.execution, { enabled: false, mode: "static" })
   assert.equal(planValue.run_safety, undefined)
   assert.equal(planValue.source.repository, contract.source.repository)
   assert.equal(planValue.source.commit, contract.source.commit)
   assert.equal(planValue.source.commit, contract.authenticated_behavior_evidence.current_source_commit)
-  assert.equal(planValue.source.tree, contract.authenticated_behavior_evidence.client.tree)
+  assert.equal(planValue.source.commit, sourceLock.commit)
+  assert.equal(planValue.source.tree, sourceLock.root_tree)
   const expectedSite = {
     unix_name: contract.authenticated_behavior_evidence.server.site,
     site_id: contract.authenticated_behavior_evidence.server.site_id,
@@ -64,7 +67,7 @@ const verifyIdentityBindings = (planValue, evidenceValue) => {
   assert.deepEqual(pinnedFiles, {
     requirements: {
       path: "install/local/wikidot-verification/requirements.txt",
-      sha256: "456c74d295e7de9265cbd6a088c285b1739f84902c65d224cb5daf44d99bf151"
+      sha256: "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f"
     },
     requirements_lock: {
       path: "install/local/wikidot-verification/requirements.lock",
@@ -80,23 +83,28 @@ const verifyIdentityBindings = (planValue, evidenceValue) => {
   const contractPath = relativePath(planValue.source.contract_path)
   assert.equal(fileSha256(contractPath), planValue.source.contract_sha256)
   assert.equal(planValue.evidence.classification, "partial")
+  assert.equal(planValue.evidence.source_classification, "historical_authenticated_observation")
+  assert.equal(
+    planValue.evidence.capture_source_commit,
+    contract.authenticated_behavior_evidence.current_source_application.behavior_capture_source_commit
+  )
+  assert.equal(planValue.evidence.capture_source_commit, sourceLock.transport.historical_evidence_source.commit)
+  assert.equal(planValue.evidence.historical_behavior_is_current_transport_proof, false)
   assert.equal(fileSha256(planValue.evidence.path), planValue.evidence.sha256)
   assert.equal(path.isAbsolute(evidenceValue.source_identity.contract.path), false)
   assert.deepEqual(evidenceValue.source_identity.repository, planValue.source.repository)
   assert.deepEqual(evidenceValue.source_identity.site, planValue.source.site)
-  assert.deepEqual(evidenceValue.source_identity.pinned_files, pinnedFiles)
-  assert.deepEqual(evidenceValue.source_identity.contract, {
-    path: planValue.source.contract_path,
-    sha256: planValue.source.contract_sha256,
-    schema: contract.schema
-  })
-  assert.deepEqual(evidenceValue.source_identity.client, {
-    commit: planValue.source.commit,
-    lock_path: planValue.source.client_lock.path,
-    lock_sha256: planValue.source.client_lock.sha256,
-    repository: planValue.source.repository,
-    tree: planValue.source.tree
-  })
+  assert.equal(evidenceValue.source_identity.contract.path, planValue.source.contract_path)
+  assert.equal(evidenceValue.source_identity.contract.schema, contract.schema)
+  assert.equal(evidenceValue.source_identity.contract.sha256, planValue.evidence.capture_contract_sha256)
+  assert.notEqual(planValue.evidence.capture_contract_sha256, planValue.source.contract_sha256)
+  assert.equal(evidenceValue.source_identity.client.commit, planValue.evidence.capture_source_commit)
+  assert.equal(evidenceValue.source_identity.client.tree, sourceLock.transport.historical_evidence_source.root_tree)
+  assert.equal(evidenceValue.source_identity.client.repository, planValue.source.repository)
+  assert.equal(evidenceValue.source_identity.client.lock_path, planValue.source.client_lock.path)
+  assert.equal(evidenceValue.source_identity.client.lock_sha256, planValue.source.client_lock.sha256)
+  assert.deepEqual(evidenceValue.source_identity.pinned_files, planValue.evidence.capture_pinned_files)
+  assert.notDeepEqual(planValue.evidence.capture_pinned_files, pinnedFiles)
 }
 
 const verifyWitnessBindings = value => {
@@ -232,7 +240,10 @@ test("issue #1373 verifier rejects identity drift", () => {
     ["site name", value => { value.source.site.unix_name = "other-site" }],
     ["site id", value => { value.source.site.site_id += 1 }],
     ["site origin", value => { value.source.site.origin = "https://sandbox-for-codex.wikidot.com" }],
-    ["evidence", value => { value.evidence.sha256 = "0".repeat(64) }]
+    ["evidence", value => { value.evidence.sha256 = "0".repeat(64) }],
+    ["evidence capture source", value => { value.evidence.capture_source_commit = "0".repeat(40) }],
+    ["evidence capture contract", value => { value.evidence.capture_contract_sha256 = "0".repeat(64) }],
+    ["evidence capture requirements", value => { value.evidence.capture_pinned_files.requirements.sha256 = "0".repeat(64) }]
   ]
   for (const [, mutate] of driftCases) {
     const drifted = structuredClone(plan)
