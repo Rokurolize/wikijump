@@ -11290,8 +11290,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "2eb5432181fd6d910ca5adae2e3947e8e5bd53ae",
-      "tree": "7dde2981a86b034a69b1aa4b870b765b835637b9"
+      "commit": "46093ad61c9abc94eb8362d19ee66ecf657f6229",
+      "tree": "60d475edd9bf7aa6e84b45f7075f037730955cf1"
     },
     "ftml": {
       "commit": "c37c8360a2ac304eb1de06942465e1c8b9ad737a",
@@ -11500,7 +11500,11 @@
       },
       {
         "path": "docs/development/wikidot-py-amc-client-parity.json",
-        "sha256": "50af25ad9caefac17510d428b7f4548d028f6feba32828237ec664cc5027e4bb"
+        "sha256": "e493e48da6a9c0f14fd3bc86a1477d168f047105b95a415e822c990bb9fbdd99"
+      },
+      {
+        "path": "docs/development/wikidot-py-supported-source.json",
+        "sha256": "ffd8b3e73c5f8658696d88cd9ec50e0336997e032e9fae770df9696bd387c6ce"
       },
       {
         "path": "docs/development/wws-cache-head-live-observations-20260815.md",
@@ -11782,28 +11786,28 @@
     "wikidot_py_amc_contract": "docs/development/wikidot-py-amc-client-parity.json",
     "wikidot_py_source": {
       "repository": "Rokurolize/wikidot.py",
-      "commit": "9f33c0f450de9daf333b068e8d70527e033fc07c",
-      "root_tree": "7511e9dc88e5f585ff44f58a6275ff2634c34e3c",
+      "commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+      "root_tree": "88ef18a7432a1ac68f25be777016eb35798d1f51",
       "objects": [
         {
           "path": "src/wikidot",
           "type": "tree",
-          "oid": "e4c0e5299b6b68c771a2bf263c656d73f2ffdd38"
+          "oid": "f79b6dafd6fa1933eb60c4758c0b654eb000db73"
         },
         {
           "path": "src/wikidot/module",
           "type": "tree",
-          "oid": "514e1dfe6cada07f123f4f922c815fafe71ccc4b"
+          "oid": "af9304f2fb4e5a4964756d2e8668535ba1ba853a"
         },
         {
           "path": "src/wikidot/connector",
           "type": "tree",
-          "oid": "5e53e6b1bb4cc3591055100c99fcc8ed53ef0a7f"
+          "oid": "85a2417c6c589fb69953b5ba9bcaa85c259ffa23"
         },
         {
           "path": "src/wikidot/connector/ajax.py",
           "type": "blob",
-          "oid": "9566f18a37cee098c371519963eeaadb56121e81"
+          "oid": "f073cbb037480deac9e6c61b941ac48ed9afb697"
         },
         {
           "path": "pyproject.toml",
