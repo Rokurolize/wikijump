@@ -11,8 +11,10 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const wikidotPyRoot = resolveWikidotPyCheckout(repositoryRoot)
 const contractPath = path.join(repositoryRoot, "docs/development/wikidot-py-amc-write-surface.json")
 const authorityPath = path.join(repositoryRoot, "docs/development/wikidot-py-amc-client-parity.json")
+const sourceLockPath = path.join(repositoryRoot, "docs/development/wikidot-py-supported-source.json")
 const contract = JSON.parse(fs.readFileSync(contractPath, "utf8"))
 const authority = JSON.parse(fs.readFileSync(authorityPath, "utf8"))
+const sourceLock = JSON.parse(fs.readFileSync(sourceLockPath, "utf8"))
 const GIT_EXECUTABLE = "/usr/bin/git"
 const PYTHON_EXECUTABLE = "/usr/bin/python3"
 const EXECUTION_ENVIRONMENT = Object.freeze({
@@ -189,6 +191,7 @@ function verifyContract(value, source) {
   assert.equal(value.source.repository, authority.source.repository)
   assert.equal(value.source.commit, authority.source.commit)
   assert.equal(value.source.revision_authority, "docs/development/wikidot-py-amc-client-parity.json#source")
+  assert.deepEqual(value.source.objects, sourceLock.write_surface_objects)
   assert.equal(git("rev-parse", "HEAD"), value.source.commit)
   for (const object of value.source.objects) {
     assert.equal(object.type, "blob")
@@ -254,10 +257,17 @@ function verifyBehaviorEvidence(value) {
   const sha256Pattern = /^[0-9a-f]{64}$/u
   assert.equal(evidence.schema, "wikijump.wikidot_py_amc_write_evidence.v1")
   assert.equal(evidence.current_source_commit, value.source.commit)
+  assert.equal(evidence.capture_classification, "historical_authenticated_observation")
+  assert.deepEqual(evidence.current_source_application, {
+    static_write_inventory_reextracted: true,
+    behavior_capture_source_commit: sourceLock.transport.historical_evidence_source.commit,
+    changed_current_operations: ["HTTPAuthentication.logout"],
+    historical_behavior_is_current_transport_proof: false
+  })
   assert.equal(evidence.client.repository, value.source.repository)
-  assert.equal(evidence.client.commit, value.source.commit)
-  assert.equal(evidence.client.tree, authority.source.root_tree)
-  assert.equal(evidence.client.uv_lock_sha256, sha256(gitBytes("show", `${value.source.commit}:uv.lock`)))
+  assert.equal(evidence.client.commit, sourceLock.transport.historical_evidence_source.commit)
+  assert.equal(evidence.client.tree, sourceLock.transport.historical_evidence_source.root_tree)
+  assert.equal(evidence.client.uv_lock_sha256, sha256(gitBytes("show", `${evidence.client.commit}:uv.lock`)))
   assert.deepEqual(evidence.server, {
     site: "sandbox-for-codex",
     site_id: 5301522,

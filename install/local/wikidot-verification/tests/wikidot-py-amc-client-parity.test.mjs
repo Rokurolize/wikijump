@@ -15,6 +15,10 @@ const contractPath = path.join(
   "docs/development/wikidot-py-amc-client-parity.json"
 )
 const contract = JSON.parse(await fs.readFile(contractPath, "utf8"))
+const sourceLock = JSON.parse(await fs.readFile(
+  path.join(repositoryRoot, "docs/development/wikidot-py-supported-source.json"),
+  "utf8"
+))
 const requirements = await fs.readFile(
   path.join(repositoryRoot, "install/local/wikidot-verification/requirements.txt"),
   "utf8"
@@ -72,17 +76,10 @@ test("client parity contract has one terminal record for every extracted module 
       objects: contract.source.objects
     },
     {
-      repository: "Rokurolize/wikidot.py",
-      commit: "9f33c0f450de9daf333b068e8d70527e033fc07c",
-      root_tree: "7511e9dc88e5f585ff44f58a6275ff2634c34e3c",
-      objects: [
-        { path: "src/wikidot", type: "tree", oid: "e4c0e5299b6b68c771a2bf263c656d73f2ffdd38" },
-        { path: "src/wikidot/module", type: "tree", oid: "514e1dfe6cada07f123f4f922c815fafe71ccc4b" },
-        { path: "src/wikidot/connector", type: "tree", oid: "5e53e6b1bb4cc3591055100c99fcc8ed53ef0a7f" },
-        { path: "src/wikidot/connector/ajax.py", type: "blob", oid: "9566f18a37cee098c371519963eeaadb56121e81" },
-        { path: "pyproject.toml", type: "blob", oid: "7d2ed894e868994ce41af5fa83b4494fcb43cd07" },
-        { path: "uv.lock", type: "blob", oid: "30a21e269683d755c5715cc937e332c8442143aa" }
-      ]
+      repository: sourceLock.repository,
+      commit: sourceLock.commit,
+      root_tree: sourceLock.root_tree,
+      objects: sourceLock.objects
     }
   )
   assert.deepEqual(contract.historical_sources, [
@@ -158,7 +155,7 @@ test("client parity contract has one terminal record for every extracted module 
 test("active verifier requirements use the supported wikidot.py revision", () => {
   assert.match(
     requirements,
-    /^wikidot @ git\+https:\/\/github\.com\/Rokurolize\/wikidot\.py@9f33c0f450de9daf333b068e8d70527e033fc07c$/mu
+    new RegExp(`^wikidot @ git\\+https:\\/\\/github\\.com\\/Rokurolize\\/wikidot\\.py@${sourceLock.commit}$`, "mu")
   )
   assert.doesNotMatch(requirements, /2434bf77744488cb2095327c9e0e4450add78df3/u)
 })

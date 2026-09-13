@@ -63,7 +63,7 @@ async function copyEvidenceFiles(directory) {
 test("AMC transport contract is complete and bound to the supported wikidot.py source", () => {
   const result = run()
   assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stdout, /verified 19 AMC transport records with 4 live-current, 6 controlled-local, and 9 source-and-unit-only bindings/u)
+  assert.match(result.stdout, /verified 19 AMC transport records with 4 live-source-equivalent, 6 controlled-local, and 9 source-and-unit-only bindings/u)
 })
 
 test("AMC verifier exercises the controlled-local Python regression without package resolution", () => {
