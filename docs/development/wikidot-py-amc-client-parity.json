@@ -2,13 +2,13 @@
   "schema": "wikijump.wikidot_py_amc_client_parity.v1",
   "source": {
     "repository": "Rokurolize/wikidot.py",
-    "commit": "9f33c0f450de9daf333b068e8d70527e033fc07c",
-    "root_tree": "7511e9dc88e5f585ff44f58a6275ff2634c34e3c",
+    "commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "root_tree": "88ef18a7432a1ac68f25be777016eb35798d1f51",
     "objects": [
-      { "path": "src/wikidot", "type": "tree", "oid": "e4c0e5299b6b68c771a2bf263c656d73f2ffdd38" },
-      { "path": "src/wikidot/module", "type": "tree", "oid": "514e1dfe6cada07f123f4f922c815fafe71ccc4b" },
-      { "path": "src/wikidot/connector", "type": "tree", "oid": "5e53e6b1bb4cc3591055100c99fcc8ed53ef0a7f" },
-      { "path": "src/wikidot/connector/ajax.py", "type": "blob", "oid": "9566f18a37cee098c371519963eeaadb56121e81" },
+      { "path": "src/wikidot", "type": "tree", "oid": "f79b6dafd6fa1933eb60c4758c0b654eb000db73" },
+      { "path": "src/wikidot/module", "type": "tree", "oid": "af9304f2fb4e5a4964756d2e8668535ba1ba853a" },
+      { "path": "src/wikidot/connector", "type": "tree", "oid": "85a2417c6c589fb69953b5ba9bcaa85c259ffa23" },
+      { "path": "src/wikidot/connector/ajax.py", "type": "blob", "oid": "f073cbb037480deac9e6c61b941ac48ed9afb697" },
       { "path": "pyproject.toml", "type": "blob", "oid": "7d2ed894e868994ce41af5fa83b4494fcb43cd07" },
       { "path": "uv.lock", "type": "blob", "oid": "30a21e269683d755c5715cc937e332c8442143aa" }
     ],

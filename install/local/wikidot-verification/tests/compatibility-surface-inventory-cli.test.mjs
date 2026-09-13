@@ -16,18 +16,15 @@ const ftmlRevision = /ftml\s*=\s*\{[^\n]*\brev\s*=\s*"([0-9a-f]{40})"/u.exec(
 assert.ok(ftmlRevision, "deepwell/Cargo.toml must pin a full FTML commit")
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex")
+const supportedSourceLock = JSON.parse(await fs.readFile(
+  path.join(repositoryRoot, "docs/development/wikidot-py-supported-source.json"),
+  "utf8"
+))
 const wikidotPySource = {
-  repository: "Rokurolize/wikidot.py",
-  commit: "9f33c0f450de9daf333b068e8d70527e033fc07c",
-  root_tree: "7511e9dc88e5f585ff44f58a6275ff2634c34e3c",
-  objects: [
-    { path: "src/wikidot", type: "tree", oid: "e4c0e5299b6b68c771a2bf263c656d73f2ffdd38" },
-    { path: "src/wikidot/module", type: "tree", oid: "514e1dfe6cada07f123f4f922c815fafe71ccc4b" },
-    { path: "src/wikidot/connector", type: "tree", oid: "5e53e6b1bb4cc3591055100c99fcc8ed53ef0a7f" },
-    { path: "src/wikidot/connector/ajax.py", type: "blob", oid: "9566f18a37cee098c371519963eeaadb56121e81" },
-    { path: "pyproject.toml", type: "blob", oid: "7d2ed894e868994ce41af5fa83b4494fcb43cd07" },
-    { path: "uv.lock", type: "blob", oid: "30a21e269683d755c5715cc937e332c8442143aa" }
-  ]
+  repository: supportedSourceLock.repository,
+  commit: supportedSourceLock.commit,
+  root_tree: supportedSourceLock.root_tree,
+  objects: supportedSourceLock.objects
 }
 const wikidotPyModuleNames = [
   "changes/SiteChangesListModule",
@@ -388,6 +385,7 @@ export const classifyWikidotSiteChangesRequest = (fields) => fields
 }
 `
   )
+  await writeJson(root, "docs/development/wikidot-py-supported-source.json", supportedSourceLock)
   await writeJson(root, "docs/development/wikidot-py-amc-client-parity.json", {
     schema: "wikijump.wikidot_py_amc_client_parity.v1",
     source: wikidotPySource,

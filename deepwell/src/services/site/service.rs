@@ -503,8 +503,11 @@ impl SiteService {
                 previous_fields.show_top_toolbar = Maybe::Set(site.show_top_toolbar);
                 previous_fields.show_bottom_toolbar =
                     Maybe::Set(site.show_bottom_toolbar);
+                previous_fields.promote_on_other_sites =
+                    Maybe::Set(site.promote_on_other_sites);
                 changed_fields.show_top_toolbar = Maybe::Set(toolbars.top);
                 changed_fields.show_bottom_toolbar = Maybe::Set(toolbars.bottom);
+                changed_fields.promote_on_other_sites = Maybe::Set(toolbars.promote);
             }
             if let Maybe::Set(membership) = &input.membership {
                 previous_fields.membership_by_application =
@@ -617,6 +620,7 @@ impl SiteService {
         if let Maybe::Set(toolbars) = input.toolbars {
             model.show_top_toolbar = Set(toolbars.top);
             model.show_bottom_toolbar = Set(toolbars.bottom);
+            model.promote_on_other_sites = Set(toolbars.promote);
         }
 
         if let Maybe::Set(membership) = input.membership {

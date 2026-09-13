@@ -312,6 +312,7 @@ export async function siteToolbarsUpdate(
   userIpAddr: string,
   top: boolean,
   bottom: boolean,
+  promote: boolean,
   requestContext: SiteUpdateRequestContext
 ): Promise<SiteModel> {
   return client.request(
@@ -320,7 +321,7 @@ export async function siteToolbarsUpdate(
       site: siteId,
       expected_settings_revision: expectedSettingsRevision,
       user_id: userId,
-      toolbars: { top, bottom },
+      toolbars: { top, bottom, promote },
       ip_address: userIpAddr
     },
     requestContext

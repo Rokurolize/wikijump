@@ -31,6 +31,29 @@ async function assertPrivateComparisonOutputDirectory(directory) {
   }
 }
 
+async function assertExistingComparisonOutputsArePrivateRegularFiles(directory) {
+  for (const name of Object.values(XMLRPC_PILOT_LOCAL_COMPARISON_OUTPUT_FILES)) {
+    const filePath = `/proc/self/fd/${directory.fd}/${name}`;
+    let stat;
+    try {
+      stat = await fs.lstat(filePath, { bigint: true });
+    } catch (error) {
+      if (error.code === "ENOENT") continue;
+      throw error;
+    }
+    if (
+      !stat.isFile() ||
+      stat.isSymbolicLink() ||
+      stat.uid !== BigInt(process.geteuid()) ||
+      (stat.mode & 0o777n) !== 0o400n
+    ) {
+      throw new Error(
+        `comparison output ${name} is not the expected private regular file`,
+      );
+    }
+  }
+}
+
 export async function openPrivateComparisonOutputDirectory({
   outputDir,
   pilotRoot,
@@ -46,6 +69,7 @@ export async function openPrivateComparisonOutputDirectory({
   const directory = await openCorpusOutputDirectory(root, output);
   try {
     await assertPrivateComparisonOutputDirectory(directory);
+    await assertExistingComparisonOutputsArePrivateRegularFiles(directory);
     return directory;
   } catch (error) {
     await directory.close().catch(() => {});

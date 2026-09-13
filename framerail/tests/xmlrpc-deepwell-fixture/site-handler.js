@@ -44,8 +44,9 @@ export const handleSiteRpc = ({ rpcRequest }) => {
         revision: 4,
         welcome_page: "main",
         google_analytics: { enabled: false, profile: null },
-        toolbars: { top: false, bottom: false }
+        toolbars: { top: false, bottom: false, promote: true }
       },
+      promoted_sites: [],
       site_file_domain: "scp-wiki.wjfiles.localhost",
       license_name: "CC BY-SA 3.0",
       license_url: "https://creativecommons.org/licenses/by-sa/3.0/",

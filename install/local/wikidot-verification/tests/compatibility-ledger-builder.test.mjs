@@ -120,6 +120,59 @@ function deferredScopeInventory() {
   return value;
 }
 
+test("compatibility ledger builder accepts the pnpm script argument separator", () => {
+  const directory = mkdtempSync(path.join(tmpdir(), "wikijump-ledger-separator-"));
+  const input = path.join(directory, "inventory.json");
+  const output = path.join(directory, "ledger.json");
+  try {
+    writeFileSync(input, JSON.stringify(inventory()));
+    execFileSync(process.execPath, [
+      script,
+      "--",
+      "--inventory",
+      input,
+      "--output",
+      output,
+    ]);
+    assert.equal(JSON.parse(readFileSync(output)).schema, "wikijump.compatibility_ledger.v1");
+    assert.throws(
+      () =>
+        execFileSync(
+          process.execPath,
+          [script, "--", "--", "--inventory", input, "--output", output],
+          { stdio: "pipe" },
+        ),
+      /usage: build-compatibility-ledger\.mjs/u,
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("compatibility ledger builder resolves relative CLI paths from the repository root", () => {
+  const directory = mkdtempSync(path.join(root, ".wikijump-ledger-relative-"));
+  const input = path.join(directory, "inventory.json");
+  const output = path.join(directory, "ledger.json");
+  try {
+    writeFileSync(input, JSON.stringify(inventory()));
+    execFileSync(
+      process.execPath,
+      [
+        script,
+        "--",
+        "--inventory",
+        path.relative(root, input),
+        "--output",
+        path.relative(root, output),
+      ],
+      { cwd: path.join(root, "install/local/wikidot-verification") },
+    );
+    assert.equal(JSON.parse(readFileSync(output)).schema, "wikijump.compatibility_ledger.v1");
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("compatibility ledger builder preserves opaque identities and rejects broken inputs", () => {
   const directory = mkdtempSync(path.join(tmpdir(), "wikijump-ledger-"));
   const input = path.join(directory, "inventory.json");

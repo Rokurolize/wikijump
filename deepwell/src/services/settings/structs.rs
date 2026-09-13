@@ -65,10 +65,21 @@ impl UpdateGoogleAnalyticsSettings {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, Default, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ToolbarSettings {
     pub top: bool,
     pub bottom: bool,
+    pub promote: bool,
+}
+
+impl Default for ToolbarSettings {
+    fn default() -> Self {
+        Self {
+            top: false,
+            bottom: false,
+            promote: true,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
@@ -391,7 +402,7 @@ mod tests {
     }
 
     #[test]
-    fn site_settings_defaults_disable_analytics_and_both_toolbars() {
+    fn site_settings_defaults_disable_analytics_and_toolbar_chrome() {
         assert_eq!(
             SiteSettings::default(),
             SiteSettings {

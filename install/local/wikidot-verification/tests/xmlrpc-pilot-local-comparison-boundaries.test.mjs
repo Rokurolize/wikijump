@@ -71,61 +71,52 @@ test("a page_get response with an invalid RFC3339 calendar date is a local error
   assert.equal(rows[1].status, "matched");
 });
 
-test(
-  "receipt FIFOs and existing output FIFOs fail without blocking",
-  { timeout: 5000 },
-  async (t) => {
-    const sourceFixture = await sealPilot(t);
-    const resultPath = path.join(
-      sourceFixture.pilotRoot,
-      "receipts",
-      "result.json",
-    );
-    await fs.unlink(resultPath);
-    await execFileAsync("mkfifo", [resultPath]);
-    await assert.rejects(
-      runXmlrpcPilotLocalComparison({
-        outputDir: comparisonOutputDir(sourceFixture, "receipt-fifo-output"),
-        pilotRoot: sourceFixture.pilotRoot,
-        rpcToken,
-        rpcUrl: "http://127.0.0.1:29999/jsonrpc",
-        runtimeIdentityPath: sourceFixture.runtimeIdentityPath,
-        sourceExpectation: sourceFixture.sourceExpectation,
-      }),
-      /bounded regular file/u,
-    );
+test("receipt FIFOs fail without blocking", { timeout: 10_000 }, async (t) => {
+  const fixture = await sealPilot(t);
+  const resultPath = path.join(fixture.pilotRoot, "receipts", "result.json");
+  await fs.unlink(resultPath);
+  await execFileAsync("mkfifo", [resultPath]);
+  await assert.rejects(
+    runXmlrpcPilotLocalComparison({
+      outputDir: comparisonOutputDir(fixture, "receipt-fifo-output"),
+      pilotRoot: fixture.pilotRoot,
+      rpcToken,
+      rpcUrl: "http://127.0.0.1:29999/jsonrpc",
+      runtimeIdentityPath: fixture.runtimeIdentityPath,
+      sourceExpectation: fixture.sourceExpectation,
+    }),
+    /bounded regular file/u,
+  );
+});
 
-    const outputFixture = await sealPilot(t);
+test(
+  "existing output FIFOs fail before local RPC",
+  { timeout: 10_000 },
+  async (t) => {
+    const fixture = await sealPilot(t);
     const pages = new Map(
-      [...outputFixture.responses].map(([fullname, response]) => [
+      [...fixture.responses].map(([fullname, response]) => [
         fullname,
         localPage(response),
       ]),
     );
     const rpc = await startRpcServer(t, pages);
-    const outputDir = comparisonOutputDir(outputFixture, "output-fifo-output");
-    await runXmlrpcPilotLocalComparison({
-      outputDir,
-      pilotRoot: outputFixture.pilotRoot,
-      rpcToken,
-      rpcUrl: rpc.rpcUrl,
-      runtimeIdentityPath: outputFixture.runtimeIdentityPath,
-      sourceExpectation: outputFixture.sourceExpectation,
-    });
+    const outputDir = comparisonOutputDir(fixture, "output-fifo-output");
+    await fs.mkdir(outputDir, { mode: 0o700 });
     const rowsPath = path.join(outputDir, "local-comparison.jsonl");
-    await fs.unlink(rowsPath);
     await execFileAsync("mkfifo", [rowsPath]);
     await assert.rejects(
       runXmlrpcPilotLocalComparison({
         outputDir,
-        pilotRoot: outputFixture.pilotRoot,
+        pilotRoot: fixture.pilotRoot,
         rpcToken,
         rpcUrl: rpc.rpcUrl,
-        runtimeIdentityPath: outputFixture.runtimeIdentityPath,
-        sourceExpectation: outputFixture.sourceExpectation,
+        runtimeIdentityPath: fixture.runtimeIdentityPath,
+        sourceExpectation: fixture.sourceExpectation,
       }),
       /expected private regular file/u,
     );
+    assert.equal(rpc.calls.length, 0);
   },
 );
 

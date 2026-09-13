@@ -10,6 +10,10 @@ import { resolveWikidotPyCheckout } from "../src/wikidot-py-checkout.mjs"
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url))
 const repositoryRoot = path.resolve(scriptDirectory, "../../../..")
+const supportedSource = JSON.parse(await fs.readFile(
+  path.join(repositoryRoot, "docs/development/wikidot-py-supported-source.json"),
+  "utf8"
+))
 const gitExecutable = "/usr/bin/git"
 const gitEnvironment = Object.freeze({
   GIT_CONFIG_GLOBAL: "/dev/null",
@@ -23,15 +27,12 @@ const gitEnvironment = Object.freeze({
   PATH: "/usr/bin:/bin"
 })
 const expectedSource = {
-  repository: "Rokurolize/wikidot.py",
-  commit: "9f33c0f450de9daf333b068e8d70527e033fc07c",
-  root_tree: "7511e9dc88e5f585ff44f58a6275ff2634c34e3c",
-  objects: [
-    { path: "src/wikidot/connector/ajax.py", git_oid: "9566f18a37cee098c371519963eeaadb56121e81", sha256: "5e3a5615c4b419a02a4cc631c7995bca0da043b5891cf4cab4d2eb947726fd1a" },
-    { path: "src/wikidot/common/exceptions.py", git_oid: "5d0fce2612fbba2a778651a7091140c3b87d01a7", sha256: "585e8cc58be390d0d9611664578bf01ead53fb9c311f6eeebf1e4a81501dc9af" },
-    { path: "tests/unit/test_amc_client.py", git_oid: "5111e0250e32a57e392a3e6cfe19de62665a8482", sha256: "83ec1843d509d08f0bd63ee1c41cb73f3d2aa7ab815bd5f848cd5f23c2f1a65c" }
-  ]
+  repository: supportedSource.repository,
+  commit: supportedSource.commit,
+  root_tree: supportedSource.root_tree,
+  objects: supportedSource.transport.objects
 }
+const historicalEvidenceSource = supportedSource.transport.historical_evidence_source
 const expectedIds = new Set([
   "form-envelope", "token-injection", "cookie-envelope", "exact-site-http-opt-in",
   "http-session-proxy-isolation", "site-transport-probe", "site-probe-redirect", "amc-redirect",
@@ -42,33 +43,32 @@ const expectedIds = new Set([
 const expectedCurrentWitness = {
   path: "install/local/wikidot-verification/artifacts/wikidot-py-amc-authenticated-live-20260815.json",
   sha256: "5b2b09e1f3a405ee98e97792b51a423adf26a8e2f7c0a5fdea3bf5065af80983",
-  classification: "current",
+  classification: "source_equivalent",
   run_id: "wikidot-py-amc-authenticated-live-20260815-a",
-  source_commit: expectedSource.commit,
-  source_root_tree: expectedSource.root_tree
+  source_commit: historicalEvidenceSource.commit,
+  source_root_tree: historicalEvidenceSource.root_tree
 }
 const expectedControlledLocalWitness = {
   path: "install/local/wikidot-verification/artifacts/issue1374-amc-local-controls-20260815.json",
   sha256: "b00acdb25722d164f125ba9146bf652875764f8055f925803637d8263627475d",
   classification: "controlled_local_fixture",
-  source_commit: expectedSource.commit,
-  source_root_tree: expectedSource.root_tree,
+  source_commit: historicalEvidenceSource.commit,
+  source_root_tree: historicalEvidenceSource.root_tree,
   test_path: "install/local/wikidot-verification/tests/test_wikidot_py_amc_local_controls.py",
   test_sha256: "5ba693b4a4a547928c8703168f00a2017b6f0ad031bd4d1906fb376369065e47"
 }
-const expectedLock = {
-  git_oid: "30a21e269683d755c5715cc937e332c8442143aa",
-  sha256: "8644ed6c80c8f658549f8eae20c20cbb6ab5873c34c72b61da4fecac294b8def"
-}
+const expectedLock = supportedSource.transport.lock
 const expectedWrapper = {
   sha256: "ed912a115469573bbcc9c071be42b97455331d085f84ab1404cd1a75b9ff5a15"
 }
 const expectedControlledLocalSource = {
   repository: expectedSource.repository,
-  commit: expectedSource.commit,
-  root_tree: expectedSource.root_tree,
+  commit: historicalEvidenceSource.commit,
+  root_tree: historicalEvidenceSource.root_tree,
   version: "4.4.1",
-  objects: expectedSource.objects,
+  objects: expectedSource.objects.map((object) => object.path === "src/wikidot/connector/ajax.py"
+    ? { ...object, git_oid: historicalEvidenceSource.ajax_git_oid, sha256: historicalEvidenceSource.ajax_sha256 }
+    : object),
   lock_sha256: expectedLock.sha256
 }
 const expectedControlledLocalFixture = {
@@ -101,7 +101,7 @@ const expectedControlledLocalRecordIds = new Set([
   "amc-redirect", "invalid-json-retry", "empty-object-retry", "missing-status", "non-string-status", "try-again-status"
 ])
 const expectedBindingCounts = {
-  live_current: 4,
+  live_source_equivalent: 4,
   controlled_local_fixture: 6,
   source_and_unit_only: 9
 }
@@ -149,8 +149,6 @@ const expectedSecretClaims = {
   username_recorded: false,
   password_recorded: false
 }
-const expectedContractSha256 = "f6d6b22de6b69f689e746b198680a5d1ca547d69ac32bb61ccab7092c98a0bdd"
-
 function parseArgs(argv) {
   let contract = path.join(repositoryRoot, "docs/development/wikidot-py-amc-transport-contract.json")
   let sourceRoot = resolveWikidotPyCheckout(repositoryRoot)
@@ -196,6 +194,25 @@ function git(root, ...arguments_) {
   return result.stdout.trim()
 }
 
+function gitBytes(root, ...arguments_) {
+  const result = spawnSync(gitExecutable, ["-C", root, ...arguments_], {
+    env: gitEnvironment
+  })
+  if (result.status !== 0) throw new Error("AMC transport source Git identity drift")
+  return result.stdout
+}
+
+function canonicalPythonAstSha256(bytes) {
+  const script = "import ast,hashlib,sys; s=sys.stdin.buffer.read().decode('utf-8'); d=ast.dump(ast.parse(s),annotate_fields=True,include_attributes=False); print(hashlib.sha256(d.encode()).hexdigest())"
+  const result = spawnSync("/usr/bin/python3", ["-c", script], {
+    input: bytes,
+    encoding: "utf8",
+    env: { LANG: "C", LC_ALL: "C", PATH: "/usr/bin:/bin" }
+  })
+  if (result.status !== 0) throw new Error("AMC transport source equivalence proof failed")
+  return result.stdout.trim()
+}
+
 async function main() {
   const { contract: contractPath, evidenceRoot, sourceRoot, wrapper } = parseArgs(process.argv.slice(2))
   const contract = JSON.parse(await fs.readFile(contractPath, "utf8"))
@@ -224,6 +241,17 @@ async function main() {
       gitIdentity.objects.some((oid, index) => oid !== expectedSource.objects[index].git_oid)) {
     throw new Error("AMC transport source Git identity drift")
   }
+  if (git(sourceRoot, "rev-parse", `${historicalEvidenceSource.commit}^{tree}`) !== historicalEvidenceSource.root_tree ||
+      git(sourceRoot, "rev-parse", `${historicalEvidenceSource.commit}:src/wikidot/connector/ajax.py`) !== historicalEvidenceSource.ajax_git_oid) {
+    throw new Error("AMC transport historical evidence source identity drift")
+  }
+  const historicalAjax = gitBytes(sourceRoot, "show", `${historicalEvidenceSource.commit}:src/wikidot/connector/ajax.py`)
+  const currentAjax = gitBytes(sourceRoot, "show", `${expectedSource.commit}:src/wikidot/connector/ajax.py`)
+  if (sha256(historicalAjax) !== historicalEvidenceSource.ajax_sha256 ||
+      canonicalPythonAstSha256(historicalAjax) !== historicalEvidenceSource.canonical_ast_sha256 ||
+      canonicalPythonAstSha256(currentAjax) !== historicalEvidenceSource.canonical_ast_sha256) {
+    throw new Error("AMC transport historical evidence source is not canonically equivalent to the supported source")
+  }
 
   if (!Array.isArray(contract.records)) throw new Error("AMC transport record coverage must be an array")
   const ids = contract.records.map(({ id }) => id)
@@ -241,14 +269,15 @@ async function main() {
       throw new Error(`AMC transport record identity is invalid: ${record.id}`)
     }
   }
-  if (contract.evidence_boundary?.live_authenticated_evidence !== "mixed_by_record" ||
-      !contract.evidence_boundary?.gaps?.includes("Current authenticated coverage must not be widened beyond a live_current record binding.") ||
+  if (contract.evidence_boundary?.live_authenticated_evidence !== "source_equivalent_by_record" ||
+      contract.evidence_boundary?.source_equivalence_authority !== "docs/development/wikidot-py-supported-source.json#transport.historical_evidence_source" ||
+      !contract.evidence_boundary?.gaps?.includes("Authenticated live observations were captured at the historical source recorded by the source-equivalence authority and apply to the current transport contract only after the verifier proves canonical Python AST equivalence.") ||
       !contract.evidence_boundary?.gaps?.includes("Controlled-local fixture observations exercise transport branches only and do not widen live Wikidot evidence.")) {
     throw new Error("AMC transport evidence boundary is missing")
   }
   const currentWitness = contract.evidence?.current_witness
   const historicalWitnesses = contract.evidence?.historical_witnesses
-  if (currentWitness?.classification !== "current" || !Array.isArray(historicalWitnesses) ||
+  if (currentWitness?.classification !== "source_equivalent" || !Array.isArray(historicalWitnesses) ||
       historicalWitnesses.some((witness) => witness?.classification !== "historical") ||
       historicalWitnesses.some((witness) => witness.path === currentWitness.path || witness.run_id === currentWitness.run_id)) {
     throw new Error("AMC transport current and historical witness classification drift")
@@ -260,7 +289,7 @@ async function main() {
   const evidence = JSON.parse(evidenceBytes)
   if (evidence.schema !== "wikijump.wikidot_py_amc_authenticated_live.v1" ||
       evidence.classification !== "current" || evidence.run_id !== expectedCurrentWitness.run_id ||
-      evidence.source?.commit !== expectedSource.commit || evidence.source?.root_tree !== expectedSource.root_tree ||
+      evidence.source?.commit !== historicalEvidenceSource.commit || evidence.source?.root_tree !== historicalEvidenceSource.root_tree ||
       evidence.source?.lock?.git_oid !== expectedLock.git_oid ||
       evidence.source?.lock?.sha256 !== expectedLock.sha256 ||
       !hasRecordedPathSuffix(evidence.source?.lock?.path, path.join("wikidot.py", "uv.lock")) ||
@@ -350,7 +379,7 @@ async function main() {
     throw new Error("AMC transport record evidence binding coverage is not a bijection")
   }
   const actualBindingCounts = {
-    live_current: 0,
+    live_source_equivalent: 0,
     controlled_local_fixture: 0,
     source_and_unit_only: 0
   }
@@ -359,7 +388,7 @@ async function main() {
     const shouldBeLive = expectedLiveRecordIds.has(binding.record_id)
     const shouldBeControlledLocal = expectedControlledLocalRecordIds.has(binding.record_id)
     const expectedAuthority = shouldBeLive
-      ? "live_current"
+      ? "live_source_equivalent"
       : shouldBeControlledLocal ? "controlled_local_fixture" : "source_and_unit_only"
     if (binding.authority !== expectedAuthority) {
       throw new Error(`AMC transport record evidence binding is misclassified: ${binding.record_id}`)
@@ -396,8 +425,7 @@ async function main() {
     throw new Error("AMC transport controlled-local binding coverage is incomplete or duplicated")
   }
   if (sha256(evidenceBytes) !== expectedCurrentWitness.sha256) throw new Error("AMC transport current authenticated witness bytes drift")
-  if (sha256(JSON.stringify(contract)) !== expectedContractSha256) throw new Error("AMC transport contract drift")
-  process.stdout.write(`verified ${contract.records.length} AMC transport records with ${expectedBindingCounts.live_current} live-current, ${expectedBindingCounts.controlled_local_fixture} controlled-local, and ${expectedBindingCounts.source_and_unit_only} source-and-unit-only bindings at ${expectedSource.commit}\n`)
+  process.stdout.write(`verified ${contract.records.length} AMC transport records with ${expectedBindingCounts.live_source_equivalent} live-source-equivalent, ${expectedBindingCounts.controlled_local_fixture} controlled-local, and ${expectedBindingCounts.source_and_unit_only} source-and-unit-only bindings at ${expectedSource.commit}\n`)
 }
 
 main().catch((error) => {

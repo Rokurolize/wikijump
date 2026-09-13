@@ -12423,6 +12423,7 @@ fn wikidot_site(slug: &str, preferred_domain: Option<&str>) -> SiteModel {
         google_analytics_profile: None,
         show_top_toolbar: false,
         show_bottom_toolbar: false,
+        promote_on_other_sites: true,
         membership_by_application: false,
         membership_by_password: false,
         membership_password_hash: None,

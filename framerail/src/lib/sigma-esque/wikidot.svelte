@@ -7,7 +7,8 @@
     name: "page-top"
   }
 
-  let { header, topBar, loginStatus, sideBar, content, footer, license } = $props()
+  let { header, topBar, loginStatus, sideBar, content, footer, license, bottomToolbar } =
+    $props()
 </script>
 
 <div id="skrollr-body" data-sveltekit-reload use:wikidotCollapsibles>
@@ -43,6 +44,7 @@
         <div id="extrac-div-1"><span></span></div>
         <div id="extrac-div-2"><span></span></div>
         <div id="extrac-div-3"><span></span></div>
+        {@render bottomToolbar?.()}
       </div>
       <div id="extra-div-1"><span></span></div>
       <div id="extra-div-2"><span></span></div>

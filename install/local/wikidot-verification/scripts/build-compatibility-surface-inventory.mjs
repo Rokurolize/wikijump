@@ -61,19 +61,6 @@ const GIT_ENVIRONMENT = Object.freeze({
   LC_ALL: "C",
   PATH: "/usr/bin:/bin"
 })
-const WIKIDOT_PY_SOURCE = {
-  repository: "Rokurolize/wikidot.py",
-  commit: "9f33c0f450de9daf333b068e8d70527e033fc07c",
-  root_tree: "7511e9dc88e5f585ff44f58a6275ff2634c34e3c",
-  objects: new Map([
-    ["src/wikidot", ["tree", "e4c0e5299b6b68c771a2bf263c656d73f2ffdd38"]],
-    ["src/wikidot/module", ["tree", "514e1dfe6cada07f123f4f922c815fafe71ccc4b"]],
-    ["src/wikidot/connector", ["tree", "5e53e6b1bb4cc3591055100c99fcc8ed53ef0a7f"]],
-    ["src/wikidot/connector/ajax.py", ["blob", "9566f18a37cee098c371519963eeaadb56121e81"]],
-    ["pyproject.toml", ["blob", "7d2ed894e868994ce41af5fa83b4494fcb43cd07"]],
-    ["uv.lock", ["blob", "30a21e269683d755c5715cc937e332c8442143aa"]]
-  ])
-}
 const WIKIDOT_PY_AMC_MODULE_EXCLUSIONS = new Set(["edit/PageEditModule"])
 const SOURCE_INPUTS = new Map()
 const SUPPORTED_RELATIONSHIP_EDGE_TYPES = new Set([
@@ -227,7 +214,27 @@ const CATALOG_FEATURE_ISSUE_EXCEPTIONS = new Map([
   ["catalog-feature:web-statistics", 1510],
 ])
 
-function pinnedWikidotPyAmcModules() {
+async function loadSupportedWikidotPySource(root) {
+  const value = await readJson(root, "docs/development/wikidot-py-supported-source.json")
+  if (value.schema !== "wikijump.wikidot_py_supported_source.v1" ||
+      typeof value.repository !== "string" ||
+      !/^[0-9a-f]{40}$/u.test(value.commit ?? "") ||
+      !/^[0-9a-f]{40}$/u.test(value.root_tree ?? "") ||
+      !Array.isArray(value.objects)) {
+    throw new Error("wikidot.py supported source lock is invalid")
+  }
+  const objects = new Map()
+  for (const object of value.objects) {
+    if (!object || typeof object.path !== "string" || !["blob", "tree"].includes(object.type) ||
+        !/^[0-9a-f]{40}$/u.test(object.oid ?? "") || objects.has(object.path)) {
+      throw new Error("wikidot.py supported source lock object identity is invalid")
+    }
+    objects.set(object.path, [object.type, object.oid])
+  }
+  return { repository: value.repository, commit: value.commit, root_tree: value.root_tree, objects }
+}
+
+function pinnedWikidotPyAmcModules(wikidotPySource) {
   const result = spawnSync(
     GIT_EXECUTABLE,
     [
@@ -238,7 +245,7 @@ function pinnedWikidotPyAmcModules() {
       "-o",
       "-E",
       '"[A-Za-z0-9_/-]+Module"',
-      WIKIDOT_PY_SOURCE.commit,
+      wikidotPySource.commit,
       "--",
       "src/wikidot/module"
     ],
@@ -265,11 +272,11 @@ function pinnedWikidotPyAmcModules() {
   return [...discovered].sort()
 }
 
-function verifyPinnedWikidotPySource() {
+function verifyPinnedWikidotPySource(wikidotPySource) {
   const identities = [
-    [`${WIKIDOT_PY_SOURCE.commit}^{tree}`, WIKIDOT_PY_SOURCE.root_tree],
-    ...[...WIKIDOT_PY_SOURCE.objects].map(([objectPath, [, oid]]) => [
-      `${WIKIDOT_PY_SOURCE.commit}:${objectPath}`,
+    [`${wikidotPySource.commit}^{tree}`, wikidotPySource.root_tree],
+    ...[...wikidotPySource.objects].map(([objectPath, [, oid]]) => [
+      `${wikidotPySource.commit}:${objectPath}`,
       oid
     ])
   ]
@@ -2277,7 +2284,7 @@ function applyFramerailAmcTests(root, records, sourceRevision) {
   return projected
 }
 
-async function discoverWikidotPyAmc(root) {
+async function discoverWikidotPyAmc(root, wikidotPySource) {
   const contractPath = "docs/development/wikidot-py-amc-client-parity.json"
   const contract = await readJson(root, contractPath)
   if (contract.schema !== "wikijump.wikidot_py_amc_client_parity.v1") {
@@ -2286,14 +2293,14 @@ async function discoverWikidotPyAmc(root) {
   const objects = contract.source?.objects
   const objectPaths = Array.isArray(objects) ? objects.map(({ path: objectPath }) => objectPath) : []
   if (
-    contract.source?.repository !== WIKIDOT_PY_SOURCE.repository ||
-    contract.source?.commit !== WIKIDOT_PY_SOURCE.commit ||
-    contract.source?.root_tree !== WIKIDOT_PY_SOURCE.root_tree ||
+    contract.source?.repository !== wikidotPySource.repository ||
+    contract.source?.commit !== wikidotPySource.commit ||
+    contract.source?.root_tree !== wikidotPySource.root_tree ||
     !Array.isArray(objects) ||
-    objects.length !== WIKIDOT_PY_SOURCE.objects.size ||
+    objects.length !== wikidotPySource.objects.size ||
     new Set(objectPaths).size !== objectPaths.length ||
     objects.some(({ path: objectPath, type, oid }) => {
-      const expected = WIKIDOT_PY_SOURCE.objects.get(objectPath)
+      const expected = wikidotPySource.objects.get(objectPath)
       return expected?.[0] !== type || expected?.[1] !== oid
     })
   ) {
@@ -2302,11 +2309,11 @@ async function discoverWikidotPyAmc(root) {
   if (!Array.isArray(contract.modules)) {
     throw new Error(`${contractPath} modules must be an array`)
   }
-  verifyPinnedWikidotPySource()
+  verifyPinnedWikidotPySource(wikidotPySource)
   const moduleNames = contract.modules.map(({ module_name: moduleName }) => moduleName)
   if (
     new Set(moduleNames).size !== moduleNames.length ||
-    JSON.stringify([...new Set(moduleNames)].sort()) !== JSON.stringify(pinnedWikidotPyAmcModules())
+    JSON.stringify([...new Set(moduleNames)].sort()) !== JSON.stringify(pinnedWikidotPyAmcModules(wikidotPySource))
   ) {
     throw new Error(`${contractPath} module denominator drift`)
   }
@@ -3985,6 +3992,7 @@ function validateInventory(surfaces, ownerKeys) {
 
 async function buildInventory(root, sourceRevision) {
   SOURCE_INPUTS.clear()
+  const wikidotPySource = await loadSupportedWikidotPySource(root)
   const [
     provenance,
     catalog,
@@ -4004,7 +4012,7 @@ async function buildInventory(root, sourceRevision) {
       discoverDeepwellJsonRpc(root),
       discoverFramerailRoutes(root),
       discoverFramerailAmc(root),
-      discoverWikidotPyAmc(root),
+      discoverWikidotPyAmc(root, wikidotPySource),
       discoverFramerailXmlRpc(root),
       discoverPageActionSurfaces(root),
       discoverWwsRoutes(root),
@@ -4089,10 +4097,10 @@ async function buildInventory(root, sourceRevision) {
       framerail_amc_live_evidence: SITE_CHANGES_EVIDENCE_ARTIFACT,
       wikidot_py_amc_contract: "docs/development/wikidot-py-amc-client-parity.json",
       wikidot_py_source: {
-        repository: WIKIDOT_PY_SOURCE.repository,
-        commit: WIKIDOT_PY_SOURCE.commit,
-        root_tree: WIKIDOT_PY_SOURCE.root_tree,
-        objects: [...WIKIDOT_PY_SOURCE.objects].map(([objectPath, [type, oid]]) => ({
+        repository: wikidotPySource.repository,
+        commit: wikidotPySource.commit,
+        root_tree: wikidotPySource.root_tree,
+        objects: [...wikidotPySource.objects].map(([objectPath, [type, oid]]) => ({
           path: objectPath,
           type,
           oid

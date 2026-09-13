@@ -243,12 +243,20 @@ pub enum GetAdminViewOutput {
 pub struct Viewer {
     pub site: SiteModel,
     pub site_settings: crate::services::settings::SiteSettings,
+    pub promoted_sites: Vec<PromotedSiteView>,
     pub site_file_domain: String,
     pub license_name: String,
     pub license_url: &'static str,
     pub license_kind: ViewerLicenseKind,
     pub license_html: Option<String>,
     pub user_session: Option<UserSession>,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct PromotedSiteView {
+    pub slug: String,
+    pub name: String,
+    pub description: String,
 }
 
 #[derive(Serialize, Debug, Copy, Clone, PartialEq, Eq)]

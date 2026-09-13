@@ -2,12 +2,12 @@
   "schema": "wikijump.wikidot_py_amc_write_surface.v1",
   "source": {
     "repository": "Rokurolize/wikidot.py",
-    "commit": "9f33c0f450de9daf333b068e8d70527e033fc07c",
+    "commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
     "revision_authority": "docs/development/wikidot-py-amc-client-parity.json#source",
     "objects": [
-      { "path": "src/wikidot/module/auth.py", "type": "blob", "oid": "39d02d5c0949303bbd6886006de0e5d3b8ae539b" },
+      { "path": "src/wikidot/module/auth.py", "type": "blob", "oid": "3f7e6b6012e534f731180218e81598f46923910f" },
       { "path": "src/wikidot/module/forum_category.py", "type": "blob", "oid": "9fa0a17eff052d3b94788a1889a4cf29bda5cac3" },
-      { "path": "src/wikidot/module/forum_post.py", "type": "blob", "oid": "b6f70f3e50f1b98fc9437224cc7a2af1ca013285" },
+      { "path": "src/wikidot/module/forum_post.py", "type": "blob", "oid": "37983ea94e39a6bb42a2ec79a5750ddfe8bd8b59" },
       { "path": "src/wikidot/module/forum_thread.py", "type": "blob", "oid": "7c073a06edcff016ed103fe773b6887e65b6aa06" },
       { "path": "src/wikidot/module/page.py", "type": "blob", "oid": "3c0e96053580e97b38a2bad5b8c0d7dbe4d2292b" },
       { "path": "src/wikidot/module/private_message.py", "type": "blob", "oid": "c8f16ff34f274dcb96e396c8a7cd40b5e4f563f1" },
@@ -74,7 +74,14 @@
   ],
   "authenticated_behavior_evidence": {
     "schema": "wikijump.wikidot_py_amc_write_evidence.v1",
-    "current_source_commit": "9f33c0f450de9daf333b068e8d70527e033fc07c",
+    "current_source_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "capture_classification": "historical_authenticated_observation",
+    "current_source_application": {
+      "static_write_inventory_reextracted": true,
+      "behavior_capture_source_commit": "9f33c0f450de9daf333b068e8d70527e033fc07c",
+      "changed_current_operations": ["HTTPAuthentication.logout"],
+      "historical_behavior_is_current_transport_proof": false
+    },
     "client": {
       "repository": "Rokurolize/wikidot.py",
       "commit": "9f33c0f450de9daf333b068e8d70527e033fc07c",

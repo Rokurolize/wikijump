@@ -18,12 +18,19 @@ import type {
 export interface Viewer {
   site: SiteModel
   site_settings: SiteSettings
+  promoted_sites: PromotedSiteView[]
   site_file_domain: string
   license_name: string
   license_url: string
   license_kind: "standard" | "other" | "copyright"
   license_html: Nullable<string>
   user_session: Nullable<UserSession>
+}
+
+export interface PromotedSiteView {
+  slug: string
+  name: string
+  description: string
 }
 
 export interface WikidotPageSnapshotView {
@@ -60,6 +67,7 @@ export interface ClientUserSession {
 export interface PreloadData {
   site: Viewer["site"]
   site_settings: Viewer["site_settings"]
+  promoted_sites: Viewer["promoted_sites"]
   site_file_domain: Viewer["site_file_domain"]
   license_name: Viewer["license_name"]
   license_url: Viewer["license_url"]

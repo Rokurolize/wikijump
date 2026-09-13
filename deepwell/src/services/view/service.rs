@@ -38,13 +38,14 @@ use super::structs::{
     GetAdminView, GetAdminViewOutput, GetArticleViewCacheMetadataOutput,
     GetArticleViewOutput, GetPageView, GetPageViewOutput, GetPreloadView,
     GetPreloadViewOutput, GetUserView, GetUserViewOutput, PageRedirectKind, PageRoute,
-    PageTemplateSummary, UserSession, Viewer, ViewerLicenseKind,
+    PageTemplateSummary, PromotedSiteView, UserSession, Viewer, ViewerLicenseKind,
     WikidotPageBreadcrumbView, WikidotPageSnapshotView,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::license::WikidotLicense;
 use crate::models::page::Model as PageModel;
 use crate::models::page_revision::Model as PageRevisionModel;
+use crate::models::site::{self, Entity as Site};
 use crate::services::ServiceContext;
 use crate::services::blueprint::{BlueprintPageType, GetBlueprintPageOutput};
 use crate::services::data_form::{
@@ -82,8 +83,10 @@ use crate::utils::{get_category_name, locale_for_ftml, parse_locales, split_cate
 use ftml::prelude::{PageInfo, ScoreValue};
 use ftml::render::html::HtmlOutput;
 use ref_map::OptionRefMap;
-use sea_orm::ConnectionTrait;
-use sea_orm::{FromQueryResult, Statement};
+use sea_orm::{
+    ColumnTrait, ConnectionTrait, EntityTrait, FromQueryResult, QueryFilter, QueryOrder,
+    QuerySelect, Statement,
+};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use time::OffsetDateTime;
@@ -230,6 +233,67 @@ async fn render_wikidot_data_form_wiki_values(
 pub struct ViewService;
 
 impl ViewService {
+    const PROMOTED_SITE_CANDIDATE_SCAN_LIMIT: u64 = 64;
+    const PROMOTED_SITE_OUTPUT_LIMIT: usize = 4;
+
+    async fn promoted_sites(
+        ctx: &ServiceContext<'_>,
+        current_site_id: i64,
+    ) -> Result<Vec<PromotedSiteView>> {
+        let candidates = Site::find()
+            .filter(site::Column::DeletedAt.is_null())
+            .filter(site::Column::FromWikidot.eq(true))
+            .filter(site::Column::PromoteOnOtherSites.eq(true))
+            .filter(site::Column::SiteId.ne(current_site_id))
+            .order_by_asc(site::Column::SiteId)
+            .limit(Self::PROMOTED_SITE_CANDIDATE_SCAN_LIMIT)
+            .all(ctx.transaction())
+            .await
+            .or_raise(|| {
+                Error::new("failed to resolve promoted Wikidot sites", ErrorType::Site)
+            })?;
+
+        let mut promoted = Vec::with_capacity(Self::PROMOTED_SITE_OUTPUT_LIMIT);
+        for candidate in candidates {
+            let visible = PermissionService::check_user_can(
+                ctx,
+                &CheckPermissionContext {
+                    user_id: None,
+                    site_id: candidate.site_id,
+                    page_reference: None,
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: None,
+                    action: Action::View,
+                },
+            )
+            .await
+            .or_raise(|| {
+                Error::new(
+                    format!(
+                        "failed to evaluate anonymous promotion visibility for site ID {}",
+                        candidate.site_id,
+                    ),
+                    ErrorType::Permission,
+                )
+            })?;
+            if !visible {
+                continue;
+            }
+
+            promoted.push(PromotedSiteView {
+                slug: candidate.slug,
+                name: candidate.name,
+                description: candidate.description,
+            });
+            if promoted.len() == Self::PROMOTED_SITE_OUTPUT_LIMIT {
+                break;
+            }
+        }
+        Ok(promoted)
+    }
+
     pub async fn article(
         ctx: &ServiceContext<'_>,
         mut input: GetPageView,
@@ -258,6 +322,7 @@ impl ViewService {
             input.locales.push(preload.viewer.site.locale.clone());
         }
         Self::apply_article_category_license(ctx, &mut preload.viewer, &input).await?;
+        let response_cache_eligible = !preload.viewer.site_settings.toolbars.bottom;
         let cache_metadata = ArticlePageCache::metadata(ctx, &input).await?;
         if let Some(cache_key) =
             cache_metadata.as_ref().map(|metadata| &metadata.cache_key)
@@ -289,13 +354,22 @@ impl ViewService {
             return Ok(GetArticleViewOutput {
                 viewer: preload.viewer,
                 page,
-                article_page_cache_key: Some(cache_key.clone()),
-                public_content_cache_fence: cache_metadata
-                    .as_ref()
-                    .map(|metadata| metadata.public_content_cache_fence.clone()),
-                anonymous_permission_cache_fence: cache_metadata
-                    .as_ref()
-                    .map(|metadata| metadata.anonymous_permission_cache_fence.clone()),
+                article_page_cache_key: response_cache_eligible
+                    .then(|| cache_key.clone()),
+                public_content_cache_fence: response_cache_eligible.then(|| {
+                    cache_metadata
+                        .as_ref()
+                        .expect("cached article page requires cache metadata")
+                        .public_content_cache_fence
+                        .clone()
+                }),
+                anonymous_permission_cache_fence: response_cache_eligible.then(|| {
+                    cache_metadata
+                        .as_ref()
+                        .expect("cached article page requires cache metadata")
+                        .anonymous_permission_cache_fence
+                        .clone()
+                }),
             });
         }
 
@@ -311,15 +385,27 @@ impl ViewService {
         Ok(GetArticleViewOutput {
             viewer: preload.viewer,
             page: page_view,
-            article_page_cache_key: cache_metadata
-                .as_ref()
-                .map(|metadata| metadata.cache_key.clone()),
-            public_content_cache_fence: cache_metadata
-                .as_ref()
-                .map(|metadata| metadata.public_content_cache_fence.clone()),
-            anonymous_permission_cache_fence: cache_metadata
-                .as_ref()
-                .map(|metadata| metadata.anonymous_permission_cache_fence.clone()),
+            article_page_cache_key: response_cache_eligible
+                .then(|| {
+                    cache_metadata
+                        .as_ref()
+                        .map(|metadata| metadata.cache_key.clone())
+                })
+                .flatten(),
+            public_content_cache_fence: response_cache_eligible
+                .then(|| {
+                    cache_metadata
+                        .as_ref()
+                        .map(|metadata| metadata.public_content_cache_fence.clone())
+                })
+                .flatten(),
+            anonymous_permission_cache_fence: response_cache_eligible
+                .then(|| {
+                    cache_metadata
+                        .as_ref()
+                        .map(|metadata| metadata.anonymous_permission_cache_fence.clone())
+                })
+                .flatten(),
         })
     }
 
@@ -391,17 +477,24 @@ impl ViewService {
             });
         }
 
-        let preload = Self::preload(
-            ctx,
-            GetPreloadView {
-                site_id: input.site_id,
-                session_token: None,
-                locales: input.locales.clone(),
-            },
-        )
-        .await?;
-        if !input.locales.contains(&preload.viewer.site.locale) {
-            input.locales.push(preload.viewer.site.locale);
+        let locales = parse_locales(&input.locales)?;
+        if locales.is_empty() {
+            bail!(Error::new(
+                "no locales are specified in the user's settings or their Accept-Language header",
+                ErrorType::NoLocalesSpecified,
+            ));
+        }
+
+        let site = SiteService::get(ctx, Reference::Id(input.site_id)).await?;
+        if SettingsService::site_settings(&site).toolbars.bottom {
+            return Ok(GetArticleViewCacheMetadataOutput {
+                article_page_cache_key: None,
+                public_content_cache_fence: None,
+                anonymous_permission_cache_fence: None,
+            });
+        }
+        if !input.locales.contains(&site.locale) {
+            input.locales.push(site.locale);
         }
 
         let cache_metadata = ArticlePageCache::metadata(ctx, &input).await?;
@@ -1823,16 +1916,24 @@ ORDER BY breadcrumb_chain.depth ASC
         let site = SiteService::get(ctx, Reference::Id(site_id))
             .await
             .or_raise(make_error)?;
+        let site_settings = SettingsService::site_settings(&site);
 
+        let promoted_sites = if site_settings.toolbars.bottom {
+            Self::promoted_sites(ctx, site.site_id)
+                .await
+                .or_raise(make_error)?
+        } else {
+            Vec::new()
+        };
         let site_file_domain = DomainService::get_files(config, &site.slug);
         let license_name = site.license.translate(ctx.localization(), &locales)?;
         let license_url = site.license.url();
-        let site_settings = SettingsService::site_settings(&site);
 
         // Return
         Ok(Viewer {
             site,
             site_settings,
+            promoted_sites,
             site_file_domain,
             license_name,
             license_url,

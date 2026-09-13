@@ -25,13 +25,13 @@ test("settings and browser closure audit is complete without promoting candidate
   assert.equal(audit.source_identity.standing_is_acceptance_evidence, false);
   assert.equal(
     audit.source_identity.observed_integration_head,
-    "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
+    "3f00b26efee25c63e94ec15d1178aedb179e2ff3",
   );
   assert.equal(
     audit.source_identity.observed_integration_tree,
-    "69cd2a08ab345dd58571f0f6f594d0e45f57b367",
+    "f6f47423da8ed3e6612d4fcb2fb06161084ec58f",
   );
-  assert.equal(audit.source_identity.final_source_freeze_reconciliation_required, true);
+  assert.equal(audit.source_identity.final_source_freeze_reconciliation_required, false);
 
   for (const input of [
     ...audit.input_manifests,
@@ -76,6 +76,13 @@ test("settings and browser closure audit is complete without promoting candidate
   assert.equal(rows.every(({ classification }) => allowed.has(classification)), true);
   const commandIds = new Set(Object.keys(audit.central_commands));
   const evidenceIds = new Set(Object.keys(audit.evidence_registry));
+  const s757Evidence = audit.evidence_registry.E_S757_TOOLBAR_PROMOTION_LIVE_20260913;
+  assert.ok(s757Evidence);
+  assert.equal(await sha256(s757Evidence.path), s757Evidence.sha256);
+  const s757Artifact = await json(s757Evidence.path);
+  assert.equal(s757Artifact.schema, "wikijump.s757.toolbar_promotion_live.v1");
+  assert.equal(s757Artifact.credentials_persisted, false);
+  assert.equal(s757Artifact.site_kind, "campaign-owned-disposable-wikidot-site");
   for (const row of rows) {
     for (const evidenceId of row.evidence_ids ?? []) {
       assert.equal(

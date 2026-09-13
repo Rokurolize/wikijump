@@ -36,6 +36,7 @@ export interface SiteModel {
   google_analytics_profile: Nullable<string>
   show_top_toolbar: boolean
   show_bottom_toolbar: boolean
+  promote_on_other_sites: boolean
   educational: boolean
 }
 
@@ -76,6 +77,7 @@ export interface SiteSettings {
   toolbars: {
     top: boolean
     bottom: boolean
+    promote: boolean
   }
   membership: {
     application_enabled: boolean

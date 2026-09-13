@@ -53,6 +53,7 @@ impl SettingsService {
             toolbars: ToolbarSettings {
                 top: site.show_top_toolbar,
                 bottom: site.show_bottom_toolbar,
+                promote: site.promote_on_other_sites,
             },
             membership: MembershipSettings {
                 application_enabled: site.membership_by_application,

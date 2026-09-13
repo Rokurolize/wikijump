@@ -2,6 +2,7 @@
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import process from "node:process";
 
 import {
@@ -12,14 +13,17 @@ import {
 import {publishBytesNoReplace} from "../src/atomic-no-replace.mjs";
 import {deferredCompatibilityOwner} from "../src/compatibility-deferred-scope.mjs";
 
-const argumentsList = process.argv.slice(2);
+const rawArguments = process.argv.slice(2);
+const argumentsList = rawArguments[0] === "--" ? rawArguments.slice(1) : rawArguments;
 if (![4, 6].includes(argumentsList.length) || argumentsList[0] !== "--inventory" || argumentsList[2] !== "--output") throw new Error("usage: build-compatibility-ledger.mjs --inventory PATH --output PATH [--previous PATH]");
 const [, inventoryPathArgument, , outputPathArgument, previousFlag, previousPathArgument] = argumentsList;
 if (argumentsList.length === 6 && previousFlag !== "--previous") throw new Error("usage: build-compatibility-ledger.mjs --inventory PATH --output PATH [--previous PATH]");
-const outputPath = path.resolve(outputPathArgument);
-const previousPath = previousPathArgument ? path.resolve(previousPathArgument) : outputPath;
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
+const resolveRepositoryPath = (value) => path.isAbsolute(value) ? value : path.resolve(repositoryRoot, value);
+const outputPath = resolveRepositoryPath(outputPathArgument);
+const previousPath = previousPathArgument ? resolveRepositoryPath(previousPathArgument) : outputPath;
 
-const inventoryPath = path.resolve(inventoryPathArgument);
+const inventoryPath = resolveRepositoryPath(inventoryPathArgument);
 const inventoryBytes = await readFile(inventoryPath);
 const inventory = JSON.parse(inventoryBytes);
 

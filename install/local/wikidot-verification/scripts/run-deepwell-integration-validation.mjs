@@ -3,6 +3,8 @@
 import {spawn} from "node:child_process";
 import process from "node:process";
 
+import {waitForPublishedPostgres} from "../src/postgres-published-readiness.mjs";
+
 const DEFAULT_IMAGES = Object.freeze({
   database: "wikijump-local-development-database",
   cache: "wikijump-local-development-cache",
@@ -173,11 +175,14 @@ async function run() {
       containerPort(containers.files, 9000),
     ]);
     const env = testEnvironment({databasePort, cachePort, filesPort});
-    await waitFor(
-      process.execPath,
-      ["-e", `fetch(${JSON.stringify(env.S3_CUSTOM_ENDPOINT + "/minio/health/live")}).then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))`],
-      "task-owned MinIO",
-    );
+    await Promise.all([
+      waitForPublishedPostgres({port: databasePort}),
+      waitFor(
+        process.execPath,
+        ["-e", `fetch(${JSON.stringify(env.S3_CUSTOM_ENDPOINT + "/minio/health/live")}).then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))`],
+        "task-owned MinIO",
+      ),
+    ]);
 
     await command("sqlx", ["migrate", "run", "--source", "deepwell/migrations"], {env});
     await command("cargo", ["build", "--manifest-path", "deepwell/Cargo.toml", "--bin", "deepwell"], {env});

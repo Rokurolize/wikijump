@@ -37,6 +37,7 @@
     $form.expectedSettingsRevision = data.site.settings_revision
     $form.top = data.site.show_top_toolbar
     $form.bottom = data.site.show_bottom_toolbar
+    $form.promote = data.site.promote_on_other_sites
   })
 </script>
 
@@ -75,7 +76,13 @@
         >Promote this site on other sites</label
       >
       <div class="controls">
-        <input id="sm-promote" name="promote" class="checkbox" disabled type="checkbox" />
+        <input
+          id="sm-promote"
+          name="promote"
+          class="checkbox"
+          type="checkbox"
+          bind:checked={$form.promote}
+        />
       </div>
     </div>
     <button class="btn btn-primary" type="submit">Save changes</button>

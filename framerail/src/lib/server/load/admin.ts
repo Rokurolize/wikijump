@@ -562,6 +562,7 @@ export async function toolbarAction({
       getClientAddress(),
       form.data.top,
       form.data.bottom,
+      form.data.promote,
       { sessionToken, siteId }
     )
     return { form, res }
@@ -831,7 +832,8 @@ const toolbarSchema = object({
   siteId: number(),
   expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
   top: boolean(),
-  bottom: boolean()
+  bottom: boolean(),
+  promote: boolean()
 })
 
 const membershipSchema = object({
