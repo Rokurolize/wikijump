@@ -38,7 +38,10 @@ const verificationInput = (file) =>
     "scripts/generate-wikidot-specifications.mjs",
     "scripts/initialize-wikidot-implementation-ledger.mjs",
     "scripts/lib/wikidot-implementation-ledger.mjs"
-  ].includes(file)
+  ].includes(file) ||
+  // Dated detailed-spec evidence aliases are consumed only by the
+  // specification generator and implementation-ledger checks.
+  file.startsWith("scripts/data/wikidot-detailed-")
 
 const verificationOnly = (file) =>
   verificationInput(file) && file !== ".github/workflows/wikidot-verification.yaml"
