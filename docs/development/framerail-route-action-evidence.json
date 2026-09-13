@@ -522,6 +522,19 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-route:/local--wp8icon/{filename}",
+      "tests": [
+        "framerail/tests/site-icons.test.js::Windows 8 tile declaration keeps Wikidot's local route rather than the configured source"
+      ],
+      "tracking": [
+        {
+          "issue": 756,
+          "case": "M756_WINDOWS_TILE_DECLARATION"
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-route:/user:info/{target}",
       "tests": [
         "framerail/tests/wikidot-user-info-target-route.test.js::GET /user:info/<target> has an encoded public route"

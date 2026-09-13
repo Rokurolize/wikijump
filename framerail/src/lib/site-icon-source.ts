@@ -10,7 +10,8 @@ const ENCODED_LINE_BREAK = /%(?:0a|0d)/iu
 
 const WIKIDOT_ROUTE_PREFIX: Partial<Record<SiteIconSourceKind, string>> = {
   favicon: "/local--favicon/",
-  ios: "/local--iosicon/"
+  ios: "/local--iosicon/",
+  windows: "/local--wp8icon/"
 }
 
 function safeLocalFileSource(source: string): boolean {

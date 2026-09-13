@@ -6,8 +6,11 @@ import {
   IOS_ICON_DECLARATIONS,
   IOS_ICON_ROUTE_PREFIX,
   SITE_ICON_CACHE_CONTROL,
+  WINDOWS_TILE_FILENAME,
+  WINDOWS_TILE_ROUTE_PREFIX,
   faviconDeclaration,
-  hasIosIcons
+  hasIosIcons,
+  windowsTileDeclaration
 } from "../src/lib/site-icons.ts"
 
 const importedSite = (icons = {}) => ({
@@ -15,6 +18,7 @@ const importedSite = (icons = {}) => ({
   from_wikidot: true,
   favicon_source: null,
   ios_icon_source: null,
+  windows_tile_source: null,
   ...icons
 })
 
@@ -23,6 +27,7 @@ const localSite = (icons = {}) => ({
   from_wikidot: false,
   favicon_source: null,
   ios_icon_source: null,
+  windows_tile_source: null,
   ...icons
 })
 
@@ -80,6 +85,46 @@ test("query strings and fragments are not declared as icon sources", () => {
       })
     ),
     null
+  )
+})
+
+test("Windows 8 tile declaration keeps Wikidot's local route rather than the configured source", () => {
+  // Live sandbox-for-codex declares /local--wp8icon/wp8icon.png.
+  assert.deepEqual(
+    windowsTileDeclaration(
+      importedSite({
+        windows_tile_source: "https://scp-wiki.wikidot.com/local--wp8icon/wp8icon.png"
+      })
+    ),
+    { href: `${WINDOWS_TILE_ROUTE_PREFIX}${WINDOWS_TILE_FILENAME}` }
+  )
+  assert.deepEqual(
+    windowsTileDeclaration(
+      localSite({ windows_tile_source: "/local--files/site/windows-tile.png" })
+    ),
+    { href: `${WINDOWS_TILE_ROUTE_PREFIX}${WINDOWS_TILE_FILENAME}` }
+  )
+})
+
+test("a site without a usable Windows 8 tile declares nothing", () => {
+  assert.equal(WINDOWS_TILE_FILENAME, "wp8icon.png")
+  assert.equal(windowsTileDeclaration(null), null)
+  assert.equal(windowsTileDeclaration(localSite()), null)
+  assert.equal(windowsTileDeclaration(localSite({ windows_tile_source: "" })), null)
+  assert.equal(
+    windowsTileDeclaration(
+      localSite({ windows_tile_source: "https://evil.example/tile.png" })
+    ),
+    null
+  )
+  assert.equal(
+    windowsTileDeclaration(
+      importedSite({
+        windows_tile_source: "https://scp-wiki.wikidot.com/local--favicon/favicon.gif"
+      })
+    ),
+    null,
+    "a favicon route must not be declared as the Windows tile"
   )
 })
 

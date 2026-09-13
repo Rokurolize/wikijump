@@ -18,9 +18,9 @@ The configured Windows tile output is therefore not observable from the campaign
 
 | Boundary | Existing public seam | Required independent expected value | Current decision |
 | --- | --- | --- | --- |
-| SSR head | `framerail/src/routes/+layout.svelte` receives `data.site.windows_tile_source` through the ordinary public page preload. | The exact `meta` name, attribute order-insensitive attribute set, and content path emitted by a configured live Wikidot page. | Blocked. The exact declaration is absent from frozen and read-only live evidence. |
-| Site-local HTTP route | A new SvelteKit route could delegate GET and HEAD to `siteIconResponse(request, (site) => site.windows_tile_source, "windows")`. | The exact site-local route pathname and configured live response behavior. | Blocked. Choosing a route prefix or filename now would be inference. |
-| Focused Node test | `framerail/tests/site-icons.test.js` and a route contract test can exercise the declaration helper and public handler once the public values are known. | The configured positive declaration and route pathname from evidence independent of Wikijump source. | Blocked by the same missing observation; no red test can be written without inventing its expectation. |
+| SSR head | `framerail/src/routes/+layout.svelte` receives `data.site.windows_tile_source` through the ordinary public page preload. | The exact `meta` name, attribute order-insensitive attribute set, and content path emitted by a configured live Wikidot page. | Resolved. The live capture appends `<meta name="msapplication-TileImage" content="/local--wp8icon/wp8icon.png"/>` after the iOS icon declarations. |
+| Site-local HTTP route | A new SvelteKit route delegates GET and HEAD to `siteIconResponse(request, (site) => site.windows_tile_source, "windows")`. | The exact site-local route pathname and configured live response behavior. | Resolved. Live serves `/local--wp8icon/wp8icon.png` with 200 GET/HEAD, `image/png`, `cache-control: maxage=3600, public max-age=3600`, and an ETag; Wikijump projects it through the same safe redirect boundary as the favicon and iOS routes. |
+| Focused Node test | `framerail/tests/site-icons.test.js` and a route contract test can exercise the declaration helper and public handler once the public values are known. | The configured positive declaration and route pathname from evidence independent of Wikijump source. | Resolved. Positive, negative, and cross-kind declaration cases run under the Framerail unit runner, and the retained capture is byte-sealed by `install/local/wikidot-verification/tests/m756-windows-tile-evidence.test.mjs`. |
 
 ## Source audit
 
@@ -28,6 +28,13 @@ The configured Windows tile output is therefore not observable from the campaign
 
 No production or test change is supported by the available evidence. `M756_WINDOWS_TILE_DECLARATION` must be classified as `blocked_evidence` until a read-only configured live Wikidot page freezes the exact head element and its requested site-local route. The existing safe-source policy remains source-ready; upload materialization, local owned bytes, and browser cache transitions remain separate subrows.
 
-## Observation required to unblock source work
+## Observed contract (2026-09-13)
 
-Capture one configured live Wikidot page without mutating a non-run-owned site. Seal the HTTP response body, extract the exact Windows tile head element, request the referenced site-local path with GET and HEAD, and seal status, headers, redirects, and byte identity. The capture must also include a same-site unconfigured negative control. Background color is a separate setting and must not be added unless the live head observation proves its declaration.
+A run-owned mutation uploaded one 144x144 PNG to the Windows 8 Tile slot on `sandbox-for-codex`, captured the anonymous public head, requested the declared site-local route with GET and HEAD, deleted the tile, and re-verified the unconfigured head. The unconfigured baseline is the same-site negative control.
+
+- Declaration: `<meta name="msapplication-TileImage" content="/local--wp8icon/wp8icon.png"/>`, appended after the iOS touch icon declarations.
+- Route: `/local--wp8icon/wp8icon.png`, 200 for GET and HEAD, `image/png; charset=utf-8`, `cache-control: maxage=3600, public max-age=3600`, ETag, and the uploaded bytes.
+- Cleanup: the delete action returned `ok`, the public meta disappeared, and the head elements matched the unconfigured baseline.
+- Background color remains a separate setting; no `msapplication-TileColor` element was observed and none must be added.
+
+Evidence: `install/local/wikidot-verification/artifacts/m756-windows-tile-live-20260914.json`, SHA-256 `20be4e14d8addc6340664e0ad765bb0eec85dcf047dbb0c7f1c203a34e3396d7` (source run receipt `/home/roku/wjlab/evidence/m756-windows-tile-20260914-r1/verdict.json`, SHA-256 `f11c7c2d0fa46e3a3986338d17544914a1a436ea9e528ff35e62da5a2d0d86ca`).
