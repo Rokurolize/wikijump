@@ -372,8 +372,8 @@
     },
     {
       "path": "docs/development/open43-m-closure-audit.json",
-      "sha256": "c7cdd9508da93da831cfad0fc90994b72647647f5252219084493eee85abeb56",
-      "source_revision": "23cd943a181633fee9c92d71e4422714620300b8",
+      "sha256": "5f82eafcabfc893bb9f4ff1e80e47be84d4f8ab71869da542f0785a5a23cba5a",
+      "source_revision": "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
       "issue_count": 7,
       "case_count": 48,
       "classification_counts": {

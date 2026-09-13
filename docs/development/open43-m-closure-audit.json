@@ -272,6 +272,7 @@
     "E_OPEN43_IMAGE_ARGUMENT_BOUNDARY_20260913": {
       "path": "install/local/wikidot-verification/artifacts/m776-m806-image-argument-boundary-live.jsonl",
       "sha256": "3014b4f94fc5b2787f3fd0d97854b58baa6bf66db0fe2ef11d967baa7ceaa961",
+      "source_revision": "23cd943a181633fee9c92d71e4422714620300b8",
       "external_evidence_root": "/home/roku/wjlab/evidence/m776-m806-argument-boundary-20260913-r1",
       "external_batch_roots": [
         "/home/roku/wjlab/evidence/m776-m806-argument-boundary-20260913-r1",
