@@ -122,6 +122,20 @@ function maskRustCommentsAndStrings(source) {
       continue;
     }
 
+    // Rust char and byte-char literals can contain a quote or a backslash
+    // (`'"'`, `'\''`, `b'\\'`). Mask them before string detection, or the
+    // embedded quote starts a phantom string that swallows later test
+    // declarations. Lifetimes (`'a`) have no closing quote and fall through.
+    const charLiteralMatch =
+      /^b?'(?:\\(?:u\{[0-9A-Fa-f]{1,6}\}|x[0-9A-Fa-f]{2}|.)|[^\\'\n\r])'/u.exec(
+        source.slice(index),
+      );
+    if (charLiteralMatch !== null) {
+      mask(charLiteralMatch[0]);
+      index += charLiteralMatch[0].length;
+      continue;
+    }
+
     const rawStringMatch = /^(?:b?r)(#*)"/u.exec(source.slice(index));
     if (rawStringMatch !== null) {
       const opening = rawStringMatch[0];
