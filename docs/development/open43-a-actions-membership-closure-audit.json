@@ -127,6 +127,17 @@
         "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
         "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
         "evidence_ids": ["E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810"]
+      },
+      {
+        "path": "install/local/wikidot-verification/artifacts/ratings-actor-tie-live-20260914.json",
+        "sha256": "620e00d1873148be791c41b7f28c6a5ff5c4ea0f4796a872db6602bc9d61d6ff",
+        "source_revision": "e30fca90d52cc61dec9ec430836a16c448ae9461",
+        "external_evidence_root": "/home/roku/wjlab/evidence/ratings-batch-20260914-r1",
+        "external_run_receipt": {
+          "path": "/home/roku/wjlab/evidence/ratings-batch-20260914-r1/receipt.json",
+          "sha256": "d40f5b9566bcccfd97a3d4f98cb08e255665560301638be891c620aa5f9d6415"
+        },
+        "evidence_ids": ["E_RATINGS_ACTOR_TIE_20260914"]
       }
     ],
     "inherited_manifests": [
@@ -439,6 +450,20 @@
             "deepwell/src/services/render/rate_actions.rs::star_registry_owns_only_values_one_through_five"
           ],
           "result": "The live post-vote five-star DOM contains five star controls and no cancel control; the same retained evidence shows cancelVote only in plus-minus mode. The star action registry therefore exposes values one through five and no cancel descriptor."
+        },
+        {
+          "case_id": "A1030_ACTOR_AND_EXISTING_VOTE_DOM",
+          "acceptance": "Match anonymous, non-member, member, moderator, administrator, and existing-vote control state in all rating modes.",
+          "owner": "deepwell",
+          "evidence": [
+            "deepwell/tests/page.rs::page_render_rate_widget_matches_actor_and_rating_mode_matrix",
+            "deepwell/tests/page.rs::page_render_emits_wikidot_rate_widget_structure",
+            "deepwell/tests/page.rs::page_render_star_rate_module_consumes_body_and_substitutes_live_variables",
+            "install/local/wikidot-verification/artifacts/ratings-actor-tie-live-20260914.json",
+            "install/local/wikidot-verification/tests/ratings-actor-tie-evidence.test.mjs::Rate widget control state is fixed across actors and rating modes"
+          ],
+          "evidence_ids": ["E_RATINGS_ACTOR_TIE_20260914"],
+          "result": "The plus-minus box is rateup/ratedown/cancel for anonymous through administrator readers and for both existing voters, the stars widget carries the aggregate data-rating with no cancel control and shows the existing four-star vote for anonymous and for the voter, and the disabled plus-only box keeps rateup/cancel without ratedown. The server render is viewer-independent because it uses only the resolved rating type and aggregate score."
         }
       ],
       "needs_source": [],
@@ -462,19 +487,14 @@
           "result": "Node proves the typed dispatch but not served browser intervals."
         }
       ],
-      "blocked_evidence": [
-        {
-          "case_id": "A1030_ACTOR_AND_EXISTING_VOTE_DOM",
-          "acceptance": "Match anonymous, non-member, member, moderator, administrator, and existing-vote control state in all rating modes.",
-          "owner": "live-evidence",
-          "result": "The frozen live capture does not establish the full actor and existing-vote DOM matrix. No control difference is invented."
-        }
-      ],
+      "blocked_evidence": [],
       "exact_commands": [
         "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --lib services::render::rate_actions::tests -- --nocapture",
         "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page saved_rate_sidecar_binds_exact_revision_and_mutates_idempotently -- --exact --nocapture",
+        "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page page_render_rate_widget_matches_actor_and_rating_mode_matrix -- --exact --nocapture",
         "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test vote_authorization vote_mutations_require_route_target_view_permission -- --exact --nocapture",
-        "node --test framerail/tests/wikidot-legacy-actions.test.js framerail/tests/wikidot-legacy-action-request.test.js framerail/tests/page-vote-request-context.test.js"
+        "node --test framerail/tests/wikidot-legacy-actions.test.js framerail/tests/wikidot-legacy-action-request.test.js framerail/tests/page-vote-request-context.test.js",
+        "node --test install/local/wikidot-verification/tests/ratings-actor-tie-evidence.test.mjs"
       ]
     },
     {
@@ -800,10 +820,10 @@
     "issue_count": 9,
     "case_count": 64,
     "classification_counts": {
-      "source_ready": 27,
+      "source_ready": 35,
       "needs_source": 0,
       "candidate_required": 18,
-      "blocked_evidence": 19
+      "blocked_evidence": 11
     },
     "duplicate_issue_numbers": 0,
     "duplicate_case_ids": 0,

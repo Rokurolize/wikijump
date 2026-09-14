@@ -4984,7 +4984,7 @@
     {
       "source": "open43-audit-case:A1030_ACTOR_AND_EXISTING_VOTE_DOM",
       "type": "implemented_by",
-      "target": "evidence.live"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:A1030_ACTOR_BOUND_VOTE_MUTATION",
@@ -6124,7 +6124,7 @@
     {
       "source": "open43-audit-case:Q1040_TIE_ACTOR_AJAX_AND_TIMING_RULES",
       "type": "implemented_by",
-      "target": "evidence.live"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION",
@@ -6239,7 +6239,7 @@
     {
       "source": "open43-audit-case:Q809_EQUAL_SCORE_UNRATED_AND_ACTOR_RULES",
       "type": "implemented_by",
-      "target": "evidence.live"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:Q809_OBSERVED_DOM_ORDER_FILTER_AND_COMMENTS",
@@ -6319,7 +6319,7 @@
     {
       "source": "open43-audit-case:Q811_TIE_ACTOR_AJAX_AND_TIMING_RULES",
       "type": "implemented_by",
-      "target": "evidence.live"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:S1046_ADMIN_INITIAL",
@@ -11295,8 +11295,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "258f17bb53a4251cf5794b94869e2d49ff4ef7a4",
-      "tree": "2f0836da93f71ccbec80d8407c1f9e9c039b6830"
+      "commit": "86d42d9cdcb576278bb04bf8c87ccdbd4b33c1cc",
+      "tree": "cd687acbafa0a91ff7629526053086a42ef174f3"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11453,7 +11453,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "8a0f64ed8580abb3cf732348c707e7de9e795faa096eeb47630c599668a46841"
+        "sha256": "1d7e5f793eebc32c5225294705ddfc3f48f9ff32d20d3649c73f38fbd51830f9"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11465,7 +11465,7 @@
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "aaf8519e2495881fcf630783404ccc730be90c09c4b307f629753f8ebdf5bcbc"
+        "sha256": "418180f639166898913d37a0cca1962eac5544bb89bb90324671aa6323fb49e2"
       },
       {
         "path": "docs/development/open43-a-authoring-closure-audit.json",
@@ -11473,11 +11473,11 @@
       },
       {
         "path": "docs/development/open43-blocked-evidence-routing.json",
-        "sha256": "6ca0dbc3f38ef090d79b1b699b804bba11eadfe3483e2b426d159526e3abb5f6"
+        "sha256": "4b878201c78ad330127bd26e563290230e39972221d0aa478e71124fc388773f"
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "5d129487d03c01c25b623494630e6d7005275f4a1101283277a6ffd53185b26c"
+        "sha256": "f080475de76a018631c4065689ab20a573655e1399e2250cf4ec21fcd9d6a6f2"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -11489,7 +11489,7 @@
       },
       {
         "path": "docs/development/open43-q-page-query-closure-audit.json",
-        "sha256": "51015339a5afd1f3ca0f634e4be7ff541cce8014ce3fece694b525af5fe3b5c4"
+        "sha256": "cd85a76fd2a95dfa0dcef5d97b4dc35642da380f3bb776f771bb599dd2d03d51"
       },
       {
         "path": "docs/development/open43-q-search-users-closure-audit.json",
@@ -11517,7 +11517,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "fac3e7235b5793fb25951a78ac11c8f93c49275ba03071569b50e24c8b08c0a8"
+        "sha256": "f8a2b8e2d82fed54a66c2c8b50ef8913171e1fa4a42266328a84b3bcc085cf47"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -37797,10 +37797,15 @@
         "cases": [
           "A1030_ACTOR_AND_EXISTING_VOTE_DOM"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#page_render_emits_wikidot_rate_widget_structure",
+          "deepwell/tests/page.rs#page_render_rate_widget_matches_actor_and_rating_mode_matrix",
+          "deepwell/tests/page.rs#page_render_star_rate_module_consumes_body_and_substitutes_live_variables",
+          "install/local/wikidot-verification/tests/ratings-actor-tie-evidence.test.mjs#Rate widget control state is fixed across actors and rating modes"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -37808,20 +37813,20 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1030_ACTOR_AND_EXISTING_VOTE_DOM",
       "implementation_owners": [
-        "evidence.live"
+        "wikijump.deepwell"
       ]
     },
     {
@@ -46619,7 +46624,8 @@
         ],
         "tests": [
           "deepwell/src/services/render/next_previous_page.rs::tests::next_previous_recognition_requires_an_own_line_invocation",
-          "deepwell/tests/page.rs::nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates"
+          "deepwell/tests/page.rs::nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
+          "deepwell/tests/page.rs::nextpreviouspage_names_private_adjacent_pages_for_every_viewer"
         ]
       },
       "evidence": {
@@ -46745,10 +46751,17 @@
         "cases": [
           "Q1040_TIE_ACTOR_AJAX_AND_TIMING_RULES"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs::nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
+          "deepwell/tests/page.rs::nextpreviouspage_names_private_adjacent_pages_for_every_viewer",
+          "deepwell/tests/page.rs::nextpreviouspage_title_tie_uses_creation_order_and_previous_stays_inclusive",
+          "install/local/wikidot-verification/tests/ratings-actor-tie-evidence.test.mjs::NextPage title ties select the first-created page and repeats are stable",
+          "install/local/wikidot-verification/tests/ratings-actor-tie-evidence.test.mjs::adjacency names a private page for every actor while direct reads enforce view",
+          "install/local/wikidot-verification/tests/ratings-actor-tie-evidence.test.mjs::an empty adjacency result selects a later-created page at request time"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -46756,20 +46769,20 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q1040_TIE_ACTOR_AJAX_AND_TIMING_RULES",
       "implementation_owners": [
-        "evidence.live"
+        "wikijump.deepwell"
       ]
     },
     {
@@ -47649,10 +47662,14 @@
         "cases": [
           "Q809_EQUAL_SCORE_UNRATED_AND_ACTOR_RULES"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/rated_pages.rs::ratedpages_equal_scores_order_by_title_and_keep_unrated_rows",
+          "deepwell/tests/rated_pages.rs::ratedpages_renders_live_top_rated_box_and_rating_filters",
+          "install/local/wikidot-verification/tests/ratings-actor-tie-evidence.test.mjs::RatedPages keeps unrated rows and orders equal scores by title"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -47660,20 +47677,20 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q809_EQUAL_SCORE_UNRATED_AND_ACTOR_RULES",
       "implementation_owners": [
-        "evidence.live"
+        "wikijump.deepwell"
       ]
     },
     {
@@ -48042,7 +48059,8 @@
         ],
         "tests": [
           "deepwell/src/services/render/next_previous_page.rs::tests::next_previous_recognition_requires_an_own_line_invocation",
-          "deepwell/tests/page.rs::nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates"
+          "deepwell/tests/page.rs::nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
+          "deepwell/tests/page.rs::nextpreviouspage_names_private_adjacent_pages_for_every_viewer"
         ]
       },
       "evidence": {
@@ -48126,10 +48144,17 @@
         "cases": [
           "Q811_TIE_ACTOR_AJAX_AND_TIMING_RULES"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs::nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
+          "deepwell/tests/page.rs::nextpreviouspage_names_private_adjacent_pages_for_every_viewer",
+          "deepwell/tests/page.rs::nextpreviouspage_title_tie_uses_creation_order_and_previous_stays_inclusive",
+          "install/local/wikidot-verification/tests/ratings-actor-tie-evidence.test.mjs::NextPage title ties select the first-created page and repeats are stable",
+          "install/local/wikidot-verification/tests/ratings-actor-tie-evidence.test.mjs::adjacency names a private page for every actor while direct reads enforce view",
+          "install/local/wikidot-verification/tests/ratings-actor-tie-evidence.test.mjs::authorized Ajax previews share the saved selection and anonymous previews are denied"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -48137,20 +48162,20 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q811_TIE_ACTOR_AJAX_AND_TIMING_RULES",
       "implementation_owners": [
-        "evidence.live"
+        "wikijump.deepwell"
       ]
     },
     {

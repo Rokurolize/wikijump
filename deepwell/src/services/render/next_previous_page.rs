@@ -53,7 +53,7 @@ use crate::services::page_query::{
     PageQuery, PageQueryScoreFilterCache, PageTypeSelector, PaginationSelector,
     RangeSelector, TagCondition,
 };
-use crate::services::{PageService, ServiceContext};
+use crate::services::{PageQueryService, PageService, ServiceContext};
 
 pub(super) static NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX: LazyLock<Regex> =
     LazyLock::new(|| {
@@ -138,7 +138,6 @@ struct NextPreviousOccurrence<'a> {
 struct CurrentPageSortKey {
     page_id: i64,
     title: String,
-    slug: String,
     created_at: time::OffsetDateTime,
 }
 
@@ -245,7 +244,6 @@ impl RenderService {
                 occurrence.name,
                 &arguments,
                 template.fields(),
-                &mut permission_cache,
                 &mut score_filter_cache,
             )
             .await?;
@@ -589,7 +587,6 @@ async fn load_current_next_previous_sort_key(
     Ok(CurrentPageSortKey {
         page_id: current_page_id,
         title: page_info.title.to_string(),
-        slug: RenderService::page_info_full_slug(page_info),
         created_at: page.created_at,
     })
 }
@@ -603,7 +600,6 @@ async fn select_next_previous_page(
     module: NextPreviousModule,
     arguments: &NextPreviousPageArguments,
     mut fields: FoundPageFields,
-    permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
     score_filter_cache: &mut PageQueryScoreFilterCache,
 ) -> Result<FoundPages> {
     if arguments.no_candidate_can_match {
@@ -674,16 +670,21 @@ async fn select_next_previous_page(
         fields,
     };
 
-    let mut rows = super::runtime::RenderRuntime::new(ctx)
-        .find_viewable_list_pages_rows(
-            query,
-            MAX_LISTPAGES_RENDER_SCAN_ROWS as usize,
-            permission_cache,
-            Some(score_filter_cache),
-        )
-        .await?
-        .pages
-        .pages;
+    // Live Wikidot resolves the neighboring row without actor-scoped view
+    // filtering: a private adjacent page is named in the module output for
+    // every viewer. The selected row still renders through the shared
+    // ListPages block path.
+    let found = PageQueryService::find_with_metadata_cached(
+        ctx,
+        query,
+        Some(score_filter_cache),
+        None,
+    )
+    .await?;
+    if found.metadata.cap_exceeded {
+        return Ok(FoundPages { pages: Vec::new() });
+    }
+    let mut rows = found.pages.pages;
 
     sort_next_previous_rows(&mut rows, arguments.order);
     let selected = match arguments.order {
@@ -775,10 +776,7 @@ fn compare_next_previous_title_rows(
         .cmp(&right_title.to_ascii_lowercase())
         .then_with(|| left_title.cmp(right_title))
         .then_with(|| {
-            left.slug
-                .as_deref()
-                .unwrap_or("")
-                .cmp(right.slug.as_deref().unwrap_or(""))
+            next_previous_row_created_at(left).cmp(&next_previous_row_created_at(right))
         })
         .then_with(|| left.page_id.cmp(&right.page_id))
 }
@@ -792,7 +790,7 @@ fn compare_row_to_current_title(
         .to_ascii_lowercase()
         .cmp(&current.title.to_ascii_lowercase())
         .then_with(|| title.cmp(current.title.as_str()))
-        .then_with(|| row.slug.as_deref().unwrap_or("").cmp(current.slug.as_str()))
+        .then_with(|| next_previous_row_created_at(row).cmp(&current.created_at))
         .then_with(|| row.page_id.cmp(&current.page_id))
 }
 

@@ -1364,6 +1364,11 @@ impl RenderService {
             suppress_nested_list_pages,
         } = options;
         let backlinks_page_id = current_page_id;
+        // PagePreviewModule carries `page_unix_name`/`pageId`, and the legacy
+        // NextPage/PreviousPage modules resolve their adjacency from that
+        // identity. Other preview modules keep rendering without a current
+        // page until their own preview contract is evidenced.
+        let next_previous_page_id = current_page_id;
         let current_page_id = (!page_preview).then_some(current_page_id).flatten();
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
@@ -1564,7 +1569,7 @@ impl RenderService {
                 page_info,
                 settings,
                 current_site_id,
-                current_page_id,
+                next_previous_page_id,
                 &mut include_budget,
                 &render_cost_budget,
                 url,

@@ -27,10 +27,10 @@
     "run_owned_mutation": 13,
     "local_candidate": 0,
     "live_browser_only": 9,
-    "missing_public_producer": 9,
+    "missing_public_producer": 5,
     "missing_architecture_domain_authority": 7,
     "missing_security_policy": 2,
-    "total": 44
+    "total": 40
   },
   "rows": [
     {"case_id":"Q810_ACTIVE_GLOBAL_ROTATION","route_class":"missing_architecture_domain_authority","status":"not_attempted_not_safe","reason":"No authorized global FeaturedSite data source or refresh owner exists."},
@@ -43,14 +43,10 @@
     {"case_id":"Q1034_FORUM_MUTATION_AUTHORITY","route_class":"missing_architecture_domain_authority","status":"not_attempted_not_safe","reason":"No public forum mutation endpoint with actor, permission, validation, idempotency, and rate-limit ownership exists."},
     {"case_id":"Q1034_ROUTE_AND_AJAX_BROWSER_LIFECYCLE","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Replacement, navigation, focus, failure, paint, and settled behavior require a browser."},
     {"case_id":"Q1034_FULL_ACTOR_USER_AND_MUTATION_MATRIX","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"The row combines actor states with post mutation and cache refresh."},
-    {"case_id":"Q809_EQUAL_SCORE_UNRATED_AND_ACTOR_RULES","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No controlled public equal-score, unrated, and actor-visible set exists."},
-    {"case_id":"Q811_TIE_ACTOR_AJAX_AND_TIMING_RULES","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No controlled adjacent-page tie and private actor pair exists; Ajax timing alone would not answer it."},
     {"case_id":"Q1027_NON_ANONYMOUS_AND_BEYOND_LIMIT_LIVE_RULES","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No public private-backlink actor pair or controlled graph beyond 500 rows exists."},
     {"case_id":"Q1035_LISTDRAFTS_NONEMPTY_QUERY","route_class":"missing_architecture_domain_authority","status":"not_attempted_not_safe","reason":"Deepwell has no persisted draft producer or visibility/expiration owner."},
-    {"case_id":"Q1040_TIE_ACTOR_AJAX_AND_TIMING_RULES","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No controlled tie and private adjacent-page actor set exists."},
     {"case_id":"A775_EXACT_LIVE_TEMPORAL_EDIT","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Edit navigation, focus, loading, cancellation, and intermediate frames require a browser."},
     {"case_id":"A777_EXACT_LIVE_PRINT_TRANSITIONS","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Print dialog handoff and before/after-print intervals require a browser."},
-    {"case_id":"A1030_ACTOR_AND_EXISTING_VOTE_DOM","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No controlled public existing-vote page spans the required actors without voting."},
     {"case_id":"A1037_MAILFORM_INITIAL_DOM_AND_SUBMIT","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"The acceptance row joins initial DOM to message submission and delivery state."},
     {"case_id":"A1037_SIMPLETODO_MUTATION","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Task create/update/delete is mutating."},
     {"case_id":"A1037_BROWSER_LIFECYCLE","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Focus, navigation, errors, loading, and intermediate paint require a browser."},

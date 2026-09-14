@@ -20305,6 +20305,632 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
     );
 }
 
+async fn make_nextprevious_test_category_member_only(
+    runner: &TestRunner,
+    site_id: i64,
+    category_slug: &str,
+    user_id: i64,
+) {
+    let category_id =
+        CategoryService::get_or_create(runner.context(), site_id, category_slug)
+            .await
+            .expect("private NextPreviousPage category should be created")
+            .category_id;
+    let role = RoleService::create(
+        runner.context(),
+        InternalCreateRoleInput {
+            site_id,
+            name: format!("{category_slug}-viewer"),
+            description: None,
+            is_virtual: false,
+            parent_role_id: None,
+            creating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("private NextPreviousPage role should be created");
+    PermissionService::update_permissions_for_role(
+        runner.context(),
+        UpdateRolePermissionsInput {
+            site_id,
+            role_reference: Reference::Id(role.role_id),
+            new_permissions: vec![Permission {
+                resource_type: Resource::Page,
+                resource_category: Some(Reference::Id(category_id)),
+                action: Action::View,
+            }],
+            cascade_removals: false,
+            updating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("private NextPreviousPage role permissions should be updated");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            site_id,
+            user_id,
+            role_id: role.role_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("member should receive the private NextPreviousPage role");
+}
+
+/// Live capture (sandbox-for-codex, 2026-09-14): when two candidate pages
+/// share a title, `NextPage by="title"` selects the first-created page even
+/// when its fullname sorts later, `PreviousPage by="title"` keeps its
+/// inclusive current-row quirk, repeated reads are stable, and the authorized
+/// PagePreview request resolves the same selection as the saved render.
+#[tokio::test]
+async fn nextpreviouspage_title_tie_uses_creation_order_and_previous_stays_inclusive() {
+    fn section<'a>(html: &'a str, start: &str, end: &str) -> &'a str {
+        html.split_once(start)
+            .unwrap_or_else(|| panic!("missing NextPreviousPage section start {start:?}"))
+            .1
+            .split_once(end)
+            .unwrap_or_else(|| panic!("missing NextPreviousPage section end {end:?}"))
+            .0
+    }
+
+    const CATEGORY: &str = "fixture-npp-title-tie";
+    const HOLDER_SLUG: &str = "fixture-npp-title-tie:mm-holder";
+    const PREV_HOLDER_SLUG: &str = "fixture-npp-title-tie:oo-holder";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (slug, title, created_seconds) in [
+        (HOLDER_SLUG, "MM tie holder", 1_i64),
+        ("fixture-npp-title-tie:zz-tie", "NN tie", 2_i64),
+        ("fixture-npp-title-tie:aa-tie", "NN tie", 3_i64),
+        (PREV_HOLDER_SLUG, "OO prev tie holder", 4_i64),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, "Tie body.").await;
+        set_listpages_test_created_at(
+            &runner,
+            site_id,
+            slug,
+            OffsetDateTime::UNIX_EPOCH + Duration::seconds(created_seconds),
+        )
+        .await;
+    }
+
+    let source = format!(
+        concat!(
+            "TIE_PREV_START\n",
+            "[[module PreviousPage category=\"{category}\" by=\"title\"]]\n",
+            "PREV=%%fullname%%|%%title%%\n",
+            "[[/module]]\n",
+            "TIE_PREV_END\n",
+            "TIE_NEXT_START\n",
+            "[[module NextPage category=\"{category}\" by=\"title\"]]\n",
+            "NEXT=%%fullname%%|%%title%%\n",
+            "[[/module]]\n",
+            "TIE_NEXT_END",
+        ),
+        category = CATEGORY,
+    );
+    let holder = PageTable::find()
+        .filter(
+            sea_orm::Condition::all()
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::Slug.eq(HOLDER_SLUG)),
+        )
+        .one(runner.context().transaction())
+        .await
+        .expect("NextPreviousPage tie holder lookup should succeed")
+        .expect("NextPreviousPage tie holder should exist");
+    let page_info = PageInfo {
+        page: Cow::Borrowed(HOLDER_SLUG),
+        category: Some(Cow::Borrowed(CATEGORY)),
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("MM tie holder"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let render = |viewer_user_id| {
+        RenderService::render_page_for_viewer(
+            runner.context(),
+            source.clone(),
+            &page_info,
+            Layout::Wikidot,
+            PageId {
+                site_id,
+                category_id: holder.page_category_id,
+                page_id: holder.page_id,
+            },
+            viewer_user_id,
+            UrlArguments::default(),
+        )
+    };
+
+    let anonymous = render(None)
+        .await
+        .expect("NextPreviousPage tie render should succeed")
+        .html_output
+        .body;
+    let tie_prev = section(&anonymous, "TIE_PREV_START", "TIE_PREV_END");
+    assert!(
+        tie_prev.contains(&format!("PREV={HOLDER_SLUG}|MM tie holder")),
+        "PreviousPage by=title must keep the inclusive current-row quirk:\n{anonymous}",
+    );
+    let tie_next = section(&anonymous, "TIE_NEXT_START", "TIE_NEXT_END");
+    assert!(
+        tie_next.contains("NEXT=fixture-npp-title-tie:zz-tie|NN tie"),
+        "NextPage by=title must select the first-created title tie even though its fullname sorts later:\n{anonymous}",
+    );
+
+    let repeated = render(None)
+        .await
+        .expect("repeated NextPreviousPage tie render should succeed")
+        .html_output
+        .body;
+    assert_eq!(
+        repeated, anonymous,
+        "title-tie selection must be stable across repeated reads",
+    );
+
+    let prev_holder = PageTable::find()
+        .filter(
+            sea_orm::Condition::all()
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::Slug.eq(PREV_HOLDER_SLUG)),
+        )
+        .one(runner.context().transaction())
+        .await
+        .expect("NextPreviousPage previous tie holder lookup should succeed")
+        .expect("NextPreviousPage previous tie holder should exist");
+    let prev_page_info = PageInfo {
+        page: Cow::Borrowed(PREV_HOLDER_SLUG),
+        category: Some(Cow::Borrowed(CATEGORY)),
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("OO prev tie holder"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let prev_holder_html = RenderService::render_page_for_viewer(
+        runner.context(),
+        source.clone(),
+        &prev_page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id,
+            category_id: prev_holder.page_category_id,
+            page_id: prev_holder.page_id,
+        },
+        None,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("NextPreviousPage previous tie holder render should succeed")
+    .html_output
+    .body;
+    let prev_holder_prev = section(&prev_holder_html, "TIE_PREV_START", "TIE_PREV_END");
+    assert!(
+        prev_holder_prev.contains(&format!("PREV={PREV_HOLDER_SLUG}|OO prev tie holder")),
+        "PreviousPage by=title from the later holder must still return itself:\n{prev_holder_html}",
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(holder.page_id)),
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "MM tie holder",
+            "wikitext": source,
+        }),
+    );
+    let preview_next = section(&preview.body, "TIE_NEXT_START", "TIE_NEXT_END");
+    assert!(
+        preview_next.contains("NEXT=fixture-npp-title-tie:zz-tie|NN tie"),
+        "the authorized PagePreview must resolve the same title-tie selection as the saved render:\n{}",
+        preview.body,
+    );
+}
+
+/// Live capture (sandbox-for-codex, 2026-09-14): `NextPage` and
+/// `PreviousPage` name a private adjacent page in their module output for
+/// anonymous, non-member, and authorized readers, even though a direct read
+/// of that page still enforces the category view permission.
+#[tokio::test]
+async fn nextpreviouspage_names_private_adjacent_pages_for_every_viewer() {
+    fn section<'a>(html: &'a str, start: &str, end: &str) -> &'a str {
+        html.split_once(start)
+            .unwrap_or_else(|| panic!("missing NextPreviousPage section start {start:?}"))
+            .1
+            .split_once(end)
+            .unwrap_or_else(|| panic!("missing NextPreviousPage section end {end:?}"))
+            .0
+    }
+
+    const PUBLIC_CATEGORY: &str = "fixture-npp-adj";
+    const PRIVATE_CATEGORY: &str = "fixture-npp-adj-priv";
+    const HOLDER_SLUG: &str = "fixture-npp-adj:holder";
+    const PRIVATE_PREV_SLUG: &str = "fixture-npp-adj-priv:priv-prev";
+    const PRIVATE_NEXT_SLUG: &str = "fixture-npp-adj-priv:priv-next";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    make_nextprevious_test_category_member_only(
+        &runner,
+        site_id,
+        PRIVATE_CATEGORY,
+        SAMPLE_USER_ID,
+    )
+    .await;
+
+    for (slug, title, created_seconds) in [
+        ("fixture-npp-adj:pub-prev", "AA public previous", 1_i64),
+        (PRIVATE_PREV_SLUG, "BB private previous", 2_i64),
+        (HOLDER_SLUG, "CC holder", 3_i64),
+        (PRIVATE_NEXT_SLUG, "DD private next", 4_i64),
+        ("fixture-npp-adj:pub-next", "EE public next", 5_i64),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, "Adjacent body.")
+            .await;
+        set_listpages_test_created_at(
+            &runner,
+            site_id,
+            slug,
+            OffsetDateTime::UNIX_EPOCH + Duration::seconds(created_seconds),
+        )
+        .await;
+    }
+
+    let private_prev = PageTable::find()
+        .filter(
+            sea_orm::Condition::all()
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::Slug.eq(PRIVATE_PREV_SLUG)),
+        )
+        .one(runner.context().transaction())
+        .await
+        .expect("private adjacent page lookup should succeed")
+        .expect("private adjacent page should exist");
+    for (viewer_user_id, expected) in [(None, false), (Some(SAMPLE_USER_ID), true)] {
+        let can_view = PermissionService::check_user_can(
+            runner.context(),
+            &CheckPermissionContext {
+                user_id: viewer_user_id,
+                site_id,
+                page_reference: Some(Reference::Id(private_prev.page_id)),
+            },
+            Permission {
+                resource_type: Resource::Page,
+                resource_category: Some(Reference::Id(private_prev.page_category_id)),
+                action: Action::View,
+            },
+        )
+        .await
+        .expect("private adjacent page permission check should succeed");
+        assert_eq!(
+            can_view, expected,
+            "direct private-page reads must keep the category view permission boundary",
+        );
+    }
+
+    let source = format!(
+        concat!(
+            "ADJ_PREV_START\n",
+            "[[module PreviousPage category=\"{categories}\"]]\n",
+            "PREV=%%fullname%%|%%title%%\n",
+            "[[/module]]\n",
+            "ADJ_PREV_END\n",
+            "ADJ_NEXT_START\n",
+            "[[module NextPage category=\"{categories}\"]]\n",
+            "NEXT=%%fullname%%|%%title%%\n",
+            "[[/module]]\n",
+            "ADJ_NEXT_END",
+        ),
+        categories = format!("{PUBLIC_CATEGORY},{PRIVATE_CATEGORY}"),
+    );
+    let holder = PageTable::find()
+        .filter(
+            sea_orm::Condition::all()
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::Slug.eq(HOLDER_SLUG)),
+        )
+        .one(runner.context().transaction())
+        .await
+        .expect("private adjacency holder lookup should succeed")
+        .expect("private adjacency holder should exist");
+    let page_info = PageInfo {
+        page: Cow::Borrowed(HOLDER_SLUG),
+        category: Some(Cow::Borrowed(PUBLIC_CATEGORY)),
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("CC holder"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let render = |viewer_user_id| {
+        RenderService::render_page_for_viewer(
+            runner.context(),
+            source.clone(),
+            &page_info,
+            Layout::Wikidot,
+            PageId {
+                site_id,
+                category_id: holder.page_category_id,
+                page_id: holder.page_id,
+            },
+            viewer_user_id,
+            UrlArguments::default(),
+        )
+    };
+
+    for viewer_user_id in [None, Some(SAMPLE_USER_ID)] {
+        let html = render(viewer_user_id)
+            .await
+            .expect("private adjacency render should succeed")
+            .html_output
+            .body;
+        let previous = section(&html, "ADJ_PREV_START", "ADJ_PREV_END");
+        assert!(
+            previous.contains(&format!("PREV={PRIVATE_PREV_SLUG}|BB private previous")),
+            "PreviousPage must name the private adjacent page for every observed viewer:\n{html}",
+        );
+        let next = section(&html, "ADJ_NEXT_START", "ADJ_NEXT_END");
+        assert!(
+            next.contains(&format!("NEXT={PRIVATE_NEXT_SLUG}|DD private next")),
+            "NextPage must name the private adjacent page for every observed viewer:\n{html}",
+        );
+    }
+}
+
+/// Live capture (sandbox-for-codex, 2026-09-14): the Rate widget control
+/// sequence is identical for anonymous, non-member, member, moderator, and
+/// administrator readers and for existing voters in every observed rating
+/// mode: plus-minus (`rateup`/`ratedown`/`cancel`), stars (`data-rating` with
+/// no cancel), and disabled plus-only (`rateup`/`cancel` without `ratedown`).
+#[tokio::test]
+async fn page_render_rate_widget_matches_actor_and_rating_mode_matrix() {
+    const PLUS_MINUS_CATEGORY: &str = "fixture-rate-matrix-plus-minus";
+    const PLUS_CATEGORY: &str = "fixture-rate-matrix-plus";
+    const STARS_CATEGORY: &str = "fixture-rate-matrix-stars";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    set_listpages_test_category_rating_type(&runner, site_id, PLUS_CATEGORY, "plus")
+        .await;
+    set_listpages_test_category_rating_type(&runner, site_id, STARS_CATEGORY, "stars")
+        .await;
+
+    let plus_minus_slug = format!("{PLUS_MINUS_CATEGORY}:holder");
+    let plus_slug = format!("{PLUS_CATEGORY}:holder");
+    let stars_slug = format!("{STARS_CATEGORY}:holder");
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        &plus_minus_slug,
+        "Rate matrix plus-minus",
+        "Plus-minus holder.",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        &plus_slug,
+        "Rate matrix plus",
+        "Plus holder.",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        &stars_slug,
+        "Rate matrix stars",
+        "Stars holder.",
+    )
+    .await;
+    let plus_minus_id = listpages_test_page_id(&runner, site_id, &plus_minus_slug).await;
+    let stars_id = listpages_test_page_id(&runner, site_id, &stars_slug).await;
+
+    for (user_id, value) in [(ADMIN_USER_ID, 1_i16), (SAMPLE_USER_ID, -1_i16)] {
+        runner
+            .context()
+            .transaction()
+            .execute_raw(Statement::from_sql_and_values(
+                runner.context().transaction().get_database_backend(),
+                "INSERT INTO page_vote (from_wikidot, page_id, user_id, value) \
+                 VALUES (false, $1, $2, $3)",
+                [
+                    Value::from(plus_minus_id),
+                    Value::from(user_id),
+                    Value::from(value),
+                ],
+            ))
+            .await
+            .expect("plus-minus rate matrix should receive its existing votes");
+    }
+    runner
+        .context()
+        .transaction()
+        .execute_raw(Statement::from_sql_and_values(
+            runner.context().transaction().get_database_backend(),
+            "INSERT INTO page_vote (from_wikidot, page_id, user_id, rating_system, value) \
+             VALUES (false, $1, $2, 'stars', 4)",
+            [Value::from(stars_id), Value::from(SAMPLE_USER_ID)],
+        ))
+        .await
+        .expect("stars rate matrix should receive its existing four-star vote");
+
+    for (category, slug, title) in [
+        (
+            PLUS_MINUS_CATEGORY,
+            plus_minus_slug.as_str(),
+            "Rate matrix plus-minus",
+        ),
+        (PLUS_CATEGORY, plus_slug.as_str(), "Rate matrix plus"),
+        (STARS_CATEGORY, stars_slug.as_str(), "Rate matrix stars"),
+    ] {
+        let page = PageTable::find()
+            .filter(
+                sea_orm::Condition::all()
+                    .add(page::Column::SiteId.eq(site_id))
+                    .add(page::Column::Slug.eq(slug)),
+            )
+            .one(runner.context().transaction())
+            .await
+            .expect("rate matrix holder lookup should succeed")
+            .expect("rate matrix holder should exist");
+        let page_info = PageInfo {
+            page: Cow::Borrowed(slug),
+            category: Some(Cow::Borrowed(category)),
+            site: Cow::Borrowed("scp-wiki"),
+            title: Cow::Borrowed(title),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let render = |viewer_user_id| {
+            RenderService::render_page_for_viewer(
+                runner.context(),
+                "RATE_START\n[[module Rate]]\nRATE_END".to_owned(),
+                &page_info,
+                Layout::Wikidot,
+                PageId {
+                    site_id,
+                    category_id: page.page_category_id,
+                    page_id: page.page_id,
+                },
+                viewer_user_id,
+                UrlArguments::default(),
+            )
+        };
+        let anonymous = render(None)
+            .await
+            .expect("anonymous rate matrix render should succeed")
+            .html_output
+            .body;
+        assert!(
+            anonymous.contains(r#"class="page-rate-widget"#)
+                || anonymous.contains(r#"class="page-rate-widget-box""#),
+            "a rate matrix page must emit its rate widget:\n{anonymous}",
+        );
+        for viewer in [Some(SAMPLE_USER_ID), Some(ADMIN_USER_ID)] {
+            let actor = render(viewer)
+                .await
+                .expect("rate matrix actor render should succeed")
+                .html_output
+                .body;
+            assert_eq!(
+                actor, anonymous,
+                "the Rate widget must be actor-independent in {category} mode",
+            );
+        }
+        match category {
+            PLUS_MINUS_CATEGORY => {
+                assert_eq!(
+                    anonymous
+                        .matches(r#"class="rateup btn btn-default""#)
+                        .count(),
+                    1,
+                    "{anonymous}",
+                );
+                assert_eq!(
+                    anonymous
+                        .matches(r#"class="ratedown btn btn-default""#)
+                        .count(),
+                    1,
+                    "{anonymous}",
+                );
+                assert_eq!(
+                    anonymous
+                        .matches(r#"class="cancel btn btn-default""#)
+                        .count(),
+                    1,
+                    "{anonymous}",
+                );
+                assert!(
+                    anonymous.contains(
+                        "rating:\u{a0}<span class=\"number prw54353\">0</span>"
+                    ),
+                    "the plus-minus existing-vote widget must show the aggregate score:\n{anonymous}",
+                );
+            }
+            PLUS_CATEGORY => {
+                assert_eq!(
+                    anonymous
+                        .matches(r#"class="rateup btn btn-default""#)
+                        .count(),
+                    1,
+                    "{anonymous}",
+                );
+                assert_eq!(
+                    anonymous
+                        .matches(r#"class="cancel btn btn-default""#)
+                        .count(),
+                    1,
+                    "{anonymous}",
+                );
+                assert_eq!(
+                    anonymous
+                        .matches(r#"class="ratedown btn btn-default""#)
+                        .count(),
+                    0,
+                    "disabled plus-only mode has no downvote control:\n{anonymous}",
+                );
+            }
+            STARS_CATEGORY => {
+                assert!(
+                    anonymous.contains(
+                        r#"<div class="page-rate-widget-start" data-rating="4"></div>"#
+                    ),
+                    "an existing four-star vote must surface data-rating=4:\n{anonymous}",
+                );
+                assert_eq!(
+                    anonymous
+                        .matches(r#"class="rateup btn btn-default""#)
+                        .count(),
+                    0,
+                    "{anonymous}",
+                );
+                assert_eq!(
+                    anonymous
+                        .matches(r#"class="ratedown btn btn-default""#)
+                        .count(),
+                    0,
+                    "{anonymous}",
+                );
+                assert_eq!(
+                    anonymous
+                        .matches(r#"class="cancel btn btn-default""#)
+                        .count(),
+                    0,
+                    "the observed five-star widget has no cancel control:\n{anonymous}",
+                );
+            }
+            other => panic!("unexpected rate matrix category {other}"),
+        }
+    }
+}
+
 /// Live capture (sandbox-for-codex, 2026-07-25): `[[module PagesByTag tag="x"]]`
 /// emits an anchor, an `h2`, and `div#tagged-pages-list.pages-list` holding one
 /// `pages-list-item` per tagged page, ordered case-insensitively by title. A tag
@@ -23182,8 +23808,10 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
     );
     assert_eq!(empty.body, EMPTY_BOX);
 
-    let non_backlink_source =
-        "[[module PageTree]]\n[[module ChildPages]]\n[[module NextPage]]";
+    // PageTree and ChildPages resolve no current-page identity in
+    // PagePreviewModule, so an identity-bearing and an identity-free preview
+    // must stay byte-identical for them.
+    let identity_free_source = "[[module PageTree]]\n[[module ChildPages]]";
     runner.set_request_context(RequestContext {
         site_id: Some(site_id),
         page_reference: None,
@@ -23192,7 +23820,7 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
     let identity_free = run_endpoint!(
         runner,
         wikidot_page_preview,
-        json!({"site_id": site_id, "title": "identity-free", "wikitext": non_backlink_source}),
+        json!({"site_id": site_id, "title": "identity-free", "wikitext": identity_free_source}),
     );
     runner.set_request_context(RequestContext {
         site_id: Some(site_id),
@@ -23202,9 +23830,162 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
     let identified = run_endpoint!(
         runner,
         wikidot_page_preview,
-        json!({"site_id": site_id, "title": "identified", "wikitext": non_backlink_source}),
+        json!({"site_id": site_id, "title": "identified", "wikitext": identity_free_source}),
     );
     assert_eq!(identified.body, identity_free.body);
+
+    // Live capture (sandbox-for-codex, 2026-09-14) retained in
+    // install/local/wikidot-verification/artifacts/ratings-actor-tie-live-20260914.json:
+    // an authorized `edit/PagePreviewModule` request carrying
+    // page_unix_name/pageId resolves the same NextPage/PreviousPage selection
+    // as the saved render. `Q811_AJAX_CONTEXT` /
+    // `Q811_PRIVATE_ADJACENT_AUTHORIZED` ajax_prevholder_a has body sha256
+    // fa2843f4986bf0dd2cdad922cfede74c26886291d424589453efbbeadde98e77,
+    // matching saved fragment q811_prevholder_a
+    // 69fa37a7c9fb89c2b3f097947aec594f9f00ebc5a897afd08f941e4a9d349cc3, and
+    // `Q1040_AJAX_CONTEXT` / `Q1040_PRIVATE_ADJACENT_AUTHORIZED`
+    // ajax_nextholder_a has body sha256
+    // 781be0b4b2dee0512d4b55d488fceb685b42271d51a8aaa7d5637c27ed56fdaa,
+    // matching saved fragment q1040_nextholder_a
+    // 41ed9ecb09de58c068899f92620c4fcf5f3884ed84025031c2a28b73bb21f9a3. The
+    // identity-omitted control `Q1040_AJAX_CONTEXT` ajax_no_context_A renders
+    // `<div class="error-block">Invalid range argument.</div>` (body sha256
+    // 73bb54ab1bfe5b99fb3e3399c26582837c1ad4232eb8782569056590e9f7eea7).
+    fn section<'a>(html: &'a str, start: &str, end: &str) -> &'a str {
+        html.split_once(start)
+            .unwrap_or_else(|| panic!("missing NextPreviousPage preview start {start:?}"))
+            .1
+            .split_once(end)
+            .unwrap_or_else(|| panic!("missing NextPreviousPage preview end {end:?}"))
+            .0
+    }
+
+    let next_previous_source = concat!(
+        "NEXT_PREVIEW_START\n",
+        "[[module NextPage]]\n",
+        "NEXT=%%fullname%%|%%title%%\n",
+        "[[/module]]\n",
+        "NEXT_PREVIEW_END\n",
+        "PREV_PREVIEW_START\n",
+        "[[module PreviousPage]]\n",
+        "PREV=%%fullname%%|%%title%%\n",
+        "[[/module]]\n",
+        "PREV_PREVIEW_END",
+    );
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: None,
+        ..Default::default()
+    });
+    let identity_free_next_previous = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "identity-free",
+            "wikitext": next_previous_source,
+        }),
+    );
+    assert!(
+        identity_free_next_previous
+            .body
+            .contains("Invalid range argument.")
+            && !identity_free_next_previous.body.contains("NEXT=")
+            && !identity_free_next_previous.body.contains("PREV="),
+        "an identity-free preview cannot resolve NextPage/PreviousPage:\n{}",
+        identity_free_next_previous.body,
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(target.page_id)),
+        ..Default::default()
+    });
+    let identified_next_previous = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": target.title,
+            "wikitext": next_previous_source,
+        }),
+    );
+    let target_page = PageTable::find_by_id(target.page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("NextPage preview target lookup should succeed")
+        .expect("NextPage preview target should exist");
+    let target_info = PageInfo {
+        page: Cow::Borrowed(target_slug),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Owned(target.title.clone()),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: target
+            .tags
+            .iter()
+            .map(|tag| Cow::Borrowed(tag.as_str()))
+            .collect(),
+        language: Cow::Borrowed("en"),
+    };
+    let saved_next_previous = RenderService::render_page_for_viewer(
+        runner.context(),
+        next_previous_source.to_owned(),
+        &target_info,
+        Layout::Wikidot,
+        PageId {
+            site_id,
+            category_id: target_page.page_category_id,
+            page_id: target.page_id,
+        },
+        None,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("saved NextPage/PreviousPage render should succeed")
+    .html_output
+    .body;
+    let identified_next = section(
+        &identified_next_previous.body,
+        "NEXT_PREVIEW_START",
+        "NEXT_PREVIEW_END",
+    );
+    let saved_next = section(
+        &saved_next_previous,
+        "NEXT_PREVIEW_START",
+        "NEXT_PREVIEW_END",
+    );
+    assert!(
+        identified_next.contains("NEXT="),
+        "the identified preview must resolve the NextPage selection:\n{}",
+        identified_next_previous.body,
+    );
+    assert_eq!(
+        identified_next, saved_next,
+        "the identified preview must resolve the same NextPage selection as the saved render:\n{}",
+        identified_next_previous.body,
+    );
+    let identified_prev = section(
+        &identified_next_previous.body,
+        "PREV_PREVIEW_START",
+        "PREV_PREVIEW_END",
+    );
+    let saved_prev = section(
+        &saved_next_previous,
+        "PREV_PREVIEW_START",
+        "PREV_PREVIEW_END",
+    );
+    assert!(
+        identified_prev.contains("PREV="),
+        "the identified preview must resolve the PreviousPage selection:\n{}",
+        identified_next_previous.body,
+    );
+    assert_eq!(
+        identified_prev, saved_prev,
+        "the identified preview must resolve the same PreviousPage selection as the saved render:\n{}",
+        identified_next_previous.body,
+    );
 
     runner.set_request_context(RequestContext {
         site_id: Some(site_id),
