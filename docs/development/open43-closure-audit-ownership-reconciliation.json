@@ -457,15 +457,15 @@
     },
     {
       "path": "docs/development/open43-s-settings-browser-closure-audit.json",
-      "sha256": "1c0fe0d517f4fb9d1d352384b50c7a3fe463cf1f04ddc3aa01b8711bce8d40f9",
+      "sha256": "236dd255bbb175ec287fd7e5fdc8b6dcdd87138555d94a756a5a82eadd74d495",
       "source_revision": "3f00b26efee25c63e94ec15d1178aedb179e2ff3",
       "issue_count": 9,
       "case_count": 60,
       "classification_counts": {
-        "source_ready": 26,
+        "source_ready": 27,
         "needs_source": 0,
         "candidate_required": 25,
-        "blocked_evidence": 9
+        "blocked_evidence": 8
       },
       "issue_summaries": [
         {
@@ -512,10 +512,10 @@
           "issue": 755,
           "case_count": 7,
           "classification_counts": {
-            "source_ready": 2,
+            "source_ready": 3,
             "needs_source": 0,
             "candidate_required": 2,
-            "blocked_evidence": 3
+            "blocked_evidence": 2
           }
         },
         {
@@ -573,10 +573,10 @@
     "unknown_classifications": [],
     "closure_claims": 0,
     "classification_counts": {
-      "source_ready": 152,
+      "source_ready": 153,
       "needs_source": 0,
       "candidate_required": 85,
-      "blocked_evidence": 48
+      "blocked_evidence": 47
     }
   },
   "validation": {
@@ -586,7 +586,7 @@
       "command": "node install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs --root . --output docs/development/compatibility-surface-inventory.json",
       "audit_count": 7,
       "case_count": 285,
-      "blocked_routing_count": 48,
+      "blocked_routing_count": 47,
       "authoritative_manifest_count": 3,
       "open_issue_snapshot_count": 43,
       "nontracking_open_issue_count": 42,

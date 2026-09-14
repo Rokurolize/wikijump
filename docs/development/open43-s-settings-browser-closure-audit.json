@@ -184,7 +184,8 @@
     },
     "E_S755_BUILT_IN_THEME_ASSET_MAPPING_LIVE_20260914": {
       "path": "install/local/wikidot-verification/artifacts/s755-built-in-theme-asset-mapping-20260914.json",
-      "sha256": "9d846ead9aaee97ff618663576e82d86273f2beb1094811a8a8d6c359b9ed3d8"
+      "sha256": "9d846ead9aaee97ff618663576e82d86273f2beb1094811a8a8d6c359b9ed3d8",
+      "source_revision": "826da42f12ae532480f7f1cbb90a88031f6c58ed"
     },
     "E_AUTONUMBER_SCOPE": {
       "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/autonumbering-setting-v1/scoping-verdict.json",
