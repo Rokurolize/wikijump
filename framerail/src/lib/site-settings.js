@@ -82,6 +82,7 @@ const EXTERNAL_THEME_HOSTS = new Set([
   "scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com"
 ])
 
+// S755_EXTERNAL_RESOURCE_FAILURE_POLICY: admission only; the browser owns redirects, timeouts, MIME, and transfer-size failures, with no server fetch or stale fallback.
 const isAllowedExternalThemeUrl = (url) =>
   url.protocol === "https:" &&
   url.port === "" &&

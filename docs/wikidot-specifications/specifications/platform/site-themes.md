@@ -45,6 +45,14 @@ Evidence:
 
 - `install/local/wikidot-verification/artifacts/s755-built-in-theme-asset-mapping-20260914.json` (SHA-256 `9d846ead9aaee97ff618663576e82d86273f2beb1094811a8a8d6c359b9ed3d8`), cases: none
 
+### External theme resource failures use browser-direct loading
+
+- Owner decision: `S755_EXTERNAL_RESOURCE_FAILURE_POLICY` in `/home/roku/wjlab/decisions-required-20260914.md`, resolved `2026-09-15`.
+- An accepted external theme URL is emitted directly to the browser as a stylesheet link. Wikijump must not fetch, proxy, rewrite, or inspect the remote stylesheet response.
+- The browser owns redirects, request timeouts, response-MIME failures, and transfer-size failures. The browser's resource failure remains observable as a resource failure; Wikijump must not invent a server-side failure presentation or substitute response bytes.
+- Wikijump owns the HTTPS and host allowlist, the CSP `style-src` boundary, and effective-theme freshness. Invalid or disallowed URLs resolve to the built-in Base descriptor, and a changed or failed external theme must not reuse the previous category or site stylesheet.
+- Browser cache behavior remains browser-owned; it does not authorize stale theme reuse by Wikijump. This policy defines failure ownership without claiming an unobserved browser-specific error DOM.
+
 
 
 ## Suggested public TDD seams
