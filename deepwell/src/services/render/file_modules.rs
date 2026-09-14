@@ -15,12 +15,18 @@
 //! File inventory remains deliberately separate from FTML syntax. Saved pages
 //! render only an authorized, bounded inventory whose latest revisions carry
 //! immutable byte-derived content descriptors. PagePreview has no saved page
-//! identity, so it retains the frozen empty contract.
+//! identity, so it retains the frozen empty contract. Each saved Files module
+//! receives a fresh opaque module-instance suffix: Wikidot's saved container
+//! id, refresh function name, and refresh selector all share one per-render
+//! value while the script's page id remains the real saved page id. The exact
+//! server-side suffix generator is not observed, so only the observable shape
+//! is reproduced.
 
 use std::sync::LazyLock;
 
 use ftml::data::PageInfo;
 use ftml::settings::WikitextSettings;
+use rand::RngExt;
 use regex::Regex;
 
 use super::AuthorizedPageSelector;
@@ -35,6 +41,16 @@ use crate::types::Reference;
 
 const MAX_VISIBLE_FILE_ROWS: u64 = 15;
 const MIN_EVIDENCED_FILE_SIZE: i64 = 1024;
+
+/// Opaque per-render suffix domain for saved Files module instances.
+///
+/// Live evidence shows unpadded decimal values of four to six digits and does
+/// not establish the server generator, its domain, or its seed. These bounds
+/// are a local replacement domain chosen only to keep the observable shape
+/// (fresh, opaque, unpadded, at least four digits) while never claiming to
+/// reproduce the unobserved generator.
+const MIN_FILES_MODULE_SUFFIX: u32 = 1_000;
+const MAX_FILES_MODULE_SUFFIX: u32 = 1_000_000;
 
 static FILES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
@@ -52,8 +68,9 @@ static FLICKR_GALLERY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 
 #[derive(Clone, Debug)]
 enum FilesModuleState {
-    Empty {
-        page_id: Option<i64>,
+    PreviewEmpty,
+    SavedEmpty {
+        page_id: i64,
     },
     Rows {
         page_id: i64,
@@ -109,17 +126,10 @@ async fn expand_files_modules(
     let Some(site_id) = current_site_id else {
         return Ok(wikitext);
     };
-    // Saved Wikidot output uses a module-instance suffix that is distinct from
-    // the page ID. Until that identity and its repeated-module lifecycle are
-    // evidenced, replacing the source would fabricate duplicate DOM and
-    // JavaScript identities. PagePreview has a separately evidenced empty
-    // contract and remains supported below.
-    if current_page_id.is_some() {
-        return Ok(wikitext);
-    }
 
     let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
     let mut page_state = None;
+    let mut used_suffixes = Vec::new();
     let mut output = String::with_capacity(wikitext.len());
     let mut cursor = 0;
     for captures in FILES_MODULE_REGEX.captures_iter(&wikitext) {
@@ -136,7 +146,7 @@ async fn expand_files_modules(
 
         if page_state.is_none() {
             let state = match current_page_id {
-                None => FilesModuleState::Empty { page_id: None },
+                None => FilesModuleState::PreviewEmpty,
                 Some(page_id) => {
                     load_files_module_state(ctx, site_id, page_id, viewer_user_id).await?
                 }
@@ -152,12 +162,19 @@ async fn expand_files_modules(
 
         output.push_str(&wikitext[cursor..matched.start()]);
         let html = match state {
-            FilesModuleState::Empty { page_id } => render_empty_files_module(*page_id),
+            FilesModuleState::PreviewEmpty => render_empty_files_module("", ""),
+            FilesModuleState::SavedEmpty { page_id } => {
+                let suffix = fresh_files_module_suffix(&mut used_suffixes, *page_id);
+                render_empty_files_module(&suffix.to_string(), &page_id.to_string())
+            }
             FilesModuleState::Rows {
                 page_id,
                 page_slug,
                 rows,
-            } => render_files_module(*page_id, page_slug, rows),
+            } => {
+                let suffix = fresh_files_module_suffix(&mut used_suffixes, *page_id);
+                render_files_module(&suffix.to_string(), *page_id, page_slug, rows)
+            }
             FilesModuleState::Unsupported => unreachable!("handled above"),
         };
         output.push_str(&compat_html.push_block_html(html));
@@ -170,20 +187,42 @@ async fn expand_files_modules(
     Ok(output)
 }
 
+/// Draw a fresh opaque module-instance suffix for one saved Files module.
+///
+/// The live contract keeps the container id, refresh function, and refresh
+/// selector identical within a module and distinct across modules of one
+/// render, while never colliding with the real saved page id. Wikidot's own
+/// generator is unobserved, so this only reproduces those observable
+/// invariants.
+fn fresh_files_module_suffix(used_suffixes: &mut Vec<u32>, page_id: i64) -> u32 {
+    let reserved_page_id = u32::try_from(page_id).ok();
+    loop {
+        let suffix: u32 =
+            rand::rng().random_range(MIN_FILES_MODULE_SUFFIX..MAX_FILES_MODULE_SUFFIX);
+        if Some(suffix) != reserved_page_id && !used_suffixes.contains(&suffix) {
+            used_suffixes.push(suffix);
+            return suffix;
+        }
+    }
+}
+
 async fn load_files_module_state(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     page_id: i64,
     viewer_user_id: Option<i64>,
 ) -> Result<FilesModuleState> {
+    // Missing and forbidden pages reveal no page or file identity: the module
+    // stays literal, so no fabricated page id, file metadata, DOM, or script
+    // can escape. File metadata is queried only after Page:View permits it.
     let Some(page) =
         PageService::get_optional(ctx, site_id, Reference::Id(page_id)).await?
     else {
-        return Ok(FilesModuleState::Empty { page_id: None });
+        return Ok(FilesModuleState::Unsupported);
     };
     let mut authorized = AuthorizedPageSelector::new(ctx, viewer_user_id);
     if !authorized.page_is_viewable(&page).await? {
-        return Ok(FilesModuleState::Empty { page_id: None });
+        return Ok(FilesModuleState::Unsupported);
     }
 
     let Some(rows) =
@@ -196,9 +235,7 @@ async fn load_files_module_state(
         return Ok(FilesModuleState::Unsupported);
     }
     Ok(if rows.is_empty() {
-        FilesModuleState::Empty {
-            page_id: Some(page_id),
-        }
+        FilesModuleState::SavedEmpty { page_id }
     } else {
         FilesModuleState::Rows {
             page_id,
@@ -208,27 +245,28 @@ async fn load_files_module_state(
     })
 }
 
-fn render_empty_files_module(page_id: Option<i64>) -> String {
-    let suffix = page_id.map(|id| id.to_string()).unwrap_or_default();
-    let page_id = page_id.map(|id| id.to_string()).unwrap_or_default();
+fn render_empty_files_module(suffix: &str, page_id: &str) -> String {
     format!(
         concat!(
             r#"<div id="files-{suffix}">"#,
-            "\n<p>\n\t\tNo files attached to this page.\t\t\n\t</p>",
+            "\n\t<p>\n\t\tNo files attached to this page.\t\t\n\t</p>",
             "\n<script type=\"text/javascript\">",
             "\n\t\tfunction updateFileSimpleList{suffix}(pageNo){{",
             "\n\t\t\tvar p = {{}};",
+            "\n\t\t\t",
             "\n\t\t\tp.page_id={page_id};",
             "\n\t\t\tvar containerElId = 'files-{suffix}';",
+            "\n\t\t\t",
             "\n\t\t\tp.page = pageNo;",
             "\n\t\t\tOZONE.ajax.requestModule(\"files/PageFilesSimpleModule\", p, function(r){{",
             "\n\t\t\t\tif(!WIKIDOT.utils.handleError(r)) {{return;}}",
+            "\n\t\t\t\t//alert(r.body);",
             "\n\t\t\t\tjQuery('#'+containerElId).replaceWith(r.body);",
             "\n\t\t\t}});",
             "\n\t\t}}",
             "\n\t</script>",
-            "\n<p class=\"manage-attachments-link\" style=\"text-align: center;\">",
-            "\n<a href=\"javascript:;\" onclick=\"WIKIDOT.page.listeners.filesClick(null)\">Manage attachments</a>",
+            "\n<p style=\"text-align: center;\" class=\"manage-attachments-link\">",
+            "\n\t<a href=\"javascript:;\" onclick=\"WIKIDOT.page.listeners.filesClick(null)\">Manage attachments</a>",
             "\n</p>",
             "\n</div>",
         ),
@@ -237,13 +275,18 @@ fn render_empty_files_module(page_id: Option<i64>) -> String {
     )
 }
 
-fn render_files_module(page_id: i64, page_slug: &str, rows: &[VisibleFileRow]) -> String {
+fn render_files_module(
+    suffix: &str,
+    page_id: i64,
+    page_slug: &str,
+    rows: &[VisibleFileRow],
+) -> String {
     let mut output = format!(
         concat!(
-            r#"<div id="files-{page_id}">"#,
+            r#"<div id="files-{suffix}">"#,
             "\n<table class=\"page-files\"><tr><th>File name</th><th>File type</th><th>Size</th><th></th></tr>",
         ),
-        page_id = page_id,
+        suffix = suffix,
     );
     let page_slug = percent_encode_path_segment(page_slug);
     for row in rows {
@@ -273,11 +316,11 @@ fn render_files_module(page_id: i64, page_slug: &str, rows: &[VisibleFileRow]) -
             "</table>",
             "\n<div style=\"text-align: center\">\n\n</div>",
             "\n<script type=\"text/javascript\">",
-            "\n\t\tfunction updateFileSimpleList{page_id}(pageNo){{",
+            "\n\t\tfunction updateFileSimpleList{suffix}(pageNo){{",
             "\n\t\t\tvar p = {{}};",
             "\n\t\t\t",
             "\n\t\t\tp.page_id={page_id};",
-            "\n\t\t\tvar containerElId = 'files-{page_id}';",
+            "\n\t\t\tvar containerElId = 'files-{suffix}';",
             "\n\t\t\t",
             "\n\t\t\tp.page = pageNo;",
             "\n\t\t\tOZONE.ajax.requestModule(\"files/PageFilesSimpleModule\", p, function(r){{",
@@ -292,6 +335,7 @@ fn render_files_module(page_id: i64, page_slug: &str, rows: &[VisibleFileRow]) -
             "\n</p>",
             "\n</div>",
         ),
+        suffix = suffix,
         page_id = page_id,
     ));
     output

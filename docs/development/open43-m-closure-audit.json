@@ -337,6 +337,16 @@
         "sha256": "f11c7c2d0fa46e3a3986338d17544914a1a436ea9e528ff35e62da5a2d0d86ca"
       }
     },
+    "E_M1039_FILES_SUFFIX_20260914": {
+      "path": "install/local/wikidot-verification/artifacts/m1039-files-suffix-live-20260914.json",
+      "sha256": "e91d5f3e58d8fc3e8e605abb768308182377e399877b4af51fd11962d932b228",
+      "source_revision": "69c824421d544f67f64cdeb64635514459b9395f",
+      "external_evidence_root": "/home/roku/wjlab/evidence/m1039-files-suffix-20260914-r1",
+      "external_run_receipt": {
+        "path": "/home/roku/wjlab/evidence/m1039-files-suffix-20260914-r1/receipt.json",
+        "sha256": "77c1d2754feeb88f6277ad536e8160a5256c35c4d24570c666bccf89b091951a"
+      }
+    },
     "E_ICON_SCOPE": {
       "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/icon-setting-v1/scoping-verdict.json",
       "sha256": "bb73af6a64011df8d87b0766032ae63c2cbdee4e0cb845b62bdb2e2bea38cd15"
@@ -425,7 +435,7 @@
       "exists_now": true
     },
     "C_DEEPWELL_FILES_ROWS": {
-      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page wikidot_files_saved_view_hides_rows_without_module_instance_authority -- --exact --nocapture",
+      "command": "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page wikidot_files_saved -- --nocapture",
       "phase": "source_barrier",
       "exists_now": true
     },
@@ -1081,20 +1091,29 @@
         {
           "case_id": "M1039_FILES_SAVED_EMPTY_AND_ACL",
           "acceptance": "Render the saved empty text and an internally consistent refresh script with the saved page ID, while denied or missing pages reveal no page or file identity and query files only after Page:View; exact saved container suffix identity is tracked separately.",
-          "classification": "blocked_evidence",
-          "reason": "Saved Files rendering now fails closed because the runtime has no evidenced Wikidot module-instance suffix. PagePreview retains its separately evidenced empty contract; saved public, private, and missing pages expose no fabricated page, file, DOM, or JavaScript identity.",
-          "source_paths": ["deepwell/src/services/render/file_modules.rs"],
-          "existing_tests": [
-            "deepwell/tests/page.rs::wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts"
+          "classification": "source_ready",
+          "reason": "The saved empty module now renders the live container, empty text, internally consistent refresh script with the real saved page id, and the manage-attachments anchor. Missing and forbidden pages stay literal before any file metadata is queried, and incomplete or moderated descriptors, sub-1 KiB sizes, and overflow still fail closed. The module-instance suffix is generated fresh per module render; its exact server generator remains an explicit missing observation in the retained summary.",
+          "source_paths": [
+            "deepwell/src/services/render/file_modules.rs",
+            "deepwell/tests/page.rs",
+            "install/local/wikidot-verification/artifacts/m1039-files-suffix-live-20260914.json"
           ],
-          "evidence_ids": ["E_FILES_SAVED_EMPTY"],
-          "next_command_ids": ["C_DEEPWELL_FILES"]
+          "existing_tests": [
+            "deepwell/tests/page.rs::wikidot_files_saved_empty_module_matches_the_live_container_and_refresh_script",
+            "deepwell/tests/page.rs::wikidot_files_saved_view_requires_page_view_and_complete_descriptors",
+            "install/local/wikidot-verification/tests/m1039-files-suffix-evidence.test.mjs::saved Files container, refresh function, and selector share one suffix"
+          ],
+          "evidence_ids": [
+            "E_FILES_SAVED_EMPTY",
+            "E_M1039_FILES_SUFFIX_20260914"
+          ],
+          "next_command_ids": ["C_DEEPWELL_FILES_ROWS"]
         },
         {
           "case_id": "M1039_FILES_NONEMPTY_ROW_CORE",
           "acceptance": "After Page:View, render the observed PageFilesSimpleModule table header and active rows with exact escaped file name, owned /local--files/{page}/{file} href, observed kB or MB size, file-ID Info action, internally consistent refresh script, and manage-attachments link; the observed table has no date or user columns, while exact container suffix identity is tracked separately.",
-          "classification": "blocked_evidence",
-          "reason": "The saved article_view regression now proves that complete local rows remain hidden and the Files source fails closed until Wikidot's distinct module-instance suffix and repeated-module lifecycle have an authoritative producer. PagePreview retains only the separately evidenced identity-free empty response.",
+          "classification": "source_ready",
+          "reason": "The saved article_view now renders the observed four-column table with exact escaped names, owned local--files hrefs, persisted kB or MB sizes, file-ID Info actions, the matching refresh script, and the manage-attachments link after Page:View. Rows whose latest revision lacks a complete persisted descriptor, hides a row-required field, names an unknown field, falls below the evidenced size range, or overflows the observed row bound still stay literal.",
           "public_seam": "Deepwell saved article_view after the complete actor-aware Page:View decision; PagePreview has no saved identity and is covered only by the separate empty contract.",
           "current_authority": {
             "available": [
@@ -1115,15 +1134,18 @@
             "deepwell/src/services/render/file_modules.rs",
             "deepwell/src/services/file",
             "deepwell/src/services/file_revision",
-            "deepwell/tests/page.rs"
+            "deepwell/tests/page.rs",
+            "install/local/wikidot-verification/artifacts/m1039-files-suffix-live-20260914.json"
           ],
           "existing_tests": [
-            "deepwell/tests/page.rs::wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts",
-            "deepwell/tests/page.rs::wikidot_files_saved_view_hides_rows_without_module_instance_authority"
+            "deepwell/tests/page.rs::wikidot_files_saved_populated_module_matches_the_live_row_contract",
+            "deepwell/tests/page.rs::wikidot_files_saved_view_requires_page_view_and_complete_descriptors",
+            "install/local/wikidot-verification/tests/m1039-files-suffix-evidence.test.mjs::the suffix is fresh, opaque, and independent of page identity"
           ],
           "evidence_ids": [
             "E_FILES_SAVED_EMPTY",
-            "E_OPEN43_FILES_ROWS_20260810"
+            "E_OPEN43_FILES_ROWS_20260810",
+            "E_M1039_FILES_SUFFIX_20260914"
           ],
           "depends_on": ["M1039_FILES_BYTE_DERIVED_TYPE"],
           "next_command_ids": [
@@ -1179,7 +1201,7 @@
           "existing_tests": [
             "deepwell/src/services/blob/mime.rs::mime_request",
             "deepwell/tests/page.rs::file_create_commits_only_its_actor_and_route_owned_pending_blob",
-            "deepwell/tests/page.rs::wikidot_files_saved_view_hides_rows_without_module_instance_authority",
+            "deepwell/tests/page.rs::wikidot_files_saved_view_requires_page_view_and_complete_descriptors",
             "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs::buildCorpusImportManifest uses the byte-matched canonical file snapshot descriptor",
             "install/local/wikidot-verification/tests/corpus-attachment-direct.test.mjs::planDirectAttachmentMaterialization fails closed on an absent content descriptor",
             "install/local/wikidot-verification/tests/corpus-attachment-staging-sql.test.mjs::buildAttachmentStagingSql can require an existing byte-matched file",
@@ -1228,27 +1250,26 @@
         {
           "case_id": "M1039_FILES_CONTAINER_SUFFIX_IDENTITY",
           "acceptance": "Derive the exact saved Files container, function, and selector suffix while preserving the distinct p.page_id page identity for empty and populated modules.",
-          "classification": "blocked_evidence",
-          "reason": "Live saved responses prove the suffix is not the page ID: scp-682 uses files-325178 with p.page_id=1956155, and the saved empty control uses files-780892 with p.page_id=1469022289. The available runtime model has no evidenced authority for Wikidot's module-instance suffix, and repeated-module or lifecycle boundaries are not frozen. Current public tests prove that saved Files fails closed without fabricating that identity.",
+          "classification": "source_ready",
+          "reason": "The sealed run-owned capture fixes the saved container (<div id=\"files-N\"> with no class), the refresh function updateFileSimpleListN, the files/PageFilesSimpleModule target, and the containerElId='files-N' selector while p.page_id stays the real saved page id. N is a fresh opaque unpadded decimal per module render, distinct across the Files modules of one render and never equal to the page id; the exact server generator, domain, seed, and cache persistence remain unobserved and are recorded as the explicit gap rather than reproduced.",
           "public_seam": "Saved article_view for empty and populated Files modules; PagePreview remains the separately evidenced empty suffix.",
           "source_paths": [
             "deepwell/src/services/render/file_modules.rs",
-            "deepwell/tests/page.rs"
+            "deepwell/tests/page.rs",
+            "install/local/wikidot-verification/artifacts/m1039-files-suffix-live-20260914.json"
           ],
           "existing_tests": [
-            "deepwell/tests/page.rs::wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts",
-            "deepwell/tests/page.rs::wikidot_files_saved_view_hides_rows_without_module_instance_authority"
+            "deepwell/tests/page.rs::wikidot_files_saved_empty_module_matches_the_live_container_and_refresh_script",
+            "deepwell/tests/page.rs::wikidot_files_saved_populated_module_matches_the_live_row_contract",
+            "deepwell/tests/page.rs::wikidot_files_saved_modules_use_distinct_container_suffixes",
+            "install/local/wikidot-verification/tests/m1039-files-suffix-evidence.test.mjs::each Files module in one render owns its own suffix"
           ],
           "evidence_ids": [
             "E_FILES_SAVED_EMPTY",
-            "E_OPEN43_FILES_ROWS_20260810"
+            "E_OPEN43_FILES_ROWS_20260810",
+            "E_M1039_FILES_SUFFIX_20260914"
           ],
-          "missing_evidence": [
-            "the suffix source and lifecycle",
-            "multiple Files modules on one saved revision",
-            "stability across rerender and page revision"
-          ],
-          "next_command_ids": []
+          "next_command_ids": ["C_DEEPWELL_FILES_ROWS"]
         },
         {
           "case_id": "M1039_MANAGE_ATTACHMENTS_INTERACTION",
@@ -2080,10 +2101,10 @@
     "issue_count": 7,
     "subrow_count": 48,
     "classification_counts": {
-      "source_ready": 27,
+      "source_ready": 30,
       "needs_source": 0,
       "candidate_required": 11,
-      "blocked_evidence": 10
+      "blocked_evidence": 7
     },
     "duplicate_case_ids": 0,
     "unknown_classifications": 0,

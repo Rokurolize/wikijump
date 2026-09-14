@@ -7780,8 +7780,8 @@ async fn wikidot_gallery_saved_page_view_enforces_order_and_last_occurrence_matr
 }
 
 #[tokio::test]
-async fn wikidot_saved_files_modules_remain_literal_without_module_instance_identity() {
-    const SLUG: &str = "fixture-files-module-instance-unavailable";
+async fn wikidot_files_saved_modules_use_distinct_container_suffixes() {
+    const SLUG: &str = "fixture-files-module-instance-distinct";
     const SOURCE: &str =
         "FILES_ONE\n[[module Files]]\nFILES_TWO\n[[module Files]]\nFILES_END";
 
@@ -7793,31 +7793,57 @@ async fn wikidot_saved_files_modules_remain_literal_without_module_instance_iden
         &mut runner,
         site.site_id,
         SLUG,
-        "Files module instance unavailable fixture",
+        "Files module instance distinct fixture",
         SOURCE,
     )
     .await;
+    let page_id = listpages_test_page_id(&runner, site.site_id, SLUG).await;
+    let saved = saved_article_view_body(&runner, site.site_id, SLUG).await;
 
-    let saved = load_listpages_test_compiled_html(&runner, site.site_id, SLUG).await;
+    assert!(saved.contains("FILES_ONE"), "{saved}");
+    assert!(saved.contains("FILES_TWO"), "{saved}");
+    assert!(!saved.contains("No such module"), "{saved}");
+
+    let containers = files_module_container_suffixes(&saved);
     assert_eq!(
-        saved
-            .matches(
-                r#"<div class="error-block">[[module <em>Files</em>]] No such module"#
-            )
-            .count(),
+        containers.len(),
         2,
-        "saved Files modules must fail closed until their distinct module-instance identity is evidenced:\n{saved}",
+        "one saved render should emit one container per Files module:\n{saved}",
     );
-    assert!(!saved.contains(r#"id=\"files-"#), "{saved}");
-    assert!(!saved.contains("updateFileSimpleList"), "{saved}");
+    assert_ne!(
+        containers[0], containers[1],
+        "each Files module in one render needs its own instance suffix:\n{saved}",
+    );
+    assert_eq!(
+        files_module_function_suffixes(&saved),
+        containers,
+        "each refresh function must use its own container suffix:\n{saved}",
+    );
+    assert_eq!(
+        files_module_selector_suffixes(&saved),
+        containers,
+        "each refresh selector must use its own container suffix:\n{saved}",
+    );
+    for suffix in &containers {
+        assert!(
+            !suffix.is_empty() && suffix.bytes().all(|byte| byte.is_ascii_digit()),
+            "saved Files suffixes must be unpadded decimal digits: {suffix:?}",
+        );
+        assert_ne!(
+            suffix,
+            &page_id.to_string(),
+            "the module-instance suffix must stay distinct from the saved page id:\n{saved}",
+        );
+    }
+    assert_eq!(
+        saved.matches(&format!("p.page_id={page_id};")).count(),
+        2,
+        "every refresh script must keep the real saved page id:\n{saved}",
+    );
 }
 
 #[tokio::test]
 async fn wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts() {
-    const FILES_SLUG: &str = "fixture-files-module-empty";
-    const PRIVATE_FILES_SLUG: &str = "fixture-files-private:module-empty";
-    const PRIVATE_FILES_CATEGORY: &str = "fixture-files-private";
-
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist")
@@ -7852,94 +7878,6 @@ async fn wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts() {
     );
     assert!(!preview.body.contains("No such module"), "{}", preview.body);
 
-    create_listpages_test_page(
-        &mut runner,
-        site.site_id,
-        FILES_SLUG,
-        "Files module empty fixture",
-        "FILES_BEFORE\n[[module Files]]\nFILES_AFTER",
-    )
-    .await;
-    let saved =
-        load_listpages_test_compiled_html(&runner, site.site_id, FILES_SLUG).await;
-    assert!(
-        saved.contains(
-            r#"<div class="error-block">[[module <em>Files</em>]] No such module"#
-        ),
-        "saved Files output must fail closed without a module-instance identity:\n{saved}",
-    );
-    assert!(!saved.contains(r#"id="files-"#), "{saved}");
-    assert!(!saved.contains("updateFileSimpleList"), "{saved}");
-    assert!(!saved.contains("Manage attachments"), "{saved}");
-
-    make_listpages_test_category_admin_only(
-        &runner,
-        site.site_id,
-        PRIVATE_FILES_CATEGORY,
-    )
-    .await;
-    create_listpages_test_page(
-        &mut runner,
-        site.site_id,
-        PRIVATE_FILES_SLUG,
-        "Private Files module fixture",
-        "[[module Files]]",
-    )
-    .await;
-    set_listpages_test_category_slug(
-        &runner,
-        site.site_id,
-        PRIVATE_FILES_SLUG,
-        PRIVATE_FILES_CATEGORY,
-    )
-    .await;
-    let private_page_id =
-        listpages_test_page_id(&runner, site.site_id, PRIVATE_FILES_SLUG).await;
-    let private_page = PageTable::find_by_id(private_page_id)
-        .one(runner.context().transaction())
-        .await
-        .expect("private Files page lookup should succeed")
-        .expect("private Files page should exist");
-    create_file_fixture_with_mime(
-        &runner,
-        site.site_id,
-        private_page_id,
-        "private-file-name.png",
-        "image/png",
-    )
-    .await;
-    let private_page_info = PageInfo {
-        page: Cow::Borrowed(PRIVATE_FILES_SLUG),
-        category: Some(Cow::Borrowed(PRIVATE_FILES_CATEGORY)),
-        site: Cow::Borrowed("scp-wiki"),
-        title: Cow::Borrowed("Private Files module fixture"),
-        alt_title: None,
-        score: ScoreValue::Integer(0),
-        tags: Vec::new(),
-        language: Cow::Borrowed("en"),
-    };
-    let denied = RenderService::render_page_for_viewer(
-        runner.context(),
-        "[[module Files]]".to_owned(),
-        &private_page_info,
-        Layout::Wikidot,
-        PageId {
-            site_id: site.site_id,
-            category_id: private_page.page_category_id,
-            page_id: private_page_id,
-        },
-        None,
-        UrlArguments::default(),
-    )
-    .await
-    .expect("a denied Files module should fail closed")
-    .html_output
-    .body;
-    assert!(denied.contains("No such module"), "{denied}");
-    assert!(!denied.contains(r#"id="files-"#), "{denied}");
-    assert!(!denied.contains(&private_page_id.to_string()), "{denied}");
-    assert!(!denied.contains("private-file-name.png"), "{denied}");
-
     let flickr = run_endpoint!(
         runner,
         wikidot_page_preview,
@@ -7967,101 +7905,311 @@ async fn wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts() {
 }
 
 #[tokio::test]
-async fn wikidot_files_saved_view_hides_rows_without_module_instance_authority() {
-    const ROW_SLUG: &str = "fixture-files-module-row";
+async fn wikidot_files_saved_empty_module_matches_the_live_container_and_refresh_script()
+{
+    const SLUG: &str = "fixture-files-module-saved-empty";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        SLUG,
+        "Files module saved empty fixture",
+        "FILES_BEFORE\n[[module Files]]\nFILES_AFTER",
+    )
+    .await;
+    let page_id = listpages_test_page_id(&runner, site.site_id, SLUG).await;
+    let saved = saved_article_view_body(&runner, site.site_id, SLUG).await;
+
+    assert!(saved.contains("FILES_BEFORE"), "{saved}");
+    assert!(saved.contains("FILES_AFTER"), "{saved}");
+    assert!(!saved.contains("No such module"), "{saved}");
+
+    let containers = files_module_container_suffixes(&saved);
+    assert_eq!(containers.len(), 1, "{saved}");
+    let suffix = &containers[0];
+    assert!(
+        !suffix.is_empty() && suffix.bytes().all(|byte| byte.is_ascii_digit()),
+        "saved empty Files suffixes are unpadded decimals: {suffix:?}",
+    );
+    assert_ne!(suffix, &page_id.to_string(), "{saved}");
+    assert!(
+        saved.contains(&format!(r#"<div id="files-{suffix}">"#)),
+        "the saved container carries only the instance id:\n{saved}",
+    );
+    assert!(saved.contains("No files attached to this page."), "{saved}");
+    assert!(
+        saved.contains(&format!("function updateFileSimpleList{suffix}(pageNo)")),
+        "{saved}",
+    );
+    assert!(
+        saved.contains(&format!("var containerElId = 'files-{suffix}';")),
+        "{saved}",
+    );
+    assert!(saved.contains(&format!("p.page_id={page_id};")), "{saved}");
+    assert!(
+        saved.contains(r#"OZONE.ajax.requestModule("files/PageFilesSimpleModule""#),
+        "{saved}",
+    );
+    assert!(
+        saved.contains(r#"class="manage-attachments-link""#),
+        "{saved}",
+    );
+    assert!(
+        saved.contains("WIKIDOT.page.listeners.filesClick(null)"),
+        "{saved}",
+    );
+    assert!(!saved.contains("page-files"), "{saved}");
+}
+
+#[tokio::test]
+async fn wikidot_files_saved_populated_module_matches_the_live_row_contract() {
+    const SLUG: &str = "fixture-files-module-populated";
+    const JPEG_NAME: &str = "that man&\".jpg";
+    const JPEG_LABEL: &str = "JPEG image data";
+    const JPEG_DESCRIPTION: &str = "JPEG image data, EXIF standard";
+    const PNG_NAME: &str = "zz-megabyte.png";
+    const PNG_LABEL: &str = "PNG image data";
+    const PNG_DESCRIPTION: &str =
+        "PNG image data, 1 x 1, 8-bit/color RGBA, non-interlaced";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        SLUG,
+        "Files module populated fixture",
+        "FILES_BEFORE\n[[module Files]]\nFILES_AFTER",
+    )
+    .await;
+    let page_id = listpages_test_page_id(&runner, site.site_id, SLUG).await;
+    let jpeg_file_id = create_file_fixture_with_descriptor(
+        &runner,
+        site.site_id,
+        page_id,
+        JPEG_NAME,
+        180_296,
+        Some(ContentTypeDescriptor {
+            label: JPEG_LABEL.to_owned(),
+            description: JPEG_DESCRIPTION.to_owned(),
+        }),
+    )
+    .await;
+    let png_file_id = create_file_fixture_with_descriptor(
+        &runner,
+        site.site_id,
+        page_id,
+        PNG_NAME,
+        3_145_728,
+        Some(ContentTypeDescriptor {
+            label: PNG_LABEL.to_owned(),
+            description: PNG_DESCRIPTION.to_owned(),
+        }),
+    )
+    .await;
+
+    let saved = saved_article_view_body(&runner, site.site_id, SLUG).await;
+    assert!(!saved.contains("No such module"), "{saved}");
+
+    let containers = files_module_container_suffixes(&saved);
+    assert_eq!(containers.len(), 1, "{saved}");
+    let suffix = &containers[0];
+    assert!(
+        saved.contains(&format!(r#"<div id="files-{suffix}">"#)),
+        "{saved}",
+    );
+    assert!(
+        saved.contains(&format!("function updateFileSimpleList{suffix}(pageNo)")),
+        "{saved}",
+    );
+    assert!(
+        saved.contains(&format!("var containerElId = 'files-{suffix}';")),
+        "{saved}",
+    );
+    assert!(saved.contains(&format!("p.page_id={page_id};")), "{saved}");
+    assert_ne!(suffix, &page_id.to_string(), "{saved}");
+
+    assert!(
+        saved.contains(
+            r#"<table class="page-files"><tr><th>File name</th><th>File type</th><th>Size</th><th></th></tr>"#
+        ),
+        "the observed header has exactly the four live columns:\n{saved}",
+    );
+    assert_eq!(
+        saved.matches("<th>").count(),
+        4,
+        "the observed table has no date or user column:\n{saved}",
+    );
+
+    assert!(
+        saved.contains(
+            r#"<a href="/local--files/fixture-files-module-populated/that%20man%26%22.jpg">that man&amp;".jpg</a>"#
+        ),
+        "the escaped name owns the local--files href:\n{saved}",
+    );
+    assert!(
+        saved.contains(&format!(
+            r#"<span title="{JPEG_DESCRIPTION}">{JPEG_LABEL}</span>"#
+        )),
+        "{saved}",
+    );
+    assert!(
+        saved.contains(&format!(
+            r#"<span title="{PNG_DESCRIPTION}">{PNG_LABEL}</span>"#
+        )),
+        "{saved}",
+    );
+    assert!(saved.contains("176.07 kB"), "{saved}");
+    assert!(saved.contains("3 MB"), "{saved}");
+    assert!(
+        saved.contains(&format!(
+            r#"onclick="WIKIDOT.modules.PageFilesModule.listeners.fileMoreInfo(event,{jpeg_file_id})""#
+        )),
+        "{saved}",
+    );
+    assert!(
+        saved.contains(&format!(
+            r#"onclick="WIKIDOT.modules.PageFilesModule.listeners.fileMoreInfo(event,{png_file_id})""#
+        )),
+        "{saved}",
+    );
+    let jpeg_row = saved
+        .find(r#"that man&amp;".jpg"#)
+        .expect("the escaped JPEG name should render");
+    let png_row = saved.find(PNG_NAME).expect("the PNG name should render");
+    assert!(
+        jpeg_row < png_row,
+        "rows keep the observed ascending name order:\n{saved}",
+    );
+    assert!(
+        saved.contains(r#"class="manage-attachments-link""#),
+        "{saved}",
+    );
+    assert!(
+        saved.contains("WIKIDOT.page.listeners.filesClick(null)"),
+        "{saved}",
+    );
+}
+
+#[tokio::test]
+async fn wikidot_files_saved_view_requires_page_view_and_complete_descriptors() {
+    const DENIED_SLUG: &str = "fixture-files-denied:module-view";
+    const DENIED_CATEGORY: &str = "fixture-files-denied";
     const MISSING_DESCRIPTOR_SLUG: &str = "fixture-files-module-missing-descriptor";
     const MISSING_REVISION_SLUG: &str = "fixture-files-module-missing-revision";
     const SMALL_SIZE_SLUG: &str = "fixture-files-module-small-size";
     const OVERFLOW_SLUG: &str = "fixture-files-module-overflow";
-    const FILE_NAME: &str = "that man&\".jpg";
-    const TYPE_LABEL: &str = "JPEG image data";
-    const TYPE_DESCRIPTION: &str = "JPEG image data, EXIF standard";
 
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist")
         .site;
 
+    // A page the anonymous viewer cannot see must leave the module literal:
+    // no page id, file name, container, or refresh script may escape.
+    make_listpages_test_category_admin_only(&runner, site.site_id, DENIED_CATEGORY).await;
     create_listpages_test_page(
         &mut runner,
         site.site_id,
-        ROW_SLUG,
-        "Files module row fixture",
-        "FILES_BEFORE\n[[module Files]]\nFILES_AFTER",
+        DENIED_SLUG,
+        "Denied Files module fixture",
+        "[[module Files]]",
     )
     .await;
-    let page_id = listpages_test_page_id(&runner, site.site_id, ROW_SLUG).await;
-    create_file_fixture_with_descriptor(
+    set_listpages_test_category_slug(&runner, site.site_id, DENIED_SLUG, DENIED_CATEGORY)
+        .await;
+    let denied_page_id = listpages_test_page_id(&runner, site.site_id, DENIED_SLUG).await;
+    create_file_fixture_with_mime(
         &runner,
         site.site_id,
-        page_id,
-        FILE_NAME,
-        180_296,
-        Some(ContentTypeDescriptor {
-            label: TYPE_LABEL.to_owned(),
-            description: TYPE_DESCRIPTION.to_owned(),
-        }),
+        denied_page_id,
+        "denied-must-not-leak.png",
+        "image/png",
     )
     .await;
-
-    runner.set_request_context(RequestContext {
-        site_id: Some(site.site_id),
-        ..Default::default()
-    });
-    let preview = run_endpoint!(
-        runner,
-        wikidot_page_preview,
-        json!({
-            "site_id": site.site_id,
-            "title": "Files preview has no saved page identity",
-            "wikitext": "[[module Files]]",
-        }),
-    );
-    assert!(preview.body.contains(r#"<div id="files-">"#));
-    assert!(preview.body.contains("No files attached to this page."));
-    assert!(!preview.body.contains(FILE_NAME));
-
-    let view = run_endpoint!(
-        runner,
-        article_view,
-        json!({
-            "site_id": site.site_id,
-            "session_token": null,
-            "route": {"slug": ROW_SLUG, "extra": ""},
-            "locales": ["en-US", "en"],
-        }),
-    );
-    let GetPageViewOutput::Found {
-        compiled_body_html, ..
-    } = view.page
-    else {
-        panic!("saved Files row fixture should be publicly viewable");
+    let denied_page = PageTable::find_by_id(denied_page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("denied Files page lookup should succeed")
+        .expect("denied Files page should exist");
+    let denied_page_info = PageInfo {
+        page: Cow::Borrowed(DENIED_SLUG),
+        category: Some(Cow::Borrowed(DENIED_CATEGORY)),
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Denied Files module fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
     };
+    let denied = RenderService::render_page_for_viewer(
+        runner.context(),
+        "[[module Files]]".to_owned(),
+        &denied_page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id: site.site_id,
+            category_id: denied_page.page_category_id,
+            page_id: denied_page_id,
+        },
+        None,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("a denied Files module should fail closed")
+    .html_output
+    .body;
+    assert!(denied.contains("No such module"), "{denied}");
+    assert!(!denied.contains(r#"id="files-"#), "{denied}");
+    assert!(!denied.contains(&denied_page_id.to_string()), "{denied}");
+    assert!(!denied.contains("denied-must-not-leak.png"), "{denied}");
+    assert!(!denied.contains("updateFileSimpleList"), "{denied}");
+
+    // A missing page fails closed the same way and has no file inventory to
+    // query at all.
+    let missing_page_info = PageInfo {
+        page: Cow::Borrowed("fixture-files-module-missing-page"),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Missing Files module fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let missing_page_target_id = i64::MAX;
+    let missing_page = RenderService::render_page_for_viewer(
+        runner.context(),
+        "[[module Files]]".to_owned(),
+        &missing_page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id: site.site_id,
+            category_id: denied_page.page_category_id,
+            page_id: missing_page_target_id,
+        },
+        None,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("a missing Files page should fail closed")
+    .html_output
+    .body;
+    assert!(missing_page.contains("No such module"), "{missing_page}");
+    assert!(!missing_page.contains(r#"id="files-"#), "{missing_page}");
     assert!(
-        compiled_body_html.contains(
-            r#"<div class="error-block">[[module <em>Files</em>]] No such module"#
-        ),
-        "saved Files output must fail closed without a module-instance identity:\n{compiled_body_html}",
+        !missing_page.contains(&missing_page_target_id.to_string()),
+        "{missing_page}"
     );
     assert!(
-        !compiled_body_html.contains(FILE_NAME),
-        "{compiled_body_html}"
-    );
-    assert!(
-        !compiled_body_html.contains(TYPE_LABEL),
-        "{compiled_body_html}"
-    );
-    assert!(
-        !compiled_body_html.contains(TYPE_DESCRIPTION),
-        "{compiled_body_html}"
-    );
-    assert!(
-        !compiled_body_html.contains("page-files"),
-        "{compiled_body_html}"
-    );
-    assert!(
-        !compiled_body_html.contains("updateFileSimpleList"),
-        "{compiled_body_html}"
+        !missing_page.contains("updateFileSimpleList"),
+        "{missing_page}"
     );
 
     create_listpages_test_page(
@@ -39837,6 +39985,80 @@ async fn load_listpages_test_compiled_html(
     .expect("ListPages compiled HTML fixture should be readable")
     .compiled_body_html
     .expect("ListPages compiled HTML fixture should have compiled HTML")
+}
+
+async fn saved_article_view_body(
+    runner: &TestRunner,
+    site_id: i64,
+    slug: &str,
+) -> String {
+    let view = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html, ..
+    } = view.page
+    else {
+        panic!("saved fixture page {slug} should be publicly viewable");
+    };
+    compiled_body_html
+}
+
+fn files_module_container_suffixes(html: &str) -> Vec<String> {
+    let mut suffixes = Vec::new();
+    let mut rest = html;
+    while let Some(start) = rest.find(r#"<div id="files-"#) {
+        let tail = &rest[start + r#"<div id="files-"#.len()..];
+        let end = tail
+            .find('"')
+            .expect("a Files container id must close its attribute");
+        let suffix = &tail[..end];
+        assert!(
+            !suffix.is_empty() && suffix.bytes().all(|byte| byte.is_ascii_digit()),
+            "a saved Files container suffix must be unpadded decimal digits: {suffix:?}",
+        );
+        suffixes.push(suffix.to_owned());
+        rest = &tail[end..];
+    }
+    suffixes
+}
+
+fn files_module_function_suffixes(html: &str) -> Vec<String> {
+    files_module_delimited_suffixes(html, "function updateFileSimpleList", '(')
+}
+
+fn files_module_selector_suffixes(html: &str) -> Vec<String> {
+    files_module_delimited_suffixes(html, "containerElId = 'files-", '\'')
+}
+
+fn files_module_delimited_suffixes(
+    html: &str,
+    prefix: &str,
+    terminator: char,
+) -> Vec<String> {
+    let mut suffixes = Vec::new();
+    let mut rest = html;
+    while let Some(start) = rest.find(prefix) {
+        let tail = &rest[start + prefix.len()..];
+        let end = tail
+            .find(terminator)
+            .expect("a Files module suffix must terminate");
+        let suffix = &tail[..end];
+        assert!(
+            !suffix.is_empty() && suffix.bytes().all(|byte| byte.is_ascii_digit()),
+            "a saved Files module suffix must be unpadded decimal digits: {suffix:?}",
+        );
+        suffixes.push(suffix.to_owned());
+        rest = &tail[end..];
+    }
+    suffixes
 }
 
 async fn query_listpages_test_author_slugs(
