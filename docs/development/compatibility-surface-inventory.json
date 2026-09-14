@@ -11295,8 +11295,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "13e4a0f400ff4581f7309edbc928ec6cb83a4e7d",
-      "tree": "265103124239d76d7ff0573e4b3130bea1f6835f"
+      "commit": "258f17bb53a4251cf5794b94869e2d49ff4ef7a4",
+      "tree": "2f0836da93f71ccbec80d8407c1f9e9c039b6830"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11453,7 +11453,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "c2958210b582cf4e75d4a6880c28d9474b1f7fda9ada02a8c6a502cc64076ea5"
+        "sha256": "8a0f64ed8580abb3cf732348c707e7de9e795faa096eeb47630c599668a46841"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11473,15 +11473,15 @@
       },
       {
         "path": "docs/development/open43-blocked-evidence-routing.json",
-        "sha256": "f2e57ef79b8b44bdb05dd7c9ea4a1dc1b988e88a4995b7207bded9aadb9665e4"
+        "sha256": "6ca0dbc3f38ef090d79b1b699b804bba11eadfe3483e2b426d159526e3abb5f6"
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "44b0abfd57668582733f9971228254760d28da78c0c89a888cafa4c57a15349f"
+        "sha256": "5d129487d03c01c25b623494630e6d7005275f4a1101283277a6ffd53185b26c"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
-        "sha256": "1352345caebe3181e540ca52e7dfeab23da0c6990bf77c21619b2f9057a76b6f"
+        "sha256": "013ff72c13ac3b162e661abcd5aae4393bc2e7f64637ef45e16f521d11b0b599"
       },
       {
         "path": "docs/development/open43-q-forum-closure-audit.json",
@@ -11517,7 +11517,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "aa9eb36a95242420b4d20cf98543e6cfed4a9d36c12c160cd03a7d09de6bd640"
+        "sha256": "fac3e7235b5793fb25951a78ac11c8f93c49275ba03071569b50e24c8b08c0a8"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -42127,7 +42127,7 @@
         "tests": [
           "deepwell/src/services/blob/mime.rs::mime_request",
           "deepwell/tests/page.rs::file_create_commits_only_its_actor_and_route_owned_pending_blob",
-          "deepwell/tests/page.rs::wikidot_files_saved_view_hides_rows_without_module_instance_authority",
+          "deepwell/tests/page.rs::wikidot_files_saved_view_requires_page_view_and_complete_descriptors",
           "install/local/wikidot-verification/tests/corpus-attachment-direct.test.mjs::planDirectAttachmentMaterialization fails closed on an absent content descriptor",
           "install/local/wikidot-verification/tests/corpus-attachment-staging-sql.test.mjs::buildAttachmentStagingSql can require an existing byte-matched file",
           "install/local/wikidot-verification/tests/corpus-file-descriptor-backfill-cli.test.mjs::standing descriptor backfill blocks all writes before materialization when metadata provenance is incomplete",
@@ -42181,12 +42181,14 @@
           "M1039_FILES_CONTAINER_SUFFIX_IDENTITY"
         ],
         "tests": [
-          "deepwell/tests/page.rs::wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts",
-          "deepwell/tests/page.rs::wikidot_files_saved_view_hides_rows_without_module_instance_authority"
+          "deepwell/tests/page.rs::wikidot_files_saved_empty_module_matches_the_live_container_and_refresh_script",
+          "deepwell/tests/page.rs::wikidot_files_saved_modules_use_distinct_container_suffixes",
+          "deepwell/tests/page.rs::wikidot_files_saved_populated_module_matches_the_live_row_contract",
+          "install/local/wikidot-verification/tests/m1039-files-suffix-evidence.test.mjs::each Files module in one render owns its own suffix"
         ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -42194,15 +42196,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:M1039_FILES_CONTAINER_SUFFIX_IDENTITY",
@@ -42224,12 +42226,13 @@
           "M1039_FILES_NONEMPTY_ROW_CORE"
         ],
         "tests": [
-          "deepwell/tests/page.rs::wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts",
-          "deepwell/tests/page.rs::wikidot_files_saved_view_hides_rows_without_module_instance_authority"
+          "deepwell/tests/page.rs::wikidot_files_saved_populated_module_matches_the_live_row_contract",
+          "deepwell/tests/page.rs::wikidot_files_saved_view_requires_page_view_and_complete_descriptors",
+          "install/local/wikidot-verification/tests/m1039-files-suffix-evidence.test.mjs::the suffix is fresh, opaque, and independent of page identity"
         ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -42237,15 +42240,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:M1039_FILES_NONEMPTY_ROW_CORE",
@@ -42349,11 +42352,13 @@
           "M1039_FILES_SAVED_EMPTY_AND_ACL"
         ],
         "tests": [
-          "deepwell/tests/page.rs::wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts"
+          "deepwell/tests/page.rs::wikidot_files_saved_empty_module_matches_the_live_container_and_refresh_script",
+          "deepwell/tests/page.rs::wikidot_files_saved_view_requires_page_view_and_complete_descriptors",
+          "install/local/wikidot-verification/tests/m1039-files-suffix-evidence.test.mjs::saved Files container, refresh function, and selector share one suffix"
         ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -42361,15 +42366,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:M1039_FILES_SAVED_EMPTY_AND_ACL",
