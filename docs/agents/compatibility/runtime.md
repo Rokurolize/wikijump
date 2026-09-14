@@ -1,49 +1,25 @@
 # Candidate and standing runtime
 
-Read this file before immutable candidate production, candidate execution, promotion, persisted-render repair, standing proof, or runtime cleanup. `docs/deployment/runtime-drift-policy.md` remains the topology/identity policy; this file records the campaign execution method and failure modes.
+## Build and freeze the material identity
 
-## Build once at the material identity
-
-Use the local incremental stack for source-changing/debugging work. Defer production/release images until the source batch is review-ready and the release suffix is actually needed. Commit and push the exact tree before the long build so remote review, local build, and measured source have one identity.
-
-Freeze generated denominators, reviews, fixtures, source-owned verification tools, source-writer roster, and image producer inputs from that exact tree. Historical final-frozen receipts are not wrappers to copy forward: regenerate source-bound inputs when the source identity changes. Preserve the exact frozen verifier/tool bytes or their source-owned snapshot when the receipt binds them.
+Develop in the local incremental stack; produce production/release images only after source batch is review-ready and release suffix is needed. Commit and push the exact tree before the immutable build so review, build, and measurement share one identity. Freeze generated denominators, reviews, fixtures, source-owned verification tools, source-writer roster, and image-producer inputs from that tree; regenerate source-bound final-frozen inputs when source identity changes, preserving exact frozen verifier/tool bytes or their source-owned snapshot when a receipt binds them.
 
 ## Candidate inputs and execution
 
-Start candidates through the maintained producer/start scripts and their ownership contract; do not invent Compose naming, topology, or a hand-written private input. `private-runtime.json` is runtime plumbing, not a candidate case input. Generate candidate-private fixtures through the maintained compatibility input producer so TLS, actor/session, temporal, and canary-asset inputs bind to the exact candidate.
+Use maintained producer/start scripts, their Compose naming/topology, and ownership contract; `private-runtime.json` is runtime plumbing, not a candidate case input. Generate candidate-private fixtures through the maintained compatibility input producer so TLS, actor/session, temporal, and canary assets bind to the exact candidate. Treat the generated candidate CaseSet manifest as the denominator: counts and aliases may change, so run every executable CaseSet, retain per-case receipts and cleanup results, and aggregate against that manifest and candidate identity. Use persistent identity-bound external replay: local candidate/WSL services need no spacing, while public origins should normally receive zero repeat requests after the first retained acquisition. Bind browser candidate parity to the accepted candidate identity, retained live reference, live-completion policy, exact browser executable identity when required, and identity-bound response cache; diagnose browser/cache/route asymmetry before calling a resource anomaly a renderer regression.
 
-Treat the generated candidate case-set manifest as the denominator. Execution counts and aliases can change, so do not hard-code a historical fixed count into control flow. Run every executable CaseSet, retain per-case receipts and cleanup results, then aggregate against the same manifest and candidate identity.
+## Promotion and merge
 
-Use persistent external-response replay across repeated CaseSets. Local candidate/WSL services may be exercised without artificial request spacing; external public origins should normally see zero repeat requests after the first retained acquisition.
-
-Browser candidate parity must bind the accepted candidate identity, retained live reference, live-completion policy, exact browser executable identity when required, and the identity-bound response cache. Diagnose browser/cache/route asymmetry before treating a resource anomaly as a renderer regression.
-
-## Pre-merge promotion proof
-
-Generate and retain the promotion precondition while the PR head is still the candidate source. After merge, do not regenerate candidate admission from the merge checkout merely to make the receipt look newer: the merge commit is not the pre-merge candidate. `prepare.py` is the post-merge authority that revalidates the retained candidate/precondition against the actual normal merge.
-
-## Normal merge and image reuse
-
-Use the normal two-parent merge and the reuse policy in `docs/deployment/runtime-drift-policy.md`. Never infer reuse eligibility from filenames or intuition: let `install/standing/merge_identity.py` / `prepare.py` decide against the actual Git delta and FTML identity. Reusing a policy-approved sealed image avoids a redundant production build; any rejected runtime-input delta requires a new sealed candidate.
+Generate and retain the promotion precondition while PR head is candidate source. After merge, `install/standing/prepare.py` revalidates the retained candidate/precondition against normal merge; never regenerate admission from the merge checkout, whose commit is not the candidate. Use normal two-parent merge and `docs/deployment/runtime-drift-policy.md`; let `install/standing/merge_identity.py` / `install/standing/prepare.py` decide eligibility from actual Git delta and FTML identity, never filenames. Reuse a policy-approved sealed image only when eligible; a rejected runtime-input delta requires a new sealed candidate.
 
 ## Saved-page freshness
 
-Persisted render semantics are part of standing identity. The expected `compiled_generator` is source-derived from the current FTML version and Deepwell renderer epoch. Increment the renderer epoch when persisted HTML semantics change so the stale-page gate can distinguish old artifacts from current ones.
-
-Standing refresh is fail-closed on saved-page freshness. Make active latest saved pages current before accepting the refresh. For corpus-backed pages, use the source-owned trusted render finalizer rather than writing compiled HTML directly. For non-corpus/tail pages, use a source-owned rerender path or a transient queue that invokes the normal renderer; remove transient queue state after verifying the compiled artifact.
-
-Use adaptive batching. Large stale sets benefit from bounded bulk finalization; once the tail is small, stop paying the bulk orchestration cost and process the remaining site/run groups directly. Retry individual heavy pages at low concurrency. If the only failure is a proven execution deadline, a one-shot worker may use a longer deadline without changing renderer semantics; record that distinction and keep the generated HTML on the same renderer identity.
-
-`stale=0` is necessary, not sufficient. Persistent source, user, site, navigation, file, or other runtime state can still differ from the accepted candidate. Fresh standing browser/full-page proof is what catches that class of drift.
+Persisted render semantics are standing identity: expected `compiled_generator` derives from the current FTML version and Deepwell renderer epoch; increment the epoch when persisted HTML semantics change so the stale-page gate distinguishes old artifacts. Fail-closed refresh requires active latest saved pages current before acceptance. Corpus-backed pages use the source-owned trusted render finalizer, not direct compiled-HTML writes; non-corpus/tail pages use source-owned rerender or a transient queue invoking the normal renderer, whose state is removed after compiled-artifact verification. `stale=0` is necessary but insufficient: persistent source, user, site, navigation, file, or other runtime state can differ from the accepted candidate, so fresh standing browser/full-page proof must catch it.
 
 ## Standing activation and proof
 
-Activate only through maintained `prepare.py` / `refresh.py` tooling and preserve the protected standing volumes. The refresh receipt's saved-page freshness section must itself validate as PASS with zero stale pages; a validator that rejects or ignores newly added freshness fields is a verifier/schema defect, not a reason to drop the field.
-
-After activation, take fresh standing evidence bound to the merge identity. Candidate PASS is never standing PASS. Use the maintained standing comparison contract, exact browser/cache identity required by the retained reference, zero-repeat external replay, and the required full-page/canary checks.
-
-When fresh standing parity fails after a healthy promotion, decompose before mutating: compare active source hashes, persisted compiled-generator freshness, site/user/file metadata, browser/resource failures, and the exact comparison contract. Repair the smallest authoritative persistent state. Do not copy an entire candidate database into standing to make a canary pass.
+Activate only through maintained `install/standing/prepare.py`/`install/standing/refresh.py`; preserve protected standing volumes. The refresh receipt's saved-page freshness section must PASS with zero stale pages; a validator rejecting/ignoring new freshness fields is a verifier/schema defect, not grounds to drop them. After activation, fresh standing evidence must bind merge identity; candidate PASS is never standing PASS. Use the maintained comparison contract, retained reference's exact browser/cache identity, zero-repeat external replay, and full-page/canary checks. If fresh standing parity fails after a healthy promotion, compare active source hashes, `compiled_generator` freshness, site/user/file metadata, browser/resource failures, and exact comparison contract before mutating; repair the smallest authoritative persistent state and never copy an entire candidate database into standing to make a canary pass.
 
 ## Runtime cleanup
 
-Keep the active production runtime and one rollback set. Candidate images/containers are build outputs, not acceptance evidence; remove them once terminal and unreferenced. Preserve receipt-referenced acceptance artifacts. Use `docs/development/cargo-target-policy.md` for candidate build targets and `docs/deployment/runtime-drift-policy.md` for standing image retention.
+Retain active production runtime and one rollback set. Candidate images/containers are disposable build outputs, not acceptance evidence; remove them once terminal and unreferenced, preserve receipt-referenced acceptance artifacts, and use `docs/development/cargo-target-policy.md` for candidate build targets and `docs/deployment/runtime-drift-policy.md` for standing image retention.
