@@ -247,6 +247,12 @@
       "actor": "anonymous",
       "mutation": false,
       "authority": "FrontForum offset, multiple-category, custom-template, feed-argument, and relative-link-switch observations over existing sandbox data."
+    },
+    {
+      "evidence_id": "Q1034_ACTOR_MATRIX_LIVE_20260914",
+      "path": "install/local/wikidot-verification/artifacts/q1034-actor-matrix-live-20260914.json",
+      "sha256": "070cc26cdd232e5c6deb89357b97a14582cbb5f88ded78af78d8f1079cb39961",
+      "authority": "Run-owned forum mutation sequence (create/edit/delete/recreate, concurrent read, cached-staleness) with anonymous/member/moderator/administrator views; imported/deleted-user states and TTL invalidation remain unobserved."
     }
   ],
   "mutation_boundary_audit": {
@@ -470,7 +476,10 @@
         {
           "case_id": "Q1034_FRONTFORUM_CATEGORY_AND_OFFSET_SELECTION",
           "status": "implemented_unverified",
-          "evidence_ids": ["OPEN43_READONLY_LIVE_20260810", "E_OPEN43_FRONTFORUM_BOUNDARIES_20260810"],
+          "evidence_ids": [
+            "OPEN43_READONLY_LIVE_20260810",
+            "E_OPEN43_FRONTFORUM_BOUNDARIES_20260810"
+          ],
           "public_tests": [
             "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
           ],
@@ -479,7 +488,10 @@
         {
           "case_id": "Q1034_COMMENTS_HIDEFORM_ACTOR_AND_FORM_STATE",
           "status": "implemented_unverified",
-          "evidence_ids": ["FORUM_COMMENTS_HIDEFORM_ACTOR_LIVE_20260810", "ISSUE1367_COMMENTS_HIDEFORM_BROWSER_LIVE_20260815_R7"],
+          "evidence_ids": [
+            "FORUM_COMMENTS_HIDEFORM_ACTOR_LIVE_20260810",
+            "ISSUE1367_COMMENTS_HIDEFORM_BROWSER_LIVE_20260815_R7"
+          ],
           "public_tests": [
             "deepwell/tests/page.rs#forum_comments_list_resolves_only_visible_page_discussions",
             "install/local/wikidot-verification/tests/comments-hideform-actor-artifact.test.mjs#authenticated Comments hideForm evidence preserves the exact actor and form-state differential",
@@ -506,7 +518,10 @@
       "blocked_evidence": [
         {
           "case_id": "Q1034_POPULATED_READ_MODEL_COVERAGE",
-          "evidence_ids": ["OPEN43_READONLY_LIVE_20260810", "E_OPEN43_FRONTFORUM_BOUNDARIES_20260810"],
+          "evidence_ids": [
+            "OPEN43_READONLY_LIVE_20260810",
+            "E_OPEN43_FRONTFORUM_BOUNDARIES_20260810"
+          ],
           "observed": "The sealed category-list, missing-category, malformed-category, and offset scalar behaviors are implemented through public preview and saved-page seams. The baseline also defines documented versus unknown custom-template variables.",
           "missing": "FrontForum custom-template consumption, feed delivery and head metadata, effective relative-link rewriting, private visibility, deletion, and complete ForumNewThread states remain undefined or unimplemented.",
           "forbidden_inference": "Do not consume a body-bearing typed Module::Runtime through a raw closer, recognize captured page data, or infer actor and mutation behavior from anonymous reads."
@@ -523,7 +538,7 @@
         },
         {
           "case_id": "Q1034_FULL_ACTOR_USER_AND_MUTATION_MATRIX",
-          "missing": "No sealed anonymous, member, moderator, administrator, imported-user, deleted-user, post mutation, cache refresh, or concurrent request matrix exists.",
+          "missing": "Anonymous, member, moderator, and administrator views plus create/edit/delete/recreate, a concurrent read, and a cached-staleness observation are sealed in Q1034_ACTOR_MATRIX_LIVE_20260914. Remaining: imported-user and deleted-user states (no fixture exists and deleted identities must not be exposed) and the cache invalidation trigger (TTL expiry was not waited out).",
           "forbidden_inference": "Do not infer private visibility, deleted identity, mutation authority behind the observed anonymous controls, or cache behavior from the anonymous read-only fixture."
         }
       ],
