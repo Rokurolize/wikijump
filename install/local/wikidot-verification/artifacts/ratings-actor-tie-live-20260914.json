@@ -1,0 +1,389 @@
+{
+  "schema": "wikijump.ratings_actor_tie_live.v1",
+  "observed_at": "2026-09-14",
+  "site": "sandbox-for-codex",
+  "site_origin": "http://sandbox-for-codex.wikidot.com",
+  "run_id": "ratings-batch-20260914-r1",
+  "actor_classes": [
+    "anonymous",
+    "non_member",
+    "member",
+    "moderator",
+    "administrator"
+  ],
+  "source_artifact": {
+    "path": "/home/roku/wjlab/evidence/ratings-batch-20260914-r1/artifact.json",
+    "sha256": "c2db588a26a59f6a5dfc5e6f4b76e96a1ff0119a4f36af869dc7203e4dd3dd2e"
+  },
+  "source_receipt": {
+    "path": "/home/roku/wjlab/evidence/ratings-batch-20260914-r1/receipt.json",
+    "sha256": "d40f5b9566bcccfd97a3d4f98cb08e255665560301638be891c620aa5f9d6415"
+  },
+  "rated_pages": {
+    "category": "rat-260914r1-pm",
+    "observer": "rat-260914r1-ob:obs",
+    "sections": {
+      "default": [
+        {
+          "fullname": "rat-260914r1-pm:bonly",
+          "title": "DD rated by B only",
+          "rating": 1
+        },
+        {
+          "fullname": "rat-260914r1-pm:eq1",
+          "title": "AA equal one",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:eq2",
+          "title": "BB equal two",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:unrated",
+          "title": "CC unrated",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:pmholder",
+          "title": "MM pmholder",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:low",
+          "title": "ZZ low",
+          "rating": -1
+        }
+      ],
+      "rating_asc": [
+        {
+          "fullname": "rat-260914r1-pm:low",
+          "title": "ZZ low",
+          "rating": -1
+        },
+        {
+          "fullname": "rat-260914r1-pm:eq1",
+          "title": "AA equal one",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:eq2",
+          "title": "BB equal two",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:unrated",
+          "title": "CC unrated",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:pmholder",
+          "title": "MM pmholder",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:bonly",
+          "title": "DD rated by B only",
+          "rating": 1
+        }
+      ],
+      "rate_asc": [
+        {
+          "fullname": "rat-260914r1-pm:low",
+          "title": "ZZ low",
+          "rating": -1
+        },
+        {
+          "fullname": "rat-260914r1-pm:eq1",
+          "title": "AA equal one",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:eq2",
+          "title": "BB equal two",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:unrated",
+          "title": "CC unrated",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:pmholder",
+          "title": "MM pmholder",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:bonly",
+          "title": "DD rated by B only",
+          "rating": 1
+        }
+      ],
+      "created_desc": [
+        {
+          "fullname": "rat-260914r1-pm:pmholder",
+          "title": "MM pmholder",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:low",
+          "title": "ZZ low",
+          "rating": -1
+        },
+        {
+          "fullname": "rat-260914r1-pm:bonly",
+          "title": "DD rated by B only",
+          "rating": 1
+        },
+        {
+          "fullname": "rat-260914r1-pm:unrated",
+          "title": "CC unrated",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:eq1",
+          "title": "AA equal one",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:eq2",
+          "title": "BB equal two",
+          "rating": 0
+        }
+      ],
+      "min_rating_one": [
+        {
+          "fullname": "rat-260914r1-pm:bonly",
+          "title": "DD rated by B only",
+          "rating": 1
+        }
+      ],
+      "max_rating_zero": [
+        {
+          "fullname": "rat-260914r1-pm:eq1",
+          "title": "AA equal one",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:eq2",
+          "title": "BB equal two",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:unrated",
+          "title": "CC unrated",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:pmholder",
+          "title": "MM pmholder",
+          "rating": 0
+        },
+        {
+          "fullname": "rat-260914r1-pm:low",
+          "title": "ZZ low",
+          "rating": -1
+        }
+      ]
+    },
+    "equal_score_titles": [
+      "AA equal one",
+      "BB equal two",
+      "CC unrated",
+      "MM pmholder"
+    ],
+    "unrated_fullname": "rat-260914r1-pm:unrated",
+    "unrated_label": "(Rating: 0)",
+    "actor_independent": true,
+    "fragment_sha256": {
+      "Q809_DEFAULT": "b58caf2bf208e75558912b4b3e439b6a50a97e0ea61a535b0d546092d5985d58",
+      "Q809_RATING_ASC": "61f3b666e5d1b6decb57d282e4f9ed5a5443777f08e5189535c9a450becf85a6",
+      "Q809_RATE_ASC": "41369a407d33484f9dd5917bfac527ad72829bc2ae4fd6e28f6f7256686ff86c",
+      "Q809_CREATED_DESC": "7940e8b74be43e5618be380637289fe662a8569bb768999ca520925e5ace4229",
+      "Q809_MIN_RATING": "6126f5c75eca9d0be107ee2bb64a5d5fc463d5c7685f4f73915d5fb434ab9b3e",
+      "Q809_MAX_RATING": "6ac1070965e0a1716b59d9cba59be74496709266802c9352f49fe9d55fd4220a"
+    }
+  },
+  "next_previous_page": {
+    "title_ties": {
+      "category": "rat-260914r1-np",
+      "tie_title": "NN tie",
+      "first_created": "rat-260914r1-np:zz-tie",
+      "second_created": "rat-260914r1-np:aa-tie",
+      "next_holder": "rat-260914r1-np:tnextholder",
+      "next_holder_title": "MM next tie holder",
+      "next_selected": "rat-260914r1-np:zz-tie|NN tie",
+      "next_fragment_sha256": "8b5146679c57abc7c7a4afb2d637b71697bcb55a67fefcd055e42567b7af3dd4",
+      "next_repeat_fragment_sha256": "8b5146679c57abc7c7a4afb2d637b71697bcb55a67fefcd055e42567b7af3dd4",
+      "previous_holder": "rat-260914r1-np:tprevholder",
+      "previous_holder_title": "OO prev tie holder",
+      "previous_selected": "rat-260914r1-np:tprevholder|OO prev tie holder",
+      "previous_fragment_sha256": "dba45319b4e31f66ead447219c9bbe6433b4ab0c4271bd2c9df9744de1fbbc72",
+      "previous_repeat_fragment_sha256": "dba45319b4e31f66ead447219c9bbe6433b4ab0c4271bd2c9df9744de1fbbc72"
+    },
+    "private_adjacency": {
+      "private_category": "rat-260914r1-pr",
+      "requested_permissions": "v:m",
+      "previous_holder": "rat-260914r1-np:prevholder",
+      "previous_private_page": "rat-260914r1-pr:nppriv",
+      "previous_selection": "rat-260914r1-pr:nppriv|PP private previous",
+      "previous_fragment_sha256": "69fa37a7c9fb89c2b3f097947aec594f9f00ebc5a897afd08f941e4a9d349cc3",
+      "previous_named_for": [
+        "anonymous",
+        "non_member",
+        "member",
+        "moderator",
+        "administrator"
+      ],
+      "next_holder": "rat-260914r1-np:nextholder",
+      "next_private_page": "rat-260914r1-pr:npprivnext",
+      "next_selection": "rat-260914r1-pr:npprivnext|PP private next",
+      "next_fragment_sha256": "41ed9ecb09de58c068899f92620c4fcf5f3884ed84025031c2a28b73bb21f9a3",
+      "next_named_for": [
+        "anonymous",
+        "non_member",
+        "member",
+        "moderator",
+        "administrator"
+      ],
+      "direct_reads": {
+        "anonymous": {
+          "http_status": 200,
+          "content_marker_present": false,
+          "served_sha256": "6beaced06020b1bfa8c42890cb3c8dae1d2ea2519b15890a494c2e749358f1c9",
+          "denial_state": "HTTP 200 \"Private content\" page; run marker absent"
+        },
+        "non_member": {
+          "http_status": 200,
+          "content_marker_present": false,
+          "served_sha256": "be6f68efc03966e23e056d7f4b933515d45c1916df38d3971c5cbcf576fdff58"
+        },
+        "member": {
+          "http_status": 200,
+          "content_marker_present": true,
+          "served_sha256": "5eded2c64b3cc82ea8958d5f3928560b2090e7153a7730e954c892b8568aa712",
+          "served_fragment_sha256": "8af9bbf6fc54f10ea7e7e8c1530d657451924d05c76bd691aadfa76df5c72d9c"
+        }
+      }
+    },
+    "ajax_preview": {
+      "module_name": "edit/PagePreviewModule",
+      "request_fields": [
+        "mode=page",
+        "source",
+        "page_unix_name",
+        "pageId"
+      ],
+      "authorized_status": "ok",
+      "authorized_previous_body_sha256": "fa2843f4986bf0dd2cdad922cfede74c26886291d424589453efbbeadde98e77",
+      "authorized_next_body_sha256": "781be0b4b2dee0512d4b55d488fceb685b42271d51a8aaa7d5637c27ed56fdaa",
+      "anonymous_status": "wrong_token7",
+      "anonymous_body_bytes": 0,
+      "no_context_status": "ok",
+      "no_context_body_sha256": "73bb54ab1bfe5b99fb3e3399c26582837c1ad4232eb8782569056590e9f7eea7"
+    },
+    "request_time": {
+      "holder": "rat-260914r1-np:rtnext",
+      "initial_selection_count": 0,
+      "initial_fragment_sha256": "ab696627c2d86b146a1043e45cb0aca8b99312f0c8dfadfed379e806790caa43",
+      "late_page": "rat-260914r1-np:rtlate",
+      "after_late_selection": "rat-260914r1-np:rtlate|XX rt late",
+      "after_late_fragment_sha256": "be71b22eb964ab48b0232737c030bf452b0dd20a0471cd0d48b26651ada9b2e7"
+    }
+  },
+  "rate_module": {
+    "plus_minus": {
+      "controls": [
+        "rateup",
+        "ratedown",
+        "cancel"
+      ],
+      "actor_classes": [
+        "anonymous",
+        "non_member",
+        "member",
+        "moderator",
+        "administrator"
+      ],
+      "served_fragment_sha256": "3197ec82aa3f5299a359cca5ab8c5d45f297e14eb6effe7cadeee54e6977ca9b",
+      "settled_fragment_sha256": "73644da4562a209d3a20deb325adf42d7bc501d5cc251caf9ed19c5fa90c0782",
+      "served_widget_html": "<div class=\"page-rate-widget-box\"><span class=\"rate-points\">rating:&nbsp;<span class=\"number prw54353\">0</span></span><span class=\"rateup btn btn-default\"><a title=\"I like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)\">+</a></span><span class=\"ratedown btn btn-default\"><a title=\"I don't like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)\">&#8211;</a></span><span class=\"cancel btn btn-default\"><a title=\"Cancel my vote\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)\">x</a></span></div>",
+      "existing_vote": {
+        "voters": [
+          "B",
+          "C"
+        ],
+        "page": "rat-260914r1-pm:eq1",
+        "served_fragment_sha256": "18239848ffcb69baf3ea1bdb77f73f8557ff05016547e16364354823464db09c",
+        "settled_fragment_sha256": "ce385ea9f92dbcbdf6f1d6aeb028104e505a9e60c51b466529864bf18d670da8"
+      }
+    },
+    "stars": {
+      "data_rating": "0",
+      "star_images": [
+        "star-off",
+        "star-off",
+        "star-off",
+        "star-off",
+        "star-off"
+      ],
+      "cancel": false,
+      "actor_classes": [
+        "anonymous",
+        "non_member",
+        "member",
+        "moderator",
+        "administrator"
+      ],
+      "served_fragment_sha256": "6cad36862846b6099f0bb99eff20caf8d584b9361ae87710ae0ce95af6420403",
+      "settled_fragment_sha256": "0644c293bc73fd82c1fabe3ddd04a2afa47ae974234ef614963992313def3d56",
+      "existing_vote": {
+        "page": "rat-260914r1-st:stvoted",
+        "voter": "B",
+        "data_rating": "4",
+        "star_images": [
+          "star-on",
+          "star-on",
+          "star-on",
+          "star-on",
+          "star-off"
+        ],
+        "served_fragment_sha256": "b171863caec81762bce268af76d7ea46548c2c3cb4fb03f3bb6107c036758a4f",
+        "settled_fragment_sha256": "893105da63cce07f46403918eb2b62828789e761b414810258230d0f1ede652d"
+      }
+    },
+    "disabled_plus": {
+      "mode": "draP",
+      "controls": [
+        "rateup",
+        "cancel"
+      ],
+      "ratedown": false,
+      "actor_classes": [
+        "anonymous",
+        "non_member",
+        "member",
+        "moderator",
+        "administrator"
+      ],
+      "served_fragment_sha256": "fdb8192cd904e8bd004eaf31fef2ca5dfcdde72221e37c48d14d13d67318002f",
+      "settled_fragment_sha256": "fdb8192cd904e8bd004eaf31fef2ca5dfcdde72221e37c48d14d13d67318002f",
+      "served_widget_html": "<div class=\"page-rate-widget-box\"><span class=\"rate-points\">rating:&nbsp;<span class=\"number prw54353\">0</span></span><span class=\"rateup btn btn-default\"><a title=\"I like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)\">+</a></span><span class=\"cancel btn btn-default\"><a title=\"Cancel my vote\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)\">x</a></span></div>"
+    }
+  },
+  "cleanup": {
+    "settings_restored": true,
+    "permissions_restored": true,
+    "pages_deleted": 21,
+    "pages_failed_delete": 0,
+    "absence_verified": true,
+    "category_residue": false
+  },
+  "missing_observations": [
+    "The exact live score tie-break for titles that differ only by case or beyond one rendered limit is not established by this capture.",
+    "The default-template body of a private adjacent NextPage/PreviousPage row was not observed; the capture used a fullname/title-only module body.",
+    "The anonymous `wrong_token7` PagePreviewModule response is produced by the production Ajax connector; the capture does not establish Deepwell-seam token enforcement for `edit/PagePreviewModule`.",
+    "The disabled plus-only mode is captured as `draP` with a plus/cancel box; the exact Wikidot mode enum behind that string is not established."
+  ],
+  "credentials_in_evidence": false
+}
