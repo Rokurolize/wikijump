@@ -657,3 +657,223 @@ start-[[module RatedPages]]-middle
     );
     assert!(runtime_html.contains("start-[[module RatedPages]]-middle"));
 }
+
+/// Live capture (sandbox-for-codex, 2026-09-14): equal score rows follow title
+/// ascending in both score directions, unrated pages stay in the result with
+/// `(Rating: 0)`, `minRating` drops them, and anonymous through administrator
+/// output is byte-identical for the same public candidate set.
+#[tokio::test]
+async fn ratedpages_equal_scores_order_by_title_and_keep_unrated_rows() {
+    const CATEGORY: &str = "ratedpages-ties";
+
+    fn section<'a>(html: &'a str, start: &str, end: &str) -> &'a str {
+        html.split_once(start)
+            .unwrap_or_else(|| panic!("missing RatedPages section start {start:?}"))
+            .1
+            .split_once(end)
+            .unwrap_or_else(|| panic!("missing RatedPages section end {end:?}"))
+            .0
+    }
+
+    fn row_hrefs(section: &str) -> Vec<&str> {
+        section
+            .split(r#"<div class="list-item">"#)
+            .skip(1)
+            .map(|row| {
+                row.split_once(r#"<a href="/"#)
+                    .unwrap_or_else(|| {
+                        panic!("RatedPages row should link its page: {row}")
+                    })
+                    .1
+                    .split_once('"')
+                    .expect("RatedPages row href should close")
+                    .0
+            })
+            .collect()
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    // Creation order deliberately disagrees with title order so a creation or
+    // fullname tie-break cannot pass for the observed title ordering.
+    let bonly_id = create_page(
+        &mut runner,
+        site_id,
+        "ratedpages-ties:bonly",
+        "DD rated by B only",
+        "2026-08-15T00:00:01Z",
+    )
+    .await;
+    let eq_b_id = create_page(
+        &mut runner,
+        site_id,
+        "ratedpages-ties:b",
+        "BB equal two",
+        "2026-08-15T00:00:02Z",
+    )
+    .await;
+    let eq_a_id = create_page(
+        &mut runner,
+        site_id,
+        "ratedpages-ties:a",
+        "AA equal one",
+        "2026-08-15T00:00:03Z",
+    )
+    .await;
+    let unrated_id = create_page(
+        &mut runner,
+        site_id,
+        "ratedpages-ties:unrated",
+        "CC unrated",
+        "2026-08-15T00:00:04Z",
+    )
+    .await;
+    let low_id = create_page(
+        &mut runner,
+        site_id,
+        "ratedpages-ties:low",
+        "ZZ low",
+        "2026-08-15T00:00:05Z",
+    )
+    .await;
+    let holder_id = create_page(
+        &mut runner,
+        site_id,
+        "ratedpages-ties:holder",
+        "MM holder",
+        "2026-08-15T00:00:06Z",
+    )
+    .await;
+
+    insert_vote(&runner, eq_a_id, ADMIN_USER_ID, 1).await;
+    insert_vote(&runner, eq_a_id, SAMPLE_USER_ID, -1).await;
+    insert_vote(&runner, eq_b_id, ADMIN_USER_ID, -1).await;
+    insert_vote(&runner, eq_b_id, SAMPLE_USER_ID, 1).await;
+    insert_vote(&runner, bonly_id, SYSTEM_USER_ID, 1).await;
+    insert_vote(&runner, low_id, SYSTEM_USER_ID, -1).await;
+
+    let scores = ScoreService::scores_bulk(
+        runner.context(),
+        &[eq_a_id, eq_b_id, bonly_id, low_id, unrated_id],
+    )
+    .await
+    .expect("RatedPages tie fixture scores should materialize");
+    assert_eq!(
+        scores,
+        vec![
+            (eq_a_id, ScoreValue::Integer(0)),
+            (eq_b_id, ScoreValue::Integer(0)),
+            (bonly_id, ScoreValue::Integer(1)),
+            (low_id, ScoreValue::Integer(-1)),
+            (unrated_id, ScoreValue::Integer(0)),
+        ],
+        "RatedPages tie fixture votes must materialize the observed scores",
+    );
+
+    let holder_page = PageTable::find_by_id(holder_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("RatedPages tie holder lookup should succeed")
+        .expect("RatedPages tie holder should exist");
+    let source = format!(
+        concat!(
+            "DEFAULT_START\n",
+            "[[module RatedPages category=\"{category}\" limit=\"20\"]]\n",
+            "DEFAULT_END\n\n",
+            "MIN_START\n",
+            "[[module RatedPages category=\"{category}\" minRating=\"1\" limit=\"20\"]]\n",
+            "MIN_END\n\n",
+            "MAX_START\n",
+            "[[module RatedPages category=\"{category}\" maxRating=\"0\" limit=\"20\"]]\n",
+            "MAX_END",
+        ),
+        category = CATEGORY,
+    );
+    let page_info = PageInfo {
+        page: Cow::Borrowed("ratedpages-ties:holder"),
+        category: Some(Cow::Borrowed(CATEGORY)),
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("MM holder"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let render = |viewer_user_id| {
+        RenderService::render_page_for_viewer(
+            runner.context(),
+            source.clone(),
+            &page_info,
+            Layout::Wikidot,
+            PageId {
+                site_id,
+                category_id: holder_page.page_category_id,
+                page_id: holder_id,
+            },
+            viewer_user_id,
+            UrlArguments::default(),
+        )
+    };
+
+    let anonymous = render(None)
+        .await
+        .expect("anonymous RatedPages tie render should succeed")
+        .html_output
+        .body;
+    let default_section = section(&anonymous, "DEFAULT_START", "DEFAULT_END");
+    assert_eq!(
+        row_hrefs(default_section),
+        [
+            "ratedpages-ties:bonly",
+            "ratedpages-ties:a",
+            "ratedpages-ties:b",
+            "ratedpages-ties:unrated",
+            "ratedpages-ties:holder",
+            "ratedpages-ties:low",
+        ],
+        "equal scores must order by title ascending under rating-desc:\n{anonymous}",
+    );
+    let unrated_row = default_section
+        .split(r#"<div class="list-item">"#)
+        .find(|row| row.contains("CC unrated"))
+        .expect("the unrated row must stay in the default result");
+    assert!(
+        unrated_row.contains(r#"(Rating: 0)"#),
+        "an unrated page must render as Rating: 0:\n{anonymous}",
+    );
+
+    let min_section = section(&anonymous, "MIN_START", "MIN_END");
+    assert_eq!(
+        row_hrefs(min_section),
+        ["ratedpages-ties:bonly"],
+        "minRating=1 must exclude every unrated or non-positive row:\n{anonymous}",
+    );
+
+    let max_section = section(&anonymous, "MAX_START", "MAX_END");
+    assert_eq!(
+        row_hrefs(max_section),
+        [
+            "ratedpages-ties:a",
+            "ratedpages-ties:b",
+            "ratedpages-ties:unrated",
+            "ratedpages-ties:holder",
+            "ratedpages-ties:low",
+        ],
+        "maxRating=0 must keep unrated rows and still tie-break by title:\n{anonymous}",
+    );
+
+    for viewer in [Some(SAMPLE_USER_ID), Some(ADMIN_USER_ID)] {
+        let actor = render(viewer)
+            .await
+            .expect("RatedPages actor render should succeed")
+            .html_output
+            .body;
+        assert_eq!(
+            actor, anonymous,
+            "RatedPages output must be actor-independent for the observed public candidate set",
+        );
+    }
+}
