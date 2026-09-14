@@ -23808,8 +23808,10 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
     );
     assert_eq!(empty.body, EMPTY_BOX);
 
-    let non_backlink_source =
-        "[[module PageTree]]\n[[module ChildPages]]\n[[module NextPage]]";
+    // PageTree and ChildPages resolve no current-page identity in
+    // PagePreviewModule, so an identity-bearing and an identity-free preview
+    // must stay byte-identical for them.
+    let identity_free_source = "[[module PageTree]]\n[[module ChildPages]]";
     runner.set_request_context(RequestContext {
         site_id: Some(site_id),
         page_reference: None,
@@ -23818,7 +23820,7 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
     let identity_free = run_endpoint!(
         runner,
         wikidot_page_preview,
-        json!({"site_id": site_id, "title": "identity-free", "wikitext": non_backlink_source}),
+        json!({"site_id": site_id, "title": "identity-free", "wikitext": identity_free_source}),
     );
     runner.set_request_context(RequestContext {
         site_id: Some(site_id),
@@ -23828,9 +23830,162 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
     let identified = run_endpoint!(
         runner,
         wikidot_page_preview,
-        json!({"site_id": site_id, "title": "identified", "wikitext": non_backlink_source}),
+        json!({"site_id": site_id, "title": "identified", "wikitext": identity_free_source}),
     );
     assert_eq!(identified.body, identity_free.body);
+
+    // Live capture (sandbox-for-codex, 2026-09-14) retained in
+    // install/local/wikidot-verification/artifacts/ratings-actor-tie-live-20260914.json:
+    // an authorized `edit/PagePreviewModule` request carrying
+    // page_unix_name/pageId resolves the same NextPage/PreviousPage selection
+    // as the saved render. `Q811_AJAX_CONTEXT` /
+    // `Q811_PRIVATE_ADJACENT_AUTHORIZED` ajax_prevholder_a has body sha256
+    // fa2843f4986bf0dd2cdad922cfede74c26886291d424589453efbbeadde98e77,
+    // matching saved fragment q811_prevholder_a
+    // 69fa37a7c9fb89c2b3f097947aec594f9f00ebc5a897afd08f941e4a9d349cc3, and
+    // `Q1040_AJAX_CONTEXT` / `Q1040_PRIVATE_ADJACENT_AUTHORIZED`
+    // ajax_nextholder_a has body sha256
+    // 781be0b4b2dee0512d4b55d488fceb685b42271d51a8aaa7d5637c27ed56fdaa,
+    // matching saved fragment q1040_nextholder_a
+    // 41ed9ecb09de58c068899f92620c4fcf5f3884ed84025031c2a28b73bb21f9a3. The
+    // identity-omitted control `Q1040_AJAX_CONTEXT` ajax_no_context_A renders
+    // `<div class="error-block">Invalid range argument.</div>` (body sha256
+    // 73bb54ab1bfe5b99fb3e3399c26582837c1ad4232eb8782569056590e9f7eea7).
+    fn section<'a>(html: &'a str, start: &str, end: &str) -> &'a str {
+        html.split_once(start)
+            .unwrap_or_else(|| panic!("missing NextPreviousPage preview start {start:?}"))
+            .1
+            .split_once(end)
+            .unwrap_or_else(|| panic!("missing NextPreviousPage preview end {end:?}"))
+            .0
+    }
+
+    let next_previous_source = concat!(
+        "NEXT_PREVIEW_START\n",
+        "[[module NextPage]]\n",
+        "NEXT=%%fullname%%|%%title%%\n",
+        "[[/module]]\n",
+        "NEXT_PREVIEW_END\n",
+        "PREV_PREVIEW_START\n",
+        "[[module PreviousPage]]\n",
+        "PREV=%%fullname%%|%%title%%\n",
+        "[[/module]]\n",
+        "PREV_PREVIEW_END",
+    );
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: None,
+        ..Default::default()
+    });
+    let identity_free_next_previous = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "identity-free",
+            "wikitext": next_previous_source,
+        }),
+    );
+    assert!(
+        identity_free_next_previous
+            .body
+            .contains("Invalid range argument.")
+            && !identity_free_next_previous.body.contains("NEXT=")
+            && !identity_free_next_previous.body.contains("PREV="),
+        "an identity-free preview cannot resolve NextPage/PreviousPage:\n{}",
+        identity_free_next_previous.body,
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(target.page_id)),
+        ..Default::default()
+    });
+    let identified_next_previous = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": target.title,
+            "wikitext": next_previous_source,
+        }),
+    );
+    let target_page = PageTable::find_by_id(target.page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("NextPage preview target lookup should succeed")
+        .expect("NextPage preview target should exist");
+    let target_info = PageInfo {
+        page: Cow::Borrowed(target_slug),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Owned(target.title.clone()),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: target
+            .tags
+            .iter()
+            .map(|tag| Cow::Borrowed(tag.as_str()))
+            .collect(),
+        language: Cow::Borrowed("en"),
+    };
+    let saved_next_previous = RenderService::render_page_for_viewer(
+        runner.context(),
+        next_previous_source.to_owned(),
+        &target_info,
+        Layout::Wikidot,
+        PageId {
+            site_id,
+            category_id: target_page.page_category_id,
+            page_id: target.page_id,
+        },
+        None,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("saved NextPage/PreviousPage render should succeed")
+    .html_output
+    .body;
+    let identified_next = section(
+        &identified_next_previous.body,
+        "NEXT_PREVIEW_START",
+        "NEXT_PREVIEW_END",
+    );
+    let saved_next = section(
+        &saved_next_previous,
+        "NEXT_PREVIEW_START",
+        "NEXT_PREVIEW_END",
+    );
+    assert!(
+        identified_next.contains("NEXT="),
+        "the identified preview must resolve the NextPage selection:\n{}",
+        identified_next_previous.body,
+    );
+    assert_eq!(
+        identified_next, saved_next,
+        "the identified preview must resolve the same NextPage selection as the saved render:\n{}",
+        identified_next_previous.body,
+    );
+    let identified_prev = section(
+        &identified_next_previous.body,
+        "PREV_PREVIEW_START",
+        "PREV_PREVIEW_END",
+    );
+    let saved_prev = section(
+        &saved_next_previous,
+        "PREV_PREVIEW_START",
+        "PREV_PREVIEW_END",
+    );
+    assert!(
+        identified_prev.contains("PREV="),
+        "the identified preview must resolve the PreviousPage selection:\n{}",
+        identified_next_previous.body,
+    );
+    assert_eq!(
+        identified_prev, saved_prev,
+        "the identified preview must resolve the same PreviousPage selection as the saved render:\n{}",
+        identified_next_previous.body,
+    );
 
     runner.set_request_context(RequestContext {
         site_id: Some(site_id),
