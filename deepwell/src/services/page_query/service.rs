@@ -1284,6 +1284,15 @@ async fn project_page_query_results(
     } else {
         BTreeMap::new()
     };
+    // Live Wikidot resolves equal scores by title ascending, regardless of
+    // whether the score direction is ascending or descending.
+    let ordering_title_by_page_id = if score_ordering {
+        load_page_ordering_titles(ctx, &pages)
+            .await
+            .or_raise(make_error)?
+    } else {
+        BTreeMap::new()
+    };
 
     let defer_offset_limit = ordering_deferred_to_rust || filtering_deferred_to_rust;
     if defer_offset_limit {
@@ -1298,20 +1307,38 @@ async fn project_page_query_results(
                         let ordering = left_score
                             .partial_cmp(&right_score)
                             .unwrap_or(Ordering::Equal);
-                        list_pages_deferred_ordering(
-                            ordering,
-                            order.ascending,
-                            ordering_identity_by_page_id
-                                .get(&left.page_id)
-                                .copied()
-                                .unwrap_or(left.page_id),
-                            ordering_identity_by_page_id
-                                .get(&right.page_id)
-                                .copied()
-                                .unwrap_or(right.page_id),
-                            left,
-                            right,
-                        )
+                        let score_ordering = if order.ascending {
+                            ordering
+                        } else {
+                            ordering.reverse()
+                        };
+                        score_ordering
+                            .then_with(|| {
+                                compare_ordering_titles(
+                                    ordering_title_by_page_id
+                                        .get(&left.page_id)
+                                        .map(String::as_str),
+                                    ordering_title_by_page_id
+                                        .get(&right.page_id)
+                                        .map(String::as_str),
+                                )
+                            })
+                            .then_with(|| {
+                                list_pages_deferred_ordering(
+                                    Ordering::Equal,
+                                    order.ascending,
+                                    ordering_identity_by_page_id
+                                        .get(&left.page_id)
+                                        .copied()
+                                        .unwrap_or(left.page_id),
+                                    ordering_identity_by_page_id
+                                        .get(&right.page_id)
+                                        .copied()
+                                        .unwrap_or(right.page_id),
+                                    left,
+                                    right,
+                                )
+                            })
                     });
                 }
                 OrderProperty::DataFormFieldName { field, numeric } => {
@@ -1526,6 +1553,32 @@ async fn load_page_ordering_identities(
         })?
         .into_iter()
         .map(|row| (row.page_id, row.ordering_id))
+        .collect())
+}
+
+async fn load_page_ordering_titles(
+    ctx: &ServiceContext<'_>,
+    pages: &[page::Model],
+) -> Result<BTreeMap<i64, String>> {
+    let revision_ids = pages
+        .iter()
+        .filter_map(|page| page.latest_revision_id)
+        .collect::<Vec<_>>();
+    if revision_ids.is_empty() {
+        return Ok(BTreeMap::new());
+    }
+    Ok(page_revision::Entity::find()
+        .filter(page_revision::Column::RevisionId.is_in(revision_ids))
+        .all(ctx.transaction())
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to load ListPages ordering titles",
+                ErrorType::PageQuery,
+            )
+        })?
+        .into_iter()
+        .map(|revision| (revision.page_id, revision.title))
         .collect())
 }
 
@@ -2060,6 +2113,14 @@ fn score_to_f32(score: ScoreValue) -> f32 {
         ScoreValue::Integer(value) => value as f32,
         ScoreValue::Float(value) => value as f32,
     }
+}
+
+fn compare_ordering_titles(left: Option<&str>, right: Option<&str>) -> Ordering {
+    let left = left.unwrap_or("");
+    let right = right.unwrap_or("");
+    left.to_ascii_lowercase()
+        .cmp(&right.to_ascii_lowercase())
+        .then_with(|| left.cmp(right))
 }
 
 fn list_pages_deferred_ordering(
