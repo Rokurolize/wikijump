@@ -3,6 +3,7 @@ import { sha256Value } from "./standing-browser-parity-util.mjs";
 
 export const OPEN43_CATEGORIES_CASE_IDS = Object.freeze([
   "Q1028_CATEGORY_LIFECYCLE_AND_CACHE",
+  "Q1028_EXPAND_LIST_ACTION",
 ]);
 
 const SITE_SLUG = "scpaiueouiuiuiui";
@@ -265,16 +266,18 @@ class Open43CategoriesRun {
       }
     }
 
-    return [{
-      case_id: OPEN43_CATEGORIES_CASE_IDS[0],
-      observations: {
-        source: { module_source: MODULE_SOURCE, live_evidence: LIVE_EVIDENCE },
-        fixture: { site_id: this.#siteId, holder: holderPage, hidden: hiddenPage, categories: this.#categories },
-        actor_sessions: actorSessions,
-        views,
-        event_scope: "candidate-rpc-and-runner-owned-browser-only",
-      },
-    }];
+    const observations = {
+      source: { module_source: MODULE_SOURCE, live_evidence: LIVE_EVIDENCE },
+      fixture: { site_id: this.#siteId, holder: holderPage, hidden: hiddenPage, categories: this.#categories },
+      actor_sessions: actorSessions,
+      views,
+      event_scope: "candidate-rpc-and-runner-owned-browser-only",
+    };
+
+    return [
+      { case_id: OPEN43_CATEGORIES_CASE_IDS[0], observations },
+      { case_id: OPEN43_CATEGORIES_CASE_IDS[1], observations },
+    ];
   }
 
   async cleanup() {
@@ -309,7 +312,8 @@ class Open43CategoriesRun {
     return { pages: pages.reverse(), hidden_category_active: false };
   }
 
-  verifyCase(_caseId, observations) {
+  verifyCase(caseId, observations) {
+    if (!OPEN43_CATEGORIES_CASE_IDS.includes(caseId)) throw new Error(`Q1028 candidate case ID is not owned by open43-categories: ${caseId}`);
     const categories = observations.fixture?.categories;
     if (observations.event_scope !== "candidate-rpc-and-runner-owned-browser-only" || !categories || !observations.views) throw new Error("Q1028 candidate evidence is incomplete");
     const expectedAll = categories.all;
