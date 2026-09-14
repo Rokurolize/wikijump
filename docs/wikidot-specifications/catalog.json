@@ -31,7 +31,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 86,
+    "observation_count": 87,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -4052,7 +4052,9 @@
         "Public service/API boundary for persistent state and permissions"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "built-in-theme-asset-mapping-20260914"
+      ]
     },
     {
       "id": "subscription-plan-matrix",

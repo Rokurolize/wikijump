@@ -182,6 +182,10 @@
       "path": "install/local/wikidot-verification/artifacts/s757-toolbar-promotion-live-20260913.json",
       "sha256": "c554f2a32c998d11bd973a9a52991fae3f3fe89847bbcecb635deb64a3c337ac"
     },
+    "E_S755_BUILT_IN_THEME_ASSET_MAPPING_LIVE_20260914": {
+      "path": "install/local/wikidot-verification/artifacts/s755-built-in-theme-asset-mapping-20260914.json",
+      "sha256": "9d846ead9aaee97ff618663576e82d86273f2beb1094811a8a8d6c359b9ed3d8"
+    },
     "E_AUTONUMBER_SCOPE": {
       "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/autonumbering-setting-v1/scoping-verdict.json",
       "sha256": "60bf8bb7141c98875b6330b7857d9347af295e48857bab2dde8777a4ae50b1f7"
@@ -657,13 +661,25 @@
         {
           "case_id": "S755_BUILT_IN_ASSET_MAPPING",
           "acceptance": "Map each persisted live built-in theme ID to the exact evidenced immutable stylesheet set and ordering.",
-          "classification": "blocked_evidence",
-          "reason": "The panel proves IDs and source groups but not the served asset URLs for each ID. Current source intentionally serves only the established Base assets.",
-          "source_paths": ["framerail/src/routes/+layout.svelte"],
-          "existing_tests": [],
-          "evidence_ids": ["E_THEME_PANEL", "E_THEME_SCOPE", "E_OPEN43_READONLY_LIVE_20260810"],
-          "missing_evidence": ["built-in ID to asset mapping", "asset order and version", "missing-resource fallback"],
-          "next_command_ids": []
+          "classification": "source_ready",
+          "reason": "The 2026-09-14 authenticated run-owned capture proves the exact ordered versioned common--theme stylesheet URL set for all 29 persisted built-in ids and excludes site custom ids, and its receipt proves restoration to Base with no mutation left active. Framerail resolves each id to that table and emits the directories beyond the established local Base assets as ordered @import statements inside the live internal-style container; Base remains byte-identical. This is source readiness, not a final-browser verdict.",
+          "source_paths": [
+            "framerail/src/lib/site-settings.js",
+            "framerail/src/routes/+layout.svelte"
+          ],
+          "existing_tests": [
+            "framerail/tests/site-settings-built-in-theme-assets.test.js::every mapped id resolves to its exact ordered evidenced stylesheet URLs",
+            "install/local/wikidot-verification/tests/s755-built-in-theme-asset-mapping-evidence.test.mjs::every built-in id maps to its exact ordered versioned asset URL set"
+          ],
+          "evidence_ids": [
+            "E_THEME_PANEL",
+            "E_THEME_SCOPE",
+            "E_OPEN43_READONLY_LIVE_20260810",
+            "E_S755_BUILT_IN_THEME_ASSET_MAPPING_LIVE_20260914"
+          ],
+          "next_command_ids": [
+            "C_NODE_SETTINGS"
+          ]
         },
         {
           "case_id": "S755_LEGACY_GALLERY_AND_CUSTOM_LIFECYCLE",
@@ -1235,10 +1251,10 @@
     "subrow_count": 60,
     "issue_owned_needs_source_count": 0,
     "classification_counts": {
-      "source_ready": 26,
+      "source_ready": 27,
       "needs_source": 0,
       "candidate_required": 25,
-      "blocked_evidence": 9
+      "blocked_evidence": 8
     },
     "duplicate_case_ids": 0,
     "unknown_classifications": 0,
