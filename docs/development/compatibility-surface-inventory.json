@@ -11295,8 +11295,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "86d42d9cdcb576278bb04bf8c87ccdbd4b33c1cc",
-      "tree": "cd687acbafa0a91ff7629526053086a42ef174f3"
+      "commit": "7c32c157c58a85eec7b19ed3f857670d83fa06ef",
+      "tree": "fb45573a24aab206830a77844339a41fb14e4bfb"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11477,7 +11477,7 @@
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "f080475de76a018631c4065689ab20a573655e1399e2250cf4ec21fcd9d6a6f2"
+        "sha256": "916e33e9723641a0497722d641955735b09690173b607d2cd77b7cb71b01f5b9"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -11485,7 +11485,7 @@
       },
       {
         "path": "docs/development/open43-q-forum-closure-audit.json",
-        "sha256": "9bf6fbdbd21cc9de47c07b1b9ecc25c4b83bbb47356f4fa9d5fe15cad83bc9b5"
+        "sha256": "c94ca9b0633aa22852a228ca2315a70781b8922ef2d7ac1614de567bfa9a4ad2"
       },
       {
         "path": "docs/development/open43-q-page-query-closure-audit.json",

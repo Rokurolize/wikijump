@@ -112,7 +112,7 @@
     },
     {
       "path": "docs/development/open43-q-forum-closure-audit.json",
-      "sha256": "9bf6fbdbd21cc9de47c07b1b9ecc25c4b83bbb47356f4fa9d5fe15cad83bc9b5",
+      "sha256": "c94ca9b0633aa22852a228ca2315a70781b8922ef2d7ac1614de567bfa9a4ad2",
       "source_revision": "eee723e8be459cbe890b739b6f833dfde6435c9f",
       "issue_count": 2,
       "case_count": 28,
