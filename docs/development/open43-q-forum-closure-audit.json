@@ -249,9 +249,10 @@
       "authority": "FrontForum offset, multiple-category, custom-template, feed-argument, and relative-link-switch observations over existing sandbox data."
     },
     {
-      "evidence_id": "Q1034_ACTOR_MATRIX_LIVE_20260914",
-      "path": "install/local/wikidot-verification/artifacts/q1034-actor-matrix-live-20260914.json",
-      "sha256": "070cc26cdd232e5c6deb89357b97a14582cbb5f88ded78af78d8f1079cb39961",
+  "evidence_id": "Q1034_ACTOR_MATRIX_LIVE_20260914",
+  "path": "install/local/wikidot-verification/artifacts/q1034-actor-matrix-live-20260914.json",
+  "sha256": "070cc26cdd232e5c6deb89357b97a14582cbb5f88ded78af78d8f1079cb39961",
+  "source_revision": "dc407eff5dab947a09a988d43bbe70daa4879548",
       "authority": "Run-owned forum mutation sequence (create/edit/delete/recreate, concurrent read, cached-staleness) with anonymous/member/moderator/administrator views; imported/deleted-user states and TTL invalidation remain unobserved."
     }
   ],
