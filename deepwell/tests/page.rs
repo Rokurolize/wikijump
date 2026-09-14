@@ -20690,12 +20690,12 @@ async fn nextpreviouspage_names_private_adjacent_pages_for_every_viewer() {
         let previous = section(&html, "ADJ_PREV_START", "ADJ_PREV_END");
         assert!(
             previous.contains(&format!("PREV={PRIVATE_PREV_SLUG}|BB private previous")),
-            "PreviousPage must name the private adjacent page for viewer {viewer_user_id:?}:\n{html}",
+            "PreviousPage must name the private adjacent page for every observed viewer:\n{html}",
         );
         let next = section(&html, "ADJ_NEXT_START", "ADJ_NEXT_END");
         assert!(
             next.contains(&format!("NEXT={PRIVATE_NEXT_SLUG}|DD private next")),
-            "NextPage must name the private adjacent page for viewer {viewer_user_id:?}:\n{html}",
+            "NextPage must name the private adjacent page for every observed viewer:\n{html}",
         );
     }
 }
