@@ -23,14 +23,14 @@
   },
   "counts": {
     "anonymous_read_only": 2,
-    "authenticated_read_only": 3,
+    "authenticated_read_only": 2,
     "run_owned_mutation": 13,
     "local_candidate": 0,
     "live_browser_only": 9,
     "missing_public_producer": 9,
     "missing_architecture_domain_authority": 10,
     "missing_security_policy": 2,
-    "total": 48
+    "total": 47
   },
   "rows": [
     {"case_id":"Q810_ACTIVE_GLOBAL_ROTATION","route_class":"missing_architecture_domain_authority","status":"not_attempted_not_safe","reason":"No authorized global FeaturedSite data source or refresh owner exists."},
@@ -73,7 +73,6 @@
     {"case_id":"M1043_VIEWER_INTERACTION_CONTRACT","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"The lightbox timeline, keyboard, focus, history, and resource errors require a browser."},
     {"case_id":"M1062_DUPLICATE_AND_UNICODE_POLICY","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Duplicate and Unicode filename policy requires creating controlled run-owned files."},
     {"case_id":"S754_IMPORT_EXPORT_REPRESENTATION","route_class":"missing_architecture_domain_authority","status":"not_attempted_not_safe","reason":"No site export producer, canonical representation, or restore consumer exists."},
-    {"case_id":"S755_BUILT_IN_ASSET_MAPPING","route_class":"authenticated_read_only","status":"blocked_no_mapping","reason":"The authenticated Themes panel was captured for A/B/C and confirms the admin boundary, but still exposes no built-in ID-to-asset URL mapping."},
     {"case_id":"S755_LEGACY_GALLERY_AND_CUSTOM_LIFECYCLE","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Theme selection and custom lifecycle require controlled setting changes."},
     {"case_id":"S755_EXTERNAL_RESOURCE_FAILURE_POLICY","route_class":"missing_security_policy","status":"not_attempted_not_safe","reason":"Fetch, timeout, failure, proxy, and stale-theme behavior require an explicit local policy."},
     {"case_id":"S758_COLLISION_DELETE_OVERFLOW_REENABLE","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Slug allocation collisions, deletion, overflow, and re-enable are state transitions."},

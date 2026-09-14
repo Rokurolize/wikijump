@@ -20,6 +20,32 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### Persisted built-in theme ids serve exact ordered versioned common--theme stylesheets
+
+- Observation ID: `built-in-theme-asset-mapping-20260914`
+- Classification: `documentation-omission`
+- Observed at: `2026-09-14`
+- Analysis: An authenticated run-owned mutation on sandbox-for-codex saved each persisted appearance id into a run-owned category, read the category back, and fetched the representative document through the authenticated document seam (x-wikidot-static-cache: BYPASS). The render's inline <style type="text/css" id="internal-style"> block was reduced to its ordered common--theme/<dir>/css/style.css URL set. The saved panel holds 29 built-in ids and 13 site custom ids. The authenticated render is authoritative; the anonymous path-keyed static cache can serve a stale mapping for its lifetime. The run restored the category to theme_default=true, theme_id=1, theme_external_url="" and verified the authoritative render matched the pre-run baseline.
+
+Normative behavior:
+
+- The saved appearance panel persists 29 built-in theme ids. Ids 8248876 through 8248888 are site custom themes (bootstrap-base plus local--theme/<dir>/style.css on the site file host) and must not be exposed as built-in themes.
+- For every built-in id, the served stylesheet set is the ordered common--theme/<dir>/css/style.css URL list recorded in the pinned artifact. Base is served first when present and a variant appends its own directory after its parent; theme 162746 (Bootstrap Base) serves bootstrap-base alone.
+- The observed asset URLs use the versioned origin http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme. The directory set and its ordering are the mapping authority for each persisted id.
+- The live document emits those assets as inline @import url(<url>); statements inside <style type="text/css" id="internal-style"> in the same order as the directory list; no stylesheet link carries a built-in theme asset.
+- The authenticated document fetch renders the saved category state immediately, while the anonymous public document can serve a stale mapping for the static-cache lifetime. The authenticated stored-category render is the mapping authority.
+- Missing-resource fallback was not observed: the capture did not exercise an unavailable theme asset. Local behavior must not invent a substitute asset, and an unmapped persisted id remains Base.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/s755-built-in-theme-asset-mapping-20260914.json` (SHA-256 `9d846ead9aaee97ff618663576e82d86273f2beb1094811a8a8d6c359b9ed3d8`), cases: none
+
+
 
 ## Suggested public TDD seams
 

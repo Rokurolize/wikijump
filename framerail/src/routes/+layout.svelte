@@ -52,6 +52,7 @@
     submitWikidotTopSearch
   } from "$lib/wikidot/wikidot-search.js"
   import {
+    builtInThemeHeadHtml,
     customThemeHeadHtml,
     normalizeGoogleAnalyticsSettings,
     normalizeThemeSetting
@@ -130,6 +131,7 @@
   )
   const effectiveTheme = $derived(normalizeThemeSetting(viewData?.theme))
   const customThemeHtml = $derived(customThemeHeadHtml(effectiveTheme))
+  const builtInThemeHtml = $derived(builtInThemeHeadHtml(effectiveTheme))
   const wikidotSiteTitle = $derived(resolveWikidotSiteTitle(viewData))
   const iconSite = $derived(
     viewData?.site
@@ -232,6 +234,8 @@
       <link data-wikidot-site-theme href={effectiveTheme.url} rel="stylesheet" />
     {:else if effectiveTheme.type === "custom"}
       {@html customThemeHtml}
+    {:else}
+      {@html builtInThemeHtml}
     {/if}
     {#each styleFrameDeclarations as declaration, index (`${declaration.priority}:${declaration.kind}:${declaration.order}:${index}`)}
       {#if declaration.kind === "theme"}

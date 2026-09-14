@@ -11295,8 +11295,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "53041fa4e3238f8b70be0e3fee2379705d4e8bb9",
-      "tree": "7c5b895c0253e15eee7e87add875a7262c058be5"
+      "commit": "13e4a0f400ff4581f7309edbc928ec6cb83a4e7d",
+      "tree": "265103124239d76d7ff0573e4b3130bea1f6835f"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11473,11 +11473,11 @@
       },
       {
         "path": "docs/development/open43-blocked-evidence-routing.json",
-        "sha256": "ba2e65869cc03d13f29d49d0935098ad63b8ac9c07767718d66629e2bdf699bf"
+        "sha256": "f2e57ef79b8b44bdb05dd7c9ea4a1dc1b988e88a4995b7207bded9aadb9665e4"
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "afc67ebacc53dc820ec47cf9bd7f48938fb563b05d3d8444656341cf5742252b"
+        "sha256": "44b0abfd57668582733f9971228254760d28da78c0c89a888cafa4c57a15349f"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -11497,7 +11497,7 @@
       },
       {
         "path": "docs/development/open43-s-settings-browser-closure-audit.json",
-        "sha256": "1c0fe0d517f4fb9d1d352384b50c7a3fe463cf1f04ddc3aa01b8711bce8d40f9"
+        "sha256": "236dd255bbb175ec287fd7e5fdc8b6dcdd87138555d94a756a5a82eadd74d495"
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
@@ -11521,15 +11521,15 @@
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
-        "sha256": "67657059d4b30171fc595fbc447b2c8052c4575982082615210a40be843c2999"
+        "sha256": "7c98d5aacbb2988119b57e5a6933390ce893df4b26231b0c41242f081fe1bd18"
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "b3fbf04daeea985b41de7e3c6e82e083fea3080d8cf444fc78260b4fcdee15dc"
+        "sha256": "f366c2ee26a1980775f3f2ff312192dab4f1cd5a1717b652eeeab91c3c0a1686"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "e5b36140f88e98e7034e03f7668fab0fc1e755289ca1f0bf0250b59d95f7abde"
+        "sha256": "344e91a2b1ef2808b049d8c67dc5eb86b0f02e29a8ae10dc86bb22ca937e0af8"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -11753,7 +11753,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "b3fbf04daeea985b41de7e3c6e82e083fea3080d8cf444fc78260b4fcdee15dc"
+        "sha256": "f366c2ee26a1980775f3f2ff312192dab4f1cd5a1717b652eeeab91c3c0a1686"
       },
       {
         "path": "wws/src/route.rs",
@@ -44803,6 +44803,7 @@
           "deepwell/src/services/render/categories.rs::tests::category_page_list_matches_wikidot_shape_and_escapes_values",
           "framerail/tests/ajax-module-connector.test.js#WikiCategoriesPageListModule",
           "framerail/tests/wikidot-categories.test.js",
+          "install/local/wikidot-verification/src/open43-categories-candidate-case-set.mjs",
           "install/local/wikidot-verification/tests/open43-categories-candidate-case-set.test.mjs"
         ]
       },
@@ -48889,10 +48890,13 @@
         "cases": [
           "S755_BUILT_IN_ASSET_MAPPING"
         ],
-        "tests": []
+        "tests": [
+          "framerail/tests/site-settings-built-in-theme-assets.test.js::every mapped id resolves to its exact ordered evidenced stylesheet URLs",
+          "install/local/wikidot-verification/tests/s755-built-in-theme-asset-mapping-evidence.test.mjs::every built-in id maps to its exact ordered versioned asset URL set"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -48900,15 +48904,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:S755_BUILT_IN_ASSET_MAPPING",
