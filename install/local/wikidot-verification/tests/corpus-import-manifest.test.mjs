@@ -56,11 +56,15 @@ test('buildCorpusImportManifest emits deterministic rows and summary', () => {
   assert.equal(formatJsonl(rows), jsonl, 'formatting should be deterministic');
 });
 
-test('buildCorpusImportManifest includes validated per-page corpus attachments', () => {
+test('buildCorpusImportManifest keeps the page-and-attachment scope separate from site settings', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-manifest-'));
   const bytes = Buffer.from([1, 2, 3, 4]);
   writePage(root, 'en', 'scp-173', {
     entityId: '12121212-1212-4121-8121-121212121212',
+    meta: {
+      welcome_page: 'system:welcome',
+      settings_revision: 17,
+    },
     source: '[[image https://scp-wiki.wikidot.com/local--files/scp-173/pixel.png]]',
   });
   writePageAttachment(root, 'en', 'scp-173', {
@@ -80,6 +84,9 @@ test('buildCorpusImportManifest includes validated per-page corpus attachments',
   const summary = buildManifestSummary(rows, jsonl);
 
   assert.equal(rows.length, 1);
+  assert.equal(Object.hasOwn(rows[0], 'welcome_page'), false);
+  assert.equal(Object.hasOwn(rows[0], 'settings_revision'), false);
+  assert.doesNotMatch(jsonl, /welcome_page|settings_revision/u);
   assert.equal(rows[0].attachments.length, 1);
   assert.deepEqual(rows[0].attachments[0], {
     filename: 'pixel.png',
