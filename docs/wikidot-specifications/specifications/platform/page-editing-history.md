@@ -35,7 +35,7 @@ missing Wikidot behavior.
 Evidence basis:
 
 - `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
-- `canonical-live-observations` -> `scripts/data/wikidot-live-observations.json` (SHA-256 `e5b36140f88e98e7034e03f7668fab0fc1e755289ca1f0bf0250b59d95f7abde`)
+- `canonical-live-observations` -> `scripts/data/wikidot-live-observations.json` (SHA-256 `344e91a2b1ef2808b049d8c67dc5eb86b0f02e29a8ae10dc86bb22ca937e0af8`)
 
 ### P1 - invocation grammar and scalar interpretation
 

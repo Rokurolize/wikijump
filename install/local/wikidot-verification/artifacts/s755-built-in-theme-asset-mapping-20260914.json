@@ -1,0 +1,484 @@
+{
+  "schema": "wikijump.s755_built_in_theme_asset_mapping.v1",
+  "observed_at": "2026-09-14",
+  "site": "sandbox-for-codex",
+  "site_origin": "http://sandbox-for-codex.wikidot.com",
+  "actor": "authenticated run-owned mutation account (account-a)",
+  "authority": "live-wikidot",
+  "credentials_persisted": false,
+  "source_artifacts": [
+    {
+      "role": "verdict",
+      "path": "/home/roku/wjlab/evidence/s755-theme-assets-20260914-r1/theme-mapping-verdict.json",
+      "sha256": "8435bb58441f042907f358772f4cd264d598c23a6ce9ae25fc6653551a5a3e31"
+    },
+    {
+      "role": "receipt",
+      "path": "/home/roku/wjlab/evidence/s755-theme-assets-20260914-r1/mapping-receipt.json",
+      "sha256": "795b4ab5393a10b57d62abcf594e9143de659c4d8e208bd1fc875846f5be8704"
+    }
+  ],
+  "run_id": "ef66413d-35c3-4d7d-bf5c-c6d5767cb6e8",
+  "category_id": 46114652,
+  "representative_page": "codexoracle:include-20260526t2147jst-001-include-source-basic",
+  "page_url": "http://sandbox-for-codex.wikidot.com/codexoracle:include-20260526t2147jst-001-include-source-basic",
+  "authoritative_seam": "authenticated_document_fetch (x-wikidot-static-cache: BYPASS)",
+  "emission": {
+    "form": "inline @import inside <style type=\"text/css\" id=\"internal-style\">",
+    "asset_origin": "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme",
+    "asset_url_template": "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/<dir>/css/style.css"
+  },
+  "baseline": {
+    "authoritative_theme_dirs": [
+      "bootstrap-base",
+      "standard-blue"
+    ],
+    "anonymous_theme_dirs": [
+      "bootstrap-base",
+      "standard-blue"
+    ]
+  },
+  "built_in_theme_mapping": [
+    {
+      "theme_id": 1,
+      "panel_name": "Base",
+      "theme_dirs": [
+        "base"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css"
+      ],
+      "internal_style_sha256": "b2ecb0f12af4596dbad1526bf2713b6953ee53cfc4b5c379a70e590371bf00e7"
+    },
+    {
+      "theme_id": 162746,
+      "panel_name": "Bootstrap Base",
+      "theme_dirs": [
+        "bootstrap-base"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/bootstrap-base/css/style.css"
+      ],
+      "internal_style_sha256": "f1677c3695b98d0f0bfaed248738419d846602a358f6a544be6f9c8a448fd10f"
+    },
+    {
+      "theme_id": 6651,
+      "panel_name": "Basic",
+      "theme_dirs": [
+        "base",
+        "basic"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/basic/css/style.css"
+      ],
+      "internal_style_sha256": "f6605428f323a20ed9967b53c96fc4f811371bf0a92d57e94f6b1103d2a9610e"
+    },
+    {
+      "theme_id": 6258,
+      "panel_name": "Bloo",
+      "theme_dirs": [
+        "base",
+        "bloo"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/bloo/css/style.css"
+      ],
+      "internal_style_sha256": "52b9cd02f812e425213d731ba00e2dd39540ac4cff952715592c007c289a6239"
+    },
+    {
+      "theme_id": 6650,
+      "panel_name": "Bloo - no side bar",
+      "theme_dirs": [
+        "base",
+        "bloo",
+        "bloo-no-side-bar"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/bloo/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/bloo-no-side-bar/css/style.css"
+      ],
+      "internal_style_sha256": "4c97266da8dc1b33803f7cb300664bee72f4cb90b5689ae3d24e0bb7df39b944"
+    },
+    {
+      "theme_id": 25,
+      "panel_name": "Cappuccino",
+      "theme_dirs": [
+        "base",
+        "cappuccino"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/cappuccino/css/style.css"
+      ],
+      "internal_style_sha256": "209eb96790fbd66ba17370170260e969d8986794e5ea34f00dc4e85067ad2e5c"
+    },
+    {
+      "theme_id": 26,
+      "panel_name": "Cappuccino - side bar on right",
+      "theme_dirs": [
+        "base",
+        "cappuccino",
+        "cappuccino-right"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/cappuccino/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/cappuccino-right/css/style.css"
+      ],
+      "internal_style_sha256": "f8ee74a22229767ad2b1ca52c0b9c56fbff12e2cfafd56322321e333c5c1af48"
+    },
+    {
+      "theme_id": 2,
+      "panel_name": "Clean",
+      "theme_dirs": [
+        "base",
+        "clean"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/clean/css/style.css"
+      ],
+      "internal_style_sha256": "77e417526ed4eab948f4eb3287a04201dccdc42ef59570146a6595b6f30be779"
+    },
+    {
+      "theme_id": 3,
+      "panel_name": "Clean - no side bar",
+      "theme_dirs": [
+        "base",
+        "clean",
+        "clean-no-side-bar"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/clean/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/clean-no-side-bar/css/style.css"
+      ],
+      "internal_style_sha256": "456168a628baf87fca41aa6a80d80e24acb0feef7b59a44ca06e34635b56b107"
+    },
+    {
+      "theme_id": 56,
+      "panel_name": "Co",
+      "theme_dirs": [
+        "base",
+        "co"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/co/css/style.css"
+      ],
+      "internal_style_sha256": "7f45fe014e47df8570987238b736107f08edc5d6b7e831fca056d0e6fcb28276"
+    },
+    {
+      "theme_id": 121,
+      "panel_name": "Co - no side bar",
+      "theme_dirs": [
+        "base",
+        "co",
+        "co-no-side-bar"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/co/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/co-no-side-bar/css/style.css"
+      ],
+      "internal_style_sha256": "38357f5cb78326fe46f1452e4c7551825db259a3e66382b8ca7280ffcd8b40e9"
+    },
+    {
+      "theme_id": 5,
+      "panel_name": "Flannel",
+      "theme_dirs": [
+        "base",
+        "flannel"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/flannel/css/style.css"
+      ],
+      "internal_style_sha256": "de560daa0696018a6e814bd0b4c3ecb3b320309839b39b0d99436968fdd845ba"
+    },
+    {
+      "theme_id": 9,
+      "panel_name": "Flannel Nature",
+      "theme_dirs": [
+        "base",
+        "flannel-nature"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/flannel-nature/css/style.css"
+      ],
+      "internal_style_sha256": "de957b57692c8ccdce49c02ab894cb6e6aacc1c1bee38605d974849d8c1bf339"
+    },
+    {
+      "theme_id": 10,
+      "panel_name": "Flannel Nature - no side bar",
+      "theme_dirs": [
+        "base",
+        "flannel-nature",
+        "flannel-nature-no-side-bar"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/flannel-nature/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/flannel-nature-no-side-bar/css/style.css"
+      ],
+      "internal_style_sha256": "f081b0bfbf7dc6727c2feb335055ce7e61f8289f8a4778068ad9ac8205d5d3f6"
+    },
+    {
+      "theme_id": 6,
+      "panel_name": "Flannel - no side bar",
+      "theme_dirs": [
+        "base",
+        "flannel",
+        "flannel-no-side-bar"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/flannel/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/flannel-no-side-bar/css/style.css"
+      ],
+      "internal_style_sha256": "78c5ada214df6ec5cd744992711812096802269206d200a79235a2df65bacb5d"
+    },
+    {
+      "theme_id": 7,
+      "panel_name": "Flannel Ocean",
+      "theme_dirs": [
+        "base",
+        "flannel-ocean"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/flannel-ocean/css/style.css"
+      ],
+      "internal_style_sha256": "cea5cd543049c0488ae13cf5c9d65ccdf425cb819e224f5fb86649bdf5c1c46a"
+    },
+    {
+      "theme_id": 8,
+      "panel_name": "Flannel Ocean - no side bar",
+      "theme_dirs": [
+        "base",
+        "flannel-ocean",
+        "flannel-ocean-no-side-bar"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/flannel-ocean/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/flannel-ocean-no-side-bar/css/style.css"
+      ],
+      "internal_style_sha256": "46307494e24a8ef5021f5f7adb874ca21df42c7e921829d3d2ebd449a147cffb"
+    },
+    {
+      "theme_id": 57,
+      "panel_name": "Flower Blossom",
+      "theme_dirs": [
+        "base",
+        "flower-blossom"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/flower-blossom/css/style.css"
+      ],
+      "internal_style_sha256": "71e88cd2260e7ceb07b795e496f1488063cf098d8d4e9647345d00c35be2990c"
+    },
+    {
+      "theme_id": 75,
+      "panel_name": "Flower Blossom - no side bar",
+      "theme_dirs": [
+        "base",
+        "flower-blossom",
+        "flower-blossom-no-side-bar"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/flower-blossom/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/flower-blossom-no-side-bar/css/style.css"
+      ],
+      "internal_style_sha256": "6757c4aa9e61c16b1c6fed621b95c57275ec4f2e9f1655fe9df5a98907694790"
+    },
+    {
+      "theme_id": 54,
+      "panel_name": "Gila",
+      "theme_dirs": [
+        "base",
+        "gila"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/gila/css/style.css"
+      ],
+      "internal_style_sha256": "663cd374972408e56a50b78be701a177f54b41fd39347bb29055a889b5a1ba29"
+    },
+    {
+      "theme_id": 55,
+      "panel_name": "Gila - no side bar",
+      "theme_dirs": [
+        "base",
+        "gila",
+        "gila-no-side-bar"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/gila/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/gila-no-side-bar/css/style.css"
+      ],
+      "internal_style_sha256": "092a7f7aebce5d2ee7d9610c238602348055a76c07a4788cacfea700963c60a8"
+    },
+    {
+      "theme_id": 58,
+      "panel_name": "Localize",
+      "theme_dirs": [
+        "base",
+        "localize"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/localize/css/style.css"
+      ],
+      "internal_style_sha256": "033a93c5d4fc8e33c024a7a384b031db14df326fc27c6a8f287f52257de847e3"
+    },
+    {
+      "theme_id": 59,
+      "panel_name": "Localize - no side bar",
+      "theme_dirs": [
+        "base",
+        "localize",
+        "localize-no-side-bar"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/localize/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/localize-no-side-bar/css/style.css"
+      ],
+      "internal_style_sha256": "0fd2c0a318f0081bfa42e3585726f10a88feaf757fafc4bdaa1b9ea793610d25"
+    },
+    {
+      "theme_id": 2439,
+      "panel_name": "Shiny",
+      "theme_dirs": [
+        "base",
+        "shiny"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/shiny/css/style.css"
+      ],
+      "internal_style_sha256": "9723d26cefafc9c7d81df6bdeba4e4ee662208afe7e4d487772faf957ca91136"
+    },
+    {
+      "theme_id": 2440,
+      "panel_name": "Shiny - no side bar",
+      "theme_dirs": [
+        "base",
+        "shiny",
+        "shiny-no-side-bar"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/shiny/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/shiny-no-side-bar/css/style.css"
+      ],
+      "internal_style_sha256": "966cb00e58411530ed7bb894f514faf2900f90e4823a2ceea960d7d23952afcd"
+    },
+    {
+      "theme_id": 2437,
+      "panel_name": "Webbish",
+      "theme_dirs": [
+        "base",
+        "webbish2"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/webbish2/css/style.css"
+      ],
+      "internal_style_sha256": "3c1313c096f3a1e1b555b613160762eb3bdc8fecb02dfc91138cf47372d8f01c"
+    },
+    {
+      "theme_id": 2438,
+      "panel_name": "Webbish - no side bar",
+      "theme_dirs": [
+        "base",
+        "webbish2",
+        "webbish2-no-side-bar"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/webbish2/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/webbish2-no-side-bar/css/style.css"
+      ],
+      "internal_style_sha256": "9a24b041a09facb2054b60d582cb36496366821653d78e8d9a02e6a73cd701a5"
+    },
+    {
+      "theme_id": 122,
+      "panel_name": "Webbish (older)",
+      "theme_dirs": [
+        "base",
+        "webbish"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/webbish/css/style.css"
+      ],
+      "internal_style_sha256": "22e37f109708ec4bc7630f83fbf0494965db3dfb6e9f343b432a5a0bffbf68cb"
+    },
+    {
+      "theme_id": 123,
+      "panel_name": "Webbish (older) - no side bar",
+      "theme_dirs": [
+        "base",
+        "webbish",
+        "webbish-no-side-bar"
+      ],
+      "theme_urls": [
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/webbish/css/style.css",
+        "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/webbish-no-side-bar/css/style.css"
+      ],
+      "internal_style_sha256": "c8cab35cf0e97947fb85b34c062ec6e62bfd2943f38e097c8fccb8aff1e4de66"
+    }
+  ],
+  "site_custom_theme_ids": [
+    8248876,
+    8248877,
+    8248878,
+    8248879,
+    8248880,
+    8248881,
+    8248882,
+    8248883,
+    8248884,
+    8248885,
+    8248886,
+    8248887,
+    8248888
+  ],
+  "site_custom_theme_shape": "bootstrap-base followed by local--theme/<dir>/style.css on the site file host; site custom ids are not built-in themes",
+  "restore": {
+    "save_status": "ok",
+    "save_http_status": 200,
+    "requested": {
+      "theme_default": true,
+      "theme_id": 1,
+      "theme_external_url": ""
+    },
+    "stored_theme_default": true,
+    "stored_theme_id": 1,
+    "stored_theme_external_url": "",
+    "matches_baseline": true
+  },
+  "cleanup": {
+    "mutation_left_active": false,
+    "restored": true
+  },
+  "request_gate": {
+    "interval_ms": 4000,
+    "grant_count": 198,
+    "enforcement_failed": false
+  },
+  "variant_investigation": {
+    "triggered": false,
+    "reason": "rendered theme directories do not collapse to a single base value"
+  }
+}

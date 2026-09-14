@@ -28,6 +28,49 @@ export const googleAnalyticsHeadHtml = (settings) => {
 
 /** @type {ThemeSetting} */
 const BUILT_IN_THEME = { type: "built_in", id: 1 }
+const WIKIDOT_THEME_ASSET_ORIGIN =
+  "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme"
+
+/**
+ * Ordered common--theme directories served for each persisted built-in
+ * theme id, captured from the authenticated live appearance render. The
+ * directory list is the authoritative asset set and ordering for the id.
+ * Ids 8248876+ are site custom themes (bootstrap-base plus local--theme)
+ * and are not built-in themes.
+ *
+ * @type {Readonly<Record<number, readonly string[]>>}
+ */
+export const BUILT_IN_THEME_ASSET_DIRS = Object.freeze({
+  1: ["base"],
+  162746: ["bootstrap-base"],
+  6651: ["base", "basic"],
+  6258: ["base", "bloo"],
+  6650: ["base", "bloo", "bloo-no-side-bar"],
+  25: ["base", "cappuccino"],
+  26: ["base", "cappuccino", "cappuccino-right"],
+  2: ["base", "clean"],
+  3: ["base", "clean", "clean-no-side-bar"],
+  56: ["base", "co"],
+  121: ["base", "co", "co-no-side-bar"],
+  5: ["base", "flannel"],
+  9: ["base", "flannel-nature"],
+  10: ["base", "flannel-nature", "flannel-nature-no-side-bar"],
+  6: ["base", "flannel", "flannel-no-side-bar"],
+  7: ["base", "flannel-ocean"],
+  8: ["base", "flannel-ocean", "flannel-ocean-no-side-bar"],
+  57: ["base", "flower-blossom"],
+  75: ["base", "flower-blossom", "flower-blossom-no-side-bar"],
+  54: ["base", "gila"],
+  55: ["base", "gila", "gila-no-side-bar"],
+  58: ["base", "localize"],
+  59: ["base", "localize", "localize-no-side-bar"],
+  2439: ["base", "shiny"],
+  2440: ["base", "shiny", "shiny-no-side-bar"],
+  2437: ["base", "webbish2"],
+  2438: ["base", "webbish2", "webbish2-no-side-bar"],
+  122: ["base", "webbish"],
+  123: ["base", "webbish", "webbish-no-side-bar"]
+})
 const EXTERNAL_THEME_HOSTS = new Set([
   "cdn.scpwiki.com",
   "d3g0gp89917ko0.cloudfront.net",
@@ -87,4 +130,56 @@ export const customThemeHeadHtml = (theme) => {
   return normalized.type === "custom"
     ? `<style data-wikidot-site-theme>${normalized.css}</style>`
     : ""
+}
+
+/**
+ * @param {{ type?: unknown; id?: unknown; url?: unknown; css?: unknown }
+ *   | null
+ *   | undefined} theme
+ * @returns {readonly string[]}
+ */
+export const builtInThemeAssetDirs = (theme) => {
+  const normalized = normalizeThemeSetting(theme)
+  if (normalized.type !== "built_in") return []
+  return (
+    BUILT_IN_THEME_ASSET_DIRS[normalized.id] ??
+    BUILT_IN_THEME_ASSET_DIRS[BUILT_IN_THEME.id]
+  )
+}
+
+/**
+ * Resolve the exact evidenced immutable stylesheet URLs for a built-in
+ * theme id, in served order. Non-built-in themes resolve to no URLs; an
+ * unmapped id resolves to Base. Missing-resource fallback was not observed
+ * on live Wikidot, so unresolved ids keep the Base asset set rather than
+ * inventing a substitute.
+ *
+ * @param {{ type?: unknown; id?: unknown; url?: unknown; css?: unknown }
+ *   | null
+ *   | undefined} theme
+ * @returns {string[]}
+ */
+export const builtInThemeAssetUrls = (theme) =>
+  builtInThemeAssetDirs(theme).map(
+    (dir) => `${WIKIDOT_THEME_ASSET_ORIGIN}/${dir}/css/style.css`
+  )
+
+/**
+ * Emit the live inline `@import` form for the theme directories beyond the
+ * established local Base assets, in evidenced order. The local Wikidot
+ * Base stylesheets already serve common--theme/base, so Base itself emits
+ * nothing and id 1 stays byte-identical to the existing head.
+ *
+ * @param {{ type?: unknown; id?: unknown; url?: unknown; css?: unknown }
+ *   | null
+ *   | undefined} theme
+ * @returns {string}
+ */
+export const builtInThemeHeadHtml = (theme) => {
+  const dirs = builtInThemeAssetDirs(theme).filter((dir) => dir !== "base")
+  if (dirs.length === 0) return ""
+  const imports = dirs
+    .map((dir) => `@import url(${WIKIDOT_THEME_ASSET_ORIGIN}/${dir}/css/style.css);`)
+    .join("\n")
+  return `<style type="text/css" id="internal-style">\n${imports}\n</style>`
 }

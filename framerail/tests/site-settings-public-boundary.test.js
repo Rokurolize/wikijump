@@ -419,8 +419,22 @@ describe("Wikidot site settings public boundaries", () => {
     )
     assert.doesNotMatch(disabled.head, /wikidot-site-analytics-profile/u)
     assert.doesNotMatch(disabled.head, /data-wikidot-site-theme/u)
+    assert.doesNotMatch(disabled.head, /id="internal-style"/u)
     assert.doesNotMatch(disabled.body, /id="navi-bar"/u)
     assert.doesNotMatch(disabled.body, /id="footer-bar"/u)
+
+    const variantData = structuredClone(disabledData)
+    variantData.theme = { type: "built_in", id: 3 }
+    const variant = renderComponent(
+      rootLayoutComponent,
+      {},
+      requestContext(variantData, { routeId: "/[slug]/[...extra]" })
+    )
+    assert.match(
+      variant.head,
+      /<style type="text\/css" id="internal-style">\n@import url\(http:\/\/d3g0gp89917ko0\.cloudfront\.net\/v--7690939296dc\/common--theme\/clean\/css\/style\.css\);\n@import url\(http:\/\/d3g0gp89917ko0\.cloudfront\.net\/v--7690939296dc\/common--theme\/clean-no-side-bar\/css\/style\.css\);\n<\/style>/u
+    )
+    assert.doesNotMatch(variant.head, /common--theme\/base\/css/u)
 
     const analyticsBody = renderComponent(analyticsSettingsComponent, {
       data: {
