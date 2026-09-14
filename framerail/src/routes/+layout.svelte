@@ -55,7 +55,8 @@
     builtInThemeHeadHtml,
     customThemeHeadHtml,
     normalizeGoogleAnalyticsSettings,
-    normalizeThemeSetting
+    normalizeThemeSetting,
+    resolveThemePreviewUrl
   } from "$lib/site-settings.js"
 
   const WIKIDOT_SEARCH_CHROME_HTML =
@@ -130,6 +131,12 @@
     analyticsSettings.enabled ? analyticsSettings.profile : null
   )
   const effectiveTheme = $derived(normalizeThemeSetting(viewData?.theme))
+  const themePreviewUrl = $derived(
+    resolveThemePreviewUrl(
+      viewData?.theme_previewer_no_ui,
+      page.url.searchParams.get("theme_url")
+    )
+  )
   const customThemeHtml = $derived(customThemeHeadHtml(effectiveTheme))
   const builtInThemeHtml = $derived(builtInThemeHeadHtml(effectiveTheme))
   const wikidotSiteTitle = $derived(resolveWikidotSiteTitle(viewData))
@@ -236,6 +243,9 @@
       {@html customThemeHtml}
     {:else}
       {@html builtInThemeHtml}
+    {/if}
+    {#if themePreviewUrl}
+      <link data-wikidot-theme-preview href={themePreviewUrl} rel="stylesheet" />
     {/if}
     {#each styleFrameDeclarations as declaration, index (`${declaration.priority}:${declaration.kind}:${declaration.order}:${index}`)}
       {#if declaration.kind === "theme"}

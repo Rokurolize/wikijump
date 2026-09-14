@@ -129,6 +129,8 @@ pub enum GetPageViewOutput {
         rate_actions: Option<RateBrowserActionRegistry>,
         #[serde(default)]
         membership_actions: Vec<MembershipBrowserAction>,
+        #[serde(default)]
+        theme_previewer_no_ui: bool,
         redirect_page: Option<String>,
         #[serde(default)]
         redirect_kind: Option<PageRedirectKind>,

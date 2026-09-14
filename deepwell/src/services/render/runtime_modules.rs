@@ -676,6 +676,44 @@ pub(crate) fn join_module_action_count(wikitext: &str) -> usize {
         .count()
 }
 
+/// Recognize the source-owned ThemePreviewer path that permits the browser to
+/// consume `theme_url`. Literal and malformed/unknown argument surfaces stay
+/// disabled so examples and unsupported module shapes cannot authorize a
+/// stylesheet request.
+pub(crate) fn has_theme_previewer_no_ui(wikitext: &str) -> bool {
+    if !STATIC_ACCOUNT_MODULE_REGEX.is_match(wikitext) {
+        return false;
+    }
+    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
+    STATIC_ACCOUNT_MODULE_REGEX
+        .captures_iter(wikitext)
+        .any(|captures| {
+            let matched = captures
+                .get(0)
+                .expect("a static account module capture always has a complete match");
+            if literal_regions.contains(matched.start()) {
+                return false;
+            }
+            if !captures
+                .name("name")
+                .is_some_and(|name| name.as_str().eq_ignore_ascii_case("ThemePreviewer"))
+            {
+                return false;
+            }
+            let Some(head) = captures.name("head").map(|head| head.as_str()) else {
+                return false;
+            };
+            let Some(arguments) = wikidot_module_arguments(head) else {
+                return false;
+            };
+            arguments.len() == 1
+                && arguments[0].key == "noUi"
+                && arguments[0].op == "="
+                && arguments[0].value_kind == WikidotModuleArgumentValueKind::DoubleQuoted
+                && arguments[0].value == "true"
+        })
+}
+
 pub(crate) fn membership_apply_action_count(wikitext: &str) -> usize {
     let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
     MEMBERSHIPAPPLY_MODULE_REGEX
@@ -3516,6 +3554,36 @@ mod membership_apply_tests {
             membership_apply_action_count("[[code]][[module MembershipApply]][[/code]]"),
             0,
         );
+    }
+}
+
+#[cfg(test)]
+mod theme_previewer_no_ui_tests {
+    use super::has_theme_previewer_no_ui;
+
+    #[test]
+    fn recognizes_only_executable_no_ui_invocations() {
+        assert!(has_theme_previewer_no_ui(
+            "[[module ThemePreviewer noUi=\"true\"]]"
+        ));
+        assert!(!has_theme_previewer_no_ui("[[module ThemePreviewer]]"));
+        assert!(!has_theme_previewer_no_ui(
+            "[[module ThemePreviewer noUi=\"true\" foo=\"bar\"]]"
+        ));
+        for source in [
+            "[[module ThemePreviewer NOUI=\"true\"]]",
+            "[[module ThemePreviewer noUi=\"TRUE\"]]",
+            "[[module ThemePreviewer noUi='true']]",
+            "[[module ThemePreviewer noUi=true]]",
+        ] {
+            assert!(!has_theme_previewer_no_ui(source), "{source}");
+        }
+        assert!(!has_theme_previewer_no_ui(
+            "[[code]][[module ThemePreviewer noUi=\"true\"]][[/code]]"
+        ));
+        assert!(!has_theme_previewer_no_ui(
+            "<!-- [[module ThemePreviewer noUi=\"true\"]] -->"
+        ));
     }
 }
 
