@@ -187,7 +187,8 @@
     {
       "name": "open43-categories",
       "case_ids": [
-        "Q1028_CATEGORY_LIFECYCLE_AND_CACHE"
+        "Q1028_CATEGORY_LIFECYCLE_AND_CACHE",
+        "Q1028_EXPAND_LIST_ACTION"
       ]
     },
     {

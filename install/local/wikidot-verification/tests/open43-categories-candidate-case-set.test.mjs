@@ -162,7 +162,7 @@ function fakeBrowser(session) {
 test("Q1028 category lifecycle is executable through the canonical runner", async (t) => {
   const session = fakeSession();
   const caseSet = createOpen43CategoriesCandidateCaseSet({ sessionFactory: () => session });
-  assert.deepEqual((await candidateCaseSet("open43-categories")).caseIds, ["Q1028_CATEGORY_LIFECYCLE_AND_CACHE"]);
+  assert.deepEqual((await candidateCaseSet("open43-categories")).caseIds, ["Q1028_CATEGORY_LIFECYCLE_AND_CACHE", "Q1028_EXPAND_LIST_ACTION"]);
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "open43-categories-candidate-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const identity = candidateIdentity();
@@ -184,6 +184,12 @@ test("Q1028 category lifecycle is executable through the canonical runner", asyn
   });
   assert.equal(receipt.status, "pass");
   assert.deepEqual(receipt.denominator.case_ids, [...OPEN43_CATEGORIES_CASE_IDS]);
+  assert.deepEqual(receipt.cases.map(({ case_id: caseId }) => caseId), [...OPEN43_CATEGORIES_CASE_IDS]);
+  for (const { path: casePath } of receipt.cases) {
+    const caseReceipt = JSON.parse(await fs.readFile(casePath, "utf8"));
+    assert.equal(caseReceipt.status, "pass");
+    assert.equal(caseReceipt.verification.verified, true);
+  }
   assert.equal(session.pages.size, 0);
   assert.equal([...session.categories.values()].some(({ slug, active }) => slug.startsWith("_open43-q1028-") && active), false);
 });
