@@ -151,6 +151,52 @@ const GENERATED_PRIVATE_INPUTS = new Set([
 ]);
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
+export const S758_AUTONUMBER_CANDIDATE_PRECONDITION = Object.freeze({
+  schema: "wikijump.open43.s758_autonumber_candidate_precondition.v1",
+  site_slug: SITE_SLUG,
+  category_role: "transition_category",
+  enabled: false,
+  next: 1,
+  cleanup_owner: "disposable_candidate_stack",
+});
+
+export function validateS758AutonumberCandidateCategory(category) {
+  if (
+    !Number.isSafeInteger(category?.category_id) ||
+    typeof category.slug !== "string" ||
+    category.slug.length === 0 ||
+    typeof category.autonumber_enabled !== "boolean" ||
+    !Number.isSafeInteger(category.autonumber_next) ||
+    !Number.isSafeInteger(category.settings_revision)
+  ) {
+    throw new Error("S758 candidate autonumber category is incomplete");
+  }
+  if (category.autonumber_enabled !== S758_AUTONUMBER_CANDIDATE_PRECONDITION.enabled || category.autonumber_next !== S758_AUTONUMBER_CANDIDATE_PRECONDITION.next) {
+    throw new Error("S758 candidate autonumber category is not at its fresh disabled precondition");
+  }
+  return Object.freeze({
+    category_id: category.category_id,
+    slug: category.slug,
+    autonumber_enabled: category.autonumber_enabled,
+    autonumber_next: category.autonumber_next,
+    settings_revision: category.settings_revision,
+  });
+}
+
+export function bindS758AutonumberFixture(input, category) {
+  if (!input?.fixture || !input.fixture.transition_category) return false;
+  const precondition = validateS758AutonumberCandidateCategory(category);
+  input.fixture.autonumber_category = {
+    ...input.fixture.transition_category,
+    category_id: precondition.category_id,
+    slug: precondition.slug,
+    autonumber_enabled: precondition.autonumber_enabled,
+    autonumber_next: precondition.autonumber_next,
+    settings_revision: precondition.settings_revision,
+  };
+  return true;
+}
+
 export function compatibilityMarkerFixtures(value) {
   if (value?.schema !== "wikijump.ftml_marker_contract_fixtures.v1" || value.site_slug !== "scp-wiki" || value.layout !== "wikidot") {
     throw new Error("FTML marker candidate fixture index is invalid");
@@ -520,6 +566,8 @@ export async function prepareCompatibilityCandidateInputs(args) {
     const defaultPage = await rpc("page_get", { site_id: SITE_ID, page: "boundary-check", details: { wikitext: false, compiled: false } }, { siteId: SITE_ID });
     const transitionPage = await rpc("page_get", { site_id: SITE_ID, page: "corpus:scp-9506-draft", details: { wikitext: false, compiled: false } }, { siteId: SITE_ID });
     if (!defaultPage || !transitionPage) throw new Error("fresh candidate is missing the maintained base page fixtures");
+    const transitionCategory = await rpc("category_get", { site: SITE_ID, category: transitionPage.page_category_id }, { siteId: SITE_ID });
+    const s758Category = validateS758AutonumberCandidateCategory(transitionCategory);
 
     const markerFixtureIndex = JSON.parse(await fs.readFile(FTML_MARKER_FIXTURE_INDEX, "utf8"));
     const markerFixtures = compatibilityMarkerFixtures(markerFixtureIndex);
@@ -629,6 +677,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       const value = JSON.parse(await fs.readFile(target, "utf8"));
       if (value.fixture?.default_category) Object.assign(value.fixture.default_category, { category_id: defaultPage.page_category_id, page_id: defaultPage.page_id, page_slug: defaultPage.slug });
       if (value.fixture?.transition_category) Object.assign(value.fixture.transition_category, { category_id: transitionPage.page_category_id, page_id: transitionPage.page_id, page_slug: transitionPage.slug });
+      if (name === "open43-settings-candidate.json") bindS758AutonumberFixture(value, s758Category);
       await fs.writeFile(target, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
     }
 

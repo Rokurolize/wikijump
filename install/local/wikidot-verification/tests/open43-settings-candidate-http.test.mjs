@@ -65,6 +65,7 @@ test("settings candidate session hashes private actors and uses public HTTP seam
   assert.equal(Object.hasOwn(session.privateInputIdentity, "expired_user_id"), false);
   assert.equal(session.privateInputIdentity.fixture_identity_sha256.length, 64);
   assert.equal(session.fixtureIdentity.transition_category.page_slug, "corpus:scp-9506-draft");
+  assert.deepEqual(session.fixtureIdentity.autonumber_category, session.fixtureIdentity.transition_category);
   assert.equal(session.storageState("administrator").cookies[0].value, "admin-secret");
   assert.deepEqual(await session.rpc("site_get", { site: "scpaiueouiuiuiui" }), {
     site_id: 17,
@@ -89,6 +90,35 @@ test("settings candidate session hashes private actors and uses public HTTP seam
   });
   assert.equal(form.has("siteId"), false);
   assert.equal(form.has("enabled"), false);
+});
+
+test("settings candidate session preserves the producer-bound autonumber fixture", () => {
+  const session = new Open43SettingsCandidateSession({
+    candidateIdentity,
+    privateInput: {
+      ...privateInput,
+      fixture: {
+        ...privateInput.fixture,
+        autonumber_category: {
+          ...privateInput.fixture.transition_category,
+          autonumber_enabled: false,
+          autonumber_next: 1,
+          settings_revision: 0,
+        },
+      },
+    },
+    requestImpl: async () => ({
+      status: 200,
+      headers: { "content-type": "application/json" },
+      body: Buffer.from('{"jsonrpc":"2.0","id":1,"result":null}'),
+    }),
+  });
+  assert.deepEqual(session.fixtureIdentity.autonumber_category, {
+    ...privateInput.fixture.transition_category,
+    autonumber_enabled: false,
+    autonumber_next: 1,
+    settings_revision: 0,
+  });
 });
 
 test("settings candidate session reports success and transport-backed action errors", async () => {

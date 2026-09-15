@@ -4,7 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, Q778_WIKIDOT_AUTHOR, b689BasaltUserFixtures, b689Scp8980CandidateFixtures, b689Scp8980UserFixtures, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs } from "../src/compatibility-candidate-input-producer.mjs";
+import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, Q778_WIKIDOT_AUTHOR, S758_AUTONUMBER_CANDIDATE_PRECONDITION, b689BasaltUserFixtures, b689Scp8980CandidateFixtures, b689Scp8980UserFixtures, bindS758AutonumberFixture, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs, validateS758AutonumberCandidateCategory } from "../src/compatibility-candidate-input-producer.mjs";
 
 test("compatibility candidate input producer requires distinct identity-bound paths", () => {
   assert.equal(COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, "wikijump.compatibility_candidate_input_receipt.v1");
@@ -12,6 +12,24 @@ test("compatibility candidate input producer requires distinct identity-bound pa
   assert.match(parsed["candidate-identity"], /candidate\.json$/u);
   assert.notEqual(parsed["template-private-dir"], parsed["output-private-dir"]);
   assert.throws(() => parseCompatibilityCandidateInputArgs(["--candidate-identity", "candidate.json"]), /Usage/u);
+});
+
+test("S758 producer binds a fresh disabled allocator and rejects reused state", () => {
+  assert.deepEqual(S758_AUTONUMBER_CANDIDATE_PRECONDITION, {
+    schema: "wikijump.open43.s758_autonumber_candidate_precondition.v1",
+    site_slug: "scpaiueouiuiuiui",
+    category_role: "transition_category",
+    enabled: false,
+    next: 1,
+    cleanup_owner: "disposable_candidate_stack",
+  });
+  const category = { category_id: 73, slug: "corpus", autonumber_enabled: false, autonumber_next: 1, settings_revision: 0 };
+  assert.deepEqual(validateS758AutonumberCandidateCategory(category), category);
+  const input = { fixture: { transition_category: { category_id: 73, slug: "corpus", page_id: 71, page_slug: "corpus:scp-9506-draft" } } };
+  assert.equal(bindS758AutonumberFixture(input, category), true);
+  assert.deepEqual(input.fixture.autonumber_category, { ...input.fixture.transition_category, autonumber_enabled: false, autonumber_next: 1, settings_revision: 0 });
+  assert.throws(() => validateS758AutonumberCandidateCategory({ ...category, autonumber_next: 2 }), /fresh disabled precondition/u);
+  assert.throws(() => bindS758AutonumberFixture({ fixture: { transition_category: {} } }, { ...category, autonumber_enabled: true }), /fresh disabled precondition/u);
 });
 
 test("candidate input cleanup preserves the RSMQ job namespace", () => {

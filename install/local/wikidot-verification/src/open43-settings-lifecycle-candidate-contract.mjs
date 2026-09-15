@@ -181,10 +181,15 @@ export function verifyOpen43SettingsLifecycleCase(caseId, rawObservations, plan)
 
 export function verifyOpen43SettingsLifecycleCleanup(proof, resources) {
   const cleanup = object(proof, "S758 cleanup proof");
-  if (cleanup.public_absence_verified !== true || cleanup.run_owned_state_absent !== true || cleanup.disposable_candidate_discarded !== true) throw new Error("S758 cleanup did not prove disposal of run-owned state");
+  if (cleanup.public_absence_verified !== true || cleanup.run_owned_state_absent !== true) throw new Error("S758 cleanup did not prove disposal of run-owned state");
   if (!Array.isArray(cleanup.run_owned_page_ids) || cleanup.run_owned_page_ids.length !== 0) throw new Error("S758 cleanup left run-owned pages");
+  if (cleanup.allocator_restored !== false) throw new Error("S758 cleanup must not claim public allocator restoration");
+  const candidateStackDisposal = object(cleanup.candidate_stack_disposal, "S758 candidate stack disposal");
+  if (candidateStackDisposal.status !== "deferred_to_parent_run") throw new Error("S758 cleanup did not delegate allocator disposal to the parent run");
+  nonEmpty(candidateStackDisposal.compose_project, "S758 candidate stack disposal.compose_project");
+  if (candidateStackDisposal.command !== "stop-promotion-candidate") throw new Error("S758 cleanup has no exact parent candidate disposal command");
   if (!Array.isArray(resources) || resources.some((resource) => resource.released !== true)) throw new Error("S758 cleanup left an unreleased resource");
-  return { verified: true, public_absence_verified: true, run_owned_state_absent: true, disposable_candidate_discarded: true, resource_count: resources.length };
+  return { verified: true, public_absence_verified: true, run_owned_state_absent: true, candidate_stack_disposal_required: true, resource_count: resources.length };
 }
 
 export function settingsLifecycleManifestSha256() {

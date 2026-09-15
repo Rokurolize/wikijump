@@ -56,7 +56,28 @@ function fixtureIdentity(value) {
   if (!Number.isSafeInteger(input.site_id) || !Number.isSafeInteger(input.cross_site_sentinel_id) || input.cross_site_sentinel_id <= 0 || input.cross_site_sentinel_id === input.site_id) throw new Error("private input fixture site identity is invalid");
   const viewRestrictedCategories = input.view_restricted_categories ?? [];
   if (!Array.isArray(viewRestrictedCategories) || viewRestrictedCategories.some((slug) => typeof slug !== "string" || slug.length === 0) || new Set(viewRestrictedCategories).size !== viewRestrictedCategories.length) throw new Error("private input fixture view-restricted categories are invalid");
-  const result = { site_id: input.site_id, cross_site_sentinel_id: input.cross_site_sentinel_id, default_category: category("default_category"), transition_category: category("transition_category"), view_restricted_categories: [...viewRestrictedCategories].sort() };
+  const transitionCategory = category("transition_category");
+  let autonumberCategory = transitionCategory;
+  if (input.autonumber_category !== undefined) {
+    autonumberCategory = category("autonumber_category");
+    if (
+      autonumberCategory.category_id !== transitionCategory.category_id ||
+      autonumberCategory.slug !== transitionCategory.slug ||
+      autonumberCategory.page_id !== transitionCategory.page_id ||
+      autonumberCategory.page_slug !== transitionCategory.page_slug ||
+      typeof input.autonumber_category.autonumber_enabled !== "boolean" ||
+      !Number.isSafeInteger(input.autonumber_category.autonumber_next) ||
+      !Number.isSafeInteger(input.autonumber_category.settings_revision)
+    ) throw new Error("private input fixture autonumber category is inconsistent");
+    if (input.autonumber_category.autonumber_enabled !== false || input.autonumber_category.autonumber_next !== 1) throw new Error("private input fixture autonumber category is not at its fresh disabled precondition");
+    autonumberCategory = {
+      ...autonumberCategory,
+      autonumber_enabled: input.autonumber_category.autonumber_enabled,
+      autonumber_next: input.autonumber_category.autonumber_next,
+      settings_revision: input.autonumber_category.settings_revision,
+    };
+  }
+  const result = { site_id: input.site_id, cross_site_sentinel_id: input.cross_site_sentinel_id, default_category: category("default_category"), transition_category: transitionCategory, autonumber_category: autonumberCategory, view_restricted_categories: [...viewRestrictedCategories].sort() };
   if (result.default_category.category_id === result.transition_category.category_id || result.default_category.slug === result.transition_category.slug || result.default_category.page_slug === result.transition_category.page_slug) throw new Error("private input fixture categories must be distinct");
   return Object.freeze(result);
 }
