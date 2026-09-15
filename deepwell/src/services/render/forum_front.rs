@@ -88,6 +88,7 @@ pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArgumentsParse> {
     let mut offset_seen = false;
     let mut feed_seen = false;
     let mut feed_title_seen = false;
+    let mut fix_relative_links_seen = false;
     for argument in arguments {
         if argument.op != "="
             || argument.value_kind != WikidotModuleArgumentValueKind::DoubleQuoted
@@ -131,6 +132,15 @@ pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArgumentsParse> {
             }
             "feed" if !feed_seen => feed_seen = true,
             "feedTitle" if !feed_title_seen => feed_title_seen = true,
+            // Anonymous PagePreview accepts both observed switch values. The
+            // content-bearing rewrite remains unimplemented until a public
+            // fixture supplies a relative post link.
+            "fixRelativeLinks"
+                if !fix_relative_links_seen
+                    && matches!(argument.value, "true" | "false") =>
+            {
+                fix_relative_links_seen = true;
+            }
             _ => return None,
         }
     }
@@ -581,6 +591,26 @@ mod tests {
         assert!(rendered.contains("<div>Description &lt;unsafe&gt;</div>"));
         assert!(rendered.contains("<div><p>Trusted post</p></div>"));
         assert!(!rendered.contains("[[/module]]"));
+    }
+
+    #[test]
+    fn frontforum_accepts_observed_relative_link_switch_values() {
+        for value in ["true", "false"] {
+            assert!(matches!(
+                parse_arguments(&format!(
+                    r#" category="8503559" limit="1" fixRelativeLinks="{value}""#,
+                )),
+                Some(FrontForumArgumentsParse::Arguments(_)),
+            ));
+        }
+        for value in ["", "yes", "TRUE"] {
+            assert!(
+                parse_arguments(&format!(
+                    r#" category="8503559" limit="1" fixRelativeLinks="{value}""#,
+                ))
+                .is_none()
+            );
+        }
     }
 
     #[test]

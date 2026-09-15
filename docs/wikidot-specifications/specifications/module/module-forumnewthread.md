@@ -47,3 +47,21 @@ SHA-256 of complete source file: `19cbbe222f1aefb65190d45ff65c1fb78b1b0c6c1131a5
 ```wikidot
 L0001 [[module ForumNewThread]]
 ```
+
+### Anonymous category-scoped ForumNewThread is a permission-error terminal state
+
+- Observation ID: `forum-q1034-forumnewthread-anonymous-denial-20260809`
+- Classification: `documentation-clarification`
+- Observed at: `2026-08-09`
+- Analysis: A retained anonymous GET of `/forum:new-thread/c/8503559` returns HTTP 200 and a page-content `error-block`, rather than a forum-thread form. The response is read-only and does not establish any authorized form, CSRF, validation, idempotency, rate-limit, or write behavior.
+
+Normative anonymous read behavior:
+
+- The category-scoped route title is `New Forum Thread - Sandbox For Codex`.
+- The page-content error title is `Permission error` and the message is `Sorry, you can not start new discussion thread. Only Wikidot.com registered users, members of this site, site administrators and perhaps selected moderators are allowed to do it.`
+- The denial includes `#action:login` with the link text `Sign in as Wikidot user` and exposes no ForumNewThread form.
+- A positive ForumNewThread state requires the smallest missing authority of an authenticated member, moderator, or administrator read of the same category route, followed by a separately evidenced authorized forum mutation contract. The anonymous denial must not be used to infer that state.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/forum-q1034-anonymous-boundaries-live-20260809.json` (SHA-256 `abb4b01f68b39bcb561fc26d2756588976981bdc7495ac2382c243749c3a3c55`), case: `forumnewthread-anonymous-category-route`

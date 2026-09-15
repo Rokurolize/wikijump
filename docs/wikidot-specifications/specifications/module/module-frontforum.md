@@ -102,6 +102,26 @@ Evidence:
 
 
 
+### FrontForum feed metadata and relative-link switches have a bounded anonymous read slice
+
+- Observation ID: `forum-q1034-frontforum-feed-and-relative-boundaries-20260809`
+- Classification: `documentation-clarification`
+- Observed at: `2026-08-09`
+- Analysis: A retained anonymous GET of a populated saved page establishes the FrontForum RSS metadata in both the document head and the rendered body. Retained anonymous PagePreviewModule pairs establish that the observed feed argument variants and both `fixRelativeLinks` switch values are accepted by the fragment seam. The preview pair contains no content-bearing relative link, and the retained set contains no linked FrontForum XML response.
+
+Normative read-model slice:
+
+- The populated saved-page response emits `<link rel="alternate" type="application/rss+xml" title="G25 NEWS" href="/feed/front/cg-mod-q11-004-frontforum/news.xml"/>` in the document head.
+- The same response emits a `feedinfo` block inside `front-forum-box`, with the RSS icon and the exact `RSS feed` anchor href `/feed/front/cg-mod-q11-004-frontforum/news.xml`.
+- Anonymous PagePreview accepts the retained `feed="readonlyfeed"`, `feed="readonlyfeed2"`, empty feed, and `feed="../bad"` shapes. The four responses have no `jsInclude` or `cssInclude` entries and share the same DOM projection; this describes the fragment envelope only and does not suppress saved-page metadata.
+- Anonymous PagePreview accepts both `fixRelativeLinks="true"` and `fixRelativeLinks="false"`. The two retained responses have identical DOM and visible-text projections for the selected item. Because that item's post body has no user-authored relative link, this establishes argument recognition and no observed difference for this fixture, not the rewriting algorithm.
+- Feed XML delivery, XML content type or schema, caching, and the general feed route remain unimplemented or unobserved until an anonymous retained or cache-sealed GET of the linked feed is available. The page link and head metadata must not be treated as delivery proof.
+- Private visibility and deletion remain unobservable in this lane. Anonymous omission is not a positive private or deleted-state result.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/forum-q1034-anonymous-boundaries-live-20260809.json` (SHA-256 `abb4b01f68b39bcb561fc26d2756588976981bdc7495ac2382c243749c3a3c55`), cases: `frontforum-saved-feed-metadata`, `frontforum-feed-preview`, `frontforum-relative-links-preview`
+
 ## Suggested public TDD seams
 
 These seams are recommendations. The implementation agent must present and confirm the actual seam map before writing tests.
