@@ -291,7 +291,7 @@ function validateSavedBody(role, body, fixture, label) {
   } else if (role === "comments_missing") {
     expect(body.includes('class="comments-box"') && body.includes('id="comments-options-hidden"') && !body.includes('id="thread-container-posts"'), `${label} did not preserve the no-discussion Comments shell`);
   } else if (role === "frontforum") {
-    expect(body.includes('class="front-forum-box"') && count(body, "/forum/t-") === 2, `${label} has the wrong saved FrontForum boundary`);
+    expect(body.includes('class="front-forum-box"') && count(body, 'href="/forum/t-') === 2, `${label} has the wrong saved FrontForum boundary`);
   } else {
     expect(body.includes('class="forum-recent-posts-box"') && count(body, '<div class="post" id="post-') === 20, `${label} has the wrong saved RecentPosts boundary`);
   }

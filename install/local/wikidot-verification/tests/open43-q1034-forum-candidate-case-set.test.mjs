@@ -184,7 +184,11 @@ function fakeSession(currentFixture, options = {}) {
     },
     async pageRequest(slug) {
       calls.push({ seam: "page", slug });
-      const body = `<main id="page-content">${savedBody(slug)}</main>`;
+      const saved = savedBody(slug);
+      const serialized = slug === currentFixture.pages.frontforum.slug
+        ? `<script>globalThis.__q1034=${JSON.stringify({ compiled_body_html: saved }).replaceAll("<", "\\u003C")}</script>`
+        : "";
+      const body = `<main id="page-content">${saved}</main>${serialized}`;
       return { status: 200, body_size: Buffer.byteLength(body), body_sha256: sha256Text(body), body_base64: Buffer.from(body).toString("base64") };
     },
     async pageRouteRequest(pathname) {
