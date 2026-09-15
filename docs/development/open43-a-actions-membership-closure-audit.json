@@ -651,13 +651,13 @@
         },
         {
           "case_id": "A1038_OTHER_AUTHENTICATED_UTILITY_STATES",
-          "owner": "owner-ruling-fail-closed",
+          "owner": "deepwell-public-preview-and-page-view",
           "evidence_ids": ["E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810"],
           "result": "Owner ruling 2026-09-15 treats the captured Dashboard denial and Clone missing-site responses as terminal campaign evidence. No positive Dashboard or Clone fixture is funded in this campaign; any unobserved positive state remains fail closed without claiming that such a state cannot exist."
         },
         {
           "case_id": "A1038_CLONE_ACTION",
-          "owner": "owner-ruling-fail-closed",
+          "owner": "deepwell-public-preview-and-page-view",
           "evidence": [
             "install/local/wikidot-verification/artifacts/open43-a1038-clone-action-live.json",
             "install/local/wikidot-verification/tests/open43-a1038-clone-action-evidence.test.mjs"
@@ -666,7 +666,7 @@
         },
         {
           "case_id": "A1038_SITEGRID_POPULATED",
-          "owner": "owner-ruling-fail-closed",
+          "owner": "deepwell-public-preview-and-page-view",
           "evidence": [
             "install/local/wikidot-verification/artifacts/open43-a1038-sitegrid-populated-live-v2.json",
             "install/local/wikidot-verification/tests/open43-a1038-sitegrid-populated-evidence-v2.test.mjs"
@@ -675,7 +675,7 @@
         },
         {
           "case_id": "A1038_THEMEPREVIEWER_ACTIVE",
-          "owner": "deepwell-framerail-owner-ruling",
+          "owner": "deepwell-framerail",
           "evidence": [
             "install/local/wikidot-verification/artifacts/open43-a1038-themepreviewer-active-live.json",
             "framerail/tests/site-settings-foundation.test.js::requires the source-owned ThemePreviewer noUi sidecar",
