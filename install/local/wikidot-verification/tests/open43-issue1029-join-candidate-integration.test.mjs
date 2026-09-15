@@ -160,12 +160,18 @@ function fakeBrowserAdapter(membershipState) {
 async function runFixture(t) {
   const membershipState = new FakeIssue1029State();
   const caseSet = createOpen43Issue1029JoinCandidateCaseSet({
-    sessionFactory: ({ privateInput }) => {
+    sessionFactory: ({ actor, purpose, privateInput }) => {
       const userId = privateInput.actors.editor.user_id;
       const name = userId === actorIds.administrator ? "administrator" : "eligible";
+      assert.equal(purpose, "primary");
+      assert.equal(name, actor);
       return new FakeIssue1029Session(name, membershipState);
     },
-    browserAdapterFactory: () => fakeBrowserAdapter(membershipState),
+    browserAdapterFactory: ({ actor, actorUserId }) => {
+      assert.equal(actor, "eligible");
+      assert.equal(actorUserId, actorIds.eligible);
+      return fakeBrowserAdapter(membershipState);
+    },
   });
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "issue1029-candidate-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
@@ -352,7 +358,13 @@ test("successful issue 1029 request observation releases its bounded timeout", a
   try {
     const adapter = new Open43Issue1029JoinBrowserAdapter({
       browserContexts: fakeIssue1029BrowserContexts(),
-      storageState: () => ({cookies: [{name: "actor", value: "eligible"}], origins: []}),
+      storageState: (actor, userId) => {
+        assert.equal(actor, "eligible");
+        assert.equal(userId, actorIds.eligible);
+        return {cookies: [{name: "actor", value: "eligible"}], origins: []};
+      },
+      actor: "eligible",
+      actorUserId: actorIds.eligible,
     });
     const result = await adapter.run({pageUrl: PAGE_URL, pagePath: JOIN_PATH, reset: async () => {}});
     assert.equal(result.operations.click.mutation_request_count, 1);

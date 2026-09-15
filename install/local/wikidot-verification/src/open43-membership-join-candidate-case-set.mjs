@@ -17,6 +17,7 @@ const SITE_HOST = `${EDITABLE_SITE}.wikijump.localhost`;
 const JOIN_SOURCE = "[[module Join]]";
 const JOIN_BODY = '<div class="join-box"><a href="javascript:;" onclick="WIKIDOT.page.listeners.join(event, \'unified\')">Join</a></div>';
 const CONTENT_SOURCE = "Joined through the public membership action.";
+const CONTENTION_PLAN = Object.freeze({ actor: "eligible", connection_count: 2, connection_policy: "isolated" });
 const EXPECTED_REQUESTS = Object.freeze([
   ...ACTORS.map((actor) => [actor, "session_get"]),
   ["anonymous", "site_get"],
@@ -106,17 +107,20 @@ function hiddenJoinEvidence(value, name) {
 
 class Open43MembershipJoinRun {
   #sessions;
+  #contentionSessions;
   #resources;
   #slugs;
   #events = [];
   #siteId = null;
   #mirrorSiteId = null;
+  #plan = null;
   #ownedPages = new Map();
   #membershipResource = null;
   #membershipMutationAttempted = false;
 
-  constructor({ sessions, resources, slugs }) {
+  constructor({ sessions, contentionSessions, resources, slugs }) {
     this.#sessions = sessions;
+    this.#contentionSessions = contentionSessions;
     this.#resources = resources;
     this.#slugs = slugs;
   }
@@ -201,6 +205,14 @@ class Open43MembershipJoinRun {
       sessionUsers[actor] = session.user_id;
     }
     if (new Set(Object.values(sessionUsers)).size !== ACTORS.length) throw new Error("membership candidate actors are not distinct");
+    for (const contentionSession of this.#contentionSessions) {
+      const session = await contentionSession.rpc(
+        "session_get",
+        [contentionSession.editorSessionToken],
+        { actor: "anonymous", siteId: undefined },
+      );
+      if (session?.user_id !== this.#eligibleId) throw new Error("contention session identity drifted from eligible actor");
+    }
 
     const site = await this.#rpc("anonymous", "site_get", { site: EDITABLE_SITE }, { siteId: null });
     const mirror = await this.#rpc("anonymous", "site_get", { site: MIRROR_SITE }, { siteId: null });
@@ -208,6 +220,11 @@ class Open43MembershipJoinRun {
     if (!Number.isSafeInteger(mirror?.site_id) || mirror.slug !== MIRROR_SITE || mirror.site_id === site.site_id) throw new Error("mirror membership denial site is missing");
     this.#siteId = site.site_id;
     this.#mirrorSiteId = mirror.site_id;
+    this.#plan = {
+      actor_ids: sessionUsers,
+      site_id: this.#siteId,
+      mirror_site_id: this.#mirrorSiteId,
+    };
 
     if (await this.#rpc("administrator", "member_get", { site_id: this.#siteId, user_id: this.#eligibleId }) !== null) {
       throw new Error("eligible membership candidate actor is already a member");
@@ -242,6 +259,7 @@ class Open43MembershipJoinRun {
       administrator: hiddenJoinEvidence(await this.#view("administrator"), "administrator Join view"),
     };
     const action = actorViews.eligible.actions[0];
+    this.#plan.join_page = { page_id: joinPage.page_id, revision_id: joinPage.revision_id };
 
     let forgedDenied = false;
     try {
@@ -277,20 +295,25 @@ class Open43MembershipJoinRun {
     };
     this.#membershipMutationAttempted = true;
     const contentionStart = this.#events.length;
-    const eligibleSession = this.#sessions.eligible;
-    const eligibleEventStart = eligibleSession.events.length;
-    const attempts = await Promise.allSettled([0, 1].map(() => eligibleSession.rpc(
+    const contentionClients = [
+      ...this.#contentionSessions.map((session, connection) => ({ session, connection })),
+    ];
+    const contentionEventStarts = contentionClients.map(({ session }) => session.events.length);
+    const attempts = await Promise.allSettled(contentionClients.map(({ session }) => session.rpc(
       "membership_join",
       joinParams,
       { actor: "editor", siteId: this.#siteId, page: this.#slugs.join },
     )));
-    this.#events.push(...eligibleSession.events.slice(eligibleEventStart).map((event) => ({
+    const contentionRequests = contentionClients.flatMap(({ session, connection }, index) => session.events.slice(contentionEventStarts[index]).map((event) => ({
       actor: "eligible",
+      connection,
+      connection_policy: "isolated",
       service: event.service,
       operation: event.operation,
       method: event.method,
       response_status: event.response_status,
     })));
+    this.#events.push(...contentionRequests);
     const attemptEvidence = attempts.map((attempt) => attempt.status === "fulfilled"
       ? { status: attempt.status, outcome: attempt.value }
       : { status: attempt.status, rpc_code: attempt.reason?.rpc?.code ?? null, rpc_message_sha256: attempt.reason?.rpc?.message_sha256 ?? null });
@@ -299,7 +322,7 @@ class Open43MembershipJoinRun {
     const repeat = outcomes.find((outcome) => outcome === "already_member");
     const membership = await this.#rpc("administrator", "member_get", { site_id: this.#siteId, user_id: this.#eligibleId });
     if (membership?.from_id !== this.#eligibleId || membership.dest_id !== this.#siteId) throw new Error("joined membership is missing at the public seam");
-    const contentionRequests = structuredClone(this.#events.slice(contentionStart));
+    const contentionEvidence = structuredClone(this.#events.slice(contentionStart));
     this.#membershipResource = this.#resources.register("membership", { site_id: this.#siteId, user_id: this.#eligibleId });
     const joinedView = hiddenJoinEvidence(await this.#view("eligible"), "joined actor Join view");
 
@@ -325,10 +348,12 @@ class Open43MembershipJoinRun {
       observations: {
         actor: { user_id: this.#eligibleId },
         site: { site_id: this.#siteId, slug: EDITABLE_SITE },
+        page: { page_id: joinPage.page_id, revision_id: joinPage.revision_id },
+        contention: { ...CONTENTION_PLAN },
         action,
         attempts: attemptEvidence,
         membership: { from_id: membership.from_id, dest_id: membership.dest_id },
-        requests: contentionRequests,
+        requests: contentionEvidence,
       },
     }];
   }
@@ -376,30 +401,48 @@ class Open43MembershipJoinRun {
     if (failures.length > 0) throw new AggregateError(failures, "membership Join public cleanup failed");
     return { membership_get: membershipAfter, pages: pagesAfter };
   }
+
+  verifyCase(caseId, observations) {
+    if (this.#plan === null) throw new Error("membership Join case was not executed");
+    return verifyCase(caseId, observations, this.#plan);
+  }
 }
 
-function verifyCase(caseId, observations) {
+function verifyCase(caseId, observations, plan) {
   requirePlainObject(observations, `${caseId} observations`);
   if (caseId === OPEN43_MEMBERSHIP_JOIN_CASE_IDS[1]) {
     const attempts = observations.attempts;
     const outcomes = Array.isArray(attempts)
       ? attempts.filter(({ status }) => status === "fulfilled").map(({ outcome }) => outcome).sort()
       : [];
+    const action = observations.action;
     if (
       attempts?.length !== 2
-      || attempts.some(({ status }) => status !== "fulfilled")
+      || attempts.some((attempt) => attempt.status !== "fulfilled" || JSON.stringify(Object.keys(attempt)) !== JSON.stringify(["status", "outcome"]))
       || JSON.stringify(outcomes) !== JSON.stringify(["already_member", "joined"])
-      || observations.membership?.from_id !== observations.actor?.user_id
-      || observations.membership.dest_id !== observations.site?.site_id
+      || observations.actor?.user_id !== plan?.actor_ids?.eligible
+      || observations.site?.site_id !== plan?.site_id
+      || observations.contention?.actor !== CONTENTION_PLAN.actor
+      || observations.contention?.connection_count !== CONTENTION_PLAN.connection_count
+      || observations.contention?.connection_policy !== CONTENTION_PLAN.connection_policy
+      || observations.membership?.from_id !== plan?.actor_ids?.eligible
+      || observations.membership.dest_id !== plan?.site_id
+      || action?.type !== "join"
+      || action.page_id !== plan?.join_page?.page_id
+      || action.revision_id !== plan?.join_page?.revision_id
+      || observations.page?.page_id !== plan?.join_page?.page_id
+      || observations.page?.revision_id !== plan?.join_page?.revision_id
+      || action.index !== 0
+      || !/^[0-9a-f]{32}$/u.test(action.fingerprint ?? "")
     ) {
       throw new Error(`${caseId} did not serialize concurrent self-join to one current relation`);
     }
     const requests = observations.requests;
-    const expected = [["eligible", "membership_join"], ["eligible", "membership_join"], ["administrator", "member_get"]];
+    const expected = [["eligible", 0, "membership_join"], ["eligible", 1, "membership_join"], ["administrator", undefined, "member_get"]];
     if (!Array.isArray(requests) || requests.length !== expected.length) throw new Error(`${caseId} public request denominator is wrong`);
     requests.forEach((request, index) => {
-      const [actor, operation] = expected[index];
-      if (request.actor !== actor || request.service !== "deepwell" || request.operation !== operation || request.method !== "POST" || request.response_status !== 200) {
+      const [actor, connection, operation] = expected[index];
+      if (request.actor !== actor || request.connection !== connection || (connection === undefined ? request.connection_policy !== undefined : request.connection_policy !== "isolated") || request.service !== "deepwell" || request.operation !== operation || request.method !== "POST" || request.response_status !== 200) {
         throw new Error(`${caseId} public contention request evidence is wrong or out of order`);
       }
     });
@@ -412,6 +455,8 @@ function verifyCase(caseId, observations) {
   }
   if (caseId !== OPEN43_MEMBERSHIP_JOIN_CASE_IDS[0]) throw new Error(`unsupported membership Join case: ${caseId}`);
   if (new Set(Object.values(observations.actors ?? {})).size !== ACTORS.length) throw new Error(`${caseId} actor identities are not distinct`);
+  for (const actor of ACTORS) if (observations.actors?.[actor] !== plan?.actor_ids?.[actor]) throw new Error(`${caseId} ${actor} identity drifted`);
+  if (observations.sites?.editable?.site_id !== plan?.site_id || observations.sites?.mirror?.site_id !== plan?.mirror_site_id) throw new Error(`${caseId} site identity drifted`);
   if (
     observations.preview?.anonymous_body_sha256 !== observations.views?.anonymous?.body_sha256
     || observations.preview.eligible_body_sha256 !== observations.views.eligible.body_sha256
@@ -507,22 +552,36 @@ export function createOpen43MembershipJoinCandidateCaseSet({
       requireCandidate(candidateIdentity);
       const sessions = Object.fromEntries(ACTORS.map((actor) => [actor, sessionFactory({
         actor,
+        purpose: "primary",
         candidateIdentity,
         privateInput: actorPrivateInput(privateInput, actor),
         signal,
       })]));
+      const contentionSessions = [0, 1].map((connection) => sessionFactory({
+        actor: "eligible",
+        purpose: "contention",
+        connectionPolicy: "isolated",
+        connection,
+        candidateIdentity,
+        privateInput: actorPrivateInput(privateInput, "eligible"),
+        signal,
+      }));
       const actorIds = Object.fromEntries(ACTORS.map((actor) => [actor, sessions[actor].editorUserId]));
       if (Object.values(actorIds).some((userId) => !Number.isSafeInteger(userId)) || new Set(Object.values(actorIds)).size !== ACTORS.length) {
         throw new Error("private membership candidate actors must have distinct safe user IDs");
       }
+      if (contentionSessions.some((session) => session.editorUserId !== sessions.eligible.editorUserId)) {
+        throw new Error("private membership contention sessions must bind the eligible actor");
+      }
       const slugs = runSlugs(runId);
-      const execution = new Open43MembershipJoinRun({ sessions, resources, slugs });
-      const runtimeBindings = [...new Map(ACTORS.flatMap((actor) => sessions[actor].requiredServiceBindings).map((binding) => [JSON.stringify(binding), binding])).values()];
+      const execution = new Open43MembershipJoinRun({ sessions, contentionSessions, resources, slugs });
+      const runtimeBindings = [...new Map([...ACTORS.flatMap((actor) => sessions[actor].requiredServiceBindings), ...contentionSessions.flatMap((session) => session.requiredServiceBindings)].map((binding) => [JSON.stringify(binding), binding])).values()];
       return Object.freeze({
         sourceFiles,
         runtimeBindings,
         privateInputIdentity: {
           actors: Object.fromEntries(ACTORS.map((actor) => [actor, sessions[actor].privateInputIdentity])),
+          contention_sessions: contentionSessions.map((session) => session.privateInputIdentity),
           fixture_identity_sha256: sha256Value({ actor_ids: actorIds, site_slug: EDITABLE_SITE }),
         },
         plan: {
@@ -533,11 +592,12 @@ export function createOpen43MembershipJoinCandidateCaseSet({
           page_slugs: slugs,
           join_source_sha256: sha256Text(JOIN_SOURCE),
           content_source_sha256: sha256Text(CONTENT_SOURCE),
+          contention: { ...CONTENTION_PLAN },
           candidate_observation_scope: "public Deepwell preview, actor page views, binding denials, membership transitions, member read, ordinary page creation, and cleanup",
         },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
-        verifyCase,
+        verifyCase: (caseId, observations) => execution.verifyCase(caseId, observations),
         verifyCleanup,
       });
     },
