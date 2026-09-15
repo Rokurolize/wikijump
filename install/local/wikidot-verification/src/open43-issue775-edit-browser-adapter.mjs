@@ -15,12 +15,18 @@ async function publicState(page) {
     try {
       return await page.evaluate((selector) => {
         const active = document.activeElement;
+        const dialog = document.querySelector("#odialog-container");
         return {
           url: location.href,
           path: location.pathname,
           edit_route: location.pathname.endsWith("/edit"),
           standalone_edit_count: document.querySelectorAll(selector).length,
           editor_count: document.querySelectorAll("#editor").length,
+          dialog_visible: dialog !== null && (() => {
+            const style = getComputedStyle(dialog);
+            return style.display !== "none" && style.visibility !== "hidden" && (dialog.offsetWidth || dialog.offsetHeight || dialog.getClientRects().length) > 0;
+          })(),
+          loading: document.body?.classList.contains("wait") || document.body?.classList.contains("loading") || false,
           source_disclosure: location.pathname.endsWith("/source") || document.body?.innerText.includes("[[button edit") === true,
           active_element: active?.id || active?.getAttribute("class") || active?.localName || "",
         };
@@ -70,7 +76,10 @@ export class Open43Issue775EditBrowserAdapter {
   }
 
   async #permissionResponse(page, pagePath) {
-    return await page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/editPermission") && new URL(response.url()).pathname === pagePath, { timeout: TIMEOUT_MS });
+    return await page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return response.request().method() === "POST" && url.origin === this.#pageOrigin && url.search === "?/editPermission" && url.pathname === pagePath;
+    }, { timeout: TIMEOUT_MS });
   }
 
   async #activate(page, pagePath, mode, editable) {
@@ -84,17 +93,19 @@ export class Open43Issue775EditBrowserAdapter {
     };
     page.on("response", onResponse);
     try {
-      const response = this.#permissionResponse(page, pagePath);
+      const responseCount = mode === "double" ? 2 : 1;
+      const responses = Array.from({length: responseCount}, () => this.#permissionResponse(page, pagePath));
       if (mode === "click") await control.click();
       else if (mode === "keyboard") await control.press("Enter");
       else await Promise.allSettled([control.click(), control.click()]);
-      await response;
+      await Promise.all(responses);
       if (editable) {
         await page.waitForURL(new URL(`${pagePath}/edit`, this.#pageOrigin).href, { timeout: TIMEOUT_MS });
         await page.locator("#editor").waitFor({ state: "visible", timeout: TIMEOUT_MS });
       } else {
         await page.locator("#odialog-container").waitFor({ state: "visible", timeout: TIMEOUT_MS });
       }
+      if (permissionResponseCount !== responseCount) throw new Error(`issue 775 ${mode} activation observed ${permissionResponseCount} permission responses, expected ${responseCount}`);
       return { focused_control: focusedControl, permission_response_count: permissionResponseCount, state: await publicState(page) };
     } finally {
       page.off("response", onResponse);

@@ -87,11 +87,11 @@ function capture(pageUrl, index) {
   return { navigation_status: 200, final_url: pageUrl, first_paint: { document: {}, screenshot: first }, document: {}, settled_viewport_screenshot: settled };
 }
 
-function state(pathname, { editable = false, standalone = 1 } = {}) {
-  return { url: `${PAGE_ORIGIN}${pathname}`, path: pathname, edit_route: editable, standalone_edit_count: standalone, editor_count: editable ? 1 : 0, source_disclosure: false, active_element: editable ? "body" : "a" };
+function state(pathname, { editable = false, standalone = 1, dialog = false } = {}) {
+  return { url: `${PAGE_ORIGIN}${pathname}`, path: pathname, edit_route: editable, standalone_edit_count: standalone, editor_count: editable ? 1 : 0, dialog_visible: dialog, loading: false, source_disclosure: false, active_element: editable ? "body" : "a" };
 }
 
-function fakeBrowserAdapter({ bad = false } = {}) {
+function fakeBrowserAdapter({ bad = false, badDouble = false, badUrl = false } = {}) {
   return {
     async run({ pageUrl, pagePath, permissions }) {
       return [
@@ -101,14 +101,15 @@ function fakeBrowserAdapter({ bad = false } = {}) {
       ].map(([actor, editable], index) => {
         const allowed = permissions[actor];
         const finalPath = allowed ? `${pagePath}/edit` : pagePath;
-        const actionState = state(finalPath, { editable: allowed });
+        const actionState = state(finalPath, { editable: allowed, dialog: !allowed });
         if (bad && actor === "editable_member") actionState.path = pagePath;
+        if (badUrl && actor === "editable_member") actionState.url += "?unexpected=1";
         return {
           actor,
           initial: { capture: capture(pageUrl, index), state: state(pagePath) },
           click: { focused_control: true, permission_response_count: 1, state: actionState },
-          keyboard: { focused_control: true, permission_response_count: 1, state: state(finalPath, { editable: allowed }) },
-          double_activation: { permission_response_count: 1, state: state(finalPath, { editable: allowed }) },
+          keyboard: { focused_control: true, permission_response_count: 1, state: state(finalPath, { editable: allowed, dialog: !allowed }) },
+          double_activation: { permission_response_count: badDouble ? 1 : 2, state: state(finalPath, { editable: allowed, dialog: !allowed }) },
           back_forward: {
             back: state(allowed ? pagePath : "/", { standalone: allowed ? 1 : 0 }),
             forward: state(finalPath, { editable: allowed }),
@@ -119,11 +120,11 @@ function fakeBrowserAdapter({ bad = false } = {}) {
   };
 }
 
-async function runFixture(t, { bad = false } = {}) {
+async function runFixture(t, { bad = false, badDouble = false, badUrl = false } = {}) {
   const state = { page: null };
   const caseSet = createOpen43Issue775EditCandidateCaseSet({
     sessionFactory: () => fakeSession(state),
-    browserAdapterFactory: () => fakeBrowserAdapter({ bad }),
+    browserAdapterFactory: () => fakeBrowserAdapter({ bad, badDouble, badUrl }),
   });
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "issue775-candidate-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
@@ -164,4 +165,12 @@ test("issue 775 executes through the shared runner and cleans its run-owned page
 
 test("issue 775 candidate verification fails closed on a route mismatch", async (t) => {
   await assert.rejects(runFixture(t, { bad: true }), /unexpected public state/u);
+});
+
+test("issue 775 candidate verification fails closed when double activation loses a live request", async (t) => {
+  await assert.rejects(runFixture(t, { badDouble: true }), /two live permission activations/u);
+});
+
+test("issue 775 candidate verification fails closed on an exact URL mismatch", async (t) => {
+  await assert.rejects(runFixture(t, { badUrl: true }), /exact candidate URL/u);
 });

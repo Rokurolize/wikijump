@@ -29,13 +29,24 @@ function requireCapture(value, plan, label) {
   return capture;
 }
 
-function requireState(value, expectedPath, editable, label, standaloneCount = 1, expectedOrigin = null) {
+function requireState(value, expectedPath, editable, label, standaloneCount = 1, expectedOrigin = null, expectedDialog = null) {
   const state = requirePlainObject(value, `${label} state`);
-  if (expectedOrigin !== null && new URL(state.url).origin !== expectedOrigin) throw new Error(`${label} left the sealed candidate origin`);
+  if (expectedOrigin !== null) {
+    const expectedUrl = new URL(expectedPath, expectedOrigin).href;
+    let actualUrl;
+    try {
+      actualUrl = new URL(state.url).href;
+    } catch {
+      throw new Error(`${label} did not report a valid candidate URL`);
+    }
+    if (actualUrl !== expectedUrl) throw new Error(`${label} left the exact candidate URL`);
+  }
   if (
     state.path !== expectedPath ||
     state.standalone_edit_count !== standaloneCount ||
     state.editor_count !== (editable ? 1 : 0) ||
+    (expectedDialog !== null && state.dialog_visible !== expectedDialog) ||
+    state.loading !== false ||
     state.edit_route !== editable ||
     state.source_disclosure !== false ||
     typeof state.active_element !== "string"
@@ -46,14 +57,14 @@ function requireState(value, expectedPath, editable, label, standaloneCount = 1,
 function requireAction(value, expectedPath, editable, label, expectedOrigin) {
   const action = requirePlainObject(value, label);
   if (action.focused_control !== true || action.permission_response_count !== 1) throw new Error(`${label} did not exercise one focused permission-bound activation`);
-  requireState(action.state, expectedPath, editable, label, 1, expectedOrigin);
+  requireState(action.state, expectedPath, editable, label, 1, expectedOrigin, !editable);
   return action;
 }
 
 function requireHistory(value, pagePath, editable, label, expectedOrigin) {
   const history = requirePlainObject(value, label);
-  requireState(history.back, editable ? pagePath : "/", false, `${label} back`, editable ? 1 : 0, expectedOrigin);
-  requireState(history.forward, editable ? `${pagePath}/edit` : pagePath, editable, `${label} forward`, 1, expectedOrigin);
+  requireState(history.back, editable ? pagePath : "/", false, `${label} back`, editable ? 1 : 0, expectedOrigin, false);
+  requireState(history.forward, editable ? `${pagePath}/edit` : pagePath, editable, `${label} forward`, 1, expectedOrigin, false);
   return history;
 }
 
@@ -75,7 +86,7 @@ export function verifyOpen43Issue775Case(caseId, observations, plan) {
     requireAction(row.click, editable ? `${plan.page_path}/edit` : plan.page_path, editable, `${caseId} ${actor} click`, expectedOrigin);
     requireAction(row.keyboard, editable ? `${plan.page_path}/edit` : plan.page_path, editable, `${caseId} ${actor} keyboard`, expectedOrigin);
     const double = requirePlainObject(row.double_activation, `${caseId} ${actor} double activation`);
-    if (double.permission_response_count !== 1) throw new Error(`${caseId} ${actor} double activation was not suppressed`);
+    if (double.permission_response_count !== 2) throw new Error(`${caseId} ${actor} double activation did not reproduce the two live permission activations`);
     requireState(double.state, editable ? `${plan.page_path}/edit` : plan.page_path, editable, `${caseId} ${actor} double activation`, 1, expectedOrigin);
     requireHistory(row.back_forward, plan.page_path, editable, `${caseId} ${actor} back-forward`, expectedOrigin);
   }
