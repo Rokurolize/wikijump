@@ -234,6 +234,15 @@
             "framerail/tests/wikidot-legacy-actions.test.js::sidecar binding preserves exact DOM and fails closed on a count mismatch"
           ],
           "result": "The closed switch invokes navigateEdit and neither reads nor executes authored script or URLs."
+        },
+        {
+          "case_id": "A775_EXACT_LIVE_TEMPORAL_EDIT",
+          "acceptance": "Match every visible Wikidot loading, denial, focus restoration, and history interval.",
+          "owner": "live-evidence",
+          "evidence": [
+            "install/local/wikidot-verification/artifacts/open43-a775-exact-live-temporal-edit-20260915/evidence.json"
+          ],
+          "result": "A task-owned Chrome capture now records anonymous denial, authenticated editor transition, focus, click and keyboard activation, rapid/repeated activation, and browser history/back behavior with browser identity and cleanup retained."
         }
       ],
       "needs_source": [],
@@ -245,14 +254,7 @@
           "result": "Requires the exact candidate session, route permission, editor lazy-load, focus, double activation, and back-forward intervals."
         }
       ],
-      "blocked_evidence": [
-        {
-          "case_id": "A775_EXACT_LIVE_TEMPORAL_EDIT",
-          "acceptance": "Match every visible Wikidot loading, denial, focus restoration, and history interval.",
-          "owner": "live-evidence",
-          "result": "The frozen matrix proves syntax and settled DOM, but contains no complete actor-differential browser timeline. Do not invent a Wikidot transition contract."
-        }
-      ],
+      "blocked_evidence": [],
       "exact_commands": [
         "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --lib services::render::legacy_actions::tests -- --nocapture",
         "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars -- --exact --nocapture",
@@ -282,6 +284,15 @@
             "framerail/src/routes/[slug]/[...extra]/page.svelte::legacyActionRuntime.print"
           ],
           "result": "The typed dispatch maps print directly to window.print and shares the per-control busy boundary."
+        },
+        {
+          "case_id": "A777_EXACT_LIVE_PRINT_TRANSITIONS",
+          "acceptance": "Match Wikidot-specific print focus and dialog-adjacent lifecycle.",
+          "owner": "live-evidence",
+          "evidence": [
+            "install/local/wikidot-verification/artifacts/open43-issue777-exact-live-print-transitions-20260915/capture.json"
+          ],
+          "result": "A task-owned Chrome capture now records click, Enter, Space, rapid and sequential repeated activation, focus/history state, and instrumented window.print invocation without automating or inferring native-dialog internals; the browser profile cleanup is retained separately."
         }
       ],
       "needs_source": [],
@@ -293,14 +304,7 @@
           "result": "Requires a print spy in the exact production candidate and inspection of every visible interval."
         }
       ],
-      "blocked_evidence": [
-        {
-          "case_id": "A777_EXACT_LIVE_PRINT_TRANSITIONS",
-          "acceptance": "Match Wikidot-specific print focus and dialog-adjacent lifecycle.",
-          "owner": "live-evidence",
-          "result": "The frozen references prove syntax and settled control DOM, not browser-dialog timing. No browser-specific quirk is inferred."
-        }
-      ],
+      "blocked_evidence": [],
       "exact_commands": [
         "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --lib services::render::legacy_actions::tests -- --nocapture",
         "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs --test page wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars -- --exact --nocapture",
@@ -644,6 +648,40 @@
             "framerail/tests/ajax-module-connector-manage-site-general.test.js::ManageSiteGeneral accepts the exact parameter-free administrator read"
           ],
           "result": "Administrator PagePreview and saved page_view render the captured initial ManageSite shell and PetitionAdmin no-campaign shell. The parameter-free ManageSiteGeneral AMC read authorizes through the existing Framerail admin view and renders the captured settings form from the local site preload. No remote mutation transport is added; PetitionAdmin actions remain blocked separately."
+        },
+        {
+          "case_id": "A1038_OTHER_AUTHENTICATED_UTILITY_STATES",
+          "owner": "owner-ruling-fail-closed",
+          "evidence_ids": ["E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810"],
+          "result": "Owner ruling 2026-09-15 treats the captured Dashboard denial and Clone missing-site responses as terminal campaign evidence. No positive Dashboard or Clone fixture is funded in this campaign; any unobserved positive state remains fail closed without claiming that such a state cannot exist."
+        },
+        {
+          "case_id": "A1038_CLONE_ACTION",
+          "owner": "owner-ruling-fail-closed",
+          "evidence": [
+            "install/local/wikidot-verification/artifacts/open43-a1038-clone-action-live.json",
+            "install/local/wikidot-verification/tests/open43-a1038-clone-action-evidence.test.mjs"
+          ],
+          "result": "The retained Clone action preflight has no reversible disposable source/destination authority and attempted no mutation. Combined with the 2026-09-15 owner ruling that no positive Clone fixture is funded, the campaign keeps the action unavailable rather than inventing a mutation contract."
+        },
+        {
+          "case_id": "A1038_SITEGRID_POPULATED",
+          "owner": "owner-ruling-fail-closed",
+          "evidence": [
+            "install/local/wikidot-verification/artifacts/open43-a1038-sitegrid-populated-live-v2.json",
+            "install/local/wikidot-verification/tests/open43-a1038-sitegrid-populated-evidence-v2.test.mjs"
+          ],
+          "result": "Owner ruling 2026-09-15 explicitly declines a new populated/private SiteGrid evidence lane for this campaign. The retained bounded read-only probe does not establish a general populated/private contract, so populated SiteGrid remains fail closed; later full parity requires separate funding or reopening."
+        },
+        {
+          "case_id": "A1038_THEMEPREVIEWER_ACTIVE",
+          "owner": "deepwell-framerail-owner-ruling",
+          "evidence": [
+            "install/local/wikidot-verification/artifacts/open43-a1038-themepreviewer-active-live.json",
+            "framerail/tests/site-settings-foundation.test.js::requires the source-owned ThemePreviewer noUi sidecar",
+            "framerail/tests/site-settings-public-boundary.test.js::server-renders analytics, theme, and toolbar settings from the request view"
+          ],
+          "result": "Owner ruling 2026-09-15 defines ThemePreviewer as browser-direct stylesheet application with the existing stored-theme HTTPS host allowlist and CSP, never a server fetch proxy. Deepwell exposes a sidecar only for the exact non-literal noUi=\"true\" form; Framerail admits theme_url through the same closed policy and emits one browser stylesheet link. Exact application timing and browser failure intervals remain candidate/browser proof rather than source invention."
         }
       ],
       "needs_source": [],
@@ -655,15 +693,6 @@
           "observed": "The administrator receives an active petition campaign shell while authenticated non-admins receive an exact permission error.",
           "missing": "Campaign persistence, identifier collisions, CSRF, rate limits, export privacy, mutation atomicity, replay, and browser transitions are not established."
         },
-        {
-          "case_id": "A1038_OTHER_AUTHENTICATED_UTILITY_STATES",
-          "evidence_ids": ["E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810"],
-          "observed": "Dashboard returned Not allowed and Clone returned Site cannot be found for all three captured actors.",
-          "missing": "No positive Dashboard or Clone actor state is available, so this slice does not infer one."
-        },
-        {"case_id": "A1038_CLONE_ACTION"},
-        {"case_id": "A1038_SITEGRID_POPULATED"},
-        {"case_id": "A1038_THEMEPREVIEWER_ACTIVE"},
         {"case_id": "A1038_BROWSER_LIFECYCLE"}
       ],
       "exact_commands": [

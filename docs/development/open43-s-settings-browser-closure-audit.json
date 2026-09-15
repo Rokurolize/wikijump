@@ -34,7 +34,7 @@
     "referent_table_path": "docs/development/referent-table-open43-s-settings-source-residual-g5.md",
     "referent_table_sha256": "1783c9398f029816b1be878c7a92c19a6d0b2caff60c78bbe12a55025a92cb6d",
     "seam_map_path": "docs/development/open43-s-settings-source-residual-seam-map.md",
-    "seam_map_sha256": "6a44489cee79ac93181e34b02ebc3f622bc52828de4cabdd47fc90b71d55d3b9",
+    "seam_map_sha256": "82fcabad17dba9affeae22f8bd3efea2c2cc5a4d0f2c9e4ede5c03c6e0c153b8",
     "cargo_executed": false,
     "standing_is_acceptance_evidence": false
   },
@@ -570,14 +570,12 @@
         },
         {
           "case_id": "S754_IMPORT_EXPORT_REPRESENTATION",
-          "acceptance": "Round-trip analytics enabled/profile state with the same site identity through the repository's import and export representation.",
-          "classification": "blocked_evidence",
-          "reason": "The repository has no site export producer or restore format. ImportSite is a Deserialize-only initial Wikidot corpus input and the seeder is initial fixture configuration; neither can prove a round trip. The frozen backup specification covers page source and attached files only and does not define a settings schema, same-site identity, cross-site non-copy, or restore conflict policy. Extending either existing input would invent an export contract.",
-          "source_paths": ["deepwell/src/services/import/structs.rs", "deepwell/src/services/import/service.rs", "deepwell/src/database/seeder/data.rs", "deepwell/src/database/seeder/mod.rs", "docs/wikidot-specifications/specifications/platform/site-backups.md"],
-          "existing_tests": [],
+          "acceptance": "Keep site backup import/export representation scoped to the evidenced page-source and page-attachment content model; analytics enabled/profile state is not part of that representation.",
+          "classification": "source_ready",
+          "reason": "Owner ruling 2026-09-15 narrows this row to the evidenced backup domain. writeSiteContentBackup emits deterministic page source and attachment bytes and buildSourceBundleImportManifest consumes that representation. Analytics/profile state, site identity transfer, and settings restore semantics are intentionally outside this acceptance rather than missing authority.",
+          "source_paths": ["install/local/wikidot-verification/src/site-content-backup.mjs", "install/local/wikidot-verification/src/corpus-import-manifest.mjs", "docs/development/open43-s-settings-source-residual-seam-map.md", "docs/wikidot-specifications/specifications/platform/site-backups.md"],
+          "existing_tests": ["install/local/wikidot-verification/tests/site-content-backup.test.mjs", "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs"],
           "evidence_ids": ["E_ANALYTICS_PANEL"],
-          "blocker_kind": "missing_export_contract",
-          "missing_evidence": ["canonical settings export schema", "same-site identity rule", "cross-site non-copy rule", "restore conflict and revision policy"],
           "next_command_ids": []
         },
         {
@@ -695,14 +693,13 @@
         },
         {
           "case_id": "S755_EXTERNAL_RESOURCE_FAILURE_POLICY",
-          "acceptance": "Define redirect, timeout, private-host, size, MIME, cache, and failure presentation for an external theme URL.",
-          "classification": "blocked_evidence",
-          "reason": "The live evidence proves an exact URL field but not fetch completion or failure policy. Browser-direct HTTPS emission is fail closed at the stored type boundary; no proxy or silent old-theme reuse is inferred.",
-          "source_paths": ["deepwell/src/services/settings/structs.rs", "framerail/src/lib/site-settings.js"],
-          "existing_tests": [],
+          "acceptance": "Use browser-direct external-theme loading with a closed HTTPS host/scheme admission policy and CSP; redirects, timeout, MIME, and transfer-size failure stay browser-owned, and Wikijump must not proxy or silently reuse the previous theme.",
+          "classification": "source_ready",
+          "reason": "Owner ruling 2026-09-15 assigns network completion failures to the browser and forbids a server fetch proxy. Framerail accepts only the explicit HTTPS host set or *.wdfiles.com with no credentials or port, emits one stylesheet link directly, carries the same origins in style-src, installs no load/error fallback, and an invalid next theme normalizes to Base instead of the previous external URL.",
+          "source_paths": ["deepwell/src/services/settings/structs.rs", "framerail/src/lib/site-settings.js", "framerail/src/routes/+layout.svelte", "framerail/svelte.config.js"],
+          "existing_tests": ["framerail/tests/external-integration-policy.test.js::external theme resources use browser-direct failure ownership", "framerail/tests/site-settings-foundation.test.js::normalizes ThemePreviewer URLs with the stored-theme policy", "framerail/tests/wikidot-csp-config.test.js::allows captured Wikidot legacy asset origins in local CSP"],
           "evidence_ids": ["E_THEME_PANEL", "E_THEME_SCOPE"],
-          "missing_evidence": ["redirect and host policy", "timeout/size/MIME", "visible failure state and cache reuse rule"],
-          "next_command_ids": []
+          "next_command_ids": ["C_NODE_SETTINGS"]
         }
       ]
     },
@@ -990,14 +987,12 @@
         },
         {
           "case_id": "S1046_IMPORT_EXPORT_REPRESENTATION",
-          "acceptance": "Round-trip welcome_page and the settings revision with the same site identity through import and export representation.",
-          "classification": "blocked_evidence",
-          "reason": "The repository has no site export producer, canonical settings representation, or restore consumer. Existing public settings tests prove persistence and stale revision rejection, not export or restore. No frozen or live evidence defines whether settings_revision is preserved, regenerated, or conflict-checked during restore, so adding welcome_page to the seeder or corpus importer would invent the required policy.",
-          "source_paths": ["deepwell/src/services/import/structs.rs", "deepwell/src/services/import/service.rs", "deepwell/src/database/seeder/data.rs", "deepwell/src/database/seeder/mod.rs", "docs/wikidot-specifications/specifications/platform/site-backups.md"],
-          "existing_tests": [],
+          "acceptance": "Keep site backup import/export representation scoped to the evidenced page-source and page-attachment content model; welcome_page, settings_revision, and other Wiki Settings state are not represented.",
+          "classification": "source_ready",
+          "reason": "Owner ruling 2026-09-15 narrows this row to pages plus attachments. The deterministic backup producer and source-bundle consumer implement that domain. welcome_page and settings_revision remain governed by the settings persistence rows and are deliberately not given invented backup/restore semantics.",
+          "source_paths": ["install/local/wikidot-verification/src/site-content-backup.mjs", "install/local/wikidot-verification/src/corpus-import-manifest.mjs", "docs/development/open43-s-settings-source-residual-seam-map.md", "docs/wikidot-specifications/specifications/platform/site-backups.md"],
+          "existing_tests": ["install/local/wikidot-verification/tests/site-content-backup.test.mjs", "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs"],
           "evidence_ids": ["E_GENERAL_PANEL"],
-          "blocker_kind": "missing_export_contract",
-          "missing_evidence": ["canonical settings export schema", "same-site identity rule", "welcome_page restore behavior", "settings revision restore policy"],
           "next_command_ids": []
         },
         {
@@ -1252,10 +1247,10 @@
     "subrow_count": 60,
     "issue_owned_needs_source_count": 0,
     "classification_counts": {
-      "source_ready": 27,
+      "source_ready": 30,
       "needs_source": 0,
       "candidate_required": 25,
-      "blocked_evidence": 8
+      "blocked_evidence": 5
     },
     "duplicate_case_ids": 0,
     "unknown_classifications": 0,

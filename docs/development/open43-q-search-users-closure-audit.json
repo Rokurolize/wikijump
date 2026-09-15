@@ -233,6 +233,15 @@
             "deepwell/tests/list_pages.rs#listpages_default_rows_expand_secondary_page_body_modules"
           ],
           "result": "The runtime uses the established unavailable-module output and rejects a fabricated local card, external HTTP thumbnail, inline script, or captured site identity."
+        },
+        {
+          "case_id": "Q810_ACTIVE_GLOBAL_ROTATION",
+          "status": "owner_fail_closed",
+          "public_tests": [
+            "deepwell/tests/page.rs#featuredsite_fails_closed_without_a_local_featured_site_authority",
+            "install/local/wikidot-verification/tests/open43-q810-featuredsite-global-rotation-evidence-v2.test.mjs"
+          ],
+          "result": "Owner ruling 2026-09-15 keeps FeaturedSite intentionally fail closed because the retained live probes establish no controllable global rotation authority. The campaign must not synthesize a local pool, hard-code a captured card, or fetch Wikidot during rendering."
         }
       ],
       "needs_source": [],
@@ -242,14 +251,8 @@
           "requires": "Verify PagePreview, saved page, and nested generated rendering on the exact candidate, with no Wikidot fetch, remote script, mixed-content thumbnail, or local-site substitution request."
         }
       ],
-      "blocked_evidence": [
-        {
-          "case_id": "Q810_ACTIVE_GLOBAL_ROTATION",
-          "missing": "No deterministic local FeaturedSite authority, authorized global data source, refresh policy, safe thumbnail descriptor, or interaction contract exists.",
-          "forbidden_inference": "Do not hard-code the captured remote card, select an arbitrary local site, fetch Wikidot during rendering, or execute authored remote JavaScript."
-        }
-      ],
-      "closure_verdict": "candidate_and_authority_required"
+      "blocked_evidence": [],
+      "closure_verdict": "candidate_required"
     },
     {
       "issue": 1026,
@@ -369,9 +372,9 @@
       "blocked_evidence": [
         {
           "case_id": "Q1032_REMAINING_DIRECTORY_RUNTIME",
-          "evidence_ids": ["OPEN43_READONLY_LIVE_20260810", "E_OPEN43_USERINFO_EXISTENCE_20260810", "MEMBERS_LIST_AMC_20260810"],
-          "observed": "Anonymous Members pages 0 through 3, their 100-row paging and envelope contract, two populated and two missing UserInfo routes, and sandbox A/B/C empty Members page controls are sealed. The matching Members Ajax source slice exists but still awaits central candidate execution.",
-          "missing": "Populated Watchers and WhoInvited results, full role/privacy actor matrices, and rename/delete/import invalidation remain unevidenced or unmodeled.",
+          "evidence_ids": ["OPEN43_READONLY_LIVE_20260810", "E_OPEN43_USERINFO_EXISTENCE_20260810", "MEMBERS_LIST_AMC_20260810", "Q1032_AUTHENTICATED_READONLY_LIVE_20260915"],
+          "observed": "The retained read-only set now includes populated Watchers output, populated WhoInvited output, and a bounded anonymous/administrator/member/moderator actor matrix in addition to the prior Members and UserInfo observations. No mutation or private credential material was retained.",
+          "missing": "A general privacy rule plus rename, delete, and import invalidation remain unobserved and unmodeled.",
           "forbidden_inference": "Do not treat the blocked SCP page 1467 and 1468 captures as response-body authority, broaden the observed empty group and joined order into other groups or orders, expose deleted identities, or filter permissions after counts or pagination."
         }
       ],

@@ -391,15 +391,24 @@
           ],
           "result": "Public preview, saved page_view, and the read-only forum RPC cover empty and populated output, exact post DOM, routes, compiled content, newest-first order, and the observed first Ajax page. Hidden groups and private page discussions are removed before ordering and limits; unobserved later Ajax pages fail closed."
         },
-        {
-          "case_id": "Q1034_UNSUPPORTED_FORUM_AJAX_FAILS_CLOSED",
+    {
+      "case_id": "Q1034_UNSUPPORTED_FORUM_AJAX_FAILS_CLOSED",
           "status": "implemented_unverified",
           "public_tests": [
             "framerail/tests/ajax-module-connector.test.js#dispatches the sealed read-only forum modules with Wikidot metadata",
             "framerail/tests/ajax-module-connector.test.js#passes read-only forum missing states through and rejects unsealed shapes",
             "framerail/tests/ajax-module-connector.test.js#dispatches the sealed page comments reads without adding mutation authority"
-          ],
-          "result": "Framerail dispatches only the exact read-only forum module and scalar-parameter allowlist. Comments accepts pageId with omitted order, order=forwards, or order=reverse. Unknown fields, other order values, unsupported modules, and ForumNewThread return a stable not_ok envelope and cannot reach mutation authority."
+      ],
+      "result": "Framerail dispatches only the exact read-only forum module and scalar-parameter allowlist. Comments accepts pageId with omitted order, order=forwards, or order=reverse. Unknown fields, other order values, unsupported modules, and ForumNewThread return a stable not_ok envelope and cannot reach mutation authority."
+    },
+    {
+      "case_id": "Q1034_FORUM_MUTATION_AUTHORITY",
+      "status": "owner_read_only_boundary",
+      "public_tests": [
+        "framerail/tests/ajax-module-connector.test.js#passes read-only forum missing states through and rejects unsealed shapes",
+        "framerail/tests/ajax-module-connector.test.js#dispatches the sealed page comments reads without adding mutation authority"
+      ],
+      "result": "Owner ruling 2026-09-15 keeps the compatibility campaign's public forum surface read-only. Deepwell and Framerail therefore expose no general forum-post or standalone-thread mutation API; adding CSRF, abuse/rate-limit, idempotency, authorization, and audit policy is a separate product/security decision rather than a parity blocker."
         },
         {
           "case_id": "Q1034_RECENTTHREADS_GENERAL_READ_MODEL",
@@ -518,20 +527,16 @@
       ],
       "blocked_evidence": [
         {
-          "case_id": "Q1034_POPULATED_READ_MODEL_COVERAGE",
-          "evidence_ids": [
-            "OPEN43_READONLY_LIVE_20260810",
-            "E_OPEN43_FRONTFORUM_BOUNDARIES_20260810"
-          ],
-          "observed": "The sealed category-list, missing-category, malformed-category, and offset scalar behaviors are implemented through public preview and saved-page seams. The baseline also defines documented versus unknown custom-template variables.",
-          "missing": "FrontForum custom-template consumption, feed delivery and head metadata, effective relative-link rewriting, private visibility, deletion, and complete ForumNewThread states remain undefined or unimplemented.",
-          "forbidden_inference": "Do not consume a body-bearing typed Module::Runtime through a raw closer, recognize captured page data, or infer actor and mutation behavior from anonymous reads."
-        },
-        {
-          "case_id": "Q1034_FORUM_MUTATION_AUTHORITY",
-          "missing": "Deepwell exposes no public forum-post or standalone-thread mutation endpoint with request actor, forum permission, validation, idempotency, and rate-limit rules. Framerail does not validate wikidot_token7 for forum actions.",
-          "forbidden_inference": "Do not expose ForumPostService fixture methods, reuse anonymous page-discussion provisioning, or render a form that has no safe action."
-        },
+      "case_id": "Q1034_POPULATED_READ_MODEL_COVERAGE",
+      "evidence_ids": [
+        "OPEN43_READONLY_LIVE_20260810",
+        "E_OPEN43_FRONTFORUM_BOUNDARIES_20260810",
+        "Q1034_ANONYMOUS_BOUNDARIES_RETAINED_20260809"
+      ],
+      "observed": "The sealed read-only set now covers category-list, missing-category, malformed-category, offset, custom-template consumption, saved-page RSS head/body metadata, exact fixRelativeLinks=true/false argument recognition, and the anonymous category-scoped ForumNewThread permission-error terminal state.",
+      "missing": "Feed XML delivery, content-bearing relative-link rewriting, private visibility, deletion, and authenticated positive ForumNewThread states remain unobserved.",
+      "forbidden_inference": "Do not consume a body-bearing typed Module::Runtime through a raw closer, recognize captured page data, or infer actor and mutation behavior from anonymous reads."
+    },
         {
           "case_id": "Q1034_ROUTE_AND_AJAX_BROWSER_LIFECYCLE",
           "missing": "The HTTP and connector read-only wire contract and exact category pager DOM are implemented. Browser replacement, category changes, thread history, focus, failed requests, intermediate paint, and settled output remain unverified on the exact candidate; RecentPosts later-page Ajax behavior remains unobserved.",

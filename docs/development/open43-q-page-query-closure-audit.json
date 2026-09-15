@@ -455,13 +455,33 @@
           "implementation_commit": "b7eb2e9b769c34b90e2821b7b9e4fe7a420cd127",
           "tests": [
             "deepwell/tests/page.rs::listdrafts_module_matches_live_empty_draft_state",
-            "framerail/tests/listdrafts-route-public-boundary.test.js::the public AMC route wires ListDrafts to its empty renderer",
+            "framerail/tests/listdrafts-route-public-boundary.test.js::the public AMC route wires ListDrafts to its persisted renderer",
             "framerail/tests/site-tools-read-actions.test.js::Site Tools AMC allows only the four observed read shapes",
             "framerail/tests/site-tools-read-actions.test.js::Site Tools AMC rejects unobserved parameters before Deepwell"
           ],
-          "result": "The public preview matrix covers the observed empty wrapper and exact pageType and standalone parsing rules. The public AMC route source wires the exact ListDrafts branch to the empty renderer; the existing injected-callback and negative-shape tests remain intact. Central Rust execution remains outstanding."
+          "result": "The public preview matrix covers the observed empty wrapper and exact pageType and standalone parsing rules. The public AMC branch now reads the persisted draft model; an empty model still renders the byte-equivalent empty wrapper."
         },
-        {"case_id": "Q1035_LISTDRAFTS_NONEMPTY_QUERY", "status": "blocked_evidence"}
+        {
+          "case_id": "Q1035_LISTDRAFTS_NONEMPTY_QUERY",
+          "status": "source_ready",
+          "owner": "deepwell-framerail",
+          "source_paths": [
+            "deepwell/migrations/20260915010000_page_draft.sql",
+            "deepwell/src/services/page_draft",
+            "deepwell/src/services/render/runtime_modules.rs",
+            "framerail/src/lib/server/ajax-module-connector.js",
+            "framerail/src/routes/ajax-module-connector.php/+server.ts"
+          ],
+          "tests": [
+            "deepwell/tests/page.rs::listdrafts_module_reads_persisted_drafts_and_enforces_target_filters",
+            "framerail/tests/ajax-module-connector.test.js::dispatches the observed full-page draft synchronize and existence lifecycle",
+            "framerail/tests/ajax-module-connector.test.js::removePageEditLock preserves or discards only the observed draft identity",
+            "framerail/tests/ajax-module-connector.test.js::page draft actions fail closed outside the observed full-page request shape",
+            "framerail/tests/listdrafts-route-public-boundary.test.js::the public AMC route wires ListDrafts to its persisted renderer"
+          ],
+          "evidence_ids": ["LISTDRAFTS_MODULE_LIVE_LIFECYCLE_20260904"],
+          "result": "The persisted page-edit draft model implements the observed existing-page and not-yet-created-page lifecycle, exact pageType=\"exists\" filter, visibility checks, and the observed synchronize/checkDraftExists/removePageEditLock full-page AMC shapes. Bare pageType and unsupported values retain the evidenced omission behavior. Expiry, rename propagation, deleted-page recovery, publish cleanup, section-edit autosave, and other unobserved lifecycle semantics remain fail closed."
+        }
       ]
     },
     {

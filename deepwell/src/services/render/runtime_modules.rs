@@ -2127,7 +2127,7 @@ impl RenderService {
                 }
                 None => Vec::new(),
             };
-            output.push_str(&compat_html.push_html(render_list_drafts(&drafts)));
+            output.push_str(&compat_html.push_html(Self::render_list_drafts(&drafts)));
             cursor = matched.end();
         }
         if cursor == 0 {

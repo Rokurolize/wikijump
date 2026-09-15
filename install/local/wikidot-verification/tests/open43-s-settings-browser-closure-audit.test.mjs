@@ -178,10 +178,14 @@ test("settings and browser closure audit is complete without promoting candidate
   ]) {
     const row = rowsByCaseId.get(caseId);
     assert.ok(row);
-    assert.equal(row.classification, "blocked_evidence");
-    assert.equal(row.blocker_kind, "missing_export_contract");
+    assert.equal(row.classification, "source_ready");
+    assert.match(row.acceptance, /page-source and page-attachment/u);
     assert.deepEqual(row.next_command_ids, []);
   }
+  const externalThemeFailurePolicy = rowsByCaseId.get("S755_EXTERNAL_RESOURCE_FAILURE_POLICY");
+  assert.equal(externalThemeFailurePolicy.classification, "source_ready");
+  assert.match(externalThemeFailurePolicy.acceptance, /browser-direct/u);
+  assert.match(externalThemeFailurePolicy.acceptance, /must not proxy/u);
 
   for (const pair of audit.temporal_evidence_contract.pairs) {
     const initial = rows.find(({ case_id }) => case_id === pair.initial_case_id);
