@@ -258,7 +258,7 @@ export function verifyOpen43Q748TopBarSearchCase(caseId, rawObservations, plan) 
   }
   const initialResult = requirePlainObject(observations.initial_result, "Q748 initial result");
   requireSha256(initialResult.content_sha256, "Q748 initial result sha");
-  if (initialResult.error_boundary_present !== false) throw new Error("Q748 initial fixture page unexpectedly rendered a result boundary");
+  if (initialResult.error_boundary_present !== true) throw new Error("Q748 initial fixture page omitted the sealed live unavailable boundary");
   verifyForm(observations.initial_form, "initial form");
   verifyDiscipline(observations, "submission");
   if (caseId === "Q748_LIVE_TOPBAR_SUBMISSION_CONTRACT") {

@@ -141,6 +141,7 @@ function fakeBrowserOwner() {
     },
     async goto(url) {
       currentUrl = url;
+      content = SEARCH_ERROR;
       fire("request");
       fire("framenavigated");
       return { status: () => 200 };
@@ -330,7 +331,7 @@ test("Q748 verification rejects trimmed whitespace, dummy navigation, and missin
   const base = {
     saved_page: { slug: "search:site", url: BASE_URL, status: 200 },
     initial_form: { ...FORM_MODEL },
-    initial_result: { content_sha256: REAL_SHA256.content_d, error_boundary_present: false },
+    initial_result: { content_sha256: REAL_SHA256.content_d, error_boundary_present: true },
     result_identity: {
       case_id: "Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION",
       saved_page_slug: "search:site",
