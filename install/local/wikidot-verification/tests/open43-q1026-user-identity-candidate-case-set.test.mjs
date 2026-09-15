@@ -192,6 +192,11 @@ test("#1026 candidate case runs preview and saved identity controls through the 
   assert.equal(printuser.settled.avatarhover_count, 1);
   assert.equal(actors.verified, true);
   assert.equal(actors.actor_count, 4);
+  assert.equal(JSON.stringify(rows[2].observations).includes(privateInput.actors.editor.session_token), false);
+  for (const [actor, surface] of Object.entries(rows[2].observations.actor_surfaces)) {
+    assert.deepEqual(surface.request_events.map(({ method }) => method), ["wikidot_page_preview", "page_view"]);
+    assert.deepEqual(surface.request_events.map(({ actor: requestActor }) => requestActor), [actor === "anonymous" ? "anonymous" : "authenticated", actor === "anonymous" ? "anonymous" : "authenticated"]);
+  }
   assert.deepEqual(browser.events.slice(0, 2), ["fixture:Q1026_PRINTUSER_INTERVALS", "context"]);
   assert.deepEqual(requests.map(({ payload }) => payload.method), ["page_get", "wikidot_page_preview", "page_view", "wikidot_page_preview", "page_view", "wikidot_page_preview", "page_view", "wikidot_page_preview", "page_view"]);
   assert.equal(requests[1].payload.params.wikitext, source);
@@ -208,6 +213,13 @@ test("#1026 candidate case runs preview and saved identity controls through the 
       initial: leaked,
     }),
     /leaked a link or avatar authority/u,
+  );
+
+  const wrongCredential = structuredClone(rows[2].observations);
+  wrongCredential.actor_surfaces.editor.request_events[0].session_token_sha256 = "0".repeat(64);
+  assert.throws(
+    () => run.verifyCase("Q1026_ACTOR_SPECIAL_IDENTITY_MATRIX", wrongCredential),
+    /credential identity changed/u,
   );
 });
 

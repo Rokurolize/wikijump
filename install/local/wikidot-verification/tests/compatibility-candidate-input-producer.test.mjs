@@ -4,7 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, Q778_WIKIDOT_AUTHOR, S758_AUTONUMBER_CANDIDATE_PRECONDITION, b689BasaltUserFixtures, b689Scp8980CandidateFixtures, b689Scp8980UserFixtures, bindS758AutonumberFixture, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs, validateS758AutonumberCandidateCategory } from "../src/compatibility-candidate-input-producer.mjs";
+import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, Q778_WIKIDOT_AUTHOR, S758_AUTONUMBER_CANDIDATE_PRECONDITION, b689BasaltUserFixtures, b689Scp8980CandidateFixtures, b689Scp8980UserFixtures, bindS758AutonumberFixture, buildQ1026InsertOnlyUserSeedSql, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs, validateS758AutonumberCandidateCategory } from "../src/compatibility-candidate-input-producer.mjs";
 
 test("compatibility candidate input producer requires distinct identity-bound paths", () => {
   assert.equal(COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, "wikijump.compatibility_candidate_input_receipt.v1");
@@ -138,4 +138,14 @@ test("compatibility candidate input producer owns a dedicated Wikidot Q778 autho
     name: "Q778 Wikidot Author",
     slug: "q778-wikidot-author",
   });
+});
+
+test("Q1026 candidate user seeding is insert-only and rejects identity-shape drift", () => {
+  const sql = buildQ1026InsertOnlyUserSeedSql();
+  assert.match(sql, /^begin;[\s\S]*insert into known_user[\s\S]*on conflict do nothing;[\s\S]*insert into wikidot_user[\s\S]*; select setval/u);
+  assert.doesNotMatch(sql, /on conflict \(user_id\) do update/u);
+  assert.throws(() => buildQ1026InsertOnlyUserSeedSql([
+    { user_id: 1, name: "duplicate", slug: "duplicate", is_deleted: false },
+    ...Array.from({ length: 8 }, (_, index) => ({ user_id: index === 0 ? 1 : index + 1, name: `user-${index}`, slug: `user-${index}`, is_deleted: false })),
+  ]), /identity is invalid/u);
 });

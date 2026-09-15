@@ -383,6 +383,18 @@ function sqlLiteral(value) {
   return `'${String(value).replaceAll("'", "''")}'`;
 }
 
+export function buildQ1026InsertOnlyUserSeedSql(users = Object.values(Q1026_USER_FIXTURES)) {
+  if (!Array.isArray(users) || users.length !== Object.keys(Q1026_USER_FIXTURES).length) throw new Error("Q1026 user seed denominator changed");
+  const ids = new Set();
+  for (const user of users) {
+    if (!user || !Number.isSafeInteger(user.user_id) || ids.has(user.user_id) || typeof user.name !== "string" || !user.name || typeof user.slug !== "string" || !user.slug || typeof user.is_deleted !== "boolean") throw new Error("Q1026 user seed identity is invalid");
+    ids.add(user.user_id);
+  }
+  const knownRows = users.map(({ user_id }) => `(${user_id})`).join(",");
+  const wikidotRows = users.map(({ user_id, name, slug, is_deleted }) => `(${user_id},now()-interval '1 second',now(),${is_deleted ? "true" : "false"},${sqlLiteral(name)},${sqlLiteral(slug)},0,false)`).join(",");
+  return `begin; insert into known_user(user_id) values ${knownRows} on conflict do nothing; insert into wikidot_user(user_id,created_at,fetched_at,is_deleted,name,slug,karma,is_pro) values ${wikidotRows}; select setval('known_user_user_id_seq',(select max(user_id) from known_user),true); commit;`;
+}
+
 async function copyPrivateTemplates(templateRoot, outputRoot, bindings) {
   await fs.mkdir(outputRoot, { recursive: false, mode: 0o700 });
   const files = (await fs.readdir(templateRoot))
@@ -704,11 +716,12 @@ export async function prepareCompatibilityCandidateInputs(args) {
     const q1036 = await page("q1036-saved-boundary", "Q1036 saved boundary", Q1036_SAVED_SOURCE);
     Object.assign(general, { saved_page_id: q1036.page_id, saved_revision_id: q1036.revision_id, saved_page_slug: q1036.slug });
 
-    const q1026Users = Object.values(Q1026_USER_FIXTURES);
-    const q1026KnownRows = q1026Users.map(({ user_id }) => `(${user_id})`).join(",");
-    const q1026WikidotRows = q1026Users.map(({ user_id, name, slug, is_deleted }) => `(${user_id},now()-interval '1 second',now(),${is_deleted ? "true" : "false"},$x$${name}$x$,$x$${slug}$x$,0,false)`).join(",");
-    sql(database, `insert into known_user(user_id) values ${q1026KnownRows} on conflict do nothing; insert into wikidot_user(user_id,created_at,fetched_at,is_deleted,name,slug,karma,is_pro) values ${q1026WikidotRows} on conflict (user_id) do update set is_deleted=excluded.is_deleted,name=excluded.name,slug=excluded.slug,fetched_at=excluded.fetched_at;`);
-    sql(database, `select setval('known_user_user_id_seq',(select max(user_id) from known_user),true);`);
+    // This fixture is an insert-only import. A same-ID row is an authoritative
+    // identity collision, not permission to guess a rename/delete refresh.
+    const q1026UserIds = Object.values(Q1026_USER_FIXTURES).map(({ user_id }) => user_id).join(",");
+    const q1026Existing = sql(database, `select user_id from wikidot_user where user_id in (${q1026UserIds}) order by user_id;`);
+    if (q1026Existing !== "") throw new Error("Q1026 insert-only user seed found an existing same-ID identity");
+    sql(database, buildQ1026InsertOnlyUserSeedSql());
     const q1026Source = buildQ1026UserIdentitySource(Q1026_USER_FIXTURES);
     const q1026Page = await page("fixture-wikidot-user-identity-matrix", "Q1026 identity matrix", q1026Source);
     const q1026Path = path.join(args["output-private-dir"], "q1026-r11.json");
