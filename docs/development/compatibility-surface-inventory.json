@@ -5099,7 +5099,12 @@
     {
       "source": "open43-audit-case:A1037_BROWSER_LIFECYCLE",
       "type": "implemented_by",
-      "target": "wikijump.runtime:actions-membership"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "open43-audit-case:A1037_BROWSER_LIFECYCLE",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:A1037_MAILFORM_FAIL_CLOSED_SERVED",
@@ -5109,7 +5114,12 @@
     {
       "source": "open43-audit-case:A1037_MAILFORM_INITIAL_DOM_AND_SUBMIT",
       "type": "implemented_by",
-      "target": "wikijump.runtime:actions-membership"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "open43-audit-case:A1037_MAILFORM_INITIAL_DOM_AND_SUBMIT",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:A1037_MAILFORM_READ_ONLY_FAIL_CLOSED",
@@ -5144,7 +5154,12 @@
     {
       "source": "open43-audit-case:A1037_SIMPLETODO_MUTATION",
       "type": "implemented_by",
-      "target": "wikijump.runtime:actions-membership"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "open43-audit-case:A1037_SIMPLETODO_MUTATION",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:A1038_ADMIN_POSITIVE_READ_MODELS",
@@ -5179,7 +5194,12 @@
     {
       "source": "open43-audit-case:A1038_BROWSER_LIFECYCLE",
       "type": "implemented_by",
-      "target": "wikijump.runtime:actions-membership"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "open43-audit-case:A1038_BROWSER_LIFECYCLE",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:A1038_CLONE_ACTION",
@@ -5209,7 +5229,12 @@
     {
       "source": "open43-audit-case:A1038_PETITION_ADMIN_ACTIONS",
       "type": "implemented_by",
-      "target": "wikijump.runtime:actions-membership"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "open43-audit-case:A1038_PETITION_ADMIN_ACTIONS",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:A1038_SITEGRID_POPULATED",
@@ -5399,12 +5424,12 @@
     {
       "source": "open43-audit-case:A1063_FULL_BREADCRUMB_LIVE_BOUNDARY",
       "type": "implemented_by",
-      "target": "wikijump.runtime:authoring"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:A1063_LEGACY_AUTHORING_PRESENTATION",
       "type": "implemented_by",
-      "target": "wikijump.runtime:authoring"
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:A1063_SELF_SETTINGS_WORKFLOW",
@@ -5849,7 +5874,7 @@
     {
       "source": "open43-audit-case:Q1026_RENAME_DELETE_IMPORT_INVALIDATION",
       "type": "implemented_by",
-      "target": "wikijump.runtime:search-users"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:Q1026_TYPED_NUMERIC_AND_DELETED_IDENTITY",
@@ -5869,7 +5894,7 @@
     {
       "source": "open43-audit-case:Q1027_NON_ANONYMOUS_AND_BEYOND_LIMIT_LIVE_RULES",
       "type": "implemented_by",
-      "target": "evidence.live"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:Q1027_OBSERVED_EMPTY_POPULATED_ARGUMENT_AND_ORDER",
@@ -5959,7 +5984,7 @@
     {
       "source": "open43-audit-case:Q1032_REMAINING_DIRECTORY_RUNTIME",
       "type": "implemented_by",
-      "target": "wikijump.runtime:search-users"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:Q1032_STATIC_USER_MODULE_BASELINES",
@@ -6029,7 +6054,12 @@
     {
       "source": "open43-audit-case:Q1034_FULL_ACTOR_USER_AND_MUTATION_MATRIX",
       "type": "implemented_by",
-      "target": "wikijump.runtime:forum"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "open43-audit-case:Q1034_FULL_ACTOR_USER_AND_MUTATION_MATRIX",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:Q1034_MISSING_CONTEXT_AND_OWNER_BOUNDARY",
@@ -6044,7 +6074,12 @@
     {
       "source": "open43-audit-case:Q1034_POPULATED_READ_MODEL_COVERAGE",
       "type": "implemented_by",
-      "target": "wikijump.runtime:forum"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "open43-audit-case:Q1034_POPULATED_READ_MODEL_COVERAGE",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:Q1034_RECENTPOSTS_PERMISSION_FIRST_READ_MODEL",
@@ -6209,7 +6244,7 @@
     {
       "source": "open43-audit-case:Q778_EXCERPT_AND_TIE_BOUNDARIES",
       "type": "implemented_by",
-      "target": "wikijump.runtime:forum"
+      "target": "wikijump.deepwell"
     },
     {
       "source": "open43-audit-case:Q778_FULL_ACTOR_AND_DELETION_MATRIX",
@@ -6219,7 +6254,12 @@
     {
       "source": "open43-audit-case:Q778_MUTATION_REFRESH",
       "type": "implemented_by",
-      "target": "wikijump.runtime:forum"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "open43-audit-case:Q778_MUTATION_REFRESH",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:Q778_PERMISSION_FIRST_MINI_READ_MODELS",
@@ -11340,8 +11380,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "8724cc778840ae77d0fa786ce91c0369155f8b81",
-      "tree": "f8232065c074df915d2212d85c3ac2803f5d88f8"
+      "commit": "b90fe4168ea44c0088fbe9cff11f894c64f863fa",
+      "tree": "b54b167bc20537578d20721b68dcdc53c812ca25"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11510,39 +11550,39 @@
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "d56af70546b217a353e5f42562f78dff45728aba88707ae39d1bd62e19ae47c3"
+        "sha256": "d87a8aead456a376f67b45841426d9367acd60cc0284d0d40cf92b45a9fd5b57"
       },
       {
         "path": "docs/development/open43-a-authoring-closure-audit.json",
-        "sha256": "3303653618de786aab6a519cfde449b0b93a142cd48c06b71bcba91f4503ac7d"
+        "sha256": "2fec8733672804efcbe6dbfec815170e322935236100497f903404c8859132cf"
       },
       {
         "path": "docs/development/open43-blocked-evidence-routing.json",
-        "sha256": "6f76cf7121d36b7745ebc2d88765acece8df37dbe5c307e9007b3d3303df89fc"
+        "sha256": "27ef05ff33ce7a2b3d300c48ba450e658e0cbbcfe8c24dcf162e6019c7b2eb80"
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "f117243ab8420f7fe831b57ff6ee40e163b798303995969e2662628bc3745ba4"
+        "sha256": "d855bbb92831ff115062b85551bcfecbd800a0b741fa5c0160431ab5d22cb14e"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
-        "sha256": "013ff72c13ac3b162e661abcd5aae4393bc2e7f64637ef45e16f521d11b0b599"
+        "sha256": "c13b97be806840579cd4de182f9a339ac9141f0100eda0b8c1ac501f35ac1b4f"
       },
       {
         "path": "docs/development/open43-q-forum-closure-audit.json",
-        "sha256": "6820796a142a0deb74ddbc6077fcf17f6d73287552bad99d1786eb41f333c0a3"
+        "sha256": "696a815341dc43496caff610afb574a2e3e17006983cd01d069a68ac000f2bd6"
       },
       {
         "path": "docs/development/open43-q-page-query-closure-audit.json",
-        "sha256": "3c471c6aaf6ff2c50095fcad29c2c3b8503c3e59609a5118d5fee271c1440b0f"
+        "sha256": "0ba7fb873e9458bc444ae89713ca909359270f9ed4e6d648eeb73d6c6e744f27"
       },
       {
         "path": "docs/development/open43-q-search-users-closure-audit.json",
-        "sha256": "0ef18a0e7efa5bd07b97f3c2ae07eec2bd14f6cf2fd48f59f560f6a3504d77df"
+        "sha256": "2acf20d9aafb4aec229a7d77923caa88e2b093bf9ab897109893f99556a6e8b2"
       },
       {
         "path": "docs/development/open43-s-settings-browser-closure-audit.json",
-        "sha256": "f08848bce9dd5879323655897292d29ed1f39d451b04c58887b386d03758a51b"
+        "sha256": "34eac98e5cbcd646757517980cb487665a6545f12933e4808fa4b859e26b5a4c"
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
@@ -11562,7 +11602,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "ffb27e2fbfcb21e515086064138cc5d97512ffd618b23963652552731b34bb13"
+        "sha256": "e4dc2b9250ec7f0f351bb14a52a3237c1cc77c09a799afbaef281b5407bbdd24"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -38675,7 +38715,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -38683,20 +38723,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1037_BROWSER_LIFECYCLE",
       "implementation_owners": [
-        "wikijump.runtime:actions-membership"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -38759,7 +38800,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -38767,20 +38808,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1037_MAILFORM_INITIAL_DOM_AND_SUBMIT",
       "implementation_owners": [
-        "wikijump.runtime:actions-membership"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -39058,7 +39100,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -39066,20 +39108,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1037_SIMPLETODO_MUTATION",
       "implementation_owners": [
-        "wikijump.runtime:actions-membership"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -39097,8 +39140,11 @@
         ],
         "tests": [
           "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
+          "deepwell/tests/page.rs::authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
           "framerail/tests/ajax-module-connector-manage-site-general.test.js#ManageSiteGeneral accepts the exact parameter-free administrator read",
-          "framerail/tests/wikidot-manage-site-general.test.js#ManageSiteGeneral renders the exact captured administrator read model"
+          "framerail/tests/ajax-module-connector-manage-site-general.test.js::ManageSiteGeneral accepts the exact parameter-free administrator read",
+          "framerail/tests/wikidot-manage-site-general.test.js#ManageSiteGeneral renders the exact captured administrator read model",
+          "framerail/tests/wikidot-manage-site-general.test.js::ManageSiteGeneral renders the exact captured administrator read model"
         ]
       },
       "evidence": {
@@ -39232,7 +39278,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -39240,20 +39286,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1038_BROWSER_LIFECYCLE",
       "implementation_owners": [
-        "wikijump.runtime:actions-membership"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -39399,7 +39446,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -39407,20 +39454,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1038_PETITION_ADMIN_ACTIONS",
       "implementation_owners": [
-        "wikijump.runtime:actions-membership"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -40771,7 +40819,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -40779,20 +40827,20 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1063_FULL_BREADCRUMB_LIVE_BOUNDARY",
       "implementation_owners": [
-        "wikijump.runtime:authoring"
+        "wikijump.deepwell"
       ]
     },
     {
@@ -40811,7 +40859,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -40819,20 +40867,20 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1063_LEGACY_AUTHORING_PRESENTATION",
       "implementation_owners": [
-        "wikijump.runtime:authoring"
+        "wikijump.framerail"
       ]
     },
     {
@@ -42384,7 +42432,7 @@
         ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -42392,15 +42440,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:M1039_FILES_BYTE_DERIVED_TYPE",
@@ -42513,7 +42561,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -42521,15 +42569,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:M1039_FILES_PAGINATION_AND_HISTORY",
@@ -42639,7 +42687,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -42647,15 +42695,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:M1039_FLICKR_ARGUMENTS_AND_PROVIDER",
@@ -42721,7 +42769,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -42729,15 +42777,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:M1039_MANAGE_ATTACHMENTS_INTERACTION",
@@ -43467,7 +43515,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -43475,15 +43523,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:M1043_VIEWER_INTERACTION_CONTRACT",
@@ -43553,7 +43601,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -43561,15 +43609,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:M1062_DUPLICATE_AND_UNICODE_POLICY",
@@ -43956,7 +44004,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -43964,15 +44012,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:M756_UPLOAD_MATERIALIZATION",
@@ -44620,7 +44668,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -44628,20 +44676,20 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q1026_RENAME_DELETE_IMPORT_INVALIDATION",
       "implementation_owners": [
-        "wikijump.runtime:search-users"
+        "wikijump.deepwell"
       ]
     },
     {
@@ -44787,7 +44835,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -44795,20 +44843,20 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q1027_NON_ANONYMOUS_AND_BEYOND_LIMIT_LIVE_RULES",
       "implementation_owners": [
-        "evidence.live"
+        "wikijump.deepwell"
       ]
     },
     {
@@ -45402,7 +45450,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -45410,20 +45458,20 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q1032_REMAINING_DIRECTORY_RUNTIME",
       "implementation_owners": [
-        "wikijump.runtime:search-users"
+        "wikijump.deepwell"
       ]
     },
     {
@@ -46008,7 +46056,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -46016,20 +46064,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q1034_FULL_ACTOR_USER_AND_MUTATION_MATRIX",
       "implementation_owners": [
-        "wikijump.runtime:forum"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -46134,7 +46183,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -46142,20 +46191,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q1034_POPULATED_READ_MODEL_COVERAGE",
       "implementation_owners": [
-        "wikijump.runtime:forum"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -46256,10 +46306,13 @@
         "cases": [
           "Q1034_ROUTE_AND_AJAX_BROWSER_LIFECYCLE"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/open43-q1034-forum-candidate-case-set.test.mjs#Q1034 runs all three unblocked forum rows through the canonical candidate runner",
+          "install/local/wikidot-verification/tests/q1034-forum-browser-lifecycle-evidence.test.mjs#Q1034 browser lifecycle seals navigation, focus, history, failure, and settled states"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -46267,15 +46320,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q1034_ROUTE_AND_AJAX_BROWSER_LIFECYCLE",
@@ -46481,7 +46534,7 @@
         ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -46489,15 +46542,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q1035_SITECHANGES_FILE_META_DELETE_RESTORE",
@@ -47353,7 +47406,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -47361,20 +47414,20 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q778_EXCERPT_AND_TIE_BOUNDARIES",
       "implementation_owners": [
-        "wikijump.runtime:forum"
+        "wikijump.deepwell"
       ]
     },
     {
@@ -47435,7 +47488,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -47443,20 +47496,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q778_MUTATION_REFRESH",
       "implementation_owners": [
-        "wikijump.runtime:forum"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -48533,7 +48587,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -48541,15 +48595,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:S1046_AUTOCOMPLETE_AND_INTERMEDIATE_FRAMES",
@@ -48833,7 +48887,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -48841,15 +48895,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:S1046_WELCOME_EFFECT",
@@ -49307,7 +49361,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -49315,15 +49369,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:S755_LEGACY_GALLERY_AND_CUSTOM_LIFECYCLE",
@@ -49740,7 +49794,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -49748,15 +49802,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:S758_CATEGORY_ADD_WARNING_LIFECYCLE",
@@ -49782,7 +49836,7 @@
         ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -49790,15 +49844,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:S758_COLLISION_DELETE_OVERFLOW_REENABLE",
