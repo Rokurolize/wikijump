@@ -108,6 +108,7 @@ function oneCaseSet(
   events,
   {
     executeResult,
+    executeError = null,
     omitRelease = false,
     caseVerification = null,
     verifiedCleanup = { public_absence_verified: true },
@@ -129,6 +130,7 @@ function oneCaseSet(
           });
           events.push("registered");
           events.push("executed");
+          if (executeError !== null) throw executeError;
           return executeResult ?? [
             {
               case_id: "M1062_SERIALIZABLE_ACTION_RESPONSE",
@@ -170,6 +172,20 @@ function oneCaseSet(
     },
   };
 }
+
+test("candidate terminal failures seal nested AggregateError details", async (t) => {
+  const outputDir = await temporaryOutput(t);
+  const nested = new AggregateError([new Error("inner candidate detail")], "nested candidate failure");
+  await assert.rejects(
+    runOne(t, oneCaseSet([], { executeError: nested }), { outputDir }),
+    /candidate case execution failed/u,
+  );
+  const terminal = JSON.parse(await fs.readFile(`${outputDir}.terminal-failure.json`, "utf8"));
+  assert.equal(terminal.status, "fail");
+  assert.equal(terminal.error_details.name, "AggregateError");
+  assert.equal(terminal.error_details.errors[0].message, "nested candidate failure");
+  assert.equal(terminal.error_details.errors[0].errors[0].message, "inner candidate detail");
+});
 
 function fixtureDependencies({ drift = false } = {}) {
   let observation = 0;
