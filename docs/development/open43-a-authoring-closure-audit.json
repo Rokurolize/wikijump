@@ -291,14 +291,14 @@
         {
           "case_id": "A1063_LEGACY_AUTHORING_PRESENTATION",
           "status": "owner_scope_boundary",
-          "owner": "framerail-authoring",
+          "owner": "framerail",
           "result": "Owner ruling 2026-09-16 treats the exact current Wikijump revision-diff and settings workflows as the campaign acceptance surface and does not claim byte-for-byte or selector-for-selector legacy Wikidot presentation. The candidate still has to prove actor binding, escaped diff content, save/cancel/reload, failure, navigation, focus, and persistence. Historical Wikidot templates and unstable current account chrome are retained only as reference material, not presentation authority.",
           "not_claimed": ["exact legacy Wikidot diff DOM", "exact legacy account-settings DOM", "legacy keyboard or intermediate-paint selectors"]
         },
         {
           "case_id": "A1063_FULL_BREADCRUMB_LIVE_BOUNDARY",
           "status": "owner_scope_boundary",
-          "owner": "deepwell-authoring",
+          "owner": "deepwell",
           "evidence_id": "AUTHORING_PARENT_STANDARD_LAYOUT_LIVE_20260908",
           "result": "Owner ruling 2026-09-16 limits this campaign to the current standard saved-page shell, where fresh live evidence proves that parent metadata does not synthesize #breadcrumbs. The separately documented Pro custom-layout [[breadcrumbs]] element is not implemented or inferred from that negative observation and is outside this campaign's accepted presentation surface; it requires a dedicated Pro custom-layout fixture and reopening.",
           "not_claimed": ["Pro custom-layout [[breadcrumbs]] DOM", "custom-layout relation-boundary presentation"]

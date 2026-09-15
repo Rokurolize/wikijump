@@ -343,14 +343,14 @@
         {
           "case_id": "Q778_EXCERPT_AND_TIE_BOUNDARIES",
           "status": "owner_scope_boundary",
-          "owner": "deepwell-forum-read",
+          "owner": "deepwell",
           "result": "Owner ruling 2026-09-16 keeps Mini forum excerpt compatibility at the bounded live-backed plain excerpt contract already implemented and tested. Rich-markup reduction, missing-title wording, a universal truncation algorithm, and timestamp/activity tie ordering are not inferred from uncontrolled public data and are not claimed by this campaign; a controlled tie/excerpt producer is required to reopen those details.",
           "not_claimed": ["rich-markup excerpt reduction", "missing-title legacy text", "universal truncation boundary", "timestamp/activity tie order"]
         },
         {
           "case_id": "Q778_MUTATION_REFRESH",
           "status": "owner_read_only_boundary",
-          "owner": "deepwell-framerail-forum-security-boundary",
+          "owner": "deepwell-framerail",
           "result": "Owner ruling 2026-09-16 aligns Mini forum refresh scope with the existing Q1034 public-forum decision: compatibility exposes read-only forum surfaces and no general forum-post mutation API. Internal fixture mutations remain test setup only. Create/edit/delete/restore, concurrent mutation reads, and write-triggered cache refresh are separate product/security work and require reopening before any public write contract is added.",
           "not_claimed": ["public forum mutation", "write idempotency", "write-triggered cache invalidation"]
         }
@@ -471,7 +471,7 @@
         {
           "case_id": "Q1034_POPULATED_READ_MODEL_COVERAGE",
           "status": "owner_scope_boundary",
-          "owner": "deepwell-framerail-forum-read",
+          "owner": "deepwell-framerail",
           "evidence_ids": ["OPEN43_READONLY_LIVE_20260810", "E_OPEN43_FRONTFORUM_BOUNDARIES_20260810", "Q1034_ANONYMOUS_BOUNDARIES_RETAINED_20260809", "Q1034_BROWSER_LIFECYCLE_LIVE_20260915"],
           "result": "Owner ruling 2026-09-16 makes the sealed read-only model the campaign boundary: category and thread routes, custom FrontForum body ownership, RSS metadata, exact fixRelativeLinks argument recognition, anonymous new-thread denial, browser navigation/failure states, and RecentPosts later-page transport are covered. Feed XML delivery, content-bearing rewrite transformations, private/deleted positive fixtures, and authenticated ForumNewThread creation are not inferred and require separate read/private or mutation authority before reopening.",
           "not_claimed": ["feed XML delivery", "content-bearing relative-link rewrite", "private/deleted positive forum fixtures", "authenticated ForumNewThread mutation"]
@@ -479,7 +479,7 @@
         {
           "case_id": "Q1034_FULL_ACTOR_USER_AND_MUTATION_MATRIX",
           "status": "owner_scope_boundary",
-          "owner": "deepwell-framerail-forum-security-boundary",
+          "owner": "deepwell-framerail",
           "result": "Owner ruling 2026-09-16 accepts the sealed anonymous/member/moderator/administrator read matrix and the bounded live mutation observations only as evidence, while keeping the product's public forum surface read-only. Imported-user and deleted-user positive presentation are intentionally not fabricated or exposed, and TTL-expiry cache timing is not promoted into a contract. Any public forum write API, deleted-identity surface, or cache-trigger guarantee requires a separate product/security decision and reopening.",
           "not_claimed": ["public forum mutation API", "deleted-user exposure", "imported-user positive display beyond sealed reads", "TTL cache invalidation timing"]
         },

@@ -279,7 +279,7 @@
         {
           "case_id": "Q1026_RENAME_DELETE_IMPORT_INVALIDATION",
           "status": "owner_architecture_boundary",
-          "owner": "identity-import",
+          "owner": "deepwell",
           "result": "Owner ruling 2026-09-16 keeps the current Wikidot identity import seam insert-only. Same-ID rename, delete, and re-import refresh would require a defined upstream identity lifecycle, conflict policy, cache invalidation owner, and producer; the campaign must not silently turn import into an undocumented upsert. Existing identity reads fail closed for deleted or ambiguous identities, and lifecycle refresh requires reopening as architecture work.",
           "not_claimed": ["same-ID rename upsert", "delete/re-import refresh", "generated-name cache invalidation trigger"]
         }
@@ -357,7 +357,7 @@
         {
           "case_id": "Q1032_REMAINING_DIRECTORY_RUNTIME",
           "status": "owner_scope_boundary",
-          "owner": "identity-directory-read",
+          "owner": "deepwell",
           "evidence_ids": ["OPEN43_READONLY_LIVE_20260810", "E_OPEN43_USERINFO_EXISTENCE_20260810", "MEMBERS_LIST_AMC_20260810", "Q1032_AUTHENTICATED_READONLY_LIVE_20260915"],
           "result": "Owner ruling 2026-09-16 makes the sealed read-only directory matrix the compatibility boundary: Members, UserInfo, Watchers, WhoInvited, and bounded anonymous/member/moderator/administrator reads keep permission filtering before counts and pagination. A universal private-identity policy plus rename/delete/re-import invalidation depends on the same undefined identity lifecycle as Q1026 and is not fabricated; deleted identities remain fail closed and that lifecycle requires a separately owned architecture reopening.",
           "not_claimed": ["general private-identity disclosure rule", "rename/delete/re-import refresh", "deleted-identity presentation"]

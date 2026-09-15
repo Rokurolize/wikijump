@@ -369,7 +369,7 @@
         {
       "case_id": "Q1027_NON_ANONYMOUS_AND_BEYOND_LIMIT_LIVE_RULES",
       "status": "source_ready",
-      "owner": "page-query-read-owner",
+      "owner": "deepwell",
       "boundary_status": "owner_scope_boundary",
           "tests": [],
       "result": "Owner ruling 2026-09-16 makes the anonymous-safe, complete-bounded backlink scan the campaign contract. Signed-in private backlink expansion and Wikidot behavior beyond the bounded raw-row ceiling are not inferred without a controlled private graph; saturation remains fail closed and those extensions require reopening."
