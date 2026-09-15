@@ -256,6 +256,9 @@ export function verifyOpen43Q748TopBarSearchCase(caseId, rawObservations, plan) 
   if (saved.slug !== fixedPlan.saved_page_slug || saved.status !== 200 || saved.url !== new URL(`/${fixedPlan.saved_page_slug}`, fixedPlan.page_origin).href) {
     throw new Error("Q748 saved fixture identity is wrong");
   }
+  const initialResult = requirePlainObject(observations.initial_result, "Q748 initial result");
+  requireSha256(initialResult.content_sha256, "Q748 initial result sha");
+  if (initialResult.error_boundary_present !== false) throw new Error("Q748 initial fixture page unexpectedly rendered a result boundary");
   verifyForm(observations.initial_form, "initial form");
   verifyDiscipline(observations, "submission");
   if (caseId === "Q748_LIVE_TOPBAR_SUBMISSION_CONTRACT") {
@@ -299,7 +302,19 @@ class Open43Q748TopBarSearchRun {
   async execute() {
     await this.#prepareFixture();
     this.#observations = await this.#browser.captureTopBarSearch();
-    return CASE_IDS.map((caseId) => ({ case_id: caseId, observations: this.#observations }));
+    return CASE_IDS.map((caseId) => ({
+      case_id: caseId,
+      observations: {
+        ...this.#observations,
+        result_identity: {
+          case_id: caseId,
+          saved_page_slug: this.#plan.saved_page_slug,
+          candidate_identity_sha256: this.#plan.candidate_identity_sha256,
+          form_fixture_sha256: this.#plan.form_fixture_sha256,
+          result_evidence_sha256: this.#plan.result_evidence_sha256,
+        },
+      },
+    }));
   }
 
   async cleanup() {
@@ -317,6 +332,14 @@ class Open43Q748TopBarSearchRun {
 
   verifyCase(caseId, observations) {
     if (!CASE_IDS.includes(caseId)) throw new Error(`unknown Q748 case: ${caseId}`);
+    const identity = requirePlainObject(observations.result_identity, `Q748 ${caseId} result identity`);
+    if (
+      identity.case_id !== caseId ||
+      identity.saved_page_slug !== this.#plan.saved_page_slug ||
+      identity.candidate_identity_sha256 !== this.#plan.candidate_identity_sha256 ||
+      identity.form_fixture_sha256 !== this.#plan.form_fixture_sha256 ||
+      identity.result_evidence_sha256 !== this.#plan.result_evidence_sha256
+    ) throw new Error(`Q748 ${caseId} result is not identity-bound`);
     return verifyOpen43Q748TopBarSearchCase(caseId, observations, this.#plan);
   }
 }
@@ -350,6 +373,7 @@ export function createOpen43Q748TopBarSearchCandidateCaseSet({ sessionFactory = 
     id: "open43-q748-topbar-search",
     caseIds: CASE_IDS,
     async prepareRun({ runId, candidateIdentity, candidateIdentitySha256, candidateBrowserContexts, resources, privateInput, signal }) {
+      requireSha256(candidateIdentitySha256, "Q748 candidate identity sha");
       if (candidateIdentity.candidate.endpoint.host !== SITE_HOST || candidateIdentity.candidate.endpoint.port === 443 || candidateIdentity.candidate.port_443_published !== false) {
         throw new Error(`Q748 requires exact non-standing ${SITE_HOST}`);
       }
@@ -360,6 +384,7 @@ export function createOpen43Q748TopBarSearchCandidateCaseSet({ sessionFactory = 
         run_id: runId,
         case_ids: [...CASE_IDS],
         page_origin: pageOrigin,
+        candidate_identity_sha256: candidateIdentitySha256,
         saved_page_slug: SAVED_PAGE_SLUG,
         saved_page_source: "[[module Search]]",
         form_fixture: Object.freeze({ path: FORM_FIXTURE_PATH, sha256: FORM_FIXTURE_SHA256 }),
