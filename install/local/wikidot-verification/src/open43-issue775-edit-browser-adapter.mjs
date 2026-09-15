@@ -10,6 +10,19 @@ const CAPTURE_CONTRACT = Object.freeze({
   ]),
 });
 
+export async function dispatchIssue775DoubleActivation(page, control) {
+  await control.scrollIntoViewIfNeeded();
+  const box = await control.boundingBox();
+  if (!box || box.width <= 0 || box.height <= 0) throw new Error("issue 775 standalone edit control has no clickable geometry");
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down({ button: "left", clickCount: 1 });
+  await page.mouse.up({ button: "left", clickCount: 1 });
+  await page.mouse.down({ button: "left", clickCount: 2 });
+  await page.mouse.up({ button: "left", clickCount: 2 });
+}
+
 async function publicState(page) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
@@ -97,7 +110,7 @@ export class Open43Issue775EditBrowserAdapter {
       const responses = Array.from({length: responseCount}, () => this.#permissionResponse(page, pagePath));
       if (mode === "click") await control.click();
       else if (mode === "keyboard") await control.press("Enter");
-      else await Promise.allSettled([control.click(), control.click()]);
+      else await dispatchIssue775DoubleActivation(page, control);
       await Promise.all(responses);
       if (editable) {
         await page.waitForURL(new URL(`${pagePath}/edit`, this.#pageOrigin).href, { timeout: TIMEOUT_MS });

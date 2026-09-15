@@ -9,6 +9,7 @@ import {
   OPEN43_ISSUE775_CASE_IDS,
   createOpen43Issue775EditCandidateCaseSet,
 } from "../src/open43-issue775-edit-candidate-case-set.mjs";
+import { dispatchIssue775DoubleActivation } from "../src/open43-issue775-edit-browser-adapter.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
@@ -98,7 +99,7 @@ function fakeBrowserAdapter({ bad = false, badDouble = false, badUrl = false } =
         ["anonymous", false],
         ["editable_member", true],
         ["non_editable_member", false],
-      ].map(([actor, editable], index) => {
+      ].map(([actor], index) => {
         const allowed = permissions[actor];
         const finalPath = allowed ? `${pagePath}/edit` : pagePath;
         const actionState = state(finalPath, { editable: allowed, dialog: !allowed });
@@ -152,6 +153,32 @@ test("issue 775 is an executable candidate case set", () => {
   assert.equal(caseSet.id, "open43-issue775-edit");
   assert.deepEqual(caseSet.caseIds, OPEN43_ISSUE775_CASE_IDS);
   assert.equal(typeof caseSet.prepareRun, "function");
+});
+
+test("issue 775 double activation reproduces the live two-click pointer sequence", async () => {
+  const events = [];
+  const control = {
+    async scrollIntoViewIfNeeded() { events.push(["scroll"]); },
+    async boundingBox() { return { x: 10, y: 20, width: 30, height: 40 }; },
+  };
+  const page = {
+    mouse: {
+      async move(x, y) { events.push(["move", x, y]); },
+      async down(options) { events.push(["down", options]); },
+      async up(options) { events.push(["up", options]); },
+    },
+  };
+
+  await dispatchIssue775DoubleActivation(page, control);
+
+  assert.deepEqual(events, [
+    ["scroll"],
+    ["move", 25, 40],
+    ["down", { button: "left", clickCount: 1 }],
+    ["up", { button: "left", clickCount: 1 }],
+    ["down", { button: "left", clickCount: 2 }],
+    ["up", { button: "left", clickCount: 2 }],
+  ]);
 });
 
 test("issue 775 executes through the shared runner and cleans its run-owned page", async (t) => {
