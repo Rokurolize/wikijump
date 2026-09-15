@@ -401,6 +401,7 @@ test("M1043 waits for enabled full-image requests to settle before each viewer t
   assert.match(gallery, /const viewerImageRequests = trackRequestQuiescence/u);
   assert.match(gallery, /gallery-one\.png/u);
   assert.match(gallery, /gallery-two\.png/u);
+  assert.match(gallery, /route\.fulfill\(\{ status: 200, contentType: "image\/png", body: "not-a-png" \}\)/u);
   assert.equal([...gallery.matchAll(/viewerImageRequests\.waitForQuiet\(\)/gu)].length, 3);
   assert.match(gallery, /viewerImageRequests\.close\(\)/u);
 });

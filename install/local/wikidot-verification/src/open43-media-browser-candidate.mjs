@@ -547,7 +547,7 @@ class Open43MediaBrowserRun {
     });
     await browserPage.route("**/local--files/**", async (route) => {
       if (route.request().url().includes("/gallery-broken.png")) {
-        await route.fulfill({ status: 404, contentType: "text/plain", body: "missing" });
+        await route.fulfill({ status: 200, contentType: "image/png", body: "not-a-png" });
         return;
       }
       await new Promise((resolve) => setTimeout(resolve, 200));
