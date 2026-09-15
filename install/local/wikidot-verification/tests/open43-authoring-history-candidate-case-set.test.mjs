@@ -370,3 +370,47 @@ test("#1063 audit retires the stale standard-layout breadcrumb candidate without
   assert.equal(audit.candidate_harness_gap.superseded_row.case_id, "A1063_BREADCRUMB_SERVED_CANDIDATE");
   assert.equal(audit.browser_commands.some(({case_ids}) => case_ids.includes("A1063_BREADCRUMB_SERVED_CANDIDATE")), false);
 });
+
+test("#1063 retained breadcrumb evidence verifies the standard-layout boundary and cleanup", async () => {
+  const artifact = JSON.parse(await fs.readFile(new URL("../artifacts/issue1063-parent-breadcrumb-live-20260908.json", import.meta.url), "utf8"));
+  assert.equal(artifact.schema, "wikijump.issue1063_parent_breadcrumb_live.v1");
+  assert.deepEqual(artifact.cases.map(({case_id}) => case_id), [
+    "issue1063-parent-chain-standard-layout-no-breadcrumbs",
+    "issue1063-renamed-parent-standard-layout-no-breadcrumbs",
+    "issue1063-no-parent-standard-layout-control",
+    "issue1063-deleted-parent-standard-layout-control",
+    "issue1063-cycle-standard-layout-control",
+    "issue1063-independent-standard-layout-control",
+    "issue1063-current-parented-documentation-page-no-breadcrumbs",
+  ]);
+  const cases = new Map(artifact.cases.map((row) => [row.case_id, row]));
+  for (const caseId of [
+    "issue1063-parent-chain-standard-layout-no-breadcrumbs",
+    "issue1063-renamed-parent-standard-layout-no-breadcrumbs",
+  ]) {
+    assert.equal(cases.get(caseId).http_status, 200);
+    assert.equal(cases.get(caseId).parent_mutations_succeeded, true);
+    assert.equal(cases.get(caseId).breadcrumbs_present, false);
+  }
+  for (const caseId of [
+    "issue1063-no-parent-standard-layout-control",
+    "issue1063-deleted-parent-standard-layout-control",
+    "issue1063-cycle-standard-layout-control",
+    "issue1063-independent-standard-layout-control",
+    "issue1063-current-parented-documentation-page-no-breadcrumbs",
+  ]) {
+    assert.equal(cases.get(caseId).http_status, 200);
+    assert.equal(cases.get(caseId).breadcrumbs_present, false);
+  }
+  assert.equal(cases.get("issue1063-cycle-standard-layout-control").cycle_mutation_accepted, true);
+  assert.deepEqual(artifact.cleanup, {
+    sandbox_run_owned_pages_remaining: [],
+    sandbox_cleanup_verified: true,
+    credentials_persisted: false,
+  });
+  assert.deepEqual(artifact.scope, {
+    standard_saved_page_layout: "observed",
+    parent_relation_persistence: "preserved",
+    custom_layout_breadcrumbs: "not_observed_do_not_infer",
+  });
+});

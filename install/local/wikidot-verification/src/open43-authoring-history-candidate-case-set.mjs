@@ -631,10 +631,14 @@ class Open43AuthoringHistoryRun {
         case_id: "A1063_EXACT_PUBLIC_SOURCE_CANDIDATE",
         observations: {
           page: {
+            site_id: this.#siteId,
             page_id: after.page_id,
             initial_revision_id: before.revision_id,
+            initial_revision_number: before.revision_number,
             intermediate_revision_id: middle.revision_id,
+            intermediate_revision_number: middle.revision_number,
             final_revision_id: after.revision_id,
+            final_revision_number: after.revision_number,
           },
           diff: {
             site_id: diff.site_id,
@@ -701,7 +705,7 @@ function verifyCase(caseId, observations) {
   if (caseId === "A1063_EXACT_PUBLIC_SOURCE_CANDIDATE") {
     const page = observations.page;
     const diff = observations.diff;
-    if (!Number.isSafeInteger(page?.page_id) || new Set([page.initial_revision_id, page.intermediate_revision_id, page.final_revision_id]).size !== 3 || diff.page_id !== page.page_id || diff.from_revision_number >= diff.to_revision_number) throw new Error("history candidate revision identities are not bound to one three-revision page");
+    if (!Number.isSafeInteger(page?.site_id) || !Number.isSafeInteger(page?.page_id) || new Set([page.initial_revision_id, page.intermediate_revision_id, page.final_revision_id]).size !== 3 || new Set([page.initial_revision_number, page.intermediate_revision_number, page.final_revision_number]).size !== 3 || diff.site_id !== page.site_id || diff.page_id !== page.page_id || diff.from_revision_number !== page.initial_revision_number || diff.to_revision_number !== page.final_revision_number) throw new Error("history candidate revision identities are not bound to one three-revision page");
     const kinds = new Set(diff.lines.map((line) => line.kind));
     if (!kinds.has("added") || !kinds.has("removed") || !kinds.has("unchanged")) throw new Error("history candidate diff did not expose all typed line kinds");
     if (diff.lines.some((line) => Object.hasOwn(line, "wikitext") || Object.hasOwn(line, "compiled_body_html"))) throw new Error("history candidate diff exposed a raw source field");
