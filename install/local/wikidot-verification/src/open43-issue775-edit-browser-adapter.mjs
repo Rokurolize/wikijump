@@ -100,28 +100,29 @@ export class Open43Issue775EditBrowserAdapter {
     if (await control.count() !== 1) throw new Error("issue 775 did not serve exactly one standalone edit control");
     await control.focus();
     const focusedControl = await page.evaluate((selector) => document.activeElement === document.querySelector(selector), SELECTOR);
-    let permissionResponseCount = 0;
-    const onResponse = (response) => {
-      if (response.request().method() === "POST" && response.url().includes("?/editPermission")) permissionResponseCount += 1;
+    let permissionRequestCount = 0;
+    const onRequest = (request) => {
+      const url = new URL(request.url());
+      if (request.method() === "POST" && url.origin === this.#pageOrigin && url.search === "?/editPermission" && url.pathname === pagePath) permissionRequestCount += 1;
     };
-    page.on("response", onResponse);
+    page.on("request", onRequest);
     try {
-      const responseCount = mode === "double" ? 2 : 1;
-      const responses = Array.from({length: responseCount}, () => this.#permissionResponse(page, pagePath));
+      const expectedRequestCount = mode === "double" ? 2 : 1;
+      const response = this.#permissionResponse(page, pagePath);
       if (mode === "click") await control.click();
       else if (mode === "keyboard") await control.press("Enter");
       else await dispatchIssue775DoubleActivation(page, control);
-      await Promise.all(responses);
+      await response;
       if (editable) {
         await page.waitForURL(new URL(`${pagePath}/edit`, this.#pageOrigin).href, { timeout: TIMEOUT_MS });
         await page.locator("#editor").waitFor({ state: "visible", timeout: TIMEOUT_MS });
       } else {
         await page.locator("#odialog-container").waitFor({ state: "visible", timeout: TIMEOUT_MS });
       }
-      if (permissionResponseCount !== responseCount) throw new Error(`issue 775 ${mode} activation observed ${permissionResponseCount} permission responses, expected ${responseCount}`);
-      return { focused_control: focusedControl, permission_response_count: permissionResponseCount, state: await publicState(page) };
+      if (permissionRequestCount !== expectedRequestCount) throw new Error(`issue 775 ${mode} activation observed ${permissionRequestCount} permission requests, expected ${expectedRequestCount}`);
+      return { focused_control: focusedControl, permission_request_count: permissionRequestCount, state: await publicState(page) };
     } finally {
-      page.off("response", onResponse);
+      page.off("request", onRequest);
     }
   }
 

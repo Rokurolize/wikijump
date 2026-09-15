@@ -19,9 +19,9 @@ function requireCapture(value, plan, label) {
     throw new Error(`${label} did not capture the exact public page navigation`);
   }
   const first = requirePlainObject(capture.first_paint, `${label} first paint`);
-  const settled = requirePlainObject(capture.document, `${label} settled document`);
-  const firstDocument = requirePlainObject(first.document, `${label} first paint document`);
-  for (const [name, document, screenshotValue] of [["first paint", firstDocument, first.screenshot], ["settled", settled, capture.settled_viewport_screenshot]]) {
+  requirePlainObject(capture.document, `${label} settled document`);
+  requirePlainObject(first.document, `${label} first paint document`);
+  for (const [name, screenshotValue] of [["first paint", first.screenshot], ["settled", capture.settled_viewport_screenshot]]) {
     const screenshot = requirePlainObject(screenshotValue, `${label} ${name} screenshot`);
     if (typeof screenshot.path !== "string" || screenshot.path.length === 0) throw new Error(`${label} ${name} screenshot path is missing`);
     requireSha256(screenshot.sha256, `${label} ${name} screenshot SHA-256`);
@@ -56,7 +56,7 @@ function requireState(value, expectedPath, editable, label, standaloneCount = 1,
 
 function requireAction(value, expectedPath, editable, label, expectedOrigin) {
   const action = requirePlainObject(value, label);
-  if (action.focused_control !== true || action.permission_response_count !== 1) throw new Error(`${label} did not exercise one focused permission-bound activation`);
+  if (action.focused_control !== true || action.permission_request_count !== 1) throw new Error(`${label} did not exercise one focused permission-bound activation`);
   requireState(action.state, expectedPath, editable, label, 1, expectedOrigin, !editable);
   return action;
 }
@@ -86,7 +86,7 @@ export function verifyOpen43Issue775Case(caseId, observations, plan) {
     requireAction(row.click, editable ? `${plan.page_path}/edit` : plan.page_path, editable, `${caseId} ${actor} click`, expectedOrigin);
     requireAction(row.keyboard, editable ? `${plan.page_path}/edit` : plan.page_path, editable, `${caseId} ${actor} keyboard`, expectedOrigin);
     const double = requirePlainObject(row.double_activation, `${caseId} ${actor} double activation`);
-    if (double.permission_response_count !== 2) throw new Error(`${caseId} ${actor} double activation did not reproduce the two live permission activations`);
+    if (double.permission_request_count !== 2) throw new Error(`${caseId} ${actor} double activation did not reproduce the two live permission activations`);
     requireState(double.state, editable ? `${plan.page_path}/edit` : plan.page_path, editable, `${caseId} ${actor} double activation`, 1, expectedOrigin);
     requireHistory(row.back_forward, plan.page_path, editable, `${caseId} ${actor} back-forward`, expectedOrigin);
   }

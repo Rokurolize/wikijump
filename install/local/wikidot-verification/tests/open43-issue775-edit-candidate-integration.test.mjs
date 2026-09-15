@@ -108,9 +108,9 @@ function fakeBrowserAdapter({ bad = false, badDouble = false, badUrl = false } =
         return {
           actor,
           initial: { capture: capture(pageUrl, index), state: state(pagePath) },
-          click: { focused_control: true, permission_response_count: 1, state: actionState },
-          keyboard: { focused_control: true, permission_response_count: 1, state: state(finalPath, { editable: allowed, dialog: !allowed }) },
-          double_activation: { permission_response_count: badDouble ? 1 : 2, state: state(finalPath, { editable: allowed, dialog: !allowed }) },
+          click: { focused_control: true, permission_request_count: 1, state: actionState },
+          keyboard: { focused_control: true, permission_request_count: 1, state: state(finalPath, { editable: allowed, dialog: !allowed }) },
+          double_activation: { permission_request_count: badDouble ? 1 : 2, state: state(finalPath, { editable: allowed, dialog: !allowed }) },
           back_forward: {
             back: state(allowed ? pagePath : "/", { standalone: allowed ? 1 : 0 }),
             forward: state(finalPath, { editable: allowed }),
