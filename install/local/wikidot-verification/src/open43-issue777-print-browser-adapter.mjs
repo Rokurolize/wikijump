@@ -1,6 +1,13 @@
 const SELECTOR = 'a.wiki-standalone-button[href="javascript:;"]';
 const VIEWPORT = Object.freeze({ width: 1280, height: 900 });
 const TIMEOUT_MS = 300_000;
+export const OPEN43_ISSUE777_PRINT_OPERATIONS = Object.freeze([
+  "click",
+  "enter",
+  "space",
+  "rapid_repeated_click",
+  "sequential_repeated_click",
+]);
 const CAPTURE_CONTRACT = Object.freeze({
   slug: "issue777-print",
   theme_family: "candidate",
@@ -111,15 +118,66 @@ export class Open43Issue777PrintBrowserAdapter {
       };
       page.on("request", onRequest);
       try {
-        if (mode === "click") await control.click();
-        else if (mode === "enter") await control.press("Enter");
-        else if (mode === "space") await control.press(" ");
-        else {
-          await page.evaluate((selector) => {
-            const element = document.querySelector(selector);
-            element?.click();
-            element?.click();
-          }, SELECTOR);
+        if (mode === "click") await control.click({ noWaitAfter: true });
+        else if (mode === "enter") {
+          await control.press("Enter", { noWaitAfter: true });
+        } else if (mode === "space") {
+          await control.press(" ", { noWaitAfter: true });
+        } else if (mode === "rapid_repeated_click") {
+          await control.click({ noWaitAfter: true });
+          await control.click({ noWaitAfter: true });
+        } else if (mode === "sequential_repeated_click") {
+          await control.click({ noWaitAfter: true });
+          await page.waitForFunction(
+            () =>
+              window.__open43Issue777Print.calls.length === 1 &&
+              window.__open43Issue777Print.pending.length === 1,
+            null,
+            { timeout: TIMEOUT_MS },
+          );
+          const firstDuring = await publicState(page);
+          await page.evaluate(() => window.__open43Issue777Print.release());
+          await page.waitForFunction(
+            (selector) =>
+              document.querySelector(selector)?.hasAttribute("aria-busy") ===
+                false &&
+              window.__open43Issue777Print.pending.length === 0,
+            SELECTOR,
+            { timeout: TIMEOUT_MS },
+          );
+          const betweenRepeats = await publicState(page);
+          await control.click({ noWaitAfter: true });
+          await page.waitForFunction(
+            () =>
+              window.__open43Issue777Print.calls.length === 2 &&
+              window.__open43Issue777Print.pending.length === 1,
+            null,
+            { timeout: TIMEOUT_MS },
+          );
+          const during = await publicState(page);
+          const printCalls = await page.evaluate(() =>
+            structuredClone(window.__open43Issue777Print.calls),
+          );
+          await page.evaluate(() => window.__open43Issue777Print.release());
+          await page.waitForFunction(
+            (selector) =>
+              document.querySelector(selector)?.hasAttribute("aria-busy") ===
+                false &&
+              window.__open43Issue777Print.pending.length === 0,
+            SELECTOR,
+            { timeout: TIMEOUT_MS },
+          );
+          const after = await publicState(page);
+          return {
+            before,
+            during,
+            after,
+            repeat: { first_during: firstDuring, between: betweenRepeats },
+            print_calls: printCalls,
+            mutation_request_count: mutationRequestCount,
+          };
+        } else {
+          throw new Error(`unknown issue 777 print operation: ${mode}`);
         }
         await page.waitForFunction(
           () =>
@@ -189,7 +247,7 @@ export class Open43Issue777PrintBrowserAdapter {
     }
     const operations = Object.fromEntries(
       await Promise.all(
-        ["click", "enter", "space", "repeated"].map(async (mode) => [
+        OPEN43_ISSUE777_PRINT_OPERATIONS.map(async (mode) => [
           mode,
           await this.#operation(pageUrl, mode),
         ]),

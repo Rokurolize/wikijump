@@ -6,7 +6,10 @@ import {
   requireSha256,
   sha256Text,
 } from "./standing-browser-parity-util.mjs";
-import { Open43Issue777PrintBrowserAdapter } from "./open43-issue777-print-browser-adapter.mjs";
+import {
+  OPEN43_ISSUE777_PRINT_OPERATIONS,
+  Open43Issue777PrintBrowserAdapter,
+} from "./open43-issue777-print-browser-adapter.mjs";
 
 export const OPEN43_ISSUE777_CASE_IDS = Object.freeze([
   "A777_BROWSER_PRINT_LIFECYCLE",
@@ -15,7 +18,7 @@ export const OPEN43_ISSUE777_CASE_IDS = Object.freeze([
 const SITE_SLUG = "scpaiueouiuiuiui";
 const SITE_HOST = `${SITE_SLUG}.wikijump.localhost`;
 const PAGE_SOURCE = '[[button print text="Print this page"]]\n';
-const OPERATIONS = Object.freeze(["click", "enter", "space", "repeated"]);
+const OPERATIONS = OPEN43_ISSUE777_PRINT_OPERATIONS;
 
 function requireCapture(value, plan) {
   const capture = requirePlainObject(value, "issue 777 initial capture");
@@ -112,13 +115,20 @@ function requireOperation(value, plan, label) {
   const during = requireState(
     operation.during,
     plan,
-    { focused: true, busy: true, calls: 1, pending: 1 },
+    label === "sequential_repeated_click"
+      ? { focused: true, busy: true, calls: 2, pending: 1 }
+      : { focused: true, busy: true, calls: 1, pending: 1 },
     `issue 777 ${label} during`,
   );
   const after = requireState(
     operation.after,
     plan,
-    { focused: true, busy: false, calls: 1, pending: 0 },
+    {
+      focused: true,
+      busy: false,
+      calls: label === "sequential_repeated_click" ? 2 : 1,
+      pending: 0,
+    },
     `issue 777 ${label} after`,
   );
   if (
@@ -126,20 +136,38 @@ function requireOperation(value, plan, label) {
     before.history_length !== after.history_length ||
     operation.mutation_request_count !== 0 ||
     !Array.isArray(operation.print_calls) ||
-    operation.print_calls.length !== 1
+    operation.print_calls.length !==
+      (label === "sequential_repeated_click" ? 2 : 1)
   ) {
     throw new Error(`issue 777 ${label} navigation or request state drifted`);
   }
-  const call = requirePlainObject(
-    operation.print_calls[0],
-    `issue 777 ${label} print call`,
-  );
-  if (
-    call.url !== plan.page_url ||
-    call.history_length !== before.history_length ||
-    call.focused_control !== true
-  ) {
-    throw new Error(`issue 777 ${label} print call drifted`);
+  for (const [index, value] of operation.print_calls.entries()) {
+    const call = requirePlainObject(
+      value,
+      `issue 777 ${label} print call ${index + 1}`,
+    );
+    if (
+      call.url !== plan.page_url ||
+      call.history_length !== before.history_length ||
+      call.focused_control !== true
+    ) {
+      throw new Error(`issue 777 ${label} print call drifted`);
+    }
+  }
+  if (label === "sequential_repeated_click") {
+    const repeat = requirePlainObject(operation.repeat, "issue 777 sequential repeat");
+    requireState(
+      repeat.first_during,
+      plan,
+      { focused: true, busy: true, calls: 1, pending: 1 },
+      "issue 777 sequential first repeat",
+    );
+    requireState(
+      repeat.between,
+      plan,
+      { focused: true, busy: false, calls: 1, pending: 0 },
+      "issue 777 sequential repeat boundary",
+    );
   }
 }
 
