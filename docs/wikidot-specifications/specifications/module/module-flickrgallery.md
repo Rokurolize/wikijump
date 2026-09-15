@@ -20,12 +20,6 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
-## Retained anonymous provider boundary
-
-The bounded anonymous public probe retained in `install/local/wikidot-verification/artifacts/m1039-flickr-provider-live-20260915.json` (SHA-256 `94f30d0000b9cb33340cf1f3ec5b037ce299e8d8375169a40bf2d46f5c9bfca2`) sent one `edit/PagePreviewModule` request for `[[module FlickrGallery tags="nasa" perPage="1"]]`. Wikidot returned HTTP 200 with AMC status `ok` and the exact `flickr-gallery-box makeHoverTitles` no-photo fallback (`Sorry, no photos.`), without a provider result, provider image, or provider network trace.
-
-This is evidence of the observed no-photo fallback for that probe only. It does not establish provider success DOM, provider request semantics, URL or HTML sanitization, SSRF/CSP/timeout/size policy, or browser loading and settled states. The implementation MUST preserve the existing literal or fail-closed boundary for those unobserved behaviors until a controlled provider-success authority or an equivalent retained Wikidot response is available. Do not infer success or provider policy from this receipt, the static Flickr JavaScript, or a direct Flickr request.
-
 
 ## Suggested public TDD seams
 

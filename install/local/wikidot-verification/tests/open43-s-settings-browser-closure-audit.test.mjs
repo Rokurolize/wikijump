@@ -170,12 +170,14 @@ test("settings and browser closure audit is complete without promoting candidate
   const adminSettled = rowsByCaseId.get("S1046_ADMIN_SETTLED");
   const autocomplete = rowsByCaseId.get("S1046_AUTOCOMPLETE_AND_INTERMEDIATE_FRAMES");
   const welcomeEffect = rowsByCaseId.get("S1046_WELCOME_EFFECT");
-  assert.equal(welcomeEffect.classification, "blocked_evidence");
+  assert.equal(welcomeEffect.classification, "source_ready");
+  assert.equal(welcomeEffect.owner_boundary_status, "owner_scope_boundary");
   assert.deepEqual(welcomeEffect.next_command_ids, []);
-  assert.match(welcomeEffect.reason, /membership transition/u);
-  assert.equal(autocomplete.classification, "blocked_evidence");
+  assert.match(welcomeEffect.reason, /membership-transition/u);
+  assert.equal(autocomplete.classification, "source_ready");
+  assert.equal(autocomplete.owner_boundary_status, "owner_scope_boundary");
   assert.deepEqual(autocomplete.next_command_ids, []);
-  assert.match(autocomplete.reason, /keyboard, focus, loading, save, cancel, or navigation/u);
+  assert.match(autocomplete.reason, /keyboard, focus, loading, and intermediate-navigation/u);
   assert.equal(adminSettled.acceptance.includes("cancel"), false);
   assert.equal(autocomplete.acceptance.includes("cancel"), true);
   for (const caseId of [
