@@ -297,6 +297,91 @@ test("M756 accepts Wikidot-style document navigation while rejecting stale icon 
   assert.throws(() => verifyOpen43MediaBrowserCase("M756_BROWSER_CACHE_TRANSITIONS", stale), /stale favicon bytes/u);
 });
 
+test("M1043 verifies thumbnail identity and viewer failure boundaries without a browser run", () => {
+  const one = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAQAAAACAQMAAABFZu8gAAAAA1BMVEX/AAAZ4gk3AAAADElEQVQI12NgYGAAAAAEAAEnNCcKAAAAAElFTkSuQmCC", "base64");
+  const two = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAAEAQMAAACeIXx6AAAAA1BMVEUAAP+KeNJXAAAAC0lEQVQI12NggAAAAAgAAS8g3TEAAAAASUVORK5CYII=", "base64");
+  const slug = "m1043-gallery";
+  const file = (filename, bytes, width, height) => ({ filename, sha256: sha256(bytes), width, height });
+  const expectedFiles = [
+    file("gallery-one.png", one, 100, 50),
+    file("gallery-two.png", two, 50, 100),
+    file("gallery-disabled.png", one, 100, 50),
+    file("gallery-broken.png", one, 100, 50),
+  ];
+  const anchor = (expected) => ({
+    href: `https://m1043.wjfiles.localhost/local--files/${slug}/${expected.filename}`,
+    image_src: `https://m1043.wjfiles.localhost/local--resized-images/${slug}/${expected.filename}/thumbnail.jpg`,
+  });
+  const image = (expected) => ({
+    complete: true,
+    natural_width: expected.width,
+    natural_height: expected.height,
+    source_url: anchor(expected).image_src,
+  });
+  const thumbnails = {
+    galleries: [
+      { id: "gallery-box-1", images: [image(expectedFiles[0]), image(expectedFiles[1])] },
+      { id: "gallery-box-2", images: [image(expectedFiles[2])] },
+      { id: "gallery-box-3", images: [image(expectedFiles[3])] },
+    ],
+  };
+  const token = "document-token";
+  const viewer = (overrides = {}) => ({
+    overlay_count: 1,
+    lightbox_count: 1,
+    loading_visible: false,
+    image_visible: true,
+    previous_visible: false,
+    next_visible: true,
+    current_number: "image 1 of 2",
+    image_url: anchor(expectedFiles[0]).href,
+    active_element: "gallery-viewer-one",
+    document_token: token,
+    ...overrides,
+  });
+  const clean = {
+    candidate_requests: expectedFiles.map((expected) => ({ pathname: `/local--resized-images/${slug}/${expected.filename}/thumbnail.jpg` })),
+    candidate_failures: [],
+    console_errors: [],
+    page_errors: [],
+    csp_violations: [],
+  };
+  const observations = {
+    url: `https://m1043.wikijump.localhost/${slug}`,
+    expected_files: expectedFiles,
+    static: [anchor(expectedFiles[0]), anchor(expectedFiles[1])],
+    disabled_static: [anchor(expectedFiles[2])],
+    broken_static: [anchor(expectedFiles[3])],
+    thumbnails: { initial: thumbnails, settled: thumbnails },
+    loading: viewer({ loading_visible: true, image_visible: false }),
+    first: viewer(),
+    next: viewer({ current_number: "image 2 of 2", previous_visible: true, next_visible: false, image_url: anchor(expectedFiles[1]).href }),
+    previous: viewer(),
+    overlay_closed: viewer({ overlay_count: 0, lightbox_count: 0 }),
+    disabled_navigation: { pathname: `/local--files/${slug}/gallery-disabled.png`, lightbox_count: 0 },
+    failure: viewer({ loading_visible: true, image_visible: false }),
+    closed: viewer({ overlay_count: 0, lightbox_count: 0 }),
+    diagnostics: clean,
+  };
+
+  const result = verifyOpen43MediaBrowserCase("M1043_BROWSER_RENDER_AND_VIEWER", observations);
+  assert.equal(result.verified, true);
+  assert.equal(result.thumbnail_identity_verified, true);
+  assert.equal(result.focus_verified, true);
+
+  const wrongThumbnail = structuredClone(observations);
+  wrongThumbnail.thumbnails.settled.galleries[0].images[0].source_url = "https://m1043.wjfiles.localhost/local--files/m1043-gallery/gallery-one.png";
+  assert.throws(() => verifyOpen43MediaBrowserCase("M1043_BROWSER_RENDER_AND_VIEWER", wrongThumbnail), /thumbnail request identity/u);
+
+  const missingErrorBoundary = structuredClone(observations);
+  missingErrorBoundary.failure.loading_visible = false;
+  assert.throws(() => verifyOpen43MediaBrowserCase("M1043_BROWSER_RENDER_AND_VIEWER", missingErrorBoundary), /failed-image loading interval/u);
+
+  const replacedDocument = structuredClone(observations);
+  replacedDocument.next.document_token = "new-document";
+  assert.throws(() => verifyOpen43MediaBrowserCase("M1043_BROWSER_RENDER_AND_VIEWER", replacedDocument), /replaced the document/u);
+});
+
 test("M1062 requires the failed empty action interval before the successful upload", () => {
   const uploadBytes = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAQAAAACAQMAAABFZu8gAAAAA1BMVEX/AAAZ4gk3AAAADElEQVQI12NgYGAAAAAEAAEnNCcKAAAAAElFTkSuQmCC", "base64");
   const clean = { candidate_requests: [], candidate_failures: [], console_errors: [], page_errors: [], csp_violations: [] };
