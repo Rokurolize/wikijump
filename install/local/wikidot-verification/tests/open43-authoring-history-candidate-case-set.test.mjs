@@ -188,6 +188,7 @@ class FakePage {
       if (parsed.length === 0) return { status: 400, body: "invalid" };
       const requestBody = "locales=ja_JP%2C+en-US+ja-JP&signature=&user=999&__superform_id=11b3t38";
       this.state.locales = parsed;
+      this.deferNextReload = this.state.deferNextSettingsReloadSettlement === true;
       return { status: 200, body: "saved", request_body: requestBody };
     }
     throw new Error(`unexpected browser operation ${argument.operation}`);
@@ -223,8 +224,27 @@ class FakePage {
   }
 
   async reload() {
-    this.inputValue = this.state.locales.join(" ");
+    if (this.deferNextReload) {
+      this.deferNextReload = false;
+      this.pendingInputValue = this.state.locales.join(" ");
+    } else {
+      this.inputValue = this.state.locales.join(" ");
+    }
     return new FakeResponse(this.currentUrl, 200, "ok");
+  }
+
+  async waitForFunction(_callback, argument, options) {
+    assert.deepEqual(argument, {
+      selector: "#user-display-locales",
+      expected: this.state.locales.join(" "),
+    });
+    assert.equal(options.timeout, 10_000);
+    this.state.settingsWaitCalls = (this.state.settingsWaitCalls ?? 0) + 1;
+    if (this.pendingInputValue !== undefined) {
+      this.inputValue = this.pendingInputValue;
+      this.pendingInputValue = undefined;
+    }
+    assert.equal(this.inputValue, argument.expected);
   }
 
   async goBack() {
@@ -293,7 +313,12 @@ test("candidate registry executes the unblocked #1063 source, diff, and settings
   assert.equal(typeof caseSet.prepareRun, "function");
 
   const calls = [];
-  const state = { pages: new Map(), locales: ["en-US"] };
+  const state = {
+    pages: new Map(),
+    locales: ["en-US"],
+    deferNextSettingsReloadSettlement: true,
+    settingsWaitCalls: 0,
+  };
   const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "open43-history-case-"));
   t.after(() => fs.rm(outputRoot, { recursive: true, force: true }));
   const outputDir = path.join(outputRoot, "evidence");
@@ -329,6 +354,7 @@ test("candidate registry executes the unblocked #1063 source, diff, and settings
     "A1063_SETTINGS_BROWSER_WORKFLOW",
   ]);
   assert.equal(calls.some((call) => call.kind === "rpc" && call.method === "user_edit" && call.params.user === -1 && call.params.locales[0] === "en-US"), true);
+  assert.equal(state.settingsWaitCalls, 1);
   assert.equal(calls.some((call) => call.kind === "rpc" && call.method === "page_delete"), true);
   assert.equal(state.pages.size, 0);
   assert.deepEqual(state.locales, ["en-US"]);

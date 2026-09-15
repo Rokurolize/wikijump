@@ -233,6 +233,19 @@ async function settingsState(page) {
   }, { operation: "settings-state" });
 }
 
+async function waitForSettingsInputValue(page, expectedLocales) {
+  const expectedValue = expectedLocales.join(" ");
+  await page.waitForFunction(({ selector, expected }) => {
+    const input = document.querySelector(selector);
+    return input instanceof HTMLInputElement && input.value === expected;
+  }, {
+    selector: "#user-display-locales",
+    expected: expectedValue,
+  }, {
+    timeout: 10_000,
+  });
+}
+
 async function addSubmittedUserControl(page) {
   await page.evaluate(({ operation }) => {
     if (operation !== "add-submitted-user") throw new Error("unknown settings operation");
@@ -515,6 +528,7 @@ class Open43AuthoringHistoryRun {
       const saved = await responseObservation(saveResponse);
       const saveRequestBody = saveResponse.request_body ?? postBodies.at(-1) ?? "";
       await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
+      await waitForSettingsInputValue(page, desired);
       const afterSaveReload = await settingsState(page);
       const persisted = await this.#user();
 
