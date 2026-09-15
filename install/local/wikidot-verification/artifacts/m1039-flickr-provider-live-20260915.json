@@ -1,0 +1,84 @@
+{
+  "schema": "wikijump.m1039_flickr_provider_probe.v1",
+  "status": "blocked",
+  "target_surface_id": "open43-audit-case:M1039_FLICKR_ARGUMENTS_AND_PROVIDER",
+  "captured_at_utc": "2026-09-15T00:18:14.152147+00:00",
+  "source_identity": {
+    "base_commit": "df1a3fb2bc873ec626b19eba78cb5c298dfc64bc",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "wikidot_py_version": "4.4.1"
+  },
+  "site": "sandbox-for-codex",
+  "actor": "anonymous",
+  "authenticated": false,
+  "mutation_performed": false,
+  "acquisition": {
+    "tool": "wikidot.py anonymous AMC connector",
+    "transport": "direct site-scoped AMC request without site-page discovery",
+    "external_request_count": 1,
+    "attempt_limit": 1,
+    "request_timeout_seconds": 20,
+    "no_retry": true,
+    "barrier_written_before_request": true,
+    "response_sealed_after_request": true,
+    "sealed_response_record_sha256": "65f5ff006d26d4198868254bb4f1aba10e53166d19c7257d5c47422ad4b547c8"
+  },
+  "request": {
+    "method": "POST",
+    "url": "http://sandbox-for-codex.wikidot.com/ajax-module-connector.php",
+    "form": {
+      "mode": "page",
+      "moduleName": "edit/PagePreviewModule",
+      "source": "[[module FlickrGallery tags=\"nasa\" perPage=\"1\"]]",
+      "title": "m1039-flickr-provider-success-probe"
+    },
+    "body_sha256": "75f09c3b1a8d28fc9cb6419be6a8eef31ac42ae4a0319ac4a4b6cf32f833f338",
+    "cookies_sent": false,
+    "authorization_sent": false
+  },
+  "response": {
+    "http_status": 200,
+    "url": "http://sandbox-for-codex.wikidot.com/ajax-module-connector.php",
+    "headers": {
+      "cache-control": "no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+      "content-type": "text/plain; charset=UTF-8",
+      "date": "Tue, 15 Sep 2026 00:18:16 GMT",
+      "expires": "Thu, 19 Nov 1981 08:52:00 GMT"
+    },
+    "body": "{\"status\":\"ok\",\"title\":\"m1039-flickr-provider-success-probe\",\"CURRENT_TIMESTAMP\":1789431495,\"body\":\"\\n\\n<div class=\\\"flickr-gallery-box makeHoverTitles\\\">\\n\\t<div>\\n\\t\\n\\t\\t\\tSorry, no photos.\\n\\t\\t<\\/div>\\n\\t\\t\\t<ul style=\\\"display: none\\\">\\n\\t\\t\\t\\t\\t\\t\\t<li class=\\\"flickr-gallery-parameter\\\">moduleName ::: edit\\/PagePreviewModule<\\/li>\\n\\t\\t\\t\\t\\t\\t\\t<li class=\\\"flickr-gallery-parameter\\\">mode ::: page<\\/li>\\n\\t\\t\\t\\t\\t\\t\\t<li class=\\\"flickr-gallery-parameter\\\">source ::: [[module FlickrGallery tags=&quot;nasa&quot; perPage=&quot;1&quot;]]<\\/li>\\n\\t\\t\\t\\t\\t\\t\\t<li class=\\\"flickr-gallery-parameter\\\">title ::: m1039-flickr-provider-success-probe<\\/li>\\n\\t\\t\\t\\t\\t<\\/ul>\\n\\t\\t\\n\\t<\\/div>\\n\",\"jsInclude\":[\"http:\\/\\/d3g0gp89917ko0.cloudfront.net\\/v--7690939296dc\\/common--modules\\/js\\/wiki\\/image\\/FlickrGalleryModule.js\"],\"cssInclude\":[],\"callbackIndex\":null}",
+    "body_sha256": "2656dfadb5fe24c25efc938edbbf6c0f8f180a63a12a43ec1a575d42b95ef640"
+  },
+  "observed_result": {
+    "amc_status": "ok",
+    "rendered_body_sha256": "368c318015591fb4502aff7e7640a66c0b892213268d4acd652e1bf487031fda",
+    "provider_success_observed": false,
+    "no_photo_diagnostic_observed": true,
+    "error_block_observed": false,
+    "provider_image_observed": false,
+    "js_include": "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/wiki/image/FlickrGalleryModule.js"
+  },
+  "provider_network_metadata": {
+    "direct_provider_request_performed": false,
+    "server_side_provider_trace_exposed": false,
+    "client_visible_url_candidates": [],
+    "client_visible_url_hosts": [],
+    "limitation": "The anonymous Wikidot AMC response exposes no provider request or response trace; no direct Flickr request was made."
+  },
+  "terminal_boundary": {
+    "code": "wikidot-provider-success-not-observed",
+    "summary": "The single canonical public tag probe returned Wikidot's no-photo fallback rather than provider results.",
+    "missing_authority": [
+      "A provider-success response and result DOM from Wikidot",
+      "A Wikidot-visible provider request or response network trace"
+    ],
+    "next_action": "Stop without retrying alternate tags, users, or provider endpoints."
+  },
+  "promoted_rules": [],
+  "credentials_exposed": false,
+  "redactions": [
+    "cookies",
+    "authorization",
+    "WIKIDOT_SESSION_ID",
+    "wikidot_token7"
+  ]
+}
