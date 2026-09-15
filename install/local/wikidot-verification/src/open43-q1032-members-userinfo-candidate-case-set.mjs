@@ -300,6 +300,9 @@ const SOURCE_FILES = Object.freeze([
   "install/local/wikidot-verification/src/standing-browser-runtime-identity.mjs",
   OPEN43_Q1032_EVIDENCE.members.path,
   OPEN43_Q1032_EVIDENCE.userinfo.path,
+  OPEN43_Q1032_EVIDENCE.readonly.artifact.path,
+  OPEN43_Q1032_EVIDENCE.readonly.fixture.path,
+  OPEN43_Q1032_EVIDENCE.readonly.capture_script.path,
   "install/local/wikidot-verification/package.json",
   "install/local/wikidot-verification/pnpm-lock.yaml",
 ]);
@@ -343,6 +346,7 @@ export function createOpen43Q1032CandidateCaseSet({
         page_origin: pageOrigin,
         saved_page: input.saved_page,
         evidence: OPEN43_Q1032_EVIDENCE,
+        retained_readonly_scope: OPEN43_Q1032_EVIDENCE.readonly.scope,
         members: { actor: "anonymous", parameters: MEMBERS_PARAMETERS, public_contract: "status-ok-table-page-one-pager-members-list-script" },
         userinfo: { source: "[[module UserInfo]]", actors: ["anonymous", "editor"], expected_no_target_sha256: USERINFO_NO_TARGET_SHA256 },
         searchusers: { source: "[[module SearchUsers]]", actors: ["anonymous", "editor"], expected_disabled_sha256: SEARCHUSERS_DISABLED_SHA256 },

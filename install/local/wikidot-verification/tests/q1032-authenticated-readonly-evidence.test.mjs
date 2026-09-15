@@ -5,6 +5,11 @@ import path from "node:path";
 import test from "node:test";
 import {fileURLToPath} from "node:url";
 
+import {
+  OPEN43_Q1032_EVIDENCE,
+  verifyOpen43Q1032ReadOnlyEvidence,
+} from "../src/open43-q1032-members-userinfo-candidate-contract.mjs";
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixturePath = path.join(root, "fixtures/q1032-authenticated-readonly.json");
 const artifactPath = path.join(root, "artifacts/q1032-authenticated-readonly-live-20260915.json");
@@ -20,8 +25,22 @@ function readJson(filePath) {
 test("Q1032 read-only evidence seals populated Watchers and WhoInvited role/privacy observations", () => {
   const fixtureBytes = readFileSync(fixturePath);
   const captureBytes = readFileSync(capturePath);
+  const artifactBytes = readFileSync(artifactPath);
   const fixture = JSON.parse(fixtureBytes);
   const artifact = readJson(artifactPath);
+
+  assert.equal(sha256(artifactBytes), OPEN43_Q1032_EVIDENCE.readonly.artifact.sha256);
+  assert.equal(sha256(fixtureBytes), OPEN43_Q1032_EVIDENCE.readonly.fixture.sha256);
+  assert.equal(sha256(captureBytes), OPEN43_Q1032_EVIDENCE.readonly.capture_script.sha256);
+
+  assert.deepEqual(verifyOpen43Q1032ReadOnlyEvidence(artifact, fixture), {
+    verified: true,
+    watchers_rows: 20,
+    whoinvited_requests: 16,
+    bounded_actor_matrix: true,
+    general_privacy_contract: false,
+    rename_delete_import_invalidation: false,
+  });
 
   assert.equal(artifact.schema, "wikijump.q1032.authenticated_readonly_live.v1");
   assert.equal(artifact.base_commit, fixture.base_commit);
@@ -180,5 +199,15 @@ test("Q1032 read-only evidence seals populated Watchers and WhoInvited role/priv
   const serialized = JSON.stringify(artifact);
   for (const forbidden of ["WIKIDOT_SESSION_ID", "Set-Cookie", "Authorization", "wikidot_token7"]) {
     assert.equal(serialized.includes(forbidden), false, `forbidden secret-bearing field: ${forbidden}`);
+  }
+
+  for (const field of ["general_privacy_contract_established", "rename_delete_import_invalidation_observed", "rename_delete_import_invalidation_inferred"]) {
+    const widened = structuredClone(artifact);
+    widened.rule_boundaries[field] = true;
+    assert.throws(
+      () => verifyOpen43Q1032ReadOnlyEvidence(widened, fixture),
+      /claims|observation|infers/u,
+      `Q1032 verifier must reject widened ${field}`,
+    );
   }
 });

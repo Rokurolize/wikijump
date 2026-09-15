@@ -245,3 +245,27 @@ test("Q1032 case is registered as an executable canonical case set", async () =>
   assert.deepEqual(selected.caseIds, [...OPEN43_Q1032_CASE_IDS]);
   assert.equal(typeof selected.prepareRun, "function");
 });
+
+test("Q1032 candidate plan carries the retained bounded directory evidence without widening its claims", async () => {
+  const calls = [];
+  const selected = createOpen43Q1032CandidateCaseSet({sessionFactory: () => fakeSession(calls)});
+  const prepared = selected.prepareRun({candidateIdentity: identity(), privateInput: PRIVATE_INPUT, signal: null, candidateBrowserContexts: fakeBrowserContexts()});
+  assert.deepEqual(prepared.plan.evidence.readonly, {
+    artifact: {
+      path: "install/local/wikidot-verification/artifacts/q1032-authenticated-readonly-live-20260915.json",
+      sha256: "0bb24087191fe7aed639fe7e26418112a763692210659390e20df788eb816b48",
+    },
+    fixture: {
+      path: "install/local/wikidot-verification/fixtures/q1032-authenticated-readonly.json",
+      sha256: "80ea953c5ea6c8ef37771e436a1c91e2a84d542fe7579066239386e345af6fdd",
+    },
+    capture_script: {
+      path: "install/local/wikidot-verification/scripts/capture_q1032_authenticated_readonly.py",
+      sha256: "24c2d457eb00deca7ae86a5966088461d41f4f73aacd7edfccf7099ea2a23acc",
+    },
+    scope: "bounded read-only Watchers and WhoInvited observations; not a general privacy or invalidation contract",
+  });
+  assert.equal(prepared.sourceFiles.includes("install/local/wikidot-verification/artifacts/q1032-authenticated-readonly-live-20260915.json"), true);
+  assert.equal(prepared.sourceFiles.includes("install/local/wikidot-verification/fixtures/q1032-authenticated-readonly.json"), true);
+  assert.equal(prepared.sourceFiles.includes("install/local/wikidot-verification/scripts/capture_q1032_authenticated_readonly.py"), true);
+});

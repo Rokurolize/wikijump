@@ -10,7 +10,10 @@ import {
   Q1026_FIXTURE_PROVENANCE,
   Q1026_USER_FIXTURES,
 } from "./open43-q1026-user-identity-candidate-case-set.mjs";
-import { OPEN43_Q1032_SAVED_DIRECTORY_SOURCE } from "./open43-q1032-members-userinfo-candidate-contract.mjs";
+import {
+  OPEN43_Q1032_EVIDENCE,
+  OPEN43_Q1032_SAVED_DIRECTORY_SOURCE,
+} from "./open43-q1032-members-userinfo-candidate-contract.mjs";
 import { SAVED_SOURCE as Q1036_SAVED_SOURCE } from "./open43-q1036-search-feed-candidate-contract.mjs";
 import { FORUM_MINI_SAVED_SOURCE } from "./open43-q778-forum-mini-candidate-case-set.mjs";
 import { Q1034_SAVED_SOURCES } from "./open43-q1034-forum-candidate-case-set.mjs";
@@ -701,6 +704,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     const members = await page("members-directory", "Members Directory", OPEN43_Q1032_SAVED_DIRECTORY_SOURCE);
     general.saved_page = { page_id: members.page_id, revision_id: members.revision_id, slug: members.slug };
     general.saved_page_source_sha256 = sha256(OPEN43_Q1032_SAVED_DIRECTORY_SOURCE);
+    general.q1032_readonly_evidence = OPEN43_Q1032_EVIDENCE.readonly;
     sql(database, `insert into known_user(user_id) select generate_series(20000100,20000250) on conflict do nothing; insert into wikidot_user(user_id,created_at,fetched_at,is_deleted,name,slug,karma,is_pro) select id,now()-interval '1 second',now(),false,'Fixture Member '||id,'fixture-member-'||id,0,false from generate_series(20000100,20000250) id on conflict do nothing; insert into relation(relation_type,dest_type,dest_id,from_type,from_id,metadata,created_by) select 'member','site',${SITE_ID},'user',id,'{"accepted":{"cause":"accepted","user_id":-1}}'::jsonb,-1 from generate_series(20000100,20000250) id on conflict do nothing;`);
 
     const featuredSource = "FEATURED_START\n[[module FeaturedSite]]\nFEATURED_END";
@@ -948,7 +952,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     await fs.writeFile(generalPath, `${JSON.stringify(general, null, 2)}\n`, { mode: 0o600 });
     await propagateActors();
     clearCandidateRedisCache(cache);
-    const receipt = { schema: COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, status: "pass", generated_at: new Date().toISOString(), candidate: { wikijump_commit: candidate.wikijump_commit, wikijump_tree: candidate.wikijump_tree, ftml_sha: candidate.ftml_sha, compose_project: project, editable_identity_sha256: identitySha256 }, output_private_dir: args["output-private-dir"], private_files: privateFiles, fixture_counts: { members: 151, ftml_markers: markerPages.length, q1034_pagination_threads: 221, q1034_page_comment_posts: 24, q778_posts: 5, q1035_public_revisions: 2105 }, fixtures: { a1037_redirect_source: redirectSource.page_id, b610_canary_attachments: b610Attachments, b690_canary_attachments: b690Attachments, ftml_markers: markerPages.map(({ page_id, revision_id, slug }) => ({ page_id, revision_id, slug })), q1032_members: members.page_id, q1036_saved: q1036.page_id, q1026_identity: q1026Page.page_id, q810_saved: featured.page_id, q778_saved: forumMini.page_id, q809_private: q809Private.page_id, q1035_sitechanges: q1035Site.page_id } };
+    const receipt = { schema: COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, status: "pass", generated_at: new Date().toISOString(), candidate: { wikijump_commit: candidate.wikijump_commit, wikijump_tree: candidate.wikijump_tree, ftml_sha: candidate.ftml_sha, compose_project: project, editable_identity_sha256: identitySha256 }, output_private_dir: args["output-private-dir"], private_files: privateFiles, fixture_counts: { members: 151, ftml_markers: markerPages.length, q1034_pagination_threads: 221, q1034_page_comment_posts: 24, q778_posts: 5, q1035_public_revisions: 2105, q1032_watchers_rows: 20, q1032_whoinvited_actors: 4, q1032_whoinvited_targets: 4 }, fixtures: { a1037_redirect_source: redirectSource.page_id, b610_canary_attachments: b610Attachments, b690_canary_attachments: b690Attachments, ftml_markers: markerPages.map(({ page_id, revision_id, slug }) => ({ page_id, revision_id, slug })), q1032_members: members.page_id, q1032_readonly_evidence: OPEN43_Q1032_EVIDENCE.readonly, q1036_saved: q1036.page_id, q1026_identity: q1026Page.page_id, q810_saved: featured.page_id, q778_saved: forumMini.page_id, q809_private: q809Private.page_id, q1035_sitechanges: q1035Site.page_id } };
     const publication = await sealJsonNoReplace(args.receipt, receipt);
     if (publication.publication !== "created") throw new Error(`candidate input receipt already exists: ${args.receipt}`);
     return { receipt: { path: args.receipt, sha256: publication.sha256 }, private_dir: args["output-private-dir"] };
