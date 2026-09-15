@@ -232,7 +232,7 @@
     },
     {
       "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-      "sha256": "b619f43435c7f0f057511471f3664cae5efdd3d9f7230034f5781536d0726b5a",
+      "sha256": "0cdac3abb3ab6099157dc2095d05c906182917cd14ecf5961f98a29704889fb9",
       "source_revision": "d3f1c4dce427b72911c0cb2a1eda4adb14143959",
       "issue_count": 9,
       "case_count": 64,

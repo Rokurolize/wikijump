@@ -151,11 +151,13 @@
       },
       {
         "path": "docs/development/open43-a-utilities-case-manifest.json",
-        "sha256": "c50b1b66146e76eca14bdfc19c666598615460e782122d36f9cc6f2f2e13a6ef"
+        "sha256": "c50b1b66146e76eca14bdfc19c666598615460e782122d36f9cc6f2f2e13a6ef",
+        "source_revision": "0f874a9f26dd69e455aa15f8c92f7ec571e94fc9"
       },
       {
         "path": "docs/development/open43-a-forms-residual-case-manifest.json",
-        "sha256": "1d2aeba881bb26a7976a2c44eae2f5396aac26c67a746cbaf3e6d4b4c63c243f"
+        "sha256": "1d2aeba881bb26a7976a2c44eae2f5396aac26c67a746cbaf3e6d4b4c63c243f",
+        "source_revision": "0f874a9f26dd69e455aa15f8c92f7ec571e94fc9"
       }
     ]
   },
@@ -589,11 +591,13 @@
         {
           "path": "docs/development/open43-a-forms-residual-case-manifest.json",
           "sha256": "1d2aeba881bb26a7976a2c44eae2f5396aac26c67a746cbaf3e6d4b4c63c243f",
+          "source_revision": "0f874a9f26dd69e455aa15f8c92f7ec571e94fc9",
           "case_inventory": true
         },
         {
           "path": "docs/development/open43-a-utilities-case-manifest.json",
           "sha256": "c50b1b66146e76eca14bdfc19c666598615460e782122d36f9cc6f2f2e13a6ef",
+          "source_revision": "0f874a9f26dd69e455aa15f8c92f7ec571e94fc9",
           "case_inventory": false
         }
       ],
@@ -638,7 +642,8 @@
       "title": "Complete Wikidot site administration and cross-site utility modules",
       "authoritative_manifest": {
         "path": "docs/development/open43-a-utilities-case-manifest.json",
-        "sha256": "c50b1b66146e76eca14bdfc19c666598615460e782122d36f9cc6f2f2e13a6ef"
+        "sha256": "c50b1b66146e76eca14bdfc19c666598615460e782122d36f9cc6f2f2e13a6ef",
+        "source_revision": "0f874a9f26dd69e455aa15f8c92f7ec571e94fc9"
       },
       "source_ready": [
         {"case_id": "A1038_ANONYMOUS_SAFE_STATES"},
