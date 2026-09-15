@@ -379,9 +379,13 @@ test("#1063 audit retires the stale standard-layout breadcrumb candidate without
   }]);
   assert.match(issue.superseded_acceptance[0].result, /do not synthesize #breadcrumbs/u);
   assert.match(issue.superseded_acceptance[0].boundary, /Deepwell ancestry remains valid/u);
-  const customLayout = issue.blocked_evidence.find(({case_id}) => case_id === "A1063_FULL_BREADCRUMB_LIVE_BOUNDARY");
-  assert.match(customLayout.missing, /Pro custom-layout \[\[breadcrumbs\]\]/u);
-  assert.doesNotMatch(customLayout.missing, /no sealed live matrix covers missing/u);
+  const customLayout = issue.source_ready.find(({case_id}) => case_id === "A1063_FULL_BREADCRUMB_LIVE_BOUNDARY");
+  assert.equal(customLayout.status, "owner_scope_boundary");
+  assert.match(customLayout.result, /Pro custom-layout \[\[breadcrumbs\]\]/u);
+  assert.deepEqual(customLayout.not_claimed, [
+    "Pro custom-layout [[breadcrumbs]] DOM",
+    "custom-layout relation-boundary presentation",
+  ]);
 
   const evidence = audit.evidence.find(({evidence_id}) => evidence_id === "AUTHORING_PARENT_STANDARD_LAYOUT_LIVE_20260908");
   assert.deepEqual(evidence, {

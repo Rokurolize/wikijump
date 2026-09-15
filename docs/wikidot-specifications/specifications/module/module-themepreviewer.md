@@ -20,12 +20,6 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
-## Campaign owner security ruling (2026-09-15)
-
-For the actionable `noUi="true"` URL path, Wikijump reads `theme_url` at the browser document boundary and emits an ordinary stylesheet link only when Deepwell's source-owned PageView sidecar recognizes a non-literal, exactly parsed ThemePreviewer invocation. Bare, literal, code, malformed, and unsupported-argument forms do not authorize the path. The value MUST pass the existing stored external-theme policy: HTTPS, no credentials, no non-default port, and an allowlisted theme host. The browser fetches the stylesheet directly under the page's existing `style-src` CSP; Wikijump MUST NOT fetch or proxy the stylesheet server-side.
-
-Missing, empty, malformed, or disallowed values produce no preview stylesheet and leave the stored site theme in place. Application/removal timing, transfer-size limits, and timeout behavior remain unobserved and require candidate/browser proof; this seam does not invent those rules.
-
 
 ## Suggested public TDD seams
 
