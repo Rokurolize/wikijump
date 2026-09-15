@@ -159,15 +159,21 @@ function outputFlags(html) {
   return FORBIDDEN_OUTPUT.filter((fragment) => html.includes(fragment));
 }
 
-function forbiddenRequest(url, allowedOrigins) {
+const SAFE_EXTERNAL_DEPENDENCY_TYPES = new Set(["stylesheet", "font", "image"]);
+
+function forbiddenRequest(request, allowedOrigins) {
   let parsed;
   try {
-    parsed = new URL(url);
+    parsed = new URL(request?.url);
   } catch {
     return true;
   }
   if (["about:", "blob:", "data:"].includes(parsed.protocol)) return false;
-  return !allowedOrigins.has(parsed.origin);
+  if (allowedOrigins.has(parsed.origin)) return false;
+  if (parsed.protocol !== "https:") return true;
+  if (parsed.hostname === "wikidot.com" || parsed.hostname.endsWith(".wikidot.com")) return true;
+  if (parsed.hostname === "thumbnails.wdfiles.com") return true;
+  return !SAFE_EXTERNAL_DEPENDENCY_TYPES.has(request?.resource_type);
 }
 
 function browserSurface(capture, firstHtml, settledHtml, requests, allowedOrigins) {
@@ -193,7 +199,7 @@ function browserSurface(capture, firstHtml, settledHtml, requests, allowedOrigin
     request_gate_aborts: capture.request_gate_aborts,
     requests,
     allowed_origins: [...allowedOrigins],
-    forbidden_requests: requests.filter(({ url }) => forbiddenRequest(url, allowedOriginSet)),
+    forbidden_requests: requests.filter((request) => forbiddenRequest(request, allowedOriginSet)),
   };
 }
 
@@ -341,7 +347,7 @@ function verifyBrowserSurface(surface, name, allowedOrigins) {
     throw new Error(`${name} candidate did not retain complete browser request observations`);
   }
   const allowedOriginSet = new Set(allowedOrigins);
-  const forbiddenRequests = surface.requests.filter(({ url }) => forbiddenRequest(url, allowedOriginSet));
+  const forbiddenRequests = surface.requests.filter((request) => forbiddenRequest(request, allowedOriginSet));
   if (JSON.stringify(surface.allowed_origins) !== JSON.stringify(allowedOrigins)) {
     throw new Error(`${name} candidate browser origin allowlist drifted`);
   }

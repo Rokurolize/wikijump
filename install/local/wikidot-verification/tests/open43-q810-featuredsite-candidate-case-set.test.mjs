@@ -163,10 +163,36 @@ test("Q810 candidate adapter verifies both browser phases and derives no-network
   assert.deepEqual(verification.scope, ["PagePreview", "saved-page", "nested-generated"]);
   assert.deepEqual(browser.events, ["fixture:Q810_CANDIDATE_FAIL_CLOSED_NETWORK", "context"]);
 
-  const forged = structuredClone(observations);
-  forged.saved_page.browser.requests.push({ url: "https://community.wikidot.com/", resource_type: "script" });
-  assert.throws(
-    () => prepared.verifyCase(rows[0].case_id, forged),
-    /forbidden-request evidence was not derived from requests/,
+  const normalThemeDependencies = structuredClone(observations);
+  normalThemeDependencies.saved_page.browser.requests.push(
+    { url: "https://rsms.me/inter/inter.css", resource_type: "stylesheet" },
+    { url: "https://cdn.scpwiki.com/theme/en/sigma/images/header-logo.svg", resource_type: "image" },
+    { url: "https://scp-wiki.wdfiles.com/local--files/component%3Atheme/font-bauhaus.css", resource_type: "stylesheet" },
   );
+  assert.doesNotThrow(() => prepared.verifyCase(rows[0].case_id, normalThemeDependencies));
+
+  for (const request of [
+    { url: "https://community.wikidot.com/", resource_type: "script" },
+    { url: "https://scp-wiki.wikidot.com/theme.css", resource_type: "stylesheet" },
+    { url: "https://thumbnails.wdfiles.com/thumbnail/site/example", resource_type: "image" },
+    { url: "http://cdn.example.test/featured.png", resource_type: "image" },
+    { url: "https://remote.example.test/featured.js", resource_type: "script" },
+    { url: "https://remote.example.test/featured.json", resource_type: "fetch" },
+    { url: "https://remote.example.test/featured-frame", resource_type: "document" },
+  ]) {
+    const forged = structuredClone(observations);
+    forged.saved_page.browser.requests.push(request);
+    assert.throws(
+      () => prepared.verifyCase(rows[0].case_id, forged),
+      /forbidden-request evidence was not derived from requests/,
+      `${request.resource_type} ${request.url}`,
+    );
+
+    forged.saved_page.browser.forbidden_requests.push(request);
+    assert.throws(
+      () => prepared.verifyCase(rows[0].case_id, forged),
+      /made a forbidden or failed browser request/,
+      `${request.resource_type} ${request.url}`,
+    );
+  }
 });
