@@ -34,7 +34,7 @@ const CAPTURE_CONTRACT = Object.freeze({
   geometry_selectors: [],
   presence_probes: [],
 });
-const LISTPAGES_WRAPPER = '<div class="list-pages-box">';
+const EMPTY_LISTPAGES_BOX = /^<div class="list-pages-box">\s*<\/div>$/u;
 
 function pageSlug(runId, role) {
   return `open43-q1040-${runId.slice("candidate-run-".length)}-${role}`;
@@ -71,6 +71,10 @@ function foundHtml(value) {
   return value.data.compiled_body_html;
 }
 
+function isEmptyListPagesBox(value) {
+  return typeof value === "string" && EMPTY_LISTPAGES_BOX.test(value.trim());
+}
+
 class Q1040Run {
   #session;
   #browserContexts;
@@ -79,6 +83,8 @@ class Q1040Run {
   #siteId = null;
   #pages;
   #pageResources = new Map();
+  #originalNextTitle;
+  #renamedNextTitle;
 
   constructor({ session, browserContexts, resources, runId, authorName }) {
     const fixtureId = runId.slice("candidate-run-".length);
@@ -91,6 +97,40 @@ class Q1040Run {
       { role: "current", slug: pageSlug(runId, "current"), title: `zzzzzzzzzzzz Q1040 ${fixtureId} B current`, wikitext: "Q1040_CURRENT\nQ1040_DEFAULT_START\n[[module NextPage by=\"title\"]]\n[[/module]]\nQ1040_DEFAULT_END\nQ1040_NEXT_START\n[[module NextPage by=\"title\"]]\nNEXT=%%linked_title%%|%%title%%\n[[/module]]\nQ1040_NEXT_END\n[[module PreviousPage]]\nPREVIOUS=%%linked_title%%|%%title%%\n[[/module]]" },
       { role: "next", slug: pageSlug(runId, "next"), title: `zzzzzzzzzzzz Q1040 ${fixtureId} C next`, wikitext: "Q1040 next" },
     ];
+    this.#originalNextTitle = this.#pages[2].title;
+    this.#renamedNextTitle = `${this.#originalNextTitle} renamed`;
+  }
+
+  plan() {
+    const current = this.#pages[1];
+    const next = this.#pages[2];
+    return {
+      schema: "wikijump.open43_q1040_reversible_mutation_plan.v1",
+      target: {
+        role: next.role,
+        slug: next.slug,
+        original_title: this.#originalNextTitle,
+        renamed_title: this.#renamedNextTitle,
+      },
+      served_page: {
+        role: current.role,
+        slug: current.slug,
+        path: `/${encodeURIComponent(current.slug)}`,
+      },
+      read_seam: "deepwell.page_view",
+      steps: [
+        { id: "initial", operation: "page_view", actor: "anonymous", page_role: current.role, read_after: "initial" },
+        { id: "rename", operation: "page_edit", actor: "editor", page_role: next.role, read_after: "renamed" },
+        { id: "delete", operation: "page_delete", actor: "editor", page_role: next.role, read_after: "deleted" },
+        { id: "restore", operation: "page_restore", actor: "editor", page_role: next.role, identity: ["page_id", "slug"], read_after: "restored" },
+      ],
+      cleanup: {
+        operation: "page_delete",
+        actor: "editor",
+        page_roles: this.#pages.map(({ role }) => role),
+        proof: ["page_get:null", "public_status:404", "resource:released"],
+      },
+    };
   }
 
   async #rpc(method, params = {}, { actor = "editor", page, cleanup = false } = {}) {
@@ -143,6 +183,10 @@ class Q1040Run {
       next_row: nextRow,
       selected_slug: nextRow.includes(`href="/${next.slug}"`) ? next.slug : null,
       date: defaultRow.match(/<span class="odate time_[^"]+ format_[^"]+">[^<]*<\/span>/u)?.[0] ?? null,
+      no_result: {
+        default_row: isEmptyListPagesBox(defaultRow),
+        next_row: isEmptyListPagesBox(nextRow),
+      },
     };
   }
 
@@ -168,7 +212,7 @@ class Q1040Run {
     const initial = await this.#view();
     if (initial.selected_slug !== next.slug || !initial.next_row.includes(next.title) || initial.date === null) throw new Error("Q1040 public NextPage did not select the initial adjacent page");
 
-    const renamedTitle = `${next.title} renamed`;
+    const renamedTitle = this.#renamedNextTitle;
     const edited = await this.#rpc("page_edit", {
       site_id: this.#siteId,
       page: next.slug,
@@ -194,7 +238,7 @@ class Q1040Run {
       ip_address: "127.0.0.1",
     }, { page: next.slug });
     const deleted = await this.#view();
-    if (deleted.selected_slug !== null || !deleted.next_row.includes(LISTPAGES_WRAPPER) || deleted.next_row.includes("list-pages-item") || deleted.next_row.includes(next.slug)) throw new Error("Q1040 public NextPage did not render the empty wrapper after deletion");
+    if (deleted.selected_slug !== null || deleted.no_result?.default_row !== true || deleted.no_result?.next_row !== true || deleted.next_row.includes(next.slug)) throw new Error("Q1040 public NextPage did not render the exact empty wrapper after deletion");
 
     await this.#rpc("page_restore", {
       site_id: this.#siteId,
@@ -227,11 +271,12 @@ class Q1040Run {
         settleMs: 0,
         navigate: ({ page: targetPage, url: targetUrl, timeoutMs }) => targetPage.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs }),
       });
-      const dom = await page.evaluate(() => {
+      const served = await page.evaluate(() => {
         const content = document.querySelector("#page-content");
         const wrappers = [...content.children].filter((node) => node.matches("div.list-pages-box"));
         return {
-          links: [...content.querySelectorAll("a")].map((link) => ({ href: new URL(link.href).pathname, text: link.textContent.trim() })),
+          url: location.href,
+          links: [...content.querySelectorAll("a")].map((link) => ({ href: link.getAttribute("href"), absolute_href: link.href, text: link.textContent.trim() })),
           default_row: wrappers[0]?.outerHTML ?? null,
           list_pages_box_count: wrappers.length,
         };
@@ -241,9 +286,13 @@ class Q1040Run {
         observations: {
           url,
           capture,
-          ...dom,
+          served,
+          links: served.links,
+          default_row: served.default_row,
+          list_pages_box_count: served.list_pages_box_count,
           lifecycle: { initial, renamed, deleted, restored },
           saved_body_sha256: { before: savedBefore, after: savedAfter },
+          mutation_plan: this.plan(),
           adapter_events: this.#session.events,
           event_scope: "adapter-issued-external-requests-only",
         },
@@ -275,13 +324,18 @@ class Q1040Run {
     return { pages: pages.reverse() };
   }
 
-  verifyCase(_caseId, observations) {
+  verifyCase(caseId, observations) {
+    if (caseId !== OPEN43_Q1040_CASE_IDS[0]) throw new Error(`unsupported Q1040 case: ${caseId}`);
     const next = this.#pages[2];
     const previous = this.#pages[0];
+    const current = this.#pages[1];
     const capture = observations.capture;
-    if (capture?.navigation_status !== 200 || capture?.capture_error || !Array.isArray(capture?.failures)) throw new Error("Q1040 served capture was not a clean HTTP 200");
+    const expectedUrl = new URL(`/${encodeURIComponent(current.slug)}`, this.#session.pageOrigin).href;
+    if (observations.url !== expectedUrl || capture?.navigation_status !== 200 || capture?.input_url !== expectedUrl || capture?.final_url !== expectedUrl || Object.hasOwn(capture ?? {}, "capture_error") || !Array.isArray(capture?.failures)) throw new Error("Q1040 served capture was not bound to the exact current-page URL");
     if (capture.failures.length !== 0 || (Array.isArray(capture.request_gate_aborts) && capture.request_gate_aborts.length !== 0)) throw new Error("Q1040 served capture observed unexpected browser request failures");
-    const defaultRow = observations.default_row;
+    const served = observations.served;
+    if (served?.url !== expectedUrl) throw new Error("Q1040 browser DOM was not captured at the exact current-page URL");
+    const defaultRow = served.default_row;
     if (
       typeof defaultRow !== "string" ||
       !defaultRow.startsWith('<div class="list-pages-box">') ||
@@ -291,19 +345,23 @@ class Q1040Run {
       !/<span class="odate time_-?\d+ format_[^"]+">[^<]+<\/span>/u.test(defaultRow) ||
       !defaultRow.includes("Q1040 next") ||
       defaultRow.includes("data-wikijump-compat-") ||
-      observations.list_pages_box_count !== 3
+      served.list_pages_box_count !== 3
     ) throw new Error("Q1040 served page did not expose the exact default NextPage row");
-    const links = observations.links ?? [];
-    const nextLink = links.find((link) => link.href === `/${next.slug}` && link.text === next.title);
-    const previousLink = links.find((link) => link.href === `/${previous.slug}` && link.text === previous.title);
+    const links = served.links ?? [];
+    const nextHref = `/${next.slug}`;
+    const previousHref = `/${previous.slug}`;
+    const nextLink = links.find((link) => link.href === nextHref && link.absolute_href === new URL(nextHref, expectedUrl).href && link.text === next.title);
+    const previousLink = links.find((link) => link.href === previousHref && link.absolute_href === new URL(previousHref, expectedUrl).href && link.text === previous.title);
     if (!nextLink || !previousLink) throw new Error("Q1040 served page did not expose exact title and default-date neighbors");
+    if (JSON.stringify(observations.mutation_plan) !== JSON.stringify(this.plan())) throw new Error("Q1040 evidence did not retain the exact reversible mutation plan");
     const lifecycle = observations.lifecycle;
     if (
       lifecycle?.initial?.selected_slug !== next.slug ||
       lifecycle?.renamed?.selected_slug !== next.slug ||
       !lifecycle.renamed.next_row.includes(next.title) ||
       lifecycle?.deleted?.selected_slug !== null ||
-      !lifecycle.deleted.next_row.includes(LISTPAGES_WRAPPER) ||
+      lifecycle?.deleted?.no_result?.default_row !== true ||
+      lifecycle?.deleted?.no_result?.next_row !== true ||
       lifecycle.deleted.next_row.includes("list-pages-item") ||
       lifecycle?.restored?.selected_slug !== next.slug ||
       !lifecycle.restored.next_row.includes(next.title)
@@ -314,7 +372,8 @@ class Q1040Run {
   }
 
   verifyCleanup(proof, resources) {
-    if (!proof || proof.pages?.length !== this.#pages.length || proof.pages.some((page) => page.page_get !== null || page.public_status !== 404) || resources.some((resource) => resource.released !== true)) throw new Error("Q1040 cleanup proof is incomplete");
+    const expectedRoles = this.#pages.map(({ role }) => role);
+    if (!proof || !Array.isArray(proof.pages) || proof.pages.length !== expectedRoles.length || proof.pages.some((page, index) => page.role !== expectedRoles[index] || page.page_get !== null || page.public_status !== 404) || !Array.isArray(resources) || resources.length !== expectedRoles.length || resources.some((resource) => resource.released !== true)) throw new Error("Q1040 cleanup proof is incomplete");
     return { public_absence_verified: true, page_count: proof.pages.length };
   }
 }
@@ -335,7 +394,7 @@ export function createOpen43Q1040CandidateCaseSet({ sessionFactory = (options) =
         runtimeBindings: session.requiredServiceBindings,
         privateInputIdentity: session.privateInputIdentity,
         browserCredentialPolicy: "none",
-        plan: { schema: "wikijump.open43_q1040_candidate_plan.v1", site_slug: SITE_SLUG, case_ids: OPEN43_Q1040_CASE_IDS, evidence: LIVE_EVIDENCE, neighbor_modes: ["title", "creation-date"], mutation_lifecycle: ["rename", "delete", "restore", "no-result"], event_scope: "adapter-issued-external-requests-only" },
+        plan: { schema: "wikijump.open43_q1040_candidate_plan.v1", site_slug: SITE_SLUG, case_ids: OPEN43_Q1040_CASE_IDS, evidence: LIVE_EVIDENCE, neighbor_modes: ["title", "creation-date"], mutation_lifecycle: ["rename", "delete", "restore", "no-result"], mutation_plan: execution.plan(), event_scope: "adapter-issued-external-requests-only" },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
         verifyCase: (caseId, observations) => execution.verifyCase(caseId, observations),
