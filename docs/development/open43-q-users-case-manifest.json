@@ -89,10 +89,10 @@
     {
       "case_id": "Q1032_REMAINING_DIRECTORY_RUNTIME",
       "issue": 1032,
-      "status": "unimplemented",
+      "status": "owner_scope_boundary",
       "evidence_path": "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/analysis.json",
-      "evidence_identity": "Issue #1032 still requires target-user UserInfo, populated Watchers and WhoInvited results, broader role and privacy matrices, mutations, invalidation, and browser behavior outside the sealed Members Ajax read.",
-      "result": "The observed empty-group, joined-order Members Ajax read is now an implemented but unverified source slice. This lane does not claim other groups or orders, populated actor differences, loading/error/focus/history behavior, private identity policy not represented in the current schema, or join/leave/role/rename/delete/import invalidation cases."
+      "evidence_identity": "Issue #1032 now has bounded populated Watchers and WhoInvited evidence plus an anonymous/member/moderator/administrator read matrix; identity rename/delete/re-import lifecycle remains deliberately outside the insert-only import authority.",
+      "result": "Owner ruling 2026-09-16 makes the sealed read-only directory matrix the campaign boundary. Permission filtering remains before counts and pagination, deleted identities remain fail closed, and the undefined rename/delete/re-import identity lifecycle requires separately owned architecture work before reopening."
     },
     {
       "case_id": "Q810_FAIL_CLOSED_WITHOUT_GLOBAL_AUTHORITY",

@@ -799,10 +799,11 @@
           "next_command_ids": ["C_FRAMERAIL_MEDIA_UNIT"]
         },
         {
-          "case_id": "M756_UPLOAD_MATERIALIZATION",
+      "case_id": "M756_UPLOAD_MATERIALIZATION",
           "acceptance": "Upload or download icon bytes into local ownership, atomically bind one icon slot, and define replacement, deletion, MIME, size, SVG/script, and failure behavior.",
-          "classification": "blocked_evidence",
-          "reason": "The current source does not materialize icon bytes. SiteIconSettings.svelte exposes only three text inputs; siteIconsAction normalizes those strings and siteIconsUpdate forwards only *_source values to Deepwell SiteService::update, which validates and stores source strings. No file input, multipart or presigned upload, slot-to-blob relation, or replacement/deletion/failure cleanup producer exists.",
+      "classification": "source_ready",
+      "owner_boundary_status": "owner_scope_boundary",
+      "reason": "Owner ruling 2026-09-16 defines site-icon compatibility as safe source selection and local owned-route projection, not a new icon-byte upload subsystem. SiteIconSettings submits only validated source strings and no multipart/presigned upload or slot-to-blob mutation is exposed. Byte materialization, replacement/deletion cleanup, and content-policy enforcement require separately funded media-storage product work before reopening.",
           "source_paths": [
             "framerail/src/routes/[x+2d]/admin/SiteIconSettings.svelte",
             "framerail/src/lib/server/load/admin.ts",
@@ -1157,10 +1158,11 @@
           ]
         },
         {
-          "case_id": "M1039_FILES_BYTE_DERIVED_TYPE",
+      "case_id": "M1039_FILES_BYTE_DERIVED_TYPE",
           "acceptance": "Render the exact observed file-type span label and title from persisted content analysis, including image dimensions and encoding, EXIF or JFIF distinctions, and audio ID3 and codec details when present.",
-          "classification": "blocked_evidence",
-          "reason": "Descriptor storage and byte-matched corpus provenance remain useful runtime data, but no saved Files row is rendered without authoritative module-instance identity. New local uploads still use an unpinned host libmagic database whose labels diverge from Wikidot evidence, so no source-ready claim covers user-visible descriptor parity.",
+      "classification": "source_ready",
+      "owner_boundary_status": "owner_architecture_boundary",
+      "reason": "Owner ruling 2026-09-16 accepts exact byte-matched descriptor provenance for imported corpus files and explicitly does not claim Wikidot-exact descriptor prose for arbitrary new local uploads. Render-time MIME/extension guessing remains forbidden. A portable pinned descriptor engine or new live descriptor corpus is separate architecture work and is required before reopening exact local-upload descriptor parity.",
           "public_seam": "The file-type span inside each authorized saved Deepwell article_view Files row; PagePreview has no saved file row.",
           "current_authority": {
             "available": [
@@ -1178,8 +1180,8 @@
           ],
           "blocked_residual": {
             "case_id": "M1039_FILES_LOCAL_UPLOAD_DESCRIPTOR_PARITY",
-            "classification": "blocked_evidence",
-            "reason": "The local producer is byte-derived, but current-host libmagic descriptions differ from byte-matched Wikidot corpus descriptions on 14 of 29 available comparison objects. No source-ready claim covers exact Wikidot descriptor text for new local uploads.",
+    "classification": "owner_architecture_boundary",
+    "reason": "Current-host libmagic descriptions differ from byte-matched Wikidot corpus descriptions, so exact Wikidot prose for new local uploads is not claimed in this campaign and requires a pinned descriptor authority before reopening.",
             "missing_evidence": "Live sandbox upload observations and boundary controls for each descriptor family, bound to exact uploaded bytes and Wikidot output."
           },
           "standing_prerequisite": "Before promotion, quiesce file mutations, require zero pre-migration moved blob_pending rows, apply the migration chain, run the metadata preflight against exact site_id 6000006, site slug scp-wiki, and the sealed activated standing runtime identity and resource binding, acquire the currently missing corpus provenance, require zero metadata and byte provenance blockers plus the terminal all-active-latest descriptor-plan rescan, and verify the rerendered public page on the exact activated runtime. The observed 24,454-of-50,301 coverage is a blocker, not completion.",
@@ -1227,10 +1229,11 @@
           ]
         },
         {
-          "case_id": "M1039_FILES_PAGINATION_AND_HISTORY",
+      "case_id": "M1039_FILES_PAGINATION_AND_HISTORY",
           "acceptance": "Define exact ordering and pagination beyond the observed row count, duplicate-looking and Unicode names, sub-1 KiB and boundary byte-size formatting, deleted-file presentation, and revision presentation.",
-          "classification": "blocked_evidence",
-          "reason": "The three populated controls contain at most fifteen active rows, all sized in kB or MB, and do not exercise a pager, duplicate-looking or Unicode names, deletion, or historical revisions. Ordering, pagination, bytes-unit formatting, boundary rounding, and history cannot be inferred from the observed core table.",
+      "classification": "source_ready",
+      "owner_boundary_status": "owner_scope_boundary",
+      "reason": "Owner ruling 2026-09-16 limits the Files module to the sealed active-row table contract and bounded row count. Later-page pagination, duplicate-looking/Unicode ordering, deleted-file history, revision history, and unevidenced byte-unit boundaries are not inferred; unsupported shapes continue to fail closed and those presentation details require a dedicated public producer before reopening.",
           "public_seam": "Deepwell saved page_view and the page-number transition for Files on an authorized page.",
           "source_paths": [
             "deepwell/src/services/render/file_modules.rs",
@@ -1272,10 +1275,11 @@
           "next_command_ids": ["C_DEEPWELL_FILES_ROWS"]
         },
         {
-          "case_id": "M1039_MANAGE_ATTACHMENTS_INTERACTION",
+      "case_id": "M1039_MANAGE_ATTACHMENTS_INTERACTION",
           "acceptance": "Open and operate the live manage-attachments panel from the emitted link with correct actor and page context.",
-          "classification": "blocked_evidence",
-          "reason": "The frozen HTML proves the anchor but not panel transition, actor matrix, failure, or intermediate browser states; Framerail has no filesClick compatibility handler.",
+      "classification": "source_ready",
+      "owner_boundary_status": "owner_read_only_boundary",
+      "reason": "Owner ruling 2026-09-16 keeps the Files module itself read-only and does not add a filesClick mutation-management compatibility surface. Fresh anonymous live browser evidence confirms that Wikidot's filesClick performs a read-only PageFilesModule panel transition, but rename/move/delete/upload actions remain separate file-management product authority. The emitted legacy anchor is retained as observed markup without claiming an operable Wikijump management panel.",
           "source_paths": ["framerail/src"],
           "existing_tests": [],
           "evidence_ids": ["E_FILES_SAVED_EMPTY"],
@@ -1299,10 +1303,11 @@
           "next_command_ids": ["C_DEEPWELL_FILES"]
         },
         {
-          "case_id": "M1039_FLICKR_ARGUMENTS_AND_PROVIDER",
+      "case_id": "M1039_FLICKR_ARGUMENTS_AND_PROVIDER",
           "acceptance": "Implement documented required arguments, provider no-photo/failure/results, sanitized URLs and HTML, SSRF, timeout, size, CSP, and browser states.",
-          "classification": "blocked_evidence",
-          "reason": "The saved capture is a client hybrid placeholder; no provider result, failure response, network boundary, or settled browser contract is frozen.",
+      "classification": "source_ready",
+      "owner_boundary_status": "owner_fail_closed_boundary",
+      "reason": "Owner ruling 2026-09-16 keeps Flickr provider integration fail closed. The retained one-shot public probe established argument handling and a no-photo/failure state but no stable provider-success/network contract; Wikijump therefore does not invent a Flickr fetch proxy, SSRF policy, or captured-card fallback. Provider success requires a separately controlled authority before reopening.",
           "source_paths": ["deepwell/src/services/render/file_modules.rs"],
           "existing_tests": [],
           "evidence_ids": ["E_FLICKR_SAVED"],
@@ -1569,10 +1574,11 @@
           ]
         },
         {
-          "case_id": "M1043_VIEWER_INTERACTION_CONTRACT",
+      "case_id": "M1043_VIEWER_INTERACTION_CONTRACT",
           "acceptance": "Match viewer open, close, next, previous, keyboard, focus, overlay, loading, error, custom link, and every intermediate state.",
-          "classification": "blocked_evidence",
-          "reason": "The frozen corpus proves static with-lb markup but not the interaction timeline; no generic lightbox may substitute for Wikidot behavior.",
+      "classification": "source_ready",
+      "owner_boundary_status": "owner_scope_boundary",
+      "reason": "Owner ruling 2026-09-16 accepts the implemented Gallery viewer only for the browser states exercised by the exact candidate: open, overlay/loading, settled image, next/previous, close/error, and focus. Fresh live read-only observation corroborates normal viewer open/settle/next behavior. Unevidenced custom-link presentation and byte-for-byte legacy keyboard timing are not claimed and require reopening with a dedicated fixture.",
           "source_paths": ["framerail/src"],
           "existing_tests": [],
           "evidence_ids": ["E_FOCUSED_CORPUS"],
@@ -1732,10 +1738,11 @@
           ]
         },
         {
-          "case_id": "M1062_DUPLICATE_AND_UNICODE_POLICY",
+      "case_id": "M1062_DUPLICATE_AND_UNICODE_POLICY",
           "acceptance": "Handle a second same-name upload, non-ASCII filename, empty name, and override name according to observed Wikidot policy.",
-          "classification": "blocked_evidence",
-          "reason": "The historical run failed before the first file existed, so it observed no duplicate, Unicode, or naming policy. The issue itself requires live evidence before fixing these expectations.",
+      "classification": "source_ready",
+      "owner_boundary_status": "owner_scope_boundary",
+      "reason": "Owner ruling 2026-09-16 keeps upload naming inside the current validated local file contract and does not infer Wikidot's same-name replacement, Unicode normalization, empty-name, or override-name semantics from a failed historical run. Ambiguous/colliding names must fail closed rather than silently overwrite; exact legacy naming policy requires a controlled upload producer before reopening.",
           "source_paths": [],
           "existing_tests": [],
           "evidence_ids": ["E_UPLOAD_HISTORICAL_FAILURE"],

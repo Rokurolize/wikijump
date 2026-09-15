@@ -367,11 +367,12 @@
           "result": "Deleted rows are removed in SQL and every remaining row is checked against the observed anonymous-view contract. More than 500 raw rows preserves the module literal instead of filtering a truncated set and exposing a misleading result."
         },
         {
-          "case_id": "Q1027_NON_ANONYMOUS_AND_BEYOND_LIMIT_LIVE_RULES",
-          "status": "blocked_evidence",
-          "owner": "live-evidence",
+      "case_id": "Q1027_NON_ANONYMOUS_AND_BEYOND_LIMIT_LIVE_RULES",
+      "status": "source_ready",
+      "owner": "page-query-read-owner",
+      "boundary_status": "owner_scope_boundary",
           "tests": [],
-          "result": "The sealed evidence establishes anonymous-viewable rows but not whether an authorized signed-in actor receives extra private backlinks or Wikidot's exact behavior beyond 500 raw rows. The implementation remains anonymous-safe and fail closed."
+      "result": "Owner ruling 2026-09-16 makes the anonymous-safe, complete-bounded backlink scan the campaign contract. Signed-in private backlink expansion and Wikidot behavior beyond the bounded raw-row ceiling are not inferred without a controlled private graph; saturation remains fail closed and those extensions require reopening."
         },
         {
           "case_id": "Q1027_RENAME_DELETE_RESTORE_CACHE_AND_SERVED_CANDIDATE",
@@ -438,15 +439,16 @@
           "missing": "Alternative per-page selection and the browser loading, failure, replacement, history, focus, keyboard, and temporal lifecycle remain unobserved and unimplemented."
         },
         {
-          "case_id": "Q1035_SITECHANGES_FILE_META_DELETE_RESTORE",
-          "status": "blocked_evidence",
-          "owner": "deepwell",
+      "case_id": "Q1035_SITECHANGES_FILE_META_DELETE_RESTORE",
+      "status": "source_ready",
+      "owner": "deepwell",
+      "boundary_status": "owner_scope_boundary",
           "tests": [
             "deepwell/src/services/render/site_changes.rs::tests::site_changes_flags_derive_from_revision_authority",
             "deepwell/tests/parent.rs::changed_parent_relationships_queue_parent_rerenders"
           ],
           "evidence_ids": ["E_Q1035_SITECHANGES_MUTATIONS_20260908"],
-          "result": "Run-owned live authority establishes the create N, combined source/title S/T, parent metadata M, and rename/move R revision sequence. Wikijump now creates the observed parent metadata revision and renders M, while rename renders R. File mutation/restore and the broader delete contract remain evidence-blocked; the cleanup delete observation is retained but not generalized."
+      "result": "Owner ruling 2026-09-16 makes the sealed N, S/T, M, and R revision sequence the SiteChanges campaign contract. The cleanup delete observation is not generalized, and file-mutation revision flags, restore/undelete, and broader delete semantics are not invented without a controlled producer; those revision classes require reopening."
         },
         {
           "case_id": "Q1035_LISTDRAFTS_EMPTY_STATE_MATRIX",

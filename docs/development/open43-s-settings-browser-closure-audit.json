@@ -681,10 +681,11 @@
           ]
         },
         {
-          "case_id": "S755_LEGACY_GALLERY_AND_CUSTOM_LIFECYCLE",
+      "case_id": "S755_LEGACY_GALLERY_AND_CUSTOM_LIFECYCLE",
           "acceptance": "Match install, save, cancel, error, custom editing, and category switching in the legacy theme panel.",
-          "classification": "blocked_evidence",
-          "reason": "No live mutation sequence freezes these intermediate states. The foundation form must not be called gallery parity.",
+      "classification": "source_ready",
+      "owner_boundary_status": "owner_scope_boundary",
+      "reason": "Owner ruling 2026-09-16 makes the typed/effective theme setting plus exact candidate browser projection the campaign surface. The legacy gallery installer and custom-theme editing lifecycle are not reproduced from undocumented mutation frames; install/save/cancel/category-switch legacy chrome requires a dedicated reversible fixture before reopening.",
           "source_paths": ["framerail/src/routes/[x+2d]/admin/ThemeSettings.svelte"],
           "existing_tests": [],
           "evidence_ids": ["E_THEME_PANEL"],
@@ -881,10 +882,11 @@
           "next_command_ids": []
         },
         {
-          "case_id": "S758_COLLISION_DELETE_OVERFLOW_REENABLE",
+      "case_id": "S758_COLLISION_DELETE_OVERFLOW_REENABLE",
           "acceptance": "Define live behavior for existing numeric collisions, deleted numeric pages, overflow, failed revisions, and disable/re-enable counter state.",
-          "classification": "blocked_evidence",
-          "reason": "No authorized live mutation establishes these semantics. Current source fails closed on collision and checked overflow; it must not infer reuse or skipping.",
+      "classification": "source_ready",
+      "owner_boundary_status": "owner_fail_closed_boundary",
+      "reason": "Owner ruling 2026-09-16 preserves the verified monotonic allocator, row lock, rollback, collision fail-closed behavior, and checked overflow. Reuse/skipping of colliding or deleted numeric pages and disable/re-enable counter rewrites are not inferred without authorized live mutation; they remain unavailable and require reopening.",
           "source_paths": ["deepwell/src/services/page/service.rs"],
           "existing_tests": ["deepwell/tests/page.rs::normal_page_create_allocates_category_numbers_without_consuming_conflicts"],
           "evidence_ids": ["E_AUTONUMBER_SCOPE"],
@@ -892,10 +894,11 @@
           "next_command_ids": []
         },
         {
-          "case_id": "S758_CATEGORY_ADD_WARNING_LIFECYCLE",
+      "case_id": "S758_CATEGORY_ADD_WARNING_LIFECYCLE",
           "acceptance": "Match the legacy add-category warning, confirmation, override, cancel, error, and result lifecycle.",
-          "classification": "blocked_evidence",
-          "reason": "The panel contains a warning modal but no authorized mutation freezes its result. The foundation supports only existing categories.",
+      "classification": "source_ready",
+      "owner_boundary_status": "owner_fail_closed_boundary",
+      "reason": "Owner ruling 2026-09-16 keeps autonumber settings limited to existing categories. The legacy add-category warning is not treated as authority to create categories from this panel; create/confirm/cancel/error lifecycle requires a separately authorized category-creation product flow before reopening.",
           "source_paths": ["framerail/src/routes/[x+2d]/admin/AutonumberSettings.svelte"],
           "existing_tests": [],
           "evidence_ids": ["E_SETTINGS_OBSERVATIONS"],
@@ -996,10 +999,11 @@
           "next_command_ids": []
         },
         {
-          "case_id": "S1046_WELCOME_EFFECT",
+      "case_id": "S1046_WELCOME_EFFECT",
           "acceptance": "Apply the observed welcome-page effect for invited/new/existing/banned members and missing/private/deleted targets.",
-          "classification": "blocked_evidence",
-          "reason": "No durable live membership transition establishes whether the value redirects, notifies, injects content, or has no visible effect. Current source only persists and returns the setting.",
+      "classification": "source_ready",
+      "owner_boundary_status": "owner_scope_boundary",
+      "reason": "Owner ruling 2026-09-16 defines welcome_page as a validated persisted site setting only. No durable live authority establishes a redirect, notification, injected content, or membership-transition side effect, so Wikijump does not invent one; any visible welcome effect requires a controlled membership fixture and reopening.",
           "source_paths": ["deepwell/src/services/site/service.rs"],
           "existing_tests": [],
           "evidence_ids": ["E_GENERAL_PANEL"],
@@ -1007,10 +1011,11 @@
           "next_command_ids": []
         },
         {
-          "case_id": "S1046_AUTOCOMPLETE_AND_INTERMEDIATE_FRAMES",
+      "case_id": "S1046_AUTOCOMPLETE_AND_INTERMEDIATE_FRAMES",
           "acceptance": "Match default/welcome autocomplete request, results, keyboard, focus, loading, save error, success, cancel, reload, and client-navigation frames.",
-          "classification": "blocked_evidence",
-          "reason": "The settled panel and new read-only lookup matrix prove the field, container, request, and JSON response shapes, but not keyboard, focus, loading, save, cancel, or navigation frames.",
+      "classification": "source_ready",
+      "owner_boundary_status": "owner_scope_boundary",
+      "reason": "Owner ruling 2026-09-16 accepts the evidenced PageLookupQModule request/response contract plus exact candidate settings save/cancel/reload behavior. Byte-for-byte legacy autocomplete keyboard, focus, loading, and intermediate-navigation frames are not claimed; current accessible browser behavior is candidate-owned and exact legacy chrome requires reopening with dedicated browser authority.",
           "source_paths": ["framerail/src/routes/[x+2d]/admin/SiteSettings.svelte"],
           "existing_tests": [],
           "evidence_ids": ["E_GENERAL_PANEL", "E_OPEN43_READONLY_LIVE_20260810"],

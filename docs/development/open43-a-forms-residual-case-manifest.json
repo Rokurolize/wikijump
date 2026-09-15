@@ -126,8 +126,8 @@
     },
     {
       "case_id": "A1037_MAILFORM_INITIAL_DOM_AND_SUBMIT",
-      "status": "unimplemented",
-      "owner": "deepwell_framerail",
+      "status": "owner_fail_closed_boundary",
+      "owner": "deepwell_framerail_security_boundary",
       "blockers": [
         "The only frozen form contains a request-bound numeric form identity and opaque mailform definition token, but the local model has no authority that issues, persists, expires, or validates either value.",
         "No observed or local contract resolves the omitted-to administrator set or named Wikidot recipients without becoming a recipient-existence oracle.",
@@ -135,7 +135,7 @@
         "No MailForm-specific rate-limit authority or replay policy exists behind the trusted RequestContext and CSRF origin boundary.",
         "Field grammar, multiple fields, malformed declarations, validation errors, format=csv, recipient errors, and anonymous, member, and administrator differences are not frozen."
       ],
-      "result": "No definition token, recipient, success response, or mutation endpoint was fabricated. The live argument-free form is evidence that a server-issued contract exists, not enough evidence to reproduce its authority safely."
+      "result": "Owner ruling 2026-09-16 keeps this surface fail closed for the current campaign. No definition token, recipient, success response, or mutation endpoint is fabricated. A positive submission contract requires a separately funded product/security design and authoritative reversible evidence before reopening."
     },
     {
       "case_id": "A1037_SIMPLETODO_INITIAL_READ_ONLY",
@@ -148,25 +148,25 @@
     },
     {
       "case_id": "A1037_SIMPLETODO_MUTATION",
-      "status": "unimplemented",
-      "owner": "deepwell_framerail",
+      "status": "owner_fail_closed_boundary",
+      "owner": "deepwell_framerail_security_boundary",
       "blockers": [
         "No live action request or response establishes task creation, edit, checkbox, ordering, title, delete, link, or conflict behavior.",
         "No local state model establishes whether an authored id is site-scoped or global, how pages sharing an id authorize reads and writes, or how deleted and renamed pages affect authority.",
         "The preview evidence reports edit-permission false and does not establish saved-page anonymous, member, editor, or administrator permissions.",
         "No transaction seam can therefore bind the current actor, source page, list identity, version, and ordered mutation atomically without trusting client state."
       ],
-      "result": "No speculative shared-id table, mutation endpoint, browser control, admin fallback, or client-authoritative task state was added."
+      "result": "Owner ruling 2026-09-16 keeps SimpleToDo read-only. No speculative shared-id table, mutation endpoint, browser control, admin fallback, or client-authoritative task state is added; positive mutation parity requires a separately funded state model and reversible authority."
     },
     {
       "case_id": "A1037_BROWSER_LIFECYCLE",
-      "status": "unimplemented",
+      "status": "owner_scope_boundary",
       "owner": "central_runtime",
       "blockers": [
         "The exact merged candidate has not been served for MailForm or SimpleToDo browser acceptance.",
         "MailForm and SimpleToDo mutation contracts remain absent, so loading, success, validation error, focus, keyboard, history, reload, and repeated-submission intervals cannot yet be accepted."
       ],
-      "result": "No browser or runtime claim is made from source-only work."
+      "result": "Owner ruling 2026-09-16 makes the strict nine-stage lifecycle conditional on a future positive MailForm or SimpleToDo mutation authority. The strict verifier is retained and must still reject any synthetic success/error/history/focus claim until that authority exists."
     }
   ],
   "local_checks": [
@@ -241,7 +241,7 @@
       "A1037_NEWPAGE_PAGE_FORM",
       "A1037_SIMPLETODO_INITIAL_READ_ONLY"
     ],
-    "unimplemented": [
+    "owner_boundaries": [
       "A1037_MAILFORM_INITIAL_DOM_AND_SUBMIT",
       "A1037_SIMPLETODO_MUTATION",
       "A1037_BROWSER_LIFECYCLE"

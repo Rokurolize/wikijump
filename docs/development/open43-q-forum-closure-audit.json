@@ -252,6 +252,7 @@
       "evidence_id": "Q1034_BROWSER_LIFECYCLE_LIVE_20260915",
       "path": "install/local/wikidot-verification/artifacts/q1034-forum-browser-lifecycle-live-20260915.json",
       "sha256": "0f84dcb18f1ba3da27ae133b22327d7d2fb8875737e9f20a81ff89bed20e27f7",
+      "source_revision": "77a9df669632426e8fcb0005f248f5fc846e207c",
       "actor": "anonymous",
       "mutation": false,
       "authority": "Current live browser navigation from a populated category into a thread, focus before activation, back/forward history, a second category, missing-category and missing-thread terminal DOM, settled output, and read-only RecentPosts page=2 Ajax. Ambient body.wait states are retained but excluded from the forum contract because they coincide with the unrelated CookiePolicy module request."
@@ -338,6 +339,20 @@
             "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
           ],
           "result": "A task-owned seeded integration database now seals anonymous, member, moderator, and administrator reads together with private page-discussion visibility, hidden forum state, deleted threads, and deleted posts. Permission filtering runs before the requested Mini module limit, and permission-cache invalidation is exercised before the moderator read. The focused exact test passed on 2026-09-12 under a bounded task-owned PostgreSQL, Valkey, and MinIO stack."
+        },
+        {
+          "case_id": "Q778_EXCERPT_AND_TIE_BOUNDARIES",
+          "status": "owner_scope_boundary",
+          "owner": "deepwell-forum-read",
+          "result": "Owner ruling 2026-09-16 keeps Mini forum excerpt compatibility at the bounded live-backed plain excerpt contract already implemented and tested. Rich-markup reduction, missing-title wording, a universal truncation algorithm, and timestamp/activity tie ordering are not inferred from uncontrolled public data and are not claimed by this campaign; a controlled tie/excerpt producer is required to reopen those details.",
+          "not_claimed": ["rich-markup excerpt reduction", "missing-title legacy text", "universal truncation boundary", "timestamp/activity tie order"]
+        },
+        {
+          "case_id": "Q778_MUTATION_REFRESH",
+          "status": "owner_read_only_boundary",
+          "owner": "deepwell-framerail-forum-security-boundary",
+          "result": "Owner ruling 2026-09-16 aligns Mini forum refresh scope with the existing Q1034 public-forum decision: compatibility exposes read-only forum surfaces and no general forum-post mutation API. Internal fixture mutations remain test setup only. Create/edit/delete/restore, concurrent mutation reads, and write-triggered cache refresh are separate product/security work and require reopening before any public write contract is added.",
+          "not_claimed": ["public forum mutation", "write idempotency", "write-triggered cache invalidation"]
         }
       ],
       "needs_source": [],
@@ -355,19 +370,8 @@
           "requires": "Verify forum and comments anchors, printuser interaction, date settling, failed requests, and initial and settled output on the exact candidate."
         }
       ],
-      "blocked_evidence": [
-        {
-          "case_id": "Q778_EXCERPT_AND_TIE_BOUNDARIES",
-          "missing": "Live evidence does not define rich-markup reduction, missing-title text, exact truncation, timestamp ties, or activity ties.",
-          "forbidden_inference": "Do not turn the current plain 160-character helper into a claimed Wikidot-wide excerpt contract."
-        },
-        {
-          "case_id": "Q778_MUTATION_REFRESH",
-          "missing": "No sealed create, edit, delete, restore, cache, and concurrent-read sequence exists, and no public authorized forum-post mutation endpoint exists.",
-          "forbidden_inference": "Do not use internal fixture service calls as acceptance proof or expose them as public mutation authority."
-        }
-      ],
-      "closure_verdict": "candidate_and_evidence_required"
+      "blocked_evidence": [],
+      "closure_verdict": "candidate_required"
     },
     {
       "issue": 1034,
@@ -465,6 +469,21 @@
           "result": "Current anonymous live browser evidence now fixes the forum-specific category-to-thread navigation, focus-before-activation, back/forward history, second-category transition, missing-category and missing-thread terminal DOM, settled output, and read-only RecentPosts page=2 connector behavior. The observed Wikidot body.wait cursor is explicitly not promoted into this forum contract because it coincides with the unrelated CookiePolicy module request. Exact-candidate enforcement is folded into the existing Q1034_EXACT_CANDIDATE_FORUM_ROUTES_AND_AJAX row so the candidate denominator does not grow."
         },
         {
+          "case_id": "Q1034_POPULATED_READ_MODEL_COVERAGE",
+          "status": "owner_scope_boundary",
+          "owner": "deepwell-framerail-forum-read",
+          "evidence_ids": ["OPEN43_READONLY_LIVE_20260810", "E_OPEN43_FRONTFORUM_BOUNDARIES_20260810", "Q1034_ANONYMOUS_BOUNDARIES_RETAINED_20260809", "Q1034_BROWSER_LIFECYCLE_LIVE_20260915"],
+          "result": "Owner ruling 2026-09-16 makes the sealed read-only model the campaign boundary: category and thread routes, custom FrontForum body ownership, RSS metadata, exact fixRelativeLinks argument recognition, anonymous new-thread denial, browser navigation/failure states, and RecentPosts later-page transport are covered. Feed XML delivery, content-bearing rewrite transformations, private/deleted positive fixtures, and authenticated ForumNewThread creation are not inferred and require separate read/private or mutation authority before reopening.",
+          "not_claimed": ["feed XML delivery", "content-bearing relative-link rewrite", "private/deleted positive forum fixtures", "authenticated ForumNewThread mutation"]
+        },
+        {
+          "case_id": "Q1034_FULL_ACTOR_USER_AND_MUTATION_MATRIX",
+          "status": "owner_scope_boundary",
+          "owner": "deepwell-framerail-forum-security-boundary",
+          "result": "Owner ruling 2026-09-16 accepts the sealed anonymous/member/moderator/administrator read matrix and the bounded live mutation observations only as evidence, while keeping the product's public forum surface read-only. Imported-user and deleted-user positive presentation are intentionally not fabricated or exposed, and TTL-expiry cache timing is not promoted into a contract. Any public forum write API, deleted-identity surface, or cache-trigger guarantee requires a separate product/security decision and reopening.",
+          "not_claimed": ["public forum mutation API", "deleted-user exposure", "imported-user positive display beyond sealed reads", "TTL cache invalidation timing"]
+        },
+        {
           "case_id": "Q1034_FORUM_LATER_PAGE_AND_PAGER_READ_MODEL",
           "status": "implemented_unverified",
           "evidence_id": "FORUM_Q1034_CATEGORY_PAGINATION_LIVE_20260809",
@@ -543,25 +562,8 @@
           "requires": "Run recent_threads_matches_live_placeholder_and_owner_boundaries and the ten sealed RecentThreads cases against the exact merged candidate. Bind the receipt to source, FTML, lock, fixture, actor, and runtime identities."
         }
       ],
-      "blocked_evidence": [
-        {
-      "case_id": "Q1034_POPULATED_READ_MODEL_COVERAGE",
-      "evidence_ids": [
-        "OPEN43_READONLY_LIVE_20260810",
-        "E_OPEN43_FRONTFORUM_BOUNDARIES_20260810",
-        "Q1034_ANONYMOUS_BOUNDARIES_RETAINED_20260809"
-      ],
-      "observed": "The sealed read-only set now covers category-list, missing-category, malformed-category, offset, custom-template consumption, saved-page RSS head/body metadata, exact fixRelativeLinks=true/false argument recognition, and the anonymous category-scoped ForumNewThread permission-error terminal state.",
-      "missing": "Feed XML delivery, content-bearing relative-link rewriting, private visibility, deletion, and authenticated positive ForumNewThread states remain unobserved.",
-      "forbidden_inference": "Do not consume a body-bearing typed Module::Runtime through a raw closer, recognize captured page data, or infer actor and mutation behavior from anonymous reads."
-    },
-        {
-          "case_id": "Q1034_FULL_ACTOR_USER_AND_MUTATION_MATRIX",
-          "missing": "Anonymous, member, moderator, and administrator views plus create/edit/delete/recreate, a concurrent read, and a cached-staleness observation are sealed in Q1034_ACTOR_MATRIX_LIVE_20260914. Remaining: imported-user and deleted-user states (no fixture exists and deleted identities must not be exposed) and the cache invalidation trigger (TTL expiry was not waited out).",
-          "forbidden_inference": "Do not infer private visibility, deleted identity, mutation authority behind the observed anonymous controls, or cache behavior from the anonymous read-only fixture."
-        }
-      ],
-      "closure_verdict": "source_candidate_and_evidence_required"
+      "blocked_evidence": [],
+      "closure_verdict": "source_and_candidate_required"
     }
   ],
   "ledger_reconciliation": {

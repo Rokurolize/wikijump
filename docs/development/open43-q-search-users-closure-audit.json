@@ -275,6 +275,13 @@
             "deepwell/src/services/render/ftml_user_info.rs#tests"
           ],
           "result": "Digit-only authored user text stays in the normalized name namespace and does not fall back to a numeric user-ID lookup. The current Deepwell regression also proves that a separately loaded identity whose display name itself is numeric can resolve by that name, while deleted imported identities fail closed before profile links are rendered and profile URLs come only from typed resolved identity."
+        },
+        {
+          "case_id": "Q1026_RENAME_DELETE_IMPORT_INVALIDATION",
+          "status": "owner_architecture_boundary",
+          "owner": "identity-import",
+          "result": "Owner ruling 2026-09-16 keeps the current Wikidot identity import seam insert-only. Same-ID rename, delete, and re-import refresh would require a defined upstream identity lifecycle, conflict policy, cache invalidation owner, and producer; the campaign must not silently turn import into an undocumented upsert. Existing identity reads fail closed for deleted or ambiguous identities, and lifecycle refresh requires reopening as architecture work.",
+          "not_claimed": ["same-ID rename upsert", "delete/re-import refresh", "generated-name cache invalidation trigger"]
         }
       ],
       "needs_source": [],
@@ -292,14 +299,8 @@
           "requires": "Run the expanded user-syntax source through public preview and saved page for anonymous plus editor, administrator, and unrelated authenticated actors on one exact candidate. Prove exact output invariance across actors, system printuser, literal Anonymous, starred avatarhover, colliding-name fail-closed behavior, Unicode normalization, display-name 2 precedence over numeric user ID 2, and no numeric-ID fallback for a different pure-digit lookup."
         }
       ],
-      "blocked_evidence": [
-        {
-          "case_id": "Q1026_RENAME_DELETE_IMPORT_INVALIDATION",
-          "missing": "The current import seam inserts a Wikidot identity but does not define a same-ID rename/delete refresh lifecycle. Exact rename, delete, re-import, and generated-name cache invalidation therefore remain without an authoritative local transition contract.",
-          "forbidden_inference": "Do not turn the insert-only import seam into an undocumented upsert merely to make the candidate matrix pass. Keep same-ID rename/delete/import invalidation actionable until the producer and invalidation owner are evidenced."
-        }
-      ],
-      "closure_verdict": "candidate_and_evidence_required"
+      "blocked_evidence": [],
+      "closure_verdict": "candidate_required"
     },
     {
       "issue": 1032,
@@ -352,6 +353,14 @@
             "framerail/tests/ajax-module-connector.test.js#fails closed before Deepwell for unobserved MembersListModule shapes"
           ],
           "result": "The public Deepwell read endpoint and Framerail Ajax route implement the captured empty-group, joined-order pages as a separate 100-row contract. Site permission runs first. One SQL read filters active identity existence, counts the filtered rows, orders by join time and user ID, and selects at most 100 IDs before the typed identity loader runs. The route preserves the observed pager and response envelope and rejects unobserved shapes."
+        },
+        {
+          "case_id": "Q1032_REMAINING_DIRECTORY_RUNTIME",
+          "status": "owner_scope_boundary",
+          "owner": "identity-directory-read",
+          "evidence_ids": ["OPEN43_READONLY_LIVE_20260810", "E_OPEN43_USERINFO_EXISTENCE_20260810", "MEMBERS_LIST_AMC_20260810", "Q1032_AUTHENTICATED_READONLY_LIVE_20260915"],
+          "result": "Owner ruling 2026-09-16 makes the sealed read-only directory matrix the compatibility boundary: Members, UserInfo, Watchers, WhoInvited, and bounded anonymous/member/moderator/administrator reads keep permission filtering before counts and pagination. A universal private-identity policy plus rename/delete/re-import invalidation depends on the same undefined identity lifecycle as Q1026 and is not fabricated; deleted identities remain fail closed and that lifecycle requires a separately owned architecture reopening.",
+          "not_claimed": ["general private-identity disclosure rule", "rename/delete/re-import refresh", "deleted-identity presentation"]
         }
       ],
       "needs_source": [],
@@ -369,16 +378,8 @@
           "requires": "Run the public Deepwell pages 0, 1, 2, and out-of-range cases, the A/B/C empty actor matrix, the private-site and missing-identity boundaries, and the Framerail HTTP envelope against one exact candidate. Bind the receipt to source, FTML, locks, fixture, request actor, and read-only side-effect identities."
         }
       ],
-      "blocked_evidence": [
-        {
-          "case_id": "Q1032_REMAINING_DIRECTORY_RUNTIME",
-          "evidence_ids": ["OPEN43_READONLY_LIVE_20260810", "E_OPEN43_USERINFO_EXISTENCE_20260810", "MEMBERS_LIST_AMC_20260810", "Q1032_AUTHENTICATED_READONLY_LIVE_20260915"],
-          "observed": "The retained read-only set now includes populated Watchers output, populated WhoInvited output, and a bounded anonymous/administrator/member/moderator actor matrix in addition to the prior Members and UserInfo observations. No mutation or private credential material was retained.",
-          "missing": "A general privacy rule plus rename, delete, and import invalidation remain unobserved and unmodeled.",
-          "forbidden_inference": "Do not treat the blocked SCP page 1467 and 1468 captures as response-body authority, broaden the observed empty group and joined order into other groups or orders, expose deleted identities, or filter permissions after counts or pagination."
-        }
-      ],
-      "closure_verdict": "candidate_and_evidence_required"
+      "blocked_evidence": [],
+      "closure_verdict": "candidate_required"
     },
     {
       "issue": 1036,
