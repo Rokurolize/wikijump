@@ -169,8 +169,24 @@ test("settings and browser closure audit is complete without promoting candidate
 
   const adminSettled = rowsByCaseId.get("S1046_ADMIN_SETTLED");
   const autocomplete = rowsByCaseId.get("S1046_AUTOCOMPLETE_AND_INTERMEDIATE_FRAMES");
+  const welcomeEffect = rowsByCaseId.get("S1046_WELCOME_EFFECT");
+  assert.equal(welcomeEffect.classification, "blocked_evidence");
+  assert.deepEqual(welcomeEffect.next_command_ids, []);
+  assert.match(welcomeEffect.reason, /membership transition/u);
+  assert.equal(autocomplete.classification, "blocked_evidence");
+  assert.deepEqual(autocomplete.next_command_ids, []);
+  assert.match(autocomplete.reason, /keyboard, focus, loading, save, cancel, or navigation/u);
   assert.equal(adminSettled.acceptance.includes("cancel"), false);
   assert.equal(autocomplete.acceptance.includes("cancel"), true);
+  for (const caseId of [
+    "S1046_ADMIN_INITIAL",
+    "S1046_ADMIN_SETTLED",
+    "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
+  ]) {
+    const row = rowsByCaseId.get(caseId);
+    assert.equal(row.classification, "candidate_required");
+    assert.deepEqual(row.next_command_ids, ["C_SETTINGS_CANDIDATE"]);
+  }
 
   for (const caseId of [
     "S754_IMPORT_EXPORT_REPRESENTATION",

@@ -1,6 +1,7 @@
 import { Open43SettingsBrowserAdapter } from "./open43-settings-browser-adapter.mjs";
 import {
   OPEN43_SETTINGS_ANALYTICS_CASE_IDS,
+  OPEN43_SETTINGS_ADMIN_CASE_IDS,
   OPEN43_SETTINGS_BROWSER_CASE_IDS,
   OPEN43_SETTINGS_THEME_CASE_IDS,
   OPEN43_SETTINGS_TOOLBAR_CASE_IDS,
@@ -22,10 +23,6 @@ export {
 const SITE_SLUG = "scpaiueouiuiuiui";
 const SITE_HOST = `${SITE_SLUG}.wikijump.localhost`;
 const VIEWPORTS = Object.freeze([1280, 767, 479]);
-const OPEN43_SETTINGS_ADMIN_CASE_IDS = Object.freeze(
-  OPEN43_SETTINGS_BROWSER_CASE_IDS.filter((caseId) => caseId.startsWith("S1046_")),
-);
-
 const siteSettings = (site) => ({
   site_id: site.site_id,
   slug: site.slug,
@@ -273,7 +270,9 @@ class Open43SettingsRun {
         description: this.#fixedPlan.general_ui_description_marker,
         onLoaded: async () => {
           const site = await this.#site();
-          await this.#action("analytics", { siteId: site.site_id, expectedSettingsRevision: site.settings_revision, enabled: site.google_analytics_enabled, profile: site.google_analytics_profile ?? "" }, { expectSuccess: true });
+          // Advance only the general-settings revision so the form's stale
+          // submission exercises the same public action under test.
+          await this.#action("site", siteFields(site), { expectSuccess: true });
         },
         onStaleObserved: async () => {
           const site = await this.#site();

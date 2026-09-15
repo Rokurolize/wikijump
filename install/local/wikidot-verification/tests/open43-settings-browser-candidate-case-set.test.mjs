@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 import {
+  OPEN43_SETTINGS_ADMIN_CASE_IDS,
   OPEN43_SETTINGS_BROWSER_CASE_IDS,
   verifyOpen43SettingsBrowserCleanup,
   verifyOpen43SettingsBrowserCase,
@@ -105,6 +106,16 @@ test("the candidate command reaches only the authoritative nine-case settings de
   assert.deepEqual(selected.caseIds, OPEN43_SETTINGS_BROWSER_CASE_IDS);
   assert.equal(selected.caseIds.length, 9);
   assert.equal(new Set(selected.caseIds).size, 9);
+});
+
+test("the admin candidate denominator is owned by the browser contract", async () => {
+  const selected = await candidateCaseSet("open43-settings-admin");
+  assert.deepEqual(selected.caseIds, OPEN43_SETTINGS_ADMIN_CASE_IDS);
+  assert.deepEqual(selected.caseIds, [
+    "S1046_ADMIN_INITIAL",
+    "S1046_ADMIN_SETTLED",
+    "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
+  ]);
 });
 
 test("analytics settled observation rejects duplicate order and stale queues", () => {

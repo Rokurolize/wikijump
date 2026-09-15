@@ -7,6 +7,7 @@ import path from "node:path";
 import { runCandidateCaseSet } from "./candidate-case-runner.mjs";
 import {
   OPEN43_SETTINGS_ANALYTICS_CASE_IDS,
+  OPEN43_SETTINGS_ADMIN_CASE_IDS,
   OPEN43_SETTINGS_BROWSER_CASE_IDS,
   OPEN43_SETTINGS_THEME_CASE_IDS,
   OPEN43_SETTINGS_TOOLBAR_CASE_IDS,
@@ -94,7 +95,7 @@ export const CANDIDATE_CASE_SETS = Object.freeze({
   "open43-settings-analytics": entry(OPEN43_SETTINGS_ANALYTICS_CASE_IDS, () => import("./open43-settings-browser-candidate-case-set.mjs").then(({ createOpen43SettingsGroupCandidateCaseSet }) => createOpen43SettingsGroupCandidateCaseSet({"group": "analytics"}))),
   "open43-settings-theme": entry(OPEN43_SETTINGS_THEME_CASE_IDS, () => import("./open43-settings-browser-candidate-case-set.mjs").then(({ createOpen43SettingsGroupCandidateCaseSet }) => createOpen43SettingsGroupCandidateCaseSet({"group": "theme"}))),
   "open43-settings-toolbar": entry(OPEN43_SETTINGS_TOOLBAR_CASE_IDS, () => import("./open43-settings-browser-candidate-case-set.mjs").then(({ createOpen43SettingsGroupCandidateCaseSet }) => createOpen43SettingsGroupCandidateCaseSet({"group": "toolbar"}))),
-  "open43-settings-admin": entry(["S1046_ADMIN_INITIAL", "S1046_ADMIN_SETTLED", "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX"], () => import("./open43-settings-browser-candidate-case-set.mjs").then(({ createOpen43SettingsGroupCandidateCaseSet }) => createOpen43SettingsGroupCandidateCaseSet({"group": "admin"}))),
+  "open43-settings-admin": entry(OPEN43_SETTINGS_ADMIN_CASE_IDS, () => import("./open43-settings-browser-candidate-case-set.mjs").then(({ createOpen43SettingsGroupCandidateCaseSet }) => createOpen43SettingsGroupCandidateCaseSet({"group": "admin"}))),
   "open43-settings-lifecycle": entry(OPEN43_SETTINGS_LIFECYCLE_CASE_IDS, () => import("./open43-settings-lifecycle-candidate-case-set.mjs").then(({ createOpen43SettingsLifecycleCandidateCaseSet }) => createOpen43SettingsLifecycleCandidateCaseSet())),
   "open43-settings-page-tags": entry(["B822_PAGE_TAGS_INITIAL", "B822_PAGE_TAGS_SETTLED"], () => import("./open43-page-tags-browser-candidate-case-set.mjs").then(({ createOpen43PageTagsBrowserCandidateCaseSet }) => createOpen43PageTagsBrowserCandidateCaseSet())),
   "open43-mailform-fail-closed": entry(["A1037_MAILFORM_FAIL_CLOSED_SERVED"], () => import("./open43-mailform-candidate-case-set.mjs").then(({ createOpen43MailformCandidateCaseSet }) => createOpen43MailformCandidateCaseSet())),
