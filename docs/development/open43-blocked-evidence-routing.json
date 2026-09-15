@@ -26,11 +26,11 @@
     "authenticated_read_only": 2,
     "run_owned_mutation": 12,
     "local_candidate": 0,
-    "live_browser_only": 7,
+    "live_browser_only": 6,
     "missing_public_producer": 3,
     "missing_architecture_domain_authority": 2,
     "missing_security_policy": 0,
-    "total": 28
+    "total": 27
   },
   "rows": [
     {"case_id":"Q1026_RENAME_DELETE_IMPORT_INVALIDATION","route_class":"missing_architecture_domain_authority","status":"not_attempted_not_safe","reason":"The insert-only Wikidot-user import seam does not define same-ID rename/delete refresh or the corresponding generated-output invalidation lifecycle."},
@@ -39,7 +39,6 @@
     {"case_id":"Q778_EXCERPT_AND_TIE_BOUNDARIES","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"Existing public forum data does not provide controlled rich excerpts and timestamp/activity ties."},
     {"case_id":"Q778_MUTATION_REFRESH","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Create, edit, delete, restore, cache, and concurrent-read transitions are mutating."},
     {"case_id":"Q1034_POPULATED_READ_MODEL_COVERAGE","route_class":"anonymous_read_only","status":"partial_evidence_acquired","reason":"Multiple-category and offset scalar behavior is implemented. Custom templates, feed argument shapes, and relative-link switches were captured but remain unimplemented; private visibility, deletion, feed delivery, and complete new-thread states remain."},
-    {"case_id":"Q1034_ROUTE_AND_AJAX_BROWSER_LIFECYCLE","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Replacement, navigation, focus, failure, paint, and settled behavior require a browser."},
     {"case_id":"Q1034_FULL_ACTOR_USER_AND_MUTATION_MATRIX","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"The row combines actor states with post mutation and cache refresh."},
     {"case_id":"Q1027_NON_ANONYMOUS_AND_BEYOND_LIMIT_LIVE_RULES","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No public private-backlink actor pair or controlled graph beyond 500 rows exists."},
     {"case_id":"A1037_MAILFORM_INITIAL_DOM_AND_SUBMIT","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"The acceptance row joins initial DOM to message submission and delivery state."},

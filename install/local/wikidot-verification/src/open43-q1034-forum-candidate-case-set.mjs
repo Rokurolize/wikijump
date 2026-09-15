@@ -30,6 +30,12 @@ const LIVE_EVIDENCE = Object.freeze({
   path: "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json",
   sha256: "0a188e7960890a0ad05fbb7733671072abc1f08156e0d2df7e70b523e3405fd4",
 });
+const LIVE_BROWSER_EVIDENCE = Object.freeze({
+  path: "install/local/wikidot-verification/artifacts/q1034-forum-browser-lifecycle-live-20260915.json",
+  sha256: "0f84dcb18f1ba3da27ae133b22327d7d2fb8875737e9f20a81ff89bed20e27f7",
+});
+const BROWSER_FIXTURE_ID = "Q1034_ROUTE_AND_AJAX_BROWSER_LIFECYCLE";
+const BROWSER_VIEWPORT = Object.freeze({ width: 1280, height: 900 });
 const SOURCE_FILES = Object.freeze([
   "docs/development/open43-q-forum-closure-audit.json",
   "docs/wikidot-specifications/specifications/module/module-comments.md",
@@ -38,6 +44,7 @@ const SOURCE_FILES = Object.freeze([
   "docs/wikidot-specifications/specifications/module/module-recentposts.md",
   "docs/wikidot-specifications/specifications/module/module-recentthreads.md",
   LIVE_EVIDENCE.path,
+  LIVE_BROWSER_EVIDENCE.path,
   "deepwell/src/endpoints/page.rs",
   "deepwell/src/services/render/forum_comments.rs",
   "deepwell/src/services/render/forum_modules.rs",
@@ -47,6 +54,7 @@ const SOURCE_FILES = Object.freeze([
   "framerail/src/lib/server/forum-routes.js",
   "framerail/tests/ajax-module-connector.test.js",
   "framerail/tests/forum-routes.test.js",
+  "install/local/wikidot-verification/scripts/capture-q1034-forum-browser-lifecycle.mjs",
   "install/local/wikidot-verification/scripts/run-candidate-cases.mjs",
   "install/local/wikidot-verification/src/candidate-case-command.mjs",
   "install/local/wikidot-verification/src/candidate-case-http.mjs",
@@ -188,6 +196,7 @@ function forumSpecs(fixture) {
     Object.freeze({ label: "thread-posts", module_name: "forum/ForumViewThreadPostsModule", parameters: { t: String(fixture.visible_thread_id), pageNo: "1" }, status: "ok", kind: "thread-posts" }),
     Object.freeze({ label: "thread-missing", module_name: "forum/ForumViewThreadModule", parameters: { t: String(fixture.missing_thread_id) }, status: "no_thread", kind: "empty" }),
     Object.freeze({ label: "recent-posts", module_name: "forum/ForumRecentPostsListModule", parameters: { page: "1", categoryId: String(fixture.primary_category_id) }, status: "ok", kind: "recent-posts" }),
+    Object.freeze({ label: "recent-posts-page2", module_name: "forum/ForumRecentPostsListModule", parameters: { page: "2", categoryId: "" }, status: "ok", kind: "recent-posts-later" }),
     Object.freeze({ label: "comments-forward", module_name: "forum/ForumCommentsListModule", parameters: { pageId: commentsPage }, status: "ok", kind: "comments-forward" }),
     Object.freeze({ label: "comments-forwards", module_name: "forum/ForumCommentsListModule", parameters: { pageId: commentsPage, order: "forwards" }, status: "ok", kind: "comments-forward" }),
     Object.freeze({ label: "comments-reverse", module_name: "forum/ForumCommentsListModule", parameters: { pageId: commentsPage, order: "reverse" }, status: "ok", kind: "comments-reverse" }),
@@ -246,7 +255,7 @@ function observeForumResult(spec, rawResult, fixture, seam) {
     rowCount = count(body, '<div class="post-container" id="fpc-');
     expect(rowCount === 20 && !body.includes('id="thread-container-posts"'), `${spec.label} ${seam} did not preserve the exact 20-row posts boundary`);
   }
-  if (spec.kind === "recent-posts") {
+  if (spec.kind === "recent-posts" || spec.kind === "recent-posts-later") {
     rowCount = count(body, '<div class="post" id="post-');
     expect(body.includes('id="recent-posts-container"') && rowCount === 20, `${spec.label} ${seam} did not preserve the permission-first 20-row RecentPosts boundary`);
   }
@@ -388,13 +397,160 @@ function verifyMatrix(observed, specs, name) {
   }
 }
 
+function browserState(page, label, targetThreadPath, status = null) {
+  return page.evaluate(({ captureLabel, threadPath, responseStatus }) => {
+    const active = document.activeElement;
+    const target = document.querySelector(`a[href="${threadPath}"]`);
+    return {
+      label: captureLabel,
+      path: location.pathname,
+      status: responseStatus,
+      ready_state: document.readyState,
+      active_element: {
+        tag: active?.tagName ?? null,
+        id: active?.id ?? "",
+        class_name: String(active?.className ?? ""),
+      },
+      body_wait_class: document.body?.classList.contains("wait") === true,
+      category_box_count: document.querySelectorAll(".forum-category-box").length,
+      thread_box_count: document.querySelectorAll(".forum-thread-box").length,
+      post_count: document.querySelectorAll(".post-container").length,
+      error_text: [...document.querySelectorAll("#page-content .error-block")]
+        .map((element) => (element.textContent ?? "").replace(/\s+/gu, " ").trim())
+        .filter(Boolean)
+        .join(" | "),
+      target_thread_link: target === null
+        ? { present: false, href: null }
+        : { present: true, href: target.getAttribute("href") },
+    };
+  }, { captureLabel: label, threadPath: targetThreadPath, responseStatus: status });
+}
+
+async function observeBrowserLifecycle(browser, session, fixture) {
+  await browser.setActiveFixture(BROWSER_FIXTURE_ID);
+  const { context } = await browser.newCandidateContext({ viewport: BROWSER_VIEWPORT });
+  const page = await context.newPage();
+  const requestMethods = [];
+  const consoleErrors = [];
+  const pageErrors = [];
+  page.on?.("request", (request) => requestMethods.push(request.method()));
+  page.on?.("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  page.on?.("pageerror", (error) => pageErrors.push(String(error)));
+
+  const categoryPath = `/forum/c-${fixture.primary_category_id}/${fixture.category_route_name}`;
+  const threadPath = `/forum/t-${fixture.visible_thread_id}/${fixture.thread_route_name}`;
+  const secondCategoryPath = `/forum/c-${fixture.pagination_category_id}/p/2`;
+  const missingCategoryPath = `/forum/c-${fixture.missing_category_id}/missing`;
+  const missingThreadPath = `/forum/t-${fixture.missing_thread_id}/missing`;
+  const states = [];
+
+  const navigate = async (targetPath, label) => {
+    const response = await page.goto(new URL(targetPath, session.pageOrigin).href, { waitUntil: "domcontentloaded", timeout: 300_000 });
+    states.push(await browserState(page, `${label}_domcontentloaded`, threadPath, response?.status() ?? null));
+    await page.waitForLoadState("load", { timeout: 30_000 }).catch(() => undefined);
+    await page.waitForTimeout(250);
+    states.push(await browserState(page, `${label}_settled`, threadPath));
+  };
+
+  try {
+    await navigate(categoryPath, "category");
+    const targetThread = page.locator(`a[href="${threadPath}"]`).first();
+    expect(await targetThread.count() === 1, "Q1034 candidate category did not expose the sealed target thread link");
+    await targetThread.focus();
+    states.push(await browserState(page, "category_thread_link_focused", threadPath));
+    await targetThread.click();
+    await page.waitForLoadState("domcontentloaded", { timeout: 30_000 });
+    states.push(await browserState(page, "thread_domcontentloaded", threadPath));
+    await page.waitForLoadState("load", { timeout: 30_000 }).catch(() => undefined);
+    await page.waitForTimeout(250);
+    states.push(await browserState(page, "thread_settled", threadPath));
+
+    let response = await page.goBack({ waitUntil: "domcontentloaded", timeout: 30_000 });
+    states.push(await browserState(page, "after_back_domcontentloaded", threadPath, response?.status() ?? null));
+    await page.waitForTimeout(250);
+    states.push(await browserState(page, "after_back_settled", threadPath));
+    response = await page.goForward({ waitUntil: "domcontentloaded", timeout: 30_000 });
+    states.push(await browserState(page, "after_forward_domcontentloaded", threadPath, response?.status() ?? null));
+    await page.waitForTimeout(250);
+    states.push(await browserState(page, "after_forward_settled", threadPath));
+
+    await navigate(secondCategoryPath, "second_category");
+    await navigate(missingCategoryPath, "missing_category");
+    await navigate(missingThreadPath, "missing_thread");
+    return Object.freeze({
+      fixture_id: BROWSER_FIXTURE_ID,
+      live_evidence: LIVE_BROWSER_EVIDENCE,
+      states,
+      request_methods: [...new Set(requestMethods)],
+      console_errors: consoleErrors,
+      page_errors: pageErrors,
+      ambient_wait_class_asserted: false,
+    });
+  } finally {
+    await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
+  }
+}
+
+export function verifyQ1034BrowserLifecycle(observation, fixture) {
+  const value = requirePlainObject(observation, "Q1034 browser lifecycle");
+  expect(value.fixture_id === BROWSER_FIXTURE_ID, "Q1034 browser fixture identity changed");
+  expect(value.live_evidence?.path === LIVE_BROWSER_EVIDENCE.path && value.live_evidence?.sha256 === LIVE_BROWSER_EVIDENCE.sha256, "Q1034 live browser authority changed");
+  expect(value.ambient_wait_class_asserted === false, "Q1034 browser lifecycle incorrectly claimed the ambient CookiePolicy wait cursor");
+  expect(Array.isArray(value.console_errors) && value.console_errors.length === 0, "Q1034 candidate browser emitted console errors");
+  expect(Array.isArray(value.page_errors) && value.page_errors.length === 0, "Q1034 candidate browser emitted page errors");
+  expect(Array.isArray(value.request_methods) && value.request_methods.length > 0 && value.request_methods.every((method) => method === "GET" || method === "HEAD"), "Q1034 candidate browser issued a non-read-only request");
+
+  const states = Array.isArray(value.states) ? value.states : [];
+  const byLabel = new Map(states.map((state) => [state.label, state]));
+  const requireState = (label) => {
+    const state = byLabel.get(label);
+    expect(state, `Q1034 browser state ${label} is missing`);
+    return state;
+  };
+  expect(states.length === 15 && byLabel.size === 15, "Q1034 browser lifecycle denominator changed");
+
+  for (const label of ["category_domcontentloaded", "category_settled", "category_thread_link_focused", "after_back_domcontentloaded", "after_back_settled"]) {
+    const state = requireState(label);
+    expect(state.category_box_count === 1 && state.thread_box_count === 0 && state.error_text === "", `Q1034 ${label} lost the category state`);
+    expect(state.target_thread_link?.present === true && state.target_thread_link.href === `/forum/t-${fixture.visible_thread_id}/${fixture.thread_route_name}`, `Q1034 ${label} lost the target thread link`);
+  }
+  expect(requireState("category_thread_link_focused").active_element?.tag === "A", "Q1034 browser focus did not land on the target thread link");
+
+  for (const label of ["thread_domcontentloaded", "thread_settled", "after_forward_domcontentloaded", "after_forward_settled"]) {
+    const state = requireState(label);
+    expect(state.thread_box_count === 1 && state.category_box_count === 0 && state.post_count === 20 && state.error_text === "", `Q1034 ${label} lost the populated thread state`);
+  }
+  for (const label of ["second_category_domcontentloaded", "second_category_settled"]) {
+    const state = requireState(label);
+    expect(state.category_box_count === 1 && state.thread_box_count === 0 && state.error_text === "", `Q1034 ${label} lost the category-change state`);
+  }
+  for (const label of ["missing_category_domcontentloaded", "missing_category_settled"]) {
+    const state = requireState(label);
+    expect(state.category_box_count === 0 && state.thread_box_count === 0 && state.error_text === "Requested forum category does not exist.", `Q1034 ${label} changed the missing-category browser failure`);
+  }
+  for (const label of ["missing_thread_domcontentloaded", "missing_thread_settled"]) {
+    const state = requireState(label);
+    expect(state.category_box_count === 0 && state.thread_box_count === 0 && /deleted/iu.test(state.error_text), `Q1034 ${label} changed the missing-thread browser failure`);
+  }
+  for (const label of ["category_domcontentloaded", "after_back_domcontentloaded", "after_forward_domcontentloaded", "second_category_domcontentloaded", "missing_category_domcontentloaded", "missing_thread_domcontentloaded"]) {
+    expect(requireState(label).status === 200, `Q1034 ${label} did not return HTTP 200`);
+  }
+  return { verified: true, state_count: states.length, focus_verified: true, history_verified: true, failure_states_verified: true, live_evidence: LIVE_BROWSER_EVIDENCE };
+}
+
 class Open43Q1034Run {
   #session;
+  #browser;
   #fixture;
+  #browserLifecycleObserver;
 
-  constructor({ session, fixture }) {
+  constructor({ session, browser, fixture, browserLifecycleObserver }) {
     this.#session = session;
+    this.#browser = browser;
     this.#fixture = fixture;
+    this.#browserLifecycleObserver = browserLifecycleObserver;
   }
 
   async execute() {
@@ -449,10 +605,11 @@ class Open43Q1034Run {
       const result = await this.#session.rpc("wikidot_page_preview", { site_id: this.#fixture.site_id, title: spec.case_id, wikitext: spec.source }, { actor: "anonymous", siteId: this.#fixture.site_id });
       frontForumPreviews.push(frontForumPreviewObservation(spec, result, frontforumThreadPath));
     }
+    const browserLifecycle = await this.#browserLifecycleObserver(this.#browser, this.#session, this.#fixture);
 
     return [
       { case_id: OPEN43_Q1034_CASE_IDS[0], observations: { saved, direct, frontforum_previews: frontForumPreviews } },
-      { case_id: OPEN43_Q1034_CASE_IDS[1], observations: { ajax, unsupported_ajax: unsupportedAjax, routes, saved_routes: savedRoutes } },
+      { case_id: OPEN43_Q1034_CASE_IDS[1], observations: { ajax, unsupported_ajax: unsupportedAjax, routes, saved_routes: savedRoutes, browser_lifecycle: browserLifecycle } },
       { case_id: OPEN43_Q1034_CASE_IDS[2], observations: { previews: recentThreads } },
     ];
   }
@@ -478,7 +635,8 @@ function verifyCase(caseId, observations, fixture) {
     verifyMatrix(observations.routes, routeSpecs(fixture), "Q1034 served route matrix");
     expect(Array.isArray(observations.saved_routes) && observations.saved_routes.length === Object.keys(Q1034_SAVED_SOURCES).length && observations.saved_routes.every(({ verified }) => verified === true), "Q1034 saved GET route denominator changed");
     expect(Array.isArray(observations.unsupported_ajax) && observations.unsupported_ajax.length === UNSUPPORTED_AJAX.length && observations.unsupported_ajax.every(({ status }) => status === "not_ok"), "Q1034 unsupported Ajax denominator changed");
-    return { verified: true, ajax_case_count: observations.ajax.length, unsupported_ajax_case_count: observations.unsupported_ajax.length, route_case_count: observations.routes.length, saved_get_case_count: observations.saved_routes.length, remote_js_loaded: false };
+    const browserLifecycle = verifyQ1034BrowserLifecycle(observations.browser_lifecycle, fixture);
+    return { verified: true, ajax_case_count: observations.ajax.length, unsupported_ajax_case_count: observations.unsupported_ajax.length, route_case_count: observations.routes.length, saved_get_case_count: observations.saved_routes.length, browser_state_count: browserLifecycle.state_count, browser_focus_verified: browserLifecycle.focus_verified, browser_history_verified: browserLifecycle.history_verified, browser_failure_states_verified: browserLifecycle.failure_states_verified, remote_js_loaded: false };
   }
   if (caseId === OPEN43_Q1034_CASE_IDS[2]) {
     expect(Array.isArray(observations.previews) && observations.previews.length === RECENT_THREADS_CASES.length, "Q1034 RecentThreads denominator changed");
@@ -494,32 +652,34 @@ function verifyCleanup(proof, resources) {
   return { public_absence_verified: true, mutation_count: 0, resource_count: 0 };
 }
 
-export function createOpen43Q1034ForumCandidateCaseSet({ sessionFactory = (options) => new CandidateHttpSession(options) } = {}) {
+export function createOpen43Q1034ForumCandidateCaseSet({ sessionFactory = (options) => new CandidateHttpSession(options), browserLifecycleObserver = observeBrowserLifecycle } = {}) {
   return Object.freeze({
     id: "open43-q1034-forum",
     caseIds: OPEN43_Q1034_CASE_IDS,
-    prepareRun({ candidateIdentity, privateInput, privateInputSha256, signal }) {
+    prepareRun({ candidateIdentity, privateInput, privateInputSha256, signal, candidateBrowserContexts }) {
       requireCandidateSite(candidateIdentity);
       const fixture = fixtureInput(privateInput);
       const session = sessionFactory({ candidateIdentity, privateInput, signal });
       expect(session.pageOrigin === candidatePageOrigin(candidateIdentity), "Q1034 session did not bind the sealed candidate origin");
       const fixtureIdentitySha256 = sha256Value(fixture);
-      const execution = new Open43Q1034Run({ session, fixture });
+      const execution = new Open43Q1034Run({ session, browser: candidateBrowserContexts, fixture, browserLifecycleObserver });
       return Object.freeze({
         sourceFiles: SOURCE_FILES,
         runtimeBindings: session.requiredServiceBindings,
+        browserCredentialPolicy: "none",
         privateInputIdentity: { ...session.privateInputIdentity, fixture_identity_sha256: fixtureIdentitySha256, site_id: fixture.site_id, private_input_sha256: privateInputSha256 },
         plan: {
           schema: "wikijump.open43_q1034_forum_candidate_plan.v1",
           case_ids: OPEN43_Q1034_CASE_IDS,
           fixture_identity_sha256: fixtureIdentitySha256,
           evidence: LIVE_EVIDENCE,
-          public_seams: ["Deepwell JSON-RPC", "Framerail Ajax Module Connector", "Framerail served GET routes"],
+          browser_evidence: LIVE_BROWSER_EVIDENCE,
+          public_seams: ["Deepwell JSON-RPC", "Framerail Ajax Module Connector", "Framerail served GET routes", "anonymous candidate browser routes"],
           category_pages: [1, 2, 11, 12],
           frontforum_preview_case_ids: FRONT_FORUM_PREVIEW_CASES.map(({ case_id }) => case_id),
           recent_threads_case_ids: RECENT_THREADS_CASES.map(({ case_id }) => case_id),
           mutation_policy: "read-only",
-          excluded_claims: ["comments-hideform-actor-state", "forum-mutations", "browser-lifecycle", "full-actor-user-deletion-matrix"],
+          excluded_claims: ["comments-hideform-actor-state", "forum-mutations", "full-actor-user-deletion-matrix"],
         },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),

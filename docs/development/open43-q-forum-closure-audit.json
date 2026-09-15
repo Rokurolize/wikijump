@@ -249,6 +249,14 @@
       "authority": "FrontForum offset, multiple-category, custom-template, feed-argument, and relative-link-switch observations over existing sandbox data."
     },
     {
+      "evidence_id": "Q1034_BROWSER_LIFECYCLE_LIVE_20260915",
+      "path": "install/local/wikidot-verification/artifacts/q1034-forum-browser-lifecycle-live-20260915.json",
+      "sha256": "0f84dcb18f1ba3da27ae133b22327d7d2fb8875737e9f20a81ff89bed20e27f7",
+      "actor": "anonymous",
+      "mutation": false,
+      "authority": "Current live browser navigation from a populated category into a thread, focus before activation, back/forward history, a second category, missing-category and missing-thread terminal DOM, settled output, and read-only RecentPosts page=2 Ajax. Ambient body.wait states are retained but excluded from the forum contract because they coincide with the unrelated CookiePolicy module request."
+    },
+    {
   "evidence_id": "Q1034_ACTOR_MATRIX_LIVE_20260914",
   "path": "install/local/wikidot-verification/artifacts/q1034-actor-matrix-live-20260914.json",
   "sha256": "070cc26cdd232e5c6deb89357b97a14582cbb5f88ded78af78d8f1079cb39961",
@@ -389,7 +397,7 @@
           "public_tests": [
             "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
           ],
-          "result": "Public preview, saved page_view, and the read-only forum RPC cover empty and populated output, exact post DOM, routes, compiled content, newest-first order, and the observed first Ajax page. Hidden groups and private page discussions are removed before ordering and limits; unobserved later Ajax pages fail closed."
+          "result": "Public preview, saved page_view, and the read-only forum RPC cover empty and populated output, exact post DOM, routes, compiled content, newest-first order, and the observed first Ajax page. Fresh anonymous live evidence additionally establishes that ForumRecentPostsListModule accepts page=2 with an empty categoryId and returns an ok later-page envelope. Hidden groups and private page discussions remain removed before ordering and limits."
         },
     {
       "case_id": "Q1034_UNSUPPORTED_FORUM_AJAX_FAILS_CLOSED",
@@ -447,6 +455,16 @@
           "result": "The exact read-only Comments, ForumStart, category, thread, thread posts, and RecentPosts parameter sets reach wikidot_forum_module with the observed envelope. Served ForumStart, category name or p/<page>, and thread routes use the same complete read model; unobserved suffixes terminate at 404 before Deepwell. Remote jsInclude values remain inert metadata and are not emitted as script loaders."
         },
         {
+          "case_id": "Q1034_ROUTE_AND_AJAX_BROWSER_LIFECYCLE",
+          "status": "live_authority_acquired_candidate_folded",
+          "evidence_id": "Q1034_BROWSER_LIFECYCLE_LIVE_20260915",
+          "public_tests": [
+            "install/local/wikidot-verification/tests/q1034-forum-browser-lifecycle-evidence.test.mjs#Q1034 browser lifecycle seals navigation, focus, history, failure, and settled states",
+            "install/local/wikidot-verification/tests/open43-q1034-forum-candidate-case-set.test.mjs#Q1034 runs all three unblocked forum rows through the canonical candidate runner"
+          ],
+          "result": "Current anonymous live browser evidence now fixes the forum-specific category-to-thread navigation, focus-before-activation, back/forward history, second-category transition, missing-category and missing-thread terminal DOM, settled output, and read-only RecentPosts page=2 connector behavior. The observed Wikidot body.wait cursor is explicitly not promoted into this forum contract because it coincides with the unrelated CookiePolicy module request. Exact-candidate enforcement is folded into the existing Q1034_EXACT_CANDIDATE_FORUM_ROUTES_AND_AJAX row so the candidate denominator does not grow."
+        },
+        {
           "case_id": "Q1034_FORUM_LATER_PAGE_AND_PAGER_READ_MODEL",
           "status": "implemented_unverified",
           "evidence_id": "FORUM_Q1034_CATEGORY_PAGINATION_LIVE_20260809",
@@ -455,7 +473,7 @@
             "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
             "framerail/tests/forum-routes.test.js#the observed category pager suffix reaches the exact AMC page"
           ],
-          "result": "ForumViewCategoryModule and the served category route implement the observed 20-row pages and exact page 1, 2, 11, and 12 pager sequences, including duplicate pagers on full pages, one pager on partial and out-of-range pages, exact /forum/c-<id>/p/<page> hrefs, and the unclamped page 12 of 11 with next page 13. Later RecentPosts Ajax pages remain fail closed."
+          "result": "ForumViewCategoryModule and the served category route implement the observed 20-row pages and exact page 1, 2, 11, and 12 pager sequences, including duplicate pagers on full pages, one pager on partial and out-of-range pages, exact /forum/c-<id>/p/<page> hrefs, and the unclamped page 12 of 11 with next page 13. Fresh live evidence separately establishes the read-only RecentPosts page=2 connector shape; exact-candidate page=2 enforcement is folded into Q1034_EXACT_CANDIDATE_FORUM_ROUTES_AND_AJAX."
         },
         {
           "case_id": "Q1034_COMMENTS_PAGE_THREAD_READ_MODEL",
@@ -518,7 +536,7 @@
         },
         {
           "case_id": "Q1034_EXACT_CANDIDATE_FORUM_ROUTES_AND_AJAX",
-          "requires": "Run the focused Ajax connector and served-route Node cases, Framerail type/build validation, and exact-candidate GET and POST requests for Comments forward, Comments reverse, Comments no_page, ForumStart, category pages 1, 2, 11, and 12, thread, thread posts, RecentPosts, and missing states. Confirm that remote jsInclude metadata is never loaded and that unobserved Comments shapes, ForumNewThread, unknown fields, and unsupported modules remain fail closed and cannot reach mutation authority."
+          "requires": "Run the focused Ajax connector and served-route Node cases, Framerail type/build validation, and exact-candidate GET and POST requests for Comments forward, Comments reverse, Comments no_page, ForumStart, category pages 1, 2, 11, and 12, thread, thread posts, RecentPosts pages 1 and 2, and missing states. In the anonymous candidate browser, prove the populated category-to-thread focus and activation path, back/forward history, a second category, missing-category and missing-thread terminal DOM, and settled output. Confirm that remote jsInclude metadata is never loaded and that unobserved Comments shapes, ForumNewThread, unknown fields, and unsupported modules remain fail closed and cannot reach mutation authority."
         },
         {
           "case_id": "Q1034_EXACT_CANDIDATE_RECENTTHREADS",
@@ -537,11 +555,6 @@
       "missing": "Feed XML delivery, content-bearing relative-link rewriting, private visibility, deletion, and authenticated positive ForumNewThread states remain unobserved.",
       "forbidden_inference": "Do not consume a body-bearing typed Module::Runtime through a raw closer, recognize captured page data, or infer actor and mutation behavior from anonymous reads."
     },
-        {
-          "case_id": "Q1034_ROUTE_AND_AJAX_BROWSER_LIFECYCLE",
-          "missing": "The HTTP and connector read-only wire contract and exact category pager DOM are implemented. Browser replacement, category changes, thread history, focus, failed requests, intermediate paint, and settled output remain unverified on the exact candidate; RecentPosts later-page Ajax behavior remains unobserved.",
-          "forbidden_inference": "Do not claim browser parity from a final Ajax body or conceal loading and failure differences through normalization."
-        },
         {
           "case_id": "Q1034_FULL_ACTOR_USER_AND_MUTATION_MATRIX",
           "missing": "Anonymous, member, moderator, and administrator views plus create/edit/delete/recreate, a concurrent read, and a cached-staleness observation are sealed in Q1034_ACTOR_MATRIX_LIVE_20260914. Remaining: imported-user and deleted-user states (no fixture exists and deleted identities must not be exposed) and the cache invalidation trigger (TTL expiry was not waited out).",

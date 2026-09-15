@@ -82,6 +82,82 @@ function fixture() {
   };
 }
 
+
+function browserLifecycleObservation(currentFixture) {
+  const threadPath = `/forum/t-${currentFixture.visible_thread_id}/${currentFixture.thread_route_name}`;
+  const categoryPath = `/forum/c-${currentFixture.primary_category_id}/${currentFixture.category_route_name}`;
+  const categoryState = (label, status = null, focused = false) => ({
+    label,
+    path: categoryPath,
+    status,
+    ready_state: status === 200 ? "interactive" : "complete",
+    active_element: { tag: focused ? "A" : "BODY", id: focused ? "" : "html-body", class_name: "" },
+    body_wait_class: false,
+    category_box_count: 1,
+    thread_box_count: 0,
+    post_count: 0,
+    error_text: "",
+    target_thread_link: { present: true, href: threadPath },
+  });
+  const threadState = (label, status = null) => ({
+    label,
+    path: threadPath,
+    status,
+    ready_state: status === 200 ? "interactive" : "complete",
+    active_element: { tag: "BODY", id: "html-body", class_name: "" },
+    body_wait_class: false,
+    category_box_count: 0,
+    thread_box_count: 1,
+    post_count: 20,
+    error_text: "",
+    target_thread_link: { present: false, href: null },
+  });
+  const secondCategoryPath = `/forum/c-${currentFixture.pagination_category_id}/p/2`;
+  const missingCategoryPath = `/forum/c-${currentFixture.missing_category_id}/missing`;
+  const missingThreadPath = `/forum/t-${currentFixture.missing_thread_id}/missing`;
+  const generic = (label, pathValue, status, categoryCount, errorText) => ({
+    label,
+    path: pathValue,
+    status,
+    ready_state: status === 200 ? "interactive" : "complete",
+    active_element: { tag: "BODY", id: "html-body", class_name: "" },
+    body_wait_class: false,
+    category_box_count: categoryCount,
+    thread_box_count: 0,
+    post_count: 0,
+    error_text: errorText,
+    target_thread_link: { present: false, href: null },
+  });
+  return {
+    fixture_id: "Q1034_ROUTE_AND_AJAX_BROWSER_LIFECYCLE",
+    live_evidence: {
+      path: "install/local/wikidot-verification/artifacts/q1034-forum-browser-lifecycle-live-20260915.json",
+      sha256: "0f84dcb18f1ba3da27ae133b22327d7d2fb8875737e9f20a81ff89bed20e27f7",
+    },
+    states: [
+      categoryState("category_domcontentloaded", 200),
+      categoryState("category_settled"),
+      categoryState("category_thread_link_focused", null, true),
+      threadState("thread_domcontentloaded"),
+      threadState("thread_settled"),
+      categoryState("after_back_domcontentloaded", 200),
+      categoryState("after_back_settled"),
+      threadState("after_forward_domcontentloaded", 200),
+      threadState("after_forward_settled"),
+      generic("second_category_domcontentloaded", secondCategoryPath, 200, 1, ""),
+      generic("second_category_settled", secondCategoryPath, null, 1, ""),
+      generic("missing_category_domcontentloaded", missingCategoryPath, 200, 0, "Requested forum category does not exist."),
+      generic("missing_category_settled", missingCategoryPath, null, 0, "Requested forum category does not exist."),
+      generic("missing_thread_domcontentloaded", missingThreadPath, 200, 0, "The thread you're trying to show seems to have been deleted"),
+      generic("missing_thread_settled", missingThreadPath, null, 0, "The thread you're trying to show seems to have been deleted"),
+    ],
+    request_methods: ["GET"],
+    console_errors: [],
+    page_errors: [],
+    ambient_wait_class_asserted: false,
+  };
+}
+
 const posts = (prefix, count) => Array.from({ length: count }, (_, index) => `<div class="post-container" id="fpc-${prefix}-${index}">${prefix} ${index}</div>`).join("");
 const categoryRows = (count) => Array.from({ length: count }, (_, index) => `<td class="name"><div class="title"><a href="/forum/t-${index}/thread-${index}">Thread ${index}</a></div></td>`).join("");
 
@@ -214,7 +290,10 @@ test("Q1034 runs all three unblocked forum rows through the canonical candidate 
   assert.deepEqual(selected.caseIds, OPEN43_Q1034_CASE_IDS);
   const currentFixture = fixture();
   const session = fakeSession(currentFixture, { frontForumThreadId: 9100124, frontForumThreadRouteName: "q778-mini-posts" });
-  const caseSet = createOpen43Q1034ForumCandidateCaseSet({ sessionFactory: () => session });
+  const caseSet = createOpen43Q1034ForumCandidateCaseSet({
+    sessionFactory: () => session,
+    browserLifecycleObserver: async () => browserLifecycleObservation(currentFixture),
+  });
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "open43-q1034-candidate-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const identity = candidateIdentity();
@@ -240,6 +319,12 @@ test("Q1034 runs all three unblocked forum rows through the canonical candidate 
   assert.equal(publicReadReceipt.verification.frontforum_preview_case_count, 6);
   assert.equal(publicReadReceipt.observations.saved.find(({ role }) => role === "frontforum").frontforum_thread_path, "/forum/t-9100124/q778-mini-posts");
   assert.equal(publicReadReceipt.observations.frontforum_previews.every(({ selected_thread_path }) => selected_thread_path === "/forum/t-9100124/q778-mini-posts"), true);
+  const routeReceipt = JSON.parse(await fs.readFile(path.join(root, "evidence", "cases", `${OPEN43_Q1034_CASE_IDS[1]}.json`), "utf8"));
+  assert.equal(routeReceipt.verification.browser_state_count, 15);
+  assert.equal(routeReceipt.verification.browser_focus_verified, true);
+  assert.equal(routeReceipt.verification.browser_history_verified, true);
+  assert.equal(routeReceipt.verification.browser_failure_states_verified, true);
+  assert.equal(routeReceipt.observations.ajax.some(({ label, row_count }) => label === "recent-posts-page2" && row_count === 20), true);
   assert.equal(session.calls.filter(({ seam }) => seam === "ajax").some(({ fields }) => fields.moduleName === "forum/ForumNewThreadModule"), true);
   assert.deepEqual(session.calls.filter(({ seam }) => seam === "route").map(({ pathname }) => pathname).filter((pathname) => pathname.includes(`/forum/c-${currentFixture.pagination_category_id}/p/`)), [1, 2, 11, 12].map((pageNumber) => `/forum/c-${currentFixture.pagination_category_id}/p/${pageNumber}`));
 });
