@@ -64,6 +64,8 @@ test('writeSiteContentBackup emits a deterministic pages-and-attachments source 
       title_shown: 'Alpha',
       welcome_page: 'alpha',
       settings_revision: 23,
+      google_analytics_enabled: true,
+      google_analytics_profile: 'UA-00000000-2',
     },
   });
   writePageAttachment(corpusRoot, 'en', 'alpha', {
@@ -79,6 +81,8 @@ test('writeSiteContentBackup emits a deterministic pages-and-attachments source 
       title_shown: 'Zeta',
       welcome_page: 'zeta',
       settings_revision: 24,
+      google_analytics_enabled: false,
+      google_analytics_profile: 'UA-00000000-3',
     },
   });
   writePageAttachment(corpusRoot, 'en', 'zeta', {
@@ -161,8 +165,14 @@ test('writeSiteContentBackup emits a deterministic pages-and-attachments source 
       fs.readFileSync(path.join(first.outputRoot, 'pages', page.fullname, 'files.json'), 'utf8'),
     ]),
   ].map((text) => JSON.parse(text));
-  assert.equal(serializedJson.some((value) => containsKey(value, 'welcome_page')), false);
-  assert.equal(serializedJson.some((value) => containsKey(value, 'settings_revision')), false);
+  for (const excludedKey of [
+    'welcome_page',
+    'settings_revision',
+    'google_analytics_enabled',
+    'google_analytics_profile',
+  ]) {
+    assert.equal(serializedJson.some((value) => containsKey(value, excludedKey)), false, excludedKey);
+  }
 });
 
 test('writeSiteContentBackup enforces caller-visible bounds before publishing output', () => {
