@@ -25854,16 +25854,16 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
     let html = root
         .compiled_body_html
         .expect("compiled body should be included in page_get details");
-    let section = |start: &str, end: &str| {
-        let start = html.find(start).expect("section start should render");
-        let end = html[start..]
+    let section = |document: &str, start: &str, end: &str| {
+        let start = document.find(start).expect("section start should render");
+        let end = document[start..]
             .find(end)
             .map(|offset| start + offset)
             .expect("section end should render");
-        &html[start..end]
+        &document[start..end]
     };
 
-    let default = section("PT_DEFAULT_START", "PT_DEFAULT_END");
+    let default = section(&html, "PT_DEFAULT_START", "PT_DEFAULT_END");
     assert!(
         default.contains(&format!(r#"<a href="/{ALPHA}">Alpha Child</a>"#)),
         "{default}",
@@ -25883,13 +25883,13 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
         "siblings should preserve page_parent creation order:\n{default}"
     );
 
-    let show_root = section("PT_SHOW_START", "PT_SHOW_END");
+    let show_root = section(&html, "PT_SHOW_START", "PT_SHOW_END");
     assert!(show_root.contains(&format!(r#"<a href="/{ROOT}">PageTree Root</a>"#)));
     assert!(show_root.contains("Alpha Child"));
     assert!(show_root.contains("Beta Child"));
     assert!(!show_root.contains("Alpha Grandchild"));
 
-    let case_variant = section("PT_CASE_START", "PT_CASE_END");
+    let case_variant = section(&html, "PT_CASE_START", "PT_CASE_END");
     assert!(!case_variant.contains("PageTree Root"));
     assert!(case_variant.contains("Alpha Great Grandchild"));
     for unsupported_wrapper in ["class=", " id=", "data-"] {
@@ -25898,7 +25898,7 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
             "PageTree DOM must remain plain ul, li, and a elements:\n{case_variant}"
         );
     }
-    let inline = section("PT_INLINE_START", "PT_INLINE_END");
+    let inline = section(&html, "PT_INLINE_START", "PT_INLINE_END");
     assert!(
         inline.contains("start-[[module PageTree]]-middle"),
         "{inline}"
@@ -25931,7 +25931,7 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
         } => compiled_body_html,
         other => panic!("expected a found PageTree page view, got {other:?}"),
     };
-    let runtime_default = section("PT_DEFAULT_START", "PT_DEFAULT_END");
+    let runtime_default = section(&runtime_html, "PT_DEFAULT_START", "PT_DEFAULT_END");
     assert!(
         runtime_html
             .contains(&format!(r#"<a href="/{RUNTIME_CHILD}">Runtime Child</a>"#))
