@@ -1186,7 +1186,7 @@ dependencies = [
  "self_cell",
  "serde",
  "serde_json",
- "sha1 0.10.7",
+ "sha1 0.11.0",
  "sha2 0.11.0",
  "static_assertions",
  "str-macro",
