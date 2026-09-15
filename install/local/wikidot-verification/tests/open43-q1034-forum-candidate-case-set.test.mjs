@@ -61,13 +61,14 @@ function fixture() {
       comments_hidden: page(103, 203, "q1034-comments-hidden", Q1034_SAVED_SOURCES.comments_hidden),
       comments_missing: page(104, 204, "q1034-comments-missing", Q1034_SAVED_SOURCES.comments_missing),
       recent_posts: page(105, 205, "q1034-recent-posts", Q1034_SAVED_SOURCES.recent_posts),
+      frontforum: page(106, 206, "q1034-frontforum", Q1034_SAVED_SOURCES.frontforum),
     },
-    primary_category_id: 301,
-    pagination_category_id: 302,
-    missing_category_id: 399,
-    visible_thread_id: 401,
-    comments_thread_id: 402,
-    missing_thread_id: 499,
+    primary_category_id: 9000101,
+    pagination_category_id: 9000102,
+    missing_category_id: 99990101,
+    visible_thread_id: 9100101,
+    comments_thread_id: 9100122,
+    missing_thread_id: 99990102,
     category_route_name: "visible-category",
     thread_route_name: "visible-thread",
     forbidden_markers: ["PRIVATE_FORUM_MARKER", "HIDDEN_FORUM_MARKER"],
@@ -107,6 +108,10 @@ function forumResult(label, currentFixture, { badForwardRoots = false } = {}) {
   return structuredClone(outputs[label]);
 }
 
+function frontForumBody(currentFixture) {
+  return `<div class="front-forum-box"><div><h1><span><a href="/forum/t-${currentFixture.visible_thread_id}/${currentFixture.thread_route_name}">Visible FrontForum thread</a></span></h1><p>by author 1 Jan 2026 00:00</p><div>FrontForum body</div><p><a href="/forum/t-${currentFixture.visible_thread_id}/${currentFixture.thread_route_name}">Comments: 1</a> | category: <a href="/forum/c-${currentFixture.primary_category_id}/${currentFixture.category_route_name}">Q1034 / Primary</a></p></div></div>`;
+}
+
 function labelFor(moduleName, parameters, currentFixture) {
   if (moduleName === "forum/ForumStartModule") return parameters.hidden === "true" ? "forum-start-hidden" : "forum-start";
   if (moduleName === "forum/ForumViewCategoryModule") {
@@ -132,6 +137,7 @@ function fakeSession(currentFixture, options = {}) {
     if (slug === currentFixture.pages.comments_reverse.slug) return `<div class="comments-box"><h1>Q1034 Reverse</h1><div class="thread-container reverse">${forumResult("comments-reverse", currentFixture).body}</div></div>`;
     if (slug === currentFixture.pages.comments_hidden.slug) return '<div class="comments-box"><div id="comments-options-hidden"></div><div id="thread-container"></div></div>';
     if (slug === currentFixture.pages.comments_missing.slug) return '<div class="comments-box"><div id="comments-options-hidden"></div><div id="thread-container"></div></div>';
+    if (slug === currentFixture.pages.frontforum.slug) return frontForumBody(currentFixture);
     return `<div class="forum-recent-posts-box">${forumResult("recent-posts", currentFixture).body}</div>`;
   };
   return {
@@ -151,6 +157,7 @@ function fakeSession(currentFixture, options = {}) {
         const source = params.wikitext;
         if (source.includes("RecentThreadsX")) return { body: `${source} No such module, please check available modules and fix this page.` };
         if (source.startsWith("before ") || source.startsWith("@@")) return { body: source.replaceAll("@@", "") };
+        if (source.includes("FrontForum")) return { body: frontForumBody(currentFixture) };
         return { body: "later." };
       }
       if (method === "wikidot_forum_module") return forumResult(labelFor(params.module_name, params.parameters, currentFixture), currentFixture, options);
@@ -224,6 +231,8 @@ test("Q1034 runs all three unblocked forum rows through the canonical candidate 
   assert.equal(receipt.status, "pass");
   assert.equal(receipt.denominator.count, 3);
   assert.deepEqual(receipt.denominator.case_ids, OPEN43_Q1034_CASE_IDS);
+  const publicReadReceipt = JSON.parse(await fs.readFile(path.join(root, "evidence", "cases", `${OPEN43_Q1034_CASE_IDS[0]}.json`), "utf8"));
+  assert.equal(publicReadReceipt.verification.frontforum_preview_case_count, 6);
   assert.equal(session.calls.filter(({ seam }) => seam === "ajax").some(({ fields }) => fields.moduleName === "forum/ForumNewThreadModule"), true);
   assert.deepEqual(session.calls.filter(({ seam }) => seam === "route").map(({ pathname }) => pathname).filter((pathname) => pathname.includes(`/forum/c-${currentFixture.pagination_category_id}/p/`)), [1, 2, 11, 12].map((pageNumber) => `/forum/c-${currentFixture.pagination_category_id}/p/${pageNumber}`));
 });

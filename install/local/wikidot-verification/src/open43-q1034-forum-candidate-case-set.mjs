@@ -21,6 +21,7 @@ export const Q1034_SAVED_SOURCES = Object.freeze({
   comments_hidden: '[[module Comments hide="true"]]',
   comments_missing: "[[module Comments]]",
   recent_posts: "[[module RecentPosts]]",
+  frontforum: '[[module FrontForum category="9000101" limit="1"]]',
 });
 
 const SITE_SLUG = "scpaiueouiuiuiui";
@@ -70,6 +71,15 @@ const RECENT_THREADS_CASES = Object.freeze([
   Object.freeze({ case_id: "recentthreads-sandbox-inline", source: "before [[module RecentThreads]] after", result: "literal" }),
   Object.freeze({ case_id: "recentthreads-sandbox-raw", source: "@@[[module RecentThreads]]@@", result: "literal" }),
   Object.freeze({ case_id: "recentthreads-sandbox-lookalike", source: "[[module RecentThreadsX]]", result: "unknown" }),
+]);
+
+const FRONT_FORUM_PREVIEW_CASES = Object.freeze([
+  Object.freeze({ case_id: "frontforum-feed-one", source: '[[module FrontForum category="9000101" limit="1" feed="candidate-feed"]]' }),
+  Object.freeze({ case_id: "frontforum-feed-two", source: '[[module FrontForum category="9000101" limit="1" feed="candidate-feed-two"]]' }),
+  Object.freeze({ case_id: "frontforum-feed-empty", source: '[[module FrontForum category="9000101" limit="1" feed=""]]' }),
+  Object.freeze({ case_id: "frontforum-feed-invalid", source: '[[module FrontForum category="9000101" limit="1" feed="../bad"]]' }),
+  Object.freeze({ case_id: "frontforum-relative-true", source: '[[module FrontForum category="9000101" limit="1" fixRelativeLinks="true"]]' }),
+  Object.freeze({ case_id: "frontforum-relative-false", source: '[[module FrontForum category="9000101" limit="1" fixRelativeLinks="false"]]' }),
 ]);
 
 const UNSUPPORTED_AJAX = Object.freeze([
@@ -280,6 +290,8 @@ function validateSavedBody(role, body, fixture, label) {
     expect(body.includes('id="comments-options-hidden"') && !body.includes('id="thread-container-posts"'), `${label} did not keep hide=true inert`);
   } else if (role === "comments_missing") {
     expect(body.includes('class="comments-box"') && body.includes('id="comments-options-hidden"') && !body.includes('id="thread-container-posts"'), `${label} did not preserve the no-discussion Comments shell`);
+  } else if (role === "frontforum") {
+    expect(body.includes('class="front-forum-box"') && count(body, "/forum/t-") === 2, `${label} has the wrong saved FrontForum boundary`);
   } else {
     expect(body.includes('class="forum-recent-posts-box"') && count(body, '<div class="post" id="post-') === 20, `${label} has the wrong saved RecentPosts boundary`);
   }
@@ -348,6 +360,15 @@ function recentThreadsObservation(spec, result) {
   return Object.freeze({ case_id: spec.case_id, source_sha256: sha256Text(spec.source), result: spec.result, body_sha256: sha256Text(body), verified: true });
 }
 
+function frontForumPreviewObservation(spec, result, fixture) {
+  const body = result?.body;
+  expect(typeof body === "string", `${spec.case_id} returned no PagePreview body`);
+  expect(body.includes('class="front-forum-box"'), `${spec.case_id} did not render the FrontForum wrapper`);
+  expect(count(body, `/forum/t-${fixture.visible_thread_id}/`) === 2, `${spec.case_id} did not render one selected FrontForum thread`);
+  expect(!body.includes("[[module FrontForum"), `${spec.case_id} left the FrontForum module literal`);
+  return Object.freeze({ case_id: spec.case_id, source_sha256: sha256Text(spec.source), body_sha256: sha256Text(body), verified: true });
+}
+
 function verifyMatrix(observed, specs, name) {
   expect(Array.isArray(observed) && observed.length === specs.length, `${name} denominator is incomplete`);
   for (const [index, spec] of specs.entries()) {
@@ -411,8 +432,14 @@ class Open43Q1034Run {
       recentThreads.push(recentThreadsObservation(spec, result));
     }
 
+    const frontForumPreviews = [];
+    for (const spec of FRONT_FORUM_PREVIEW_CASES) {
+      const result = await this.#session.rpc("wikidot_page_preview", { site_id: this.#fixture.site_id, title: spec.case_id, wikitext: spec.source }, { actor: "anonymous", siteId: this.#fixture.site_id });
+      frontForumPreviews.push(frontForumPreviewObservation(spec, result, this.#fixture));
+    }
+
     return [
-      { case_id: OPEN43_Q1034_CASE_IDS[0], observations: { saved, direct } },
+      { case_id: OPEN43_Q1034_CASE_IDS[0], observations: { saved, direct, frontforum_previews: frontForumPreviews } },
       { case_id: OPEN43_Q1034_CASE_IDS[1], observations: { ajax, unsupported_ajax: unsupportedAjax, routes, saved_routes: savedRoutes } },
       { case_id: OPEN43_Q1034_CASE_IDS[2], observations: { previews: recentThreads } },
     ];
@@ -427,7 +454,10 @@ function verifyCase(caseId, observations, fixture) {
   if (caseId === OPEN43_Q1034_CASE_IDS[0]) {
     expect(Array.isArray(observations.saved) && observations.saved.length === Object.keys(Q1034_SAVED_SOURCES).length && observations.saved.every((row, index) => row.role === Object.keys(Q1034_SAVED_SOURCES)[index] && row.verified === true), "Q1034 saved read-model denominator changed");
     verifyMatrix(observations.direct, forumSpecs(fixture), "Q1034 public Deepwell matrix");
-    return { verified: true, saved_page_count: observations.saved.length, public_forum_case_count: observations.direct.length, permission_before_limit: true, comments_root_boundary: 10, thread_post_boundary: 20 };
+    expect(Array.isArray(observations.frontforum_previews) && observations.frontforum_previews.length === FRONT_FORUM_PREVIEW_CASES.length, "Q1034 FrontForum preview denominator changed");
+    for (const [index, spec] of FRONT_FORUM_PREVIEW_CASES.entries()) expect(observations.frontforum_previews[index]?.case_id === spec.case_id && observations.frontforum_previews[index].source_sha256 === sha256Text(spec.source) && observations.frontforum_previews[index].verified === true, `Q1034 FrontForum preview matrix changed at ${spec.case_id}`);
+    expect(new Set(observations.frontforum_previews.map(({ body_sha256 }) => body_sha256)).size === 1, "Q1034 FrontForum feed and relative-link controls changed the selected body");
+    return { verified: true, saved_page_count: observations.saved.length, public_forum_case_count: observations.direct.length, frontforum_preview_case_count: observations.frontforum_previews.length, permission_before_limit: true, comments_root_boundary: 10, thread_post_boundary: 20 };
   }
   if (caseId === OPEN43_Q1034_CASE_IDS[1]) {
     verifyMatrix(observations.ajax, forumSpecs(fixture), "Q1034 public Ajax matrix");
@@ -472,6 +502,7 @@ export function createOpen43Q1034ForumCandidateCaseSet({ sessionFactory = (optio
           evidence: LIVE_EVIDENCE,
           public_seams: ["Deepwell JSON-RPC", "Framerail Ajax Module Connector", "Framerail served GET routes"],
           category_pages: [1, 2, 11, 12],
+          frontforum_preview_case_ids: FRONT_FORUM_PREVIEW_CASES.map(({ case_id }) => case_id),
           recent_threads_case_ids: RECENT_THREADS_CASES.map(({ case_id }) => case_id),
           mutation_policy: "read-only",
           excluded_claims: ["comments-hideform-actor-state", "forum-mutations", "browser-lifecycle", "full-actor-user-deletion-matrix"],
