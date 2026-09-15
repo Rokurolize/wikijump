@@ -226,7 +226,9 @@ export class Open43SettingsBrowserAdapter {
           await this.#browserContexts.setActiveFixture(phase === "settled" ? `${label}_SETTLED` : `${label}_INITIAL`);
         },
       });
-      if (capture.capture_error || capture.navigation_status !== 200) throw new Error(`${label} browser capture failed`);
+      if (capture.capture_error || capture.navigation_status !== 200) {
+        throw new Error(`${label} browser capture failed: ${capture.capture_error?.message ?? `status ${capture.navigation_status}`}`);
+      }
       const initial = await page.evaluate(() => globalThis.__open43InitialObservation);
       const settled = await page.evaluate(() => globalThis.__open43SemanticSnapshot());
       await page.reload({ waitUntil: "domcontentloaded", timeout: CAPTURE_TIMEOUT_MS });
