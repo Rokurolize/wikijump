@@ -61,13 +61,14 @@ function fixture() {
       comments_hidden: page(103, 203, "q1034-comments-hidden", Q1034_SAVED_SOURCES.comments_hidden),
       comments_missing: page(104, 204, "q1034-comments-missing", Q1034_SAVED_SOURCES.comments_missing),
       recent_posts: page(105, 205, "q1034-recent-posts", Q1034_SAVED_SOURCES.recent_posts),
+      frontforum: page(106, 206, "q1034-frontforum", Q1034_SAVED_SOURCES.frontforum),
     },
-    primary_category_id: 301,
-    pagination_category_id: 302,
-    missing_category_id: 399,
-    visible_thread_id: 401,
-    comments_thread_id: 402,
-    missing_thread_id: 499,
+    primary_category_id: 9000101,
+    pagination_category_id: 9000102,
+    missing_category_id: 99990101,
+    visible_thread_id: 9100101,
+    comments_thread_id: 9100122,
+    missing_thread_id: 99990102,
     category_route_name: "visible-category",
     thread_route_name: "visible-thread",
     forbidden_markers: ["PRIVATE_FORUM_MARKER", "HIDDEN_FORUM_MARKER"],
@@ -78,6 +79,85 @@ function fixture() {
       reverse_roots: Array.from({ length: 10 }, (_, index) => `REVERSE_ROOT_${String(11 - index).padStart(2, "0")}`),
       reverse_excluded: ["REVERSE_ROOT_01", "REVERSE_ROOT_00"],
     },
+  };
+}
+
+
+function browserLifecycleObservation(currentFixture) {
+  const threadPath = `/forum/t-${currentFixture.visible_thread_id}/${currentFixture.thread_route_name}`;
+  const categoryPath = `/forum/c-${currentFixture.primary_category_id}/${currentFixture.category_route_name}`;
+  const categoryState = (label, status = null, focused = false) => ({
+    label,
+    path: categoryPath,
+    status,
+    ready_state: status === 200 ? "interactive" : "complete",
+    active_element: { tag: focused ? "A" : "BODY", id: focused ? "" : "html-body", class_name: "" },
+    body_wait_class: false,
+    category_box_count: 1,
+    thread_box_count: 0,
+    post_count: 0,
+    forum_thread_id: null,
+    error_text: "",
+    target_thread_link: { present: true, href: threadPath },
+  });
+  const threadState = (label, status = null) => ({
+    label,
+    path: threadPath,
+    status,
+    ready_state: status === 200 ? "interactive" : "complete",
+    active_element: { tag: "BODY", id: "html-body", class_name: "" },
+    body_wait_class: false,
+    category_box_count: 0,
+    thread_box_count: 1,
+    post_count: 20,
+    forum_thread_id: currentFixture.visible_thread_id,
+    error_text: "",
+    target_thread_link: { present: false, href: null },
+  });
+  const secondCategoryPath = `/forum/c-${currentFixture.pagination_category_id}/p/2`;
+  const missingCategoryPath = `/forum/c-${currentFixture.missing_category_id}/missing`;
+  const missingThreadPath = `/forum/t-${currentFixture.missing_thread_id}/missing`;
+  const generic = (label, pathValue, status, categoryCount, errorText) => ({
+    label,
+    path: pathValue,
+    status,
+    ready_state: status === 200 ? "interactive" : "complete",
+    active_element: { tag: "BODY", id: "html-body", class_name: "" },
+    body_wait_class: false,
+    category_box_count: categoryCount,
+    thread_box_count: 0,
+    post_count: 0,
+    forum_thread_id: null,
+    error_text: errorText,
+    target_thread_link: { present: false, href: null },
+  });
+  return {
+    fixture_id: "Q1034_ROUTE_AND_AJAX_BROWSER_LIFECYCLE",
+    live_evidence: {
+      path: "install/local/wikidot-verification/artifacts/q1034-forum-browser-lifecycle-live-20260915.json",
+      sha256: "0f84dcb18f1ba3da27ae133b22327d7d2fb8875737e9f20a81ff89bed20e27f7",
+    },
+    states: [
+      categoryState("category_domcontentloaded", 200),
+      categoryState("category_settled"),
+      categoryState("category_thread_link_focused", null, true),
+      threadState("thread_domcontentloaded"),
+      threadState("thread_settled"),
+      categoryState("after_back_domcontentloaded", 200),
+      categoryState("after_back_settled"),
+      threadState("after_forward_domcontentloaded", 200),
+      threadState("after_forward_settled"),
+      generic("second_category_domcontentloaded", secondCategoryPath, 200, 1, ""),
+      generic("second_category_settled", secondCategoryPath, null, 1, ""),
+      generic("missing_category_domcontentloaded", missingCategoryPath, 200, 0, "Requested forum category does not exist."),
+      generic("missing_category_settled", missingCategoryPath, null, 0, "Requested forum category does not exist."),
+      generic("missing_thread_domcontentloaded", missingThreadPath, 200, 0, "The thread you're trying to show seems to have been deleted"),
+      generic("missing_thread_settled", missingThreadPath, null, 0, "The thread you're trying to show seems to have been deleted"),
+    ],
+    request_methods: ["GET"],
+    console_errors: [],
+    page_errors: [],
+    ambient_wait_class_asserted: false,
   };
 }
 
@@ -107,6 +187,10 @@ function forumResult(label, currentFixture, { badForwardRoots = false } = {}) {
   return structuredClone(outputs[label]);
 }
 
+function frontForumBody(currentFixture, { threadId = currentFixture.visible_thread_id, threadRouteName = currentFixture.thread_route_name } = {}) {
+  return `<div class="front-forum-box"><div><h1><span><a href="/forum/t-${threadId}/${threadRouteName}">Visible FrontForum thread</a></span></h1><p>by author 1 Jan 2026 00:00</p><div>FrontForum body</div><p><a href="/forum/t-${threadId}/${threadRouteName}">Comments: 1</a> | category: <a href="/forum/c-${currentFixture.primary_category_id}/${currentFixture.category_route_name}">Q1034 / Primary</a></p></div></div>`;
+}
+
 function labelFor(moduleName, parameters, currentFixture) {
   if (moduleName === "forum/ForumStartModule") return parameters.hidden === "true" ? "forum-start-hidden" : "forum-start";
   if (moduleName === "forum/ForumViewCategoryModule") {
@@ -127,11 +211,13 @@ function labelFor(moduleName, parameters, currentFixture) {
 function fakeSession(currentFixture, options = {}) {
   const calls = [];
   const sourceBySlug = new Map(Object.entries(Q1034_SAVED_SOURCES).map(([role, source]) => [currentFixture.pages[role].slug, source]));
+  const frontForumOptions = { threadId: options.frontForumThreadId ?? currentFixture.visible_thread_id, threadRouteName: options.frontForumThreadRouteName ?? currentFixture.thread_route_name };
   const savedBody = (slug) => {
     if (slug === currentFixture.pages.comments_forward.slug) return `<div class="comments-box"><h1>Q1034 Forward</h1>${forumResult("comments-forward", currentFixture, options).body}</div>`;
     if (slug === currentFixture.pages.comments_reverse.slug) return `<div class="comments-box"><h1>Q1034 Reverse</h1><div class="thread-container reverse">${forumResult("comments-reverse", currentFixture).body}</div></div>`;
     if (slug === currentFixture.pages.comments_hidden.slug) return '<div class="comments-box"><div id="comments-options-hidden"></div><div id="thread-container"></div></div>';
     if (slug === currentFixture.pages.comments_missing.slug) return '<div class="comments-box"><div id="comments-options-hidden"></div><div id="thread-container"></div></div>';
+    if (slug === currentFixture.pages.frontforum.slug) return frontForumBody(currentFixture, frontForumOptions);
     return `<div class="forum-recent-posts-box">${forumResult("recent-posts", currentFixture).body}</div>`;
   };
   return {
@@ -151,6 +237,7 @@ function fakeSession(currentFixture, options = {}) {
         const source = params.wikitext;
         if (source.includes("RecentThreadsX")) return { body: `${source} No such module, please check available modules and fix this page.` };
         if (source.startsWith("before ") || source.startsWith("@@")) return { body: source.replaceAll("@@", "") };
+        if (source.includes("FrontForum")) return { body: frontForumBody(currentFixture, frontForumOptions) };
         return { body: "later." };
       }
       if (method === "wikidot_forum_module") return forumResult(labelFor(params.module_name, params.parameters, currentFixture), currentFixture, options);
@@ -177,7 +264,11 @@ function fakeSession(currentFixture, options = {}) {
     },
     async pageRequest(slug) {
       calls.push({ seam: "page", slug });
-      const body = `<main id="page-content">${savedBody(slug)}</main>`;
+      const saved = savedBody(slug);
+      const serialized = slug === currentFixture.pages.frontforum.slug
+        ? `<script>globalThis.__q1034=${JSON.stringify({ compiled_body_html: saved }).replaceAll("<", "\\u003C")}</script>`
+        : "";
+      const body = `<main id="page-content">${saved}</main>${serialized}`;
       return { status: 200, body_size: Buffer.byteLength(body), body_sha256: sha256Text(body), body_base64: Buffer.from(body).toString("base64") };
     },
     async pageRouteRequest(pathname) {
@@ -201,8 +292,11 @@ test("Q1034 runs all three unblocked forum rows through the canonical candidate 
   const selected = await candidateCaseSet("open43-q1034-forum");
   assert.deepEqual(selected.caseIds, OPEN43_Q1034_CASE_IDS);
   const currentFixture = fixture();
-  const session = fakeSession(currentFixture);
-  const caseSet = createOpen43Q1034ForumCandidateCaseSet({ sessionFactory: () => session });
+  const session = fakeSession(currentFixture, { frontForumThreadId: 9100124, frontForumThreadRouteName: "q778-mini-posts" });
+  const caseSet = createOpen43Q1034ForumCandidateCaseSet({
+    sessionFactory: () => session,
+    browserLifecycleObserver: async () => browserLifecycleObservation(currentFixture),
+  });
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "open43-q1034-candidate-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const identity = candidateIdentity();
@@ -224,6 +318,16 @@ test("Q1034 runs all three unblocked forum rows through the canonical candidate 
   assert.equal(receipt.status, "pass");
   assert.equal(receipt.denominator.count, 3);
   assert.deepEqual(receipt.denominator.case_ids, OPEN43_Q1034_CASE_IDS);
+  const publicReadReceipt = JSON.parse(await fs.readFile(path.join(root, "evidence", "cases", `${OPEN43_Q1034_CASE_IDS[0]}.json`), "utf8"));
+  assert.equal(publicReadReceipt.verification.frontforum_preview_case_count, 6);
+  assert.equal(publicReadReceipt.observations.saved.find(({ role }) => role === "frontforum").frontforum_thread_path, "/forum/t-9100124/q778-mini-posts");
+  assert.equal(publicReadReceipt.observations.frontforum_previews.every(({ selected_thread_path }) => selected_thread_path === "/forum/t-9100124/q778-mini-posts"), true);
+  const routeReceipt = JSON.parse(await fs.readFile(path.join(root, "evidence", "cases", `${OPEN43_Q1034_CASE_IDS[1]}.json`), "utf8"));
+  assert.equal(routeReceipt.verification.browser_state_count, 15);
+  assert.equal(routeReceipt.verification.browser_focus_verified, true);
+  assert.equal(routeReceipt.verification.browser_history_verified, true);
+  assert.equal(routeReceipt.verification.browser_failure_states_verified, true);
+  assert.equal(routeReceipt.observations.ajax.some(({ label, row_count }) => label === "recent-posts-page2" && row_count === 20), true);
   assert.equal(session.calls.filter(({ seam }) => seam === "ajax").some(({ fields }) => fields.moduleName === "forum/ForumNewThreadModule"), true);
   assert.deepEqual(session.calls.filter(({ seam }) => seam === "route").map(({ pathname }) => pathname).filter((pathname) => pathname.includes(`/forum/c-${currentFixture.pagination_category_id}/p/`)), [1, 2, 11, 12].map((pageNumber) => `/forum/c-${currentFixture.pagination_category_id}/p/${pageNumber}`));
 });

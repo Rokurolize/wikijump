@@ -14,22 +14,22 @@ Referent table SHA-256: `1783c9398f029816b1be878c7a92c19a6d0b2caff60c78bbe12a550
 
 ## S754_IMPORT_EXPORT_REPRESENTATION
 
-1. Required public seam: a repository-owned producer must export a site's analytics enabled/profile state, and a repository-owned consumer must restore that representation to the same site identity without copying it to another site.
+1. Owner ruling `S754_IMPORT_EXPORT_REPRESENTATION` narrows this acceptance to the evidenced site-backup content scope: page source and attached files.
 
-2. Repository inventory result: no such producer exists. `deepwell/src/services/import/structs.rs::ImportSite` is a Deserialize-only input for initial Wikidot corpus import. `deepwell/src/database/seeder/data.rs::Site` is an initial fixture input. Neither is an export representation or a round-trip boundary.
+2. The source-owned `writeSiteContentBackup` seam emits a deterministic source-bundle directory with page source, whitelisted page metadata, and validated page-local attachment manifests and bytes. `buildSourceBundleImportManifest` is the existing consumer boundary.
 
-3. Independent expected value is not currently defined: the frozen `site-backups` specification documents a ZIP of page source and attached files only. It supplies no site-settings schema, same-site identity rule, cross-site non-copy rule, or restore conflict policy. This row must be reclassified as blocked evidence and architecture, not implemented by extending the seeder or one-way corpus importer.
+3. Analytics/profile state, site settings, same-site identity, cross-site copy rules, and restore conflict semantics are not represented. ZIP packaging remains a later UI/runtime concern; extending seed data or treating `ImportService::add_site` as restore would invent behavior.
 
 ## S1046_IMPORT_EXPORT_REPRESENTATION
 
-1. Required public seam: the same repository-owned export/restore representation must round-trip `welcome_page` and define how `settings_revision` is restored or regenerated for the same site identity.
+1. Owner ruling `S1046_IMPORT_EXPORT_REPRESENTATION` narrows this acceptance to the evidenced site-backup content scope: page source and attached files.
 
-2. Repository inventory result: the required producer, format, and restore policy do not exist. Current public settings read/update tests prove persistence and stale-revision rejection, not export or restore.
+2. The source-owned `writeSiteContentBackup` seam bounds and serializes that content scope into the deterministic source-bundle representation. The existing corpus/source-bundle manifest helpers validate the page records, attachment metadata, and attachment bytes on the producer and consumer sides.
 
-3. Independent expected value is not currently defined: live observations and the frozen backup specification do not specify a settings revision policy. This row must be reclassified as blocked evidence and architecture. Adding fields to seed JSON, serializing a database model, or treating `ImportService::add_site` as restore would invent behavior and cannot satisfy the row.
+3. `welcome_page`, `settings_revision`, and other Wiki Settings state remain outside this import/export acceptance. The representation is not a settings restore contract, and actual ZIP packaging is intentionally deferred to a later UI/runtime seam. Existing Wiki Settings persistence and welcome behavior remain governed by their current source and evidence rows.
 
 ## Central validation ownership
 
 1. The central Deepwell command for the implemented #610 test is `cargo test --manifest-path deepwell/Cargo.toml --test page wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page -- --exact --nocapture`.
 
-2. No Cargo command can honestly close the two settings export rows until a canonical site export format and restore policy are specified and implemented. The audit must retain them as unfinished and must not list the nonexistent `site_settings_import_export_round_trip` test as an executable closure claim.
+2. The S754/S1046 content-scope source gap is closed by `writeSiteContentBackup`, the corpus manifest boundary, and their Node tests. Regenerated authority may reclassify those rows from the old missing-settings-contract blocker using this narrowed owner-approved scope. No settings export/restore test may be claimed unless a separate canonical settings format and revision policy are specified, and the nonexistent `site_settings_import_export_round_trip` test must not appear as executable closure proof.

@@ -77,19 +77,25 @@ async function publicState(page) {
 export class Open43Issue1029JoinBrowserAdapter {
   #browserContexts;
   #storageState;
+  #actor;
+  #actorUserId;
   #contexts = new Map();
 
-  constructor({ browserContexts, storageState }) {
+  constructor({ browserContexts, storageState, actor = "eligible", actorUserId }) {
+    if (actor !== "eligible" || !Number.isSafeInteger(actorUserId)) throw new Error("issue 1029 browser actor binding is invalid");
     this.#browserContexts = browserContexts;
     this.#storageState = storageState;
+    this.#actor = actor;
+    this.#actorUserId = actorUserId;
   }
 
   async #context(actor) {
+    if (actor !== "anonymous" && actor !== this.#actor) throw new Error("issue 1029 browser actor is outside the prepared binding");
     if (!this.#contexts.has(actor)) {
       this.#contexts.set(
         actor,
         this.#browserContexts.newCandidateContext({
-          storageState: actor === "anonymous" ? { cookies: [], origins: [] } : this.#storageState("eligible"),
+          storageState: actor === "anonymous" ? { cookies: [], origins: [] } : this.#storageState(this.#actor, this.#actorUserId),
           viewport: VIEWPORT,
         }),
       );

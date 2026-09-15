@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -47,6 +48,12 @@ const MANAGE_SITE_NON_ADMIN_HTML = [
   "\t\t<h3>You\'re not signed in or you are not an administrator of this Wiki.</h3>\n",
   "\t\t\t</div>\n</div>",
 ].join("");
+
+const PETITION_ADMIN_DENIAL_HTML =
+  '<div class="error-block"><div class="title">Permission error</div>This tool is for use by the administrators of this site</div>';
+const petitionAdminDenialSha256 = createHash("sha256")
+  .update(PETITION_ADMIN_DENIAL_HTML)
+  .digest("hex");
 
 function candidateIdentity() {
   return {
@@ -106,14 +113,24 @@ function sessionFactoryCapture() {
       },
       async rpc(method, params, options) {
         this.calls.push({ method, params, actor: options.actor });
-        if (method === "site_get") return { site_id: 17, slug: "scpaiueouiuiuiui" };
+        if (method === "site_get") {
+          assert.deepEqual(params, { site: "scpaiueouiuiuiui" });
+          return { site_id: 17, slug: "scpaiueouiuiuiui" };
+        }
         assert.equal(method, "wikidot_page_preview");
-        assert.deepEqual(params, {
-          site_id: 17,
-          title: "A1038 authenticated non-admin boundary",
-          wikitext: "[[module ManageSite]]",
-        });
-        return { body: options.actor === "non_admin" ? MANAGE_SITE_NON_ADMIN_HTML : MANAGE_SITE_ANONYMOUS_HTML };
+        assert.equal(params.site_id, 17);
+        assert.equal(params.title, "A1038 authenticated non-admin boundary");
+        if (params.wikitext === "[[module ManageSite]]") {
+          return {
+            body:
+              options.actor === "non_admin"
+                ? MANAGE_SITE_NON_ADMIN_HTML
+                : MANAGE_SITE_ANONYMOUS_HTML,
+          };
+        }
+        assert.equal(params.wikitext, "[[module PetitionAdmin]]");
+        assert.equal(options.actor, "non_admin");
+        return { body: PETITION_ADMIN_DENIAL_HTML };
       },
     };
     return session;
@@ -160,6 +177,7 @@ test("#1038 candidate runner publishes exact actor-bound output and rejects repl
     { method: "site_get", actor: "anonymous" },
     { method: "wikidot_page_preview", actor: "non_admin" },
     { method: "wikidot_page_preview", actor: "anonymous" },
+    { method: "wikidot_page_preview", actor: "non_admin" },
   ]);
 
   const receipt = JSON.parse(await fs.readFile(path.join(outputDir, "candidate-case-receipt.json"), "utf8"));
@@ -170,6 +188,14 @@ test("#1038 candidate runner publishes exact actor-bound output and rejects repl
   assert.equal(caseReceipt.private_input_sha256, hash("8"));
   assert.equal(caseReceipt.verification.verified, true);
   assert.notEqual(caseReceipt.verification.authenticated_non_admin_body_sha256, caseReceipt.verification.anonymous_boundary_body_sha256);
+  assert.equal(
+    caseReceipt.verification.petition_admin_mutation,
+    "not_attempted_read_only_boundary",
+  );
+  assert.equal(
+    caseReceipt.verification.petition_admin_non_admin_body_sha256,
+    petitionAdminDenialSha256,
+  );
   assert.equal(JSON.stringify(receipt).includes("not-published"), false);
 
   await assert.rejects(

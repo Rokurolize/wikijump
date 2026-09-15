@@ -24,6 +24,21 @@ export const OPEN43_Q1032_EVIDENCE = Object.freeze({
     path: "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json",
     sha256: "bde2f0e6ef4daf8fe9f52134aec967a24f9187503f066338b5365439b3dac628",
   }),
+  readonly: Object.freeze({
+    artifact: Object.freeze({
+      path: "install/local/wikidot-verification/artifacts/q1032-authenticated-readonly-live-20260915.json",
+      sha256: "0bb24087191fe7aed639fe7e26418112a763692210659390e20df788eb816b48",
+    }),
+    fixture: Object.freeze({
+      path: "install/local/wikidot-verification/fixtures/q1032-authenticated-readonly.json",
+      sha256: "80ea953c5ea6c8ef37771e436a1c91e2a84d542fe7579066239386e345af6fdd",
+    }),
+    capture_script: Object.freeze({
+      path: "install/local/wikidot-verification/scripts/capture_q1032_authenticated_readonly.py",
+      sha256: "24c2d457eb00deca7ae86a5966088461d41f4f73aacd7edfccf7099ea2a23acc",
+    }),
+    scope: "bounded read-only Watchers and WhoInvited observations; not a general privacy or invalidation contract",
+  }),
 });
 
 const USERINFO_NO_TARGET_BODY = "<div class=\"error-block\">No user specified.</div>";
@@ -114,6 +129,61 @@ export function verifyOpen43Q1032Case(caseId, observations) {
     members,
     userinfo: { anonymous, editor, actor_invariant_no_target: true },
     searchusers: { anonymous: searchAnonymous, editor: searchEditor, actor_invariant_disabled: true },
+  };
+}
+
+export function verifyOpen43Q1032ReadOnlyEvidence(value, fixture) {
+  const artifact = object(value, "Q1032 retained read-only evidence");
+  const expectedFixture = object(fixture, "Q1032 retained read-only fixture");
+  expect(artifact.schema === "wikijump.q1032.authenticated_readonly_live.v1", "Q1032 read-only evidence schema changed");
+  expect(artifact.residual_id === "Q1032_REMAINING_DIRECTORY_RUNTIME", "Q1032 read-only evidence residual changed");
+  expect(artifact.disposition === "observed", "Q1032 read-only evidence is not observed");
+  expect(artifact.mutated === false && artifact.mutation_count === 0, "Q1032 read-only evidence contains a mutation");
+  expect(artifact.acquisition?.browser_used === false, "Q1032 read-only evidence used a browser");
+  expect(artifact.budgets?.actual_state_changing_requests === 0, "Q1032 read-only evidence contains a state-changing request");
+
+  const watchers = object(artifact.watchers, "Q1032 Watchers evidence");
+  const expectedWatchers = object(expectedFixture.watchers, "Q1032 Watchers fixture");
+  expect(watchers.actor?.label === "anonymous" && watchers.actor?.authenticated === false, "Q1032 Watchers actor boundary changed");
+  expect(watchers.source?.site === expectedWatchers.site && watchers.source?.slug === expectedWatchers.slug, "Q1032 Watchers source identity changed");
+  expect(watchers.render_response?.selected_selector === expectedWatchers.selector, "Q1032 Watchers selector changed");
+  expect(Array.isArray(watchers.rows) && watchers.rows.length > 0, "Q1032 Watchers evidence is not populated");
+  expect(watchers.rows.length === expectedWatchers.expected_rows.length && watchers.rows.every((row, index) => {
+    const expected = expectedWatchers.expected_rows[index];
+    return row.user_id === expected.user_id && row.public_name === expected.public_name && row.href === expected.href && row.onclick === expected.onclick;
+  }), "Q1032 Watchers rows changed");
+  expect(watchers.render_response?.status === 200 && watchers.render_response?.selected_style === "display:none", "Q1032 Watchers envelope changed");
+
+  const whoInvited = object(artifact.whoinvited, "Q1032 WhoInvited evidence");
+  const expectedWhoInvited = object(expectedFixture.whoinvited, "Q1032 WhoInvited fixture");
+  expect(whoInvited.site === expectedWhoInvited.site && whoInvited.module_name === expectedWhoInvited.module_name, "Q1032 WhoInvited seam changed");
+  expect(Array.isArray(whoInvited.actor_matrix) && whoInvited.actor_matrix.length === expectedWhoInvited.actors.length, "Q1032 WhoInvited actor matrix changed");
+  expect(Array.isArray(whoInvited.requests) && whoInvited.requests.length === expectedWhoInvited.actors.length * expectedWhoInvited.targets.length, "Q1032 WhoInvited request matrix changed");
+  expect(whoInvited.actor_differential?.targets_with_differing_module_bodies === 0, "Q1032 WhoInvited actor differential changed");
+  expect(whoInvited.actor_differential?.scope_limit === "This is a bounded observation, not a general privacy rule; no broader actor or target state is inferred.", "Q1032 WhoInvited scope widened");
+
+  const targetKinds = new Map(expectedWhoInvited.targets.map((target) => [target.user_id, target.expected_result_kind]));
+  for (const request of whoInvited.requests) {
+    const target = targetKinds.get(request.target?.user_id);
+    expect(target !== undefined, "Q1032 WhoInvited target is outside the retained fixture");
+    expect(request.result_kind === target, "Q1032 WhoInvited result kind changed");
+    expect(request.response?.envelope?.status === "ok", "Q1032 WhoInvited response status changed");
+    expect(typeof request.response?.body_sha256 === "string" && /^[0-9a-f]{64}$/u.test(request.response.body_sha256), "Q1032 WhoInvited body hash is invalid");
+  }
+
+  expect(artifact.rule_boundaries?.watchers_populated_output_observed === true, "Q1032 populated Watchers observation was not recorded");
+  expect(artifact.rule_boundaries?.whoinvited_populated_output_observed === true, "Q1032 populated WhoInvited observation was not recorded");
+  expect(artifact.rule_boundaries?.bounded_actor_matrix_observed === true, "Q1032 actor matrix was not recorded");
+  expect(artifact.rule_boundaries?.general_privacy_contract_established === false, "Q1032 evidence claims a general privacy rule");
+  expect(artifact.rule_boundaries?.rename_delete_import_invalidation_observed === false, "Q1032 evidence claims invalidation observation");
+  expect(artifact.rule_boundaries?.rename_delete_import_invalidation_inferred === false, "Q1032 evidence infers invalidation");
+  return {
+    verified: true,
+    watchers_rows: watchers.rows.length,
+    whoinvited_requests: whoInvited.requests.length,
+    bounded_actor_matrix: true,
+    general_privacy_contract: false,
+    rename_delete_import_invalidation: false,
   };
 }
 

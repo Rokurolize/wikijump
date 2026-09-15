@@ -25,7 +25,7 @@ function localUrl(value, name, pathname = "/") {
   return url;
 }
 
-export async function requestCandidateCaseHttp({ url, method, headers = {}, body = null, connectAddress = null, tlsCa = null, signal = null }) {
+export async function requestCandidateCaseHttp({ url, method, headers = {}, body = null, connectAddress = null, tlsCa = null, signal = null, agent = undefined }) {
   const target = url instanceof URL ? url : new URL(url);
   const transport = target.protocol === "https:" ? https : target.protocol === "http:" ? http : null;
   if (!transport) throw new Error("candidate request must use HTTP or HTTPS");
@@ -40,6 +40,7 @@ export async function requestCandidateCaseHttp({ url, method, headers = {}, body
       method,
       headers: requestHeaders,
       ...(target.protocol === "https:" ? { servername: target.hostname, ...(tlsCa === null ? {} : { ca: tlsCa }) } : {}),
+      ...(agent === undefined ? {} : { agent }),
       ...(connectAddress === null ? {} : {
         lookup(_hostname, options, callback) {
           const address = loopback(connectAddress, "candidate connect address");
@@ -114,12 +115,15 @@ export class CandidateHttpSession {
   #signal;
   #rpcId = 1;
   #events = [];
+  #connectionPolicy;
 
-  constructor({ candidateIdentity, privateInput: rawInput, signal = null, requestImpl = requestCandidateCaseHttp }) {
+  constructor({ candidateIdentity, privateInput: rawInput, signal = null, requestImpl = requestCandidateCaseHttp, connectionPolicy = "pooled" }) {
+    if (!["pooled", "isolated"].includes(connectionPolicy)) throw new Error("candidate HTTP connection policy is invalid");
     this.#candidate = candidateIdentity;
     this.#input = privateInput(rawInput);
     this.#request = requestImpl;
     this.#signal = signal;
+    this.#connectionPolicy = connectionPolicy;
   }
 
   get editorUserId() { return this.#input.actor.userId; }
@@ -155,7 +159,11 @@ export class CandidateHttpSession {
   }
 
   async #send(service, operation, options, cleanup = false) {
-    const response = await this.#request({ ...options, signal: this.#requestSignal(cleanup) });
+    const response = await this.#request({
+      ...options,
+      ...(this.#connectionPolicy === "isolated" ? { agent: false } : {}),
+      signal: this.#requestSignal(cleanup),
+    });
     this.#events.push({ sequence: this.#events.length + 1, service, operation, method: options.method, response_status: response.status });
     return response;
   }

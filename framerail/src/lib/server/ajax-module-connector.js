@@ -126,6 +126,52 @@ const FORUM_POST_FIELDS = new Set([
 const EDIT_META_MODULE = "edit/EditMetaModule"
 const EDIT_META_ACTION = "WikiPageAction"
 const EDIT_META_EVENTS = new Set(["saveMetaTag", "deleteMetaTag"])
+const PAGE_DRAFT_EVENTS = new Set([
+  "synchronize",
+  "checkDraftExists",
+  "removePageEditLock"
+])
+const PAGE_DRAFT_SYNCHRONIZE_FIELDS = new Set([
+  "action",
+  "event",
+  "moduleName",
+  "wikidot_token7",
+  "callbackIndex",
+  "mode",
+  "wiki_page",
+  "lock_id",
+  "lock_secret",
+  "revision_id",
+  "page_id",
+  "source",
+  "title",
+  "comments",
+  "since_last_input"
+])
+const PAGE_DRAFT_EXISTS_FIELDS = new Set([
+  "action",
+  "event",
+  "moduleName",
+  "wikidot_token7",
+  "callbackIndex",
+  "wiki_page",
+  "lock_id",
+  "page_id",
+  "title",
+  "source"
+])
+const PAGE_DRAFT_REMOVE_FIELDS = new Set([
+  "action",
+  "event",
+  "moduleName",
+  "wikidot_token7",
+  "callbackIndex",
+  "wiki_page",
+  "lock_id",
+  "lock_secret",
+  "page_id",
+  "leave_draft"
+])
 const PAGE_DELETE_EVENT = "deletePage"
 const PAGE_DELETE_MODULE = "Empty"
 const PAGE_DELETE_ACTION_FIELDS = new Set([
@@ -283,6 +329,23 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *     siteId: number
  *     pageId: number
  *   }) => Promise<void>
+ *   savePageDraft?: (input: {
+ *     siteId: number
+ *     pageId?: number
+ *     slug: string
+ *     title: string
+ *     wikitext: string
+ *   }) => Promise<void>
+ *   pageDraftExists?: (input: {
+ *     siteId: number
+ *     pageId?: number
+ *     slug: string
+ *   }) => Promise<boolean>
+ *   removePageDraft?: (input: {
+ *     siteId: number
+ *     pageId?: number
+ *     slug: string
+ *   }) => Promise<void>
  * }} AjaxModuleConnectorOptions
  */
 
@@ -423,6 +486,11 @@ const requestWikidotTokenCookie = (request) => {
 
 /** @param {string} value */
 const isCanonicalPositiveDecimal = (value) => /^[1-9][0-9]*$/u.test(value)
+
+/** @param {string} value */
+const isCanonicalNonNegativeDecimal = (value) =>
+  /^(?:0|[1-9][0-9]*)$/u.test(value) &&
+  Number.isSafeInteger(Number.parseInt(value, 10))
 
 /** @param {string} value */
 const isPositiveSafeDecimal = (value) => {
@@ -714,7 +782,10 @@ export const handleAjaxModuleConnectorRequest = async (
     renderEditMetaModule,
     saveMetaTag,
     deleteMetaTag,
-    deletePage
+    deletePage,
+    savePageDraft,
+    pageDraftExists,
+    removePageDraft
   }
 ) => {
   if (request.method !== "POST") {
@@ -898,6 +969,97 @@ export const handleAjaxModuleConnectorRequest = async (
       return jsonResponse({ status: "ok" })
     } catch (error) {
       console.error("AJAX deletePage action failed", error)
+      return jsonResponse({ status: "not_ok" })
+    }
+  }
+
+  const pageDraftEvent = fields.get("event")
+  if (
+    fields.get("action") === EDIT_META_ACTION &&
+    pageDraftEvent !== undefined &&
+    PAGE_DRAFT_EVENTS.has(pageDraftEvent)
+  ) {
+    const allowedFields =
+      pageDraftEvent === "synchronize"
+        ? PAGE_DRAFT_SYNCHRONIZE_FIELDS
+        : pageDraftEvent === "checkDraftExists"
+          ? PAGE_DRAFT_EXISTS_FIELDS
+          : PAGE_DRAFT_REMOVE_FIELDS
+    const slug = fieldValue(fields, "wiki_page")
+    const lockId = fieldValue(fields, "lock_id")
+    const rawPageId = fields.get("page_id")
+    const pageId =
+      rawPageId === undefined
+        ? undefined
+        : isPositiveSafeDecimal(rawPageId)
+          ? Number.parseInt(rawPageId, 10)
+          : null
+    const commonShapeSupported =
+      moduleName === "Empty" &&
+      [...fields.keys()].every((field) => allowedFields.has(field)) &&
+      slug.length > 0 &&
+      !slug.includes("\0") &&
+      isPositiveSafeDecimal(lockId) &&
+      pageId !== null
+
+    if (!commonShapeSupported) {
+      return jsonResponse({ status: "not_ok" })
+    }
+
+    try {
+      if (pageDraftEvent === "synchronize") {
+        const revisionId = fieldValue(fields, "revision_id")
+        const shapeSupported =
+          fields.get("mode") === "page" &&
+          fieldValue(fields, "lock_secret").length > 0 &&
+          (revisionId === "" || isPositiveSafeDecimal(revisionId)) &&
+          fields.has("source") &&
+          fields.has("title") &&
+          fields.has("comments") &&
+          isCanonicalNonNegativeDecimal(fieldValue(fields, "since_last_input"))
+        if (!shapeSupported || !savePageDraft) {
+          return jsonResponse({ status: "not_ok" })
+        }
+        await savePageDraft({
+          siteId,
+          ...(pageId === undefined ? {} : { pageId }),
+          slug,
+          title: fieldValue(fields, "title"),
+          wikitext: fieldValue(fields, "source")
+        })
+        return jsonResponse({ status: "ok", savedDraft: true })
+      }
+
+      if (pageDraftEvent === "checkDraftExists") {
+        if (!fields.has("title") || !fields.has("source") || !pageDraftExists) {
+          return jsonResponse({ status: "not_ok" })
+        }
+        const draftExists = await pageDraftExists({
+          siteId,
+          ...(pageId === undefined ? {} : { pageId }),
+          slug
+        })
+        return jsonResponse({ status: "ok", draftExists })
+      }
+
+      const leaveDraft = fields.get("leave_draft")
+      if (
+        fieldValue(fields, "lock_secret").length === 0 ||
+        (leaveDraft !== "true" && leaveDraft !== "false")
+      ) {
+        return jsonResponse({ status: "not_ok" })
+      }
+      if (leaveDraft === "false") {
+        if (!removePageDraft) return jsonResponse({ status: "not_ok" })
+        await removePageDraft({
+          siteId,
+          ...(pageId === undefined ? {} : { pageId }),
+          slug
+        })
+      }
+      return jsonResponse({ status: "ok" })
+    } catch (error) {
+      console.error(`AJAX page draft ${pageDraftEvent} failed`, error)
       return jsonResponse({ status: "not_ok" })
     }
   }

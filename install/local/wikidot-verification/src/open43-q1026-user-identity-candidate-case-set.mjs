@@ -187,7 +187,7 @@ export class Open43Q1026UserIdentityCandidateSession {
       tlsCa: this.#tlsCa,
       signal: this.#signal,
     });
-    this.#events.push({ method, response_status: response.status });
+    this.#events.push({ method, response_status: response.status, actor: sessionToken === null ? "anonymous" : "authenticated", session_token_sha256: sessionToken === null ? null : sha256(sessionToken) });
     let payload;
     try { payload = JSON.parse(response.body); } catch { throw new Error(`${method} returned non-JSON at the public Deepwell seam`); }
     if (response.status !== 200 || payload?.error !== undefined) throw new Error(`${method} failed at the public Deepwell seam`);
@@ -339,9 +339,11 @@ export function createOpen43Q1026UserIdentityCandidateCaseSet({ sessionFactory =
             user_id: null,
             preview_sha256: sha256Value(previewBody),
             saved_sha256: sha256Value(savedBody),
+            request_events: session.events.slice(1),
           },
         };
         for (const actor of ACTOR_NAMES.slice(1)) {
+          const actorRequestStart = session.events.length;
           const actorPreview = await session.preview(actor);
           const actorSaved = await session.savedPage(actor);
           const actorPreviewBody = requireNonEmptyString(actorPreview?.body, `#1026 ${actor} preview body`);
@@ -351,6 +353,7 @@ export function createOpen43Q1026UserIdentityCandidateCaseSet({ sessionFactory =
             user_id: session.actorUserId(actor),
             preview_sha256: sha256Value(actorPreviewBody),
             saved_sha256: sha256Value(actorSavedBody),
+            request_events: session.events.slice(actorRequestStart),
           };
         }
         const printuser = await browser.capturePrintuser();
@@ -368,6 +371,7 @@ export function createOpen43Q1026UserIdentityCandidateCaseSet({ sessionFactory =
         source_sha256: fixture.source_sha256,
         fixture: Object.fromEntries(Object.keys(Q1026_USER_FIXTURES).map((name) => [name, fixture[name]])),
         actor_user_ids: Object.fromEntries(ACTOR_NAMES.map((name) => [name, session.actorUserId(name)])),
+        actor_session_token_sha256: Object.fromEntries(Object.entries(privateInputIdentity.actor_identities).map(([name, identity]) => [name, identity.session_token_sha256])),
         page_origin: pageOrigin,
       };
       return Object.freeze({
@@ -386,6 +390,7 @@ export function createOpen43Q1026UserIdentityCandidateCaseSet({ sessionFactory =
           page_origin: pageOrigin,
           fixture: { provenance: fixture.provenance, users: Object.fromEntries(Object.keys(Q1026_USER_FIXTURES).map((name) => [name, fixture[name]])) },
           actor_user_ids: verifyPlan.actor_user_ids,
+          actor_session_token_sha256: verifyPlan.actor_session_token_sha256,
           candidate_observation_scope: "read-only-public-deepwell-rpc-actor-matrix-and-anonymous-browser",
         },
         execute,

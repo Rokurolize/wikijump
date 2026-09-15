@@ -317,5 +317,16 @@ async function sealFailure(destination, runId, output, error) {
     run_id: runId,
     output_dir: output,
     error: error?.message ?? String(error),
+    error_details: terminalErrorDetails(error),
   });
+}
+
+function terminalErrorDetails(error) {
+  return {
+    name: error?.name ?? "Error",
+    message: error?.message ?? String(error),
+    ...(Array.isArray(error?.errors)
+      ? { errors: error.errors.map((cause) => terminalErrorDetails(cause)) }
+      : {}),
+  };
 }

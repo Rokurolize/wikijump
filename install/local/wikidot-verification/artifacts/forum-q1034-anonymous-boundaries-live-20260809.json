@@ -1,0 +1,305 @@
+{
+  "schema": "wikijump_forum_q1034_anonymous_boundaries_live.v1",
+  "captured_at": "2026-08-09T15:03:49.928517+00:00",
+  "surface_ids": [
+    "catalog-feature:module-frontforum",
+    "catalog-feature:module-forumnewthread",
+    "Q1034_POPULATED_READ_MODEL_COVERAGE"
+  ],
+  "provenance": {
+    "actor": "anonymous",
+    "authenticated": false,
+    "mutated": false,
+    "retained_only": true,
+    "forum_g9_manifest_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9/manifest.json",
+    "forum_g9_manifest_sha256": "10bd8aca6854fd54db4659b6c449548fad7ec730779fca70e3a495b59a0d97f5",
+    "forum_g9_sums_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9/SHA256SUMS",
+    "forum_g9_sums_sha256": "a9f5453a596371509e9aa5e9a7f2cc45f68ee839f3a447a750c49f954510f909",
+    "forum_g9_capture_script_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9/capture-script.py",
+    "forum_g9_capture_script_sha256": "58d13a7f417610735f8908ebfb256ccbba882e0ee0c8a3c8856a516024b3dd70",
+    "open43_sums_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/SHA256SUMS",
+    "open43_sums_sha256": "225897681df10c1e8c307053056849990fc32ebe10e47f2ab9012685bda709ff",
+    "open43_capture_script_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/acquire_readonly.py",
+    "open43_capture_script_sha256": "835946c3b659a9da4fc6b0618093a2752326907fbb1ce762d5cc99f9bca6d86a"
+  },
+  "case_ids": [
+    "frontforum-saved-feed-metadata",
+    "frontforum-feed-preview",
+    "frontforum-relative-links-preview",
+    "forumnewthread-anonymous-category-route"
+  ],
+  "cases": {
+    "frontforum-saved-feed-metadata": {
+      "request": {
+        "method": "GET",
+        "url": "http://sandbox-for-codex.wikidot.com/cg-mod-q11-004-frontforum"
+      },
+      "response": {
+        "http_status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "final_url": "http://sandbox-for-codex.wikidot.com/cg-mod-q11-004-frontforum",
+        "raw_body": {
+          "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9/raw/http/sandbox-frontforum-holder.html",
+          "sha256": "e8997b5011d095fe76eb26b15fe4adee4fb5654dfd2b45430fad9c10afacecde",
+          "size": 26798
+        },
+        "observed": {
+          "front_forum_wrapper_class": "front-forum-box",
+          "populated_item_count": 8,
+          "head_feed_link": {
+            "rel": "alternate",
+            "type": "application/rss+xml",
+            "title": "G25 NEWS",
+            "href": "/feed/front/cg-mod-q11-004-frontforum/news.xml",
+            "exact_html": "<link rel=\"alternate\" type=\"application/rss+xml\" title=\"G25 NEWS\" href=\"/feed/front/cg-mod-q11-004-frontforum/news.xml\"/>"
+          },
+          "body_feed_info": {
+            "class": "feedinfo",
+            "rss_icon_class": "rss-icon",
+            "rss_icon_alt": "rss icon",
+            "feed_link_text": "RSS feed",
+            "feed_link_href": "/feed/front/cg-mod-q11-004-frontforum/news.xml",
+            "exact_anchor_html": "<a href=\"/feed/front/cg-mod-q11-004-frontforum/news.xml\">RSS feed</a>"
+          }
+        }
+      },
+      "mutated": false
+    },
+    "frontforum-feed-preview": {
+      "endpoint": "http://sandbox-for-codex.wikidot.com/ajax-module-connector.php",
+      "cases": [
+        {
+          "case_id": "q1034-frontforum-feed-one",
+          "request": {
+            "method": "POST",
+            "form": {
+              "mode": "page",
+              "moduleName": "edit/PagePreviewModule",
+              "source": "[[module FrontForum category=\"8503559\" limit=\"1\" feed=\"readonlyfeed\" feedTitle=\"Read only feed\"]]",
+              "title": "q1034-frontforum-feed-one"
+            }
+          },
+          "response": {
+            "http_status": 200,
+            "status": "ok",
+            "raw_response": {
+              "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-feed-one.json",
+              "sha256": "e3b66fcea37443a89c2e1b783dcf48900ba257856526b7598524a15a07669cbf",
+              "size": 4501
+            },
+            "response_body_sha256": "aba798a46bb5e64eb81cba2fabd6faf53d646ae9da27fb51b67c1e7a81cb77fb",
+            "dom_serialized_sha256": "65312cc6a71b0f49c5ad15b337622723fb6b2b67ada77007db8609efc3709c87",
+            "visible_text_sha256": "1b04c47f31970967934630aeeb14df6f571fb1fa91d08bdfbbc85c4cf1fd3056",
+            "js_include": [],
+            "css_include": []
+          },
+          "mutated": false
+        },
+        {
+          "case_id": "q1034-frontforum-feed-two",
+          "request": {
+            "method": "POST",
+            "form": {
+              "mode": "page",
+              "moduleName": "edit/PagePreviewModule",
+              "source": "[[module FrontForum category=\"8503559\" limit=\"1\" feed=\"readonlyfeed2\"]]",
+              "title": "q1034-frontforum-feed-two"
+            }
+          },
+          "response": {
+            "http_status": 200,
+            "status": "ok",
+            "raw_response": {
+              "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260909/raw/q1034-frontforum-feed-two.json",
+              "sha256": "b335db45b2cde95d9ba07057f011cd28a976c85353313bbd661c6beece90d400",
+              "size": 4473
+            },
+            "response_body_sha256": "bafac99ab30277133925a549f826c00fd84619ec7733e78516348b6da4f399ed",
+            "dom_serialized_sha256": "65312cc6a71b0f49c5ad15b337622723fb6b2b67ada77007db8609efc3709c87",
+            "visible_text_sha256": "1b04c47f31970967934630aeeb14df6f571fb1fa91d08bdfbbc85c4cf1fd3056",
+            "js_include": [],
+            "css_include": []
+          },
+          "mutated": false
+        },
+        {
+          "case_id": "q1034-frontforum-feed-empty",
+          "request": {
+            "method": "POST",
+            "form": {
+              "mode": "page",
+              "moduleName": "edit/PagePreviewModule",
+              "source": "[[module FrontForum category=\"8503559\" limit=\"1\" feed=\"\"]]",
+              "title": "q1034-frontforum-feed-empty"
+            }
+          },
+          "response": {
+            "http_status": 200,
+            "status": "ok",
+            "raw_response": {
+              "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-feed-empty.json",
+              "sha256": "f97587acf0b504f41814fd21e0a402149635b7fa09768fd584810d52ff0b26b4",
+              "size": 4466
+            },
+            "response_body_sha256": "d7cb296d76f51a471c6eb73eb75a0965ba2527d2da535cd15d00ea74a73e5c58",
+            "dom_serialized_sha256": "65312cc6a71b0f49c5ad15b337622723fb6b2b67ada77007db8609efc3709c87",
+            "visible_text_sha256": "1b04c47f31970967934630aeeb14df6f571fb1fa91d08bdfbbc85c4cf1fd3056",
+            "js_include": [],
+            "css_include": []
+          },
+          "mutated": false
+        },
+        {
+          "case_id": "q1034-frontforum-feed-invalid",
+          "request": {
+            "method": "POST",
+            "form": {
+              "mode": "page",
+              "moduleName": "edit/PagePreviewModule",
+              "source": "[[module FrontForum category=\"8503559\" limit=\"1\" feed=\"../bad\"]]",
+              "title": "q1034-frontforum-feed-invalid"
+            }
+          },
+          "response": {
+            "http_status": 200,
+            "status": "ok",
+            "raw_response": {
+              "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-feed-invalid.json",
+              "sha256": "57f45e36399dd4aef9ce989d77a04a0996f2964d092c61b67fa2954ed287648d",
+              "size": 4478
+            },
+            "response_body_sha256": "a10a4618fdd7aaa4383ed3ddc7f2ea12aff346b1144a39d77301344d54324f7f",
+            "dom_serialized_sha256": "65312cc6a71b0f49c5ad15b337622723fb6b2b67ada77007db8609efc3709c87",
+            "visible_text_sha256": "1b04c47f31970967934630aeeb14df6f571fb1fa91d08bdfbbc85c4cf1fd3056",
+            "js_include": [],
+            "css_include": []
+          },
+          "mutated": false
+        }
+      ],
+      "observation": "All four anonymous preview variants returned the same populated FrontForum DOM projection and no jsInclude or cssInclude entries. This is a fragment-envelope observation and does not prove saved-page head behavior or feed delivery."
+    },
+    "frontforum-relative-links-preview": {
+      "endpoint": "http://sandbox-for-codex.wikidot.com/ajax-module-connector.php",
+      "cases": [
+        {
+          "case_id": "q1034-frontforum-relative-true",
+          "request": {
+            "method": "POST",
+            "form": {
+              "mode": "page",
+              "moduleName": "edit/PagePreviewModule",
+              "source": "[[module FrontForum category=\"8503559\" limit=\"1\" fixRelativeLinks=\"true\"]]",
+              "title": "q1034-frontforum-relative-true"
+            }
+          },
+          "response": {
+            "http_status": 200,
+            "status": "ok",
+            "raw_response": {
+              "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-relative-true.json",
+              "sha256": "8ed9ef9941aab55b3d2e584f3d32e4e5f3e33bf62535c247cad96f9950b1c14e",
+              "size": 4491
+            },
+            "response_body_sha256": "4ad222dac736e67e1382e655a5f71dbe6bc3f31cc7b6bdc005b4a6a04bdeec5d",
+            "dom_serialized_sha256": "65312cc6a71b0f49c5ad15b337622723fb6b2b67ada77007db8609efc3709c87",
+            "visible_text_sha256": "1b04c47f31970967934630aeeb14df6f571fb1fa91d08bdfbbc85c4cf1fd3056",
+            "js_include": [],
+            "css_include": []
+          },
+          "mutated": false
+        },
+        {
+          "case_id": "q1034-frontforum-relative-false",
+          "request": {
+            "method": "POST",
+            "form": {
+              "mode": "page",
+              "moduleName": "edit/PagePreviewModule",
+              "source": "[[module FrontForum category=\"8503559\" limit=\"1\" fixRelativeLinks=\"false\"]]",
+              "title": "q1034-frontforum-relative-false"
+            }
+          },
+          "response": {
+            "http_status": 200,
+            "status": "ok",
+            "raw_response": {
+              "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-relative-false.json",
+              "sha256": "25516759c68c8917f5ef1dc25260a61934b003d22bc97866d1c32ac4f0b8b256",
+              "size": 4495
+            },
+            "response_body_sha256": "c18c1ea0c937424257076c9d0fc68720ddad02263522168f5cfecad4761d0823",
+            "dom_serialized_sha256": "65312cc6a71b0f49c5ad15b337622723fb6b2b67ada77007db8609efc3709c87",
+            "visible_text_sha256": "1b04c47f31970967934630aeeb14df6f571fb1fa91d08bdfbbc85c4cf1fd3056",
+            "js_include": [],
+            "css_include": []
+          },
+          "mutated": false
+        }
+      ],
+      "observation": "Both anonymous switches were accepted and produced the same DOM and visible-text projections. The selected post body contained no user-authored relative link, so effective rewriting remains unobserved."
+    },
+    "forumnewthread-anonymous-category-route": {
+      "request": {
+        "method": "GET",
+        "url": "http://sandbox-for-codex.wikidot.com/forum:new-thread/c/8503559"
+      },
+      "response": {
+        "http_status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "final_url": "http://sandbox-for-codex.wikidot.com/forum:new-thread/c/8503559",
+        "raw_body": {
+          "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9/raw/http/sandbox-new-thread-anonymous.html",
+          "sha256": "8b25e0625d87a4815ed9224e1e1f7da80be3e2b2f4f5f9d196bae2bdcdb58d1e",
+          "size": 24022
+        },
+        "observed": {
+          "page_title": "New Forum Thread - Sandbox For Codex",
+          "error_class": "error-block",
+          "error_title": "Permission error",
+          "message": "Sorry, you can not start new discussion thread. Only Wikidot.com registered users, members of this site, site administrators and perhaps selected moderators are allowed to do it.",
+          "login_link": {
+            "href": "#action:login",
+            "text": "Sign in as Wikidot user"
+          },
+          "forum_new_thread_form_count": 0
+        }
+      },
+      "mutated": false
+    }
+  },
+  "observed_contract": [
+    "A populated saved-page FrontForum response emits the same feed URL in document head metadata and in a feedinfo body block.",
+    "Anonymous FrontForum PagePreview accepts the retained feed argument variants without adding fragment jsInclude or cssInclude entries.",
+    "Anonymous FrontForum PagePreview accepts both retained fixRelativeLinks switch values and produces identical projections for the captured post.",
+    "An anonymous category-scoped ForumNewThread GET is an HTTP 200 permission-error terminal state with no forum-thread form."
+  ],
+  "blocked_boundaries": {
+    "feed_delivery": {
+      "status": "blocked",
+      "missing_authority": "A retained or cache-sealed anonymous GET of /feed/front/cg-mod-q11-004-frontforum/news.xml with status, content type, headers, and XML body is required; page links and document-head metadata do not prove feed delivery."
+    },
+    "relative_link_rewriting": {
+      "status": "blocked",
+      "missing_authority": "No additional private or mutation authority is required, but a public or anonymous-preview FrontForum item whose post body contains a relative user-authored link must be captured with fixRelativeLinks=true and false."
+    },
+    "private_visibility": {
+      "status": "blocked",
+      "missing_authority": "A controlled private forum category or thread plus an authorized actor read is required for a positive visibility boundary; anonymous omission cannot distinguish private filtering from absence."
+    },
+    "deletion": {
+      "status": "blocked",
+      "missing_authority": "A retained public before-and-after deletion read pair or a controlled deletion mutation and anonymous readback is required; this lane cannot create or delete forum data."
+    },
+    "forumnewthread_positive_state": {
+      "status": "blocked",
+      "missing_authority": "An authenticated member, moderator, or administrator read of the same category route plus the form, CSRF, validation, idempotency, and authorized write contract is required; the anonymous denial does not establish a positive form."
+    }
+  },
+  "forbidden_inferences": [
+    "The saved-page RSS link proves that the linked XML endpoint is available or has any particular feed schema.",
+    "The relative-link pair proves rewriting behavior for a content-bearing relative link.",
+    "Anonymous absence proves private or deleted forum visibility behavior.",
+    "The anonymous ForumNewThread denial grants no forum mutation authority."
+  ]
+}

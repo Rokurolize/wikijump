@@ -100,3 +100,72 @@ test("Wikidot Categories ignores malformed or detached controls without a reques
   assert.equal(module.listeners.toggleListPages(undefined, 17), false)
   assert.equal(requests, 0)
 })
+
+test("Wikidot Categories delegates retained inline controls under strict CSP", async () => {
+  const listeners = []
+  const list = { style: { display: "none" }, innerHTML: "" }
+  const toggler = {
+    id: "category-pages-toggler-17",
+    textContent: "+ list pages",
+    closest(selector) {
+      return selector === 'a[id^="category-pages-toggler-"]' ? this : null
+    },
+    getAttribute(name) {
+      return name === "onclick"
+        ? "WIKIDOT.modules.WikiCategoriesModule.listeners.toggleListPages(event, 17)"
+        : null
+    }
+  }
+  const elements = new Map([
+    ["category-pages-17", list],
+    ["category-pages-toggler-17", toggler]
+  ])
+  const requests = []
+  const root = {
+    document: {
+      addEventListener(type, listener, capture) {
+        listeners.push({ type, listener, capture })
+      },
+      getElementById(id) {
+        return elements.get(id) ?? null
+      }
+    },
+    async fetch(url, init) {
+      requests.push({ url, init })
+      return {
+        async json() {
+          return { status: "ok", categoryId: 17, body: "<ul><li>Alpha</li></ul>" }
+        }
+      }
+    }
+  }
+  let prevented = 0
+  let stopped = 0
+  const event = {
+    target: toggler,
+    preventDefault() {
+      prevented += 1
+    },
+    stopPropagation() {
+      stopped += 1
+    }
+  }
+
+  installWikidotCategories(root)
+  installWikidotCategories(root)
+  assert.equal(listeners.length, 1)
+  assert.deepEqual(
+    { type: listeners[0].type, capture: listeners[0].capture },
+    { type: "click", capture: true }
+  )
+
+  listeners[0].listener(event)
+  assert.equal(prevented, 1)
+  assert.equal(stopped, 1)
+  assert.equal(list.style.display, "block")
+  assert.equal(toggler.textContent, "- hide pages")
+  assert.equal(requests.length, 1)
+
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(list.innerHTML, "<ul><li>Alpha</li></ul>")
+})

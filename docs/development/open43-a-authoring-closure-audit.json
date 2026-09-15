@@ -275,7 +275,7 @@
           "public_tests": [
             "deepwell/tests/authoring_boundaries.rs#imported_breadcrumbs_fail_closed_at_relation_boundaries"
           ],
-          "result": "Public article_view cases return no breadcrumb payload for parent-none and missing-parent states. They reject cyclic or depth-truncated snapshot chains instead of returning a repeated partial chain. They preserve the imported source fullname when the local parent row is renamed. Fresh current Wikidot evidence separately establishes that the standard saved-page shell does not synthesize #breadcrumbs; only the Pro custom-layout [[breadcrumbs]] presentation remains blocked authority."
+          "result": "Public article_view cases return no breadcrumb payload for parent-none and missing-parent states. They reject cyclic or depth-truncated snapshot chains instead of returning a repeated partial chain. They preserve the imported source fullname when the local parent row is renamed. Fresh current Wikidot evidence separately establishes that the standard saved-page shell does not synthesize #breadcrumbs; the Pro custom-layout [[breadcrumbs]] presentation is a separately scoped, not-claimed surface that requires reopening."
         },
         {
           "case_id": "A1063_SETTINGS_ACTION_BOUNDARY_REGRESSION",
@@ -287,6 +287,21 @@
             "framerail/tests/user-settings-action-boundary.test.js#user settings bind persistence to the server session actor"
           ],
           "result": "The actual SvelteKit loader and server action reject an anonymous load, an invalid form, and a missing session. The action uses user 41 from session_get even when the form submits user 999. It persists normalized locales through user_edit with the trusted request context. A fresh loader call returns the persisted value. Cancel interaction, SvelteKit origin enforcement, and real browser reload remain candidate-only."
+        },
+        {
+          "case_id": "A1063_LEGACY_AUTHORING_PRESENTATION",
+          "status": "owner_scope_boundary",
+          "owner": "framerail",
+          "result": "Owner ruling 2026-09-16 treats the exact current Wikijump revision-diff and settings workflows as the campaign acceptance surface and does not claim byte-for-byte or selector-for-selector legacy Wikidot presentation. The candidate still has to prove actor binding, escaped diff content, save/cancel/reload, failure, navigation, focus, and persistence. Historical Wikidot templates and unstable current account chrome are retained only as reference material, not presentation authority.",
+          "not_claimed": ["exact legacy Wikidot diff DOM", "exact legacy account-settings DOM", "legacy keyboard or intermediate-paint selectors"]
+        },
+        {
+          "case_id": "A1063_FULL_BREADCRUMB_LIVE_BOUNDARY",
+          "status": "owner_scope_boundary",
+          "owner": "deepwell",
+          "evidence_id": "AUTHORING_PARENT_STANDARD_LAYOUT_LIVE_20260908",
+          "result": "Owner ruling 2026-09-16 limits this campaign to the current standard saved-page shell, where fresh live evidence proves that parent metadata does not synthesize #breadcrumbs. The separately documented Pro custom-layout [[breadcrumbs]] element is not implemented or inferred from that negative observation and is outside this campaign's accepted presentation surface; it requires a dedicated Pro custom-layout fixture and reopening.",
+          "not_claimed": ["Pro custom-layout [[breadcrumbs]] DOM", "custom-layout relation-boundary presentation"]
         }
       ],
       "needs_source": [],
@@ -314,19 +329,8 @@
           "boundary": "Deepwell ancestry remains valid internal/public relation data. Pro custom-layout [[breadcrumbs]] behavior is a separate authority and is not inferred from the standard shell."
         }
       ],
-      "blocked_evidence": [
-        {
-          "case_id": "A1063_LEGACY_AUTHORING_PRESENTATION",
-          "missing": "The live site remained read-only. No authoritative capture defines exact Wikidot revision-diff or user-settings DOM, messages, keyboard behavior, errors, or intermediate frames.",
-          "forbidden_inference": "Do not label the accessible Wikijump diff and settings UI exact legacy DOM or fabricate a Wikidot authoring presentation from the page-history documentation."
-        },
-        {
-          "case_id": "A1063_FULL_BREADCRUMB_LIVE_BOUNDARY",
-          "missing": "Current live evidence now establishes that the standard saved-page shell does not synthesize #breadcrumbs from parent relations. The remaining unobserved breadcrumb presentation authority is the separately documented Pro custom-layout [[breadcrumbs]] surface, including its exact DOM and relation-boundary behavior.",
-          "forbidden_inference": "Do not infer custom-layout [[breadcrumbs]] output from the standard shell, and do not remove or expose Deepwell ancestry merely to manufacture a breadcrumb presentation."
-        }
-      ],
-      "closure_verdict": "candidate_and_evidence_required"
+      "blocked_evidence": [],
+      "closure_verdict": "candidate_required"
     }
   ],
   "cache_and_authority_audit": {
@@ -568,5 +572,5 @@
       "rejected_findings": 0
     }
   },
-  "closure_rule": "This lane closes neither issue. Issue 1061 now has source for post-commit dispatch, rollback absence, duplicate-edge collapse, finite cycle stopping, worker consumption, and first public read, but still requires exact-candidate execution and first-reload browser intervals. Issue 1063 requires the existing exact source, served diff, and settings candidate receipts; the former standard-layout breadcrumb candidate row is superseded by fresh current-live evidence proving that parent metadata does not synthesize #breadcrumbs. Exact Wikidot revision-diff/settings presentation and the separate Pro custom-layout [[breadcrumbs]] surface remain blocked until authoritative live evidence exists."
+  "closure_rule": "Issue 1061 still requires exact-candidate execution and first-reload browser intervals after its source proof. Issue 1063 requires the existing exact source plus served diff and settings candidate receipts. Owner rulings dated 2026-09-16 make exact legacy Wikidot authoring chrome and Pro custom-layout [[breadcrumbs]] explicitly not-claimed surfaces for this campaign rather than evidence blockers; either requires reopening with dedicated current authority before parity can be expanded."
 }

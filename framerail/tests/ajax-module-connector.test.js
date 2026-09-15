@@ -1999,6 +1999,125 @@ test("dispatches the observed WikiPageAction deletePage request", async () => {
   assert.deepEqual(calls, [{ siteId: 6000006, pageId: 1469167148 }])
 })
 
+test("dispatches the observed full-page draft synchronize and existence lifecycle", async () => {
+  const saves = []
+  const existsChecks = []
+  const synchronize = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "Empty",
+      action: "WikiPageAction",
+      event: "synchronize",
+      mode: "page",
+      wiki_page: "run-owned:draft-existing",
+      lock_id: "91",
+      lock_secret: "observed-lock-secret",
+      revision_id: "123",
+      page_id: "42",
+      source: "draft source",
+      title: "Draft title",
+      comments: "draft evidence",
+      since_last_input: "7",
+      wikidot_token7: "client-token"
+    }),
+    {
+      siteId: 6000006,
+      savePageDraft: async (input) => saves.push(input)
+    }
+  )
+  assert.deepEqual(await synchronize.json(), { status: "ok", savedDraft: true })
+  assert.deepEqual(saves, [
+    {
+      siteId: 6000006,
+      pageId: 42,
+      slug: "run-owned:draft-existing",
+      title: "Draft title",
+      wikitext: "draft source"
+    }
+  ])
+
+  const exists = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "Empty",
+      action: "WikiPageAction",
+      event: "checkDraftExists",
+      wiki_page: "run-owned:draft-existing",
+      lock_id: "91",
+      page_id: "42",
+      title: "Draft title",
+      source: "draft source",
+      wikidot_token7: "client-token"
+    }),
+    {
+      siteId: 6000006,
+      pageDraftExists: async (input) => {
+        existsChecks.push(input)
+        return true
+      }
+    }
+  )
+  assert.deepEqual(await exists.json(), { status: "ok", draftExists: true })
+  assert.deepEqual(existsChecks, [
+    { siteId: 6000006, pageId: 42, slug: "run-owned:draft-existing" }
+  ])
+})
+
+test("removePageEditLock preserves or discards only the observed draft identity", async () => {
+  const removals = []
+  const base = {
+    moduleName: "Empty",
+    action: "WikiPageAction",
+    event: "removePageEditLock",
+    wiki_page: "run-owned:draft-new",
+    lock_id: "92",
+    lock_secret: "observed-lock-secret",
+    wikidot_token7: "client-token"
+  }
+  for (const leaveDraft of ["true", "false"]) {
+    const response = await handleAjaxModuleConnectorRequest(
+      request({ ...base, leave_draft: leaveDraft }),
+      {
+        siteId: 6000006,
+        removePageDraft: async (input) => removals.push(input)
+      }
+    )
+    assert.deepEqual(await response.json(), { status: "ok" })
+  }
+  assert.deepEqual(removals, [
+    { siteId: 6000006, slug: "run-owned:draft-new" }
+  ])
+})
+
+test("page draft actions fail closed outside the observed full-page request shape", async () => {
+  let calls = 0
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "Empty",
+      action: "WikiPageAction",
+      event: "synchronize",
+      mode: "section",
+      wiki_page: "run-owned:draft-section",
+      lock_id: "93",
+      lock_secret: "observed-lock-secret",
+      revision_id: "",
+      source: "draft source",
+      title: "Draft title",
+      comments: "",
+      since_last_input: "0",
+      range_start: "1",
+      range_end: "2",
+      wikidot_token7: "client-token"
+    }),
+    {
+      siteId: 6000006,
+      savePageDraft: async () => {
+        calls += 1
+      }
+    }
+  )
+  assert.deepEqual(await response.json(), { status: "not_ok" })
+  assert.equal(calls, 0)
+})
+
 test("deletePage fails closed for invalid controls and Deepwell failures", async () => {
   const canonical = {
     action: "WikiPageAction",

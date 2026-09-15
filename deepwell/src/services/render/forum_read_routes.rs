@@ -953,9 +953,6 @@ impl RenderService {
                 else {
                     return Ok(response("not_ok", String::new()));
                 };
-                if page_number != 1 {
-                    return Ok(response("not_ok", String::new()));
-                }
                 let category_id = match request.parameters.get("categoryId") {
                     None => None,
                     Some(category_id) if category_id.is_empty() => None,

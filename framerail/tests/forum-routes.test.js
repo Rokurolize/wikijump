@@ -61,16 +61,18 @@ test("forum route loads use the exact sealed read-only module requests", async (
   )
 
   const jsInclude = ["https://static.example/ForumViewThreadModule.js"]
+  const threadBody =
+    '<div class="forum-thread-box">complete</div><script type="text/javascript">WIKIDOT.forumThreadId = 18029831;</script>'
   assert.deepEqual(
     await loadForumThreadRoute(
       routeEvent({ thread: "18029831", name: "codex-smoke-thread" }),
       dependencies(calls, {
         status: "ok",
-        body: '<div class="forum-thread-box">complete</div>',
+        body: threadBody,
         js_include: jsInclude
       })
     ),
-    { body: '<div class="forum-thread-box">complete</div>' }
+    { body: '<div class="forum-thread-box">complete</div>', forumThreadId: 18029831 }
   )
 
   assert.deepEqual(
@@ -81,6 +83,21 @@ test("forum route loads use the exact sealed read-only module requests", async (
       ["forum/ForumViewCategoryModule", { c: "8503559", p: "1" }],
       ["forum/ForumViewThreadModule", { t: "18029831" }]
     ]
+  )
+})
+
+test("forum thread route refuses a mismatched legacy thread-id script", async () => {
+  /** @type {ForumCall[]} */
+  const calls = []
+  await assert.rejects(
+    loadForumThreadRoute(
+      routeEvent({ thread: "18029831", name: "codex-smoke-thread" }),
+      dependencies(calls, {
+        status: "ok",
+        body: '<div class="forum-thread-box">complete</div><script type="text/javascript">WIKIDOT.forumThreadId = 18029832;</script>'
+      })
+    ),
+    /exact trusted thread ID script/u
   )
 })
 

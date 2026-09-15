@@ -70,6 +70,10 @@ test("Q1036 candidate case exercises preview and saved public RPC boundaries", a
   assert.equal(calls.length, 14);
   assert.equal(calls.filter(({ method }) => method === "wikidot_page_preview").length, 12);
   assert.deepEqual(calls.slice(-2).map(({ method }) => method), ["page_get", "page_view"]);
+  assert.equal(prepared.privateInputIdentity.evidence_sha256, "b8642635e71c02bb9e798af5740be5de3c259fef13f000dc6f0bd0fe28946565");
+  assert.ok(prepared.sourceFiles.includes("deepwell/src/services/render/search_feed.rs"));
+  assert.ok(prepared.sourceFiles.includes("deepwell/src/services/render/runtime_modules.rs"));
+  assert.ok(prepared.sourceFiles.includes("deepwell/tests/page.rs"));
   assert.equal(prepared.verifyCase(rows[0].case_id, rows[0].observations).verified, true);
 
   const extraBody = `${SEARCH_ERROR}<p>unexpected</p>`;

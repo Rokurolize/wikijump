@@ -535,6 +535,14 @@ fn score(output: &JsonValue) -> i64 {
         .expect("vote output should carry an integer score")
 }
 
+fn contention_client() -> reqwest::Client {
+    reqwest::Client::builder()
+        .http1_only()
+        .pool_max_idle_per_host(0)
+        .build()
+        .expect("vote contention client should build")
+}
+
 #[tokio::test]
 async fn concurrent_vote_mutations_leave_one_current_vote_and_consistent_aggregate() {
     let fixture = VoteContentionFixture::new().await;
@@ -557,12 +565,15 @@ async fn run_concurrent_vote_matrix(fixture: &VoteContentionFixture) {
     )
     .await
     .expect("public Deepwell server should start");
-    let client = reqwest::Client::new();
+    // Use independent HTTP/1 clients with no idle pooling so each pair below
+    // is an actual two-connection request race, not two futures queued on one
+    // reusable client connection.
+    let clients = [contention_client(), contention_client()];
     let site_id = fixture.site_id;
     let slug = fixture.page_slug.clone();
 
     let viewed = rpc_request(
-        &client,
+        &clients[0],
         address,
         Some(&fixture.session_token),
         Some(site_id),
@@ -606,7 +617,7 @@ async fn run_concurrent_vote_matrix(fixture: &VoteContentionFixture) {
 
     let first_votes = futures::future::join_all([
         rpc_request(
-            &client,
+            &clients[0],
             address,
             Some(&fixture.session_token),
             Some(site_id),
@@ -615,7 +626,7 @@ async fn run_concurrent_vote_matrix(fixture: &VoteContentionFixture) {
             activate(&actions[0]),
         ),
         rpc_request(
-            &client,
+            &clients[1],
             address,
             Some(&fixture.session_token),
             Some(site_id),
@@ -637,7 +648,7 @@ async fn run_concurrent_vote_matrix(fixture: &VoteContentionFixture) {
 
     let changed = futures::future::join_all([
         rpc_request(
-            &client,
+            &clients[0],
             address,
             Some(&fixture.session_token),
             Some(site_id),
@@ -646,7 +657,7 @@ async fn run_concurrent_vote_matrix(fixture: &VoteContentionFixture) {
             activate(&actions[1]),
         ),
         rpc_request(
-            &client,
+            &clients[1],
             address,
             Some(&fixture.session_token),
             Some(site_id),
@@ -668,7 +679,7 @@ async fn run_concurrent_vote_matrix(fixture: &VoteContentionFixture) {
 
     let canceled = futures::future::join_all([
         rpc_request(
-            &client,
+            &clients[0],
             address,
             Some(&fixture.session_token),
             Some(site_id),
@@ -677,7 +688,7 @@ async fn run_concurrent_vote_matrix(fixture: &VoteContentionFixture) {
             activate(&actions[2]),
         ),
         rpc_request(
-            &client,
+            &clients[1],
             address,
             Some(&fixture.session_token),
             Some(site_id),

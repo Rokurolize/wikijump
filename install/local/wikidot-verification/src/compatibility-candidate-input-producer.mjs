@@ -10,7 +10,10 @@ import {
   Q1026_FIXTURE_PROVENANCE,
   Q1026_USER_FIXTURES,
 } from "./open43-q1026-user-identity-candidate-case-set.mjs";
-import { OPEN43_Q1032_SAVED_DIRECTORY_SOURCE } from "./open43-q1032-members-userinfo-candidate-contract.mjs";
+import {
+  OPEN43_Q1032_EVIDENCE,
+  OPEN43_Q1032_SAVED_DIRECTORY_SOURCE,
+} from "./open43-q1032-members-userinfo-candidate-contract.mjs";
 import { SAVED_SOURCE as Q1036_SAVED_SOURCE } from "./open43-q1036-search-feed-candidate-contract.mjs";
 import { FORUM_MINI_SAVED_SOURCE } from "./open43-q778-forum-mini-candidate-case-set.mjs";
 import { Q1034_SAVED_SOURCES } from "./open43-q1034-forum-candidate-case-set.mjs";
@@ -30,7 +33,10 @@ const SITE_SLUG = "scpaiueouiuiuiui";
 const STANDARD_SITE_SLUG = "scp-wiki";
 const FOREIGN_SITE_ID = 6_000_006;
 const ACTOR_IDS = Object.freeze({ editor: 20_000_007, eligible: 20_000_008, registered: 20_000_009, pending: 20_000_010, banned: 20_000_011, other: 20_000_012 });
-export const Q778_WIKIDOT_AUTHOR = Object.freeze({ user_id: 20_000_013, name: "Q778 Wikidot Author", slug: "q778-wikidot-author" });
+// Retained live MiniRecentPosts authority uses this exact Wikidot identity.
+// Keeping a real imported identity here also keeps the candidate's public
+// avatar URL resolvable during the Q1034 category browser lifecycle.
+export const Q778_WIKIDOT_AUTHOR = Object.freeze({ user_id: 1_735_419, name: "Lt Flops", slug: "lt-flops" });
 const MEDIA_BROWSER_EVIDENCE = Object.freeze({
   M756_BROWSER_CACHE_TRANSITIONS: "E_ICON_OBSERVATIONS",
   M776_BROWSER_GEOMETRY_AND_NETWORK: "E_G06",
@@ -150,6 +156,52 @@ const GENERATED_PRIVATE_INPUTS = new Set([
   "media-files.json",
 ]);
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+
+export const S758_AUTONUMBER_CANDIDATE_PRECONDITION = Object.freeze({
+  schema: "wikijump.open43.s758_autonumber_candidate_precondition.v1",
+  site_slug: SITE_SLUG,
+  category_role: "transition_category",
+  enabled: false,
+  next: 1,
+  cleanup_owner: "disposable_candidate_stack",
+});
+
+export function validateS758AutonumberCandidateCategory(category) {
+  if (
+    !Number.isSafeInteger(category?.category_id) ||
+    typeof category.slug !== "string" ||
+    category.slug.length === 0 ||
+    typeof category.autonumber_enabled !== "boolean" ||
+    !Number.isSafeInteger(category.autonumber_next) ||
+    !Number.isSafeInteger(category.settings_revision)
+  ) {
+    throw new Error("S758 candidate autonumber category is incomplete");
+  }
+  if (category.autonumber_enabled !== S758_AUTONUMBER_CANDIDATE_PRECONDITION.enabled || category.autonumber_next !== S758_AUTONUMBER_CANDIDATE_PRECONDITION.next) {
+    throw new Error("S758 candidate autonumber category is not at its fresh disabled precondition");
+  }
+  return Object.freeze({
+    category_id: category.category_id,
+    slug: category.slug,
+    autonumber_enabled: category.autonumber_enabled,
+    autonumber_next: category.autonumber_next,
+    settings_revision: category.settings_revision,
+  });
+}
+
+export function bindS758AutonumberFixture(input, category) {
+  if (!input?.fixture || !input.fixture.transition_category) return false;
+  const precondition = validateS758AutonumberCandidateCategory(category);
+  input.fixture.autonumber_category = {
+    ...input.fixture.transition_category,
+    category_id: precondition.category_id,
+    slug: precondition.slug,
+    autonumber_enabled: precondition.autonumber_enabled,
+    autonumber_next: precondition.autonumber_next,
+    settings_revision: precondition.settings_revision,
+  };
+  return true;
+}
 
 export function compatibilityMarkerFixtures(value) {
   if (value?.schema !== "wikijump.ftml_marker_contract_fixtures.v1" || value.site_slug !== "scp-wiki" || value.layout !== "wikidot") {
@@ -337,6 +389,18 @@ function sqlLiteral(value) {
   return `'${String(value).replaceAll("'", "''")}'`;
 }
 
+export function buildQ1026InsertOnlyUserSeedSql(users = Object.values(Q1026_USER_FIXTURES)) {
+  if (!Array.isArray(users) || users.length !== Object.keys(Q1026_USER_FIXTURES).length) throw new Error("Q1026 user seed denominator changed");
+  const ids = new Set();
+  for (const user of users) {
+    if (!user || !Number.isSafeInteger(user.user_id) || ids.has(user.user_id) || typeof user.name !== "string" || !user.name || typeof user.slug !== "string" || !user.slug || typeof user.is_deleted !== "boolean") throw new Error("Q1026 user seed identity is invalid");
+    ids.add(user.user_id);
+  }
+  const knownRows = users.map(({ user_id }) => `(${user_id})`).join(",");
+  const wikidotRows = users.map(({ user_id, name, slug, is_deleted }) => `(${user_id},now()-interval '1 second',now(),${is_deleted ? "true" : "false"},${sqlLiteral(name)},${sqlLiteral(slug)},0,false)`).join(",");
+  return `begin; insert into known_user(user_id) values ${knownRows} on conflict do nothing; insert into wikidot_user(user_id,created_at,fetched_at,is_deleted,name,slug,karma,is_pro) values ${wikidotRows}; select setval('known_user_user_id_seq',(select max(user_id) from known_user),true); commit;`;
+}
+
 async function copyPrivateTemplates(templateRoot, outputRoot, bindings) {
   await fs.mkdir(outputRoot, { recursive: false, mode: 0o700 });
   const files = (await fs.readdir(templateRoot))
@@ -473,7 +537,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     const expiredToken = `wj:${randomBytes(48).toString("base64url")}`;
     const sessionRows = Object.values(tokens).map(({ userId, token }) => `($x$${token}$x$,${userId},now(),now()+interval '24 hours','127.0.0.1','compatibility input producer',false,0)`).join(",");
     sql(database, `insert into session(session_token,user_id,created_at,expires_at,ip_address,user_agent,restricted,mfa_failed_attempts) values ${sessionRows}; insert into session(session_token,user_id,created_at,expires_at,ip_address,user_agent,restricted,mfa_failed_attempts) values ($x$${expiredToken}$x$,${ACTOR_IDS.editor},now()-interval '2 hours',now()-interval '1 hour','127.0.0.1','compatibility expired actor',false,0); insert into user_role(user_id,role_id,site_id,assigned_at,assigned_by) select ${ACTOR_IDS.editor},role_id,site_id,now(),-1 from user_role where user_id=-1 and site_id=${SITE_ID} on conflict do nothing; update site set locale='en',favicon_source='https://scp-wiki.wdfiles.com/local--files/site/favicon.gif' where site_id=${SITE_ID};`);
-    sql(database, `insert into relation(relation_type,dest_type,dest_id,from_type,from_id,metadata,created_by) values ('application','site',${SITE_ID},'user',${ACTOR_IDS.pending},'{}'::jsonb,${ACTOR_IDS.pending}),('ban','site',${SITE_ID},'user',${ACTOR_IDS.banned},'{"banned_until":null,"reason":"compatibility candidate actor matrix"}'::jsonb,-1) on conflict do nothing;`);
+    sql(database, `insert into relation(relation_type,dest_type,dest_id,from_type,from_id,metadata,created_by) values ('application','site',${SITE_ID},'user',${ACTOR_IDS.pending},'{"status":"pending","comment":"compatibility candidate pending actor","reply":null}'::jsonb,${ACTOR_IDS.pending}),('ban','site',${SITE_ID},'user',${ACTOR_IDS.banned},'{"banned_until":null,"reason":"compatibility candidate actor matrix"}'::jsonb,-1) on conflict do nothing; update relation set metadata='{"status":"pending","comment":"compatibility candidate pending actor","reply":null}'::jsonb where relation_type='application' and dest_type='site' and dest_id=${SITE_ID} and from_type='user' and from_id=${ACTOR_IDS.pending} and created_by=${ACTOR_IDS.pending} and overwritten_at is null and deleted_at is null;`);
     general.actors.administrator = { user_id: -1, session_token: staffToken };
     for (const name of Object.keys(ACTOR_IDS)) general.actors[name].session_token = tokens[name].token;
     general.actors.non_admin = { user_id: ACTOR_IDS.other, session_token: tokens.other.token };
@@ -520,6 +584,8 @@ export async function prepareCompatibilityCandidateInputs(args) {
     const defaultPage = await rpc("page_get", { site_id: SITE_ID, page: "boundary-check", details: { wikitext: false, compiled: false } }, { siteId: SITE_ID });
     const transitionPage = await rpc("page_get", { site_id: SITE_ID, page: "corpus:scp-9506-draft", details: { wikitext: false, compiled: false } }, { siteId: SITE_ID });
     if (!defaultPage || !transitionPage) throw new Error("fresh candidate is missing the maintained base page fixtures");
+    const transitionCategory = await rpc("category_get", { site: SITE_ID, category: transitionPage.page_category_id }, { siteId: SITE_ID });
+    const s758Category = validateS758AutonumberCandidateCategory(transitionCategory);
 
     const markerFixtureIndex = JSON.parse(await fs.readFile(FTML_MARKER_FIXTURE_INDEX, "utf8"));
     const markerFixtures = compatibilityMarkerFixtures(markerFixtureIndex);
@@ -629,6 +695,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       const value = JSON.parse(await fs.readFile(target, "utf8"));
       if (value.fixture?.default_category) Object.assign(value.fixture.default_category, { category_id: defaultPage.page_category_id, page_id: defaultPage.page_id, page_slug: defaultPage.slug });
       if (value.fixture?.transition_category) Object.assign(value.fixture.transition_category, { category_id: transitionPage.page_category_id, page_id: transitionPage.page_id, page_slug: transitionPage.slug });
+      if (name === "open43-settings-candidate.json") bindS758AutonumberFixture(value, s758Category);
       await fs.writeFile(target, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
     }
 
@@ -640,6 +707,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     const members = await page("members-directory", "Members Directory", OPEN43_Q1032_SAVED_DIRECTORY_SOURCE);
     general.saved_page = { page_id: members.page_id, revision_id: members.revision_id, slug: members.slug };
     general.saved_page_source_sha256 = sha256(OPEN43_Q1032_SAVED_DIRECTORY_SOURCE);
+    general.q1032_readonly_evidence = OPEN43_Q1032_EVIDENCE.readonly;
     sql(database, `insert into known_user(user_id) select generate_series(20000100,20000250) on conflict do nothing; insert into wikidot_user(user_id,created_at,fetched_at,is_deleted,name,slug,karma,is_pro) select id,now()-interval '1 second',now(),false,'Fixture Member '||id,'fixture-member-'||id,0,false from generate_series(20000100,20000250) id on conflict do nothing; insert into relation(relation_type,dest_type,dest_id,from_type,from_id,metadata,created_by) select 'member','site',${SITE_ID},'user',id,'{"accepted":{"cause":"accepted","user_id":-1}}'::jsonb,-1 from generate_series(20000100,20000250) id on conflict do nothing;`);
 
     const featuredSource = "FEATURED_START\n[[module FeaturedSite]]\nFEATURED_END";
@@ -655,11 +723,12 @@ export async function prepareCompatibilityCandidateInputs(args) {
     const q1036 = await page("q1036-saved-boundary", "Q1036 saved boundary", Q1036_SAVED_SOURCE);
     Object.assign(general, { saved_page_id: q1036.page_id, saved_revision_id: q1036.revision_id, saved_page_slug: q1036.slug });
 
-    const q1026Users = Object.values(Q1026_USER_FIXTURES);
-    const q1026KnownRows = q1026Users.map(({ user_id }) => `(${user_id})`).join(",");
-    const q1026WikidotRows = q1026Users.map(({ user_id, name, slug, is_deleted }) => `(${user_id},now()-interval '1 second',now(),${is_deleted ? "true" : "false"},$x$${name}$x$,$x$${slug}$x$,0,false)`).join(",");
-    sql(database, `insert into known_user(user_id) values ${q1026KnownRows} on conflict do nothing; insert into wikidot_user(user_id,created_at,fetched_at,is_deleted,name,slug,karma,is_pro) values ${q1026WikidotRows} on conflict (user_id) do update set is_deleted=excluded.is_deleted,name=excluded.name,slug=excluded.slug,fetched_at=excluded.fetched_at;`);
-    sql(database, `select setval('known_user_user_id_seq',(select max(user_id) from known_user),true);`);
+    // This fixture is an insert-only import. A same-ID row is an authoritative
+    // identity collision, not permission to guess a rename/delete refresh.
+    const q1026UserIds = Object.values(Q1026_USER_FIXTURES).map(({ user_id }) => user_id).join(",");
+    const q1026Existing = sql(database, `select user_id from wikidot_user where user_id in (${q1026UserIds}) order by user_id;`);
+    if (q1026Existing !== "") throw new Error("Q1026 insert-only user seed found an existing same-ID identity");
+    sql(database, buildQ1026InsertOnlyUserSeedSql());
     const q1026Source = buildQ1026UserIdentitySource(Q1026_USER_FIXTURES);
     const q1026Page = await page("fixture-wikidot-user-identity-matrix", "Q1026 identity matrix", q1026Source);
     const q1026Path = path.join(args["output-private-dir"], "q1026-r11.json");
@@ -743,13 +812,17 @@ export async function prepareCompatibilityCandidateInputs(args) {
       .map(({ case_id }) => case_id);
     if (JSON.stringify(mediaCaseIds) !== JSON.stringify(Object.keys(MEDIA_BROWSER_EVIDENCE))) throw new Error("media browser audit denominator drifted during private input production");
     const mediaInput = structuredClone(general);
+    const mediaCases = [];
+    for (const caseId of mediaCaseIds) {
+      const evidenceId = MEDIA_BROWSER_EVIDENCE[caseId];
+      const evidence = mediaAudit.evidence_registry?.[evidenceId];
+      if (typeof evidence?.path !== "string" || !/^[0-9a-f]{64}$/u.test(evidence.sha256 ?? "")) throw new Error(`${caseId} media browser evidence is absent from the audit registry`);
+      const evidenceBytes = await fs.readFile(evidence.path);
+      if (sha256(evidenceBytes) !== evidence.sha256) throw new Error(`${caseId} retained media browser evidence SHA-256 does not match the audit registry`);
+      mediaCases.push({ case_id: caseId, evidence: { evidence_id: evidenceId, path: evidence.path, sha256: evidence.sha256 } });
+    }
     mediaInput.media_browser = {
-      cases: mediaCaseIds.map((caseId) => {
-        const evidenceId = MEDIA_BROWSER_EVIDENCE[caseId];
-        const evidence = mediaAudit.evidence_registry?.[evidenceId];
-        if (typeof evidence?.path !== "string" || !/^[0-9a-f]{64}$/u.test(evidence.sha256 ?? "")) throw new Error(`${caseId} media browser evidence is absent from the audit registry`);
-        return { case_id: caseId, evidence: { evidence_id: evidenceId, path: evidence.path, sha256: evidence.sha256 } };
-      }),
+      cases: mediaCases,
     };
     const mediaPath = path.join(args["output-private-dir"], "media-browser.json");
     await fs.writeFile(mediaPath, `${JSON.stringify(mediaInput, null, 2)}\n`, { mode: 0o600, flag: "wx" });
@@ -882,7 +955,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     await fs.writeFile(generalPath, `${JSON.stringify(general, null, 2)}\n`, { mode: 0o600 });
     await propagateActors();
     clearCandidateRedisCache(cache);
-    const receipt = { schema: COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, status: "pass", generated_at: new Date().toISOString(), candidate: { wikijump_commit: candidate.wikijump_commit, wikijump_tree: candidate.wikijump_tree, ftml_sha: candidate.ftml_sha, compose_project: project, editable_identity_sha256: identitySha256 }, output_private_dir: args["output-private-dir"], private_files: privateFiles, fixture_counts: { members: 151, ftml_markers: markerPages.length, q1034_pagination_threads: 221, q1034_page_comment_posts: 24, q778_posts: 5, q1035_public_revisions: 2105 }, fixtures: { a1037_redirect_source: redirectSource.page_id, b610_canary_attachments: b610Attachments, b690_canary_attachments: b690Attachments, ftml_markers: markerPages.map(({ page_id, revision_id, slug }) => ({ page_id, revision_id, slug })), q1032_members: members.page_id, q1036_saved: q1036.page_id, q1026_identity: q1026Page.page_id, q810_saved: featured.page_id, q778_saved: forumMini.page_id, q809_private: q809Private.page_id, q1035_sitechanges: q1035Site.page_id } };
+    const receipt = { schema: COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, status: "pass", generated_at: new Date().toISOString(), candidate: { wikijump_commit: candidate.wikijump_commit, wikijump_tree: candidate.wikijump_tree, ftml_sha: candidate.ftml_sha, compose_project: project, editable_identity_sha256: identitySha256 }, output_private_dir: args["output-private-dir"], private_files: privateFiles, fixture_counts: { members: 151, ftml_markers: markerPages.length, q1034_pagination_threads: 221, q1034_page_comment_posts: 24, q778_posts: 5, q1035_public_revisions: 2105, q1032_watchers_rows: 20, q1032_whoinvited_actors: 4, q1032_whoinvited_targets: 4 }, fixtures: { a1037_redirect_source: redirectSource.page_id, b610_canary_attachments: b610Attachments, b690_canary_attachments: b690Attachments, ftml_markers: markerPages.map(({ page_id, revision_id, slug }) => ({ page_id, revision_id, slug })), q1032_members: members.page_id, q1032_readonly_evidence: OPEN43_Q1032_EVIDENCE.readonly, q1036_saved: q1036.page_id, q1026_identity: q1026Page.page_id, q810_saved: featured.page_id, q778_saved: forumMini.page_id, q809_private: q809Private.page_id, q1035_sitechanges: q1035Site.page_id } };
     const publication = await sealJsonNoReplace(args.receipt, receipt);
     if (publication.publication !== "created") throw new Error(`candidate input receipt already exists: ${args.receipt}`);
     return { receipt: { path: args.receipt, sha256: publication.sha256 }, private_dir: args["output-private-dir"] };

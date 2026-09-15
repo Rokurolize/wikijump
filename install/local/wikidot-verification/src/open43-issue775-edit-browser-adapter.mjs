@@ -10,17 +10,36 @@ const CAPTURE_CONTRACT = Object.freeze({
   ]),
 });
 
+export async function dispatchIssue775DoubleActivation(page, control) {
+  await control.scrollIntoViewIfNeeded();
+  const box = await control.boundingBox();
+  if (!box || box.width <= 0 || box.height <= 0) throw new Error("issue 775 standalone edit control has no clickable geometry");
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down({ button: "left", clickCount: 1 });
+  await page.mouse.up({ button: "left", clickCount: 1 });
+  await page.mouse.down({ button: "left", clickCount: 2 });
+  await page.mouse.up({ button: "left", clickCount: 2 });
+}
+
 async function publicState(page) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       return await page.evaluate((selector) => {
         const active = document.activeElement;
+        const dialog = document.querySelector("#odialog-container");
         return {
           url: location.href,
           path: location.pathname,
           edit_route: location.pathname.endsWith("/edit"),
           standalone_edit_count: document.querySelectorAll(selector).length,
           editor_count: document.querySelectorAll("#editor").length,
+          dialog_visible: dialog !== null && (() => {
+            const style = getComputedStyle(dialog);
+            return style.display !== "none" && style.visibility !== "hidden" && (dialog.offsetWidth || dialog.offsetHeight || dialog.getClientRects().length) > 0;
+          })(),
+          loading: document.body?.classList.contains("wait") || document.body?.classList.contains("loading") || false,
           source_disclosure: location.pathname.endsWith("/source") || document.body?.innerText.includes("[[button edit") === true,
           active_element: active?.id || active?.getAttribute("class") || active?.localName || "",
         };
@@ -70,7 +89,10 @@ export class Open43Issue775EditBrowserAdapter {
   }
 
   async #permissionResponse(page, pagePath) {
-    return await page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/editPermission") && new URL(response.url()).pathname === pagePath, { timeout: TIMEOUT_MS });
+    return await page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return response.request().method() === "POST" && url.origin === this.#pageOrigin && url.search === "?/editPermission" && url.pathname === pagePath;
+    }, { timeout: TIMEOUT_MS });
   }
 
   async #activate(page, pagePath, mode, editable) {
@@ -78,16 +100,18 @@ export class Open43Issue775EditBrowserAdapter {
     if (await control.count() !== 1) throw new Error("issue 775 did not serve exactly one standalone edit control");
     await control.focus();
     const focusedControl = await page.evaluate((selector) => document.activeElement === document.querySelector(selector), SELECTOR);
-    let permissionResponseCount = 0;
-    const onResponse = (response) => {
-      if (response.request().method() === "POST" && response.url().includes("?/editPermission")) permissionResponseCount += 1;
+    let permissionRequestCount = 0;
+    const onRequest = (request) => {
+      const url = new URL(request.url());
+      if (request.method() === "POST" && url.origin === this.#pageOrigin && url.search === "?/editPermission" && url.pathname === pagePath) permissionRequestCount += 1;
     };
-    page.on("response", onResponse);
+    page.on("request", onRequest);
     try {
+      const expectedRequestCount = mode === "double" ? 2 : 1;
       const response = this.#permissionResponse(page, pagePath);
       if (mode === "click") await control.click();
       else if (mode === "keyboard") await control.press("Enter");
-      else await Promise.allSettled([control.click(), control.click()]);
+      else await dispatchIssue775DoubleActivation(page, control);
       await response;
       if (editable) {
         await page.waitForURL(new URL(`${pagePath}/edit`, this.#pageOrigin).href, { timeout: TIMEOUT_MS });
@@ -95,9 +119,10 @@ export class Open43Issue775EditBrowserAdapter {
       } else {
         await page.locator("#odialog-container").waitFor({ state: "visible", timeout: TIMEOUT_MS });
       }
-      return { focused_control: focusedControl, permission_response_count: permissionResponseCount, state: await publicState(page) };
+      if (permissionRequestCount !== expectedRequestCount) throw new Error(`issue 775 ${mode} activation observed ${permissionRequestCount} permission requests, expected ${expectedRequestCount}`);
+      return { focused_control: focusedControl, permission_request_count: permissionRequestCount, state: await publicState(page) };
     } finally {
-      page.off("response", onResponse);
+      page.off("request", onRequest);
     }
   }
 

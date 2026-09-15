@@ -45,20 +45,25 @@ function candidateIdentity() {
   };
 }
 
+function renderPageTree(pages, parents, root, maxDepth) {
+  const active = [...pages.values()].filter((page) => !page.deleted);
+  const children = (parent) => active.filter((page) => parents.get(page.name) === parent).sort((left, right) => left.created - right.created);
+  const node = (page, depth) => {
+    const nested = maxDepth === null || depth < maxDepth ? children(page.name) : [];
+    return `<li>\n<a href="/${page.slug}">${page.title}</a>${nested.length ? `\n<ul>\n${nested.map((child) => node(child, depth + 1)).join("")}</ul>\n` : "\n"}</li>\n`;
+  };
+  return `\n<ul>\n${node(root, 0)}</ul>\n`;
+}
+
 function fixtureTree(pages, parents) {
   const active = [...pages.values()].filter((page) => !page.deleted);
   const root = active.find((page) => page.name === "root");
-  const children = (parent) => active.filter((page) => parents.get(page.name) === parent).sort((left, right) => left.created - right.created);
-  const anchors = (parent, depth) => children(parent).flatMap((child) => [
-    `<a href="/${child.slug}">${child.title}</a>`,
-    ...(depth > 1 ? anchors(child.name, depth - 1) : []),
-  ]);
+  const explicitRoot = active.find((page) => page.name === "alpha");
   return [
-    `<p>PT_SHOW_START</p>\n<ul>\n<li>\n<a href="/${root.slug}">${root.title}</a>\n<ul>`,
-    ...children("root").map((child) => `\n<li>\n<a href="/${child.slug}">${child.title}</a>\n</li>`),
-    "\n</ul>\n</li>\n</ul>\n<p>PT_SHOW_END</p>",
+    `<p>PT_SHOW_START</p>${renderPageTree(pages, parents, root, 1)}<p>PT_SHOW_END</p>`,
+    `<p>PT_ROOT_ARG_START</p>${renderPageTree(pages, parents, explicitRoot, null)}<p>PT_ROOT_ARG_END</p>`,
     "<p>PT_INLINE_START</p>\nstart-[[module PageTree]]-middle\n<p>PT_INLINE_END</p>",
-    `<p>PT_LIFECYCLE_START</p>\n${anchors("root", 2).join("\n")}\n<p>PT_LIFECYCLE_END</p>`,
+    `<p>PT_LIFECYCLE_START</p>${renderPageTree(pages, parents, root, 2)}<p>PT_LIFECYCLE_END</p>`,
   ].join("");
 }
 
@@ -156,6 +161,13 @@ test("the canonical runner executes the Q779 public PageTree case and seals no-r
   const receipt = JSON.parse(await fs.readFile(path.join(output, "candidate-case-receipt.json"), "utf8"));
   assert.equal(receipt.status, "pass");
   assert.equal(receipt.candidate_identity_sha256, hash("a"));
+  const caseReceipt = JSON.parse(await fs.readFile(path.join(output, "cases", "Q779_EXPLICIT_ROOT_ACTOR_AND_LIFECYCLE_CANDIDATE.json"), "utf8"));
+  assert.equal(caseReceipt.observations.source_fixture.case_id, "pagetree-depth-and-showroot");
+  assert.equal(caseReceipt.observations.explicit_root_fixture.case_id, "pagetree-case-sensitive-arguments-and-explicit-root");
+  assert.match(caseReceipt.observations.module_source, /PT_ROOT_ARG_START\n\[\[module PageTree root="[^"]+" showRoot="true"\]\]/u);
+  assert.equal(caseReceipt.verification.explicit_root, true);
+  assert.match(caseReceipt.observations.initial_anonymous.explicit_root_output, /Alpha child/u);
+  assert.doesNotMatch(caseReceipt.observations.initial_anonymous.explicit_root_output, /Beta child/u);
 });
 
 test("the Q779 verifier rejects lifecycle evidence without the renamed parent", () => {
@@ -170,14 +182,15 @@ test("the Q779 verifier rejects lifecycle evidence without the renamed parent", 
   const initial = (actor) => ({
     actor,
     exact_output: run.plan.expected_initial_output,
+    explicit_root_output: run.plan.expected_initial_explicit_root_output,
     negative_boundary: "\nstart-[[module PageTree]]-middle\n",
   });
   assert.throws(() => run.verifyCase("Q779_EXPLICIT_ROOT_ACTOR_AND_LIFECYCLE_CANDIDATE", {
     initial_anonymous: initial("anonymous"),
     initial_editor: initial("editor"),
-    after_move: { lifecycle_output: run.plan.beta_slug },
-    after_delete: { lifecycle_output: "" },
-    after_restore: { lifecycle_output: run.plan.beta_slug },
+    after_move: { lifecycle_output: run.plan.beta_slug, explicit_root_output: run.plan.beta_slug },
+    after_delete: { lifecycle_output: "", explicit_root_output: "" },
+    after_restore: { lifecycle_output: run.plan.beta_slug, explicit_root_output: run.plan.beta_slug },
     adapter_events: Array.from({ length: 4 }, () => ({ operation: "page_view", method: "POST", response_status: 200 })),
     event_scope: "adapter-issued-external-requests-only",
   }), /renamed parent/u);

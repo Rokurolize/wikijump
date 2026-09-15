@@ -9,6 +9,7 @@ import {
   OPEN43_ISSUE777_CASE_IDS,
   createOpen43Issue777PrintCandidateCaseSet,
 } from "../src/open43-issue777-print-candidate-case-set.mjs";
+import { OPEN43_ISSUE777_PRINT_OPERATIONS } from "../src/open43-issue777-print-browser-adapter.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
@@ -85,12 +86,26 @@ function publicState(
   };
 }
 
-function activation(pagePath) {
+function activation(pagePath, name) {
+  const repeated = name === "sequential_repeated_click";
+  const printCalls = repeated ? 2 : 1;
   return {
     before: publicState(pagePath),
-    during: publicState(pagePath, { busy: true, calls: 1, pending: 1 }),
-    after: publicState(pagePath, { calls: 1 }),
-    print_calls: [{ url: `${PAGE_ORIGIN}${pagePath}`, history_length: 2, focused_control: true }],
+    during: publicState(pagePath, { busy: true, calls: printCalls, pending: 1 }),
+    after: publicState(pagePath, { calls: printCalls }),
+    ...(repeated
+      ? {
+          repeat: {
+            first_during: publicState(pagePath, { busy: true, calls: 1, pending: 1 }),
+            between: publicState(pagePath, { calls: 1 }),
+          },
+        }
+      : {}),
+    print_calls: Array.from({ length: printCalls }, () => ({
+      url: `${PAGE_ORIGIN}${pagePath}`,
+      history_length: 2,
+      focused_control: true,
+    })),
     mutation_request_count: 0,
   };
 }
@@ -116,7 +131,10 @@ function fakeBrowserAdapter() {
   return {
     async run({ pageUrl, pagePath }) {
       const rows = Object.fromEntries(
-        ["click", "enter", "space", "repeated"].map((name) => [name, activation(pagePath)]),
+        OPEN43_ISSUE777_PRINT_OPERATIONS.map((name) => [
+          name,
+          activation(pagePath, name),
+        ]),
       );
       return {
         initial: {

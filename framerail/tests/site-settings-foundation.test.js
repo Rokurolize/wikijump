@@ -9,7 +9,9 @@ import {
   googleAnalyticsQueueScript,
   googleAnalyticsHeadHtml,
   normalizeGoogleAnalyticsSettings,
-  normalizeThemeSetting
+  normalizeThemePreviewUrl,
+  normalizeThemeSetting,
+  resolveThemePreviewUrl
 } from "../src/lib/site-settings.js"
 
 describe("Wikidot site settings foundation", () => {
@@ -89,6 +91,40 @@ describe("Wikidot site settings foundation", () => {
     assert.deepEqual(
       normalizeThemeSetting({ type: "custom", css: "</style><script>x</script>" }),
       { type: "built_in", id: 1 }
+    )
+  })
+
+  it("normalizes ThemePreviewer URLs with the stored-theme policy", () => {
+    assert.equal(
+      normalizeThemePreviewUrl("https://cdn.scpwiki.com/theme/preview.css"),
+      "https://cdn.scpwiki.com/theme/preview.css"
+    )
+    assert.equal(
+      normalizeThemePreviewUrl("https://sandbox-for-codex.wdfiles.com/local--code/theme/1"),
+      "https://sandbox-for-codex.wdfiles.com/local--code/theme/1"
+    )
+    for (const value of [
+      null,
+      "",
+      "http://cdn.scpwiki.com/theme/preview.css",
+      "data:text/css,body{}",
+      "https://evil.example/theme.css",
+      "https://user:password@cdn.scpwiki.com/theme.css",
+      "https://cdn.scpwiki.com:8443/theme.css"
+    ]) {
+      assert.equal(normalizeThemePreviewUrl(value), null, String(value))
+    }
+  })
+
+  it("requires the source-owned ThemePreviewer noUi sidecar", () => {
+    const allowed = "https://cdn.scpwiki.com/theme/preview.css"
+    assert.equal(resolveThemePreviewUrl(true, allowed), allowed)
+    assert.equal(resolveThemePreviewUrl(false, allowed), null, "bare ThemePreviewer")
+    assert.equal(resolveThemePreviewUrl(undefined, allowed), null, "literal/code source")
+    assert.equal(
+      resolveThemePreviewUrl(true, "https://evil.example/theme.css"),
+      null,
+      "disallowed URL"
     )
   })
 })

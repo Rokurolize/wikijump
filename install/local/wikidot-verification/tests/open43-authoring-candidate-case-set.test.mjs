@@ -62,6 +62,10 @@ function candidateIdentity() {
 }
 
 class FakePublicSession {
+  constructor({ staleDependentPageGet = false } = {}) {
+    this.staleDependentPageGet = staleDependentPageGet;
+  }
+
   editorUserId = -1;
   pageOrigin = PAGE_ORIGIN;
   requiredServiceBindings = [{
@@ -83,7 +87,13 @@ class FakePublicSession {
       const page = [...this.pages.values()].find((candidate) =>
         candidate.page_id === params.page || candidate.slug === params.page,
       ) ?? null;
-      return page === null ? null : structuredClone(page);
+      if (page === null) return null;
+      const result = structuredClone(page);
+      if (this.staleDependentPageGet && result.slug.includes("dependent") && params.details?.compiled_html) {
+        result.compiled_body_styles = [".authoring-color { color: red; }"];
+        result.compiled_at = 1;
+      }
+      return result;
     }
     if (method === "page_create") {
       const page = {
@@ -289,4 +299,27 @@ test("authoring candidate rejects CSS that remains stale on the first normal rel
   );
   assert.equal(session.pages.size, 0);
   assert.equal(browser.events.filter((event) => event === "reload").length, 1);
+});
+
+test("authoring candidate rejects a stale dependent page payload even when the article read is blue", async (t) => {
+  const session = new FakePublicSession({ staleDependentPageGet: true });
+  const browser = fakeBrowserOwner();
+  const caseSet = createOpen43AuthoringCandidateCaseSet({ sessionFactory: () => session });
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "open43-authoring-page-stale-"));
+  t.after(() => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  await assert.rejects(
+    runCandidateCaseSet({
+      candidateIdentity: candidateIdentity(),
+      candidateIdentitySha256: hash("a"),
+      privateInput: {},
+      privateInputSha256: hash("b"),
+      outputDir: path.join(tempRoot, "evidence"),
+      caseSet,
+      runId: "candidate-run-0123456789ab",
+      dependencies: candidateDependencies(browser),
+    }),
+    /dependent page after component save did not expose only blue CSS/u,
+  );
+  assert.equal(session.pages.size, 0);
 });

@@ -141,6 +141,7 @@ function fakeBrowserOwner() {
     },
     async goto(url) {
       currentUrl = url;
+      content = SEARCH_ERROR;
       fire("request");
       fire("framenavigated");
       return { status: () => 200 };
@@ -213,6 +214,7 @@ function planFor(caseSet) {
   assert.equal(plan.issue, 748);
   assert.equal(plan.saved_page_slug, "search:site");
   assert.equal(plan.saved_page_source, "[[module Search]]");
+  assert.equal(plan.candidate_identity_sha256, REAL_SHA256.identity);
   assert.deepEqual(plan.case_ids, [
     "Q748_LIVE_TOPBAR_SUBMISSION_CONTRACT",
     "Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION",
@@ -262,6 +264,8 @@ test("Q748 candidate set executes both submission rows over fake browser boundar
   assert.equal(observations.saved_page.slug, "search:site");
   assert.equal(observations.saved_page.status, 200);
   assert.equal(observations.initial_form.query_value, "Search this site");
+  assert.equal(observations.result_identity.case_id, "Q748_LIVE_TOPBAR_SUBMISSION_CONTRACT");
+  assert.equal(observations.result_identity.candidate_identity_sha256, REAL_SHA256.identity);
   assert.equal(observations.live_query.final_url, `${BASE_URL}/q/codex%20search%20probe`);
   assert.equal(observations.live_query.navigation_delta, 1);
   assert.equal(observations.live_query.result.error_boundary_present, true);
@@ -327,7 +331,14 @@ test("Q748 verification rejects trimmed whitespace, dummy navigation, and missin
   const base = {
     saved_page: { slug: "search:site", url: BASE_URL, status: 200 },
     initial_form: { ...FORM_MODEL },
-    initial_result: { content_sha256: REAL_SHA256.content_d, error_boundary_present: false },
+    initial_result: { content_sha256: REAL_SHA256.content_d, error_boundary_present: true },
+    result_identity: {
+      case_id: "Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION",
+      saved_page_slug: "search:site",
+      candidate_identity_sha256: REAL_SHA256.identity,
+      form_fixture_sha256: "9494777d18face903fa6b8c48444f4c3aa687fae6175156977700fa8476559ea",
+      result_evidence_sha256: "b8642635e71c02bb9e798af5740be5de3c259fef13f000dc6f0bd0fe28946565",
+    },
     live_query: {
       query: "codex search probe",
       encoded_path: "codex%20search%20probe",
@@ -352,6 +363,13 @@ test("Q748 verification rejects trimmed whitespace, dummy navigation, and missin
 
   assert.equal(verifyOpen43Q748TopBarSearchCase("Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION", base, plan).verified, true);
   assert.equal(verifyOpen43Q748TopBarSearchCase("Q748_LIVE_TOPBAR_SUBMISSION_CONTRACT", base, plan).verified, true);
+
+  const unbound = structuredClone(base);
+  unbound.result_identity.candidate_identity_sha256 = "f".repeat(64);
+  assert.throws(
+    () => prepared.verifyCase("Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION", unbound),
+    /result is not identity-bound/u,
+  );
 
   for (const url of [
     "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/sigma/fonts/Sans-Normalcy.woff2",

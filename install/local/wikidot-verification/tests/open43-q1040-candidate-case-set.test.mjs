@@ -138,9 +138,17 @@ function fakeBrowserContexts(state) {
         url: () => PAGE_ORIGIN,
         async evaluate() {
           const pages = [...state.pages.values()].filter((candidate) => !candidate.deleted);
+          const current = pages.find((candidate) => candidate.slug.endsWith("-current"));
           const next = pages.find((candidate) => candidate.slug.endsWith("-next"));
+          const previous = pages.find((candidate) => candidate.slug.endsWith("-previous"));
+          const nextHref = `/${next.slug}`;
+          const previousHref = `/${previous.slug}`;
           return {
-            links: pages.filter((candidate) => candidate.slug.endsWith("-next") || candidate.slug.endsWith("-previous")).map((candidate) => ({ href: `/${candidate.slug}`, text: candidate.title })),
+            url: `${PAGE_ORIGIN}/${current.slug}`,
+            links: [
+              { href: nextHref, absolute_href: new URL(nextHref, PAGE_ORIGIN).href, text: next.title },
+              { href: previousHref, absolute_href: new URL(previousHref, PAGE_ORIGIN).href, text: previous.title },
+            ],
             default_row: `<div class="list-pages-box"><div class="list-pages-item"><h1><span><a href="/${next.slug}">${next.title}</a></span></h1><p>by editor <span class="odate time_1 format_%25O">10 Aug 2026 00:00</span></p><p>Q1040 next</p></div></div>`,
             list_pages_box_count: 3,
           };
@@ -185,9 +193,71 @@ test("Q1040 has one executable candidate case through the canonical runner", asy
   const caseReceipt = JSON.parse(await fs.readFile(path.join(root, "evidence", "cases", `${CASE_ID}.json`), "utf8"));
   assert.equal(caseReceipt.verification.mutation_next_read, true);
   assert.equal(caseReceipt.verification.empty_wrapper_contract, true);
+  assert.equal(caseReceipt.verification.served_url, `${PAGE_ORIGIN}/open43-q1040-0123456789ab-current`);
   assert.equal([...state.pages.values()].every((page) => page.deleted), true);
   assert.equal(state.events.filter((event) => event.operation === "page_view").length, 4);
   assert.equal(receipt.resources.every((resource) => resource.released), true);
+});
+
+test("Q1040 publishes an exact reversible mutation and served-page plan", () => {
+  const { session } = fakeCandidateSession();
+  const prepared = createOpen43Q1040CandidateCaseSet({ sessionFactory: () => session }).prepareRun({
+    runId: "candidate-run-0123456789ab",
+    candidateIdentity: candidateIdentity(),
+    privateInput: { actors: { editor: { user_id: 10, name: "editor", session_token: "fixture-session" } } },
+    signal: null,
+    resources: {},
+    candidateBrowserContexts: {},
+  });
+  assert.deepEqual(prepared.plan.mutation_plan, {
+    schema: "wikijump.open43_q1040_reversible_mutation_plan.v1",
+    target: {
+      role: "next",
+      slug: "open43-q1040-0123456789ab-next",
+      original_title: "zzzzzzzzzzzz Q1040 0123456789ab C next",
+      renamed_title: "zzzzzzzzzzzz Q1040 0123456789ab C next renamed",
+    },
+    served_page: {
+      role: "current",
+      slug: "open43-q1040-0123456789ab-current",
+      path: "/open43-q1040-0123456789ab-current",
+    },
+    read_seam: "deepwell.page_view",
+    steps: [
+      { id: "initial", operation: "page_view", actor: "anonymous", page_role: "current", read_after: "initial" },
+      { id: "rename", operation: "page_edit", actor: "editor", page_role: "next", read_after: "renamed" },
+      { id: "delete", operation: "page_delete", actor: "editor", page_role: "next", read_after: "deleted" },
+      { id: "restore", operation: "page_restore", actor: "editor", page_role: "next", identity: ["page_id", "slug"], read_after: "restored" },
+    ],
+    cleanup: {
+      operation: "page_delete",
+      actor: "editor",
+      page_roles: ["previous", "current", "next"],
+      proof: ["page_get:null", "public_status:404", "resource:released"],
+    },
+  });
+});
+
+test("Q1040 rejects a served capture redirected away from the current page", () => {
+  const { session } = fakeCandidateSession();
+  const run = createOpen43Q1040CandidateCaseSet({ sessionFactory: () => session }).prepareRun({
+    runId: "candidate-run-0123456789ab",
+    candidateIdentity: candidateIdentity(),
+    privateInput: { actors: { editor: { user_id: 10, name: "editor", session_token: "fixture-session" } } },
+    signal: null,
+    resources: {},
+    candidateBrowserContexts: {},
+  });
+  const currentUrl = `${PAGE_ORIGIN}/open43-q1040-0123456789ab-current`;
+  assert.throws(() => run.verifyCase(CASE_ID, {
+    url: currentUrl,
+    capture: {
+      navigation_status: 200,
+      input_url: currentUrl,
+      final_url: `${PAGE_ORIGIN}/not-the-current-page`,
+      failures: [],
+    },
+  }), /exact current-page URL/u);
 });
 
 test("Q1040 rejects directional links without the default NextPage row", () => {
@@ -201,7 +271,14 @@ test("Q1040 rejects directional links without the default NextPage row", () => {
     candidateBrowserContexts: {},
   });
   assert.throws(() => run.verifyCase(CASE_ID, {
-    capture: { navigation_status: 200, failures: structuredClone(PRINTUSER_CSP_FAILURES) },
+    url: `${PAGE_ORIGIN}/open43-q1040-0123456789ab-current`,
+    capture: {
+      navigation_status: 200,
+      input_url: `${PAGE_ORIGIN}/open43-q1040-0123456789ab-current`,
+      final_url: `${PAGE_ORIGIN}/open43-q1040-0123456789ab-current`,
+      failures: structuredClone(PRINTUSER_CSP_FAILURES),
+    },
+    served: { url: `${PAGE_ORIGIN}/open43-q1040-0123456789ab-current` },
     links: [
       { href: "/open43-q1040-0123456789ab-next", text: "CCC Q1040 0123456789ab next" },
       { href: "/open43-q1040-0123456789ab-previous", text: "AAA Q1040 0123456789ab previous" },

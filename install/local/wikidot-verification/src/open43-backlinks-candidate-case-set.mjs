@@ -10,6 +10,27 @@ export const OPEN43_BACKLINKS_CASE_IDS = Object.freeze([
   "Q1027_BACKLINKS_PREVIEW_SAVED_FAIL_CLOSED",
 ]);
 
+export const OPEN43_BACKLINKS_SOURCE_FILES = Object.freeze([
+  "deepwell/src/services/render/backlinks.rs",
+  "deepwell/src/services/render/service.rs",
+  "deepwell/tests/page.rs",
+  "docs/wikidot-specifications/specifications/module/module-backlinks.md",
+  "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json",
+  "install/local/wikidot-verification/scripts/run-candidate-cases.mjs",
+  "install/local/wikidot-verification/src/atomic-no-replace.mjs",
+  "install/local/wikidot-verification/src/candidate-source-execution-identity.mjs",
+  "install/local/wikidot-verification/src/candidate-case-runner.mjs",
+  "install/local/wikidot-verification/src/candidate-case-command.mjs",
+  "install/local/wikidot-verification/src/candidate-case-http.mjs",
+  "install/local/wikidot-verification/src/deepwell-rpc-auth.mjs",
+  "install/local/wikidot-verification/src/open43-backlinks-candidate-case-set.mjs",
+  "install/local/wikidot-verification/src/standing-browser-parity-receipt.mjs",
+  "install/local/wikidot-verification/src/standing-browser-parity-util.mjs",
+  "install/local/wikidot-verification/src/standing-browser-runtime-identity.mjs",
+  "install/local/wikidot-verification/package.json",
+  "install/local/wikidot-verification/pnpm-lock.yaml",
+]);
+
 const SITE_SLUG = "scpaiueouiuiuiui";
 const MUTATING_OPERATIONS = new Set([
   "page_create",
@@ -314,6 +335,7 @@ function verifyCleanup(proof, resources) {
 }
 
 function verifyCase(observations, fixture) {
+  if (observations.actor?.rendered_viewer !== "anonymous") throw new Error("Backlinks candidate evidence must identify the anonymous rendered viewer");
   if (observations.fixture?.source_sha256 !== sha256Text(fixture.holder.source) || observations.fixture.empty_source_sha256 !== sha256Text(fixture.empty_holder.source) || observations.fixture.expected_populated_dom_sha256 !== sha256Text(fixture.expected.populated) || observations.fixture.expected_empty_dom_sha256 !== sha256Text(fixture.expected.empty)) throw new Error("Backlinks candidate fixture identity drifted");
   for (const side of [observations.saved.populated, observations.saved.empty, observations.preview.populated, observations.preview.empty]) if (side.fragment_sha256 !== sha256Text(side === observations.saved.empty || side === observations.preview.empty ? fixture.expected.empty : fixture.expected.populated)) throw new Error("saved or preview Backlinks DOM digest does not match its exact fixture fragment");
   for (const negative of Object.values(observations.identity_negative)) if (negative.has_wrapper !== false) throw new Error("invalid preview page identity rendered a Backlinks wrapper");
@@ -324,25 +346,18 @@ function verifyCase(observations, fixture) {
   if (observations.state_before_sha256 !== observations.state_after_sha256) throw new Error("Backlinks candidate changed public fixture state");
   const events = [...observations.request_events];
   if (events.some((event) => MUTATING_OPERATIONS.has(event.operation))) throw new Error("Backlinks candidate issued a mutating public operation");
-  return { verified: true, controls: ["saved_populated", "saved_empty", "preview_populated", "preview_empty", "identity_free", "missing_id", "stale_identity", "foreign_identity", "mismatched_id", "syntax_only", "inline_module"], hidden_private_deleted_fail_closed: true, mutation_count: 0 };
+  return {
+    verified: true,
+    controls: ["saved_populated", "saved_empty", "preview_populated", "preview_empty", "identity_free", "missing_id", "stale_identity", "foreign_identity", "mismatched_id", "syntax_only", "inline_module"],
+    anonymous_hidden_private_deleted_fail_closed: true,
+    non_anonymous_private_visibility: "unproven",
+    beyond_limit_behavior: "unproven",
+    standing_proof: "unproven",
+    mutation_count: 0,
+  };
 }
 
 export function createOpen43BacklinksCandidateCaseSet({ sessionFactory = (options) => new CandidateHttpSession(options) } = {}) {
-  const sourceFiles = Object.freeze([
-    "install/local/wikidot-verification/scripts/run-candidate-cases.mjs",
-    "install/local/wikidot-verification/src/atomic-no-replace.mjs",
-    "install/local/wikidot-verification/src/candidate-source-execution-identity.mjs",
-    "install/local/wikidot-verification/src/candidate-case-runner.mjs",
-    "install/local/wikidot-verification/src/candidate-case-command.mjs",
-    "install/local/wikidot-verification/src/candidate-case-http.mjs",
-    "install/local/wikidot-verification/src/deepwell-rpc-auth.mjs",
-    "install/local/wikidot-verification/src/open43-backlinks-candidate-case-set.mjs",
-    "install/local/wikidot-verification/src/standing-browser-parity-receipt.mjs",
-    "install/local/wikidot-verification/src/standing-browser-parity-util.mjs",
-    "install/local/wikidot-verification/src/standing-browser-runtime-identity.mjs",
-    "install/local/wikidot-verification/package.json",
-    "install/local/wikidot-verification/pnpm-lock.yaml",
-  ]);
   return Object.freeze({
     id: "open43-backlinks",
     caseIds: OPEN43_BACKLINKS_CASE_IDS,
@@ -352,7 +367,7 @@ export function createOpen43BacklinksCandidateCaseSet({ sessionFactory = (option
       const session = sessionFactory({ candidateIdentity, privateInput, signal });
       const execution = new Open43BacklinksRun({ session, fixture });
       return Object.freeze({
-        sourceFiles,
+        sourceFiles: OPEN43_BACKLINKS_SOURCE_FILES,
         runtimeBindings: session.requiredServiceBindings,
         privateInputIdentity: { ...session.privateInputIdentity, fixture_identity_sha256: sha256Value(fixture) },
         plan: {
@@ -374,6 +389,12 @@ export function createOpen43BacklinksCandidateCaseSet({ sessionFactory = (option
           },
           actor: { editor_user_id: session.editorUserId, rendered_viewer: "anonymous" },
           mutation_policy: "read-only-public-seams",
+          proof_scope: {
+            anonymous_hidden_private_deleted_fail_closed: true,
+            non_anonymous_private_visibility: "unproven",
+            beyond_limit_behavior: "unproven",
+            standing_proof: "unproven",
+          },
         },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),

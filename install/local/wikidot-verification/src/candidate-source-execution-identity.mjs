@@ -18,12 +18,18 @@ const GIT_OBJECT = /^[0-9a-f]{40}$/u;
 const VERIFICATION_ONLY_PREFIXES = [
   ".github/",
   "docs/development/candidate-case-set-manifest.json",
+  "docs/development/open43-",
   "install/local/wikidot-verification/",
   "install/standing/",
 ];
 
 export const CANDIDATE_SOURCE_EXECUTION_IDENTITY_SCHEMA =
   "wikijump.candidate_source_execution_identity.v1";
+
+export function isCandidateVerificationOnlyPath(file) {
+  return typeof file === "string"
+    && VERIFICATION_ONLY_PREFIXES.some((prefix) => file.startsWith(prefix));
+}
 
 function sourceManifest(files) {
   if (!Array.isArray(files) || files.length === 0) throw new Error("candidate source manifest must not be empty");
@@ -100,7 +106,7 @@ async function assertCandidateRuntimeUnchanged(candidateCommit, candidateTree, h
   }
   if (candidateTree === tree) return;
   const changed = (await git(["diff", "--name-only", `${candidateCommit}..${head}`])).split("\n").filter(Boolean);
-  if (changed.length === 0 || changed.some((file) => !VERIFICATION_ONLY_PREFIXES.some((prefix) => file.startsWith(prefix)))) {
+  if (changed.length === 0 || changed.some((file) => !isCandidateVerificationOnlyPath(file))) {
     throw new Error("candidate source execution identity does not bind the sealed candidate runtime");
   }
 }

@@ -42,6 +42,7 @@ const SOURCE_FILES = Object.freeze([
     "install/local/wikidot-verification/src/open43-q810-featuredsite-candidate-case-set.mjs",
     "install/local/wikidot-verification/package.json",
     "install/local/wikidot-verification/pnpm-lock.yaml",
+    "install/local/wikidot-verification/src/standing-browser-parity-receipt.mjs",
   ]),
 ]);
 
@@ -116,6 +117,10 @@ class Q810CandidateSession {
     return this.#http.pageOrigin;
   }
 
+  get filesOrigin() {
+    return this.#http.filesOrigin;
+  }
+
   get privateInputIdentity() {
     return {
       ...this.#http.privateInputIdentity,
@@ -158,19 +163,25 @@ function outputFlags(html) {
   return FORBIDDEN_OUTPUT.filter((fragment) => html.includes(fragment));
 }
 
-function forbiddenRequest(url) {
+const SAFE_EXTERNAL_DEPENDENCY_TYPES = new Set(["stylesheet", "font", "image"]);
+
+function forbiddenRequest(request, allowedOrigins) {
   let parsed;
   try {
-    parsed = new URL(url);
+    parsed = new URL(request?.url);
   } catch {
     return true;
   }
-  return parsed.protocol === "http:" ||
-    parsed.hostname.endsWith(".wikidot.com") ||
-    parsed.hostname === "thumbnails.wdfiles.com";
+  if (["about:", "blob:", "data:"].includes(parsed.protocol)) return false;
+  if (allowedOrigins.has(parsed.origin)) return false;
+  if (parsed.protocol !== "https:") return true;
+  if (parsed.hostname === "wikidot.com" || parsed.hostname.endsWith(".wikidot.com")) return true;
+  if (parsed.hostname === "thumbnails.wdfiles.com") return true;
+  return !SAFE_EXTERNAL_DEPENDENCY_TYPES.has(request?.resource_type);
 }
 
-function browserSurface(capture, firstHtml, settledHtml, requests) {
+function browserSurface(capture, firstHtml, settledHtml, requests, allowedOrigins) {
+  const allowedOriginSet = new Set(allowedOrigins);
   const content = (html) => ({
     html_sha256: sha256(html),
     unavailable_module: html.includes(EXPECTED_UNAVAILABLE),
@@ -191,7 +202,8 @@ function browserSurface(capture, firstHtml, settledHtml, requests) {
     failures: capture.failures,
     request_gate_aborts: capture.request_gate_aborts,
     requests,
-    forbidden_requests: requests.filter(({ url }) => forbiddenRequest(url)),
+    allowed_origins: [...allowedOrigins],
+    forbidden_requests: requests.filter((request) => forbiddenRequest(request, allowedOriginSet)),
   };
 }
 
@@ -210,6 +222,14 @@ class Q810FeaturedSiteRun {
     this.#session = session;
     this.#browser = candidateBrowserContexts;
     this.#fixture = session.fixture;
+  }
+
+  get browserAllowedOrigins() {
+    const origins = [this.#session.pageOrigin, this.#session.filesOrigin];
+    if (origins.some((origin) => typeof origin !== "string" || origin.length === 0)) {
+      throw new Error("Q810 candidate browser origins are incomplete");
+    }
+    return origins;
   }
 
   async #readFixturePage(page, expected, name) {
@@ -257,7 +277,7 @@ class Q810FeaturedSiteRun {
         },
       });
       settledHtml = await pageContent(page);
-      return browserSurface(capture, firstHtml, settledHtml, requests);
+      return browserSurface(capture, firstHtml, settledHtml, requests, this.browserAllowedOrigins);
     } finally {
       page.off("request", onRequest);
       await page.close();
@@ -319,7 +339,7 @@ class Q810FeaturedSiteRun {
   }
 }
 
-function verifyBrowserSurface(surface, name) {
+function verifyBrowserSurface(surface, name, allowedOrigins) {
   if (surface.navigation_status !== 200 || surface.final_url !== surface.input_url) {
     throw new Error(`${name} candidate navigation did not settle on its requested page`);
   }
@@ -331,7 +351,18 @@ function verifyBrowserSurface(surface, name) {
       throw new Error(`${name} candidate rendered a non-fail-closed FeaturedSite result`);
     }
   }
-  if (surface.failures.length !== 0 || surface.request_gate_aborts.length !== 0 || surface.forbidden_requests.length !== 0) {
+  if (!Array.isArray(surface.requests) || surface.requests.some((request) => typeof request?.url !== "string" || typeof request?.resource_type !== "string")) {
+    throw new Error(`${name} candidate did not retain complete browser request observations`);
+  }
+  const allowedOriginSet = new Set(allowedOrigins);
+  const forbiddenRequests = surface.requests.filter((request) => forbiddenRequest(request, allowedOriginSet));
+  if (JSON.stringify(surface.allowed_origins) !== JSON.stringify(allowedOrigins)) {
+    throw new Error(`${name} candidate browser origin allowlist drifted`);
+  }
+  if (JSON.stringify(surface.forbidden_requests) !== JSON.stringify(forbiddenRequests)) {
+    throw new Error(`${name} candidate browser forbidden-request evidence was not derived from requests`);
+  }
+  if (surface.failures.length !== 0 || surface.request_gate_aborts.length !== 0 || forbiddenRequests.length !== 0) {
     throw new Error(`${name} candidate made a forbidden or failed browser request`);
   }
   return {
@@ -342,7 +373,7 @@ function verifyBrowserSurface(surface, name) {
   };
 }
 
-function verifyCase(caseId, observations) {
+function verifyCase(caseId, observations, _allObservations, allowedOrigins) {
   if (caseId !== "Q810_CANDIDATE_FAIL_CLOSED_NETWORK") throw new Error(`unknown Q810 case: ${caseId}`);
   if (observations.preview.unavailable_module !== true || observations.preview.forbidden_output.length !== 0) {
     throw new Error("Q810 PagePreview did not fail closed");
@@ -357,8 +388,8 @@ function verifyCase(caseId, observations) {
     preview_body_sha256: observations.preview.body_sha256,
     saved_page_source_sha256: observations.saved_page.identity.source_sha256,
     nested_page_source_sha256: observations.nested_page.identity.source_sha256,
-    saved_browser: verifyBrowserSurface(observations.saved_page.browser, "saved page"),
-    nested_browser: verifyBrowserSurface(observations.nested_page.browser, "nested page"),
+    saved_browser: verifyBrowserSurface(observations.saved_page.browser, "saved page", allowedOrigins),
+    nested_browser: verifyBrowserSurface(observations.nested_page.browser, "nested page", allowedOrigins),
   };
 }
 
@@ -369,15 +400,15 @@ function verifyCleanup(proof, resources) {
   return { public_absence_verified: true, run_owned_resource_count: 0, mutation: "none" };
 }
 
-export function createOpen43FeaturedSiteCandidateCaseSet() {
+export function createOpen43FeaturedSiteCandidateCaseSet({ sessionFactory = (options) => new Q810CandidateSession(options) } = {}) {
   return Object.freeze({
     id: "open43-featuredsite",
     caseIds: OPEN43_Q810_FEATUREDSITE_CASE_IDS,
-    prepareRun({ candidateIdentity, privateInput, signal, resources, candidateBrowserContexts }) {
+    prepareRun({ candidateIdentity, privateInput, signal, candidateBrowserContexts }) {
       if (candidateIdentity.candidate.endpoint.host !== `${SITE_SLUG}.wikijump.localhost`) {
         throw new Error(`Q810 FeaturedSite cases require the ${SITE_SLUG} candidate`);
       }
-      const session = new Q810CandidateSession({ candidateIdentity, privateInput, signal });
+      const session = sessionFactory({ candidateIdentity, privateInput, signal });
       const execution = new Q810FeaturedSiteRun({ session, candidateBrowserContexts });
       return Object.freeze({
         sourceFiles: SOURCE_FILES,
@@ -396,7 +427,7 @@ export function createOpen43FeaturedSiteCandidateCaseSet() {
         },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
-        verifyCase,
+        verifyCase: (caseId, observations, allObservations) => verifyCase(caseId, observations, allObservations, execution.browserAllowedOrigins),
         verifyCleanup,
       });
     },

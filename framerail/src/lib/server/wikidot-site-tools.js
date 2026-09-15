@@ -18,9 +18,22 @@ export const renderWikidotSiteTools = () => `
   </div>
 </div>`
 
-export const renderWikidotListDrafts = () =>
-  `<div class="list-drafts-box">
+export const renderWikidotListDrafts = (drafts = []) => {
+  if (drafts.length === 0) {
+    return `<div class="list-drafts-box">
             </div>`
+  }
+
+  let body = `<div class="list-drafts-box">
+`
+  for (const draft of drafts) {
+    body += `            <div class="list-drafts-item">
+                <p><a href="/${escapeHtml(draft.slug)}">${escapeHtml(draft.title)}</a></p>
+            </div>
+`
+  }
+  return `${body}            </div>`
+}
 
 export const renderWikidotOrphanedPages = (pages) => {
   let body = "\n<h1>List of orphaned pages</h1>\n\n"

@@ -26,6 +26,8 @@
  */
 
 const CATEGORIES_PAGE_LIST_MODULE = "list/WikiCategoriesPageListModule"
+const CATEGORY_TOGGLER_ID = /^category-pages-toggler-(\d+)$/u
+const delegatedRoots = new WeakSet()
 
 /** @param {WikidotCategoriesRoot} root */
 const ensureWikidotNamespace = (root) => {
@@ -96,6 +98,30 @@ export const installWikidotCategories = (
     }
     toggler.textContent = "- hide pages"
     return false
+  }
+
+  if (
+    !delegatedRoots.has(root) &&
+    typeof root.document?.addEventListener === "function"
+  ) {
+    root.document.addEventListener(
+      "click",
+      (event) => {
+        const toggler = event.target?.closest?.('a[id^="category-pages-toggler-"]')
+        const match = CATEGORY_TOGGLER_ID.exec(toggler?.id ?? "")
+        if (!match) return
+
+        const categoryId = Number(match[1])
+        if (!Number.isSafeInteger(categoryId) || categoryId <= 0) return
+
+        const expectedOnclick = `WIKIDOT.modules.WikiCategoriesModule.listeners.toggleListPages(event, ${categoryId})`
+        if (toggler.getAttribute?.("onclick") !== expectedOnclick) return
+
+        module.listeners.toggleListPages?.(event, categoryId)
+      },
+      true
+    )
+    delegatedRoots.add(root)
   }
 
   return module

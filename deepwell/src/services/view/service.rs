@@ -64,7 +64,7 @@ use crate::services::relation::{
 };
 use crate::services::render::{
     LegacyActionRegistry, MembershipActionRegistry, RenderOutput, RenderService,
-    compiled_generator_is_current,
+    compiled_generator_is_current, has_theme_previewer_no_ui,
 };
 use crate::services::settings::{
     NavigationPageHtml, PageRatingPermission, PageRatingSettings, SettingsService,
@@ -1327,6 +1327,7 @@ impl ViewService {
                 wikidot_breadcrumbs,
                 attributions,
             } => {
+                let theme_previewer_no_ui = has_theme_previewer_no_ui(&wikitext);
                 let legacy_actions = LegacyActionRegistry::from_wikidot_source_bounded(
                     wikitext.clone(),
                     ctx.config().render_timeout,
@@ -1392,6 +1393,7 @@ impl ViewService {
                     legacy_actions,
                     rate_actions,
                     membership_actions,
+                    theme_previewer_no_ui,
                     redirect_page,
                     redirect_kind,
                     wikitext,

@@ -177,6 +177,73 @@ export interface SiteToolsWantedPageView {
   sources: SiteToolsPageView[]
 }
 
+export interface PageDraftView {
+  slug: string
+  title: string
+}
+
+export interface PageDraftIdentityInput {
+  siteId: number
+  userId: number
+  pageId?: number
+  slug: string
+}
+
+export interface SavePageDraftInput extends PageDraftIdentityInput {
+  title: string
+  wikitext: string
+}
+
+export async function pageDraftSave(
+  input: SavePageDraftInput,
+  requestContext: RequestContext = {}
+): Promise<boolean> {
+  return client.request(
+    "page_draft_save",
+    {
+      site_id: input.siteId,
+      user_id: input.userId,
+      page_id: input.pageId,
+      slug: input.slug,
+      title: input.title,
+      wikitext: input.wikitext
+    },
+    requestContext
+  )
+}
+
+export async function pageDraftExists(
+  input: PageDraftIdentityInput,
+  requestContext: RequestContext = {}
+): Promise<boolean> {
+  return client.request(
+    "page_draft_exists",
+    {
+      site_id: input.siteId,
+      user_id: input.userId,
+      page_id: input.pageId,
+      slug: input.slug
+    },
+    requestContext
+  )
+}
+
+export async function pageDraftRemove(
+  input: PageDraftIdentityInput,
+  requestContext: RequestContext = {}
+): Promise<boolean> {
+  return client.request(
+    "page_draft_remove",
+    {
+      site_id: input.siteId,
+      user_id: input.userId,
+      page_id: input.pageId,
+      slug: input.slug
+    },
+    requestContext
+  )
+}
+
 export async function siteToolsOrphanedPages(
   siteId: number,
   requestContext: RequestContext = {}
@@ -189,6 +256,13 @@ export async function siteToolsWantedPages(
   requestContext: RequestContext = {}
 ): Promise<SiteToolsWantedPageView[]> {
   return client.request("site_tools_wanted_pages", { site_id: siteId }, requestContext)
+}
+
+export async function siteToolsListDrafts(
+  siteId: number,
+  requestContext: RequestContext = {}
+): Promise<PageDraftView[]> {
+  return client.request("site_tools_list_drafts", { site_id: siteId }, requestContext)
 }
 
 export async function pageWatchers(

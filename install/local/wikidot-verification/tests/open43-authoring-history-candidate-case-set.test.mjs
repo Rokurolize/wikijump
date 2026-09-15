@@ -188,6 +188,7 @@ class FakePage {
       if (parsed.length === 0) return { status: 400, body: "invalid" };
       const requestBody = "locales=ja_JP%2C+en-US+ja-JP&signature=&user=999&__superform_id=11b3t38";
       this.state.locales = parsed;
+      this.deferNextReload = this.state.deferNextSettingsReloadSettlement === true;
       return { status: 200, body: "saved", request_body: requestBody };
     }
     throw new Error(`unexpected browser operation ${argument.operation}`);
@@ -223,8 +224,27 @@ class FakePage {
   }
 
   async reload() {
-    this.inputValue = this.state.locales.join(" ");
+    if (this.deferNextReload) {
+      this.deferNextReload = false;
+      this.pendingInputValue = this.state.locales.join(" ");
+    } else {
+      this.inputValue = this.state.locales.join(" ");
+    }
     return new FakeResponse(this.currentUrl, 200, "ok");
+  }
+
+  async waitForFunction(_callback, argument, options) {
+    assert.deepEqual(argument, {
+      selector: "#user-display-locales",
+      expected: this.state.locales.join(" "),
+    });
+    assert.equal(options.timeout, 10_000);
+    this.state.settingsWaitCalls = (this.state.settingsWaitCalls ?? 0) + 1;
+    if (this.pendingInputValue !== undefined) {
+      this.inputValue = this.pendingInputValue;
+      this.pendingInputValue = undefined;
+    }
+    assert.equal(this.inputValue, argument.expected);
   }
 
   async goBack() {
@@ -293,7 +313,12 @@ test("candidate registry executes the unblocked #1063 source, diff, and settings
   assert.equal(typeof caseSet.prepareRun, "function");
 
   const calls = [];
-  const state = { pages: new Map(), locales: ["en-US"] };
+  const state = {
+    pages: new Map(),
+    locales: ["en-US"],
+    deferNextSettingsReloadSettlement: true,
+    settingsWaitCalls: 0,
+  };
   const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "open43-history-case-"));
   t.after(() => fs.rm(outputRoot, { recursive: true, force: true }));
   const outputDir = path.join(outputRoot, "evidence");
@@ -329,6 +354,7 @@ test("candidate registry executes the unblocked #1063 source, diff, and settings
     "A1063_SETTINGS_BROWSER_WORKFLOW",
   ]);
   assert.equal(calls.some((call) => call.kind === "rpc" && call.method === "user_edit" && call.params.user === -1 && call.params.locales[0] === "en-US"), true);
+  assert.equal(state.settingsWaitCalls, 1);
   assert.equal(calls.some((call) => call.kind === "rpc" && call.method === "page_delete"), true);
   assert.equal(state.pages.size, 0);
   assert.deepEqual(state.locales, ["en-US"]);
@@ -369,4 +395,48 @@ test("#1063 audit retires the stale standard-layout breadcrumb candidate without
   assert.equal(createHash("sha256").update(artifactBytes).digest("hex"), evidence.sha256);
   assert.equal(audit.candidate_harness_gap.superseded_row.case_id, "A1063_BREADCRUMB_SERVED_CANDIDATE");
   assert.equal(audit.browser_commands.some(({case_ids}) => case_ids.includes("A1063_BREADCRUMB_SERVED_CANDIDATE")), false);
+});
+
+test("#1063 retained breadcrumb evidence verifies the standard-layout boundary and cleanup", async () => {
+  const artifact = JSON.parse(await fs.readFile(new URL("../artifacts/issue1063-parent-breadcrumb-live-20260908.json", import.meta.url), "utf8"));
+  assert.equal(artifact.schema, "wikijump.issue1063_parent_breadcrumb_live.v1");
+  assert.deepEqual(artifact.cases.map(({case_id}) => case_id), [
+    "issue1063-parent-chain-standard-layout-no-breadcrumbs",
+    "issue1063-renamed-parent-standard-layout-no-breadcrumbs",
+    "issue1063-no-parent-standard-layout-control",
+    "issue1063-deleted-parent-standard-layout-control",
+    "issue1063-cycle-standard-layout-control",
+    "issue1063-independent-standard-layout-control",
+    "issue1063-current-parented-documentation-page-no-breadcrumbs",
+  ]);
+  const cases = new Map(artifact.cases.map((row) => [row.case_id, row]));
+  for (const caseId of [
+    "issue1063-parent-chain-standard-layout-no-breadcrumbs",
+    "issue1063-renamed-parent-standard-layout-no-breadcrumbs",
+  ]) {
+    assert.equal(cases.get(caseId).http_status, 200);
+    assert.equal(cases.get(caseId).parent_mutations_succeeded, true);
+    assert.equal(cases.get(caseId).breadcrumbs_present, false);
+  }
+  for (const caseId of [
+    "issue1063-no-parent-standard-layout-control",
+    "issue1063-deleted-parent-standard-layout-control",
+    "issue1063-cycle-standard-layout-control",
+    "issue1063-independent-standard-layout-control",
+    "issue1063-current-parented-documentation-page-no-breadcrumbs",
+  ]) {
+    assert.equal(cases.get(caseId).http_status, 200);
+    assert.equal(cases.get(caseId).breadcrumbs_present, false);
+  }
+  assert.equal(cases.get("issue1063-cycle-standard-layout-control").cycle_mutation_accepted, true);
+  assert.deepEqual(artifact.cleanup, {
+    sandbox_run_owned_pages_remaining: [],
+    sandbox_cleanup_verified: true,
+    credentials_persisted: false,
+  });
+  assert.deepEqual(artifact.scope, {
+    standard_saved_page_layout: "observed",
+    parent_relation_persistence: "preserved",
+    custom_layout_breadcrumbs: "not_observed_do_not_infer",
+  });
 });

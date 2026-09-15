@@ -22,7 +22,10 @@ const ROUTE_CASE_IDS = Object.freeze([
   "searchall-browser-f-query",
 ]);
 const ERROR_CASE = fixtureCase("searchall-route-pf-query");
-const NEGATIVE_CASE = fixtureCase("searchall-route-unknown-area-query");
+const NEGATIVE_CASES = Object.freeze([
+  fixtureCase("searchall-route-unknown-area-query"),
+  fixtureCase("searchall-route-query-without-area"),
+]);
 const DEFAULT_VIEWPORT = Object.freeze({ width: 1280, height: 900 });
 const CAPTURE_TIMEOUT_MS = 300_000;
 
@@ -89,12 +92,12 @@ function planFor({ runId, pageOrigin, candidateIdentitySha256 }) {
     form_fragment_sha256: structuralHash(FIXTURE.form_raw_html),
     unavailable_fragment_sha256: structuralHash(ERROR_CASE.raw_html),
     routes: EXPECTED_ROUTES,
-    negative_boundary: {
-      case_id: NEGATIVE_CASE.case_id,
-      path: NEGATIVE_CASE.path,
+    negative_boundaries: NEGATIVE_CASES.map((negativeCase) => ({
+      case_id: negativeCase.case_id,
+      path: negativeCase.path,
       expected_fragment_sha256: structuralHash(ERROR_CASE.raw_html),
-      reason: "unknown-area-route-fails-closed-to-observed-unavailable-output",
-    },
+      reason: "observed-unavailable-route-fails-closed-to-observed-unavailable-output",
+    })),
   });
 }
 
@@ -200,20 +203,25 @@ export class Open43Q807SearchAllBrowserAdapter {
           error_text: await page.locator(".error-block").textContent(),
         });
       }
-      const negativeUrl = new URL(NEGATIVE_CASE.path, this.#pageOrigin).href;
-      await page.goto(negativeUrl, { waitUntil: "domcontentloaded", timeout: CAPTURE_TIMEOUT_MS });
-      const negativeResult = await exactFragment(page, ERROR_CASE.raw_html, "Q807 unknown-area negative boundary");
-      return {
-        saved_page: { slug: "search:all", url: baseUrl, status: initialNavigation?.status() ?? 0, source: "[[module SearchAll]]" },
-        initial: { form: initialForm, result: initialFragment, final_url: baseUrl },
-        routes,
-        negative_boundary: {
-          path: NEGATIVE_CASE.path,
+      const negativeBoundaries = [];
+      for (const negativeCase of NEGATIVE_CASES) {
+        const negativeUrl = new URL(negativeCase.path, this.#pageOrigin).href;
+        await page.goto(negativeUrl, { waitUntil: "domcontentloaded", timeout: CAPTURE_TIMEOUT_MS });
+        const negativeResult = await exactFragment(page, ERROR_CASE.raw_html, `Q807 ${negativeCase.case_id} negative boundary`);
+        negativeBoundaries.push({
+          case_id: negativeCase.case_id,
+          path: negativeCase.path,
           final_url: page.url(),
           result: negativeResult,
           form_present: await page.locator("#search-form-all").count() > 0,
           error_text: await page.locator(".error-block").textContent(),
-        },
+        });
+      }
+      return {
+        saved_page: { slug: "search:all", url: baseUrl, status: initialNavigation?.status() ?? 0, source: "[[module SearchAll]]" },
+        initial: { form: initialForm, result: initialFragment, final_url: baseUrl },
+        routes,
+        negative_boundaries: negativeBoundaries,
         request_methods: requestMethods,
         failed_requests: failedRequests,
         navigation_urls: navigationUrls,
@@ -262,11 +270,14 @@ export function verifyOpen43Q807SearchAllCase(rawObservations, plan) {
     verifyForm(route.defaults, fixedPlan);
     verifyResult(route.result, expected.expected_fragment_sha256, `Q807 ${expected.case_id}`);
   }
-  const negative = object(observations.negative_boundary, "Q807 negative boundary");
-  if (negative.final_url !== new URL(fixedPlan.negative_boundary.path, fixedPlan.page_origin).href || negative.form_present !== false || negative.error_text?.trim() !== "Couldnt connect to host, ElasticSearch down?") throw new Error("Q807 unknown-area boundary did not fail closed");
-  verifyResult(negative.result, fixedPlan.negative_boundary.expected_fragment_sha256, "Q807 negative boundary");
+  if (!Array.isArray(fixedPlan.negative_boundaries) || !Array.isArray(observations.negative_boundaries) || observations.negative_boundaries.length !== fixedPlan.negative_boundaries.length) throw new Error("Q807 negative-boundary denominator is incomplete");
+  for (const [index, expected] of fixedPlan.negative_boundaries.entries()) {
+    const negative = object(observations.negative_boundaries[index], `Q807 negative boundary ${index}`);
+    if (negative.case_id !== expected.case_id || negative.path !== expected.path || negative.final_url !== new URL(expected.path, fixedPlan.page_origin).href || negative.form_present !== false || negative.error_text?.trim() !== "Couldnt connect to host, ElasticSearch down?") throw new Error(`Q807 ${expected.case_id} boundary did not fail closed`);
+    verifyResult(negative.result, expected.expected_fragment_sha256, `Q807 ${expected.case_id} negative boundary`);
+  }
   if (!Array.isArray(observations.request_methods) || observations.request_methods.some((method) => !["GET", "HEAD", "OPTIONS"].includes(method)) || !Array.isArray(observations.failed_requests) || observations.failed_requests.length !== 0 || observations.mutation_detected !== false) throw new Error("Q807 candidate route issued a failed or mutating request");
-  return { verified: true, case_id: CASE_ID, route_case_ids: fixedPlan.routes.map((route) => route.case_id), negative_boundary: fixedPlan.negative_boundary.case_id, fixture_sha256: fixedPlan.fixture_sha256 };
+  return { verified: true, case_id: CASE_ID, route_case_ids: fixedPlan.routes.map((route) => route.case_id), negative_boundaries: fixedPlan.negative_boundaries.map((boundary) => boundary.case_id), fixture_sha256: fixedPlan.fixture_sha256 };
 }
 
 function verifyCleanup(proof, resources) {

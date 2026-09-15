@@ -34,7 +34,14 @@ let canonicalAdminServer
 let legacyAdminServer
 let wikidotCollapsibles
 
-const requestContext = (data, { error = null, routeId = "/[x+2d]/admin" } = {}) => {
+const requestContext = (
+  data,
+  {
+    error = null,
+    routeId = "/[x+2d]/admin",
+    url = "https://wikijump.test/--/admin"
+  } = {}
+) => {
   const page = {
     data,
     error,
@@ -43,7 +50,7 @@ const requestContext = (data, { error = null, routeId = "/[x+2d]/admin" } = {}) 
     route: { id: routeId },
     state: {},
     status: error ? 403 : 200,
-    url: new URL("https://wikijump.test/--/admin")
+    url: new URL(url)
   }
   const updated = readable(false)
   return new Map([
@@ -406,6 +413,40 @@ describe("Wikidot site settings public boundaries", () => {
       enabled.body.indexOf('id="license-area"') < enabled.body.indexOf('id="footer-bar"'),
       "bottom toolbar must follow the license and extra chrome like Wikidot"
     )
+
+    const previewData = { ...enabledData, theme_previewer_no_ui: true }
+    const preview = renderComponent(
+      rootLayoutComponent,
+      {},
+      requestContext(previewData, {
+        routeId: "/[slug]/[...extra]",
+        url: "https://wikijump.test/start?theme_url=https%3A%2F%2Fcdn.scpwiki.com%2Ftheme%2Fpreview.css"
+      })
+    )
+    assert.match(
+      preview.head,
+      /data-wikidot-theme-preview="" href="https:\/\/cdn\.scpwiki\.com\/theme\/preview\.css" rel="stylesheet"/u
+    )
+
+    const rejectedPreview = renderComponent(
+      rootLayoutComponent,
+      {},
+      requestContext(previewData, {
+        routeId: "/[slug]/[...extra]",
+        url: "https://wikijump.test/start?theme_url=https%3A%2F%2Fevil.example%2Ftheme.css"
+      })
+    )
+    assert.doesNotMatch(rejectedPreview.head, /data-wikidot-theme-preview/u)
+
+    const unrecognizedPreview = renderComponent(
+      rootLayoutComponent,
+      {},
+      requestContext(enabledData, {
+        routeId: "/[slug]/[...extra]",
+        url: "https://wikijump.test/start?theme_url=https%3A%2F%2Fcdn.scpwiki.com%2Ftheme%2Fpreview.css"
+      })
+    )
+    assert.doesNotMatch(unrecognizedPreview.head, /data-wikidot-theme-preview/u)
 
     const disabledData = structuredClone(enabledData)
     disabledData.site_settings.google_analytics = { enabled: false, profile: null }

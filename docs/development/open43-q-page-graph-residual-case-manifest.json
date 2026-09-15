@@ -7,9 +7,10 @@
     "deepwell_cargo_lock_sha256": "54eb9700fa098bdfefee66d863a520adf80261a770e0a20564b592dc4ce067d8",
     "candidate_identity": null,
     "implementation_commits": [
-      "726264199ebcd9ccfa2fa43edb1527e8c5c69d29",
-      "8d347148ff025da4d229dba9d5524fa9d036fd4d",
-      "b7eb2e9b769c34b90e2821b7b9e4fe7a420cd127"
+      "4f08bf6adef436224c7207882d29534ab9b2fa6b",
+      "2a472660b48a926f6c2147bdba42a0de00ecb39d",
+      "b7eb2e9b769c34b90e2821b7b9e4fe7a420cd127",
+      "6ed92b7424eee1456782ff9f2246e6acc1060b04"
     ]
   },
   "evidence": [
@@ -61,37 +62,45 @@
     {
       "case_id": "Q1028_INITIAL_CATEGORY_DOM_AND_ARGUMENTS",
       "issue": 1028,
-      "status": "implemented_unverified",
+      "status": "source_ready",
       "owner": "deepwell",
       "tests": [
         "deepwell/tests/page.rs::categories_module_lists_active_categories_and_honors_include_hidden",
         "deepwell/src/services/render/categories.rs::tests"
       ],
-      "result": "The integration base already renders the live initial category sections, category IDs, hidden options marker, canonical ordering, case-insensitive module name, and exact includeHidden argument quirks. This lane preserves that recognition surface and adds actor-safe request-time rendering. Central Rust execution remains outstanding."
+      "result": "Deepwell renders the live initial category sections, category IDs, hidden options marker, canonical ordering, case-insensitive module name, and exact includeHidden argument quirks. The source seam is complete and remains pending the central Rust execution gate."
     },
     {
       "case_id": "Q1028_ACTOR_SCOPED_RUNTIME_INVENTORY",
       "issue": 1028,
-      "status": "implemented_unverified",
+      "status": "source_ready",
       "owner": "deepwell",
       "test": "deepwell/tests/page.rs::categories_runtime_inventory_is_scoped_to_the_request_actor",
-      "result": "Categories now requires request-time rendering, applies category-scoped Page View authority before category names and controls are emitted, and distinguishes anonymous and authorized page_view output without persisting actor-specific HTML. Central Rust execution remains outstanding."
+      "result": "Categories uses request-time rendering, applies category-scoped Page View authority before category names and controls are emitted, and distinguishes anonymous and authorized page_view output without persisting actor-specific HTML. The source seam is complete and remains pending the central Rust execution gate."
     },
     {
       "case_id": "Q1028_EXPAND_LIST_ACTION",
       "issue": 1028,
-      "status": "unimplemented",
-      "owner": "framerail-deepwell",
-      "test": null,
-      "result": "The frozen live artifact proves only the initial toggler DOM. It does not capture the click request, response rows, count text, collapse label, loading state, focus, or failure behavior. This lane does not invent an Ajax contract or bind an inert local-only toggle."
+      "status": "candidate_required",
+      "owner": "deepwell-framerail-candidate",
+      "tests": [
+        "deepwell/src/services/render/categories.rs::tests::category_page_list_matches_wikidot_shape_and_escapes_values",
+        "framerail/tests/wikidot-categories.test.js",
+        "framerail/tests/ajax-module-connector.test.js#WikiCategoriesPageListModule",
+        "install/local/wikidot-verification/tests/open43-categories-candidate-case-set.test.mjs"
+      ],
+      "result": "The source implementation covers first-click loading, one WikiCategoriesPageListModule request, title-sorted page rows, and subsequent local hide/re-open without another request. The exact candidate must still prove the anonymous and administrator browser intervals, permission-filtered page list, one-request cache behavior, and cleanup with no external request."
     },
     {
       "case_id": "Q1028_CATEGORY_LIFECYCLE_AND_CACHE",
       "issue": 1028,
-      "status": "unproved",
-      "owner": "deepwell-runtime",
-      "test": null,
-      "result": "Category create, delete, rename, page moves, templates, many-category bounds, cache convergence, and served browser intervals remain for the central runtime and browser barriers."
+      "status": "candidate_required",
+      "owner": "deepwell-browser-candidate",
+      "tests": [
+        "deepwell/tests/page.rs::categories_module_refreshes_inventory_after_category_pages_come_and_go",
+        "install/local/wikidot-verification/tests/open43-categories-candidate-case-set.test.mjs"
+      ],
+      "result": "The local source lifecycle test covers populated and emptied category inventory refresh. Category create, delete, rename, page moves, templates, many-category bounds, cache convergence, and served browser intervals remain for the exact candidate, browser, and standing barriers."
     },
     {
       "case_id": "Q1035_SITECHANGES_DEFAULT_INITIAL_SNAPSHOT",
@@ -190,6 +199,21 @@
     {
       "command": "cmp docs/wikidot-specifications/implementation-ledger.json scripts/data/wikidot-implementation-ledger.json",
       "status": "pass"
+    },
+    {
+      "command": "node --test framerail/tests/wikidot-categories.test.js framerail/tests/ajax-module-connector.test.js",
+      "status": "pass",
+      "result": "77 tests passed, including the Categories page-list dispatch, malformed-selector rejection, and first-load/local-toggle behavior."
+    },
+    {
+      "command": "node --test install/local/wikidot-verification/tests/open43-categories-candidate-case-set.test.mjs",
+      "status": "pass",
+      "result": "The canonical Q1028 case set emits and verifies both candidate residual case IDs through the fixture runner."
+    },
+    {
+      "command": "node --test install/local/wikidot-verification/tests/candidate-case-set-manifest.test.mjs install/local/wikidot-verification/tests/candidate-case-command.test.mjs",
+      "status": "pass",
+      "result": "25 candidate registry and command tests passed; the open43-categories set remains registered with both Q1028 residual cases."
     }
   ],
   "central_commands": [

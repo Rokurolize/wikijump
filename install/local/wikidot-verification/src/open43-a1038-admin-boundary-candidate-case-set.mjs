@@ -7,7 +7,8 @@ export const OPEN43_A1038_ADMIN_BOUNDARY_CASE_IDS = Object.freeze([
 ]);
 
 const SITE_SLUG = "scpaiueouiuiuiui";
-const SOURCE = "[[module ManageSite]]";
+const MANAGE_SITE_SOURCE = "[[module ManageSite]]";
+const PETITION_ADMIN_SOURCE = "[[module PetitionAdmin]]";
 const TITLE = "A1038 authenticated non-admin boundary";
 const ADMIN_HOST = `${SITE_SLUG}.wikijump.localhost`;
 
@@ -44,6 +45,9 @@ const MANAGE_SITE_NON_ADMIN_HTML = [
   "\t\t<h3>You\'re not signed in or you are not an administrator of this Wiki.</h3>\n",
   "\t\t\t</div>\n</div>",
 ].join("");
+
+const PETITION_ADMIN_DENIAL_HTML =
+  '<div class="error-block"><div class="title">Permission error</div>This tool is for use by the administrators of this site</div>';
 
 const SOURCE_FILES = Object.freeze([
   "install/local/wikidot-verification/scripts/run-candidate-cases.mjs",
@@ -101,16 +105,29 @@ class Open43A1038Run {
     if (!Number.isSafeInteger(site?.site_id) || site.slug !== SITE_SLUG) {
       throw new Error("candidate site identity does not match the sealed fixture");
     }
-    const params = { site_id: site.site_id, title: TITLE, wikitext: SOURCE };
+    const manageSiteParams = {
+      site_id: site.site_id,
+      title: TITLE,
+      wikitext: MANAGE_SITE_SOURCE,
+    };
     const authenticatedNonAdmin = await this.#rpc(
       "wikidot_page_preview",
-      params,
+      manageSiteParams,
       { actor: "non_admin", siteId: site.site_id },
     );
     const anonymous = await this.#rpc(
       "wikidot_page_preview",
-      params,
+      manageSiteParams,
       { actor: "anonymous", siteId: site.site_id },
+    );
+    const petitionAdminNonAdmin = await this.#rpc(
+      "wikidot_page_preview",
+      {
+        site_id: site.site_id,
+        title: TITLE,
+        wikitext: PETITION_ADMIN_SOURCE,
+      },
+      { actor: "non_admin", siteId: site.site_id },
     );
     return [
       {
@@ -124,6 +141,12 @@ class Open43A1038Run {
           },
           anonymous_boundary: {
             body: responseBody(anonymous, "anonymous preview"),
+          },
+          petition_admin_non_admin: {
+            body: responseBody(
+              petitionAdminNonAdmin,
+              "authenticated non-admin PetitionAdmin preview",
+            ),
           },
         },
       },
@@ -143,16 +166,24 @@ function verifyCase(caseId, observations) {
     { method: "site_get", actor: "anonymous" },
     { method: "wikidot_page_preview", actor: "non_admin" },
     { method: "wikidot_page_preview", actor: "anonymous" },
+    { method: "wikidot_page_preview", actor: "non_admin" },
   ])) throw new Error("candidate public operation sequence is not the fixed boundary");
   const authenticatedNonAdmin = responseBody(value.authenticated_non_admin, "authenticated non-admin observation");
   const anonymous = responseBody(value.anonymous_boundary, "anonymous boundary observation");
+  const petitionAdminNonAdmin = responseBody(
+    value.petition_admin_non_admin,
+    "authenticated non-admin PetitionAdmin observation",
+  );
   if (authenticatedNonAdmin !== MANAGE_SITE_NON_ADMIN_HTML) throw new Error("authenticated non-admin ManageSite output drifted");
   if (anonymous !== MANAGE_SITE_ANONYMOUS_HTML) throw new Error("anonymous ManageSite boundary output drifted");
+  if (petitionAdminNonAdmin !== PETITION_ADMIN_DENIAL_HTML) throw new Error("authenticated non-admin PetitionAdmin output drifted");
   return {
     verified: true,
     authenticated_non_admin_body_sha256: sha256(authenticatedNonAdmin),
     anonymous_boundary_body_sha256: sha256(anonymous),
+    petition_admin_non_admin_body_sha256: sha256(petitionAdminNonAdmin),
     negative_boundary: "anonymous_actor_retains_login_capable_manage_site_dom",
+    petition_admin_mutation: "not_attempted_read_only_boundary",
   };
 }
 
@@ -176,7 +207,7 @@ export function createOpen43A1038AdminBoundaryCandidateCaseSet({ sessionFactory 
         plan: {
           schema: "wikijump.open43_a1038_admin_boundary_candidate_plan.v1",
           site_slug: SITE_SLUG,
-          source: SOURCE,
+          source: MANAGE_SITE_SOURCE,
           title: TITLE,
           public_entry_point: "Deepwell wikidot_page_preview",
           actor: "non_admin",

@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { candidateCaseSet } from "../src/candidate-case-command.mjs";
+import { CandidateHttpSession } from "../src/candidate-case-http.mjs";
 import { runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
 import {
   OPEN43_MEMBERSHIP_JOIN_CASE_IDS,
@@ -157,6 +158,7 @@ test("the #1029 candidate adapter proves actor-bound Join and contention through
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const state = new FakeMembershipState();
   const sessions = new Map();
+  const sessionFactoryCalls = [];
   const aggregate = await runCandidateCaseSet({
     candidateIdentity: candidateIdentity(),
     candidateIdentitySha256: hash("a"),
@@ -166,7 +168,9 @@ test("the #1029 candidate adapter proves actor-bound Join and contention through
     privateInputSha256: hash("b"),
     outputDir: path.join(root, "evidence"),
     caseSet: createOpen43MembershipJoinCandidateCaseSet({
-      sessionFactory: ({ actor }) => {
+      sessionFactory: ({ actor, purpose, connectionPolicy, connection }) => {
+        sessionFactoryCalls.push({ actor, purpose, connectionPolicy, connection });
+        assert.ok(Object.hasOwn(actorIds, actor));
         const session = new FakeMembershipSession(actor, state);
         sessions.set(actor, session);
         return session;
@@ -189,6 +193,12 @@ test("the #1029 candidate adapter proves actor-bound Join and contention through
   const contentionArtifact = aggregate.cases.find(({ case_id: caseId }) => caseId === "A1029_TWO_TRANSACTION_CONTENTION");
   const contention = JSON.parse(await fs.readFile(contentionArtifact.path, "utf8"));
   assert.deepEqual(contention.observations.attempts.map(({ outcome }) => outcome).sort(), ["already_member", "joined"]);
+  assert.deepEqual(contention.observations.contention, { actor: "eligible", connection_count: 2, connection_policy: "isolated" });
+  assert.deepEqual(contention.observations.requests.map(({ actor, connection, connection_policy }) => ({ actor, connection, connection_policy })), [
+    { actor: "eligible", connection: 0, connection_policy: "isolated" },
+    { actor: "eligible", connection: 1, connection_policy: "isolated" },
+    { actor: "administrator", connection: undefined, connection_policy: undefined },
+  ]);
   assert.equal(contention.verification.committed_relations, 1);
   assert.equal(contention.verification.stale_successes, 0);
   assert.equal(aggregate.cleanup.public_absence_verified, true);
@@ -197,4 +207,36 @@ test("the #1029 candidate adapter proves actor-bound Join and contention through
   assert.equal(state.member, false);
   assert.equal(state.pages.size, 0);
   assert.equal(sessions.size, 4);
+  assert.deepEqual(sessionFactoryCalls, [
+    { actor: "administrator", purpose: "primary", connectionPolicy: undefined, connection: undefined },
+    { actor: "eligible", purpose: "primary", connectionPolicy: undefined, connection: undefined },
+    { actor: "pending", purpose: "primary", connectionPolicy: undefined, connection: undefined },
+    { actor: "banned", purpose: "primary", connectionPolicy: undefined, connection: undefined },
+    { actor: "eligible", purpose: "contention", connectionPolicy: "isolated", connection: 0 },
+    { actor: "eligible", purpose: "contention", connectionPolicy: "isolated", connection: 1 },
+  ]);
+});
+
+test("the #1029 contention clients require separate HTTP connections", async () => {
+  const privateInput = {
+    deepwell_rpc_url: "http://127.0.0.1:12747/jsonrpc",
+    object_store_origin: "http://127.0.0.1:19000/",
+    presigned_origin: "http://127.0.0.1:19000/",
+    deepwell_rpc_token: hash("a"),
+    tls_ca_pem: "candidate-ca",
+    actors: { editor: { user_id: actorIds.eligible, session_token: "session-eligible" } },
+  };
+  const calls = [];
+  const requestImpl = async (request) => {
+    calls.push(request);
+    return { status: 200, headers: {}, body: Buffer.from(JSON.stringify({ jsonrpc: "2.0", id: 1, result: { user_id: actorIds.eligible } })) };
+  };
+  const session = new CandidateHttpSession({
+    candidateIdentity: candidateIdentity(),
+    privateInput,
+    connectionPolicy: "isolated",
+    requestImpl,
+  });
+  await session.rpc("session_get", ["session-eligible"]);
+  assert.equal(calls[0].agent, false);
 });

@@ -365,7 +365,32 @@ test("unsupported sidecar actions fail closed without calling authored names", a
   assert.equal(called, false)
 })
 
-test("an action stays busy until its observable operation settles", async () => {
+test("edit stays visibly busy while overlapping Wikidot activations settle", async () => {
+  const releases = []
+  let calls = 0
+  const element = actionElement()
+  const runtime = {
+    edit: async () => {
+      calls += 1
+      await new Promise((resolve) => releases.push(resolve))
+    }
+  }
+
+  const first = performWikidotLegacyAction(element, { type: "edit" }, runtime)
+  const second = performWikidotLegacyAction(element, { type: "edit" }, runtime)
+  assert.equal(calls, 2)
+  assert.equal(element.getAttribute("aria-busy"), "true")
+
+  releases[1]()
+  assert.equal(await second, true)
+  assert.equal(element.getAttribute("aria-busy"), "true")
+
+  releases[0]()
+  assert.equal(await first, true)
+  assert.equal(element.getAttribute("aria-busy"), null)
+})
+
+test("non-edit standalone actions remain serialized while busy", async () => {
   let release
   let calls = 0
   const operation = new Promise((resolve) => {
@@ -373,14 +398,14 @@ test("an action stays busy until its observable operation settles", async () => 
   })
   const element = actionElement()
   const runtime = {
-    edit: async () => {
+    print: async () => {
       calls += 1
       await operation
     }
   }
 
-  const first = performWikidotLegacyAction(element, { type: "edit" }, runtime)
-  const repeated = await performWikidotLegacyAction(element, { type: "edit" }, runtime)
+  const first = performWikidotLegacyAction(element, { type: "print" }, runtime)
+  const repeated = await performWikidotLegacyAction(element, { type: "print" }, runtime)
   assert.equal(repeated, false)
   assert.equal(calls, 1)
   assert.equal(element.getAttribute("aria-busy"), "true")

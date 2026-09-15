@@ -107,6 +107,7 @@ pub use self::render_dependency::{
 pub(crate) use self::replay::{
     RenderReplayService, RenderReplaySettings, run_worker_action,
 };
+pub(crate) use self::runtime_modules::has_theme_previewer_no_ui;
 pub use self::service::RenderService;
 pub(crate) use self::service::{
     CorpusReplayExpandedWikitext, CorpusReplayPreparationStage,

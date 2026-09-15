@@ -7,6 +7,7 @@ import { STANDING_BROWSER_EXECUTION_MODULES } from "./standing-browser-execution
 import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
 import {
   requirePlainObject,
+  requireSha256,
   sha256Text,
   sha256Value,
 } from "./standing-browser-parity-util.mjs";
@@ -119,23 +120,50 @@ function pagePath(pageSlugValue) {
   return `/${encodeURIComponent(pageSlugValue)}`;
 }
 
-function verifyRegistry(value, name, expectedActions) {
+function verifyRegistry(value, name, { siteId, pageId, revisionId, ratingType }) {
   const registry = requirePlainObject(value, `${name} registry`);
-  if (!Number.isSafeInteger(registry.page_id) || !Number.isSafeInteger(registry.revision_id)) {
+  if (
+    registry.site_id !== siteId ||
+    registry.page_id !== pageId ||
+    registry.revision_id !== revisionId
+  ) {
     throw new Error(`${name} registry identity drifted`);
   }
-  if (!Array.isArray(registry.actions) || registry.actions.length !== expectedActions) {
+  const expectedActions = ratingType === "plus_minus"
+    ? [["rate", 1], ["rate", -1], ["rate-cancel"]]
+    : [1, 2, 3, 4, 5].map((value) => ["rate", value]);
+  if (!Array.isArray(registry.actions) || registry.actions.length !== expectedActions.length) {
     throw new Error(`${name} registry action count drifted`);
   }
+  registry.actions.forEach((action, index) => {
+    const expected = expectedActions[index];
+    const keys = Object.keys(action ?? {}).sort();
+    const expectedKeys = ["fingerprint", "index", "type", ...(expected[0] === "rate" ? ["value"] : [])].sort();
+    if (
+      action?.type !== expected[0] ||
+      action.index !== index ||
+      (expected[0] === "rate" && action.value !== expected[1]) ||
+      !/^[0-9a-f]{32}$/u.test(action.fingerprint ?? "") ||
+      JSON.stringify(keys) !== JSON.stringify(expectedKeys)
+    ) {
+      throw new Error(`${name} registry action ${index} drifted`);
+    }
+  });
   return {
+    site_id: registry.site_id,
     page_id: registry.page_id,
     revision_id: registry.revision_id,
-    actions: registry.actions,
+    actions: structuredClone(registry.actions),
   };
 }
 
-function requirePointState(value, label, score) {
-  if (value.present !== true || value.score !== score) throw new Error(`A1030 point ${label} state drifted`);
+function requirePointState(value, label, score, { busy = false, errorPopup = false } = {}) {
+  if (
+    value.present !== true ||
+    value.score !== score ||
+    value.busy !== busy ||
+    value.error_popup_visible !== errorPopup
+  ) throw new Error(`A1030 point ${label} state drifted`);
   if (value.rateup_count !== 1 || value.ratedown_count !== 1 || value.cancel_count !== 1) {
     throw new Error(`A1030 point ${label} control count drifted`);
   }
@@ -143,8 +171,14 @@ function requirePointState(value, label, score) {
   return { score: value.score, controls_verified: true };
 }
 
-function requireStarState(value, label, score) {
-  if (value.present !== true || value.hidden_score !== score || value.data_rating !== score) {
+function requireStarState(value, label, score, { busy = false, errorPopup = false } = {}) {
+  if (
+    value.present !== true ||
+    value.hidden_score !== score ||
+    value.data_rating !== score ||
+    value.busy !== busy ||
+    value.error_popup_visible !== errorPopup
+  ) {
     throw new Error(`A1030 star ${label} state drifted`);
   }
   if (value.star_image_count !== 5) throw new Error(`A1030 star ${label} raty image count drifted`);
@@ -201,12 +235,15 @@ function requireCache(value, label, score) {
 
 function verifyBrowserCase(caseId, observations, plan) {
   const value = requirePlainObject(observations, `${caseId} observations`);
+  if (value.point_slug !== plan?.point_slug || value.star_slug !== plan?.star_slug) {
+    throw new Error(`${caseId} browser observations are not bound to the prepared Rate fixtures`);
+  }
   const point = requirePlainObject(value.point, `${caseId} point mode`);
   const star = requirePlainObject(value.star, `${caseId} star mode`);
 
   requireInitialCapture(point.initial_capture, "A1030 point");
   requirePointState(point.initial, "initial", "0");
-  requirePointState(point.busy, "busy", "0");
+  requirePointState(point.busy, "busy", "0", { busy: true });
   if (point.busy.busy !== true || point.keyboard_focus !== true) {
     throw new Error(`A1030 point keyboard activation did not preserve focus and expose a busy interval`);
   }
@@ -221,8 +258,7 @@ function verifyBrowserCase(caseId, observations, plan) {
   }
   requireNavigation(point.navigation, "A1030 point", "0");
   requireCsrf(point.csrf, "A1030 point", "0");
-  requirePointState(point.error, "error", "0");
-  if (point.error.busy === true || point.error.error_popup_visible !== true) throw new Error(`A1030 point failure did not settle into the public error surface`);
+  requirePointState(point.error, "error", "0", { errorPopup: true });
   requireCache(point.cache, "A1030 point", "0");
   if (point.forged?.payload_type !== "failure") throw new Error(`A1030 point forged rate request was not rejected`);
   if (!Number.isSafeInteger(point.mutation_request_count) || point.mutation_request_count < 6) {
@@ -231,7 +267,7 @@ function verifyBrowserCase(caseId, observations, plan) {
 
   requireInitialCapture(star.initial_capture, "A1030 star");
   requireStarState(star.initial, "initial", "0");
-  requireStarState(star.busy, "busy", "0");
+  requireStarState(star.busy, "busy", "0", { busy: true });
   if (star.busy.busy !== true) throw new Error(`A1030 star click did not expose a busy interval`);
   if (star.focusable_image_count !== 0 || star.tabindex_attribute_count !== 0) {
     throw new Error(`A1030 star DOM invented a keyboard-focus affordance absent from the Wikidot oracle`);
@@ -246,8 +282,7 @@ function verifyBrowserCase(caseId, observations, plan) {
   }
   requireNavigation(star.navigation, "A1030 star", "3");
   requireCsrf(star.csrf, "A1030 star", "3");
-  requireStarState(star.error, "error", "3");
-  if (star.error.busy === true || star.error.error_popup_visible !== true) throw new Error(`A1030 star failure did not settle into the public error surface`);
+  requireStarState(star.error, "error", "3", { errorPopup: true });
   requireCache(star.cache, "A1030 star", "3");
   if (star.forged?.payload_type !== "failure") throw new Error(`A1030 star forged rate request was not rejected`);
   if (!Number.isSafeInteger(star.mutation_request_count) || star.mutation_request_count < 5) {
@@ -289,7 +324,14 @@ function verifyCommandResults(results, commands, caseId) {
   results.forEach((result, index) => {
     const row = requirePlainObject(result, `${caseId} command result ${index}`);
     if (JSON.stringify(row.command) !== JSON.stringify(commands[index])) throw new Error(`${caseId} command ${index} drifted`);
-    if (row.exit_code !== 0 || row.spawn_error !== undefined) throw new Error(`${caseId} command ${index} failed`);
+    if (
+      row.exit_code !== 0 ||
+      row.signal !== null ||
+      row.spawn_error !== undefined ||
+      !Number.isSafeInteger(row.duration_ms) ||
+      row.duration_ms < 0
+    ) throw new Error(`${caseId} command ${index} failed`);
+    requireSha256(row.output_sha256, `${caseId} command ${index} output SHA-256`);
   });
   return { verified: true, command_count: results.length, exit_statuses: results.map(({ exit_code }) => exit_code) };
 }
@@ -326,6 +368,7 @@ class Open43A1030Run {
   #pointPage = null;
   #starPage = null;
   #pageResources = [];
+  #categoryRatingTypes = new Map();
   #plans = new Map();
 
   constructor({ sessionFactory, sessions, browser, cargoRunner, resources, runId, candidateIdentity, baseInput }) {
@@ -406,6 +449,7 @@ class Open43A1030Run {
       category,
     }, { siteId: this.#siteId });
     if (!Number.isSafeInteger(pageCategory?.category_id)) throw new Error(`A1030 category_get did not return ${category}`);
+    this.#categoryRatingTypes.set(category, ratingType);
     await this.#setCategoryRating(category, ratingType, true);
     await this.#rpc("administrator", "page_rerender", {
       site_id: this.#siteId,
@@ -418,11 +462,18 @@ class Open43A1030Run {
       route: { slug, extra: "" },
       locales: ["en-US", "en"],
     });
-    const registry = verifyRegistry(viewed?.data?.rate_actions, slug, ratingType === "plus_minus" ? 3 : 5);
+    const registry = verifyRegistry(viewed?.data?.rate_actions, slug, {
+      siteId: this.#siteId,
+      pageId: created.page_id,
+      revisionId: created.revision_id,
+      ratingType,
+    });
     return { created, registry, category_id: pageCategory.category_id };
   }
 
   async #executeBrowserCase() {
+    this.#categoryRatingTypes.set(this.#pointCategory, "plus_minus");
+    this.#categoryRatingTypes.set(this.#starCategory, "stars");
     const point = await this.#createRateFixture(this.#pointSlug, this.#pointCategory, "plus_minus");
     this.#pointPage = point.created;
     this.#pageResources.push({ slug: point.created.slug, token: this.#resources.register("page", {
@@ -455,8 +506,8 @@ class Open43A1030Run {
     return [{
       case_id: OPEN43_A1030_CASE_IDS[2],
       observations: {
-        point_slug: this.#pointSlug,
-        star_slug: this.#starSlug,
+        point_slug: browser.point_slug ?? this.#pointSlug,
+        star_slug: browser.star_slug ?? this.#starSlug,
         point: browser.point,
         star: browser.star,
       },
@@ -514,6 +565,13 @@ class Open43A1030Run {
         if (this.#starSlug !== null) await this.#deletePage(this.#starSlug, { cleanup: true });
         if (this.#pointCategory !== null) await this.#setCategoryRating(this.#pointCategory, "plus_minus", false, { cleanup: true });
         if (this.#starCategory !== null) await this.#setCategoryRating(this.#starCategory, "stars", false, { cleanup: true });
+        for (const [category, ratingType] of this.#categoryRatingTypes) {
+          const restored = await this.#rpc("administrator", "category_get", {
+            site: this.#siteId,
+            category,
+          }, { cleanup: true });
+          if (restored?.rating_enabled !== false || restored?.rating_type !== ratingType) ratingAfter = false;
+        }
       }
     } catch (error) {
       failures.push(error);
@@ -564,6 +622,8 @@ const SOURCE_FILES = Object.freeze([
     "deepwell/src/services/vote/service.rs",
     "deepwell/src/services/score/service.rs",
     "deepwell/src/services/render/rate_actions.rs",
+    "deepwell/migrations/20260723140000_page_category_rating.sql",
+    "deepwell/migrations/20260809040000_page_vote_current_unique.sql",
     "deepwell/tests/vote.rs",
     "deepwell/tests/vote_authorization.rs",
     "deepwell/tests/vote_concurrency.rs",

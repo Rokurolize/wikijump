@@ -652,7 +652,8 @@ test("#1046 runs its three public cases without changing unrelated settings", as
   const actions = events.filter(({ seam }) => seam === "action").map(({ name }) => name);
   assert.equal(actions.includes("theme"), false);
   assert.equal(actions.includes("toolbar"), false);
-  assert.equal(actions.filter((name) => name === "analytics").length, 1);
+  assert.equal(actions.includes("analytics"), false);
+  assert.equal(actions.includes("site"), true);
   assert.deepEqual(events.filter(({ seam, label }) => seam === "browser-adapter" && label !== undefined).map(({ label }) => label), ["S1046_ADMIN", "S1046_ADMIN"]);
 });
 

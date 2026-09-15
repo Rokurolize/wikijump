@@ -82,6 +82,7 @@ const EXTERNAL_THEME_HOSTS = new Set([
   "scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com"
 ])
 
+// S755_EXTERNAL_RESOURCE_FAILURE_POLICY: admission only; the browser owns redirects, timeouts, MIME, and transfer-size failures, with no server fetch or stale fallback.
 const isAllowedExternalThemeUrl = (url) =>
   url.protocol === "https:" &&
   url.port === "" &&
@@ -124,6 +125,32 @@ export const normalizeThemeSetting = (theme) => {
   }
   return { ...BUILT_IN_THEME }
 }
+
+/**
+ * Normalize a browser-requested ThemePreviewer stylesheet with the same
+ * policy used for stored external themes. Invalid values fail closed so the
+ * browser keeps the stored site theme and no server-side stylesheet fetch is
+ * needed.
+ *
+ * @param {unknown} value
+ * @returns {string | null}
+ */
+export const normalizeThemePreviewUrl = (value) => {
+  const normalized = normalizeThemeSetting({ type: "external", url: value })
+  return normalized.type === "external" ? normalized.url : null
+}
+
+/**
+ * Resolve a browser-requested ThemePreviewer stylesheet only when Deepwell's
+ * source-owned PageView sidecar recognizes an executable noUi invocation.
+ * This boundary deliberately does not inspect wikitext or compiled HTML.
+ *
+ * @param {unknown} themePreviewerNoUi
+ * @param {unknown} value
+ * @returns {string | null}
+ */
+export const resolveThemePreviewUrl = (themePreviewerNoUi, value) =>
+  themePreviewerNoUi === true ? normalizeThemePreviewUrl(value) : null
 
 export const customThemeHeadHtml = (theme) => {
   const normalized = normalizeThemeSetting(theme)

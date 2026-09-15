@@ -42,6 +42,7 @@ const MUTATING_SERVICE_CALLS = new Set([
   "MessageService::create_draft", "MessageService::delete_draft", "MessageService::send", "MessageService::update_draft",
   "MfaService::disable", "MfaService::reset_recovery_codes", "MfaService::setup",
   "PageLockService::create", "PageLockService::remove",
+  "PageDraftService::remove", "PageDraftService::save",
   "PageMetaTagService::delete", "PageMetaTagService::set",
   "PageRevisionService::rerender", "PageRevisionService::update",
   "PageService::create", "PageService::delete", "PageService::edit", "PageService::r#move", "PageService::restore", "PageService::rollback", "PageService::set_layout",

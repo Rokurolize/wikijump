@@ -30,6 +30,8 @@ const MAX_CENTER_DELTA = 0.5;
 const MEDIUM_RESIZE_LONGEST_SIDE = 500;
 const INITIAL_BYTES = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAQAAAACAQMAAABFZu8gAAAAA1BMVEX/AAAZ4gk3AAAADElEQVQI12NgYGAAAAAEAAEnNCcKAAAAAElFTkSuQmCC", "base64");
 const SECOND_BYTES = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAAEAQMAAACeIXx6AAAAA1BMVEUAAP+KeNJXAAAAC0lEQVQI12NggAAAAAgAAS8g3TEAAAAASUVORK5CYII=", "base64");
+const M776_POSITIVE_SOURCE = '[[f=image float.png width="100px" alt="G06_IMAGE_ALT"]]';
+const M776_NEGATIVE_SOURCE = "[[f=image\u00a0float.png width=\"100px\" alt=\"G06_IMAGE_ALT\"]]";
 const EVIDENCE_BY_CASE = Object.freeze({
   M756_BROWSER_CACHE_TRANSITIONS: "E_ICON_OBSERVATIONS",
   M776_BROWSER_GEOMETRY_AND_NETWORK: "E_G06",
@@ -40,6 +42,12 @@ const EVIDENCE_BY_CASE = Object.freeze({
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const object = (value, name) => requirePlainObject(value, name);
+const GALLERY_EXPECTED_FILES = Object.freeze([
+  Object.freeze({ filename: "gallery-one.png", sha256: sha256(INITIAL_BYTES), width: 100, height: 50 }),
+  Object.freeze({ filename: "gallery-two.png", sha256: sha256(SECOND_BYTES), width: 50, height: 100 }),
+  Object.freeze({ filename: "gallery-disabled.png", sha256: sha256(INITIAL_BYTES), width: 100, height: 50 }),
+  Object.freeze({ filename: "gallery-broken.png", sha256: sha256(INITIAL_BYTES), width: 100, height: 50 }),
+]);
 
 function docker(args) {
   const result = spawnSync(DOCKER, args, {
@@ -274,6 +282,21 @@ function lightboxSnapshot() {
     current_number: document.querySelector("#lightbox-image-details-currentNumber")?.textContent?.trim() ?? "",
     image_url: image instanceof HTMLImageElement ? image.currentSrc || image.src : null,
     active_element: document.activeElement instanceof HTMLElement ? (document.activeElement.id || document.activeElement.localName) : "",
+    document_token: globalThis.__open43MediaDocumentToken ?? null,
+  };
+}
+
+function galleryImageSnapshot() {
+  return {
+    galleries: [...document.querySelectorAll("#page-content .gallery-box")].map((gallery) => ({
+      id: gallery.id,
+      images: [...gallery.querySelectorAll("img")].map((image) => ({
+        complete: image.complete,
+        natural_width: image.naturalWidth,
+        natural_height: image.naturalHeight,
+        source_url: image.currentSrc || image.src,
+      })),
+    })),
   };
 }
 
@@ -465,10 +488,10 @@ class Open43MediaBrowserRun {
     await this.#upload(negative, filename, INITIAL_BYTES);
     const positiveSource = centered
       ? `[[=image ${filename} width="100px"]]\n[[=image  ${filename}  width="100px"]]`
-      : `[[f<image ${filename} width="100px" alt="G06_IMAGE_ALT"]]`;
+      : M776_POSITIVE_SOURCE;
     const negativeSource = centered
       ? `[[=image\u00a0${filename} width="100px"]]`
-      : `[[f=image\u00a0${filename} width="100px" alt="G06_IMAGE_ALT"]]`;
+      : M776_NEGATIVE_SOURCE;
     await this.#editPage(positive, positiveSource);
     await this.#editPage(negative, negativeSource);
     const positivePage = await this.#rpc("page_get", { site_id: this.#siteId, page: positive.slug, details: { wikitext: true, compiled: true } });
@@ -487,27 +510,66 @@ class Open43MediaBrowserRun {
     const pageFixture = await this.#createPage("gallery", "GALLERY_FIXTURE_PENDING");
     await this.#upload(pageFixture, "gallery-one.png", INITIAL_BYTES);
     await this.#upload(pageFixture, "gallery-two.png", SECOND_BYTES);
-    const source = "[[gallery]]\n: gallery-one.png\n: gallery-two.png\n[[/gallery]]";
+    await this.#upload(pageFixture, "gallery-disabled.png", INITIAL_BYTES);
+    await this.#upload(pageFixture, "gallery-broken.png", INITIAL_BYTES);
+    const source = [
+      "[[gallery]]",
+      ": gallery-one.png",
+      ": gallery-two.png",
+      "[[/gallery]]",
+      "",
+      "[[gallery viewer=\"false\"]]",
+      ": gallery-disabled.png",
+      "[[/gallery]]",
+      "",
+      "[[gallery]]",
+      ": gallery-broken.png",
+      "[[/gallery]]",
+    ].join("\n");
     await this.#editPage(pageFixture, source);
     const publicPage = await this.#rpc("page_get", { site_id: this.#siteId, page: pageFixture.slug, details: { wikitext: true, compiled: true } });
-    if (publicPage?.wikitext !== source || !publicPage.compiled_body_html?.includes("gallery-box")) throw new Error("M1043 public Gallery fixture is missing");
+    if (publicPage?.wikitext !== source || (publicPage.compiled_body_html?.match(/gallery-box-/gu) ?? []).length !== 3) throw new Error("M1043 public Gallery fixture is missing");
 
     const owned = await this.#browser.newCandidateContext({ viewport: DEFAULT_VIEWPORT });
     const browserPage = await owned.context.newPage();
     const diagnostics = attachDiagnostics(browserPage);
+    const enabledViewerPaths = new Set([
+      `/local--files/${pageFixture.slug}/gallery-one.png`,
+      `/local--files/${pageFixture.slug}/gallery-two.png`,
+    ]);
+    const viewerImageRequests = trackRequestQuiescence(
+      browserPage,
+      (request) => request.method() === "GET" && request.resourceType() === "image" && enabledViewerPaths.has(new URL(request.url()).pathname),
+    );
     await installCspProbe(browserPage);
-    await browserPage.route("**/-/file/**", async (route) => {
+    await browserPage.addInitScript(() => {
+      globalThis.__open43MediaDocumentToken = crypto.randomUUID();
+    });
+    await browserPage.route("**/local--files/**", async (route) => {
+      if (route.request().url().includes("/gallery-broken.png")) {
+        await route.fulfill({ status: 200, contentType: "image/png", body: "not-a-png" });
+        return;
+      }
       await new Promise((resolve) => setTimeout(resolve, 200));
       await route.fallback();
     });
     try {
       const url = candidateUrl(this.#session.pageOrigin, pageFixture.slug);
       if ((await browserPage.goto(url, { waitUntil: "domcontentloaded", timeout: 300_000 }))?.status() !== 200) throw new Error("M1043 browser navigation failed");
-      const anchors = browserPage.locator("#page-content .gallery-box a.with-lb");
-      if (await anchors.count() !== 2) throw new Error("M1043 Gallery did not render two viewer anchors");
-      const staticState = await anchors.evaluateAll((nodes) => nodes.map((node) => ({ href: node.href, image_src: node.querySelector("img")?.src ?? null })));
-      await anchors.first().click({ timeout: 300_000 });
+      const enabledAnchors = browserPage.locator("#gallery-box-1 a.with-lb");
+      const disabledAnchors = browserPage.locator("#gallery-box-2 a.with-lb");
+      const brokenAnchors = browserPage.locator("#gallery-box-3 a.with-lb");
+      if (await enabledAnchors.count() !== 2 || await disabledAnchors.count() !== 1 || await brokenAnchors.count() !== 1) throw new Error("M1043 Gallery did not render the expected viewer anchors");
+      const anchorSnapshot = async (locator) => await locator.evaluateAll((nodes) => nodes.map((node) => ({ href: node.href, image_src: node.querySelector("img")?.src ?? null })));
+      const staticState = await anchorSnapshot(enabledAnchors);
+      const disabledStatic = await anchorSnapshot(disabledAnchors);
+      const brokenStatic = await anchorSnapshot(brokenAnchors);
+      const initialThumbnails = await browserPage.evaluate(galleryImageSnapshot);
+      await browserPage.waitForFunction(() => [...document.querySelectorAll("#page-content .gallery-box img")].every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0), null, { timeout: 300_000 });
+      const settledThumbnails = await browserPage.evaluate(galleryImageSnapshot);
+      await browserPage.locator("#gallery-box-1 a.with-lb").first().click({ timeout: 300_000 });
       const loading = await browserPage.evaluate(lightboxSnapshot);
+      await viewerImageRequests.waitForQuiet();
       await browserPage.locator("#lightbox-image").waitFor({ state: "visible", timeout: 300_000 });
       const first = await browserPage.evaluate(lightboxSnapshot);
       await browserPage.keyboard.press("ArrowRight");
@@ -516,6 +578,7 @@ class Open43MediaBrowserRun {
         "image 2 of 2",
         { timeout: 300_000 },
       );
+      await viewerImageRequests.waitForQuiet();
       const next = await browserPage.evaluate(lightboxSnapshot);
       await browserPage.keyboard.press("p");
       await browserPage.waitForFunction(
@@ -523,11 +586,40 @@ class Open43MediaBrowserRun {
         "image 1 of 2",
         { timeout: 300_000 },
       );
+      await viewerImageRequests.waitForQuiet();
       const previous = await browserPage.evaluate(lightboxSnapshot);
-      await browserPage.keyboard.press("Escape");
+      await browserPage.locator("#jquery-overlay").click({ position: { x: 1, y: 1 } });
+      const overlayClosed = await browserPage.evaluate(lightboxSnapshot);
+
+      await browserPage.goto(url, { waitUntil: "domcontentloaded", timeout: 300_000 });
+      await browserPage.locator("#gallery-box-2 a.with-lb").click({ timeout: 300_000 });
+      const disabledNavigation = { pathname: new URL(browserPage.url()).pathname, lightbox_count: await browserPage.locator("#jquery-lightbox").count() };
+
+      await browserPage.goto(url, { waitUntil: "domcontentloaded", timeout: 300_000 });
+      await browserPage.locator("#gallery-box-3 a.with-lb").click({ timeout: 300_000 });
+      const failure = await browserPage.evaluate(lightboxSnapshot);
+      await browserPage.keyboard.press("x");
       const closed = await browserPage.evaluate(lightboxSnapshot);
-      return { url, source_sha256: sha256(source), static: staticState, loading, first, next, previous, closed, diagnostics: await finishDiagnostics(browserPage, diagnostics) };
+      return {
+        url,
+        source_sha256: sha256(source),
+        expected_files: GALLERY_EXPECTED_FILES,
+        static: staticState,
+        disabled_static: disabledStatic,
+        broken_static: brokenStatic,
+        thumbnails: { initial: initialThumbnails, settled: settledThumbnails },
+        loading,
+        first,
+        next,
+        previous,
+        overlay_closed: overlayClosed,
+        disabled_navigation: disabledNavigation,
+        failure,
+        closed,
+        diagnostics: await finishDiagnostics(browserPage, diagnostics),
+      };
     } finally {
+      viewerImageRequests.close();
       await browserPage.close().catch(() => undefined);
     }
   }
@@ -700,7 +792,7 @@ function cleanDiagnostics(value, name, { allowCandidateFailure = null, maxAllowe
   }
   if (allowedFailureCount > maxAllowedCandidateFailures) throw new Error(`${name} recorded too many tolerated candidate-owned lifecycle cancellations`);
   if (!Array.isArray(diagnostics.page_errors) || diagnostics.page_errors.length !== 0) throw new Error(`${name} emitted page errors`);
-  if (!Array.isArray(diagnostics.console_errors) || diagnostics.console_errors.length !== 0) throw new Error(`${name} emitted console errors`);
+  if (!Array.isArray(diagnostics.console_errors) || diagnostics.console_errors.length !== 0) throw new Error(`${name} emitted console errors: ${JSON.stringify(diagnostics.console_errors)}`);
   if (!Array.isArray(diagnostics.csp_violations) || diagnostics.csp_violations.some(({ blocked_uri }) => typeof blocked_uri === "string" && candidateOwnedUrl(blocked_uri))) throw new Error(`${name} violated CSP at a candidate-owned boundary`);
   return diagnostics;
 }
@@ -709,17 +801,28 @@ function imagePath(caseId, value, centered) {
   const observation = object(value, `${caseId} observations`);
   cleanDiagnostics(observation.positive, `${caseId}.positive`);
   cleanDiagnostics(observation.negative, `${caseId}.negative`);
+  const initial = object(observation.positive.initial, `${caseId}.positive.initial`);
   const positive = object(observation.positive.settled, `${caseId}.positive.settled`);
   const responsive = object(observation.positive.responsive, `${caseId}.positive.responsive`);
+  const negativeInitial = object(observation.negative.initial, `${caseId}.negative.initial`);
   const negative = object(observation.negative.settled, `${caseId}.negative.settled`);
+  const negativeResponsive = object(observation.negative.responsive, `${caseId}.negative.responsive`);
   const expectedCount = centered ? 2 : 1;
-  if (!Array.isArray(positive.images) || positive.images.length !== expectedCount || !Array.isArray(responsive.images) || responsive.images.length !== expectedCount) throw new Error(`${caseId} positive image denominator is wrong`);
-  if (!Array.isArray(negative.images) || negative.images.length !== 0) throw new Error(`${caseId} negative whitespace control acquired image ownership`);
   const expectedFile = object(observation.expected_file, `${caseId}.expected_file`);
-  for (const [phase, snapshot] of [["settled", positive], ["responsive", responsive]]) for (const image of snapshot.images) {
+  const expectedClass = centered ? "aligncenter" : "image-container";
+  if (!centered) {
+    const source = object(observation.source, `${caseId}.source`);
+    if (source.positive_sha256 !== sha256(M776_POSITIVE_SOURCE) || source.negative_sha256 !== sha256(M776_NEGATIVE_SOURCE)) throw new Error(`${caseId} source fixture drifted from retained G06 syntax`);
+  }
+  if (expectedFile.filename !== (centered ? "center.png" : "float.png") || expectedFile.width !== MEDIUM_RESIZE_LONGEST_SIDE || expectedFile.height !== MEDIUM_RESIZE_LONGEST_SIDE / 2 || expectedFile.source_width !== 4 || expectedFile.source_height !== 2 || expectedFile.byte_sha256 !== sha256(INITIAL_BYTES)) throw new Error(`${caseId} expected file contract drifted`);
+  const phases = [["initial", initial], ["settled", positive], ["responsive", responsive]];
+  if (phases.some(([, snapshot]) => !Array.isArray(snapshot.images) || snapshot.images.length !== expectedCount)) throw new Error(`${caseId} positive image denominator is wrong`);
+  if ([negativeInitial, negative, negativeResponsive].some((snapshot) => !Array.isArray(snapshot.images) || snapshot.images.length !== 0)) throw new Error(`${caseId} negative whitespace control acquired image ownership`);
+  for (const [phase, snapshot] of phases) for (const image of snapshot.images) {
     if (image.complete !== true || image.natural_width !== expectedFile.width || image.natural_height !== expectedFile.height) throw new Error(`${caseId} ${phase} image load state or natural geometry is wrong`);
-    if (image.width_attribute !== "100px" || image.computed_width !== "100px" || Math.abs(image.rendered_width - 100) > 0.5) throw new Error(`${caseId} ${phase} image width is wrong`);
-    if (centered ? !String(image.container_class).split(/\s+/u).includes("aligncenter") : !String(image.container_class).split(/\s+/u).includes("floatleft")) throw new Error(`${caseId} ${phase} image alignment class is wrong`);
+    if (image.width_attribute !== "100px" || image.computed_width !== "100px" || Math.abs(image.rendered_width - 100) > 0.5 || Math.abs(image.rendered_height - 50) > 0.5) throw new Error(`${caseId} ${phase} image width is wrong`);
+    const classes = String(image.container_class).split(/\s+/u);
+    if (centered ? !classes.includes(expectedClass) : classes.includes("floatleft") || classes.includes("floatright") || !classes.includes(expectedClass)) throw new Error(`${caseId} ${phase} image alignment class is wrong`);
     if (centered && (!Number.isFinite(image.center_delta) || image.center_delta > MAX_CENTER_DELTA)) throw new Error(`${caseId} ${phase} image is not centered`);
     const source = new URL(image.source_url);
     const target = new URL(image.click_target_url);
@@ -727,9 +830,51 @@ function imagePath(caseId, value, centered) {
     if (!target.hostname.endsWith(".wjfiles.localhost") || target.pathname !== `/local--files/${new URL(observation.positive.url).pathname.slice(1)}/${expectedFile.filename}`) throw new Error(`${caseId} click target route is wrong`);
   }
   const requiredPath = `/local--resized-images/${new URL(observation.positive.url).pathname.slice(1)}/${expectedFile.filename}/medium.jpg`;
-  if (!observation.positive.diagnostics.candidate_requests.some(({ pathname }) => pathname === requiredPath)) throw new Error(`${caseId} omitted the exact image request`);
+  if (!observation.positive.diagnostics.candidate_requests.some(({ method, resource_type, pathname }) => method === "GET" && resource_type === "image" && pathname === requiredPath)) throw new Error(`${caseId} omitted the exact image request`);
   if (observation.negative.diagnostics.candidate_requests.some(({ pathname }) => pathname.endsWith(`/${expectedFile.filename}/medium.jpg`))) throw new Error(`${caseId} negative control requested the image`);
   return { verified: true, natural_width: expectedFile.width, natural_height: expectedFile.height, responsive_viewport: responsive.viewport, image_request_path: requiredPath, negative_boundary_verified: true };
+}
+
+function verifyGalleryAnchors(caseId, rawAnchors, expectedFiles, pageSlug) {
+  if (!Array.isArray(rawAnchors) || rawAnchors.length !== expectedFiles.length) throw new Error(`${caseId} static Gallery anchor denominator is wrong`);
+  for (const [index, rawAnchor] of rawAnchors.entries()) {
+    const anchor = object(rawAnchor, `${caseId}.static[${index}]`);
+    const href = new URL(requireNonEmptyString(anchor.href, `${caseId}.static[${index}].href`));
+    const image = new URL(requireNonEmptyString(anchor.image_src, `${caseId}.static[${index}].image_src`));
+    const expected = expectedFiles[index];
+    if (!href.hostname.endsWith(".wjfiles.localhost") || href.pathname !== `/local--files/${pageSlug}/${expected.filename}`) throw new Error(`${caseId} static Gallery original identity is wrong`);
+    if (!image.hostname.endsWith(".wjfiles.localhost") || image.pathname !== `/local--resized-images/${pageSlug}/${expected.filename}/thumbnail.jpg`) throw new Error(`${caseId} static Gallery thumbnail identity is wrong`);
+  }
+}
+
+function verifyGalleryThumbnails(caseId, rawSnapshot, pageSlug, settled) {
+  const snapshot = object(rawSnapshot, `${caseId}.thumbnails.${settled ? "settled" : "initial"}`);
+  if (!Array.isArray(snapshot.galleries) || snapshot.galleries.length !== 3) throw new Error(`${caseId} Gallery thumbnail denominator is wrong`);
+  const expectedByGallery = [
+    GALLERY_EXPECTED_FILES.slice(0, 2),
+    [GALLERY_EXPECTED_FILES[2]],
+    [GALLERY_EXPECTED_FILES[3]],
+  ];
+  for (const [galleryIndex, expectedFiles] of expectedByGallery.entries()) {
+    const gallery = object(snapshot.galleries[galleryIndex], `${caseId}.thumbnails.gallery[${galleryIndex}]`);
+    if (gallery.id !== `gallery-box-${galleryIndex + 1}` || !Array.isArray(gallery.images) || gallery.images.length !== expectedFiles.length) throw new Error(`${caseId} Gallery thumbnail shape is wrong`);
+    for (const [imageIndex, rawImage] of gallery.images.entries()) {
+      const image = object(rawImage, `${caseId}.thumbnails.gallery[${galleryIndex}].images[${imageIndex}]`);
+      const expected = expectedFiles[imageIndex];
+      if (settled && (image.complete !== true || image.natural_width !== expected.width || image.natural_height !== expected.height)) throw new Error(`${caseId} settled thumbnail geometry is wrong`);
+      const source = new URL(requireNonEmptyString(image.source_url, `${caseId}.thumbnail.source_url`));
+      if (!source.hostname.endsWith(".wjfiles.localhost") || source.pathname !== `/local--resized-images/${pageSlug}/${expected.filename}/thumbnail.jpg`) throw new Error(`${caseId} thumbnail request identity is wrong`);
+    }
+  }
+}
+
+function verifyViewerFocus(caseId, states) {
+  const tokens = states.map((state, index) => {
+    const value = object(state, `${caseId}.viewer_state[${index}]`);
+    if (typeof value.document_token !== "string" || value.document_token === "" || typeof value.active_element !== "string" || value.active_element === "") throw new Error(`${caseId} viewer focus observation is missing`);
+    return value.document_token;
+  });
+  if (tokens.some((token) => token !== tokens[0])) throw new Error(`${caseId} viewer interaction replaced the document unexpectedly`);
 }
 
 export function verifyOpen43MediaBrowserCase(caseId, observations) {
@@ -751,14 +896,27 @@ export function verifyOpen43MediaBrowserCase(caseId, observations) {
   if (caseId === "M776_BROWSER_GEOMETRY_AND_NETWORK") return imagePath(caseId, value, false);
   if (caseId === "M806_BROWSER_GEOMETRY_AND_NETWORK") return imagePath(caseId, value, true);
   if (caseId === "M1043_BROWSER_RENDER_AND_VIEWER") {
-    cleanDiagnostics(value, caseId);
-    if (!Array.isArray(value.static) || value.static.length !== 2 || value.static.some(({ href, image_src }) => !new URL(href).hostname.endsWith(".wjfiles.localhost") || !new URL(image_src).hostname.endsWith(".wjfiles.localhost"))) throw new Error(`${caseId} static Gallery file identity is wrong`);
+    const diagnostics = cleanDiagnostics(value, caseId);
+    const pageSlug = new URL(requireNonEmptyString(value.url, `${caseId}.url`)).pathname.slice(1);
+    if (JSON.stringify(value.expected_files) !== JSON.stringify(GALLERY_EXPECTED_FILES)) throw new Error(`${caseId} expected Gallery blob inputs drifted`);
+    verifyGalleryAnchors(caseId, value.static, GALLERY_EXPECTED_FILES.slice(0, 2), pageSlug);
+    verifyGalleryAnchors(caseId, value.disabled_static, [GALLERY_EXPECTED_FILES[2]], pageSlug);
+    verifyGalleryAnchors(caseId, value.broken_static, [GALLERY_EXPECTED_FILES[3]], pageSlug);
+    verifyGalleryThumbnails(caseId, value.thumbnails?.initial, pageSlug, false);
+    verifyGalleryThumbnails(caseId, value.thumbnails?.settled, pageSlug, true);
+    const requestPaths = new Set(diagnostics.candidate_requests.map(({ pathname }) => pathname));
+    for (const expected of GALLERY_EXPECTED_FILES) if (!requestPaths.has(`/local--resized-images/${pageSlug}/${expected.filename}/thumbnail.jpg`)) throw new Error(`${caseId} thumbnail request was not observed`);
     if (value.loading?.overlay_count !== 1 || value.loading.lightbox_count !== 1 || value.loading.loading_visible !== true || value.loading.image_visible !== false) throw new Error(`${caseId} loading interval is wrong`);
     if (value.first?.image_visible !== true || value.first.loading_visible !== false || value.first.current_number !== "image 1 of 2" || value.first.previous_visible !== false || value.first.next_visible !== true) throw new Error(`${caseId} first viewer state is wrong`);
     if (value.next?.current_number !== "image 2 of 2" || value.next.previous_visible !== true || value.next.next_visible !== false || value.next.image_url === value.first.image_url) throw new Error(`${caseId} next navigation state is wrong`);
     if (value.previous?.current_number !== "image 1 of 2" || value.previous.image_url !== value.first.image_url) throw new Error(`${caseId} previous keyboard state is wrong`);
+    if (value.overlay_closed?.overlay_count !== 0 || value.overlay_closed.lightbox_count !== 0) throw new Error(`${caseId} overlay close state is wrong`);
+    if (value.disabled_navigation?.pathname !== `/local--files/${pageSlug}/gallery-disabled.png` || value.disabled_navigation.lightbox_count !== 0) throw new Error(`${caseId} viewer-disabled navigation boundary is wrong`);
+    if (value.failure?.overlay_count !== 1 || value.failure.lightbox_count !== 1 || value.failure.loading_visible !== true || value.failure.image_visible !== false) throw new Error(`${caseId} failed-image loading interval is wrong`);
     if (value.closed?.overlay_count !== 0 || value.closed.lightbox_count !== 0) throw new Error(`${caseId} viewer did not close`);
-    return { verified: true, viewer_loading_verified: true, navigation_verified: true, keyboard_verified: true, close_verified: true, static_anchor_count: 2 };
+    verifyViewerFocus(caseId, [value.loading, value.first, value.next, value.previous, value.overlay_closed]);
+    verifyViewerFocus(caseId, [value.failure, value.closed]);
+    return { verified: true, thumbnail_identity_verified: true, viewer_loading_verified: true, navigation_verified: true, keyboard_verified: true, focus_verified: true, overlay_close_verified: true, disabled_navigation_verified: true, error_loading_verified: true, static_anchor_count: 2 };
   }
   if (caseId === "M1062_BROWSER_UPLOAD_FLOW") {
     const uploadPage = typeof value.url === "string" ? new URL(value.url) : null;

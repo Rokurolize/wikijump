@@ -1,5 +1,3 @@
-import { spawnSync } from "node:child_process";
-
 import {
   OPEN43_SETTINGS_LIFECYCLE_CASE_IDS,
   OPEN43_SETTINGS_LIFECYCLE_CASE_MANIFEST,
@@ -15,58 +13,19 @@ import { sha256Value } from "./standing-browser-parity-util.mjs";
 
 const SITE_SLUG = "scpaiueouiuiuiui";
 const SITE_HOST = `${SITE_SLUG}.wikijump.localhost`;
-const DOCKER = "/usr/bin/docker";
-
-function docker(args) {
-  const result = spawnSync(DOCKER, args, {
-    encoding: "utf8",
-    env: Object.fromEntries(Object.entries(process.env).filter(([key]) => !["DOCKER_CONTEXT", "DOCKER_HOST"].includes(key))),
-  });
-  if (result.error || result.status !== 0) throw new Error("S758 candidate lifecycle Docker operation failed");
-  return result.stdout.trim();
-}
-
-function databaseContainer(project) {
-  const ids = docker([
-    "ps",
-    "--filter", `label=com.docker.compose.project=${project}`,
-    "--filter", "label=com.docker.compose.service=database",
-    "--format", "{{.ID}}",
-  ]).split(/\s+/u).filter(Boolean);
-  if (ids.length !== 1 || !/^[0-9a-f]{12,64}$/u.test(ids[0])) throw new Error("S758 candidate lifecycle database container is not unique");
-  return ids[0];
-}
-
-function databaseQuery(project, sql) {
-  const container = databaseContainer(project);
-  return docker([
-    "exec", "-e", "PGPASSWORD=wikijump", container,
-    "psql", "-h", "127.0.0.1", "-U", "wikijump", "-d", "wikijump", "-Atc", sql,
-  ]);
-}
-
-function sqlString(value) {
-  return `'${String(value).replaceAll("'", "''")}'`;
-}
 
 function assignedSlug(categorySlug, next) {
   return categorySlug === "_default" ? String(next) : `${categorySlug}:${next}`;
 }
 
-function restoreAllocator(project, before, siteId, categoryId) {
-  const sql = `UPDATE page_category SET autonumber_enabled = ${before.enabled ? "TRUE" : "FALSE"}, autonumber_next = ${before.next}, settings_revision = ${before.settings_revision} WHERE site_id = ${siteId} AND category_id = ${categoryId};`;
-  const result = databaseQuery(project, sql);
-  if (result !== "UPDATE 1") throw new Error("S758 candidate lifecycle allocator restore did not update exactly one category");
-}
-
 class CandidateLifecycleOwner {
-  #candidateIdentity;
   #session;
   #plan;
   #before = null;
 
   constructor({ candidateIdentity, session, plan }) {
-    this.#candidateIdentity = candidateIdentity;
+    if (candidateIdentity?.candidate?.compose_project === undefined) throw new Error("S758 candidate lifecycle requires a sealed candidate project");
+    this.#candidateProject = candidateIdentity.candidate.compose_project;
     this.#session = session;
     this.#plan = plan;
   }
@@ -91,18 +50,27 @@ class CandidateLifecycleOwner {
     }
   }
 
-  async cleanup({ site_id: siteId, category_id: categoryId, run_owned_page_ids: pageIds }) {
+  async cleanup({ site_id: siteId, run_owned_page_ids: pageIds }) {
     if (this.#before === null) throw new Error("S758 candidate lifecycle was not prepared");
-    const titles = [this.#plan.first_title, this.#plan.second_title, this.#plan.disabled_title];
-    const discovered = databaseQuery(
-      this.#candidateIdentity.candidate.compose_project,
-      `SELECT page.page_id FROM page JOIN page_revision ON page_revision.revision_id = page.latest_revision_id WHERE page.site_id = ${siteId} AND page.deleted_at IS NULL AND page_revision.title IN (${titles.map(sqlString).join(", ")}) ORDER BY page.page_id`,
-    ).split(/\s+/u).filter(Boolean).map((value) => Number.parseInt(value, 10));
-    if (discovered.some((pageId) => !Number.isSafeInteger(pageId) || pageId <= 0)) throw new Error("S758 candidate lifecycle discovered an invalid run-owned page ID");
+    const assignedSlugs = [
+      assignedSlug(this.#plan.category_slug, this.#before.next),
+      assignedSlug(this.#plan.category_slug, this.#before.next + 1),
+    ];
+    const requestedSlugs = [this.#plan.first_requested_slug, this.#plan.second_requested_slug, this.#plan.disabled_requested_slug];
+    const allowedSlugs = new Set([...assignedSlugs, ...requestedSlugs]);
+    const discovered = [];
+    for (const slug of allowedSlugs) {
+      const page = await this.#session.rpc("page_get", { site_id: siteId, page: slug, details: { wikitext: false, compiled: false } }, { actor: "administrator", siteId, cleanup: true });
+      if (page !== null) {
+        if (!Number.isSafeInteger(page.page_id) || page.page_id <= 0 || page.slug !== slug) throw new Error("S758 candidate lifecycle discovered an invalid run-owned page");
+        discovered.push(page.page_id);
+      }
+    }
     const ownedPageIds = [...new Set([...pageIds, ...discovered])];
     for (const pageId of [...ownedPageIds].reverse()) {
       const page = await this.#session.rpc("page_get", { site_id: siteId, page: pageId, details: { wikitext: false, compiled: false } }, { actor: "administrator", siteId, cleanup: true });
       if (page !== null) {
+        if (!allowedSlugs.has(page.slug)) throw new Error("S758 candidate lifecycle cleanup refused an unowned page");
         await this.#session.rpc("page_delete", {
           site_id: siteId,
           page: page.page_id,
@@ -113,24 +81,26 @@ class CandidateLifecycleOwner {
         }, { actor: "administrator", siteId, cleanup: true });
       }
     }
-    restoreAllocator(this.#candidateIdentity.candidate.compose_project, this.#before, siteId, categoryId);
-    const category = await this.#session.rpc("category_get", { site: siteId, category: categoryId }, { actor: "administrator", siteId, cleanup: true });
-    if (category?.autonumber_enabled !== this.#before.enabled || category.autonumber_next !== this.#before.next || category.settings_revision !== this.#before.settings_revision) {
-      throw new Error("S758 candidate lifecycle allocator restore did not round-trip");
-    }
     const residual = [];
-    for (const pageId of ownedPageIds) {
-      const page = await this.#session.rpc("page_get", { site_id: siteId, page: pageId, details: { wikitext: false, compiled: false } }, { actor: "administrator", siteId, cleanup: true });
-      if (page !== null) residual.push(pageId);
+    for (const slug of allowedSlugs) {
+      const page = await this.#session.rpc("page_get", { site_id: siteId, page: slug, details: { wikitext: false, compiled: false } }, { actor: "administrator", siteId, cleanup: true });
+      if (page !== null) residual.push(slug);
     }
     return {
       public_absence_verified: residual.length === 0,
       run_owned_state_absent: residual.length === 0,
-      disposable_candidate_discarded: residual.length === 0,
       run_owned_page_ids: residual,
-      allocator_restored: true,
+      allocator_restored: false,
+      candidate_stack_disposal: {
+        status: "deferred_to_parent_run",
+        compose_project: this.#candidateProject,
+        command: "stop-promotion-candidate",
+        reason: "the monotonic allocator is restored only by discarding the disposable candidate stack",
+      },
     };
   }
+
+  #candidateProject;
 }
 
 async function defaultBrowserAdapterFactory(options) {
@@ -159,7 +129,7 @@ export function createOpen43SettingsLifecycleCandidateCaseSet({
       if (session.pageOrigin !== candidatePageOrigin(candidateIdentity)) throw new Error("S758 session did not bind the sealed editable candidate origin");
       const suffix = runId.slice("candidate-run-".length);
       const fixture = session.fixtureIdentity;
-      const category = fixture.transition_category;
+      const category = fixture.autonumber_category ?? fixture.transition_category;
       const plan = Object.freeze({
         schema: "wikijump.open43_settings_lifecycle_candidate_plan.v1",
         issue: 758,

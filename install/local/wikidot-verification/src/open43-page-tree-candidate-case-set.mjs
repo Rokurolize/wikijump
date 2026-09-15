@@ -15,20 +15,27 @@ const SOURCE_FIXTURE_PATH = "deepwell/tests/page.rs";
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const LIVE_FIXTURE = JSON.parse(fs.readFileSync(path.join(REPOSITORY_ROOT, LIVE_FIXTURE_PATH), "utf8"));
 const LIVE_PAGE_TREE_CASE = LIVE_FIXTURE.cases.find(({ case_id }) => case_id === "pagetree-depth-and-showroot");
-if (!LIVE_PAGE_TREE_CASE) throw new Error("source-owned PageTree live fixture is missing its depth case");
+const LIVE_EXPLICIT_ROOT_CASE = LIVE_FIXTURE.cases.find(({ case_id }) => case_id === "pagetree-case-sensitive-arguments-and-explicit-root");
+if (!LIVE_PAGE_TREE_CASE || !LIVE_EXPLICIT_ROOT_CASE) throw new Error("source-owned PageTree live fixture is missing its depth or explicit-root case");
 
 const PAGE_NAMES = Object.freeze({ root: "root", alpha: "alpha", beta: "beta" });
-const MODULE_SOURCE = [
-  "PT_SHOW_START",
-  '[[module PageTree showRoot="true" depth="1"]]',
-  "PT_SHOW_END",
-  "PT_INLINE_START",
-  "start-[[module PageTree]]-middle",
-  "PT_INLINE_END",
-  "PT_LIFECYCLE_START",
-  '[[module PageTree showRoot="true" depth="2"]]',
-  "PT_LIFECYCLE_END",
-].join("\n");
+
+function moduleSource(explicitRootSlug) {
+  return [
+    "PT_SHOW_START",
+    '[[module PageTree showRoot="true" depth="1"]]',
+    "PT_SHOW_END",
+    "PT_ROOT_ARG_START",
+    `[[module PageTree root="${explicitRootSlug}" showRoot="true"]]`,
+    "PT_ROOT_ARG_END",
+    "PT_INLINE_START",
+    "start-[[module PageTree]]-middle",
+    "PT_INLINE_END",
+    "PT_LIFECYCLE_START",
+    '[[module PageTree showRoot="true" depth="2"]]',
+    "PT_LIFECYCLE_END",
+  ].join("\n");
+}
 
 function pageSlug(prefix, name) {
   return `${prefix}-pagetree-${name}`;
@@ -42,22 +49,30 @@ function pageTitle(prefix, name) {
   }[name];
 }
 
-function expectedPageTree(pages, childSlugs) {
-  const rows = childSlugs.map((slug) => {
-    const name = Object.entries(pages).find(([, value]) => value.slug === slug)?.[0];
-    return `\t\t\t\t\t\t\t<li>\n\t\t\t\t\t<a href="/${slug}">${pages[name].title}</a>\n\t\t\t\t\t\t\t</li>`;
+function expectedPageTree(pages, rootName, childNames) {
+  const rows = childNames.map((name) => {
+    const page = pages[name];
+    return `\t\t\t\t\t\t\t<li>\n\t\t\t\t\t<a href="/${page.slug}">${page.title}</a>\n\t\t\t\t\t\t\t</li>`;
   }).join("\n");
-  return `\n  \n\n\n\t<ul>\n\t\t<li>\n\t\t\t<a href="/${pages.root.slug}">${pages.root.title}</a>\n\t\t\t  \n\t\t\t\t<ul>\n${rows}\n\t\t\t\t\t</ul>\n\t\t\t</li>\n\t\t</ul>\n  \n`;
+  const root = pages[rootName];
+  const childTree = rows ? `\n\t\t\t\t<ul>\n${rows}\n\t\t\t\t\t</ul>` : "";
+  return `\n  \n\n\n\t<ul>\n\t\t<li>\n\t\t\t<a href="/${root.slug}">${root.title}</a>\n\t\t\t  ${childTree}\n\t\t\t</li>\n\t\t</ul>\n  \n`;
 }
 
 function normalizeIntertagWhitespace(value) {
   return value.replace(/>\s+</gu, "><").trim();
 }
 
-function fixturePrefix(prefix) {
-  const marker = "PT_SHOW_START</p>";
-  const snippet = LIVE_PAGE_TREE_CASE.html_snippet;
-  return snippet.slice(snippet.indexOf(marker) + marker.length).replaceAll(LIVE_FIXTURE.fixture.primary_prefix, prefix);
+function fixtureRootPrefix(capture, marker, prefix) {
+  const snippet = capture.html_snippet;
+  const markerStart = snippet.indexOf(marker);
+  const anchorEnd = snippet.indexOf("</a>", markerStart);
+  if (markerStart < 0 || anchorEnd < 0) throw new Error(`PageTree live fixture is missing its ${marker} root anchor`);
+  return snippet.slice(markerStart + marker.length, anchorEnd + "</a>".length).replaceAll(LIVE_FIXTURE.fixture.primary_prefix, prefix);
+}
+
+function fixtureReference(capture) {
+  return { path: LIVE_FIXTURE_PATH, case_id: capture.case_id };
 }
 
 function between(html, start, end) {
@@ -105,13 +120,15 @@ class Open43PageTreeRun {
   #session;
   #resources;
   #prefix;
+  #moduleSource;
   #siteId = null;
   #pages = new Map();
 
-  constructor({ session, resources, prefix }) {
+  constructor({ session, resources, prefix, moduleSource: source }) {
     this.#session = session;
     this.#resources = resources;
     this.#prefix = prefix;
+    this.#moduleSource = source;
   }
 
   #page(name) {
@@ -141,7 +158,7 @@ class Open43PageTreeRun {
     const page = {
       slug: pageSlug(this.#prefix, name),
       title: pageTitle(this.#prefix, name),
-      wikitext: name === PAGE_NAMES.root ? MODULE_SOURCE : `Open43 Q779 ${name} child`,
+      wikitext: name === PAGE_NAMES.root ? this.#moduleSource : `Open43 Q779 ${name} child`,
     };
     if (await this.#getPage(name, { pageOverride: page })) throw new Error(`run-owned PageTree page already exists: ${page.slug}`);
     let created;
@@ -183,11 +200,14 @@ class Open43PageTreeRun {
     }, { actor, page: root.slug });
     const html = foundHtml(value);
     const exact = between(html, "PT_SHOW_START", "PT_SHOW_END");
+    const explicitRoot = between(html, "PT_ROOT_ARG_START", "PT_ROOT_ARG_END");
     const negative = between(html, "PT_INLINE_START", "PT_INLINE_END");
     return {
       actor,
       exact_output: exact,
       exact_output_sha256: sha256Value(exact),
+      explicit_root_output: explicitRoot,
+      explicit_root_output_sha256: sha256Value(explicitRoot),
       negative_boundary: negative,
       negative_boundary_sha256: sha256Value(negative),
       lifecycle_output: html,
@@ -195,10 +215,16 @@ class Open43PageTreeRun {
   }
 
   #assertInitial(view, pages) {
-    const expected = expectedPageTree(pages, [pages.alpha.slug, pages.beta.slug]);
-    if (!expected.startsWith(fixturePrefix(this.#prefix))) throw new Error("PageTree expected output no longer matches the source-owned live fixture indentation");
-    if (normalizeIntertagWhitespace(view.exact_output) !== normalizeIntertagWhitespace(expected)) throw new Error("PageTree public module output differs from the source-owned candidate structure");
+    const expected = expectedPageTree(pages, PAGE_NAMES.root, [PAGE_NAMES.alpha, PAGE_NAMES.beta]);
+    const expectedExplicitRoot = expectedPageTree(pages, PAGE_NAMES.alpha, []);
+    if (!expected.startsWith(fixtureRootPrefix(LIVE_PAGE_TREE_CASE, "PT_SHOW_START</p>", this.#prefix)) || !expectedExplicitRoot.startsWith(fixtureRootPrefix(LIVE_EXPLICIT_ROOT_CASE, "PT_ROOT_ARG_START</p>", this.#prefix))) throw new Error("PageTree expected output no longer matches the source-owned live fixture indentation");
+    if (normalizeIntertagWhitespace(view.exact_output) !== normalizeIntertagWhitespace(expected) || normalizeIntertagWhitespace(view.explicit_root_output) !== normalizeIntertagWhitespace(expectedExplicitRoot)) throw new Error("PageTree public module output differs from the source-owned candidate structure");
     if ((view.negative_boundary.match(/start-\[\[module PageTree\]\]-middle/gu) ?? []).length !== 1 || view.negative_boundary.includes("<ul>")) throw new Error("inline PageTree syntax crossed its negative boundary");
+  }
+
+  #assertExplicitRoot(view, pages, childNames, name) {
+    const expected = expectedPageTree(pages, PAGE_NAMES.alpha, childNames);
+    if (normalizeIntertagWhitespace(view.explicit_root_output) !== normalizeIntertagWhitespace(expected)) throw new Error(`PageTree ${name} explicit-root output drifted`);
   }
 
   async execute() {
@@ -235,6 +261,7 @@ class Open43PageTreeRun {
     await this.#removeParent(PAGE_NAMES.root, PAGE_NAMES.beta);
     await this.#setParent(PAGE_NAMES.alpha, PAGE_NAMES.beta);
     const afterMove = await this.#view("anonymous");
+    this.#assertExplicitRoot(afterMove, pages, [PAGE_NAMES.beta], "after move");
     if (!afterMove.lifecycle_output.includes(alpha.title) || !afterMove.lifecycle_output.includes(this.#page(PAGE_NAMES.beta).slug)) throw new Error("PageTree next read did not observe the public rename and parent move");
 
     const beta = this.#page(PAGE_NAMES.beta);
@@ -248,6 +275,7 @@ class Open43PageTreeRun {
       ip_address: "127.0.0.1",
     }, { page: beta.slug });
     const afterDelete = await this.#view("anonymous");
+    this.#assertExplicitRoot(afterDelete, pages, [], "after delete");
     if (afterDelete.lifecycle_output.includes(beta.slug)) throw new Error("PageTree next read exposed a deleted child");
 
     await this.#rpc("page_restore", {
@@ -263,13 +291,15 @@ class Open43PageTreeRun {
     beta.revision_id = restored.revision_id;
     await this.#setParent(PAGE_NAMES.alpha, PAGE_NAMES.beta);
     const afterRestore = await this.#view("editor");
+    this.#assertExplicitRoot(afterRestore, pages, [PAGE_NAMES.beta], "after restore");
     if (!afterRestore.lifecycle_output.includes(beta.slug) || !afterRestore.lifecycle_output.includes(alpha.title)) throw new Error("PageTree next read did not observe the restored child");
 
     return [{
       case_id: OPEN43_PAGE_TREE_CASE_IDS[0],
       observations: {
-        source_fixture: { path: LIVE_FIXTURE_PATH, case_id: LIVE_PAGE_TREE_CASE.case_id },
-        module_source: MODULE_SOURCE,
+        source_fixture: fixtureReference(LIVE_PAGE_TREE_CASE),
+        explicit_root_fixture: fixtureReference(LIVE_EXPLICIT_ROOT_CASE),
+        module_source: this.#moduleSource,
         initial_anonymous: anonymous,
         initial_editor: editor,
         after_move: afterMove,
@@ -320,12 +350,13 @@ function verifyCase(caseId, observations, plan) {
   if (caseId !== OPEN43_PAGE_TREE_CASE_IDS[0]) throw new Error(`unsupported PageTree case: ${caseId}`);
   for (const actor of ["anonymous", "editor"]) {
     const view = observations[`initial_${actor}`];
-    if (view?.actor !== actor || normalizeIntertagWhitespace(view.exact_output) !== normalizeIntertagWhitespace(plan.expected_initial_output) || (view.negative_boundary.match(/start-\[\[module PageTree\]\]-middle/gu) ?? []).length !== 1 || view.negative_boundary.includes("<ul>")) throw new Error(`Q779 initial ${actor} evidence is not structurally exact or crossed the negative boundary`);
+    if (view?.actor !== actor || normalizeIntertagWhitespace(view.exact_output) !== normalizeIntertagWhitespace(plan.expected_initial_output) || normalizeIntertagWhitespace(view.explicit_root_output) !== normalizeIntertagWhitespace(plan.expected_initial_explicit_root_output) || (view.negative_boundary.match(/start-\[\[module PageTree\]\]-middle/gu) ?? []).length !== 1 || view.negative_boundary.includes("<ul>")) throw new Error(`Q779 initial ${actor} evidence is not structurally exact or crossed the negative boundary`);
   }
   const events = observations.adapter_events;
   if (observations.event_scope !== "adapter-issued-external-requests-only" || !Array.isArray(events) || events.filter((event) => event.operation === "page_view" && event.method === "POST" && event.response_status === 200).length < 4) throw new Error("Q779 evidence does not prove public page_view execution");
   if (!observations.after_move.lifecycle_output.includes(plan.beta_slug) || !observations.after_move.lifecycle_output.includes(plan.alpha_renamed_title) || !observations.after_restore.lifecycle_output.includes(plan.beta_slug) || !observations.after_restore.lifecycle_output.includes(plan.alpha_renamed_title) || observations.after_delete.lifecycle_output.includes(plan.beta_slug)) throw new Error("Q779 lifecycle evidence does not bind move, delete, restore, and the renamed parent to the next public read");
-  return { verified: true, exact_public_module_output: true, negative_inline_boundary: true, actors: ["anonymous", "editor"], lifecycle_next_read: true, public_seam: "deepwell.page_view" };
+  if (!observations.after_move.explicit_root_output.includes(plan.beta_slug) || !observations.after_move.explicit_root_output.includes(plan.alpha_renamed_title) || !observations.after_restore.explicit_root_output.includes(plan.beta_slug) || !observations.after_restore.explicit_root_output.includes(plan.alpha_renamed_title) || observations.after_delete.explicit_root_output.includes(plan.beta_slug)) throw new Error("Q779 lifecycle evidence does not bind explicit-root move, delete, restore, and the renamed parent to the next public read");
+  return { verified: true, exact_public_module_output: true, explicit_root: true, negative_inline_boundary: true, actors: ["anonymous", "editor"], lifecycle_next_read: true, public_seam: "deepwell.page_view" };
 }
 
 function requireCandidateSite(candidateIdentity) {
@@ -360,9 +391,11 @@ export function createOpen43PageTreeCandidateCaseSet({ sessionFactory = (options
       const prefix = `open43-pagetree-${suffix}`;
       const session = sessionFactory({ candidateIdentity, privateInput, signal });
       const pages = Object.fromEntries(Object.values(PAGE_NAMES).map((name) => [name, { slug: pageSlug(prefix, name), title: pageTitle(prefix, name) }]));
-      const expectedInitialOutput = expectedPageTree(pages, [pages.alpha.slug, pages.beta.slug]);
-      if (!expectedInitialOutput.startsWith(fixturePrefix(prefix))) throw new Error("source-owned PageTree fixture no longer matches the candidate expected output");
-      const execution = new Open43PageTreeRun({ session, resources, prefix });
+      const source = moduleSource(pages[PAGE_NAMES.alpha].slug);
+      const expectedInitialOutput = expectedPageTree(pages, PAGE_NAMES.root, [PAGE_NAMES.alpha, PAGE_NAMES.beta]);
+      const expectedInitialExplicitRootOutput = expectedPageTree(pages, PAGE_NAMES.alpha, []);
+      if (!expectedInitialOutput.startsWith(fixtureRootPrefix(LIVE_PAGE_TREE_CASE, "PT_SHOW_START</p>", prefix)) || !expectedInitialExplicitRootOutput.startsWith(fixtureRootPrefix(LIVE_EXPLICIT_ROOT_CASE, "PT_ROOT_ARG_START</p>", prefix))) throw new Error("source-owned PageTree fixture no longer matches the candidate expected output");
+      const execution = new Open43PageTreeRun({ session, resources, prefix, moduleSource: source });
       return Object.freeze({
         sourceFiles,
         runtimeBindings: session.requiredServiceBindings,
@@ -371,17 +404,19 @@ export function createOpen43PageTreeCandidateCaseSet({ sessionFactory = (options
           schema: "wikijump.open43_page_tree_candidate_plan.v1",
           site_slug: SITE_SLUG,
           page_prefix: prefix,
-          module_source: MODULE_SOURCE,
-          source_fixture: { path: LIVE_FIXTURE_PATH, case_id: LIVE_PAGE_TREE_CASE.case_id },
+          module_source: source,
+          source_fixture: fixtureReference(LIVE_PAGE_TREE_CASE),
+          explicit_root_fixture: fixtureReference(LIVE_EXPLICIT_ROOT_CASE),
           source_fixture_test: SOURCE_FIXTURE_PATH,
           expected_initial_output: expectedInitialOutput,
+          expected_initial_explicit_root_output: expectedInitialExplicitRootOutput,
           alpha_renamed_title: `${pages.alpha.title} renamed`,
           beta_slug: pages.beta.slug,
           event_scope: "adapter-issued-external-requests-only",
         },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
-        verifyCase: (caseId, observations) => verifyCase(caseId, observations, { expected_initial_output: expectedInitialOutput, alpha_renamed_title: `${pages.alpha.title} renamed`, beta_slug: pages.beta.slug }),
+        verifyCase: (caseId, observations) => verifyCase(caseId, observations, { expected_initial_output: expectedInitialOutput, expected_initial_explicit_root_output: expectedInitialExplicitRootOutput, alpha_renamed_title: `${pages.alpha.title} renamed`, beta_slug: pages.beta.slug }),
         verifyCleanup,
       });
     },

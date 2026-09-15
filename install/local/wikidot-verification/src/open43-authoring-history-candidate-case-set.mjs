@@ -233,6 +233,19 @@ async function settingsState(page) {
   }, { operation: "settings-state" });
 }
 
+async function waitForSettingsInputValue(page, expectedLocales) {
+  const expectedValue = expectedLocales.join(" ");
+  await page.waitForFunction(({ selector, expected }) => {
+    const input = document.querySelector(selector);
+    return input instanceof HTMLInputElement && input.value === expected;
+  }, {
+    selector: "#user-display-locales",
+    expected: expectedValue,
+  }, {
+    timeout: 10_000,
+  });
+}
+
 async function addSubmittedUserControl(page) {
   await page.evaluate(({ operation }) => {
     if (operation !== "add-submitted-user") throw new Error("unknown settings operation");
@@ -515,6 +528,7 @@ class Open43AuthoringHistoryRun {
       const saved = await responseObservation(saveResponse);
       const saveRequestBody = saveResponse.request_body ?? postBodies.at(-1) ?? "";
       await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
+      await waitForSettingsInputValue(page, desired);
       const afterSaveReload = await settingsState(page);
       const persisted = await this.#user();
 
@@ -631,10 +645,14 @@ class Open43AuthoringHistoryRun {
         case_id: "A1063_EXACT_PUBLIC_SOURCE_CANDIDATE",
         observations: {
           page: {
+            site_id: this.#siteId,
             page_id: after.page_id,
             initial_revision_id: before.revision_id,
+            initial_revision_number: before.revision_number,
             intermediate_revision_id: middle.revision_id,
+            intermediate_revision_number: middle.revision_number,
             final_revision_id: after.revision_id,
+            final_revision_number: after.revision_number,
           },
           diff: {
             site_id: diff.site_id,
@@ -701,7 +719,7 @@ function verifyCase(caseId, observations) {
   if (caseId === "A1063_EXACT_PUBLIC_SOURCE_CANDIDATE") {
     const page = observations.page;
     const diff = observations.diff;
-    if (!Number.isSafeInteger(page?.page_id) || new Set([page.initial_revision_id, page.intermediate_revision_id, page.final_revision_id]).size !== 3 || diff.page_id !== page.page_id || diff.from_revision_number >= diff.to_revision_number) throw new Error("history candidate revision identities are not bound to one three-revision page");
+    if (!Number.isSafeInteger(page?.site_id) || !Number.isSafeInteger(page?.page_id) || new Set([page.initial_revision_id, page.intermediate_revision_id, page.final_revision_id]).size !== 3 || new Set([page.initial_revision_number, page.intermediate_revision_number, page.final_revision_number]).size !== 3 || diff.site_id !== page.site_id || diff.page_id !== page.page_id || diff.from_revision_number !== page.initial_revision_number || diff.to_revision_number !== page.final_revision_number) throw new Error("history candidate revision identities are not bound to one three-revision page");
     const kinds = new Set(diff.lines.map((line) => line.kind));
     if (!kinds.has("added") || !kinds.has("removed") || !kinds.has("unchanged")) throw new Error("history candidate diff did not expose all typed line kinds");
     if (diff.lines.some((line) => Object.hasOwn(line, "wikitext") || Object.hasOwn(line, "compiled_body_html"))) throw new Error("history candidate diff exposed a raw source field");
@@ -786,7 +804,22 @@ function verifySettingsBrowser(observations) {
   requireSha256(observations.invalid.response.body_sha256, "invalid settings response SHA-256");
   const expected = observations.save?.expected_locales;
   const savedReload = verifySettingsState(observations.save?.reloaded, "saved settings reload");
-  if (observations.save?.response?.status !== 200 || observations.save.submitted_user_control !== true || !sameStrings(observations.save.persisted_locales, expected) || savedReload.input_value !== expected.join(" ")) throw new Error("settings save did not persist normalized self locales through a fresh reload");
+  if (
+    observations.save?.response?.status !== 200 ||
+    observations.save.submitted_user_control !== true ||
+    !sameStrings(observations.save.persisted_locales, expected) ||
+    savedReload.input_value !== expected.join(" ")
+  ) {
+    throw new Error(
+      `settings save did not persist normalized self locales through a fresh reload: ${JSON.stringify({
+        response_status: observations.save?.response?.status ?? null,
+        submitted_user_control: observations.save?.submitted_user_control ?? null,
+        expected_locales: expected ?? null,
+        persisted_locales: observations.save?.persisted_locales ?? null,
+        reload_input_value: savedReload.input_value,
+      })}`,
+    );
+  }
   requireSha256(observations.save.request_body_sha256, "saved settings request body SHA-256");
   requireSha256(observations.save.response.body_sha256, "saved settings response SHA-256");
   const csrfReload = verifySettingsState(observations.csrf?.reloaded, "CSRF settings reload");

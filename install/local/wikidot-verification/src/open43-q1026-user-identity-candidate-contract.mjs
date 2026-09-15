@@ -136,6 +136,13 @@ export function verifyOpen43Q1026ActorMatrixCase(caseId, observations, plan) {
     requireSha256(surface.preview_sha256, `#1026 ${actor} preview SHA-256`);
     requireSha256(surface.saved_sha256, `#1026 ${actor} saved SHA-256`);
     if (surface.preview_sha256 !== baseline.preview_sha256 || surface.saved_sha256 !== baseline.saved_sha256) throw new Error(`#1026 ${actor} changed user-syntax output by request actor`);
+    if (!Array.isArray(surface.request_events) || surface.request_events.length !== 2) throw new Error(`#1026 ${actor} request denominator changed`);
+    if (JSON.stringify(surface.request_events.map(({ method }) => method)) !== JSON.stringify(["wikidot_page_preview", "page_view"])) throw new Error(`#1026 ${actor} did not use the fixed preview/saved request sequence`);
+    for (const event of surface.request_events) {
+      if (event?.response_status !== 200 || event?.actor !== (actor === "anonymous" ? "anonymous" : "authenticated")) throw new Error(`#1026 ${actor} request actor boundary changed`);
+      const expectedTokenSha256 = actor === "anonymous" ? null : plan.actor_session_token_sha256[actor];
+      if (event.session_token_sha256 !== expectedTokenSha256) throw new Error(`#1026 ${actor} request credential identity changed`);
+    }
   }
   return { verified: true, actor_count: actors.length, preview_sha256: baseline.preview_sha256, saved_sha256: baseline.saved_sha256 };
 }

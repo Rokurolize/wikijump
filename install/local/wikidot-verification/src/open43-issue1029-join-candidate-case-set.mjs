@@ -295,6 +295,8 @@ export function createOpen43Issue1029JoinCandidateCaseSet({
         throw new Error(`issue 1029 requires an exact non-standing ${SITE_HOST} candidate`);
       }
       const sessions = Object.fromEntries(ACTORS.map((actor) => [actor, sessionFactory({
+        actor,
+        purpose: "primary",
         candidateIdentity,
         privateInput: actorPrivateInput(privateInput, actor),
         signal,
@@ -308,6 +310,7 @@ export function createOpen43Issue1029JoinCandidateCaseSet({
       if (pageOrigin !== candidatePageOrigin(candidateIdentity)) throw new Error("issue 1029 session did not bind the candidate origin");
       const storageState = (actor) => {
         if (actor === "anonymous") return { cookies: [], origins: [] };
+        if (actor !== "eligible") throw new Error("issue 1029 browser storage state requested for an unexpected actor");
         return {
           cookies: [{ name: "wikijump_token", value: sessions[actor].editorSessionToken, url: pageOrigin, httpOnly: true, secure: true, sameSite: "Lax" }],
           origins: [],
@@ -316,12 +319,15 @@ export function createOpen43Issue1029JoinCandidateCaseSet({
       sessions.browser = browserAdapterFactory({
         browserContexts: candidateBrowserContexts,
         storageState,
+        actor: "eligible",
+        actorUserId: eligibleId,
       });
       const execution = new Open43Issue1029JoinRun({ sessions, resources });
       const privateInputIdentity = {
         eligible_user_id: eligibleId,
         administrator_user_id: administratorId,
         eligible_session_sha256: sha256Value(sessions.eligible.privateInputIdentity),
+        administrator_session_sha256: sha256Value(sessions.administrator.privateInputIdentity),
       };
       return Object.freeze({
         sourceFiles: SOURCE_FILES,

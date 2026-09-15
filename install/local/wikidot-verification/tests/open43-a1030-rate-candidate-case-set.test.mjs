@@ -130,7 +130,7 @@ function browserObservations({ forgedFailure = true } = {}) {
   };
 }
 
-function runtime() {
+function runtime({ registryIdentityDrift = false, incompleteCommandOutput = false } = {}) {
   const pages = new Map();
   const ratings = new Map();
   let pageSequence = 700;
@@ -148,7 +148,15 @@ function runtime() {
       pages.set(params.slug, page);
       return page;
     }
-    if (method === "category_get") return { category_id: 100 + params.category.length, slug: params.category };
+    if (method === "category_get") {
+      const rating = ratings.get(String(params.category)) ?? { enabled: null, type: null };
+      return {
+        category_id: 100 + params.category.length,
+        slug: params.category,
+        rating_enabled: rating.enabled,
+        rating_type: rating.type,
+      };
+    }
     if (method === "category_update") {
       ratings.set(String(params.category), { enabled: params.rating_enabled, type: params.rating_type });
       return null;
@@ -169,7 +177,7 @@ function runtime() {
         type: "Found",
         data: {
           rate_actions: {
-            site_id: SITE_ID,
+            site_id: registryIdentityDrift ? SITE_ID + 1 : SITE_ID,
             page_id: page.page_id,
             revision_id: page.revision_id,
             current_value: null,
@@ -205,7 +213,13 @@ function runtime() {
       };
     },
     cargoRunner() {
-      return async ({ commands }) => commands.map((command) => ({ command, exit_code: 0, duration_ms: 1 }));
+      return async ({ commands }) => commands.map((command) => ({
+        command,
+        exit_code: 0,
+        signal: null,
+        duration_ms: 1,
+        ...(incompleteCommandOutput ? {} : { output_sha256: hash("f") }),
+      }));
     },
   };
 }
@@ -290,6 +304,7 @@ test("A1030 executes through the shared runner and cleans its run-owned pages", 
   assert.equal(result.resources.every((resource) => resource.released), true);
   assert.equal(state.pages.has(POINT_SLUG), false);
   assert.equal(state.pages.has(STAR_SLUG), false);
+  assert.ok(result.execution_identity.source_files.includes("deepwell/migrations/20260809040000_page_vote_current_unique.sql"));
 });
 
 test("A1030 candidate verification fails closed when a forged Rate request is accepted", async (t) => {
@@ -316,5 +331,40 @@ test("A1030 candidate verification fails closed when the browser lifecycle proof
   await assert.rejects(
     runFixture(t, state, {}),
     /repeated activation was not suppressed/u,
+  );
+});
+
+test("A1030 candidate verification binds browser observations to its prepared fixtures", async (t) => {
+  const state = runtime();
+  const originalAdapter = state.browserAdapter;
+  state.browserAdapter = (options) => {
+    const adapter = originalAdapter(options);
+    return {
+      async run(input) {
+        const observations = await adapter.run(input);
+        observations.point_slug = "wrong-page";
+        return observations;
+      },
+    };
+  };
+  await assert.rejects(
+    runFixture(t, state, {}),
+    /not bound to the prepared Rate fixtures/u,
+  );
+});
+
+test("A1030 candidate producer rejects a Rate registry from another page identity", async (t) => {
+  const state = runtime({ registryIdentityDrift: true });
+  await assert.rejects(
+    runFixture(t, state, {}),
+    (error) => error instanceof AggregateError && error.errors.some(({ message }) => /registry identity drifted/u.test(message)),
+  );
+});
+
+test("A1030 candidate verifier requires retained command output receipts", async (t) => {
+  const state = runtime({ incompleteCommandOutput: true });
+  await assert.rejects(
+    runFixture(t, state, {}),
+    /output SHA-256 must be a lowercase SHA-256/u,
   );
 });

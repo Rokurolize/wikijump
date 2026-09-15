@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 import { CandidateHttpSession } from "./candidate-case-http.mjs";
 import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
-import { sha256Value } from "./standing-browser-parity-util.mjs";
 import {
   FEED_MISSING_ERROR,
   OPEN43_Q1036_CASE_IDS,
@@ -19,6 +19,9 @@ export { OPEN43_Q1036_CASE_IDS } from "./open43-q1036-search-feed-candidate-cont
 
 const SITE_SLUG = "scpaiueouiuiuiui";
 const SITE_HOST = `${SITE_SLUG}.wikijump.localhost`;
+const LIVE_EVIDENCE_BYTES = readFileSync(new URL("../artifacts/search-feed-live-preview-20260809.json", import.meta.url));
+const LIVE_EVIDENCE_SHA256 = createHash("sha256").update(LIVE_EVIDENCE_BYTES).digest("hex");
+if (LIVE_EVIDENCE_SHA256 !== OPEN43_Q1036_EVIDENCE.sha256) throw new Error("Q1036 Search/Feed live evidence artifact changed");
 
 function hash(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -95,6 +98,11 @@ class Open43Q1036Run {
 }
 
 const SOURCE_FILES = Object.freeze([
+  "docs/wikidot-specifications/specifications/module/module-feed.md",
+  "docs/wikidot-specifications/specifications/module/module-search.md",
+  "deepwell/src/services/render/runtime_modules.rs",
+  "deepwell/src/services/render/search_feed.rs",
+  "deepwell/tests/page.rs",
   "install/local/wikidot-verification/scripts/run-candidate-cases.mjs",
   "install/local/wikidot-verification/src/atomic-no-replace.mjs",
   "install/local/wikidot-verification/src/candidate-source-execution-identity.mjs",
@@ -107,6 +115,7 @@ const SOURCE_FILES = Object.freeze([
   "install/local/wikidot-verification/src/standing-browser-parity-receipt.mjs",
   "install/local/wikidot-verification/src/standing-browser-parity-util.mjs",
   "install/local/wikidot-verification/src/standing-browser-runtime-identity.mjs",
+  "install/local/wikidot-verification/tests/open43-q1036-search-feed-candidate-case-set.test.mjs",
   OPEN43_Q1036_EVIDENCE.path,
   "install/local/wikidot-verification/package.json",
   "install/local/wikidot-verification/pnpm-lock.yaml",
@@ -127,7 +136,7 @@ export function createOpen43Q1036CandidateCaseSet({ sessionFactory = (options) =
         saved_page_id: input.saved_page_id,
         saved_revision_id: input.saved_revision_id,
         saved_page_slug: input.saved_page_slug,
-        evidence_sha256: sha256Value(OPEN43_Q1036_EVIDENCE),
+        evidence_sha256: OPEN43_Q1036_EVIDENCE.sha256,
       };
       const execution = new Open43Q1036Run(session, input);
       return Object.freeze({

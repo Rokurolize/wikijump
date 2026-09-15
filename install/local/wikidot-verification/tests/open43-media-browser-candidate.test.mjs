@@ -128,6 +128,16 @@ test("media browser natural geometry is pinned to the WWS medium resize contract
   assert.match(wws, /Self::Medium => 500/u);
 });
 
+test("M776 producer keeps the retained G06 f=image spelling and plain container boundary", () => {
+  const adapter = read("install/local/wikidot-verification/src/open43-media-browser-candidate.mjs");
+  assert.match(adapter, /const M776_POSITIVE_SOURCE = '\[\[f=image float\.png width="100px" alt="G06_IMAGE_ALT"\]\]'/u);
+  assert.match(adapter, /const M776_NEGATIVE_SOURCE = "\[\[f=image\\u00a0float\.png/u);
+  assert.match(adapter, /expectedClass = centered \? "aligncenter" : "image-container"/u);
+  assert.match(adapter, /classes\.includes\("floatleft"\) \|\| classes\.includes\("floatright"\)/u);
+  assert.match(adapter, /method === "GET" && resource_type === "image" && pathname === requiredPath/u);
+  assert.doesNotMatch(adapter, /M776_POSITIVE_SOURCE[\s\S]*f<image/u);
+});
+
 test("media browser cleanup can exactly restore a producer-seeded legacy favicon snapshot", () => {
   const calls = [];
   const before = {
@@ -170,21 +180,23 @@ test("M806 enforces centered width, exact local routes, and whitespace ownership
     source_url: `https://candidate.wjfiles.localhost/local--resized-images/${slug}/${filename}/medium.jpg`,
     click_target_url: `https://candidate.wjfiles.localhost/local--files/${slug}/${filename}`,
   });
-  const clean = { candidate_requests: [{ pathname: `/local--resized-images/${slug}/${filename}/medium.jpg` }], candidate_failures: [], console_errors: [], page_errors: [], csp_violations: [] };
+  const clean = { candidate_requests: [{ method: "GET", resource_type: "image", pathname: `/local--resized-images/${slug}/${filename}/medium.jpg` }], candidate_failures: [], console_errors: [], page_errors: [], csp_violations: [] };
   const observations = {
     positive: {
       url: `https://candidate.wikijump.localhost/${slug}`,
+      initial: { viewport: { width: 1280, height: 900 }, images: [image(), image()] },
       settled: { viewport: { width: 1280, height: 900 }, images: [image(), image()] },
       responsive: { viewport: { width: 479, height: 900 }, images: [image(), image()] },
       diagnostics: clean,
     },
     negative: {
       url: "https://candidate.wikijump.localhost/m806-negative",
+      initial: { viewport: { width: 1280, height: 900 }, images: [] },
       settled: { viewport: { width: 1280, height: 900 }, images: [] },
       responsive: { viewport: { width: 479, height: 900 }, images: [] },
       diagnostics: { candidate_requests: [], candidate_failures: [], console_errors: [], page_errors: [], csp_violations: [] },
     },
-    expected_file: { filename, width: 500, height: 250, source_width: 4, source_height: 2, byte_sha256: sha256("fixed") },
+    expected_file: { filename, width: 500, height: 250, source_width: 4, source_height: 2, byte_sha256: sha256(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAQAAAACAQMAAABFZu8gAAAAA1BMVEX/AAAZ4gk3AAAADElEQVQI12NgYGAAAAAEAAEnNCcKAAAAAElFTkSuQmCC", "base64")) },
   };
   assert.equal(verifyOpen43MediaBrowserCase("M806_BROWSER_GEOMETRY_AND_NETWORK", observations).verified, true);
 
@@ -199,6 +211,64 @@ test("M806 enforces centered width, exact local routes, and whitespace ownership
   const stolenNegative = structuredClone(observations);
   stolenNegative.negative.settled.images = [image()];
   assert.throws(() => verifyOpen43MediaBrowserCase("M806_BROWSER_GEOMETRY_AND_NETWORK", stolenNegative), /negative whitespace control acquired image ownership/u);
+});
+
+test("M776 verifies initial, settled, responsive, and exact image request state", () => {
+  const slug = "m776-positive";
+  const filename = "float.png";
+  const image = (phase) => ({
+    container_class: "image-container",
+    complete: true,
+    natural_width: 500,
+    natural_height: 250,
+    width_attribute: "100px",
+    computed_width: "100px",
+    rendered_width: 100,
+    rendered_height: 50,
+    center_delta: 7.59,
+    source_url: `https://candidate.wjfiles.localhost/local--resized-images/${slug}/${filename}/medium.jpg`,
+    click_target_url: `https://candidate.wjfiles.localhost/local--files/${slug}/${filename}`,
+    phase,
+  });
+  const clean = {
+    candidate_requests: [{ method: "GET", resource_type: "image", pathname: `/local--resized-images/${slug}/${filename}/medium.jpg` }],
+    candidate_failures: [],
+    console_errors: [],
+    page_errors: [],
+    csp_violations: [],
+  };
+  const phaseSnapshot = (viewport) => ({ viewport, images: [image(viewport.width)], });
+  const observations = {
+    source: { positive_sha256: sha256('[[f=image float.png width="100px" alt="G06_IMAGE_ALT"]]'), negative_sha256: sha256("[[f=image\u00a0float.png width=\"100px\" alt=\"G06_IMAGE_ALT\"]]") },
+    positive: {
+      url: `https://candidate.wikijump.localhost/${slug}`,
+      initial: phaseSnapshot({ width: 1280, height: 900 }),
+      settled: phaseSnapshot({ width: 1280, height: 900 }),
+      responsive: phaseSnapshot({ width: 479, height: 900 }),
+      diagnostics: clean,
+    },
+    negative: {
+      url: "https://candidate.wikijump.localhost/m776-negative",
+      initial: { viewport: { width: 1280, height: 900 }, images: [] },
+      settled: { viewport: { width: 1280, height: 900 }, images: [] },
+      responsive: { viewport: { width: 479, height: 900 }, images: [] },
+      diagnostics: { candidate_requests: [], candidate_failures: [], console_errors: [], page_errors: [], csp_violations: [] },
+    },
+    expected_file: { filename, width: 500, height: 250, source_width: 4, source_height: 2, byte_sha256: sha256(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAQAAAACAQMAAABFZu8gAAAAA1BMVEX/AAAZ4gk3AAAADElEQVQI12NgYGAAAAAEAAEnNCcKAAAAAElFTkSuQmCC", "base64")) },
+  };
+  assert.equal(verifyOpen43MediaBrowserCase("M776_BROWSER_GEOMETRY_AND_NETWORK", observations).verified, true);
+
+  const missingInitial = structuredClone(observations);
+  missingInitial.positive.initial.images = [];
+  assert.throws(() => verifyOpen43MediaBrowserCase("M776_BROWSER_GEOMETRY_AND_NETWORK", missingInitial), /positive image denominator is wrong/u);
+
+  const wrongSource = structuredClone(observations);
+  wrongSource.source.positive_sha256 = sha256("[[f<image float.png width=\"100px\"]]");
+  assert.throws(() => verifyOpen43MediaBrowserCase("M776_BROWSER_GEOMETRY_AND_NETWORK", wrongSource), /source fixture drifted/u);
+
+  const wrongRequestKind = structuredClone(observations);
+  wrongRequestKind.positive.diagnostics.candidate_requests[0].resource_type = "document";
+  assert.throws(() => verifyOpen43MediaBrowserCase("M776_BROWSER_GEOMETRY_AND_NETWORK", wrongRequestKind), /omitted the exact image request/u);
 });
 
 test("M756 accepts Wikidot-style document navigation while rejecting stale icon state", () => {
@@ -225,6 +295,115 @@ test("M756 accepts Wikidot-style document navigation while rejecting stale icon 
   const stale = structuredClone(observations);
   stale.client_fetch.body_sha256 = sha256(first);
   assert.throws(() => verifyOpen43MediaBrowserCase("M756_BROWSER_CACHE_TRANSITIONS", stale), /stale favicon bytes/u);
+});
+
+test("M1043 verifies thumbnail identity and viewer failure boundaries without a browser run", () => {
+  const one = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAQAAAACAQMAAABFZu8gAAAAA1BMVEX/AAAZ4gk3AAAADElEQVQI12NgYGAAAAAEAAEnNCcKAAAAAElFTkSuQmCC", "base64");
+  const two = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAAEAQMAAACeIXx6AAAAA1BMVEUAAP+KeNJXAAAAC0lEQVQI12NggAAAAAgAAS8g3TEAAAAASUVORK5CYII=", "base64");
+  const slug = "m1043-gallery";
+  const file = (filename, bytes, width, height) => ({ filename, sha256: sha256(bytes), width, height });
+  const expectedFiles = [
+    file("gallery-one.png", one, 100, 50),
+    file("gallery-two.png", two, 50, 100),
+    file("gallery-disabled.png", one, 100, 50),
+    file("gallery-broken.png", one, 100, 50),
+  ];
+  const anchor = (expected) => ({
+    href: `https://m1043.wjfiles.localhost/local--files/${slug}/${expected.filename}`,
+    image_src: `https://m1043.wjfiles.localhost/local--resized-images/${slug}/${expected.filename}/thumbnail.jpg`,
+  });
+  const image = (expected) => ({
+    complete: true,
+    natural_width: expected.width,
+    natural_height: expected.height,
+    source_url: anchor(expected).image_src,
+  });
+  const thumbnails = {
+    galleries: [
+      { id: "gallery-box-1", images: [image(expectedFiles[0]), image(expectedFiles[1])] },
+      { id: "gallery-box-2", images: [image(expectedFiles[2])] },
+      { id: "gallery-box-3", images: [image(expectedFiles[3])] },
+    ],
+  };
+  const token = "document-token";
+  const viewer = (overrides = {}) => ({
+    overlay_count: 1,
+    lightbox_count: 1,
+    loading_visible: false,
+    image_visible: true,
+    previous_visible: false,
+    next_visible: true,
+    current_number: "image 1 of 2",
+    image_url: anchor(expectedFiles[0]).href,
+    active_element: "gallery-viewer-one",
+    document_token: token,
+    ...overrides,
+  });
+  const clean = {
+    candidate_requests: expectedFiles.map((expected) => ({ pathname: `/local--resized-images/${slug}/${expected.filename}/thumbnail.jpg` })),
+    candidate_failures: [],
+    console_errors: [],
+    page_errors: [],
+    csp_violations: [],
+  };
+  const observations = {
+    url: `https://m1043.wikijump.localhost/${slug}`,
+    expected_files: expectedFiles,
+    static: [anchor(expectedFiles[0]), anchor(expectedFiles[1])],
+    disabled_static: [anchor(expectedFiles[2])],
+    broken_static: [anchor(expectedFiles[3])],
+    thumbnails: { initial: thumbnails, settled: thumbnails },
+    loading: viewer({ loading_visible: true, image_visible: false }),
+    first: viewer(),
+    next: viewer({ current_number: "image 2 of 2", previous_visible: true, next_visible: false, image_url: anchor(expectedFiles[1]).href }),
+    previous: viewer(),
+    overlay_closed: viewer({ overlay_count: 0, lightbox_count: 0 }),
+    disabled_navigation: { pathname: `/local--files/${slug}/gallery-disabled.png`, lightbox_count: 0 },
+    failure: viewer({ loading_visible: true, image_visible: false }),
+    closed: viewer({ overlay_count: 0, lightbox_count: 0 }),
+    diagnostics: clean,
+  };
+
+  const result = verifyOpen43MediaBrowserCase("M1043_BROWSER_RENDER_AND_VIEWER", observations);
+  assert.equal(result.verified, true);
+  assert.equal(result.thumbnail_identity_verified, true);
+  assert.equal(result.focus_verified, true);
+
+  const wrongThumbnail = structuredClone(observations);
+  wrongThumbnail.thumbnails.settled.galleries[0].images[0].source_url = "https://m1043.wjfiles.localhost/local--files/m1043-gallery/gallery-one.png";
+  assert.throws(() => verifyOpen43MediaBrowserCase("M1043_BROWSER_RENDER_AND_VIEWER", wrongThumbnail), /thumbnail request identity/u);
+
+  const missingErrorBoundary = structuredClone(observations);
+  missingErrorBoundary.failure.loading_visible = false;
+  assert.throws(() => verifyOpen43MediaBrowserCase("M1043_BROWSER_RENDER_AND_VIEWER", missingErrorBoundary), /failed-image loading interval/u);
+
+  const replacedDocument = structuredClone(observations);
+  replacedDocument.next.document_token = "new-document";
+  assert.throws(() => verifyOpen43MediaBrowserCase("M1043_BROWSER_RENDER_AND_VIEWER", replacedDocument), /replaced the document/u);
+
+  const abortedViewerImage = structuredClone(observations);
+  abortedViewerImage.diagnostics.candidate_failures = [{
+    pathname: `/local--files/${slug}/gallery-one.png`,
+    method: "GET",
+    resource_type: "image",
+    error: "net::ERR_ABORTED",
+    phase: null,
+  }];
+  assert.throws(() => verifyOpen43MediaBrowserCase("M1043_BROWSER_RENDER_AND_VIEWER", abortedViewerImage), /candidate-owned request failure/u);
+});
+
+test("M1043 waits for enabled full-image requests to settle before each viewer transition", () => {
+  const adapter = read("install/local/wikidot-verification/src/open43-media-browser-candidate.mjs");
+  const start = adapter.indexOf("async #galleryCase()");
+  const end = adapter.indexOf("async #uploadBrowserCase()", start);
+  assert.ok(start >= 0 && end > start);
+  const gallery = adapter.slice(start, end);
+  assert.match(gallery, /const viewerImageRequests = trackRequestQuiescence/u);
+  assert.match(gallery, /gallery-one\.png/u);
+  assert.match(gallery, /gallery-two\.png/u);
+  assert.match(gallery, /route\.fulfill\(\{ status: 200, contentType: "image\/png", body: "not-a-png" \}\)/u);
+  assert.equal([...gallery.matchAll(/viewerImageRequests\.waitForQuiet\(\)/gu)].length, 3);
+  assert.match(gallery, /viewerImageRequests\.close\(\)/u);
 });
 
 test("M1062 requires the failed empty action interval before the successful upload", () => {

@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   OPEN43_SETTINGS_LIFECYCLE_CASE_MANIFEST,
@@ -8,6 +11,7 @@ import {
 } from "../src/open43-settings-lifecycle-candidate-contract.mjs";
 
 const hash = (character) => character.repeat(64);
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
 function capture(url, suffix, title, content) {
   return {
@@ -103,7 +107,23 @@ test("S758 verifier binds sequential creates, disable behavior, temporal evidenc
     () => verifyOpen43SettingsLifecycleCase("S758_CREATE_INITIAL", { ...observations, first_create: { ...first, capture: { ...first.capture, failures: [{ url: "https://failed.example/asset" }] } } }, plan),
     /successful navigation/u,
   );
-  assert.equal(verifyOpen43SettingsLifecycleCleanup({ public_absence_verified: true, run_owned_state_absent: true, disposable_candidate_discarded: true, run_owned_page_ids: [] }, [{ released: true }]).verified, true);
+  assert.equal(verifyOpen43SettingsLifecycleCleanup({ public_absence_verified: true, run_owned_state_absent: true, allocator_restored: false, run_owned_page_ids: [], candidate_stack_disposal: { status: "deferred_to_parent_run", compose_project: "wikijump-s758", command: "stop-promotion-candidate" } }, [{ released: true }]).verified, true);
+});
+
+test("S758 cleanup delegates monotonic allocator disposal and does not use database cleanup", () => {
+  const source = readFileSync(path.join(repositoryRoot, "install/local/wikidot-verification/src/open43-settings-lifecycle-candidate-case-set.mjs"), "utf8");
+  assert.doesNotMatch(source, /spawnSync|databaseQuery|UPDATE page_category|page_revision\.title/u);
+  assert.match(source, /status: "deferred_to_parent_run"/u);
+});
+
+test("S758 authority fixture keeps unresolved live rows actionable", async () => {
+  const fixture = JSON.parse(readFileSync(path.join(repositoryRoot, "install/local/wikidot-verification/fixtures/open43-s758-autonumber/authority-contract.json"), "utf8"));
+  assert.equal(fixture.schema, "wikijump.open43.s758_autonumber_authority_contract.v1");
+  assert.deepEqual(fixture.authority_required_rows.map(({ case_id }) => case_id), ["S758_COLLISION_DELETE_OVERFLOW_REENABLE", "S758_CATEGORY_ADD_WARNING_LIFECYCLE"]);
+  assert.equal(fixture.authority_required_rows.every(({ expected_result }) => expected_result === "live-authority-required"), true);
+  assert.equal(fixture.disposal.owner, "parent-run");
+  assert.equal(fixture.disposal.required, true);
+  assert.equal(fixture.disposal.command, "stop-promotion-candidate");
 });
 
 test("S758 successful-navigation failure names the exact capture fields", () => {

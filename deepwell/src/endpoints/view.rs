@@ -19,6 +19,7 @@
  */
 
 use super::prelude::*;
+use crate::services::page_draft::PageDraftView;
 use crate::services::view::{
     GetAdminView, GetAdminViewOutput, GetArticleViewCacheMetadataOutput,
     GetArticleViewOutput, GetPageBacklinksView, GetPageView, GetPageViewOutput,
@@ -49,6 +50,14 @@ pub async fn site_tools_wanted_pages(
 ) -> Result<Vec<SiteToolsWantedPageView>> {
     let input: GetSiteToolsPages = parse!(params, Page);
     ViewService::site_tools_wanted_pages(ctx, input).await
+}
+
+pub async fn site_tools_list_drafts(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Vec<PageDraftView>> {
+    let input: GetSiteToolsPages = parse!(params, Page);
+    ViewService::site_tools_list_drafts(ctx, input).await
 }
 
 /// Returns relevant context for rendering a view from a processed web request.

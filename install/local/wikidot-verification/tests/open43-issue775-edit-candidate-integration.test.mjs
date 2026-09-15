@@ -9,6 +9,7 @@ import {
   OPEN43_ISSUE775_CASE_IDS,
   createOpen43Issue775EditCandidateCaseSet,
 } from "../src/open43-issue775-edit-candidate-case-set.mjs";
+import { dispatchIssue775DoubleActivation } from "../src/open43-issue775-edit-browser-adapter.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
@@ -87,28 +88,29 @@ function capture(pageUrl, index) {
   return { navigation_status: 200, final_url: pageUrl, first_paint: { document: {}, screenshot: first }, document: {}, settled_viewport_screenshot: settled };
 }
 
-function state(pathname, { editable = false, standalone = 1 } = {}) {
-  return { url: `${PAGE_ORIGIN}${pathname}`, path: pathname, edit_route: editable, standalone_edit_count: standalone, editor_count: editable ? 1 : 0, source_disclosure: false, active_element: editable ? "body" : "a" };
+function state(pathname, { editable = false, standalone = 1, dialog = false } = {}) {
+  return { url: `${PAGE_ORIGIN}${pathname}`, path: pathname, edit_route: editable, standalone_edit_count: standalone, editor_count: editable ? 1 : 0, dialog_visible: dialog, loading: false, source_disclosure: false, active_element: editable ? "body" : "a" };
 }
 
-function fakeBrowserAdapter({ bad = false } = {}) {
+function fakeBrowserAdapter({ bad = false, badDouble = false, badUrl = false } = {}) {
   return {
     async run({ pageUrl, pagePath, permissions }) {
       return [
         ["anonymous", false],
         ["editable_member", true],
         ["non_editable_member", false],
-      ].map(([actor, editable], index) => {
+      ].map(([actor], index) => {
         const allowed = permissions[actor];
         const finalPath = allowed ? `${pagePath}/edit` : pagePath;
-        const actionState = state(finalPath, { editable: allowed });
+        const actionState = state(finalPath, { editable: allowed, dialog: !allowed });
         if (bad && actor === "editable_member") actionState.path = pagePath;
+        if (badUrl && actor === "editable_member") actionState.url += "?unexpected=1";
         return {
           actor,
           initial: { capture: capture(pageUrl, index), state: state(pagePath) },
-          click: { focused_control: true, permission_response_count: 1, state: actionState },
-          keyboard: { focused_control: true, permission_response_count: 1, state: state(finalPath, { editable: allowed }) },
-          double_activation: { permission_response_count: 1, state: state(finalPath, { editable: allowed }) },
+          click: { focused_control: true, permission_request_count: 1, state: actionState },
+          keyboard: { focused_control: true, permission_request_count: 1, state: state(finalPath, { editable: allowed, dialog: !allowed }) },
+          double_activation: { permission_request_count: badDouble ? 1 : 2, state: state(finalPath, { editable: allowed, dialog: !allowed }) },
           back_forward: {
             back: state(allowed ? pagePath : "/", { standalone: allowed ? 1 : 0 }),
             forward: state(finalPath, { editable: allowed }),
@@ -119,11 +121,11 @@ function fakeBrowserAdapter({ bad = false } = {}) {
   };
 }
 
-async function runFixture(t, { bad = false } = {}) {
+async function runFixture(t, { bad = false, badDouble = false, badUrl = false } = {}) {
   const state = { page: null };
   const caseSet = createOpen43Issue775EditCandidateCaseSet({
     sessionFactory: () => fakeSession(state),
-    browserAdapterFactory: () => fakeBrowserAdapter({ bad }),
+    browserAdapterFactory: () => fakeBrowserAdapter({ bad, badDouble, badUrl }),
   });
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "issue775-candidate-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
@@ -153,6 +155,32 @@ test("issue 775 is an executable candidate case set", () => {
   assert.equal(typeof caseSet.prepareRun, "function");
 });
 
+test("issue 775 double activation reproduces the live two-click pointer sequence", async () => {
+  const events = [];
+  const control = {
+    async scrollIntoViewIfNeeded() { events.push(["scroll"]); },
+    async boundingBox() { return { x: 10, y: 20, width: 30, height: 40 }; },
+  };
+  const page = {
+    mouse: {
+      async move(x, y) { events.push(["move", x, y]); },
+      async down(options) { events.push(["down", options]); },
+      async up(options) { events.push(["up", options]); },
+    },
+  };
+
+  await dispatchIssue775DoubleActivation(page, control);
+
+  assert.deepEqual(events, [
+    ["scroll"],
+    ["move", 25, 40],
+    ["down", { button: "left", clickCount: 1 }],
+    ["up", { button: "left", clickCount: 1 }],
+    ["down", { button: "left", clickCount: 2 }],
+    ["up", { button: "left", clickCount: 2 }],
+  ]);
+});
+
 test("issue 775 executes through the shared runner and cleans its run-owned page", async (t) => {
   const result = await runFixture(t);
   assert.deepEqual(result.denominator.case_ids, OPEN43_ISSUE775_CASE_IDS);
@@ -164,4 +192,12 @@ test("issue 775 executes through the shared runner and cleans its run-owned page
 
 test("issue 775 candidate verification fails closed on a route mismatch", async (t) => {
   await assert.rejects(runFixture(t, { bad: true }), /unexpected public state/u);
+});
+
+test("issue 775 candidate verification fails closed when double activation loses a live request", async (t) => {
+  await assert.rejects(runFixture(t, { badDouble: true }), /two live permission activations/u);
+});
+
+test("issue 775 candidate verification fails closed on an exact URL mismatch", async (t) => {
+  await assert.rejects(runFixture(t, { badUrl: true }), /exact candidate URL/u);
 });
