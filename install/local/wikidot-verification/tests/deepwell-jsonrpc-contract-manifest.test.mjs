@@ -44,7 +44,7 @@ test("Deepwell JSON-RPC manifest exactly covers the current registered contract"
   assert.equal(result.status, 0, result.stderr)
   const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"))
   assert.equal(manifest.schema, "wikijump.deepwell_jsonrpc_contract_manifest.v1")
-  assert.equal(manifest.method_count, 173)
+  assert.equal(manifest.method_count, 177)
   assert.equal(manifest.methods.length, manifest.method_count)
   assert.equal(new Set(manifest.methods.map(({ method }) => method)).size, manifest.method_count)
   for (const method of manifest.methods) {
@@ -60,6 +60,14 @@ test("Deepwell JSON-RPC manifest exactly covers the current registered contract"
   }
 
   const byMethod = new Map(manifest.methods.map((method) => [method.method, method]))
+  for (const method of ["page_draft_exists", "page_draft_remove", "page_draft_save", "site_tools_list_drafts"]) {
+    assert.equal(byMethod.get(method).test_witness.kind, "source_contract_only")
+  }
+  assert.equal(byMethod.get("page_draft_exists").mutation_class.classification, "read_only")
+  assert.equal(byMethod.get("site_tools_list_drafts").mutation_class.classification, "read_only")
+  for (const method of ["page_draft_remove", "page_draft_save"]) {
+    assert.equal(byMethod.get(method).mutation_class.classification, "mutating")
+  }
   assert.deepEqual(byMethod.get("member_set").actor_context.requirements, [
     "authenticated_user",
     "permission_check"
