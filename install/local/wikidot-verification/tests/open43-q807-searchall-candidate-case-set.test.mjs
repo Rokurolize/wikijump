@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { candidateCaseSet } from "../src/candidate-case-command.mjs";
@@ -32,6 +33,10 @@ test("Q807 candidate case reaches prepare through the public command path with J
   assert.deepEqual(caseSet.caseIds, ["Q807_EXACT_CANDIDATE_FORM_ROUTE_BROWSER"]);
   assert.equal(prepared.plan.issue, 807);
   assert.equal(prepared.plan.saved_page_slug, "search:all");
+  assert.deepEqual(prepared.plan.negative_boundaries.map(({ case_id }) => case_id), [
+    "searchall-route-unknown-area-query",
+    "searchall-route-query-without-area",
+  ]);
   assert.equal(prepared.browserCredentialPolicy, "none");
   assert.equal(typeof prepared.execute, "function");
 
@@ -41,4 +46,15 @@ test("Q807 candidate case reaches prepare through the public command path with J
     () => verifyOpen43Q807SearchAllCase({}, changedEvidencePlan),
     /Q807 fixture digest differs from sealed live evidence/,
   );
+});
+
+test("Q807 audit treats the observed unavailable state as the current result contract", () => {
+  const audit = JSON.parse(readFileSync(new URL("../../../../docs/development/open43-q-search-users-closure-audit.json", import.meta.url), "utf8"));
+  const issue = audit.issues.find(({ issue: number }) => number === 807);
+  assert.ok(issue);
+  assert.equal(issue.blocked_evidence.some(({ case_id }) => case_id === "Q807_SUCCESSFUL_SEARCH_RESULTS"), false);
+  const unavailableRow = issue.source_ready.find(({ case_id }) => case_id === "Q807_SUCCESSFUL_SEARCH_RESULTS");
+  assert.ok(unavailableRow);
+  assert.match(unavailableRow.result, /unavailable state is the current positive compatibility contract/u);
+  assert.deepEqual(issue.candidate_required.map(({ case_id }) => case_id), ["Q807_EXACT_CANDIDATE_FORM_ROUTE_BROWSER"]);
 });
