@@ -17233,7 +17233,7 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
         assert!(noncanonical.js_include.is_empty(), "{module_name}");
     }
 
-    let unsupported_recent_posts_page = run_endpoint!(
+    let recent_posts_page_two_ajax = run_endpoint!(
         runner,
         wikidot_forum_module,
         json!({
@@ -17242,7 +17242,33 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
             "parameters": {"page": "2", "categoryId": ""},
         }),
     );
-    assert_eq!(unsupported_recent_posts_page.status, "not_ok");
+    assert_eq!(recent_posts_page_two_ajax.status, "ok");
+    assert_eq!(
+        recent_posts_page_two_ajax
+            .body
+            .matches(r#"<div class="post" id="post-"#)
+            .count(),
+        20,
+        "{}",
+        recent_posts_page_two_ajax.body,
+    );
+    assert!(
+        recent_posts_page_two_ajax.body.contains("Visible Post 02")
+            && recent_posts_page_two_ajax.body.contains("Visible Post 00")
+            && !recent_posts_page_two_ajax.body.contains("Visible Post 03")
+            && !recent_posts_page_two_ajax
+                .body
+                .contains("Hidden Newest Post")
+            && !recent_posts_page_two_ajax
+                .body
+                .contains("Private Newest Post")
+            && recent_posts_page_two_ajax
+                .body
+                .contains(r#"<span class="pager-no">page 2</span>"#)
+            && recent_posts_page_two_ajax.body.contains("updateList(1)"),
+        "{}",
+        recent_posts_page_two_ajax.body,
+    );
 
     let first_page = page_view_html(&runner, site_id, RECENT_POSTS_PAGE, "").await;
     assert!(
