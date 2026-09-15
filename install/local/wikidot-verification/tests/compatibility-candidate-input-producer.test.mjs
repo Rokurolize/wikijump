@@ -140,6 +140,13 @@ test("compatibility candidate input producer owns a dedicated Wikidot Q778 autho
   });
 });
 
+test("compatibility candidate input producer keeps the pending actor application metadata current", () => {
+  const source = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "../src/compatibility-candidate-input-producer.mjs"), "utf8");
+  const metadata = `'${JSON.stringify({ status: "pending", comment: "compatibility candidate pending actor", reply: null })}'::jsonb`;
+  assert.equal(source.includes(metadata), true);
+  assert.equal(source.includes(`update relation set metadata=${metadata} where relation_type='application' and dest_type='site' and dest_id=\${SITE_ID} and from_type='user' and from_id=\${ACTOR_IDS.pending} and created_by=\${ACTOR_IDS.pending} and overwritten_at is null and deleted_at is null;`), true);
+});
+
 test("Q1026 candidate user seeding is insert-only and rejects identity-shape drift", () => {
   const sql = buildQ1026InsertOnlyUserSeedSql();
   assert.match(sql, /^begin;[\s\S]*insert into known_user[\s\S]*on conflict do nothing;[\s\S]*insert into wikidot_user[\s\S]*; select setval/u);
