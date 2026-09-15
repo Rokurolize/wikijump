@@ -4,11 +4,19 @@ import path from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
 
-import { normalizeThemeSetting } from "../src/lib/site-settings.js"
+import {
+  normalizeThemeSetting,
+  resolveThemePreviewUrl
+} from "../src/lib/site-settings.js"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const layoutSource = fs.readFileSync(path.join(root, "src/routes/+layout.svelte"), "utf8")
 const svelteConfigSource = fs.readFileSync(path.join(root, "svelte.config.js"), "utf8")
+const serverSource = [
+  "src/lib/server/deepwell/index.ts",
+  "src/lib/server/deepwell/views.ts",
+  "src/lib/server/load/admin.ts"
+].map((relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8"))
 
 const shippedSourceFiles = (directory) => {
   const output = []
@@ -61,8 +69,15 @@ test("external theme resources use browser-direct failure ownership", () => {
     layoutSource,
     /<link data-wikidot-site-theme href=\{effectiveTheme\.url\} rel="stylesheet" \/>/u
   )
+  assert.match(
+    layoutSource,
+    /<link data-wikidot-theme-preview href=\{themePreviewUrl\} rel="stylesheet" \/>/u
+  )
   assert.doesNotMatch(layoutSource, /\b(?:fetch|XMLHttpRequest)\b/u)
   assert.doesNotMatch(layoutSource, /\bon(?:error|load)=/u)
+  for (const source of serverSource) {
+    assert.doesNotMatch(source, /theme_url/u, "server source must not proxy ThemePreviewer URLs")
+  }
   assert.match(svelteConfigSource, /"style-src": styleSources\(\)/u)
   assert.doesNotMatch(svelteConfigSource, /["']https:["']/u)
 
@@ -76,4 +91,9 @@ test("external theme resources use browser-direct failure ownership", () => {
   })
   assert.notDeepEqual(currentTheme, previousTheme)
   assert.deepEqual(currentTheme, { type: "built_in", id: 1 })
+  assert.equal(
+    resolveThemePreviewUrl(true, "https://themes.example/current.css"),
+    null,
+    "an invalid current preview must not reuse the previous stylesheet"
+  )
 })
