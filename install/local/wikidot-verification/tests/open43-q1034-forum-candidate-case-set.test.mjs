@@ -108,8 +108,8 @@ function forumResult(label, currentFixture, { badForwardRoots = false } = {}) {
   return structuredClone(outputs[label]);
 }
 
-function frontForumBody(currentFixture) {
-  return `<div class="front-forum-box"><div><h1><span><a href="/forum/t-${currentFixture.visible_thread_id}/${currentFixture.thread_route_name}">Visible FrontForum thread</a></span></h1><p>by author 1 Jan 2026 00:00</p><div>FrontForum body</div><p><a href="/forum/t-${currentFixture.visible_thread_id}/${currentFixture.thread_route_name}">Comments: 1</a> | category: <a href="/forum/c-${currentFixture.primary_category_id}/${currentFixture.category_route_name}">Q1034 / Primary</a></p></div></div>`;
+function frontForumBody(currentFixture, { threadId = currentFixture.visible_thread_id, threadRouteName = currentFixture.thread_route_name } = {}) {
+  return `<div class="front-forum-box"><div><h1><span><a href="/forum/t-${threadId}/${threadRouteName}">Visible FrontForum thread</a></span></h1><p>by author 1 Jan 2026 00:00</p><div>FrontForum body</div><p><a href="/forum/t-${threadId}/${threadRouteName}">Comments: 1</a> | category: <a href="/forum/c-${currentFixture.primary_category_id}/${currentFixture.category_route_name}">Q1034 / Primary</a></p></div></div>`;
 }
 
 function labelFor(moduleName, parameters, currentFixture) {
@@ -132,12 +132,13 @@ function labelFor(moduleName, parameters, currentFixture) {
 function fakeSession(currentFixture, options = {}) {
   const calls = [];
   const sourceBySlug = new Map(Object.entries(Q1034_SAVED_SOURCES).map(([role, source]) => [currentFixture.pages[role].slug, source]));
+  const frontForumOptions = { threadId: options.frontForumThreadId ?? currentFixture.visible_thread_id, threadRouteName: options.frontForumThreadRouteName ?? currentFixture.thread_route_name };
   const savedBody = (slug) => {
     if (slug === currentFixture.pages.comments_forward.slug) return `<div class="comments-box"><h1>Q1034 Forward</h1>${forumResult("comments-forward", currentFixture, options).body}</div>`;
     if (slug === currentFixture.pages.comments_reverse.slug) return `<div class="comments-box"><h1>Q1034 Reverse</h1><div class="thread-container reverse">${forumResult("comments-reverse", currentFixture).body}</div></div>`;
     if (slug === currentFixture.pages.comments_hidden.slug) return '<div class="comments-box"><div id="comments-options-hidden"></div><div id="thread-container"></div></div>';
     if (slug === currentFixture.pages.comments_missing.slug) return '<div class="comments-box"><div id="comments-options-hidden"></div><div id="thread-container"></div></div>';
-    if (slug === currentFixture.pages.frontforum.slug) return frontForumBody(currentFixture);
+    if (slug === currentFixture.pages.frontforum.slug) return frontForumBody(currentFixture, frontForumOptions);
     return `<div class="forum-recent-posts-box">${forumResult("recent-posts", currentFixture).body}</div>`;
   };
   return {
@@ -157,7 +158,7 @@ function fakeSession(currentFixture, options = {}) {
         const source = params.wikitext;
         if (source.includes("RecentThreadsX")) return { body: `${source} No such module, please check available modules and fix this page.` };
         if (source.startsWith("before ") || source.startsWith("@@")) return { body: source.replaceAll("@@", "") };
-        if (source.includes("FrontForum")) return { body: frontForumBody(currentFixture) };
+        if (source.includes("FrontForum")) return { body: frontForumBody(currentFixture, frontForumOptions) };
         return { body: "later." };
       }
       if (method === "wikidot_forum_module") return forumResult(labelFor(params.module_name, params.parameters, currentFixture), currentFixture, options);
@@ -212,7 +213,7 @@ test("Q1034 runs all three unblocked forum rows through the canonical candidate 
   const selected = await candidateCaseSet("open43-q1034-forum");
   assert.deepEqual(selected.caseIds, OPEN43_Q1034_CASE_IDS);
   const currentFixture = fixture();
-  const session = fakeSession(currentFixture);
+  const session = fakeSession(currentFixture, { frontForumThreadId: 9100124, frontForumThreadRouteName: "q778-mini-posts" });
   const caseSet = createOpen43Q1034ForumCandidateCaseSet({ sessionFactory: () => session });
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "open43-q1034-candidate-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
@@ -237,6 +238,8 @@ test("Q1034 runs all three unblocked forum rows through the canonical candidate 
   assert.deepEqual(receipt.denominator.case_ids, OPEN43_Q1034_CASE_IDS);
   const publicReadReceipt = JSON.parse(await fs.readFile(path.join(root, "evidence", "cases", `${OPEN43_Q1034_CASE_IDS[0]}.json`), "utf8"));
   assert.equal(publicReadReceipt.verification.frontforum_preview_case_count, 6);
+  assert.equal(publicReadReceipt.observations.saved.find(({ role }) => role === "frontforum").frontforum_thread_path, "/forum/t-9100124/q778-mini-posts");
+  assert.equal(publicReadReceipt.observations.frontforum_previews.every(({ selected_thread_path }) => selected_thread_path === "/forum/t-9100124/q778-mini-posts"), true);
   assert.equal(session.calls.filter(({ seam }) => seam === "ajax").some(({ fields }) => fields.moduleName === "forum/ForumNewThreadModule"), true);
   assert.deepEqual(session.calls.filter(({ seam }) => seam === "route").map(({ pathname }) => pathname).filter((pathname) => pathname.includes(`/forum/c-${currentFixture.pagination_category_id}/p/`)), [1, 2, 11, 12].map((pageNumber) => `/forum/c-${currentFixture.pagination_category_id}/p/${pageNumber}`));
 });

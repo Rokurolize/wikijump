@@ -278,8 +278,15 @@ function foundPage(value, name) {
   return data;
 }
 
+function frontForumThreadPath(body, label) {
+  const paths = [...body.matchAll(/href="(\/forum\/t-[^"]+)"/gu)].map((match) => match[1]);
+  expect(paths.length === 2 && paths[0] === paths[1], `${label} has the wrong selected FrontForum thread boundary`);
+  return paths[0];
+}
+
 function validateSavedBody(role, body, fixture, label) {
   expect(fixture.forbidden_markers.every((marker) => !body.includes(marker)), `${label} leaked a permission-filtered marker`);
+  let frontforumThreadPath = null;
   if (role === "comments_forward") {
     expect(body.includes('class="comments-box"') && body.includes("<h1>Q1034 Forward</h1>"), `${label} has no titled Comments wrapper`);
     requireOrderedMarkers(body, fixture.comments.forward_roots, fixture.comments.forward_excluded, label);
@@ -291,10 +298,12 @@ function validateSavedBody(role, body, fixture, label) {
   } else if (role === "comments_missing") {
     expect(body.includes('class="comments-box"') && body.includes('id="comments-options-hidden"') && !body.includes('id="thread-container-posts"'), `${label} did not preserve the no-discussion Comments shell`);
   } else if (role === "frontforum") {
-    expect(body.includes('class="front-forum-box"') && count(body, 'href="/forum/t-') === 2, `${label} has the wrong saved FrontForum boundary`);
+    expect(body.includes('class="front-forum-box"'), `${label} has no saved FrontForum wrapper`);
+    frontforumThreadPath = frontForumThreadPath(body, label);
   } else {
     expect(body.includes('class="forum-recent-posts-box"') && count(body, '<div class="post" id="post-') === 20, `${label} has the wrong saved RecentPosts boundary`);
   }
+  return frontforumThreadPath;
 }
 
 function savedPageObservation(role, page, view, fixture) {
@@ -303,8 +312,8 @@ function savedPageObservation(role, page, view, fixture) {
   expect(typeof page.wikitext === "string" && sha256Text(page.wikitext) === expected.source_sha256, `Q1034 ${role} source changed`);
   const data = foundPage(view, `Q1034 ${role} page_view`);
   expect(data.wikitext === Q1034_SAVED_SOURCES[role], `Q1034 ${role} page_view returned another source`);
-  validateSavedBody(role, data.compiled_body_html, fixture, `Q1034 ${role} page_view`);
-  return Object.freeze({ role, page_id: page.page_id, revision_id: page.revision_id, slug: page.slug, source_sha256: expected.source_sha256, body_sha256: sha256Text(data.compiled_body_html), verified: true });
+  const frontforumThreadPath = validateSavedBody(role, data.compiled_body_html, fixture, `Q1034 ${role} page_view`);
+  return Object.freeze({ role, page_id: page.page_id, revision_id: page.revision_id, slug: page.slug, source_sha256: expected.source_sha256, body_sha256: sha256Text(data.compiled_body_html), ...(frontforumThreadPath === null ? {} : { frontforum_thread_path: frontforumThreadPath }), verified: true });
 }
 
 function publicBody(response, name) {
@@ -360,13 +369,14 @@ function recentThreadsObservation(spec, result) {
   return Object.freeze({ case_id: spec.case_id, source_sha256: sha256Text(spec.source), result: spec.result, body_sha256: sha256Text(body), verified: true });
 }
 
-function frontForumPreviewObservation(spec, result, fixture) {
+function frontForumPreviewObservation(spec, result, expectedThreadPath) {
   const body = result?.body;
   expect(typeof body === "string", `${spec.case_id} returned no PagePreview body`);
   expect(body.includes('class="front-forum-box"'), `${spec.case_id} did not render the FrontForum wrapper`);
-  expect(count(body, `/forum/t-${fixture.visible_thread_id}/`) === 2, `${spec.case_id} did not render one selected FrontForum thread`);
+  const selectedThreadPath = frontForumThreadPath(body, spec.case_id);
+  expect(selectedThreadPath === expectedThreadPath, `${spec.case_id} changed the selected FrontForum thread`);
   expect(!body.includes("[[module FrontForum"), `${spec.case_id} left the FrontForum module literal`);
-  return Object.freeze({ case_id: spec.case_id, source_sha256: sha256Text(spec.source), body_sha256: sha256Text(body), verified: true });
+  return Object.freeze({ case_id: spec.case_id, source_sha256: sha256Text(spec.source), body_sha256: sha256Text(body), selected_thread_path: selectedThreadPath, verified: true });
 }
 
 function verifyMatrix(observed, specs, name) {
@@ -397,6 +407,8 @@ class Open43Q1034Run {
       const view = await this.#session.rpc("page_view", { site_id: this.#fixture.site_id, session_token: null, route: { slug: expected.slug, extra: "" }, locales: ["en-US", "en"] }, { actor: "anonymous", siteId: this.#fixture.site_id, page: expected.slug });
       saved.push(savedPageObservation(role, page, view, this.#fixture));
     }
+    const frontforumThreadPath = saved.find(({ role }) => role === "frontforum")?.frontforum_thread_path;
+    expect(typeof frontforumThreadPath === "string" && frontforumThreadPath.startsWith("/forum/t-"), "Q1034 saved FrontForum selected thread identity is missing");
 
     const specs = forumSpecs(this.#fixture);
     const direct = [];
@@ -435,7 +447,7 @@ class Open43Q1034Run {
     const frontForumPreviews = [];
     for (const spec of FRONT_FORUM_PREVIEW_CASES) {
       const result = await this.#session.rpc("wikidot_page_preview", { site_id: this.#fixture.site_id, title: spec.case_id, wikitext: spec.source }, { actor: "anonymous", siteId: this.#fixture.site_id });
-      frontForumPreviews.push(frontForumPreviewObservation(spec, result, this.#fixture));
+      frontForumPreviews.push(frontForumPreviewObservation(spec, result, frontforumThreadPath));
     }
 
     return [
@@ -457,6 +469,8 @@ function verifyCase(caseId, observations, fixture) {
     expect(Array.isArray(observations.frontforum_previews) && observations.frontforum_previews.length === FRONT_FORUM_PREVIEW_CASES.length, "Q1034 FrontForum preview denominator changed");
     for (const [index, spec] of FRONT_FORUM_PREVIEW_CASES.entries()) expect(observations.frontforum_previews[index]?.case_id === spec.case_id && observations.frontforum_previews[index].source_sha256 === sha256Text(spec.source) && observations.frontforum_previews[index].verified === true, `Q1034 FrontForum preview matrix changed at ${spec.case_id}`);
     expect(new Set(observations.frontforum_previews.map(({ body_sha256 }) => body_sha256)).size === 1, "Q1034 FrontForum feed and relative-link controls changed the selected body");
+    const savedFrontforumThreadPath = observations.saved.find(({ role }) => role === "frontforum")?.frontforum_thread_path;
+    expect(typeof savedFrontforumThreadPath === "string" && observations.frontforum_previews.every(({ selected_thread_path }) => selected_thread_path === savedFrontforumThreadPath), "Q1034 FrontForum previews changed the saved selected thread identity");
     return { verified: true, saved_page_count: observations.saved.length, public_forum_case_count: observations.direct.length, frontforum_preview_case_count: observations.frontforum_previews.length, permission_before_limit: true, comments_root_boundary: 10, thread_post_boundary: 20 };
   }
   if (caseId === OPEN43_Q1034_CASE_IDS[1]) {
