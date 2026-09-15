@@ -792,13 +792,17 @@ export async function prepareCompatibilityCandidateInputs(args) {
       .map(({ case_id }) => case_id);
     if (JSON.stringify(mediaCaseIds) !== JSON.stringify(Object.keys(MEDIA_BROWSER_EVIDENCE))) throw new Error("media browser audit denominator drifted during private input production");
     const mediaInput = structuredClone(general);
+    const mediaCases = [];
+    for (const caseId of mediaCaseIds) {
+      const evidenceId = MEDIA_BROWSER_EVIDENCE[caseId];
+      const evidence = mediaAudit.evidence_registry?.[evidenceId];
+      if (typeof evidence?.path !== "string" || !/^[0-9a-f]{64}$/u.test(evidence.sha256 ?? "")) throw new Error(`${caseId} media browser evidence is absent from the audit registry`);
+      const evidenceBytes = await fs.readFile(evidence.path);
+      if (sha256(evidenceBytes) !== evidence.sha256) throw new Error(`${caseId} retained media browser evidence SHA-256 does not match the audit registry`);
+      mediaCases.push({ case_id: caseId, evidence: { evidence_id: evidenceId, path: evidence.path, sha256: evidence.sha256 } });
+    }
     mediaInput.media_browser = {
-      cases: mediaCaseIds.map((caseId) => {
-        const evidenceId = MEDIA_BROWSER_EVIDENCE[caseId];
-        const evidence = mediaAudit.evidence_registry?.[evidenceId];
-        if (typeof evidence?.path !== "string" || !/^[0-9a-f]{64}$/u.test(evidence.sha256 ?? "")) throw new Error(`${caseId} media browser evidence is absent from the audit registry`);
-        return { case_id: caseId, evidence: { evidence_id: evidenceId, path: evidence.path, sha256: evidence.sha256 } };
-      }),
+      cases: mediaCases,
     };
     const mediaPath = path.join(args["output-private-dir"], "media-browser.json");
     await fs.writeFile(mediaPath, `${JSON.stringify(mediaInput, null, 2)}\n`, { mode: 0o600, flag: "wx" });

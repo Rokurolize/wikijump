@@ -30,6 +30,8 @@ const MAX_CENTER_DELTA = 0.5;
 const MEDIUM_RESIZE_LONGEST_SIDE = 500;
 const INITIAL_BYTES = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAQAAAACAQMAAABFZu8gAAAAA1BMVEX/AAAZ4gk3AAAADElEQVQI12NgYGAAAAAEAAEnNCcKAAAAAElFTkSuQmCC", "base64");
 const SECOND_BYTES = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAAEAQMAAACeIXx6AAAAA1BMVEUAAP+KeNJXAAAAC0lEQVQI12NggAAAAAgAAS8g3TEAAAAASUVORK5CYII=", "base64");
+const M776_POSITIVE_SOURCE = '[[f=image float.png width="100px" alt="G06_IMAGE_ALT"]]';
+const M776_NEGATIVE_SOURCE = "[[f=image\u00a0float.png width=\"100px\" alt=\"G06_IMAGE_ALT\"]]";
 const EVIDENCE_BY_CASE = Object.freeze({
   M756_BROWSER_CACHE_TRANSITIONS: "E_ICON_OBSERVATIONS",
   M776_BROWSER_GEOMETRY_AND_NETWORK: "E_G06",
@@ -465,10 +467,10 @@ class Open43MediaBrowserRun {
     await this.#upload(negative, filename, INITIAL_BYTES);
     const positiveSource = centered
       ? `[[=image ${filename} width="100px"]]\n[[=image  ${filename}  width="100px"]]`
-      : `[[f<image ${filename} width="100px" alt="G06_IMAGE_ALT"]]`;
+      : M776_POSITIVE_SOURCE;
     const negativeSource = centered
       ? `[[=image\u00a0${filename} width="100px"]]`
-      : `[[f=image\u00a0${filename} width="100px" alt="G06_IMAGE_ALT"]]`;
+      : M776_NEGATIVE_SOURCE;
     await this.#editPage(positive, positiveSource);
     await this.#editPage(negative, negativeSource);
     const positivePage = await this.#rpc("page_get", { site_id: this.#siteId, page: positive.slug, details: { wikitext: true, compiled: true } });
@@ -709,17 +711,28 @@ function imagePath(caseId, value, centered) {
   const observation = object(value, `${caseId} observations`);
   cleanDiagnostics(observation.positive, `${caseId}.positive`);
   cleanDiagnostics(observation.negative, `${caseId}.negative`);
+  const initial = object(observation.positive.initial, `${caseId}.positive.initial`);
   const positive = object(observation.positive.settled, `${caseId}.positive.settled`);
   const responsive = object(observation.positive.responsive, `${caseId}.positive.responsive`);
+  const negativeInitial = object(observation.negative.initial, `${caseId}.negative.initial`);
   const negative = object(observation.negative.settled, `${caseId}.negative.settled`);
+  const negativeResponsive = object(observation.negative.responsive, `${caseId}.negative.responsive`);
   const expectedCount = centered ? 2 : 1;
-  if (!Array.isArray(positive.images) || positive.images.length !== expectedCount || !Array.isArray(responsive.images) || responsive.images.length !== expectedCount) throw new Error(`${caseId} positive image denominator is wrong`);
-  if (!Array.isArray(negative.images) || negative.images.length !== 0) throw new Error(`${caseId} negative whitespace control acquired image ownership`);
   const expectedFile = object(observation.expected_file, `${caseId}.expected_file`);
-  for (const [phase, snapshot] of [["settled", positive], ["responsive", responsive]]) for (const image of snapshot.images) {
+  const expectedClass = centered ? "aligncenter" : "image-container";
+  if (!centered) {
+    const source = object(observation.source, `${caseId}.source`);
+    if (source.positive_sha256 !== sha256(M776_POSITIVE_SOURCE) || source.negative_sha256 !== sha256(M776_NEGATIVE_SOURCE)) throw new Error(`${caseId} source fixture drifted from retained G06 syntax`);
+  }
+  if (expectedFile.filename !== (centered ? "center.png" : "float.png") || expectedFile.width !== MEDIUM_RESIZE_LONGEST_SIDE || expectedFile.height !== MEDIUM_RESIZE_LONGEST_SIDE / 2 || expectedFile.source_width !== 4 || expectedFile.source_height !== 2 || expectedFile.byte_sha256 !== sha256(INITIAL_BYTES)) throw new Error(`${caseId} expected file contract drifted`);
+  const phases = [["initial", initial], ["settled", positive], ["responsive", responsive]];
+  if (phases.some(([, snapshot]) => !Array.isArray(snapshot.images) || snapshot.images.length !== expectedCount)) throw new Error(`${caseId} positive image denominator is wrong`);
+  if ([negativeInitial, negative, negativeResponsive].some((snapshot) => !Array.isArray(snapshot.images) || snapshot.images.length !== 0)) throw new Error(`${caseId} negative whitespace control acquired image ownership`);
+  for (const [phase, snapshot] of phases) for (const image of snapshot.images) {
     if (image.complete !== true || image.natural_width !== expectedFile.width || image.natural_height !== expectedFile.height) throw new Error(`${caseId} ${phase} image load state or natural geometry is wrong`);
-    if (image.width_attribute !== "100px" || image.computed_width !== "100px" || Math.abs(image.rendered_width - 100) > 0.5) throw new Error(`${caseId} ${phase} image width is wrong`);
-    if (centered ? !String(image.container_class).split(/\s+/u).includes("aligncenter") : !String(image.container_class).split(/\s+/u).includes("floatleft")) throw new Error(`${caseId} ${phase} image alignment class is wrong`);
+    if (image.width_attribute !== "100px" || image.computed_width !== "100px" || Math.abs(image.rendered_width - 100) > 0.5 || Math.abs(image.rendered_height - 50) > 0.5) throw new Error(`${caseId} ${phase} image width is wrong`);
+    const classes = String(image.container_class).split(/\s+/u);
+    if (centered ? !classes.includes(expectedClass) : classes.includes("floatleft") || classes.includes("floatright") || !classes.includes(expectedClass)) throw new Error(`${caseId} ${phase} image alignment class is wrong`);
     if (centered && (!Number.isFinite(image.center_delta) || image.center_delta > MAX_CENTER_DELTA)) throw new Error(`${caseId} ${phase} image is not centered`);
     const source = new URL(image.source_url);
     const target = new URL(image.click_target_url);
@@ -727,7 +740,7 @@ function imagePath(caseId, value, centered) {
     if (!target.hostname.endsWith(".wjfiles.localhost") || target.pathname !== `/local--files/${new URL(observation.positive.url).pathname.slice(1)}/${expectedFile.filename}`) throw new Error(`${caseId} click target route is wrong`);
   }
   const requiredPath = `/local--resized-images/${new URL(observation.positive.url).pathname.slice(1)}/${expectedFile.filename}/medium.jpg`;
-  if (!observation.positive.diagnostics.candidate_requests.some(({ pathname }) => pathname === requiredPath)) throw new Error(`${caseId} omitted the exact image request`);
+  if (!observation.positive.diagnostics.candidate_requests.some(({ method, resource_type, pathname }) => method === "GET" && resource_type === "image" && pathname === requiredPath)) throw new Error(`${caseId} omitted the exact image request`);
   if (observation.negative.diagnostics.candidate_requests.some(({ pathname }) => pathname.endsWith(`/${expectedFile.filename}/medium.jpg`))) throw new Error(`${caseId} negative control requested the image`);
   return { verified: true, natural_width: expectedFile.width, natural_height: expectedFile.height, responsive_viewport: responsive.viewport, image_request_path: requiredPath, negative_boundary_verified: true };
 }

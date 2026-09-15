@@ -118,6 +118,13 @@ test("compatibility candidate input producer binds the retained Wikidot favicon 
   assert.match(source, /update page set from_wikidot=true where page_id=\$\{prior\.page_id\}/u);
 });
 
+test("compatibility candidate input producer verifies retained media evidence before publication", () => {
+  const source = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "../src/compatibility-candidate-input-producer.mjs"), "utf8");
+  assert.match(source, /const evidenceBytes = await fs\.readFile\(evidence\.path\)/u);
+  assert.match(source, /sha256\(evidenceBytes\) !== evidence\.sha256/u);
+  assert.match(source, /cases: mediaCases/u);
+});
+
 test("compatibility candidate input producer seeds the SearchAll saved-page fixture", () => {
   const source = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "../src/compatibility-candidate-input-producer.mjs"), "utf8");
   assert.match(source, /slug: "search:all"[\s\S]*?wikitext: "\[\[module SearchAll\]\]"/u);
