@@ -533,6 +533,14 @@ class Open43MediaBrowserRun {
     const owned = await this.#browser.newCandidateContext({ viewport: DEFAULT_VIEWPORT });
     const browserPage = await owned.context.newPage();
     const diagnostics = attachDiagnostics(browserPage);
+    const enabledViewerPaths = new Set([
+      `/local--files/${pageFixture.slug}/gallery-one.png`,
+      `/local--files/${pageFixture.slug}/gallery-two.png`,
+    ]);
+    const viewerImageRequests = trackRequestQuiescence(
+      browserPage,
+      (request) => request.method() === "GET" && request.resourceType() === "image" && enabledViewerPaths.has(new URL(request.url()).pathname),
+    );
     await installCspProbe(browserPage);
     await browserPage.addInitScript(() => {
       globalThis.__open43MediaDocumentToken = crypto.randomUUID();
@@ -561,6 +569,7 @@ class Open43MediaBrowserRun {
       const settledThumbnails = await browserPage.evaluate(galleryImageSnapshot);
       await browserPage.locator("#gallery-box-1 a.with-lb").first().click({ timeout: 300_000 });
       const loading = await browserPage.evaluate(lightboxSnapshot);
+      await viewerImageRequests.waitForQuiet();
       await browserPage.locator("#lightbox-image").waitFor({ state: "visible", timeout: 300_000 });
       const first = await browserPage.evaluate(lightboxSnapshot);
       await browserPage.keyboard.press("ArrowRight");
@@ -569,6 +578,7 @@ class Open43MediaBrowserRun {
         "image 2 of 2",
         { timeout: 300_000 },
       );
+      await viewerImageRequests.waitForQuiet();
       const next = await browserPage.evaluate(lightboxSnapshot);
       await browserPage.keyboard.press("p");
       await browserPage.waitForFunction(
@@ -576,6 +586,7 @@ class Open43MediaBrowserRun {
         "image 1 of 2",
         { timeout: 300_000 },
       );
+      await viewerImageRequests.waitForQuiet();
       const previous = await browserPage.evaluate(lightboxSnapshot);
       await browserPage.locator("#jquery-overlay").click({ position: { x: 1, y: 1 } });
       const overlayClosed = await browserPage.evaluate(lightboxSnapshot);
@@ -608,6 +619,7 @@ class Open43MediaBrowserRun {
         diagnostics: await finishDiagnostics(browserPage, diagnostics),
       };
     } finally {
+      viewerImageRequests.close();
       await browserPage.close().catch(() => undefined);
     }
   }

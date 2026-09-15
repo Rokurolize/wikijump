@@ -380,6 +380,29 @@ test("M1043 verifies thumbnail identity and viewer failure boundaries without a 
   const replacedDocument = structuredClone(observations);
   replacedDocument.next.document_token = "new-document";
   assert.throws(() => verifyOpen43MediaBrowserCase("M1043_BROWSER_RENDER_AND_VIEWER", replacedDocument), /replaced the document/u);
+
+  const abortedViewerImage = structuredClone(observations);
+  abortedViewerImage.diagnostics.candidate_failures = [{
+    pathname: `/local--files/${slug}/gallery-one.png`,
+    method: "GET",
+    resource_type: "image",
+    error: "net::ERR_ABORTED",
+    phase: null,
+  }];
+  assert.throws(() => verifyOpen43MediaBrowserCase("M1043_BROWSER_RENDER_AND_VIEWER", abortedViewerImage), /candidate-owned request failure/u);
+});
+
+test("M1043 waits for enabled full-image requests to settle before each viewer transition", () => {
+  const adapter = read("install/local/wikidot-verification/src/open43-media-browser-candidate.mjs");
+  const start = adapter.indexOf("async #galleryCase()");
+  const end = adapter.indexOf("async #uploadBrowserCase()", start);
+  assert.ok(start >= 0 && end > start);
+  const gallery = adapter.slice(start, end);
+  assert.match(gallery, /const viewerImageRequests = trackRequestQuiescence/u);
+  assert.match(gallery, /gallery-one\.png/u);
+  assert.match(gallery, /gallery-two\.png/u);
+  assert.equal([...gallery.matchAll(/viewerImageRequests\.waitForQuiet\(\)/gu)].length, 3);
+  assert.match(gallery, /viewerImageRequests\.close\(\)/u);
 });
 
 test("M1062 requires the failed empty action interval before the successful upload", () => {
