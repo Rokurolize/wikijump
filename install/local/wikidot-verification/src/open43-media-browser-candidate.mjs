@@ -792,7 +792,7 @@ function cleanDiagnostics(value, name, { allowCandidateFailure = null, maxAllowe
   }
   if (allowedFailureCount > maxAllowedCandidateFailures) throw new Error(`${name} recorded too many tolerated candidate-owned lifecycle cancellations`);
   if (!Array.isArray(diagnostics.page_errors) || diagnostics.page_errors.length !== 0) throw new Error(`${name} emitted page errors`);
-  if (!Array.isArray(diagnostics.console_errors) || diagnostics.console_errors.length !== 0) throw new Error(`${name} emitted console errors`);
+  if (!Array.isArray(diagnostics.console_errors) || diagnostics.console_errors.length !== 0) throw new Error(`${name} emitted console errors: ${JSON.stringify(diagnostics.console_errors)}`);
   if (!Array.isArray(diagnostics.csp_violations) || diagnostics.csp_violations.some(({ blocked_uri }) => typeof blocked_uri === "string" && candidateOwnedUrl(blocked_uri))) throw new Error(`${name} violated CSP at a candidate-owned boundary`);
   return diagnostics;
 }
