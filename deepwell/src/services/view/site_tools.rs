@@ -13,7 +13,10 @@
 use super::service::ViewService;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::permission::{CheckPermissionContext, PermissionService};
-use crate::services::{PageRevisionService, ServiceContext};
+use crate::services::{
+    PageDraftPageType, PageDraftService, PageDraftView, PageRevisionService,
+    ServiceContext,
+};
 use crate::types::{Action, Permission, Reference, Resource};
 use sea_orm::sea_query::ArrayType;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
@@ -308,6 +311,13 @@ impl ViewService {
             .collect::<Vec<_>>();
         targets.sort_by(|left, right| compare_case_folded(&left.slug, &right.slug));
         Ok(targets)
+    }
+
+    pub async fn site_tools_list_drafts(
+        ctx: &ServiceContext<'_>,
+        input: GetSiteToolsPages,
+    ) -> Result<Vec<PageDraftView>> {
+        PageDraftService::list(ctx, input.site_id, PageDraftPageType::All).await
     }
 }
 

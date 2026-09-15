@@ -32,6 +32,7 @@ use crate::services::page::{
     PageEditPermissionOutput, PageLifecycleIdentity, RestorePage, RestorePageOutput,
     RollbackPage, SetPageLayout,
 };
+use crate::services::page_draft::{PageDraftIdentity, PageDraftService, SavePageDraft};
 use crate::services::page_query::PageQueryService;
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
@@ -691,6 +692,40 @@ pub async fn page_create(
     PageService::create(ctx, input)
         .await
         .or_raise(|| Error::new("failed to create page", ErrorType::Page))
+}
+
+/// Persist the observed full-page editor draft state for the current actor.
+pub async fn page_draft_save(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<bool> {
+    let input: SavePageDraft = parse!(params, Page);
+    PageDraftService::save(ctx, input)
+        .await
+        .map(|_| true)
+        .or_raise(|| Error::new("failed to save page draft", ErrorType::Page))
+}
+
+/// Return whether the current actor owns the exact observed draft identity.
+pub async fn page_draft_exists(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<bool> {
+    let input: PageDraftIdentity = parse!(params, Page);
+    PageDraftService::exists(ctx, input)
+        .await
+        .or_raise(|| Error::new("failed to check page draft", ErrorType::Page))
+}
+
+/// Remove the current actor's exact observed draft identity.
+pub async fn page_draft_remove(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<bool> {
+    let input: PageDraftIdentity = parse!(params, Page);
+    PageDraftService::remove(ctx, input)
+        .await
+        .or_raise(|| Error::new("failed to remove page draft", ErrorType::Page))
 }
 
 pub async fn page_get(

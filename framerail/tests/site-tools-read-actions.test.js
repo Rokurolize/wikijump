@@ -5,6 +5,7 @@ import test from "node:test"
 
 import { handleAjaxModuleConnectorRequest } from "../src/lib/server/ajax-module-connector.js"
 import {
+  renderWikidotListDrafts,
   renderWikidotSiteTools,
   renderWikidotWantedPages
 } from "../src/lib/server/wikidot-site-tools.js"
@@ -148,6 +149,23 @@ test("Site Tools shell and wanted report preserve the observed read-only DOM", (
   assert.equal(wanted.match(/class="pager"/gu)?.length, 2)
   assert.match(wanted, /class="newpage"/u)
   assert.doesNotMatch(wanted, /missing-50/u)
+})
+
+test("ListDrafts renders the bounded row hierarchy and escapes draft fields", () => {
+  const empty = renderWikidotListDrafts()
+  assert.equal(empty, `<div class="list-drafts-box">
+            </div>`)
+
+  const rendered = renderWikidotListDrafts([
+    { slug: "run-owned:existing", title: "Existing <draft>" },
+    { slug: "run-owned:absent", title: 'Absent "draft"' }
+  ])
+  assert.match(
+    rendered,
+    /<div class="list-drafts-item">\s*<p><a href="\/run-owned:existing">Existing &lt;draft&gt;<\/a><\/p>\s*<\/div>/u
+  )
+  assert.match(rendered, /href="\/run-owned:absent"/u)
+  assert.match(rendered, /Absent &quot;draft&quot;/u)
 })
 
 test("saved Wikidot Site tools action lazily activates the compatibility pane", async () => {

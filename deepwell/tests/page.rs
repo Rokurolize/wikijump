@@ -65,6 +65,9 @@ use deepwell::services::membership::{
     MembershipEmailInvitationOutcome,
 };
 use deepwell::services::page::{CreatePage, GetPageOutput};
+use deepwell::services::page_draft::{
+    PageDraftIdentity, PageDraftPageType, PageDraftService, SavePageDraft,
+};
 use deepwell::services::page_lock::{CreatePageLockInput, PageLockService};
 use deepwell::services::page_query::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DataFormSelector,
@@ -11220,6 +11223,353 @@ async fn listdrafts_module_matches_live_empty_draft_state() {
     assert!(
         !body.contains("[[module ListDrafts") && !body.contains("list-drafts-item"),
         "saved page view should not leak raw ListDrafts source or render nonexistent drafts:\n{body}",
+    );
+}
+
+#[tokio::test]
+async fn listdrafts_module_reads_persisted_drafts_and_enforces_target_filters() {
+    const EXISTING_SLUG: &str = "fixture-listdrafts-existing-target";
+    const ABSENT_SLUG: &str = "fixture-listdrafts-absent-target";
+    const PRIVATE_CATEGORY: &str = "fixture-listdrafts-private-category";
+    const PRIVATE_SLUG: &str = "fixture-listdrafts-private-target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let existing_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        EXISTING_SLUG,
+        "Fixture ListDrafts Existing Target",
+        "published existing target",
+    )
+    .await;
+    let existing_page_id = PageRevisionTable::find_by_id(existing_revision)
+        .one(runner.context().transaction())
+        .await
+        .expect("existing ListDrafts target revision should be readable")
+        .expect("existing ListDrafts target revision should exist")
+        .page_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        PRIVATE_CATEGORY,
+        ADMIN_USER_ID,
+        &[Action::View, Action::Create, Action::Edit],
+        "listdrafts-admin-mutator",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_SLUG,
+        "Fixture ListDrafts Private Target",
+        "private published target",
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_SLUG, PRIVATE_CATEGORY)
+        .await;
+    let private_page_id = PageTable::find()
+        .filter(
+            sea_orm::Condition::all()
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::Slug.eq(PRIVATE_SLUG)),
+        )
+        .one(runner.context().transaction())
+        .await
+        .expect("private ListDrafts target should be readable")
+        .expect("private ListDrafts target should exist")
+        .page_id;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(existing_page_id),
+    );
+    PageDraftService::save(
+        runner.context(),
+        SavePageDraft {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            page_id: Some(existing_page_id),
+            slug: EXISTING_SLUG.to_owned(),
+            title: "Existing draft v1".to_owned(),
+            wikitext: "existing draft source v1".to_owned(),
+        },
+    )
+    .await
+    .expect("existing-page draft should persist");
+    PageDraftService::save(
+        runner.context(),
+        SavePageDraft {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            page_id: None,
+            slug: ABSENT_SLUG.to_owned(),
+            title: "Absent draft v1".to_owned(),
+            wikitext: "absent draft source v1".to_owned(),
+        },
+    )
+    .await
+    .expect("not-yet-created-page draft should persist");
+    PageDraftService::save(
+        runner.context(),
+        SavePageDraft {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            page_id: Some(private_page_id),
+            slug: PRIVATE_SLUG.to_owned(),
+            title: "Private draft must stay hidden".to_owned(),
+            wikitext: "private draft source".to_owned(),
+        },
+    )
+    .await
+    .expect("private existing-page draft should persist for the administrator");
+    PageDraftService::save(
+        runner.context(),
+        SavePageDraft {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            page_id: None,
+            slug: format!("{PRIVATE_CATEGORY}:absent"),
+            title: "Private absent draft must stay hidden".to_owned(),
+            wikitext: "private absent draft source".to_owned(),
+        },
+    )
+    .await
+    .expect("private absent-page draft should persist for the administrator");
+
+    let all = PageDraftService::list(runner.context(), site_id, PageDraftPageType::All)
+        .await
+        .expect("all persisted drafts should be readable");
+    assert_eq!(all.len(), 4);
+    assert!(all.iter().any(|draft| draft.slug == EXISTING_SLUG));
+    assert!(all.iter().any(|draft| draft.slug == ABSENT_SLUG));
+    assert!(
+        all.iter()
+            .any(|draft| draft.slug == format!("{PRIVATE_CATEGORY}:absent"))
+    );
+
+    let existing =
+        PageDraftService::list(runner.context(), site_id, PageDraftPageType::Exists)
+            .await
+            .expect("existing-page draft filter should be readable");
+    let existing_slugs = existing
+        .iter()
+        .map(|draft| draft.slug.as_str())
+        .collect::<BTreeSet<_>>();
+    assert_eq!(
+        existing_slugs,
+        BTreeSet::from([EXISTING_SLUG, PRIVATE_SLUG]),
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: None,
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let all_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ListDrafts persisted all",
+            "wikitext": "[[module ListDrafts]]",
+        }),
+    );
+    assert!(all_preview.body.contains("list-drafts-item"));
+    assert!(all_preview.body.contains("Existing draft v1"));
+    assert!(all_preview.body.contains("Absent draft v1"));
+    assert!(!all_preview.body.contains("Private draft must stay hidden"));
+    assert!(
+        !all_preview
+            .body
+            .contains("Private absent draft must stay hidden")
+    );
+
+    let exists_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ListDrafts persisted existing",
+            "wikitext": r##"[[module ListDrafts pageType="exists"]]"##,
+        }),
+    );
+    assert!(exists_preview.body.contains("Existing draft v1"));
+    assert!(!exists_preview.body.contains("Absent draft v1"));
+    assert!(
+        !exists_preview
+            .body
+            .contains("Private draft must stay hidden")
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        SAMPLE_USER_ID,
+        site_id,
+        Reference::Id(private_page_id),
+    );
+    assert!(
+        PageDraftService::save(
+            runner.context(),
+            SavePageDraft {
+                site_id,
+                user_id: SAMPLE_USER_ID,
+                page_id: Some(private_page_id),
+                slug: PRIVATE_SLUG.to_owned(),
+                title: "must not edit private target".to_owned(),
+                wikitext: "must not edit private target".to_owned(),
+            },
+        )
+        .await
+        .is_err(),
+        "a user without private-page edit permission must not save a draft",
+    );
+    set_mutation_request_context(
+        &mut runner,
+        SAMPLE_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Owned(format!("{PRIVATE_CATEGORY}:absent"))),
+    );
+    assert!(
+        PageDraftService::save(
+            runner.context(),
+            SavePageDraft {
+                site_id,
+                user_id: SAMPLE_USER_ID,
+                page_id: None,
+                slug: format!("{PRIVATE_CATEGORY}:absent"),
+                title: "must not create private target draft".to_owned(),
+                wikitext: "must not create private target draft".to_owned(),
+            },
+        )
+        .await
+        .is_err(),
+        "a user without private-category create permission must not save a draft",
+    );
+
+    for (case_id, source) in [
+        (
+            "notexists-is-omitted",
+            r##"[[module ListDrafts pageType="notexists"]]"##,
+        ),
+        ("empty-is-omitted", r##"[[module ListDrafts pageType=""]]"##),
+        (
+            "unsupported-is-omitted",
+            r##"[[module ListDrafts pageType="other"]]"##,
+        ),
+        (
+            "single-quoted-is-omitted",
+            "[[module ListDrafts pageType='exists']]",
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": format!("ListDrafts {case_id}"),
+                "wikitext": source,
+            }),
+        );
+        assert!(preview.body.contains("Existing draft v1"), "{case_id}");
+        assert!(preview.body.contains("Absent draft v1"), "{case_id}");
+    }
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(existing_page_id),
+    );
+    PageDraftService::save(
+        runner.context(),
+        SavePageDraft {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            page_id: Some(existing_page_id),
+            slug: EXISTING_SLUG.to_owned(),
+            title: "Existing draft v2".to_owned(),
+            wikitext: "existing draft source v2".to_owned(),
+        },
+    )
+    .await
+    .expect("saving the same target should update one persisted draft");
+    let updated =
+        PageDraftService::list(runner.context(), site_id, PageDraftPageType::Exists)
+            .await
+            .expect("updated existing-page draft should be readable");
+    assert_eq!(updated.len(), 2);
+    assert!(
+        updated.iter().any(
+            |draft| draft.slug == EXISTING_SLUG && draft.title == "Existing draft v2"
+        )
+    );
+
+    assert!(
+        PageDraftService::exists(
+            runner.context(),
+            PageDraftIdentity {
+                site_id,
+                user_id: ADMIN_USER_ID,
+                page_id: None,
+                slug: ABSENT_SLUG.to_owned(),
+            },
+        )
+        .await
+        .expect("persisted absent-page draft should have an exact identity")
+    );
+    assert!(
+        PageDraftService::remove(
+            runner.context(),
+            PageDraftIdentity {
+                site_id,
+                user_id: ADMIN_USER_ID,
+                page_id: None,
+                slug: ABSENT_SLUG.to_owned(),
+            },
+        )
+        .await
+        .expect("explicit draft discard should succeed")
+    );
+    assert!(
+        !PageDraftService::exists(
+            runner.context(),
+            PageDraftIdentity {
+                site_id,
+                user_id: ADMIN_USER_ID,
+                page_id: None,
+                slug: ABSENT_SLUG.to_owned(),
+            },
+        )
+        .await
+        .expect("discarded draft existence check should succeed")
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: None,
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    assert!(
+        PageDraftService::save(
+            runner.context(),
+            SavePageDraft {
+                site_id,
+                user_id: ADMIN_USER_ID,
+                page_id: None,
+                slug: "fixture-listdrafts-anonymous-save".to_owned(),
+                title: "must not persist".to_owned(),
+                wikitext: "must not persist".to_owned(),
+            },
+        )
+        .await
+        .is_err(),
+        "an anonymous request must not persist another actor's page draft",
     );
 }
 

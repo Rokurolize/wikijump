@@ -25,6 +25,7 @@ pub use super::page::Entity as Page;
 pub use super::page_category::Entity as PageCategory;
 pub use super::page_connection::Entity as PageConnection;
 pub use super::page_connection_missing::Entity as PageConnectionMissing;
+pub use super::page_draft::Entity as PageDraft;
 pub use super::page_link::Entity as PageLink;
 pub use super::page_lock::Entity as PageLock;
 pub use super::page_meta_tag::Entity as PageMetaTag;

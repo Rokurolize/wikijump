@@ -17,6 +17,9 @@ import { adminView, preloadView } from "$lib/server/deepwell/views"
 import { pageFileList } from "$lib/server/deepwell/page-file"
 import {
   pageDelete,
+  pageDraftExists,
+  pageDraftRemove,
+  pageDraftSave,
   pageEdit,
   pageGet,
   pageHistory,
@@ -28,6 +31,7 @@ import {
   pageViewPermission,
   pageWhoRated,
   pageParentUpdate,
+  siteToolsListDrafts,
   siteToolsOrphanedPages,
   siteToolsWantedPages,
   wikidotPageDiscussionCreate,
@@ -236,6 +240,58 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
         }
       )
     },
+    savePageDraft: async ({
+      siteId: requestSiteId,
+      pageId,
+      slug,
+      title,
+      wikitext
+    }: {
+      siteId: number
+      pageId?: number
+      slug: string
+      title: string
+      wikitext: string
+    }) => {
+      const userId = await resolveNewPageUserId()
+      if (userId === undefined) throw new Error("page draft requires a mutation actor")
+      await pageDraftSave(
+        { siteId: requestSiteId, userId, pageId, slug, title, wikitext },
+        { ...requestContext, page: slug }
+      )
+    },
+    pageDraftExists: async ({
+      siteId: requestSiteId,
+      pageId,
+      slug
+    }: {
+      siteId: number
+      pageId?: number
+      slug: string
+    }) => {
+      const userId = await resolveNewPageUserId()
+      if (userId === undefined) return false
+      return pageDraftExists(
+        { siteId: requestSiteId, userId, pageId, slug },
+        { ...requestContext, page: slug }
+      )
+    },
+    removePageDraft: async ({
+      siteId: requestSiteId,
+      pageId,
+      slug
+    }: {
+      siteId: number
+      pageId?: number
+      slug: string
+    }) => {
+      const userId = await resolveNewPageUserId()
+      if (userId === undefined) throw new Error("page draft removal requires a mutation actor")
+      await pageDraftRemove(
+        { siteId: requestSiteId, userId, pageId, slug },
+        { ...requestContext, page: slug }
+      )
+    },
     renderListPages: ({
       siteId,
       moduleBody,
@@ -387,7 +443,8 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
         return { status: "ok", body: renderWikidotOrphanedPages(pages) }
       }
       if (moduleName === "list/ListDraftsModule") {
-        return { status: "ok", body: renderWikidotListDrafts() }
+        const drafts = await siteToolsListDrafts(siteId, requestContext)
+        return { status: "ok", body: renderWikidotListDrafts(drafts) }
       }
       return { status: "not_ok", body: "" }
     },
