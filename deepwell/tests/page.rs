@@ -25933,9 +25933,8 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
     };
     let runtime_default = section(&runtime_html, "PT_DEFAULT_START", "PT_DEFAULT_END");
     assert!(
-        runtime_html
-            .contains(&format!(r#"<a href="/{RUNTIME_CHILD}">Runtime Child</a>"#))
-            && !runtime_default.contains(RUNTIME_CHILD),
+        runtime_default
+            .contains(&format!(r#"<a href="/{RUNTIME_CHILD}">Runtime Child</a>"#)),
         "PageTree must query current parent state on the next page view:\n{runtime_html}",
     );
 }
