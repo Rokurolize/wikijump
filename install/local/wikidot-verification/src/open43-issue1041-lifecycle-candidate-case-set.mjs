@@ -116,7 +116,8 @@ function requireEdit(value, plan, name) {
     if (operation.before.focused_control !== true) throw new Error(`${name} edit ${mode} did not focus its control`);
     requireState(operation.during, plan, { busy: true }, `${name} edit ${mode} during`);
     requireEditDestination(operation.after, plan, `${name} edit ${mode}`);
-    if (operation.mutation_request_count !== 1) throw new Error(`${name} edit ${mode} public request count drifted`);
+    const expectedRequests = mode === "double" ? 2 : 1;
+    if (operation.mutation_request_count !== expectedRequests) throw new Error(`${name} edit ${mode} public request count drifted`);
     if (operation.after.history_length !== operation.before.history_length + 1) throw new Error(`${name} edit ${mode} did not add one history entry`);
   }
   const backForward = requirePlainObject(edit.back_forward, `${name} edit back_forward`);

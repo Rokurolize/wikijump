@@ -251,12 +251,12 @@ function capture() {
   };
 }
 
-function editOperation() {
+function editOperation({ requestCount = 1 } = {}) {
   return {
     before: pageState({ focused_control: true }),
     during: pageState({ focused_control: true, any_aria_busy: true, busy_events: [{ label: "Edit page here", busy: true }] }),
     after: editState({ history_length: 4 }),
-    mutation_request_count: 1,
+    mutation_request_count: requestCount,
   };
 }
 
@@ -338,7 +338,7 @@ function fakeBrowserAdapter(state) {
         edit: {
           click: editOperation(),
           keyboard: editOperation(),
-          double: editOperation(),
+          double: editOperation({ requestCount: 2 }),
           back_forward: { home: { path: "/" }, back: pageState(), forward: editState() },
         },
         history: { click: paneOperation("history", "history") },

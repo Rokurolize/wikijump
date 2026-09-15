@@ -52,6 +52,8 @@
 const boundActions = new WeakMap()
 /** @type {WeakSet<object>} */
 const busyActions = new WeakSet()
+/** @type {WeakMap<ActionControl, number>} */
+const busyCounts = new WeakMap()
 /** @type {WeakMap<HTMLElement, ((event: MouseEvent) => false) | null>} */
 const originalUserInfoHandlers = new WeakMap()
 
@@ -204,12 +206,14 @@ const validRateAction = (action) => {
 export const performWikidotLegacyAction = async (element, action, runtime) => {
   const busyKey =
     action.type === "rate" || action.type === "rate-cancel" ? runtime : element
-  if (busyActions.has(busyKey)) return false
+  const serialized = action.type !== "edit"
+  if (serialized && busyActions.has(busyKey)) return false
 
   const operation = operationFor(element, action, runtime)
   if (!operation) return false
 
-  busyActions.add(busyKey)
+  if (serialized) busyActions.add(busyKey)
+  busyCounts.set(element, (busyCounts.get(element) ?? 0) + 1)
   element.setAttribute("aria-busy", "true")
   try {
     await operation()
@@ -218,8 +222,14 @@ export const performWikidotLegacyAction = async (element, action, runtime) => {
     runtime.error?.(error)
     return false
   } finally {
-    busyActions.delete(busyKey)
-    element.removeAttribute("aria-busy")
+    if (serialized) busyActions.delete(busyKey)
+    const remaining = (busyCounts.get(element) ?? 1) - 1
+    if (remaining === 0) {
+      busyCounts.delete(element)
+      element.removeAttribute("aria-busy")
+    } else {
+      busyCounts.set(element, remaining)
+    }
   }
 }
 
