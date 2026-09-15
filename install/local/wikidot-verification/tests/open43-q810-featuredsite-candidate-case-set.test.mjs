@@ -5,6 +5,7 @@ import test from "node:test";
 
 import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 import { createOpen43FeaturedSiteCandidateCaseSet } from "../src/open43-q810-featuredsite-candidate-case-set.mjs";
+import { canonicalJson } from "../src/standing-browser-parity-util.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
@@ -160,6 +161,7 @@ test("Q810 candidate adapter verifies both browser phases and derives no-network
   const observations = rows[0].observations;
   const verification = prepared.verifyCase(rows[0].case_id, observations);
   assert.equal(verification.verified, true);
+  assert.doesNotThrow(() => canonicalJson({ observations, verification }));
   assert.deepEqual(verification.scope, ["PagePreview", "saved-page", "nested-generated"]);
   assert.deepEqual(browser.events, ["fixture:Q810_CANDIDATE_FAIL_CLOSED_NETWORK", "context"]);
 

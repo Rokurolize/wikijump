@@ -117,6 +117,10 @@ class Q810CandidateSession {
     return this.#http.pageOrigin;
   }
 
+  get filesOrigin() {
+    return this.#http.filesOrigin;
+  }
+
   get privateInputIdentity() {
     return {
       ...this.#http.privateInputIdentity,
@@ -221,7 +225,11 @@ class Q810FeaturedSiteRun {
   }
 
   get browserAllowedOrigins() {
-    return [this.#session.pageOrigin, this.#session.filesOrigin];
+    const origins = [this.#session.pageOrigin, this.#session.filesOrigin];
+    if (origins.some((origin) => typeof origin !== "string" || origin.length === 0)) {
+      throw new Error("Q810 candidate browser origins are incomplete");
+    }
+    return origins;
   }
 
   async #readFixturePage(page, expected, name) {
