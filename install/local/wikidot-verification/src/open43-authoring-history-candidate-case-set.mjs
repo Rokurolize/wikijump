@@ -790,7 +790,22 @@ function verifySettingsBrowser(observations) {
   requireSha256(observations.invalid.response.body_sha256, "invalid settings response SHA-256");
   const expected = observations.save?.expected_locales;
   const savedReload = verifySettingsState(observations.save?.reloaded, "saved settings reload");
-  if (observations.save?.response?.status !== 200 || observations.save.submitted_user_control !== true || !sameStrings(observations.save.persisted_locales, expected) || savedReload.input_value !== expected.join(" ")) throw new Error("settings save did not persist normalized self locales through a fresh reload");
+  if (
+    observations.save?.response?.status !== 200 ||
+    observations.save.submitted_user_control !== true ||
+    !sameStrings(observations.save.persisted_locales, expected) ||
+    savedReload.input_value !== expected.join(" ")
+  ) {
+    throw new Error(
+      `settings save did not persist normalized self locales through a fresh reload: ${JSON.stringify({
+        response_status: observations.save?.response?.status ?? null,
+        submitted_user_control: observations.save?.submitted_user_control ?? null,
+        expected_locales: expected ?? null,
+        persisted_locales: observations.save?.persisted_locales ?? null,
+        reload_input_value: savedReload.input_value,
+      })}`,
+    );
+  }
   requireSha256(observations.save.request_body_sha256, "saved settings request body SHA-256");
   requireSha256(observations.save.response.body_sha256, "saved settings response SHA-256");
   const csrfReload = verifySettingsState(observations.csrf?.reloaded, "CSRF settings reload");
