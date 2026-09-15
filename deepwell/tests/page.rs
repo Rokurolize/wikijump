@@ -25854,14 +25854,14 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
     let html = root
         .compiled_body_html
         .expect("compiled body should be included in page_get details");
-    let section = |document: &str, start: &str, end: &str| {
+    fn section<'a>(document: &'a str, start: &str, end: &str) -> &'a str {
         let start = document.find(start).expect("section start should render");
         let end = document[start..]
             .find(end)
             .map(|offset| start + offset)
             .expect("section end should render");
         &document[start..end]
-    };
+    }
 
     let default = section(&html, "PT_DEFAULT_START", "PT_DEFAULT_END");
     assert!(
