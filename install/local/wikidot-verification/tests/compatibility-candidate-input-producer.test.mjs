@@ -132,11 +132,11 @@ test("compatibility candidate input producer seeds the SearchAll saved-page fixt
   assert.doesNotMatch(source, /page\(Q807_SEARCH_ALL_SOURCE\.slug, Q807_SEARCH_ALL_SOURCE\.title, Q807_SEARCH_ALL_SOURCE\.wikitext, \{ siteId: standardSiteId/u);
 });
 
-test("compatibility candidate input producer owns a dedicated Wikidot Q778 author identity", () => {
+test("compatibility candidate input producer reuses the retained live Q778 author identity", () => {
   assert.deepEqual(Q778_WIKIDOT_AUTHOR, {
-    user_id: 20_000_013,
-    name: "Q778 Wikidot Author",
-    slug: "q778-wikidot-author",
+    user_id: 1_735_419,
+    name: "Lt Flops",
+    slug: "lt-flops",
   });
 });
 

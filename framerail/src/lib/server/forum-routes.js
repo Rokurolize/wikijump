@@ -8,6 +8,8 @@ const MISSING_THREAD =
 const FORUM_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u
 const CATEGORY_PAGE = /^p\/([1-9]\d*)$/u
 const MAX_CATEGORY_PAGE = 50
+const FORUM_THREAD_ID_SCRIPT =
+  /<script type="text\/javascript">WIKIDOT\.forumThreadId = ([1-9]\d*);<\/script>/gu
 
 /**
  * @typedef {{
@@ -50,6 +52,29 @@ const requestContext = (event, loadSiteInfo) => {
 const bodyOr = (result, fallback) => ({
   body: result.status === "ok" ? result.body : fallback
 })
+
+/**
+ * Preserve Wikidot's forumThreadId semantic without executing raw inline
+ * HTML. SvelteKit owns the CSP nonce, so the trusted route ID is passed to
+ * compiled client code and the exact legacy assignment is removed here.
+ *
+ * @param {ForumOutput} result @param {string} fallback @param {string} thread
+ */
+const threadBody = (result, fallback, thread) => {
+  if (result.status !== "ok") return { body: fallback, forumThreadId: null }
+  const threadId = Number(thread)
+  if (!Number.isSafeInteger(threadId) || threadId <= 0) {
+    throw new Error("forum thread route produced an invalid trusted thread ID")
+  }
+  const matches = [...result.body.matchAll(FORUM_THREAD_ID_SCRIPT)]
+  if (matches.length !== 1 || Number(matches[0][1]) !== threadId) {
+    throw new Error("forum thread response did not bind its exact trusted thread ID script")
+  }
+  return {
+    body: result.body.replace(matches[0][0], ""),
+    forumThreadId: threadId
+  }
+}
 
 /**
  * @param {ForumRouteEvent} event @param {ForumRouteDependencies}
@@ -122,5 +147,5 @@ export const loadForumThreadRoute = async (event, dependencies) => {
   )
   // The sealed remote script URLs remain inert response metadata. The served
   // route does not grant them loader authority.
-  return bodyOr(result, MISSING_THREAD)
+  return threadBody(result, MISSING_THREAD, thread)
 }

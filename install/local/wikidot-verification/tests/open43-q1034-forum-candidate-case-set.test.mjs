@@ -96,6 +96,7 @@ function browserLifecycleObservation(currentFixture) {
     category_box_count: 1,
     thread_box_count: 0,
     post_count: 0,
+    forum_thread_id: null,
     error_text: "",
     target_thread_link: { present: true, href: threadPath },
   });
@@ -109,6 +110,7 @@ function browserLifecycleObservation(currentFixture) {
     category_box_count: 0,
     thread_box_count: 1,
     post_count: 20,
+    forum_thread_id: currentFixture.visible_thread_id,
     error_text: "",
     target_thread_link: { present: false, href: null },
   });
@@ -125,6 +127,7 @@ function browserLifecycleObservation(currentFixture) {
     category_box_count: categoryCount,
     thread_box_count: 0,
     post_count: 0,
+    forum_thread_id: null,
     error_text: errorText,
     target_thread_link: { present: false, href: null },
   });

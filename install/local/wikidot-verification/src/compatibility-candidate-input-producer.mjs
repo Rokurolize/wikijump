@@ -33,7 +33,10 @@ const SITE_SLUG = "scpaiueouiuiuiui";
 const STANDARD_SITE_SLUG = "scp-wiki";
 const FOREIGN_SITE_ID = 6_000_006;
 const ACTOR_IDS = Object.freeze({ editor: 20_000_007, eligible: 20_000_008, registered: 20_000_009, pending: 20_000_010, banned: 20_000_011, other: 20_000_012 });
-export const Q778_WIKIDOT_AUTHOR = Object.freeze({ user_id: 20_000_013, name: "Q778 Wikidot Author", slug: "q778-wikidot-author" });
+// Retained live MiniRecentPosts authority uses this exact Wikidot identity.
+// Keeping a real imported identity here also keeps the candidate's public
+// avatar URL resolvable during the Q1034 category browser lifecycle.
+export const Q778_WIKIDOT_AUTHOR = Object.freeze({ user_id: 1_735_419, name: "Lt Flops", slug: "lt-flops" });
 const MEDIA_BROWSER_EVIDENCE = Object.freeze({
   M756_BROWSER_CACHE_TRANSITIONS: "E_ICON_OBSERVATIONS",
   M776_BROWSER_GEOMETRY_AND_NETWORK: "E_G06",

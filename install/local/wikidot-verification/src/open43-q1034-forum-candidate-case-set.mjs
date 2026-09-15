@@ -52,6 +52,7 @@ const SOURCE_FILES = Object.freeze([
   "deepwell/tests/page.rs",
   "framerail/src/lib/server/ajax-module-connector.js",
   "framerail/src/lib/server/forum-routes.js",
+  "framerail/src/routes/forum/t-[thread=id]/[...name]/+page.svelte",
   "framerail/tests/ajax-module-connector.test.js",
   "framerail/tests/forum-routes.test.js",
   "install/local/wikidot-verification/scripts/capture-q1034-forum-browser-lifecycle.mjs",
@@ -59,6 +60,7 @@ const SOURCE_FILES = Object.freeze([
   "install/local/wikidot-verification/src/candidate-case-command.mjs",
   "install/local/wikidot-verification/src/candidate-case-http.mjs",
   "install/local/wikidot-verification/src/candidate-case-runner.mjs",
+  "install/local/wikidot-verification/src/compatibility-candidate-input-producer.mjs",
   "install/local/wikidot-verification/src/deepwell-rpc-auth.mjs",
   "install/local/wikidot-verification/src/open43-q1034-forum-candidate-case-set.mjs",
   "install/local/wikidot-verification/src/standing-browser-parity-receipt.mjs",
@@ -415,6 +417,9 @@ function browserState(page, label, targetThreadPath, status = null) {
       category_box_count: document.querySelectorAll(".forum-category-box").length,
       thread_box_count: document.querySelectorAll(".forum-thread-box").length,
       post_count: document.querySelectorAll(".post-container").length,
+      forum_thread_id: Number.isSafeInteger(globalThis.WIKIDOT?.forumThreadId)
+        ? globalThis.WIKIDOT.forumThreadId
+        : null,
       error_text: [...document.querySelectorAll("#page-content .error-block")]
         .map((element) => (element.textContent ?? "").replace(/\s+/gu, " ").trim())
         .filter(Boolean)
@@ -521,6 +526,7 @@ export function verifyQ1034BrowserLifecycle(observation, fixture) {
   for (const label of ["thread_domcontentloaded", "thread_settled", "after_forward_domcontentloaded", "after_forward_settled"]) {
     const state = requireState(label);
     expect(state.thread_box_count === 1 && state.category_box_count === 0 && state.post_count === 20 && state.error_text === "", `Q1034 ${label} lost the populated thread state`);
+    expect(state.forum_thread_id === fixture.visible_thread_id, `Q1034 ${label} lost the CSP-safe forumThreadId semantic`);
   }
   for (const label of ["second_category_domcontentloaded", "second_category_settled"]) {
     const state = requireState(label);
