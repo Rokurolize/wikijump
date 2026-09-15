@@ -381,9 +381,11 @@ function verifyPublicSlice(observations) {
   const beforeArticleStyles = styles(before.article, "before dependent article");
   const firstStyles = styles(after.first_article, "first dependent article");
   const settledStyles = styles(after.settled_article, "settled dependent article");
+  const afterDependentStyles = styles(after.dependent, "after dependent page");
   styles(after.unrelated, "after unrelated");
   requireOnlyColor(beforeDependentStyles, "red", "initial dependent page");
   requireOnlyColor(beforeArticleStyles, "red", "initial dependent article");
+  requireOnlyColor(afterDependentStyles, "blue", "dependent page after component save");
   requireOnlyColor(firstStyles, "blue", "first dependent article after component save");
   requireOnlyColor(settledStyles, "blue", "settled dependent article");
   if (
