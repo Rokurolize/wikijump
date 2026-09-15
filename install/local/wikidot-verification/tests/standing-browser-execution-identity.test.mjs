@@ -7,6 +7,7 @@ import {
 } from "../src/standing-browser-execution-identity.mjs";
 import {
   CANDIDATE_SOURCE_EXECUTION_IDENTITY_SCHEMA,
+  isCandidateVerificationOnlyPath,
   validateCandidateSourceExecutionIdentity,
 } from "../src/candidate-source-execution-identity.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
@@ -93,4 +94,12 @@ test("candidate source execution identity binds only the caller-supplied manifes
     validateCandidateSourceExecutionIdentity(identity, candidateIdentity(), files).modules,
     modules,
   );
+});
+
+
+test("candidate runtime identity treats Open43 audit documents as verification-only", () => {
+  assert.equal(isCandidateVerificationOnlyPath("docs/development/open43-q-forum-closure-audit.json"), true);
+  assert.equal(isCandidateVerificationOnlyPath("docs/development/open43-blocked-evidence-routing.json"), true);
+  assert.equal(isCandidateVerificationOnlyPath("docs/development/runtime-config.json"), false);
+  assert.equal(isCandidateVerificationOnlyPath("framerail/src/routes/+layout.svelte"), false);
 });
