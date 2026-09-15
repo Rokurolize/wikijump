@@ -3352,6 +3352,21 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:page_draft_exists",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:page_draft_remove",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:page_draft_save",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:page_edit_permission",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
@@ -3623,6 +3638,11 @@
     },
     {
       "source": "deepwell-jsonrpc:site_get",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:site_tools_list_drafts",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
     },
@@ -5164,7 +5184,12 @@
     {
       "source": "open43-audit-case:A1038_CLONE_ACTION",
       "type": "implemented_by",
-      "target": "wikijump.runtime:actions-membership"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "open43-audit-case:A1038_CLONE_ACTION",
+      "type": "implemented_by",
+      "target": "wikijump.runtime:public-preview-page-view"
     },
     {
       "source": "open43-audit-case:A1038_LITERAL_AND_BODY_OWNERSHIP",
@@ -5174,7 +5199,12 @@
     {
       "source": "open43-audit-case:A1038_OTHER_AUTHENTICATED_UTILITY_STATES",
       "type": "implemented_by",
-      "target": "wikijump.runtime:actions-membership"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "open43-audit-case:A1038_OTHER_AUTHENTICATED_UTILITY_STATES",
+      "type": "implemented_by",
+      "target": "wikijump.runtime:public-preview-page-view"
     },
     {
       "source": "open43-audit-case:A1038_PETITION_ADMIN_ACTIONS",
@@ -5184,12 +5214,22 @@
     {
       "source": "open43-audit-case:A1038_SITEGRID_POPULATED",
       "type": "implemented_by",
-      "target": "wikijump.runtime:actions-membership"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "open43-audit-case:A1038_SITEGRID_POPULATED",
+      "type": "implemented_by",
+      "target": "wikijump.runtime:public-preview-page-view"
     },
     {
       "source": "open43-audit-case:A1038_THEMEPREVIEWER_ACTIVE",
       "type": "implemented_by",
-      "target": "wikijump.runtime:actions-membership"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "open43-audit-case:A1038_THEMEPREVIEWER_ACTIVE",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:A1041_ACTION_RATE_LIMIT_POLICY",
@@ -6039,7 +6079,12 @@
     {
       "source": "open43-audit-case:Q1035_LISTDRAFTS_NONEMPTY_QUERY",
       "type": "implemented_by",
-      "target": "wikijump.runtime:page-query"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "open43-audit-case:Q1035_LISTDRAFTS_NONEMPTY_QUERY",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:Q1035_SITECHANGES_DEFAULT_INITIAL_SNAPSHOT",
@@ -11295,8 +11340,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "7c32c157c58a85eec7b19ed3f857670d83fa06ef",
-      "tree": "fb45573a24aab206830a77844339a41fb14e4bfb"
+      "commit": "19645717afdc8b4e068805880fa95f3edf77a01b",
+      "tree": "e0bcca3098c64e688114cb8ea3a516adc339c759"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11313,7 +11358,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "87c84ef5b994fb664718aab05779215145d4b7ea9d4dc93219a205932d729dea"
+        "sha256": "aa8348ee4ea28f7a7135b77fd1bb779f9a46b0e3014dca941c6dda60011b0684"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11397,7 +11442,7 @@
       },
       {
         "path": "deepwell/src/endpoints/page.rs",
-        "sha256": "d84ee44bf7325ffc6ca19bd24b4c007f513940a03789197a2b475dce1a907aa2"
+        "sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9"
       },
       {
         "path": "deepwell/src/endpoints/parent.rs",
@@ -11437,7 +11482,7 @@
       },
       {
         "path": "deepwell/src/endpoints/view.rs",
-        "sha256": "669a3a574516ac7cfd91bacd072ec0531dcd83c0181f88bdc719eeff46d6f74d"
+        "sha256": "4f40d24192b2b5e750e7976f038fa0b8bad497cbb2b49fef20618d8341cd97d2"
       },
       {
         "path": "deepwell/src/endpoints/vote.rs",
@@ -11453,7 +11498,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "1d7e5f793eebc32c5225294705ddfc3f48f9ff32d20d3649c73f38fbd51830f9"
+        "sha256": "c57f51e39cb0772479055f3260500e6fe982640c7d90c6e644dd3c2d403fadbd"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11465,7 +11510,7 @@
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "418180f639166898913d37a0cca1962eac5544bb89bb90324671aa6323fb49e2"
+        "sha256": "d56af70546b217a353e5f42562f78dff45728aba88707ae39d1bd62e19ae47c3"
       },
       {
         "path": "docs/development/open43-a-authoring-closure-audit.json",
@@ -11473,11 +11518,11 @@
       },
       {
         "path": "docs/development/open43-blocked-evidence-routing.json",
-        "sha256": "4b878201c78ad330127bd26e563290230e39972221d0aa478e71124fc388773f"
+        "sha256": "6f76cf7121d36b7745ebc2d88765acece8df37dbe5c307e9007b3d3303df89fc"
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "916e33e9723641a0497722d641955735b09690173b607d2cd77b7cb71b01f5b9"
+        "sha256": "f117243ab8420f7fe831b57ff6ee40e163b798303995969e2662628bc3745ba4"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -11485,19 +11530,19 @@
       },
       {
         "path": "docs/development/open43-q-forum-closure-audit.json",
-        "sha256": "c94ca9b0633aa22852a228ca2315a70781b8922ef2d7ac1614de567bfa9a4ad2"
+        "sha256": "6820796a142a0deb74ddbc6077fcf17f6d73287552bad99d1786eb41f333c0a3"
       },
       {
         "path": "docs/development/open43-q-page-query-closure-audit.json",
-        "sha256": "cd85a76fd2a95dfa0dcef5d97b4dc35642da380f3bb776f771bb599dd2d03d51"
+        "sha256": "3c471c6aaf6ff2c50095fcad29c2c3b8503c3e59609a5118d5fee271c1440b0f"
       },
       {
         "path": "docs/development/open43-q-search-users-closure-audit.json",
-        "sha256": "550d39ef2311985c22a91e15f709005a0241306a56672f67fae3248d3486dfe2"
+        "sha256": "0ef18a0e7efa5bd07b97f3c2ae07eec2bd14f6cf2fd48f59f560f6a3504d77df"
       },
       {
         "path": "docs/development/open43-s-settings-browser-closure-audit.json",
-        "sha256": "236dd255bbb175ec287fd7e5fdc8b6dcdd87138555d94a756a5a82eadd74d495"
+        "sha256": "f08848bce9dd5879323655897292d29ed1f39d451b04c58887b386d03758a51b"
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
@@ -11517,7 +11562,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "f8a2b8e2d82fed54a66c2c8b50ef8913171e1fa4a42266328a84b3bcc085cf47"
+        "sha256": "1708837fb11194e0cb8cd1243d5f75ff39a523e04a4ea8c83684ca05e9d39259"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11537,7 +11582,7 @@
       },
       {
         "path": "framerail/src/lib/server/ajax-module-connector.js",
-        "sha256": "92eb6812c009db1d6231b81a000efa6c2a7d89827218e8a021987b27088d5631"
+        "sha256": "38553130e3d99507606d51ff7c032ec17ad939eb61072e0a8880eee98964dbc6"
       },
       {
         "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -11673,7 +11718,7 @@
       },
       {
         "path": "framerail/src/routes/ajax-module-connector.php/+server.ts",
-        "sha256": "0a83aa2c8842f889955c3d2eeb3347edc9f34d375e15bcb3eed9fc81065402b1"
+        "sha256": "ce448aad2e9edd5d30e35d0acb43e383ae176b02fe413713a1d2019e4afdf265"
       },
       {
         "path": "framerail/src/routes/common--images/jquery-raty/[asset]/+server.ts",
@@ -11844,10 +11889,10 @@
     ]
   },
   "counts": {
-    "total": 949,
+    "total": 953,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 173,
+      "deepwell_jsonrpc_method": 177,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
       "framerail_route": 29,
@@ -26064,6 +26109,141 @@
       ]
     },
     {
+      "surface_id": "deepwell-jsonrpc:page_draft_exists",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:page_draft_exists",
+        "deepwell/src/endpoints/page.rs#page_draft_exists"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/page.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:page_draft_remove",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:page_draft_remove",
+        "deepwell/src/endpoints/page.rs#page_draft_remove"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/page.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:page_draft_save",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:page_draft_save",
+        "deepwell/src/endpoints/page.rs#page_draft_save"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/page.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
       "surface_id": "deepwell-jsonrpc:page_edit",
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
@@ -28519,6 +28699,51 @@
         "status": "implemented",
         "references": [
           "deepwell/src/endpoints/site.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:site_tools_list_drafts",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:site_tools_list_drafts",
+        "deepwell/src/endpoints/view.rs#site_tools_list_drafts"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/view.rs"
         ]
       },
       "candidate": {
@@ -39044,10 +39269,12 @@
         "cases": [
           "A1038_CLONE_ACTION"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/open43-a1038-clone-action-evidence.test.mjs"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -39055,20 +39282,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1038_CLONE_ACTION",
       "implementation_owners": [
-        "wikijump.runtime:actions-membership"
+        "wikijump.deepwell",
+        "wikijump.runtime:public-preview-page-view"
       ]
     },
     {
@@ -39130,7 +39358,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -39138,20 +39366,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1038_OTHER_AUTHENTICATED_UTILITY_STATES",
       "implementation_owners": [
-        "wikijump.runtime:actions-membership"
+        "wikijump.deepwell",
+        "wikijump.runtime:public-preview-page-view"
       ]
     },
     {
@@ -39207,10 +39436,12 @@
         "cases": [
           "A1038_SITEGRID_POPULATED"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/open43-a1038-sitegrid-populated-evidence-v2.test.mjs"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -39218,20 +39449,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1038_SITEGRID_POPULATED",
       "implementation_owners": [
-        "wikijump.runtime:actions-membership"
+        "wikijump.deepwell",
+        "wikijump.runtime:public-preview-page-view"
       ]
     },
     {
@@ -39247,10 +39479,13 @@
         "cases": [
           "A1038_THEMEPREVIEWER_ACTIVE"
         ],
-        "tests": []
+        "tests": [
+          "framerail/tests/site-settings-foundation.test.js#requires the source-owned ThemePreviewer noUi sidecar",
+          "framerail/tests/site-settings-public-boundary.test.js#server-renders analytics, theme, and toolbar settings from the request view"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -39258,20 +39493,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A1038_THEMEPREVIEWER_ACTIVE",
       "implementation_owners": [
-        "wikijump.runtime:actions-membership"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -40832,7 +41068,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -40840,15 +41076,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A775_EXACT_LIVE_TEMPORAL_EDIT",
@@ -41002,7 +41238,7 @@
         "tests": []
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -41010,15 +41246,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:A777_EXACT_LIVE_PRINT_TRANSITIONS",
@@ -45642,10 +45878,13 @@
         "cases": [
           "Q1034_FORUM_MUTATION_AUTHORITY"
         ],
-        "tests": []
+        "tests": [
+          "framerail/tests/ajax-module-connector.test.js#dispatches the sealed page comments reads without adding mutation authority",
+          "framerail/tests/ajax-module-connector.test.js#passes read-only forum missing states through and rejects unsealed shapes"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -45653,15 +45892,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q1034_FORUM_MUTATION_AUTHORITY",
@@ -46103,7 +46342,7 @@
         ],
         "tests": [
           "deepwell/tests/page.rs::listdrafts_module_matches_live_empty_draft_state",
-          "framerail/tests/listdrafts-route-public-boundary.test.js::the public AMC route wires ListDrafts to its empty renderer",
+          "framerail/tests/listdrafts-route-public-boundary.test.js::the public AMC route wires ListDrafts to its persisted renderer",
           "framerail/tests/site-tools-read-actions.test.js::Site Tools AMC allows only the four observed read shapes",
           "framerail/tests/site-tools-read-actions.test.js::Site Tools AMC rejects unobserved parameters before Deepwell"
         ]
@@ -46147,10 +46386,16 @@
         "cases": [
           "Q1035_LISTDRAFTS_NONEMPTY_QUERY"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs::listdrafts_module_reads_persisted_drafts_and_enforces_target_filters",
+          "framerail/tests/ajax-module-connector.test.js::dispatches the observed full-page draft synchronize and existence lifecycle",
+          "framerail/tests/ajax-module-connector.test.js::page draft actions fail closed outside the observed full-page request shape",
+          "framerail/tests/ajax-module-connector.test.js::removePageEditLock preserves or discards only the observed draft identity",
+          "framerail/tests/listdrafts-route-public-boundary.test.js::the public AMC route wires ListDrafts to its persisted renderer"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -46158,20 +46403,21 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q1035_LISTDRAFTS_NONEMPTY_QUERY",
       "implementation_owners": [
-        "wikijump.runtime:page-query"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -47884,10 +48130,13 @@
         "cases": [
           "Q810_ACTIVE_GLOBAL_ROTATION"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#featuredsite_fails_closed_without_a_local_featured_site_authority",
+          "install/local/wikidot-verification/tests/open43-q810-featuredsite-global-rotation-evidence-v2.test.mjs"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -47895,15 +48144,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:Q810_ACTIVE_GLOBAL_ROTATION",
@@ -48321,10 +48570,13 @@
         "cases": [
           "S1046_IMPORT_EXPORT_REPRESENTATION"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs",
+          "install/local/wikidot-verification/tests/site-content-backup.test.mjs"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -48332,15 +48584,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:S1046_IMPORT_EXPORT_REPRESENTATION",
@@ -48751,10 +49003,13 @@
         "cases": [
           "S754_IMPORT_EXPORT_REPRESENTATION"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs",
+          "install/local/wikidot-verification/tests/site-content-backup.test.mjs"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -48762,15 +49017,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:S754_IMPORT_EXPORT_REPRESENTATION",
@@ -49005,10 +49260,14 @@
         "cases": [
           "S755_EXTERNAL_RESOURCE_FAILURE_POLICY"
         ],
-        "tests": []
+        "tests": [
+          "framerail/tests/external-integration-policy.test.js::external theme resources use browser-direct failure ownership",
+          "framerail/tests/site-settings-foundation.test.js::normalizes ThemePreviewer URLs with the stored-theme policy",
+          "framerail/tests/wikidot-csp-config.test.js::allows captured Wikidot legacy asset origins in local CSP"
+        ]
       },
       "evidence": {
-        "status": "blocked",
+        "status": "available",
         "references": []
       },
       "source": {
@@ -49016,15 +49275,15 @@
         "references": []
       },
       "candidate": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "standing": {
-        "status": "blocked",
+        "status": "pending",
         "references": []
       },
       "closure": {
-        "status": "blocked",
+        "status": "open",
         "references": []
       },
       "specification_owner": "open43.case:S755_EXTERNAL_RESOURCE_FAILURE_POLICY",
