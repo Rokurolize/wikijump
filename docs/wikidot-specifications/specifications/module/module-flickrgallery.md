@@ -20,11 +20,27 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
-## Retained anonymous provider boundary
+## Live-Wikidot behavioral corrections
 
-The bounded anonymous public probe retained in `install/local/wikidot-verification/artifacts/m1039-flickr-provider-live-20260915.json` (SHA-256 `94f30d0000b9cb33340cf1f3ec5b037ce299e8d8375169a40bf2d46f5c9bfca2`) sent one `edit/PagePreviewModule` request for `[[module FlickrGallery tags="nasa" perPage="1"]]`. Wikidot returned HTTP 200 with AMC status `ok` and the exact `flickr-gallery-box makeHoverTitles` no-photo fallback (`Sorry, no photos.`), without a provider result, provider image, or provider network trace.
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
 
-This is evidence of the observed no-photo fallback for that probe only. It does not establish provider success DOM, provider request semantics, URL or HTML sanitization, SSRF/CSP/timeout/size policy, or browser loading and settled states. The implementation MUST preserve the existing literal or fail-closed boundary for those unobserved behaviors until a controlled provider-success authority or an equivalent retained Wikidot response is available. Do not infer success or provider policy from this receipt, the static Flickr JavaScript, or a direct Flickr request.
+### FlickrGallery anonymous provider probe establishes only the no-photo fallback
+
+- Observation ID: `flickrgallery-anonymous-no-photo-provider-boundary-20260915`
+- Classification: `documentation-clarification`
+- Observed at: `2026-09-15`
+- Analysis: One bounded anonymous edit/PagePreviewModule probe for [[module FlickrGallery tags="nasa" perPage="1"]] returned HTTP 200 with AMC status ok and the FlickrGallery no-photo fallback. The retained response exposes neither a provider result nor a Wikidot-visible provider request or response trace, and no direct Flickr request was made. This observation therefore establishes the captured fallback only; provider-success DOM, provider request semantics, URL or HTML sanitization, SSRF/CSP/timeout/size policy, and browser loading or settled states remain unobserved.
+
+Normative behavior:
+
+- For the retained anonymous probe, Wikidot renders the flickr-gallery-box makeHoverTitles wrapper with the visible fallback text Sorry, no photos. and no provider image.
+- The retained response does not authorize inference of provider-success DOM or provider-network policy. Unobserved provider-success and resource-handling behavior must remain literal or fail closed until stronger authority is retained.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/m1039-flickr-provider-live-20260915.json` (SHA-256 `94f30d0000b9cb33340cf1f3ec5b037ce299e8d8375169a40bf2d46f5c9bfca2`), cases: none
+
 
 
 ## Suggested public TDD seams

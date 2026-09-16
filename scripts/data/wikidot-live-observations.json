@@ -3463,6 +3463,79 @@
           ]
         }
       ]
+    },
+    {
+      "id": "flickrgallery-anonymous-no-photo-provider-boundary-20260915",
+      "title": "FlickrGallery anonymous provider probe establishes only the no-photo fallback",
+      "feature_ids": [
+        "module-flickrgallery"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-09-15",
+      "analysis": "One bounded anonymous edit/PagePreviewModule probe for [[module FlickrGallery tags=\"nasa\" perPage=\"1\"]] returned HTTP 200 with AMC status ok and the FlickrGallery no-photo fallback. The retained response exposes neither a provider result nor a Wikidot-visible provider request or response trace, and no direct Flickr request was made. This observation therefore establishes the captured fallback only; provider-success DOM, provider request semantics, URL or HTML sanitization, SSRF/CSP/timeout/size policy, and browser loading or settled states remain unobserved.",
+      "normative_behavior": [
+        "For the retained anonymous probe, Wikidot renders the flickr-gallery-box makeHoverTitles wrapper with the visible fallback text Sorry, no photos. and no provider image.",
+        "The retained response does not authorize inference of provider-success DOM or provider-network policy. Unobserved provider-success and resource-handling behavior must remain literal or fail closed until stronger authority is retained."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/m1039-flickr-provider-live-20260915.json",
+          "sha256": "94f30d0000b9cb33340cf1f3ec5b037ce299e8d8375169a40bf2d46f5c9bfca2",
+          "case_ids": []
+        }
+      ]
+    },
+    {
+      "id": "forum-q1034-frontforum-feed-relative-read-boundary-20260809",
+      "title": "FrontForum feed metadata and relative-link switches have a bounded anonymous read slice",
+      "feature_ids": [
+        "module-frontforum"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-08-09",
+      "analysis": "A retained anonymous GET of a populated saved page establishes FrontForum RSS metadata in both the document head and rendered body. Retained anonymous PagePreviewModule pairs establish acceptance of the observed feed argument variants and both fixRelativeLinks switch values. The selected preview item contains no user-authored relative link, and the retained evidence contains no linked FrontForum XML response, so feed delivery and the actual rewrite algorithm remain unobserved. Private and deleted positive states are likewise outside this lane.",
+      "normative_behavior": [
+        "The populated saved-page response emits an alternate application/rss+xml link titled G25 NEWS with href /feed/front/cg-mod-q11-004-frontforum/news.xml in the document head, and a feedinfo block inside front-forum-box whose RSS feed anchor uses the same href.",
+        "Anonymous PagePreview accepts feed=\"readonlyfeed\", feed=\"readonlyfeed2\", an empty feed value, and feed=\"../bad\" for the retained fixture. Those four fragment responses have no jsInclude or cssInclude entries and share the same DOM projection; this does not suppress or redefine saved-page feed metadata.",
+        "Anonymous PagePreview accepts both fixRelativeLinks=\"true\" and fixRelativeLinks=\"false\". The retained pair has identical DOM and visible-text projections because the selected post contains no user-authored relative link; this establishes argument recognition only, not the rewriting algorithm.",
+        "Feed XML delivery, XML schema or content type, caching, general feed-route semantics, content-bearing relative-link rewriting, and positive private or deleted visibility remain unobserved and must not be inferred from the retained metadata or preview controls."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/forum-q1034-anonymous-boundaries-live-20260809.json",
+          "sha256": "abb4b01f68b39bcb561fc26d2756588976981bdc7495ac2382c243749c3a3c55",
+          "case_ids": [
+            "frontforum-saved-feed-metadata",
+            "frontforum-feed-preview",
+            "frontforum-relative-links-preview"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "forum-q1034-forumnewthread-anonymous-denial-20260809",
+      "title": "Anonymous category-scoped ForumNewThread terminates in a permission error",
+      "feature_ids": [
+        "module-forumnewthread"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-08-09",
+      "analysis": "A retained anonymous GET of /forum:new-thread/c/8503559 returns HTTP 200 with a page-content permission error rather than a ForumNewThread form. The read-only response establishes the anonymous denial state only; it does not establish an authorized form, CSRF behavior, validation, idempotency, rate limiting, or any forum mutation contract.",
+      "normative_behavior": [
+        "The retained category-scoped route title is New Forum Thread - Sandbox For Codex.",
+        "The page-content error title is Permission error and the message is Sorry, you can not start new discussion thread. Only Wikidot.com registered users, members of this site, site administrators and perhaps selected moderators are allowed to do it.",
+        "The anonymous denial exposes #action:login with link text Sign in as Wikidot user and exposes no ForumNewThread form.",
+        "A positive ForumNewThread state requires separate authenticated read authority and separately evidenced authorized mutation behavior; the anonymous denial must not be used to infer either."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/forum-q1034-anonymous-boundaries-live-20260809.json",
+          "sha256": "abb4b01f68b39bcb561fc26d2756588976981bdc7495ac2382c243749c3a3c55",
+          "case_ids": [
+            "forumnewthread-anonymous-category-route"
+          ]
+        }
+      ]
     }
   ]
 }
