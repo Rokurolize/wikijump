@@ -11380,8 +11380,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "1b9c2ebb7629f7ed65bdecb086799122e463958b",
-      "tree": "f9447b289d13b0dde7867a670e3e165ee3eb7b64"
+      "commit": "b0b859b8bfc07137dce6f112144bc713c798f38e",
+      "tree": "aa927b1265208fdb4453def072f6f5ef416af09e"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11562,7 +11562,7 @@
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "d855bbb92831ff115062b85551bcfecbd800a0b741fa5c0160431ab5d22cb14e"
+        "sha256": "1c5e8224a3bf1cb08560834e1005cd9d298c1d20032fd1e1d968c907324b2afe"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -11582,7 +11582,7 @@
       },
       {
         "path": "docs/development/open43-s-settings-browser-closure-audit.json",
-        "sha256": "34eac98e5cbcd646757517980cb487665a6545f12933e4808fa4b859e26b5a4c"
+        "sha256": "b4d5f4a5398e00ac325cd28d2c25d87a06284604ec99af5fad225626cace2660"
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
@@ -11606,15 +11606,15 @@
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
-        "sha256": "7c98d5aacbb2988119b57e5a6933390ce893df4b26231b0c41242f081fe1bd18"
+        "sha256": "ce9a798b7d1d076085e634e1e61ef338fff89bb3dc797449f90f06aae4f61714"
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "f366c2ee26a1980775f3f2ff312192dab4f1cd5a1717b652eeeab91c3c0a1686"
+        "sha256": "1e5503962e105b70a13fd0ad5d2ecd508465d1a3225a6a26b60f3079978c3392"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "344e91a2b1ef2808b049d8c67dc5eb86b0f02e29a8ae10dc86bb22ca937e0af8"
+        "sha256": "553dbdf60f809e8af6dbfb029650fda8de4101008777adaa99fd4b4d9d6f3518"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -11838,7 +11838,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "f366c2ee26a1980775f3f2ff312192dab4f1cd5a1717b652eeeab91c3c0a1686"
+        "sha256": "1e5503962e105b70a13fd0ad5d2ecd508465d1a3225a6a26b60f3079978c3392"
       },
       {
         "path": "wws/src/route.rs",
