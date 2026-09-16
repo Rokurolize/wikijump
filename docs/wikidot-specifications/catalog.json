@@ -31,7 +31,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 87,
+    "observation_count": 90,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -1804,7 +1804,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "flickrgallery-anonymous-no-photo-provider-boundary-20260915"
+      ]
     },
     {
       "id": "module-footerbar",
@@ -1880,7 +1882,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-q1034-forumnewthread-anonymous-denial-20260809"
+      ]
     },
     {
       "id": "module-forumstart",
@@ -1959,7 +1963,8 @@
       "live_observation_ids": [
         "forum-q1034-readonly-route-core-20260809",
         "forum-q1034-frontforum-scalar-boundaries-20260810",
-        "forum-q1034-frontforum-custom-body-rendering-20260810"
+        "forum-q1034-frontforum-custom-body-rendering-20260810",
+        "forum-q1034-frontforum-feed-relative-read-boundary-20260809"
       ]
     },
     {

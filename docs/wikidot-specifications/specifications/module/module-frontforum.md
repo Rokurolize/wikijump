@@ -100,6 +100,24 @@ Evidence:
 
 - `install/local/wikidot-verification/artifacts/frontforum-custom-body-live-20260810.json` (SHA-256 `1cfdeed366ced060d051a64e58ad25bcd98a0b3ce6bdd6af5419c736396ebc48`), cases: `frontforum-custom-body-canonical`, `frontforum-custom-body-alias-offset-multi`, `frontforum-custom-body-unknown`, `frontforum-custom-body-malformed-owner-control`
 
+### FrontForum feed metadata and relative-link switches have a bounded anonymous read slice
+
+- Observation ID: `forum-q1034-frontforum-feed-relative-read-boundary-20260809`
+- Classification: `documentation-clarification`
+- Observed at: `2026-08-09`
+- Analysis: A retained anonymous GET of a populated saved page establishes FrontForum RSS metadata in both the document head and rendered body. Retained anonymous PagePreviewModule pairs establish acceptance of the observed feed argument variants and both fixRelativeLinks switch values. The selected preview item contains no user-authored relative link, and the retained evidence contains no linked FrontForum XML response, so feed delivery and the actual rewrite algorithm remain unobserved. Private and deleted positive states are likewise outside this lane.
+
+Normative behavior:
+
+- The populated saved-page response emits an alternate application/rss+xml link titled G25 NEWS with href /feed/front/cg-mod-q11-004-frontforum/news.xml in the document head, and a feedinfo block inside front-forum-box whose RSS feed anchor uses the same href.
+- Anonymous PagePreview accepts feed="readonlyfeed", feed="readonlyfeed2", an empty feed value, and feed="../bad" for the retained fixture. Those four fragment responses have no jsInclude or cssInclude entries and share the same DOM projection; this does not suppress or redefine saved-page feed metadata.
+- Anonymous PagePreview accepts both fixRelativeLinks="true" and fixRelativeLinks="false". The retained pair has identical DOM and visible-text projections because the selected post contains no user-authored relative link; this establishes argument recognition only, not the rewriting algorithm.
+- Feed XML delivery, XML schema or content type, caching, general feed-route semantics, content-bearing relative-link rewriting, and positive private or deleted visibility remain unobserved and must not be inferred from the retained metadata or preview controls.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/forum-q1034-anonymous-boundaries-live-20260809.json` (SHA-256 `abb4b01f68b39bcb561fc26d2756588976981bdc7495ac2382c243749c3a3c55`), cases: `frontforum-saved-feed-metadata`, `frontforum-feed-preview`, `frontforum-relative-links-preview`
+
 
 
 ## Suggested public TDD seams

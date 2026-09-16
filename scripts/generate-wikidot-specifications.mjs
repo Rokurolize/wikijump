@@ -225,9 +225,23 @@ for (const observation of liveObservations.observations) {
           capturedCaseIds.add(capture.case_id);
         }
       }
-      for (const capture of row.cases ?? []) {
-        if (capture.case_id) {
-          capturedCaseIds.add(capture.case_id);
+      if (Array.isArray(row.case_ids)) {
+        for (const caseId of row.case_ids) {
+          capturedCaseIds.add(caseId);
+        }
+      }
+      if (Array.isArray(row.cases)) {
+        for (const capture of row.cases) {
+          if (capture.case_id) {
+            capturedCaseIds.add(capture.case_id);
+          }
+        }
+      } else if (row.cases !== null && typeof row.cases === "object") {
+        for (const [caseId, capture] of Object.entries(row.cases)) {
+          capturedCaseIds.add(caseId);
+          if (capture?.case_id) {
+            capturedCaseIds.add(capture.case_id);
+          }
         }
       }
       for (const observation of row.observations ?? []) {
