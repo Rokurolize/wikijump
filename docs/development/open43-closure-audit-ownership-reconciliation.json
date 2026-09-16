@@ -457,7 +457,7 @@
     },
     {
       "path": "docs/development/open43-s-settings-browser-closure-audit.json",
-      "sha256": "34eac98e5cbcd646757517980cb487665a6545f12933e4808fa4b859e26b5a4c",
+      "sha256": "b4d5f4a5398e00ac325cd28d2c25d87a06284604ec99af5fad225626cace2660",
       "source_revision": "3f00b26efee25c63e94ec15d1178aedb179e2ff3",
       "issue_count": 9,
       "case_count": 60,
