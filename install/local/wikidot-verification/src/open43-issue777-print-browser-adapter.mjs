@@ -1,6 +1,8 @@
 const SELECTOR = 'a.wiki-standalone-button[href="javascript:;"]';
+const POPUP_SELECTOR = 'a[href="javascript:;"][onclick*="window.print"]';
 const VIEWPORT = Object.freeze({ width: 1280, height: 900 });
-const TIMEOUT_MS = 300_000;
+const TIMEOUT_MS = 15_000;
+const CLOSE_TIMEOUT_MS = 2_000;
 export const OPEN43_ISSUE777_PRINT_OPERATIONS = Object.freeze([
   "click",
   "enter",
@@ -20,43 +22,60 @@ const CAPTURE_CONTRACT = Object.freeze({
     }),
   ]),
 });
+const EXPECTED_POPUP_COUNTS = Object.freeze({
+  click: 1,
+  enter: 1,
+  space: 0,
+  rapid_repeated_click: 2,
+  sequential_repeated_click: 2,
+});
 
 function installPrintProbe() {
-  const calls = [];
-  const pending = [];
-  const probe = {
-    calls,
-    pending,
-    reset() {
-      calls.length = 0;
-      while (pending.length > 0) pending.shift()?.();
-    },
-    release() {
-      pending.shift()?.();
-    },
+  const state = {
+    opens: [],
+    prints: [],
+    pagehide: 0,
   };
   Object.defineProperty(window, "__open43Issue777Print", {
     configurable: false,
-    value: probe,
+    value: state,
+  });
+  const nativeOpen = typeof window.open === "function" ? window.open : null;
+  Object.defineProperty(window, "open", {
+    configurable: true,
+    writable: true,
+    value: (...args) => {
+      state.opens.push({
+        url: args[0] === undefined ? null : String(args[0]),
+        target: args[1] === undefined ? null : String(args[1]),
+      });
+      if (!nativeOpen) return null;
+      return nativeOpen.apply(window, args);
+    },
   });
   Object.defineProperty(window, "print", {
     configurable: true,
-    value: () =>
-      new Promise((resolve) => {
-        const control = document.querySelector(
-          'a.wiki-standalone-button[href="javascript:;"]',
-        );
-        calls.push({
-          url: location.href,
-          history_length: history.length,
-          focused_control: document.activeElement === control,
-        });
-        pending.push(resolve);
-      }),
+    writable: true,
+    value: (...args) => {
+      // Playwright serializes init scripts without their module-scope
+      // closures, so the exact control selector must be restated here.
+      const control = document.querySelector(
+        'a[href="javascript:;"][onclick*="window.print"]',
+      );
+      state.prints.push({
+        url: location.href,
+        history_length: history.length,
+        focused_control: document.activeElement === control,
+        argument_count: args.length,
+      });
+    },
+  });
+  window.addEventListener("pagehide", () => {
+    state.pagehide += 1;
   });
 }
 
-async function publicState(page) {
+async function openerState(page) {
   return await page.evaluate((selector) => {
     const control = document.querySelector(selector);
     const probe = window.__open43Issue777Print;
@@ -67,13 +86,41 @@ async function publicState(page) {
       standalone_print_count: document.querySelectorAll(selector).length,
       focused_control: document.activeElement === control,
       aria_busy: control?.getAttribute("aria-busy") === "true",
-      print_call_count: probe?.calls.length ?? -1,
-      pending_print_count: probe?.pending.length ?? -1,
+      open_count: probe?.opens.length ?? -1,
+      print_call_count: probe?.prints.length ?? -1,
+      opens: probe?.opens ?? [],
       source_disclosure:
         location.pathname.endsWith("/source") ||
         document.body?.innerText.includes("[[button print") === true,
     };
   }, SELECTOR);
+}
+
+async function popupState(popup) {
+  return await popup.evaluate((selector) => {
+    const control = document.querySelector(selector);
+    const probe = window.__open43Issue777Print;
+    return {
+      url: location.href,
+      path: location.pathname,
+      history_length: history.length,
+      body_id: document.body?.id ?? null,
+      body_class: document.body?.className ?? null,
+      print_control_count: document.querySelectorAll(selector).length,
+      rendered:
+        control !== null &&
+        getComputedStyle(control).display !== "none" &&
+        getComputedStyle(control).visibility !== "hidden",
+      focused_control: document.activeElement === control,
+      aria_busy: control?.getAttribute("aria-busy"),
+      control_href: control?.getAttribute("href") ?? null,
+      control_onclick: control?.getAttribute("onclick") ?? null,
+      control_outer_html: control?.outerHTML ?? null,
+      parent_outer_html: control?.parentElement?.outerHTML ?? null,
+      print_call_count: probe?.prints.length ?? -1,
+      prints: probe?.prints ?? [],
+    };
+  }, POPUP_SELECTOR);
 }
 
 export class Open43Issue777PrintBrowserAdapter {
@@ -95,9 +142,54 @@ export class Open43Issue777PrintBrowserAdapter {
     return this.#context;
   }
 
+  async #observePopup(popup) {
+    await popup.waitForLoadState("domcontentloaded", { timeout: TIMEOUT_MS });
+    const control = popup.locator(POPUP_SELECTOR);
+    if ((await control.count()) !== 1) {
+      throw new Error("issue 777 printer-friendly view did not serve one print control");
+    }
+    const before = await popupState(popup);
+    await control.focus();
+    const focused = await popupState(popup);
+    await this.#activateUntil(
+      () => control.click({ noWaitAfter: true }),
+      async () => (await popupState(popup)).print_call_count > 0,
+    );
+    const after = await popupState(popup);
+    return { before, focused, after };
+  }
+
+  async #activateUntil(activate, ready) {
+    const deadline = Date.now() + TIMEOUT_MS;
+    while (Date.now() < deadline) {
+      if (await ready()) return;
+      await activate();
+      const waitUntil = Date.now() + 500;
+      while (Date.now() < waitUntil) {
+        if (await ready()) return;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+    }
+    throw new Error("issue 777 activation did not take effect before the deadline");
+  }
+
+  async #waitForOpened(opened, count) {
+    const start = Date.now();
+    while (opened.length < count) {
+      if (Date.now() - start > TIMEOUT_MS) {
+        throw new Error(
+          `issue 777 expected ${count} child windows, observed ${opened.length}`,
+        );
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+  }
+
   async #operation(pageUrl, mode) {
     const context = await this.#candidateContext();
     const page = await context.newPage();
+    const opened = [];
+    const onPage = (popup) => opened.push(popup);
     try {
       await page.goto(pageUrl, {
         waitUntil: "domcontentloaded",
@@ -108,8 +200,11 @@ export class Open43Issue777PrintBrowserAdapter {
         throw new Error("issue 777 did not serve exactly one print control");
       }
       await control.focus();
-      await page.evaluate(() => window.__open43Issue777Print.reset());
-      const before = await publicState(page);
+      await page.evaluate(() => {
+        window.__open43Issue777Print.opens.length = 0;
+        window.__open43Issue777Print.prints.length = 0;
+      });
+      const before = await openerState(page);
       let mutationRequestCount = 0;
       const onRequest = (request) => {
         if (!["GET", "HEAD", "OPTIONS"].includes(request.method())) {
@@ -117,101 +212,57 @@ export class Open43Issue777PrintBrowserAdapter {
         }
       };
       page.on("request", onRequest);
+      page.on("popup", onPage);
       try {
-        if (mode === "click") await control.click({ noWaitAfter: true });
-        else if (mode === "enter") {
-          await control.press("Enter", { noWaitAfter: true });
+        const expectedCount = EXPECTED_POPUP_COUNTS[mode];
+        const click = () => control.click({ noWaitAfter: true });
+        if (mode === "click") {
+          await this.#activateUntil(click, () => opened.length >= 1);
+        } else if (mode === "enter") {
+          await this.#activateUntil(
+            () => control.press("Enter", { noWaitAfter: true }),
+            () => opened.length >= 1,
+          );
         } else if (mode === "space") {
           await control.press(" ", { noWaitAfter: true });
+          await page.waitForTimeout(250);
         } else if (mode === "rapid_repeated_click") {
-          await control.click({ noWaitAfter: true });
-          await control.click({ noWaitAfter: true });
+          await this.#activateUntil(click, () => opened.length >= 1);
+          await click();
         } else if (mode === "sequential_repeated_click") {
-          await control.click({ noWaitAfter: true });
-          await page.waitForFunction(
-            () =>
-              window.__open43Issue777Print.calls.length === 1 &&
-              window.__open43Issue777Print.pending.length === 1,
-            null,
-            { timeout: TIMEOUT_MS },
-          );
-          const firstDuring = await publicState(page);
-          await page.evaluate(() => window.__open43Issue777Print.release());
-          await page.waitForFunction(
-            (selector) =>
-              document.querySelector(selector)?.hasAttribute("aria-busy") ===
-                false &&
-              window.__open43Issue777Print.pending.length === 0,
-            SELECTOR,
-            { timeout: TIMEOUT_MS },
-          );
-          const betweenRepeats = await publicState(page);
-          await control.click({ noWaitAfter: true });
-          await page.waitForFunction(
-            () =>
-              window.__open43Issue777Print.calls.length === 2 &&
-              window.__open43Issue777Print.pending.length === 1,
-            null,
-            { timeout: TIMEOUT_MS },
-          );
-          const during = await publicState(page);
-          const printCalls = await page.evaluate(() =>
-            structuredClone(window.__open43Issue777Print.calls),
-          );
-          await page.evaluate(() => window.__open43Issue777Print.release());
-          await page.waitForFunction(
-            (selector) =>
-              document.querySelector(selector)?.hasAttribute("aria-busy") ===
-                false &&
-              window.__open43Issue777Print.pending.length === 0,
-            SELECTOR,
-            { timeout: TIMEOUT_MS },
-          );
-          const after = await publicState(page);
-          return {
-            before,
-            during,
-            after,
-            repeat: { first_during: firstDuring, between: betweenRepeats },
-            print_calls: printCalls,
-            mutation_request_count: mutationRequestCount,
-          };
+          await this.#activateUntil(click, () => opened.length >= 1);
+          await opened[0].waitForLoadState("load", { timeout: TIMEOUT_MS });
+          await click();
         } else {
           throw new Error(`unknown issue 777 print operation: ${mode}`);
         }
-        await page.waitForFunction(
-          () =>
-            window.__open43Issue777Print.calls.length === 1 &&
-            window.__open43Issue777Print.pending.length === 1,
-          null,
-          { timeout: TIMEOUT_MS },
-        );
-        const during = await publicState(page);
-        const printCalls = await page.evaluate(() =>
-          structuredClone(window.__open43Issue777Print.calls),
-        );
-        await page.evaluate(() => window.__open43Issue777Print.release());
-        await page.waitForFunction(
-          (selector) =>
-            document.querySelector(selector)?.hasAttribute("aria-busy") ===
-            false,
-          SELECTOR,
-          { timeout: TIMEOUT_MS },
-        );
-        const after = await publicState(page);
+        if (expectedCount > 0) await this.#waitForOpened(opened, expectedCount);
+        const during = await openerState(page);
+        const popupObservations = [];
+        for (const popup of opened.slice(0, expectedCount)) {
+          popupObservations.push(await this.#observePopup(popup));
+        }
+        const after = await openerState(page);
         return {
           before,
           during,
           after,
-          print_calls: printCalls,
+          popup_observations: popupObservations,
+          popup_count: opened.length,
           mutation_request_count: mutationRequestCount,
         };
       } finally {
+        page.off("popup", onPage);
         page.off("request", onRequest);
+        for (const popup of opened) {
+          await popup
+            .close({ runBeforeUnload: false, timeout: CLOSE_TIMEOUT_MS })
+            .catch(() => undefined);
+        }
       }
     } finally {
       await page
-        .close({ runBeforeUnload: false, timeout: 10_000 })
+        .close({ runBeforeUnload: false, timeout: CLOSE_TIMEOUT_MS })
         .catch(() => undefined);
     }
   }
@@ -239,10 +290,10 @@ export class Open43Issue777PrintBrowserAdapter {
             "A777_BROWSER_PRINT_LIFECYCLE",
           ),
       });
-      initial = { capture, state: await publicState(page) };
+      initial = { capture, state: await openerState(page) };
     } finally {
       await page
-        .close({ runBeforeUnload: false, timeout: 10_000 })
+        .close({ runBeforeUnload: false, timeout: CLOSE_TIMEOUT_MS })
         .catch(() => undefined);
     }
     const operations = Object.fromEntries(

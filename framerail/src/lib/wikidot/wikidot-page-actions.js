@@ -32,8 +32,16 @@ export const isWikidotFragmentPage = (tags) => tags?.includes("fragment") ?? fal
 export const buildWikidotDiscussButtonHtml = (label) =>
   `<a href="javascript:;" class="btn btn-default" id="discuss-button" onclick="WIKIDOT.page.listeners.createPageDiscussion(event)">${escapeHtml(label)}</a>`
 
-/** @param {{ print: () => unknown }} [browser] */
-export const printWikidotPage = (browser = window) => browser.print()
+/**
+ * Open the live Wikidot printer-friendly child window for the current page
+ * path. The path already begins with `/`, so the route keeps Wikidot's exact
+ * doubled slash (`/printer--friendly//<page>`).
+ *
+ * @param {string} pagePath
+ * @param {{ open: (url: string, target: string) => unknown }} [browser]
+ */
+export const openWikidotPrinterFriendly = (pagePath, browser = window) =>
+  browser.open(`/printer--friendly/${pagePath}`, "_blank")
 
 /**
  * @param {string | null | undefined} sourceSite

@@ -12,7 +12,7 @@
   import {
     buildWikidotDiscussButtonHtml,
     isWikidotFragmentPage,
-    printWikidotPage
+    openWikidotPrinterFriendly
   } from "$lib/wikidot/wikidot-page-actions"
   import {
     updateWikidotRateWidget,
@@ -269,7 +269,7 @@
       showSource = true
       pagePaneState = PagePane.None
     },
-    print: printWikidotPage,
+    print: () => openWikidotPrinterFriendly(page.url.pathname),
     setTags: setLegacyTags,
     rate: rateFromLegacyWidget,
     cancelRate: cancelLegacyRating,
@@ -580,7 +580,7 @@
             id="print-button"
             class="btn btn-default"
             href="javascript:;"
-            onclick={() => printWikidotPage()}
+            onclick={() => openWikidotPrinterFriendly(page.url.pathname)}
             type="button"
           >
             {wikidotPageActions.print}

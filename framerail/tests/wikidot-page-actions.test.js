@@ -6,19 +6,22 @@ import {
   buildWikidotPageActionLabels,
   formatSigned,
   isWikidotFragmentPage,
-  printWikidotPage,
+  openWikidotPrinterFriendly,
   sourceShowsStandardWikidotPageActions,
   wikidotPageActionVisibility
 } from "../src/lib/wikidot/wikidot-page-actions.js"
 
-test("Print delegates to the browser print boundary", () => {
-  let calls = 0
-  printWikidotPage({
-    print() {
-      calls += 1
-    }
+test("Print opens the live printer-friendly child window without printing the opener", () => {
+  const calls = []
+  let printed = 0
+  openWikidotPrinterFriendly("/doc-wiki-syntax:buttons", {
+    open: (url, target) => calls.push([url, target]),
+    print: () => (printed += 1)
   })
-  assert.equal(calls, 1)
+  assert.deepEqual(calls, [
+    ["/printer--friendly//doc-wiki-syntax:buttons", "_blank"]
+  ])
+  assert.equal(printed, 0)
 })
 
 test("discussion action uses the frozen Wikidot DOM marker and escapes its label", () => {

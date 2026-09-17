@@ -94,6 +94,9 @@
   }
 
   const currentLayout = $derived.by(resolveCurrentLayout)
+  const isPrinterFriendlyView = $derived(
+    page.route.id === "/printer--friendly/[...path]"
+  )
   const canonicalView = $derived(resolveCanonicalViewMetadata(page.error, page.data))
   const viewData = $derived(canonicalView.viewData)
   const wikidotLocale = $derived(canonicalView.locale)
@@ -233,7 +236,7 @@
   {#if siteWindowsTile}
     <meta name="msapplication-TileImage" content={siteWindowsTile.href} />
   {/if}
-  {#if currentLayout === Layout.WIKIDOT}
+  {#if !isPrinterFriendlyView && currentLayout === Layout.WIKIDOT}
     <link href="/wikidot/styles/wikidot-base-165bc434fd1d.css" rel="stylesheet" />
     <link href="/wikidot/styles/pagerate-db0bffe086ed.css" rel="stylesheet" />
     <link href="/wikidot/styles/sigma-fe5388a32e12.css" rel="stylesheet" />
@@ -263,7 +266,9 @@
   {/if}
 </svelte:head>
 
-{#if currentLayout === Layout.WIKIDOT}
+{#if isPrinterFriendlyView}
+  {@render children?.()}
+{:else if currentLayout === Layout.WIKIDOT}
   {#if showTopToolbar}
     <div id="navi-bar">
       <a href="http://www.wikidot.com"><span>Wikidot.com</span></a>

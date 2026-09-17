@@ -85,7 +85,7 @@ function requireCapture(value, plan) {
   }
 }
 
-function requireState(value, plan, expected, label) {
+function requireOpenerState(value, plan, expected, label) {
   const state = requirePlainObject(value, `${label} state`);
   if (
     state.url !== plan.page_url ||
@@ -95,79 +95,151 @@ function requireState(value, plan, expected, label) {
     state.standalone_print_count !== 1 ||
     state.focused_control !== expected.focused ||
     state.aria_busy !== expected.busy ||
-    state.print_call_count !== expected.calls ||
-    state.pending_print_count !== expected.pending ||
+    state.open_count !== expected.opens ||
+    state.print_call_count !== 0 ||
     state.source_disclosure !== false
   ) {
     throw new Error(`${label} public print state drifted`);
   }
+  const opens = state.opens;
+  if (!Array.isArray(opens) || opens.length !== expected.opens) {
+    throw new Error(`${label} child-window count drifted`);
+  }
+  const expectedUrl = `/printer--friendly/${plan.page_path}`;
+  for (const open of opens) {
+    const call = requirePlainObject(open, `${label} child window`);
+    if (call.url !== expectedUrl || call.target !== "_blank") {
+      throw new Error(`${label} child-window request drifted`);
+    }
+  }
   return state;
+}
+
+const EXPECTED_OPENS = Object.freeze({
+  click: 1,
+  enter: 1,
+  space: 0,
+  rapid_repeated_click: 2,
+  sequential_repeated_click: 2,
+});
+const POPUP_CONTROL_OUTER_HTML =
+  '<a href="javascript:;" onclick="window.print()">PRINT THE PAGE</a>';
+const POPUP_CONTROL_PARENT_OUTER_HTML = `<b>${POPUP_CONTROL_OUTER_HTML}</b>`;
+const POPUP_HISTORY_LENGTH = 1;
+
+function requirePopup(value, plan, label) {
+  const popup = requirePlainObject(value, `${label} printer-friendly window`);
+  const expectedUrl = new URL(
+    `/printer--friendly/${plan.page_path}`,
+    plan.page_url,
+  ).href;
+  const phases = ["before", "focused", "after"].map((phase) => [
+    phase,
+    requirePlainObject(popup[phase], `${label} ${phase} state`),
+  ]);
+  for (const [phase, state] of phases) {
+    const drift = [];
+    if (state.url !== expectedUrl) drift.push(`url=${JSON.stringify(state.url)}`);
+    if (state.history_length !== POPUP_HISTORY_LENGTH) {
+      drift.push(
+        `history_length=${JSON.stringify(state.history_length)} expected=${POPUP_HISTORY_LENGTH}`,
+      );
+    }
+    if (state.body_id !== "html-body") drift.push(`body_id=${JSON.stringify(state.body_id)}`);
+    if (!String(state.body_class ?? "").split(/\s+/u).includes("print-body")) {
+      drift.push(`body_class=${JSON.stringify(state.body_class)}`);
+    }
+    if (state.print_control_count !== 1) {
+      drift.push(`print_control_count=${JSON.stringify(state.print_control_count)}`);
+    }
+    if (state.rendered !== true) drift.push(`rendered=${JSON.stringify(state.rendered)}`);
+    if (state.control_href !== "javascript:;") {
+      drift.push(`control_href=${JSON.stringify(state.control_href)}`);
+    }
+    if (state.control_onclick !== "window.print()") {
+      drift.push(`control_onclick=${JSON.stringify(state.control_onclick)}`);
+    }
+    if (state.control_outer_html !== POPUP_CONTROL_OUTER_HTML) {
+      drift.push(`control_outer_html=${JSON.stringify(state.control_outer_html)}`);
+    }
+    if (state.parent_outer_html !== POPUP_CONTROL_PARENT_OUTER_HTML) {
+      drift.push(`parent_outer_html=${JSON.stringify(state.parent_outer_html)}`);
+    }
+    if (drift.length > 0) {
+      throw new Error(
+        `${label} ${phase} printer-friendly DOM drifted: ${drift.join("; ")}`,
+      );
+    }
+  }
+  const before = phases[0][1];
+  const focused = phases[1][1];
+  const after = phases[2][1];
+  if (
+    before.focused_control !== false ||
+    focused.focused_control !== true ||
+    after.focused_control !== true
+  ) {
+    throw new Error(`${label} printer-friendly focus drifted`);
+  }
+  for (const state of [before, focused, after]) {
+    if (state.aria_busy !== null) {
+      throw new Error(`${label} printer-friendly control acquired aria-busy`);
+    }
+  }
+  if (
+    after.print_call_count !== 1 ||
+    !Array.isArray(after.prints) ||
+    after.prints.length !== 1
+  ) {
+    throw new Error(`${label} printer-friendly native print count drifted`);
+  }
+  const call = requirePlainObject(after.prints[0], `${label} print call`);
+  if (
+    call.url !== expectedUrl ||
+    call.history_length !== POPUP_HISTORY_LENGTH ||
+    call.focused_control !== true ||
+    call.argument_count !== 0
+  ) {
+    throw new Error(`${label} printer-friendly print call identity drifted`);
+  }
+  return popup;
 }
 
 function requireOperation(value, plan, label) {
   const operation = requirePlainObject(value, `issue 777 ${label}`);
-  const before = requireState(
+  const expectedOpens = EXPECTED_OPENS[label];
+  const before = requireOpenerState(
     operation.before,
     plan,
-    { focused: true, busy: false, calls: 0, pending: 0 },
+    { focused: true, busy: false, opens: 0 },
     `issue 777 ${label} before`,
   );
-  const during = requireState(
+  const during = requireOpenerState(
     operation.during,
     plan,
-    label === "sequential_repeated_click"
-      ? { focused: true, busy: true, calls: 2, pending: 1 }
-      : { focused: true, busy: true, calls: 1, pending: 1 },
+    { focused: true, busy: false, opens: expectedOpens },
     `issue 777 ${label} during`,
   );
-  const after = requireState(
+  const after = requireOpenerState(
     operation.after,
     plan,
-    {
-      focused: true,
-      busy: false,
-      calls: label === "sequential_repeated_click" ? 2 : 1,
-      pending: 0,
-    },
+    { focused: true, busy: false, opens: expectedOpens },
     `issue 777 ${label} after`,
   );
   if (
     before.history_length !== during.history_length ||
     before.history_length !== after.history_length ||
     operation.mutation_request_count !== 0 ||
-    !Array.isArray(operation.print_calls) ||
-    operation.print_calls.length !==
-      (label === "sequential_repeated_click" ? 2 : 1)
+    operation.popup_count !== expectedOpens
   ) {
     throw new Error(`issue 777 ${label} navigation or request state drifted`);
   }
-  for (const [index, value] of operation.print_calls.entries()) {
-    const call = requirePlainObject(
-      value,
-      `issue 777 ${label} print call ${index + 1}`,
-    );
-    if (
-      call.url !== plan.page_url ||
-      call.history_length !== before.history_length ||
-      call.focused_control !== true
-    ) {
-      throw new Error(`issue 777 ${label} print call drifted`);
-    }
+  const popups = operation.popup_observations;
+  if (!Array.isArray(popups) || popups.length !== expectedOpens) {
+    throw new Error(`issue 777 ${label} printer-friendly observations drifted`);
   }
-  if (label === "sequential_repeated_click") {
-    const repeat = requirePlainObject(operation.repeat, "issue 777 sequential repeat");
-    requireState(
-      repeat.first_during,
-      plan,
-      { focused: true, busy: true, calls: 1, pending: 1 },
-      "issue 777 sequential first repeat",
-    );
-    requireState(
-      repeat.between,
-      plan,
-      { focused: true, busy: false, calls: 1, pending: 0 },
-      "issue 777 sequential repeat boundary",
-    );
+  for (const [index, popup] of popups.entries()) {
+    requirePopup(popup, plan, `${label} popup ${index + 1}`);
   }
 }
 
@@ -187,10 +259,10 @@ export function verifyOpen43Issue777PrintCase(caseId, observations, plan) {
   const lifecycle = requirePlainObject(value.lifecycle, `${caseId} lifecycle`);
   const initial = requirePlainObject(lifecycle.initial, `${caseId} initial`);
   requireCapture(initial.capture, plan);
-  requireState(
+  requireOpenerState(
     initial.state,
     plan,
-    { focused: false, busy: false, calls: 0, pending: 0 },
+    { focused: false, busy: false, opens: 0 },
     `${caseId} initial`,
   );
   const operations = requirePlainObject(
@@ -389,9 +461,15 @@ const SOURCE_FILES = Object.freeze([
     "install/local/wikidot-verification/src/open43-issue777-print-browser-adapter.mjs",
     "install/local/wikidot-verification/src/open43-issue777-print-candidate-case-set.mjs",
     "install/local/wikidot-verification/src/standing-browser-parity-receipt.mjs",
+    "framerail/src/hooks.server.ts",
+    "framerail/src/hooks.ts",
     "framerail/src/lib/wikidot/wikidot-legacy-actions.js",
     "framerail/src/lib/wikidot/wikidot-page-actions.js",
+    "framerail/src/lib/wikidot/wikidot-print-view.js",
+    "framerail/src/routes/+layout.svelte",
     "framerail/src/routes/[slug]/[...extra]/page.svelte",
+    "framerail/src/routes/printer--friendly/[...path]/+page.server.ts",
+    "framerail/src/routes/printer--friendly/[...path]/+page.svelte",
     "deepwell/src/services/render/legacy_actions.rs",
     "install/local/wikidot-verification/package.json",
     "install/local/wikidot-verification/pnpm-lock.yaml",

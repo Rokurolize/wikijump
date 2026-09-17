@@ -284,7 +284,12 @@ function validateCandidateCapture(capture, pair) {
     );
   }
   if (capture.navigation_status !== 200 || capture.capture_error) {
-    throw new Error(`candidate capture is incomplete for ${pair.local_url}`);
+    throw new Error(
+      `candidate capture is incomplete for ${pair.local_url}: ${JSON.stringify({
+        navigation_status: capture.navigation_status,
+        capture_error: capture.capture_error ?? null,
+      })}`,
+    );
   }
   validateRequestGateAborts(
     capture.request_gate_aborts,

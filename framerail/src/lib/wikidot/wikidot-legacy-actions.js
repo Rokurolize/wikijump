@@ -206,7 +206,10 @@ const validRateAction = (action) => {
 export const performWikidotLegacyAction = async (element, action, runtime) => {
   const busyKey =
     action.type === "rate" || action.type === "rate-cancel" ? runtime : element
-  const serialized = action.type !== "edit"
+  // Print is a fixed synchronous navigation action on live Wikidot: the
+  // control never observes a busy state and every activation opens its own
+  // child window. Only long-running server actions serialize per element.
+  const serialized = action.type !== "edit" && action.type !== "print"
   if (serialized && busyActions.has(busyKey)) return false
 
   const operation = operationFor(element, action, runtime)
@@ -474,7 +477,20 @@ export const wikidotLegacyActions = (root, parameters) => {
   }
   /** @param {KeyboardEvent} event */
   const keydown = (event) => {
-    if (![" ", "Spacebar", "Space", "Enter"].includes(event.key)) return undefined
+    const element = actionElement(event)
+    if (!element) return undefined
+    const action = boundActions.get(element)
+    const spaceActivatesRate =
+      action?.type === "rate" || action?.type === "rate-cancel"
+    // Live Wikidot standalone actions are anchors: Enter activates them and
+    // Space scrolls without firing the handler. Rate controls retain their
+    // separately evidenced Space-key activation contract.
+    if (
+      event.key !== "Enter" &&
+      !(spaceActivatesRate && [" ", "Spacebar", "Space"].includes(event.key))
+    ) {
+      return undefined
+    }
     return activate(event)
   }
 
