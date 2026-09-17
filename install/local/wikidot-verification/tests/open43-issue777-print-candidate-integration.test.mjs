@@ -105,7 +105,7 @@ function popupState(pagePath, printed) {
   return {
     url,
     path: `/printer--friendly/${pagePath}`,
-    history_length: 2,
+    history_length: 1,
     body_id: "html-body",
     body_class: "print-body",
     print_control_count: 1,
@@ -121,7 +121,7 @@ function popupState(pagePath, printed) {
       ? [
           {
             url,
-            history_length: 2,
+            history_length: 1,
             focused_control: true,
             argument_count: 0,
           },

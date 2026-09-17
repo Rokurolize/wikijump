@@ -125,8 +125,9 @@ const EXPECTED_OPENS = Object.freeze({
 const POPUP_CONTROL_OUTER_HTML =
   '<a href="javascript:;" onclick="window.print()">PRINT THE PAGE</a>';
 const POPUP_CONTROL_PARENT_OUTER_HTML = `<b>${POPUP_CONTROL_OUTER_HTML}</b>`;
+const POPUP_HISTORY_LENGTH = 1;
 
-function requirePopup(value, plan, openerHistoryLength, label) {
+function requirePopup(value, plan, label) {
   const popup = requirePlainObject(value, `${label} printer-friendly window`);
   const expectedUrl = new URL(
     `/printer--friendly/${plan.page_path}`,
@@ -139,9 +140,9 @@ function requirePopup(value, plan, openerHistoryLength, label) {
   for (const [phase, state] of phases) {
     const drift = [];
     if (state.url !== expectedUrl) drift.push(`url=${JSON.stringify(state.url)}`);
-    if (state.history_length !== openerHistoryLength) {
+    if (state.history_length !== POPUP_HISTORY_LENGTH) {
       drift.push(
-        `history_length=${JSON.stringify(state.history_length)} expected=${JSON.stringify(openerHistoryLength)}`,
+        `history_length=${JSON.stringify(state.history_length)} expected=${POPUP_HISTORY_LENGTH}`,
       );
     }
     if (state.body_id !== "html-body") drift.push(`body_id=${JSON.stringify(state.body_id)}`);
@@ -195,7 +196,7 @@ function requirePopup(value, plan, openerHistoryLength, label) {
   const call = requirePlainObject(after.prints[0], `${label} print call`);
   if (
     call.url !== expectedUrl ||
-    call.history_length !== openerHistoryLength ||
+    call.history_length !== POPUP_HISTORY_LENGTH ||
     call.focused_control !== true ||
     call.argument_count !== 0
   ) {
@@ -238,7 +239,7 @@ function requireOperation(value, plan, label) {
     throw new Error(`issue 777 ${label} printer-friendly observations drifted`);
   }
   for (const [index, popup] of popups.entries()) {
-    requirePopup(popup, plan, before.history_length, `${label} popup ${index + 1}`);
+    requirePopup(popup, plan, `${label} popup ${index + 1}`);
   }
 }
 
