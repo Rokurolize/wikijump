@@ -11385,8 +11385,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "9fe7dba01012a07ece801b70995faee2163f2fa5",
-      "tree": "e4d42a8487dc55deb6aa5635765d6352786dacf0"
+      "commit": "de46bb959197b3d3a9103401997647c0608267a0",
+      "tree": "91d7dafdefec5a9d90b6b1b071b028a741ff8727"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11819,7 +11819,7 @@
       },
       {
         "path": "framerail/src/routes/printer--friendly/[...path]/+page.server.ts",
-        "sha256": "641975e4bf4c0852c443fe8156325cbed04c7a6c255e1b531a4a8c81adc1b531"
+        "sha256": "d4158648bc9a279f953d7c741338b89e29d873eb8d669823c6bff7e0e8300bfa"
       },
       {
         "path": "framerail/src/routes/printer--friendly/[...path]/+page.svelte",
