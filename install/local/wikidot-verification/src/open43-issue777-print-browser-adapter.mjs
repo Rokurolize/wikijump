@@ -1,7 +1,8 @@
 const SELECTOR = 'a.wiki-standalone-button[href="javascript:;"]';
 const POPUP_SELECTOR = 'a[href="javascript:;"][onclick*="window.print"]';
 const VIEWPORT = Object.freeze({ width: 1280, height: 900 });
-const TIMEOUT_MS = 300_000;
+const TIMEOUT_MS = 15_000;
+const CLOSE_TIMEOUT_MS = 2_000;
 export const OPEN43_ISSUE777_PRINT_OPERATIONS = Object.freeze([
   "click",
   "enter",
@@ -52,7 +53,6 @@ function installPrintProbe() {
       return nativeOpen.apply(window, args);
     },
   });
-  const nativePrint = typeof window.print === "function" ? window.print : null;
   Object.defineProperty(window, "print", {
     configurable: true,
     writable: true,
@@ -64,8 +64,6 @@ function installPrintProbe() {
         focused_control: document.activeElement === control,
         argument_count: args.length,
       });
-      if (!nativePrint) return undefined;
-      return nativePrint.apply(window, args);
     },
   });
   window.addEventListener("pagehide", () => {
@@ -141,7 +139,7 @@ export class Open43Issue777PrintBrowserAdapter {
   }
 
   async #observePopup(popup) {
-    await popup.waitForLoadState("load", { timeout: TIMEOUT_MS });
+    await popup.waitForLoadState("domcontentloaded", { timeout: TIMEOUT_MS });
     const control = popup.locator(POPUP_SELECTOR);
     if ((await control.count()) !== 1) {
       throw new Error("issue 777 printer-friendly view did not serve one print control");
@@ -254,13 +252,13 @@ export class Open43Issue777PrintBrowserAdapter {
         page.off("request", onRequest);
         for (const popup of opened) {
           await popup
-            .close({ runBeforeUnload: false, timeout: 10_000 })
+            .close({ runBeforeUnload: false, timeout: CLOSE_TIMEOUT_MS })
             .catch(() => undefined);
         }
       }
     } finally {
       await page
-        .close({ runBeforeUnload: false, timeout: 10_000 })
+        .close({ runBeforeUnload: false, timeout: CLOSE_TIMEOUT_MS })
         .catch(() => undefined);
     }
   }
@@ -291,7 +289,7 @@ export class Open43Issue777PrintBrowserAdapter {
       initial = { capture, state: await openerState(page) };
     } finally {
       await page
-        .close({ runBeforeUnload: false, timeout: 10_000 })
+        .close({ runBeforeUnload: false, timeout: CLOSE_TIMEOUT_MS })
         .catch(() => undefined);
     }
     const operations = Object.fromEntries(
