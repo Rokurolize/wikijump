@@ -137,21 +137,37 @@ function requirePopup(value, plan, openerHistoryLength, label) {
     requirePlainObject(popup[phase], `${label} ${phase} state`),
   ]);
   for (const [phase, state] of phases) {
-    if (
-      state.url !== expectedUrl ||
-      state.history_length !== openerHistoryLength ||
-      state.body_id !== "html-body" ||
-      !String(state.body_class ?? "")
-        .split(/\s+/u)
-        .includes("print-body") ||
-      state.print_control_count !== 1 ||
-      state.rendered !== true ||
-      state.control_href !== "javascript:;" ||
-      state.control_onclick !== "window.print()" ||
-      state.control_outer_html !== POPUP_CONTROL_OUTER_HTML ||
-      state.parent_outer_html !== POPUP_CONTROL_PARENT_OUTER_HTML
-    ) {
-      throw new Error(`${label} ${phase} printer-friendly DOM drifted`);
+    const drift = [];
+    if (state.url !== expectedUrl) drift.push(`url=${JSON.stringify(state.url)}`);
+    if (state.history_length !== openerHistoryLength) {
+      drift.push(
+        `history_length=${JSON.stringify(state.history_length)} expected=${JSON.stringify(openerHistoryLength)}`,
+      );
+    }
+    if (state.body_id !== "html-body") drift.push(`body_id=${JSON.stringify(state.body_id)}`);
+    if (!String(state.body_class ?? "").split(/\s+/u).includes("print-body")) {
+      drift.push(`body_class=${JSON.stringify(state.body_class)}`);
+    }
+    if (state.print_control_count !== 1) {
+      drift.push(`print_control_count=${JSON.stringify(state.print_control_count)}`);
+    }
+    if (state.rendered !== true) drift.push(`rendered=${JSON.stringify(state.rendered)}`);
+    if (state.control_href !== "javascript:;") {
+      drift.push(`control_href=${JSON.stringify(state.control_href)}`);
+    }
+    if (state.control_onclick !== "window.print()") {
+      drift.push(`control_onclick=${JSON.stringify(state.control_onclick)}`);
+    }
+    if (state.control_outer_html !== POPUP_CONTROL_OUTER_HTML) {
+      drift.push(`control_outer_html=${JSON.stringify(state.control_outer_html)}`);
+    }
+    if (state.parent_outer_html !== POPUP_CONTROL_PARENT_OUTER_HTML) {
+      drift.push(`parent_outer_html=${JSON.stringify(state.parent_outer_html)}`);
+    }
+    if (drift.length > 0) {
+      throw new Error(
+        `${label} ${phase} printer-friendly DOM drifted: ${drift.join("; ")}`,
+      );
     }
   }
   const before = phases[0][1];
