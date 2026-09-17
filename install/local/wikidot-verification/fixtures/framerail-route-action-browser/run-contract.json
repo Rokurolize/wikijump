@@ -3,10 +3,10 @@
   "issue": 1372,
   "repository": "Rokurolize/wikijump",
   "status": "ready_for_capture",
-  "source_revision": "3ea28facdd7fc1679ce6a3304c87805c0e54a72c",
+  "source_revision": "1666e49950b7da4cff7b450df25972c945cbf644",
   "evidence_registry": {
     "path": "docs/development/framerail-route-action-evidence.json",
-    "sha256": "ec59a1a0dfc21498cbe64be32d3255a6605365a655f83ae3ebea91d266d883d1"
+    "sha256": "7f7ef4378d00675d22ff78ea2eed15c7dada1fed6731c003c1cebfb72b9b97d8"
   },
   "historical_evidence": {
     "path": "install/local/wikidot-verification/artifacts/page-pane-lazy-browser-20260713.json",
