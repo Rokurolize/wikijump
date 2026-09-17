@@ -126,6 +126,36 @@ test("standalone actions activate from Enter without Space activation", async ()
   assert.equal(calls, 1)
 })
 
+test("Rate controls preserve Space keyboard activation", async () => {
+  const rate = actionElement()
+  const listeners = new Map()
+  const root = {
+    addEventListener: (name, listener) => listeners.set(name, listener),
+    removeEventListener: () => {},
+    querySelectorAll: (selector) => {
+      if (selector.includes(".rateup")) return [rate]
+      return []
+    }
+  }
+  rate.parentElement = root
+  let votes = 0
+  const fingerprint = "0123456789abcdef0123456789abcdef"
+
+  wikidotLegacyActions(root, {
+    actions: [],
+    rateActions: [{ type: "rate", index: 0, fingerprint, value: 1 }],
+    runtime: { rate: () => (votes += 1) }
+  })
+
+  await listeners.get("keydown")({
+    target: rate,
+    key: "Space",
+    preventDefault: () => {},
+    stopPropagation: () => {}
+  })
+  assert.equal(votes, 1)
+})
+
 test("standalone edit clicks use the exact control set and fail closed on extras", async () => {
   const selector = 'a[href="javascript:;"]'
   const exact = actionElement()

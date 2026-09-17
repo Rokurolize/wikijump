@@ -477,9 +477,20 @@ export const wikidotLegacyActions = (root, parameters) => {
   }
   /** @param {KeyboardEvent} event */
   const keydown = (event) => {
+    const element = actionElement(event)
+    if (!element) return undefined
+    const action = boundActions.get(element)
+    const spaceActivatesRate =
+      action?.type === "rate" || action?.type === "rate-cancel"
     // Live Wikidot standalone actions are anchors: Enter activates them and
-    // Space scrolls without firing the handler.
-    if (event.key !== "Enter") return undefined
+    // Space scrolls without firing the handler. Rate controls retain their
+    // separately evidenced Space-key activation contract.
+    if (
+      event.key !== "Enter" &&
+      !(spaceActivatesRate && [" ", "Spacebar", "Space"].includes(event.key))
+    ) {
+      return undefined
+    }
     return activate(event)
   }
 
