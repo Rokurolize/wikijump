@@ -4077,6 +4077,11 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-route:/printer--friendly/{*path}",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-route:/user:info/{target}",
       "type": "implemented_by",
       "target": "wikijump.framerail"
@@ -11380,8 +11385,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "b0b859b8bfc07137dce6f112144bc713c798f38e",
-      "tree": "aa927b1265208fdb4453def072f6f5ef416af09e"
+      "commit": "0df11ca9660717cde82f1343e5b16128f3795ced",
+      "tree": "5c5615e044da20cca297844a8191ef41c237594e"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11546,11 +11551,11 @@
       },
       {
         "path": "docs/development/framerail-route-action-evidence.json",
-        "sha256": "7c0cc687efd032c6554f2299a96c9e3b28974cfbe5d8cfdecf48ee8c8fdaf75b"
+        "sha256": "ec59a1a0dfc21498cbe64be32d3255a6605365a655f83ae3ebea91d266d883d1"
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "d87a8aead456a376f67b45841426d9367acd60cc0284d0d40cf92b45a9fd5b57"
+        "sha256": "7728d60ca64857978506e8bd386fb5d2805e325e8afe1ad6a036503cd6bb89a7"
       },
       {
         "path": "docs/development/open43-a-authoring-closure-audit.json",
@@ -11562,7 +11567,7 @@
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "1c5e8224a3bf1cb08560834e1005cd9d298c1d20032fd1e1d968c907324b2afe"
+        "sha256": "bec65f0056a9922d8e1e0e770eb748299e5529e45952ab9ce27407e8dd04f230"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -11813,6 +11818,14 @@
         "sha256": "f77680d24f23cd6bb3ab5ea1f4e37b31505af6c2bcf4a1755aba40245620b6da"
       },
       {
+        "path": "framerail/src/routes/printer--friendly/[...path]/+page.server.ts",
+        "sha256": "641975e4bf4c0852c443fe8156325cbed04c7a6c255e1b531a4a8c81adc1b531"
+      },
+      {
+        "path": "framerail/src/routes/printer--friendly/[...path]/+page.svelte",
+        "sha256": "67a38a8c64c2c65c653fd7db577a8eca81cae6191e02b594335dc97dea5b3172"
+      },
+      {
         "path": "framerail/src/routes/user[x+3a]info/[target]/+page.server.ts",
         "sha256": "8b19f2be3aaf05717b90b1707fc234aef18f155b493f3f1356c10257e1158740"
       },
@@ -11929,13 +11942,13 @@
     ]
   },
   "counts": {
-    "total": 953,
+    "total": 954,
     "by_kind": {
       "catalog_feature": 210,
       "deepwell_jsonrpc_method": 177,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
-      "framerail_route": 29,
+      "framerail_route": 30,
       "framerail_server_action": 107,
       "framerail_xmlrpc_method": 17,
       "missing_page_control": 2,
@@ -32435,6 +32448,48 @@
       ]
     },
     {
+      "surface_id": "framerail-route:/printer--friendly/{*path}",
+      "kind": "framerail_route",
+      "public_reference": [
+        "framerail/src/routes/printer--friendly/[...path]/+page.server.ts#methods:GET",
+        "framerail/src/routes/printer--friendly/[...path]/+page.svelte#methods:GET"
+      ],
+      "existing_refs": {
+        "issues": [
+          777
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/hooks-reroute.test.ts#printer-friendly doubled slash resolves to the single-slash route",
+          "framerail/tests/wikidot-print-view.test.js#printer-friendly URL preserves the live doubled slash"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-route",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-route:/user:info/{target}",
       "kind": "framerail_route",
       "public_reference": [
@@ -41324,7 +41379,9 @@
           "A777_FIXED_PRINT_ONLY"
         ],
         "tests": [
-          "framerail/tests/wikidot-legacy-actions.test.js#typed standalone actions call only their fixed browser behavior"
+          "framerail/tests/wikidot-legacy-actions.test.js#print opens one child window per activation without a busy state",
+          "framerail/tests/wikidot-page-actions.test.js#Print opens the live printer-friendly child window without printing the opener",
+          "framerail/tests/wikidot-print-view.test.js#printer-friendly URL preserves the live doubled slash"
         ]
       },
       "evidence": {
