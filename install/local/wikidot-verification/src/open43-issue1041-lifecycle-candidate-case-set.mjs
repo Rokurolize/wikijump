@@ -22,11 +22,8 @@ const SOURCE = [
 ].join("\n");
 const INITIAL_TAGS = Object.freeze(["original"]);
 const EXPECTED_TAGS = Object.freeze(["candidate"]);
-const EDIT_LABEL = "Edit page here";
 const HISTORY_LABEL = "history";
 const SOURCE_LABEL = "view source";
-const PRINT_LABEL = "Print this page";
-const TAGS_LABEL = "Apply tags";
 
 function requireInitial(value, plan, name) {
   const initial = requirePlainObject(value, `${name} initial`);
@@ -91,12 +88,6 @@ function requireFocusedActivation(value, plan, expected, name) {
   return operation;
 }
 
-function requireBusyCycle(value, expected, name) {
-  if (!Array.isArray(value) || JSON.stringify(value) !== JSON.stringify(expected)) {
-    throw new Error(`${name} busy cycle drifted`);
-  }
-}
-
 function requireEditDestination(value, plan, name) {
   const after = requirePlainObject(value, `${name} after`);
   if (after.path !== plan.edit_path || after.editor_count !== 1) {
@@ -144,18 +135,32 @@ function requirePrint(value, plan, name) {
   const operation = requirePlainObject(print.hold, `${name} print hold`);
   requireState(operation.before, plan, { busy: false }, `${name} print before`);
   if (operation.before.focused_control !== true) throw new Error(`${name} print did not focus its control`);
-  requireState(operation.during, plan, { busy: true }, `${name} print during`);
-  if (operation.during.print_pending !== 1 || operation.during.source_pane_visible !== false) {
-    throw new Error(`${name} print did not hold its pending busy state`);
+  requireState(operation.during, plan, { busy: false }, `${name} print during`);
+  const popup = requirePlainObject(operation.popup, `${name} print popup`);
+  const expectedPopupPath = `/printer--friendly/${plan.page_path}`;
+  const expectedPopupUrl = new URL(expectedPopupPath, plan.page_url).href;
+  if (
+    popup.url !== expectedPopupUrl ||
+    popup.path !== expectedPopupPath ||
+    popup.history_length !== 1
+  ) {
+    throw new Error(`${name} print did not open the exact printer-friendly child window`);
   }
-  requireState(operation.independent, plan, { busy: true, source_disclosure: true }, `${name} print independent`);
-  if (operation.independent.source_pane_visible !== true || operation.independent.print_pending !== 1) {
-    throw new Error(`${name} print busy state blocked an independent control`);
+  if (operation.during.print_pending !== 0 || operation.during.source_pane_visible !== false) {
+    throw new Error(`${name} print changed opener print state`);
+  }
+  requireState(operation.independent, plan, { busy: false, source_disclosure: true }, `${name} print independent`);
+  if (operation.independent.source_pane_visible !== true || operation.independent.print_pending !== 0) {
+    throw new Error(`${name} print child window blocked an independent control`);
   }
   requireState(operation.after, plan, { busy: false, source_disclosure: true }, `${name} print after`);
   if (operation.after.print_pending !== 0 || operation.after.source_pane_visible !== true) {
-    throw new Error(`${name} print release did not settle`);
+    throw new Error(`${name} print opener did not remain settled`);
   }
+  if (
+    operation.before.history_length !== operation.during.history_length ||
+    operation.before.history_length !== operation.after.history_length
+  ) throw new Error(`${name} print changed opener history`);
   if (operation.mutation_request_count !== 0) throw new Error(`${name} print issued a mutation request`);
   return print;
 }
@@ -227,7 +232,6 @@ class Open43Issue1041LifecycleRun {
   #session;
   #browser;
   #resources;
-  #runId;
   #pageSlug;
   #siteId = null;
   #ownedPage = null;
@@ -238,7 +242,6 @@ class Open43Issue1041LifecycleRun {
     this.#session = session;
     this.#browser = browser;
     this.#resources = resources;
-    this.#runId = runId;
     this.#pageSlug = `open43-issue1041-${runId.slice("candidate-run-".length)}`;
   }
 

@@ -193,14 +193,16 @@ export class Open43Issue1041LifecycleBrowserAdapter {
     const control = this.#control(page, label);
     if (!focused) await control.focus();
     if (mode === "click") await control.click({ noWaitAfter: true });
-    else if (mode === "space") await control.press("Space", { noWaitAfter: true });
-    else {
+    else if (mode === "enter") await control.press("Enter", { noWaitAfter: true });
+    else if (mode === "double") {
       await page.evaluate(({ selector, label }) => {
         const element = [...document.querySelectorAll(selector)]
           .find((candidate) => (candidate.textContent ?? "").trim() === label);
         element?.click();
         element?.click();
       }, { selector: STANDALONE_SELECTOR, label });
+    } else {
+      throw new Error(`issue 1041 unsupported activation mode: ${mode}`);
     }
   }
 
@@ -296,32 +298,35 @@ export class Open43Issue1041LifecycleBrowserAdapter {
       if (!["GET", "HEAD", "OPTIONS"].includes(request.method())) mutationRequestCount += 1;
     };
     page.on("request", onRequest);
+    let popup = null;
     try {
       await this.#control(page, "Print this page").focus();
       const before = await publicState(page);
-      await page.evaluate((key) => {
-        Object.defineProperty(window, "print", { configurable: true, value: () => window[key].interceptPrint() });
-      }, PROBE_KEY);
+      const popupPromise = page.waitForEvent("popup", { timeout: TIMEOUT_MS });
       await this.#activate(page, "Print this page", "click", { focused: true });
-      await page.waitForFunction(
-        (key) => window[key]?.print_pending === 1,
-        PROBE_KEY,
-        { timeout: TIMEOUT_MS },
-      );
+      popup = await popupPromise;
+      await popup.waitForLoadState("domcontentloaded", { timeout: TIMEOUT_MS });
+      const popupState = await popup.evaluate(() => ({
+        url: location.href,
+        path: location.pathname,
+        history_length: history.length,
+      }));
       const during = await publicState(page);
-      await this.#activate(page, "view source", "space");
+      await this.#activate(page, "view source", "enter");
       await page.locator("h1.page-source-header").waitFor({ state: "visible", timeout: TIMEOUT_MS });
       const independent = await publicState(page);
-      await page.evaluate((key) => window[key].releasePrint(), PROBE_KEY);
-      await page.waitForFunction(
-        (selector) => [...document.querySelectorAll(selector)].every((element) => element.getAttribute("aria-busy") !== "true"),
-        STANDALONE_SELECTOR,
-        { timeout: TIMEOUT_MS },
-      );
       const after = await publicState(page);
-      return { before, during, independent, after, mutation_request_count: mutationRequestCount };
+      return {
+        before,
+        during,
+        independent,
+        after,
+        popup: popupState,
+        mutation_request_count: mutationRequestCount,
+      };
     } finally {
       page.off("request", onRequest);
+      await popup?.close({ runBeforeUnload: false, timeout: CLOSE_TIMEOUT_MS }).catch(() => undefined);
       await page.close({ runBeforeUnload: false, timeout: CLOSE_TIMEOUT_MS }).catch(() => undefined);
     }
   }
@@ -395,7 +400,7 @@ export class Open43Issue1041LifecycleBrowserAdapter {
     }
     const edit = {
       click: await this.#edit(editor, pageUrl, pagePath, "click"),
-      keyboard: await this.#edit(editor, pageUrl, pagePath, "space"),
+      keyboard: await this.#edit(editor, pageUrl, pagePath, "enter"),
       double: await this.#edit(editor, pageUrl, pagePath, "double"),
       back_forward: await this.#backForward(editor, pageUrl, pagePath),
     };
@@ -404,12 +409,12 @@ export class Open43Issue1041LifecycleBrowserAdapter {
     };
     const source = {
       click: await this.#pane(editor, pageUrl, { label: "view source", kind: "source" }, "click"),
-      keyboard: await this.#pane(editor, pageUrl, { label: "view source", kind: "source" }, "space"),
+      keyboard: await this.#pane(editor, pageUrl, { label: "view source", kind: "source" }, "enter"),
     };
     const print = { hold: await this.#print(editor, pageUrl) };
     const setTags = {
       click: await this.#setTags(editor, pageUrl, "click"),
-      keyboard: await this.#setTags(editor, pageUrl, "space"),
+      keyboard: await this.#setTags(editor, pageUrl, "enter"),
       double: await this.#setTags(editor, pageUrl, "double"),
     };
     const nonEditor = await this.#context("non_admin");

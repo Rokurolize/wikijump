@@ -277,15 +277,12 @@ function paneOperation(label, kind) {
 function printOperation() {
   return {
     before: pageState({ focused_control: true }),
-    during: pageState({ any_aria_busy: true, print_pending: 1 }),
+    during: pageState(),
     independent: pageState({
-      any_aria_busy: true,
-      print_pending: 1,
       action_area_visible: true,
       source_pane_visible: true,
       source_disclosure: true,
       busy_events: [
-        { label: "Print this page", busy: true },
         { label: "view source", busy: true },
         { label: "view source", busy: false },
       ],
@@ -295,12 +292,15 @@ function printOperation() {
       source_pane_visible: true,
       source_disclosure: true,
       busy_events: [
-        { label: "Print this page", busy: true },
         { label: "view source", busy: true },
         { label: "view source", busy: false },
-        { label: "Print this page", busy: false },
       ],
     }),
+    popup: {
+      url: `${PAGE_ORIGIN}/printer--friendly/${PAGE_PATH}`,
+      path: `/printer--friendly/${PAGE_PATH}`,
+      history_length: 1,
+    },
     mutation_request_count: 0,
   };
 }
