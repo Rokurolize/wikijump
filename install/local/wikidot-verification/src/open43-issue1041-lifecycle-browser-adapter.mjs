@@ -1,6 +1,7 @@
 const STANDALONE_SELECTOR = 'a.wiki-standalone-button[href="javascript:;"]';
 const VIEWPORT = Object.freeze({ width: 1280, height: 900 });
-const TIMEOUT_MS = 300_000;
+const TIMEOUT_MS = 15_000;
+const CLOSE_TIMEOUT_MS = 2_000;
 const PROBE_KEY = "__open43Issue1041Lifecycle";
 const CAPTURE_CONTRACT = Object.freeze({
   slug: "issue1041-lifecycle",
@@ -169,13 +170,23 @@ export class Open43Issue1041LifecycleBrowserAdapter {
       );
       return page;
     } catch (error) {
-      await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
+      await page.close({ runBeforeUnload: false, timeout: CLOSE_TIMEOUT_MS }).catch(() => undefined);
       throw error;
     }
   }
 
   #control(page, label) {
     return page.locator(STANDALONE_SELECTOR).filter({ hasText: label });
+  }
+
+  async #waitForResponse(page, predicate, label) {
+    try {
+      return await page.waitForResponse(predicate, { timeout: TIMEOUT_MS });
+    } catch (error) {
+      throw new Error(`issue 1041 ${label} response did not arrive before the deadline`, {
+        cause: error,
+      });
+    }
   }
 
   async #activate(page, label, mode, { focused = false } = {}) {
@@ -203,9 +214,10 @@ export class Open43Issue1041LifecycleBrowserAdapter {
     try {
       await this.#control(page, "Edit page here").focus();
       const before = await publicState(page);
-      const permission = page.waitForResponse(
+      const permission = this.#waitForResponse(
+        page,
         (response) => response.request().method() === "POST" && response.url().includes("?/editPermission"),
-        { timeout: TIMEOUT_MS },
+        `edit ${mode} permission`,
       );
       await this.#activate(page, "Edit page here", mode, { focused: true });
       const during = await publicState(page);
@@ -216,7 +228,7 @@ export class Open43Issue1041LifecycleBrowserAdapter {
       return { before, during, after, mutation_request_count: mutationRequestCount };
     } finally {
       page.off("request", onRequest);
-      await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
+      await page.close({ runBeforeUnload: false, timeout: CLOSE_TIMEOUT_MS }).catch(() => undefined);
     }
   }
 
@@ -226,16 +238,18 @@ export class Open43Issue1041LifecycleBrowserAdapter {
       await page.goto(new URL("/", this.#pageOrigin).href, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       const home = await page.evaluate(() => ({ path: location.pathname }));
       await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
-      const permission = page.waitForResponse(
+      const permission = this.#waitForResponse(
+        page,
         (response) => response.request().method() === "POST" && response.url().includes("?/editPermission"),
-        { timeout: TIMEOUT_MS },
+        "back-forward edit permission",
       );
       await this.#activate(page, "Edit page here", "click");
       await permission;
       await page.waitForURL(new URL(`${pagePath}/edit`, this.#pageOrigin).href, { timeout: TIMEOUT_MS });
-      const backDataResponse = page.waitForResponse(
+      const backDataResponse = this.#waitForResponse(
+        page,
         (response) => isIssue1041PageDataResponse(response, pagePath),
-        { timeout: TIMEOUT_MS },
+        "back navigation page-data",
       );
       await page.goBack({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       const backData = await backDataResponse;
@@ -247,7 +261,7 @@ export class Open43Issue1041LifecycleBrowserAdapter {
       const forward = await publicState(page);
       return { home, back, forward };
     } finally {
-      await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
+      await page.close({ runBeforeUnload: false, timeout: CLOSE_TIMEOUT_MS }).catch(() => undefined);
     }
   }
 
@@ -271,7 +285,7 @@ export class Open43Issue1041LifecycleBrowserAdapter {
       return { before, after, mutation_request_count: mutationRequestCount };
     } finally {
       page.off("request", onRequest);
-      await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
+      await page.close({ runBeforeUnload: false, timeout: CLOSE_TIMEOUT_MS }).catch(() => undefined);
     }
   }
 
@@ -308,7 +322,7 @@ export class Open43Issue1041LifecycleBrowserAdapter {
       return { before, during, independent, after, mutation_request_count: mutationRequestCount };
     } finally {
       page.off("request", onRequest);
-      await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
+      await page.close({ runBeforeUnload: false, timeout: CLOSE_TIMEOUT_MS }).catch(() => undefined);
     }
   }
 
@@ -353,7 +367,7 @@ export class Open43Issue1041LifecycleBrowserAdapter {
     } finally {
       page.off("request", onRequest);
       page.off("framenavigated", onNavigation);
-      await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
+      await page.close({ runBeforeUnload: false, timeout: CLOSE_TIMEOUT_MS }).catch(() => undefined);
     }
   }
 
@@ -377,7 +391,7 @@ export class Open43Issue1041LifecycleBrowserAdapter {
       });
       initial = { capture, state: await publicState(page) };
     } finally {
-      await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
+      await page.close({ runBeforeUnload: false, timeout: CLOSE_TIMEOUT_MS }).catch(() => undefined);
     }
     const edit = {
       click: await this.#edit(editor, pageUrl, pagePath, "click"),
