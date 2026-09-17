@@ -542,7 +542,8 @@
       ],
       "tracking": [
         {
-          "issue": 777
+          "issue": 777,
+          "case": "A777_BROWSER_PRINT_LIFECYCLE"
         }
       ],
       "temporal": []
