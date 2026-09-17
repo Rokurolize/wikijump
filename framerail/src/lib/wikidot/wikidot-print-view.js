@@ -31,8 +31,8 @@ const fontSizesHtml = WIKIDOT_PRINT_FONT_SIZES.map(
 
 /**
  * Wikidot's verified printer-friendly option rows. Only the base font size
- * choices carry a retained live handler shape; every other row stays literal
- * until a retained interaction capture establishes its behavior.
+ * choices carry a retained live handler shape; every other row stays
+ * literal until a retained interaction capture establishes its behavior.
  */
 export const buildWikidotPrintOptionsHtml = () =>
   [
@@ -96,53 +96,47 @@ const CHANGE_FONT_SIZE_ONCLICK =
 /**
  * Bind the printer-friendly child window's trusted behavior. Served markup
  * keeps Wikidot's exact inert `javascript:;` anchors and generated handler
- * attributes; this action supplies the executable property under CSP without
- * evaluating authored script.
+ * attributes; this action supplies the executable property under CSP
+ * without evaluating authored script. Handling is delegated on the
+ * printer-friendly root so `{@html}` child insertion or hydration timing
+ * cannot leave a generated control unbound; only the exact generated
+ * handler shapes activate.
  *
  * @param {HTMLElement} root
  */
 export const wikidotPrintView = (root) => {
-  /** @type {Array<() => void>} */
-  const releases = []
-  const bind = (element, listener) => {
-    element.addEventListener("click", listener)
-    releases.push(() => element.removeEventListener("click", listener))
-  }
   const content = () => root.querySelector("#print-content")
-
-  for (const element of root.querySelectorAll(
-    'a[onclick^="WIKIDOT.printview.listeners.changeFontSize"]'
-  )) {
-    const match = CHANGE_FONT_SIZE_ONCLICK.exec(element.getAttribute("onclick") ?? "")
-    if (!match) continue
-    const size = match[1]
-    bind(element, (event) => {
-      event.preventDefault()
-      const target = content()
-      if (target) target.style.fontSize = size
-    })
-  }
-
-  for (const element of root.querySelectorAll('a[onclick="window.print()"]')) {
-    bind(element, (event) => {
+  const listener = (event) => {
+    const target = typeof event.target?.closest === "function" ? event.target : null
+    if (!target) return
+    const print = target.closest('a[onclick="window.print()"]')
+    if (print) {
       event.preventDefault()
       globalThis.print()
-    })
-  }
-
-  for (const element of root.querySelectorAll(
-    '#print-options a[href="javascript:;"]:not([onclick])'
-  )) {
-    bind(element, (event) => {
+      return
+    }
+    const change = target.closest(
+      'a[onclick^="WIKIDOT.printview.listeners.changeFontSize"]'
+    )
+    if (change) {
+      const match = CHANGE_FONT_SIZE_ONCLICK.exec(change.getAttribute("onclick") ?? "")
+      if (match) {
+        event.preventDefault()
+        const targetContent = content()
+        if (targetContent) targetContent.style.fontSize = match[1]
+      }
+      return
+    }
+    const close = target.closest('#print-options a[href="javascript:;"]:not([onclick])')
+    if (close) {
       event.preventDefault()
       globalThis.close()
-    })
+    }
   }
-
+  root.addEventListener("click", listener)
   return {
     destroy() {
-      for (const release of releases) release()
-      releases.length = 0
+      root.removeEventListener("click", listener)
     }
   }
 }

@@ -9,27 +9,6 @@ import {
   wikidotPrintView
 } from "../src/lib/wikidot/wikidot-print-view.js"
 
-const fakeElement = (attributes = {}) => {
-  const listeners = new Map()
-  return {
-    getAttribute(name) {
-      return attributes[name] ?? null
-    },
-    addEventListener(type, listener) {
-      listeners.set(type, listener)
-    },
-    removeEventListener(type) {
-      listeners.delete(type)
-    },
-    click() {
-      listeners.get("click")?.({ preventDefault() {} })
-    },
-    hasListener(type) {
-      return listeners.has(type)
-    }
-  }
-}
-
 test("printer-friendly URL preserves the live doubled slash", () => {
   assert.equal(
     buildWikidotPrinterFriendlyUrl("/doc-wiki-syntax:buttons"),
@@ -97,26 +76,39 @@ test("print source info escapes site and page identity", () => {
   assert.ok(!html.includes("<script>"), html)
 })
 
-test("print view binds only the generated option handlers", () => {
-  const change = fakeElement({
-    onclick: "WIKIDOT.printview.listeners.changeFontSize(event, '12pt')"
-  })
-  const unknown = fakeElement({
-    onclick: "WIKIDOT.printview.listeners.changeFontSize(document, '12pt')"
-  })
-  const nativePrint = fakeElement({ onclick: "window.print()" })
-  const close = fakeElement({ href: "#" })
+test("print view delegates activation for generated handlers only", () => {
   const content = { style: {} }
+  const listeners = new Map()
   const root = {
     querySelector: (selector) => (selector === "#print-content" ? content : null),
-    querySelectorAll: (selector) => {
-      if (
-        selector.startsWith('a[onclick^="WIKIDOT.printview.listeners.changeFontSize"')
-      ) {
-        return [change, unknown]
-      }
-      if (selector === 'a[onclick="window.print()"]') return [nativePrint]
-      return [close]
+    addEventListener(type, listener) {
+      listeners.set(type, listener)
+    },
+    removeEventListener(type) {
+      listeners.delete(type)
+    },
+    hasListener(type) {
+      return listeners.has(type)
+    },
+    dispatch(element) {
+      const preventDefault = () => {}
+      listeners.get("click")?.({
+        target: {
+          closest: (selector) =>
+            ({
+              'a[onclick="window.print()"]':
+                element.onclick === "window.print()" ? element : null,
+              'a[onclick^="WIKIDOT.printview.listeners.changeFontSize"]':
+                element.onclick?.startsWith("WIKIDOT.printview.listeners.changeFontSize")
+                  ? element
+                  : null,
+              '#print-options a[href="javascript:;"]:not([onclick])':
+                // eslint-disable-next-line no-script-url -- Wikidot's observed control contract uses this exact inert href.
+                element.href === "javascript:;" && !element.onclick ? element : null
+            })[selector] ?? null
+        },
+        preventDefault
+      })
     }
   }
 
@@ -128,23 +120,52 @@ test("print view binds only the generated option handlers", () => {
   globalThis.close = () => closed.push(true)
   try {
     const action = wikidotPrintView(root)
-    assert.equal(change.hasListener("click"), true)
-    assert.equal(unknown.hasListener("click"), false)
-    assert.equal(nativePrint.hasListener("click"), true)
-    assert.equal(close.hasListener("click"), true)
+    assert.equal(root.hasListener("click"), true)
 
-    change.click()
-    assert.equal(content.style.fontSize, "12pt")
-    unknown.click()
-    assert.equal(content.style.fontSize, "12pt")
-    nativePrint.click()
-    assert.equal(printed.length, 1)
-    close.click()
+    const mountedPrint = { onclick: "window.print()" }
+    const latePrint = { onclick: "window.print()" }
+    const mountedChange = {
+      getAttribute: (name) =>
+        ({ onclick: "WIKIDOT.printview.listeners.changeFontSize(event, '12pt')" })[
+          name
+        ] ?? null,
+      onclick: "WIKIDOT.printview.listeners.changeFontSize(event, '12pt')"
+    }
+    const lateChange = {
+      getAttribute: (name) =>
+        ({ onclick: "WIKIDOT.printview.listeners.changeFontSize(event, '14pt')" })[
+          name
+        ] ?? null,
+      onclick: "WIKIDOT.printview.listeners.changeFontSize(event, '14pt')"
+    }
+    const unknownChange = {
+      getAttribute: (name) =>
+        ({ onclick: "WIKIDOT.printview.listeners.changeFontSize(document, '12pt')" })[
+          name
+        ] ?? null,
+      onclick: "WIKIDOT.printview.listeners.changeFontSize(document, '12pt')"
+    }
+    const close = {
+      // eslint-disable-next-line no-script-url -- Wikidot's observed control contract uses this exact inert href.
+      href: "javascript:;"
+    }
+
+    root.dispatch(mountedPrint)
+    root.dispatch(latePrint)
+    root.dispatch(mountedChange)
+    root.dispatch(lateChange)
+    root.dispatch(unknownChange)
+    root.dispatch(close)
+    assert.equal(printed.length, 2)
+    assert.equal(content.style.fontSize, "14pt")
     assert.equal(closed.length, 1)
 
+    const inert = { onclick: null }
+    root.dispatch(inert)
+    assert.equal(printed.length, 2)
+
     action.destroy()
-    assert.equal(change.hasListener("click"), false)
-    assert.equal(nativePrint.hasListener("click"), false)
+    assert.equal(root.hasListener("click"), false)
   } finally {
     globalThis.print = previousPrint
     globalThis.close = previousClose
