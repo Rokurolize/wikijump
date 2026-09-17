@@ -57,7 +57,11 @@ function installPrintProbe() {
     configurable: true,
     writable: true,
     value: (...args) => {
-      const control = document.querySelector(POPUP_SELECTOR);
+      // Playwright serializes init scripts without their module-scope
+      // closures, so the exact control selector must be restated here.
+      const control = document.querySelector(
+        'a[href="javascript:;"][onclick*="window.print"]',
+      );
       state.prints.push({
         url: location.href,
         history_length: history.length,
