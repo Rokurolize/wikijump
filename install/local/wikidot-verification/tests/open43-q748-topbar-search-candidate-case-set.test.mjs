@@ -385,7 +385,13 @@ test("Q748 verification rejects trimmed whitespace, dummy navigation, and missin
   unexpectedFailure.failed_requests = [{ url: "https://example.test/app.js", method: "GET", failure: "net::ERR_FAILED" }];
   assert.throws(
     () => verifyOpen43Q748TopBarSearchCase("Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION", unexpectedFailure, plan),
-    /observed failed requests/u,
+    (error) => {
+      assert.match(error.message, /observed failed requests/u);
+      assert.match(error.message, /https:\/\/example\.test\/app\.js/u);
+      assert.match(error.message, /GET/u);
+      assert.match(error.message, /net::ERR_FAILED/u);
+      return true;
+    },
   );
 
   const trimmed = structuredClone(base);
