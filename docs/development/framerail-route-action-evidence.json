@@ -1,9 +1,9 @@
 {
   "schema": "wikijump.framerail_route_action_evidence.v1",
-  "source_revision": "5c1f40df01936c3aec1795b3ff93c7e42f8a123f",
+  "source_revision": "3ea28facdd7fc1679ce6a3304c87805c0e54a72c",
   "inventory": {
     "path": "docs/development/compatibility-surface-inventory.json",
-    "sha256": "32199ee7db6e02eebde5b596b8e1c918925b219cf357e7c0539737daa0f544f6"
+    "sha256": "c7a72f852c147f7e28e103ff8c62128acd4b875f7951553a6f9aec7b0c1dac8e"
   },
   "records": [
     {
@@ -530,6 +530,20 @@
         {
           "issue": 756,
           "case": "M756_WINDOWS_TILE_DECLARATION"
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/printer--friendly/{*path}",
+      "tests": [
+        "framerail/tests/hooks-reroute.test.ts::printer-friendly doubled slash resolves to the single-slash route",
+        "framerail/tests/wikidot-print-view.test.js::printer-friendly URL preserves the live doubled slash"
+      ],
+      "tracking": [
+        {
+          "issue": 777,
+          "case": "A777_BROWSER_PRINT_LIFECYCLE"
         }
       ],
       "temporal": []

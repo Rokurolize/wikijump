@@ -1311,8 +1311,8 @@ test("CLI projects current Framerail route-action tests without inventing browse
   const rows = inventory.surfaces.filter(({ kind }) =>
     kind === "framerail_route" || kind === "framerail_server_action"
   )
-  assert.equal(rows.length, 136)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 136)
+  assert.equal(rows.length, 137)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 137)
   assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 0)
   assert.equal(rows.every(({ evidence }) => evidence.status === "missing"), true)
   assert.deepEqual(

@@ -279,13 +279,16 @@
         },
         {
           "case_id": "A777_FIXED_PRINT_ONLY",
-          "acceptance": "Activation calls fixed window.print behavior once and performs no network mutation or authored JavaScript.",
+          "acceptance": "Activation opens the fixed printer-friendly child window once, performs no network mutation or authored JavaScript, and never prints the opener.",
           "owner": "framerail",
           "evidence": [
-            "framerail/tests/wikidot-legacy-actions.test.js::typed standalone actions call only their fixed browser behavior",
+            "framerail/tests/wikidot-legacy-actions.test.js::print opens one child window per activation without a busy state",
+            "framerail/tests/wikidot-page-actions.test.js::Print opens the live printer-friendly child window without printing the opener",
+            "framerail/tests/wikidot-print-view.test.js::printer-friendly URL preserves the live doubled slash",
+            "framerail/src/lib/wikidot/wikidot-page-actions.js::openWikidotPrinterFriendly",
             "framerail/src/routes/[slug]/[...extra]/page.svelte::legacyActionRuntime.print"
           ],
-          "result": "The typed dispatch maps print directly to window.print and shares the per-control busy boundary."
+          "result": "The typed dispatch opens live Wikidot's exact /printer--friendly//<page> child window; Enter activates, Space does not, and every activation opens its own child window without an aria-busy boundary."
         },
         {
           "case_id": "A777_EXACT_LIVE_PRINT_TRANSITIONS",
@@ -303,7 +306,7 @@
           "case_id": "A777_BROWSER_PRINT_LIFECYCLE",
           "acceptance": "Click and keyboard activation invoke one browser print operation with correct focus, repeated activation, and navigation behavior.",
           "owner": "central-production-browser",
-          "result": "Requires a print spy in the exact production candidate and inspection of every visible interval."
+          "result": "Requires the exact production candidate plus open/print spies covering the opener and every printer-friendly child window interval."
         }
       ],
       "blocked_evidence": [],

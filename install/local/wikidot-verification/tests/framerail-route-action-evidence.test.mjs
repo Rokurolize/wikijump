@@ -161,7 +161,7 @@ async function verifyRegistry(registry) {
     .filter(({ kind }) => kind === "framerail_route" || kind === "framerail_server_action")
     .map(({ surface_id }) => surface_id)
   const actual = registry.records.map(({ surface_id }) => surface_id)
-  assert.equal(actual.length, 136)
+  assert.equal(actual.length, 137)
   assert.deepEqual(actual, expected)
   assert.equal(new Set(actual).size, actual.length)
 

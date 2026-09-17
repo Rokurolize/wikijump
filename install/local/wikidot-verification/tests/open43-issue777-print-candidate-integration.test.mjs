@@ -69,9 +69,19 @@ function fakeSession(state) {
   };
 }
 
-function publicState(
+const EXPECTED_OPENS = Object.freeze({
+  click: 1,
+  enter: 1,
+  space: 0,
+  rapid_repeated_click: 2,
+  sequential_repeated_click: 2,
+});
+const POPUP_CONTROL_OUTER_HTML =
+  '<a href="javascript:;" onclick="window.print()">PRINT THE PAGE</a>';
+
+function openerState(
   pagePath,
-  { focused = true, busy = false, calls = 0, pending = 0 } = {},
+  { focused = true, busy = false, opens = 0 } = {},
 ) {
   return {
     url: `${PAGE_ORIGIN}${pagePath}`,
@@ -80,32 +90,64 @@ function publicState(
     standalone_print_count: 1,
     focused_control: focused,
     aria_busy: busy,
-    print_call_count: calls,
-    pending_print_count: pending,
+    open_count: opens,
+    print_call_count: 0,
+    opens: Array.from({ length: opens }, () => ({
+      url: `/printer--friendly/${pagePath}`,
+      target: "_blank",
+    })),
     source_disclosure: false,
   };
 }
 
-function activation(pagePath, name) {
-  const repeated = name === "sequential_repeated_click";
-  const printCalls = repeated ? 2 : 1;
+function popupState(pagePath, printed) {
+  const url = `${PAGE_ORIGIN}/printer--friendly/${pagePath}`;
   return {
-    before: publicState(pagePath),
-    during: publicState(pagePath, { busy: true, calls: printCalls, pending: 1 }),
-    after: publicState(pagePath, { calls: printCalls }),
-    ...(repeated
-      ? {
-          repeat: {
-            first_during: publicState(pagePath, { busy: true, calls: 1, pending: 1 }),
-            between: publicState(pagePath, { calls: 1 }),
+    url,
+    path: `/printer--friendly/${pagePath}`,
+    history_length: 2,
+    body_id: "html-body",
+    body_class: "print-body",
+    print_control_count: 1,
+    rendered: true,
+    focused_control: printed,
+    aria_busy: null,
+    control_href: "javascript:;",
+    control_onclick: "window.print()",
+    control_outer_html: POPUP_CONTROL_OUTER_HTML,
+    parent_outer_html: `<b>${POPUP_CONTROL_OUTER_HTML}</b>`,
+    print_call_count: printed ? 1 : 0,
+    prints: printed
+      ? [
+          {
+            url,
+            history_length: 2,
+            focused_control: true,
+            argument_count: 0,
           },
-        }
-      : {}),
-    print_calls: Array.from({ length: printCalls }, () => ({
-      url: `${PAGE_ORIGIN}${pagePath}`,
-      history_length: 2,
-      focused_control: true,
-    })),
+        ]
+      : [],
+  };
+}
+
+function popupObservation(pagePath) {
+  return {
+    before: popupState(pagePath, false),
+    focused: popupState(pagePath, true),
+    after: popupState(pagePath, true),
+  };
+}
+
+function activation(pagePath, name) {
+  const opens = EXPECTED_OPENS[name];
+  return {
+    before: openerState(pagePath),
+    during: openerState(pagePath, { opens }),
+    after: openerState(pagePath, { opens }),
+    popup_observations: Array.from({ length: opens }, () =>
+      popupObservation(pagePath),
+    ),
+    popup_count: opens,
     mutation_request_count: 0,
   };
 }
@@ -139,7 +181,7 @@ function fakeBrowserAdapter() {
       return {
         initial: {
           capture: capture(pageUrl),
-          state: publicState(pagePath, { focused: false }),
+          state: openerState(pagePath, { focused: false }),
         },
         operations: rows,
       };
