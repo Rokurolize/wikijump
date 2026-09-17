@@ -1,5 +1,6 @@
 import { strict as assert } from "node:assert"
 import test from "node:test"
+import { readFile } from "node:fs/promises"
 
 import {
   buildWikidotPrintOptionsHtml,
@@ -40,6 +41,29 @@ test("printer-friendly URL preserves the live doubled slash", () => {
   )
 })
 
+test("printer-friendly loader preserves the required empty route suffix", async () => {
+  const source = await readFile(
+    new URL("../src/routes/printer--friendly/[...path]/+page.server.ts", import.meta.url),
+    "utf8"
+  )
+  const calls = []
+  const load = new Function(
+    "loadPage",
+    `${source.replace(/^import .*\n/u, "").replace("export async function", "async function")}\nreturn load`
+  )((...args) => calls.push(args))
+  const request = {}
+  const cookies = {}
+  const locals = {}
+  for (const [path, slug, extra] of [
+    ["start", "start", ""],
+    ["category:page", "category:page", ""],
+    ["category:page/revision/2", "category:page", "revision/2"]
+  ]) {
+    await load({ params: { path }, request, cookies, locals })
+    assert.deepEqual(calls.pop(), [slug, extra, request, cookies, locals])
+  }
+})
+
 test("print options keep the verified font sizes and single native print control", () => {
   const html = buildWikidotPrintOptionsHtml()
   for (const size of ["6pt", "8pt", "10pt", "12pt", "14pt", "16pt"]) {
@@ -67,7 +91,7 @@ test("print source info escapes site and page identity", () => {
     pageTitle: "Page <script>",
     pageUrl: "http://example.test/page&x"
   })
-  assert.ok(html.includes("Site &lt;\"unsafe\"&gt;"), html)
+  assert.ok(html.includes('Site &lt;"unsafe"&gt;'), html)
   assert.ok(html.includes("http://example.test/?a=1&amp;b=2"), html)
   assert.ok(html.includes("Page &lt;script&gt;"), html)
   assert.ok(!html.includes("<script>"), html)
@@ -86,7 +110,9 @@ test("print view binds only the generated option handlers", () => {
   const root = {
     querySelector: (selector) => (selector === "#print-content" ? content : null),
     querySelectorAll: (selector) => {
-      if (selector.startsWith('a[onclick^="WIKIDOT.printview.listeners.changeFontSize"')) {
+      if (
+        selector.startsWith('a[onclick^="WIKIDOT.printview.listeners.changeFontSize"')
+      ) {
         return [change, unknown]
       }
       if (selector === 'a[onclick="window.print()"]') return [nativePrint]
