@@ -33,10 +33,7 @@ const SITE_CONTEXT_EXEMPT_PATHS = new Set(["/xml-rpc-api.php"])
 const PRINTER_FRIENDLY_ROUTE = "/printer--friendly/[...path]"
 
 function withPrinterFriendlyBodyClass(html: string): string {
-  return html.replace(
-    '<body id="html-body"',
-    '<body id="html-body" class="print-body"'
-  )
+  return html.replace('<body id="html-body"', '<body id="html-body" class="print-body"')
 }
 
 function getArticleRoute(event: RequestEvent) {

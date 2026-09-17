@@ -100,7 +100,9 @@ describe("Wikidot site settings foundation", () => {
       "https://cdn.scpwiki.com/theme/preview.css"
     )
     assert.equal(
-      normalizeThemePreviewUrl("https://sandbox-for-codex.wdfiles.com/local--code/theme/1"),
+      normalizeThemePreviewUrl(
+        "https://sandbox-for-codex.wdfiles.com/local--code/theme/1"
+      ),
       "https://sandbox-for-codex.wdfiles.com/local--code/theme/1"
     )
     for (const value of [

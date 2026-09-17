@@ -153,8 +153,11 @@ test("Site Tools shell and wanted report preserve the observed read-only DOM", (
 
 test("ListDrafts renders the bounded row hierarchy and escapes draft fields", () => {
   const empty = renderWikidotListDrafts()
-  assert.equal(empty, `<div class="list-drafts-box">
-            </div>`)
+  assert.equal(
+    empty,
+    `<div class="list-drafts-box">
+            </div>`
+  )
 
   const rendered = renderWikidotListDrafts([
     { slug: "run-owned:existing", title: "Existing <draft>" },

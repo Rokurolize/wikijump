@@ -18,9 +18,7 @@ test("Print opens the live printer-friendly child window without printing the op
     open: (url, target) => calls.push([url, target]),
     print: () => (printed += 1)
   })
-  assert.deepEqual(calls, [
-    ["/printer--friendly//doc-wiki-syntax:buttons", "_blank"]
-  ])
+  assert.deepEqual(calls, [["/printer--friendly//doc-wiki-syntax:buttons", "_blank"]])
   assert.equal(printed, 0)
 })
 

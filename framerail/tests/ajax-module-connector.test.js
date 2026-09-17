@@ -2082,9 +2082,7 @@ test("removePageEditLock preserves or discards only the observed draft identity"
     )
     assert.deepEqual(await response.json(), { status: "ok" })
   }
-  assert.deepEqual(removals, [
-    { siteId: 6000006, slug: "run-owned:draft-new" }
-  ])
+  assert.deepEqual(removals, [{ siteId: 6000006, slug: "run-owned:draft-new" }])
 })
 
 test("page draft actions fail closed outside the observed full-page request shape", async () => {

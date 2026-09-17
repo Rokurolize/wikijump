@@ -158,7 +158,10 @@ interface PageViewFound {
     legacy_actions: LegacyBrowserAction[]
     rate_actions: Nullable<RateBrowserActionRegistry>
     membership_actions: MembershipBrowserAction[]
-    /** Deepwell recognizes an executable, non-literal ThemePreviewer noUi path. */
+    /**
+     * Deepwell recognizes an executable, non-literal ThemePreviewer noUi
+     * path.
+     */
     theme_previewer_no_ui?: boolean
     meta_tags: PageMetaTagView[]
   }

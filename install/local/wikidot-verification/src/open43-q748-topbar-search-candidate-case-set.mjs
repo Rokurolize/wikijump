@@ -222,7 +222,9 @@ function verifyDiscipline(observations, label) {
       request.failure === "net::ERR_ABORTED"
     ))
   ) {
-    throw new Error(`Q748 ${label} candidate observed failed requests`);
+    throw new Error(
+      `Q748 ${label} candidate observed failed requests: ${JSON.stringify(observations.failed_requests)}`,
+    );
   }
   if (observations.mutation_detected !== false) throw new Error(`Q748 ${label} candidate mutation was detected`);
   if (observations.navigation_urls.some((url) => url.includes("/dummy"))) {

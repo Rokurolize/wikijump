@@ -460,8 +460,14 @@ test("print opens one child window per activation without a busy state", async (
     print: () => (calls += 1)
   }
 
-  assert.equal(await performWikidotLegacyAction(element, { type: "print" }, runtime), true)
-  assert.equal(await performWikidotLegacyAction(element, { type: "print" }, runtime), true)
+  assert.equal(
+    await performWikidotLegacyAction(element, { type: "print" }, runtime),
+    true
+  )
+  assert.equal(
+    await performWikidotLegacyAction(element, { type: "print" }, runtime),
+    true
+  )
   assert.equal(calls, 2)
   assert.equal(element.getAttribute("aria-busy"), null)
 })

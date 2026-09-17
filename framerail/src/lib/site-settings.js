@@ -128,9 +128,9 @@ export const normalizeThemeSetting = (theme) => {
 
 /**
  * Normalize a browser-requested ThemePreviewer stylesheet with the same
- * policy used for stored external themes. Invalid values fail closed so the
- * browser keeps the stored site theme and no server-side stylesheet fetch is
- * needed.
+ * policy used for stored external themes. Invalid values fail closed so
+ * the browser keeps the stored site theme and no server-side stylesheet
+ * fetch is needed.
  *
  * @param {unknown} value
  * @returns {string | null}
@@ -141,9 +141,10 @@ export const normalizeThemePreviewUrl = (value) => {
 }
 
 /**
- * Resolve a browser-requested ThemePreviewer stylesheet only when Deepwell's
- * source-owned PageView sidecar recognizes an executable noUi invocation.
- * This boundary deliberately does not inspect wikitext or compiled HTML.
+ * Resolve a browser-requested ThemePreviewer stylesheet only when
+ * Deepwell's source-owned PageView sidecar recognizes an executable noUi
+ * invocation. This boundary deliberately does not inspect wikitext or
+ * compiled HTML.
  *
  * @param {unknown} themePreviewerNoUi
  * @param {unknown} value
