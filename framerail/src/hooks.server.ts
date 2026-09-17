@@ -30,6 +30,14 @@ import {
 import type { Handle, RequestEvent } from "@sveltejs/kit"
 
 const SITE_CONTEXT_EXEMPT_PATHS = new Set(["/xml-rpc-api.php"])
+const PRINTER_FRIENDLY_ROUTE = "/printer--friendly/[...path]"
+
+function withPrinterFriendlyBodyClass(html: string): string {
+  return html.replace(
+    '<body id="html-body"',
+    '<body id="html-body" class="print-body"'
+  )
+}
 
 function getArticleRoute(event: RequestEvent) {
   return event.params.slug || event.params.extra
@@ -135,13 +143,17 @@ export const handle: Handle = async ({ event, resolve }) => {
   const { responseStore, tokenStore } = getArticleResponseCacheStores()
   const resolveWithWikidotRequestInfo = async () =>
     resolve(event, {
-      transformPageChunk: ({ html }) =>
-        injectWikidotRequestInfo(
+      transformPageChunk: ({ html }) => {
+        const rendered = injectWikidotRequestInfo(
           html,
           locals.wikidotRequestInfo,
           locals.siteLocale,
           locals.wikidotDocument === true
         )
+        return event.route.id === PRINTER_FRIENDLY_ROUTE
+          ? withPrinterFriendlyBodyClass(rendered)
+          : rendered
+      }
     })
 
   if (SITE_CONTEXT_EXEMPT_PATHS.has(event.url.pathname)) {

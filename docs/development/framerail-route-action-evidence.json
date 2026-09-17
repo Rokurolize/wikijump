@@ -535,6 +535,19 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-route:/printer--friendly/{*path}",
+      "tests": [
+        "framerail/tests/hooks-reroute.test.ts::printer-friendly doubled slash resolves to the single-slash route",
+        "framerail/tests/wikidot-print-view.test.js::printer-friendly URL preserves the live doubled slash"
+      ],
+      "tracking": [
+        {
+          "issue": 777
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-route:/user:info/{target}",
       "tests": [
         "framerail/tests/wikidot-user-info-target-route.test.js::GET /user:info/<target> has an encoded public route"

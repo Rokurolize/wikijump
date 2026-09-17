@@ -90,7 +90,7 @@ test("custom-class standalone print controls use the typed browser action", asyn
   assert.equal(printCalls, 1)
 })
 
-test("standalone actions activate from Space and Enter keyboard events", async () => {
+test("standalone actions activate from Enter without Space activation", async () => {
   const selector = 'a[href="javascript:;"]'
   const action = actionElement()
   const listeners = new Map()
@@ -107,7 +107,7 @@ test("standalone actions activate from Space and Enter keyboard events", async (
     runtime: { source: () => (calls += 1) }
   })
 
-  for (const key of [" ", "Spacebar", "Space", "Enter"]) {
+  for (const key of [" ", "Spacebar", "Space"]) {
     await listeners.get("keydown")({
       target: action,
       key,
@@ -115,7 +115,15 @@ test("standalone actions activate from Space and Enter keyboard events", async (
       stopPropagation: () => {}
     })
   }
-  assert.equal(calls, 4)
+  assert.equal(calls, 0)
+
+  await listeners.get("keydown")({
+    target: action,
+    key: "Enter",
+    preventDefault: () => {},
+    stopPropagation: () => {}
+  })
+  assert.equal(calls, 1)
 })
 
 test("standalone edit clicks use the exact control set and fail closed on extras", async () => {
@@ -398,20 +406,33 @@ test("non-edit standalone actions remain serialized while busy", async () => {
   })
   const element = actionElement()
   const runtime = {
-    print: async () => {
+    source: async () => {
       calls += 1
       await operation
     }
   }
 
-  const first = performWikidotLegacyAction(element, { type: "print" }, runtime)
-  const repeated = await performWikidotLegacyAction(element, { type: "print" }, runtime)
+  const first = performWikidotLegacyAction(element, { type: "source" }, runtime)
+  const repeated = await performWikidotLegacyAction(element, { type: "source" }, runtime)
   assert.equal(repeated, false)
   assert.equal(calls, 1)
   assert.equal(element.getAttribute("aria-busy"), "true")
 
   release()
   assert.equal(await first, true)
+  assert.equal(element.getAttribute("aria-busy"), null)
+})
+
+test("print opens one child window per activation without a busy state", async () => {
+  let calls = 0
+  const element = actionElement()
+  const runtime = {
+    print: () => (calls += 1)
+  }
+
+  assert.equal(await performWikidotLegacyAction(element, { type: "print" }, runtime), true)
+  assert.equal(await performWikidotLegacyAction(element, { type: "print" }, runtime), true)
+  assert.equal(calls, 2)
   assert.equal(element.getAttribute("aria-busy"), null)
 })
 
