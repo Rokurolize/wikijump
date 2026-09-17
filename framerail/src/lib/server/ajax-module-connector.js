@@ -489,8 +489,7 @@ const isCanonicalPositiveDecimal = (value) => /^[1-9][0-9]*$/u.test(value)
 
 /** @param {string} value */
 const isCanonicalNonNegativeDecimal = (value) =>
-  /^(?:0|[1-9][0-9]*)$/u.test(value) &&
-  Number.isSafeInteger(Number.parseInt(value, 10))
+  /^(?:0|[1-9][0-9]*)$/u.test(value) && Number.isSafeInteger(Number.parseInt(value, 10))
 
 /** @param {string} value */
 const isPositiveSafeDecimal = (value) => {

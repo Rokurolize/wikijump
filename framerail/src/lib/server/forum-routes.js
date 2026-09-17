@@ -58,7 +58,8 @@ const bodyOr = (result, fallback) => ({
  * HTML. SvelteKit owns the CSP nonce, so the trusted route ID is passed to
  * compiled client code and the exact legacy assignment is removed here.
  *
- * @param {ForumOutput} result @param {string} fallback @param {string} thread
+ * @param {ForumOutput} result @param {string} fallback @param {string}
+ *   thread
  */
 const threadBody = (result, fallback, thread) => {
   if (result.status !== "ok") return { body: fallback, forumThreadId: null }
@@ -68,7 +69,9 @@ const threadBody = (result, fallback, thread) => {
   }
   const matches = [...result.body.matchAll(FORUM_THREAD_ID_SCRIPT)]
   if (matches.length !== 1 || Number(matches[0][1]) !== threadId) {
-    throw new Error("forum thread response did not bind its exact trusted thread ID script")
+    throw new Error(
+      "forum thread response did not bind its exact trusted thread ID script"
+    )
   }
   return {
     body: result.body.replace(matches[0][0], ""),

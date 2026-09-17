@@ -76,7 +76,11 @@ test("external theme resources use browser-direct failure ownership", () => {
   assert.doesNotMatch(layoutSource, /\b(?:fetch|XMLHttpRequest)\b/u)
   assert.doesNotMatch(layoutSource, /\bon(?:error|load)=/u)
   for (const source of serverSource) {
-    assert.doesNotMatch(source, /theme_url/u, "server source must not proxy ThemePreviewer URLs")
+    assert.doesNotMatch(
+      source,
+      /theme_url/u,
+      "server source must not proxy ThemePreviewer URLs"
+    )
   }
   assert.match(svelteConfigSource, /"style-src": styleSources\(\)/u)
   assert.doesNotMatch(svelteConfigSource, /["']https:["']/u)

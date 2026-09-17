@@ -36,11 +36,7 @@ let wikidotCollapsibles
 
 const requestContext = (
   data,
-  {
-    error = null,
-    routeId = "/[x+2d]/admin",
-    url = "https://wikijump.test/--/admin"
-  } = {}
+  { error = null, routeId = "/[x+2d]/admin", url = "https://wikijump.test/--/admin" } = {}
 ) => {
   const page = {
     data,

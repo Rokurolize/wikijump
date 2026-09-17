@@ -480,8 +480,7 @@ export const wikidotLegacyActions = (root, parameters) => {
     const element = actionElement(event)
     if (!element) return undefined
     const action = boundActions.get(element)
-    const spaceActivatesRate =
-      action?.type === "rate" || action?.type === "rate-cancel"
+    const spaceActivatesRate = action?.type === "rate" || action?.type === "rate-cancel"
     // Live Wikidot standalone actions are anchors: Enter activates them and
     // Space scrolls without firing the handler. Rate controls retain their
     // separately evidenced Space-key activation contract.

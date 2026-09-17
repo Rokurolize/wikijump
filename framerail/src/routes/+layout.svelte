@@ -94,9 +94,7 @@
   }
 
   const currentLayout = $derived.by(resolveCurrentLayout)
-  const isPrinterFriendlyView = $derived(
-    page.route.id === "/printer--friendly/[...path]"
-  )
+  const isPrinterFriendlyView = $derived(page.route.id === "/printer--friendly/[...path]")
   const canonicalView = $derived(resolveCanonicalViewMetadata(page.error, page.data))
   const viewData = $derived(canonicalView.viewData)
   const wikidotLocale = $derived(canonicalView.locale)

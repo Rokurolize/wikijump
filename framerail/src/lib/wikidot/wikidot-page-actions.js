@@ -34,8 +34,8 @@ export const buildWikidotDiscussButtonHtml = (label) =>
 
 /**
  * Open the live Wikidot printer-friendly child window for the current page
- * path. The path already begins with `/`, so the route keeps Wikidot's exact
- * doubled slash (`/printer--friendly//<page>`).
+ * path. The path already begins with `/`, so the route keeps Wikidot's
+ * exact doubled slash (`/printer--friendly//<page>`).
  *
  * @param {string} pagePath
  * @param {{ open: (url: string, target: string) => unknown }} [browser]

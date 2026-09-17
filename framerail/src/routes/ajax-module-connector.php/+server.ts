@@ -286,7 +286,8 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
       slug: string
     }) => {
       const userId = await resolveNewPageUserId()
-      if (userId === undefined) throw new Error("page draft removal requires a mutation actor")
+      if (userId === undefined)
+        throw new Error("page draft removal requires a mutation actor")
       await pageDraftRemove(
         { siteId: requestSiteId, userId, pageId, slug },
         { ...requestContext, page: slug }
