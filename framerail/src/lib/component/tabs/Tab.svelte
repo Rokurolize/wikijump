@@ -13,7 +13,7 @@
 -->
 <script lang="ts">
   import { createID } from "$lib/util"
-  import { getContext } from "svelte"
+  import { getContext, type Snippet } from "svelte"
   import type { Writable } from "svelte/store"
   import Button from "../Button.svelte"
   import { portal } from "../scripts/portal"
@@ -22,8 +22,8 @@
     button,
     children
   }: {
-    button?: any
-    children?: any
+    button?: Snippet
+    children?: Snippet
   } = $props()
 
   const id = createID()
@@ -33,7 +33,7 @@
 
   interface Tabs {
     buttons?: HTMLElement
-    key: Writable<any>
+    key: Writable<string | null>
     conditional: boolean
   }
 
@@ -61,9 +61,9 @@
     aria-controls={panelID}
     aria-selected={String(selected)}
     baseline
+    onclick={selectThis}
     sharp
     wide
-    on:click={selectThis}
   >
     {@render button?.()}
   </Button>

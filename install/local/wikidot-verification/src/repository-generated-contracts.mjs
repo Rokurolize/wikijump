@@ -77,7 +77,10 @@ export function verifyTrackedContractConsistency({
   deepwellManifest,
   wwsDenominator,
 }) {
-  if (inventory?.schema !== "wikijump.compatibility_surface_inventory.v2" || !Array.isArray(inventory.surfaces)) {
+  if (
+    !["wikijump.compatibility_surface_inventory.v2", "wikijump.compatibility_surface_inventory.v3"].includes(inventory?.schema) ||
+    !Array.isArray(inventory.surfaces)
+  ) {
     throw new Error("compatibility surface inventory is malformed");
   }
   if (semantics?.schema !== "wikijump.compatibility_surface_semantics.v1") {

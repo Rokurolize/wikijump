@@ -1,5 +1,5 @@
 declare module "jquery" {
-  const jquery: any
+  const jquery: unknown
   export default jquery
 }
 

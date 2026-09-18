@@ -3,7 +3,7 @@ import assert from "node:assert/strict"
 import { fileURLToPath } from "node:url"
 import { after, before, test } from "node:test"
 
-import { createServer as createViteServer } from "vite"
+import { createTestViteServer } from "./vite-test-server.js"
 
 import { loadWikidotUserInfo } from "../src/lib/server/wikidot-user-info.js"
 
@@ -17,12 +17,7 @@ let userInfoPage
 before(async () => {
   previousWorkingDirectory = process.cwd()
   process.chdir(root)
-  vite = await createViteServer({
-    root,
-    appType: "custom",
-    logLevel: "silent",
-    server: { middlewareMode: true }
-  })
+  vite = await createTestViteServer()
 
   ;({ render } = await vite.ssrLoadModule("svelte/server"))
   ;({ default: userInfoPage } = await vite.ssrLoadModule(

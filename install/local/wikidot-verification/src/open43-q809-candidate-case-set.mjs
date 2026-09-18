@@ -157,7 +157,7 @@ class Open43Q809Run {
         index: 1,
         contract: CAPTURE_CONTRACT,
         viewport: { width: 1280, height: 900 },
-        timeoutMs: 300_000,
+        timeoutMs: 30_000,
         settleMs: 0,
       });
       const served = await page.evaluate(() => {

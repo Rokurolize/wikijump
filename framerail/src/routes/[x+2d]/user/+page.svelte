@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Page from "./[slug]/page.svelte"
+  import Page from "./[slug]/PageView.svelte"
 
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { invalidateAll } from "$app/navigation"

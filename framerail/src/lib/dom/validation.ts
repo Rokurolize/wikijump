@@ -24,7 +24,7 @@ export function inputsValid(
       input.disabled ||
       !input.validity.valid ||
       (input.required && input.value.length === 0) ||
-      (input as any).readOnly
+      ("readOnly" in input && input.readOnly)
     ) {
       return false
     }

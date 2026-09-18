@@ -63,7 +63,7 @@
     /** If true, the input will be as wide as possible. */
     wide?: boolean
 
-    [key: string]: any
+    [key: string]: unknown
   } = $props()
 </script>
 
@@ -119,8 +119,8 @@
           baseline
           compact
           i="wj-close"
+          onclick={() => (value = "")}
           size="1.25em"
-          on:click={() => (value = "")}
         />
       </span>
     {:else}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Page from "./page.svelte"
+  import Page from "./PageView.svelte"
 
   import type { userEditSchema } from "$lib/server/load/user"
   import type { PageProps } from "./$types"

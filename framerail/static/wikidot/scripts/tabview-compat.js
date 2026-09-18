@@ -77,8 +77,9 @@
         else tabItem.removeAttribute("title")
       }
       for (const [index, panel] of panels.entries()) {
-        if (panel instanceof HTMLElement)
+        if (panel instanceof HTMLElement) {
           panel.style.display = index === selectedIndex ? "block" : "none"
+        }
       }
       event.preventDefault()
     })

@@ -22,7 +22,7 @@ const SITE_SLUG = "scpaiueouiuiuiui";
 const SITE_HOST = `${SITE_SLUG}.wikijump.localhost`;
 const REPOSITORY_ROOT = new URL("../../../../", import.meta.url);
 const ACTORS = Object.freeze(["administrator", "editor"]);
-const CARGO_TIMEOUT_MS = 1_800_000;
+const CARGO_TIMEOUT_MS = 30_000;
 const RATE_SOURCE = "[[module Rate]]";
 const RUST_MATRIX_COMMANDS = Object.freeze([
   Object.freeze([
@@ -614,7 +614,7 @@ const SOURCE_FILES = Object.freeze([
     "install/local/wikidot-verification/src/standing-browser-runtime-identity.mjs",
     "framerail/src/lib/wikidot/wikidot-legacy-actions.js",
     "framerail/src/lib/wikidot/wikidot-legacy-action-request.js",
-    "framerail/src/routes/[slug]/[...extra]/page.svelte",
+    "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
     "framerail/src/routes/[slug]/[...extra]/VotePane.svelte",
     "deepwell/src/endpoints/vote.rs",
     "deepwell/src/endpoints/category.rs",

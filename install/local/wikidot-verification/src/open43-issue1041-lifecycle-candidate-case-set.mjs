@@ -386,7 +386,7 @@ const SOURCE_FILES = Object.freeze([
     "install/local/wikidot-verification/src/standing-browser-parity-receipt.mjs",
     "framerail/src/lib/wikidot/wikidot-legacy-actions.js",
     "framerail/src/lib/wikidot/wikidot-legacy-action-request.js",
-    "framerail/src/routes/[slug]/[...extra]/page.svelte",
+    "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
     "framerail/src/routes/[slug]/[...extra]/EditorPane.svelte",
     "deepwell/src/endpoints/page.rs",
     "deepwell/src/services/legacy_action.rs",

@@ -452,7 +452,7 @@ async function observeBrowserLifecycle(browser, session, fixture) {
   const states = [];
 
   const navigate = async (targetPath, label) => {
-    const response = await page.goto(new URL(targetPath, session.pageOrigin).href, { waitUntil: "domcontentloaded", timeout: 300_000 });
+    const response = await page.goto(new URL(targetPath, session.pageOrigin).href, { waitUntil: "domcontentloaded", timeout: 30_000 });
     states.push(await browserState(page, `${label}_domcontentloaded`, threadPath, response?.status() ?? null));
     await page.waitForLoadState("load", { timeout: 30_000 }).catch(() => undefined);
     await page.waitForTimeout(250);

@@ -224,7 +224,7 @@ export function createOpen43B610ShellCandidateCaseSet() {
             index: 0,
             contract: browserContract(canary),
             viewport: VIEWPORT,
-            timeoutMs: 300_000,
+            timeoutMs: 30_000,
             settleMs: DEFAULT_SETTLE_MS,
             onPhase: async (phase) => candidateBrowserContexts.setActiveFixture(
               phase === "settled" ? SETTLED_FIXTURE_ID : INITIAL_FIXTURE_ID,

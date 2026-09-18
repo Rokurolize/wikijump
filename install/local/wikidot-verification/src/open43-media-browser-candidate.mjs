@@ -246,13 +246,13 @@ async function observeImagePage(browser, session, slug, expectedImageCount) {
   await installCspProbe(page);
   const url = candidateUrl(session.pageOrigin, slug);
   try {
-    const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 300_000 });
+    const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
     if (response?.status() !== 200 || page.url() !== url) throw new Error(`${slug} browser navigation failed`);
     const initial = await page.evaluate(mediaImageSnapshot);
     if (expectedImageCount > 0) await page.waitForFunction((count) => {
       const images = [...document.querySelectorAll("#page-content img.image")];
       return images.length === count && images.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0);
-    }, expectedImageCount, { timeout: 300_000 });
+    }, expectedImageCount, { timeout: 30_000 });
     const settled = await page.evaluate(mediaImageSnapshot);
     await page.setViewportSize(RESPONSIVE_VIEWPORT);
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -314,7 +314,7 @@ async function browserIconFetch(context, pageOrigin) {
   try {
     const response = await probe.goto(new URL("/local--favicon/favicon.gif", pageOrigin).href, {
       waitUntil: "commit",
-      timeout: 300_000,
+      timeout: 30_000,
     });
     if (!response) throw new Error("favicon browser navigation returned no response");
     const body = await probe.evaluate(async () => {
@@ -448,19 +448,19 @@ class Open43MediaBrowserRun {
     await installCspProbe(page);
     try {
       const firstUrl = candidateUrl(this.#session.pageOrigin, main.slug);
-      if ((await page.goto(firstUrl, { waitUntil: "domcontentloaded", timeout: 300_000 }))?.status() !== 200) throw new Error("M756 initial navigation failed");
+      if ((await page.goto(firstUrl, { waitUntil: "domcontentloaded", timeout: 30_000 }))?.status() !== 200) throw new Error("M756 initial navigation failed");
       await page.evaluate(() => { globalThis.__open43MediaDocumentToken = crypto.randomUUID(); });
       const first = await page.evaluate(iconSnapshot);
       const firstFetch = await browserIconFetch(owned.context, this.#session.pageOrigin);
 
       await this.#setFaviconSource(secondSource);
-      await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
+      await page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
       const reload = await page.evaluate(iconSnapshot);
       const reloadFetch = await browserIconFetch(owned.context, this.#session.pageOrigin);
       await page.evaluate(() => { globalThis.__open43MediaDocumentToken = crypto.randomUUID(); });
       const token = (await page.evaluate(iconSnapshot)).document_token;
-      await page.locator(`#page-content a[href$="/${next.slug}"]`).click({ timeout: 300_000 });
-      await page.waitForURL(candidateUrl(this.#session.pageOrigin, next.slug), { timeout: 300_000 });
+      await page.locator(`#page-content a[href$="/${next.slug}"]`).click({ timeout: 30_000 });
+      await page.waitForURL(candidateUrl(this.#session.pageOrigin, next.slug), { timeout: 30_000 });
       const client = await page.evaluate(iconSnapshot);
       const clientFetch = await browserIconFetch(owned.context, this.#session.pageOrigin);
       return {
@@ -555,7 +555,7 @@ class Open43MediaBrowserRun {
     });
     try {
       const url = candidateUrl(this.#session.pageOrigin, pageFixture.slug);
-      if ((await browserPage.goto(url, { waitUntil: "domcontentloaded", timeout: 300_000 }))?.status() !== 200) throw new Error("M1043 browser navigation failed");
+      if ((await browserPage.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 }))?.status() !== 200) throw new Error("M1043 browser navigation failed");
       const enabledAnchors = browserPage.locator("#gallery-box-1 a.with-lb");
       const disabledAnchors = browserPage.locator("#gallery-box-2 a.with-lb");
       const brokenAnchors = browserPage.locator("#gallery-box-3 a.with-lb");
@@ -565,18 +565,18 @@ class Open43MediaBrowserRun {
       const disabledStatic = await anchorSnapshot(disabledAnchors);
       const brokenStatic = await anchorSnapshot(brokenAnchors);
       const initialThumbnails = await browserPage.evaluate(galleryImageSnapshot);
-      await browserPage.waitForFunction(() => [...document.querySelectorAll("#page-content .gallery-box img")].every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0), null, { timeout: 300_000 });
+      await browserPage.waitForFunction(() => [...document.querySelectorAll("#page-content .gallery-box img")].every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0), null, { timeout: 30_000 });
       const settledThumbnails = await browserPage.evaluate(galleryImageSnapshot);
-      await browserPage.locator("#gallery-box-1 a.with-lb").first().click({ timeout: 300_000 });
+      await browserPage.locator("#gallery-box-1 a.with-lb").first().click({ timeout: 30_000 });
       const loading = await browserPage.evaluate(lightboxSnapshot);
       await viewerImageRequests.waitForQuiet();
-      await browserPage.locator("#lightbox-image").waitFor({ state: "visible", timeout: 300_000 });
+      await browserPage.locator("#lightbox-image").waitFor({ state: "visible", timeout: 30_000 });
       const first = await browserPage.evaluate(lightboxSnapshot);
       await browserPage.keyboard.press("ArrowRight");
       await browserPage.waitForFunction(
         (expected) => document.querySelector("#lightbox-image-details-currentNumber")?.textContent?.trim() === expected,
         "image 2 of 2",
-        { timeout: 300_000 },
+        { timeout: 30_000 },
       );
       await viewerImageRequests.waitForQuiet();
       const next = await browserPage.evaluate(lightboxSnapshot);
@@ -584,19 +584,19 @@ class Open43MediaBrowserRun {
       await browserPage.waitForFunction(
         (expected) => document.querySelector("#lightbox-image-details-currentNumber")?.textContent?.trim() === expected,
         "image 1 of 2",
-        { timeout: 300_000 },
+        { timeout: 30_000 },
       );
       await viewerImageRequests.waitForQuiet();
       const previous = await browserPage.evaluate(lightboxSnapshot);
       await browserPage.locator("#jquery-overlay").click({ position: { x: 1, y: 1 } });
       const overlayClosed = await browserPage.evaluate(lightboxSnapshot);
 
-      await browserPage.goto(url, { waitUntil: "domcontentloaded", timeout: 300_000 });
-      await browserPage.locator("#gallery-box-2 a.with-lb").click({ timeout: 300_000 });
+      await browserPage.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await browserPage.locator("#gallery-box-2 a.with-lb").click({ timeout: 30_000 });
       const disabledNavigation = { pathname: new URL(browserPage.url()).pathname, lightbox_count: await browserPage.locator("#jquery-lightbox").count() };
 
-      await browserPage.goto(url, { waitUntil: "domcontentloaded", timeout: 300_000 });
-      await browserPage.locator("#gallery-box-3 a.with-lb").click({ timeout: 300_000 });
+      await browserPage.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await browserPage.locator("#gallery-box-3 a.with-lb").click({ timeout: 30_000 });
       const failure = await browserPage.evaluate(lightboxSnapshot);
       await browserPage.keyboard.press("x");
       const closed = await browserPage.evaluate(lightboxSnapshot);
@@ -639,20 +639,20 @@ class Open43MediaBrowserRun {
     page.on("request", (request) => { if (request.method() === "POST" && request.url().includes("?/fileUpload")) actionRequests.push(request.url()); });
     try {
       const url = candidateUrl(this.#session.pageOrigin, pageFixture.slug);
-      if ((await page.goto(url, { waitUntil: "domcontentloaded", timeout: 300_000 }))?.status() !== 200) throw new Error("M1062 browser navigation failed");
-      await page.locator("#files-button").click({ timeout: 300_000 });
-      await page.locator("#action-area .buttons input.btn-primary[type=button]").waitFor({ state: "visible", timeout: 300_000 });
+      if ((await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 }))?.status() !== 200) throw new Error("M1062 browser navigation failed");
+      await page.locator("#files-button").click({ timeout: 30_000 });
+      await page.locator("#action-area .buttons input.btn-primary[type=button]").waitFor({ state: "visible", timeout: 30_000 });
       await page.locator("#action-area .buttons input.btn-primary[type=button]").click();
       const form = page.locator("#file-upload");
-      await form.waitFor({ state: "visible", timeout: 300_000 });
+      await form.waitFor({ state: "visible", timeout: 30_000 });
       const emptyBefore = { form_visible: await form.isVisible(), file_rows: await page.locator("#action-area .file-row").count() };
       diagnosticPhase = "empty-submit";
-      const emptyResponsePromise = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/fileUpload"), { timeout: 300_000 });
+      const emptyResponsePromise = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/fileUpload"), { timeout: 30_000 });
       void emptyResponsePromise.catch(() => undefined);
       await form.locator('input[type="submit"]').click();
       const emptyResponse = await emptyResponsePromise;
       const errorDialog = page.locator("#odialog-container .owindow.error");
-      await errorDialog.waitFor({ state: "visible", timeout: 300_000 });
+      await errorDialog.waitFor({ state: "visible", timeout: 30_000 });
       const emptyAfter = {
         form_visible: await form.isVisible(),
         file_rows: await page.locator("#action-area .file-row").count(),
@@ -660,22 +660,22 @@ class Open43MediaBrowserRun {
         action_status: emptyResponse.status(),
         error_dialog_visible: await errorDialog.isVisible(),
       };
-      await errorDialog.locator(".button-close-message").click({ timeout: 300_000 });
-      await errorDialog.waitFor({ state: "hidden", timeout: 300_000 });
+      await errorDialog.locator(".button-close-message").click({ timeout: 30_000 });
+      await errorDialog.waitFor({ state: "hidden", timeout: 30_000 });
 
       await form.locator('input[type="file"]').setInputFiles({ name: "browser-upload.png", mimeType: "image/png", buffer: INITIAL_BYTES });
       const beforeSuccess = actionRequests.length;
       const pending = { request_seen: false, form_visible: false };
       diagnosticPhase = "success-submit";
-      const responsePromise = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/fileUpload"), { timeout: 300_000 });
+      const responsePromise = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/fileUpload"), { timeout: 30_000 });
       void responsePromise.catch(() => undefined);
       await form.locator('input[type="submit"]').click();
-      await page.waitForFunction(() => document.querySelector("#file-upload") !== null, null, { timeout: 300_000 }).catch(() => undefined);
+      await page.waitForFunction(() => document.querySelector("#file-upload") !== null, null, { timeout: 30_000 }).catch(() => undefined);
       pending.request_seen = actionRequests.length > beforeSuccess;
       pending.form_visible = await form.isVisible().catch(() => false);
       const actionResponse = await responsePromise;
       if (actionResponse.status() !== 200) throw new Error("M1062 upload action returned non-200");
-      await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).waitFor({ state: "visible", timeout: 300_000 });
+      await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).waitFor({ state: "visible", timeout: 30_000 });
       const fileListQuiescence = await fileListRequests.waitForQuiet();
       const success = {
         form_visible: await form.isVisible().catch(() => false),
@@ -686,9 +686,9 @@ class Open43MediaBrowserRun {
       };
 
       diagnosticPhase = "reload";
-      await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
-      await page.locator("#files-button").click({ timeout: 300_000 });
-      await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).waitFor({ state: "visible", timeout: 300_000 });
+      await page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.locator("#files-button").click({ timeout: 30_000 });
+      await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).waitFor({ state: "visible", timeout: 30_000 });
       const downloadHref = await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).locator(".file-name a").getAttribute("href");
       if (typeof downloadHref !== "string") throw new Error("M1062 browser upload row has no download link");
       const inventory = await this.#rpc("page_get_files", { site_id: this.#siteId, page_id: pageFixture.page_id, deleted: false });
@@ -701,14 +701,14 @@ class Open43MediaBrowserRun {
       await secondForm.locator('input[type="file"]').setInputFiles({ name: "browser-double.png", mimeType: "image/png", buffer: SECOND_BYTES });
       const beforeDouble = actionRequests.length;
       diagnosticPhase = "double-submit";
-      const doubleResponse = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/fileUpload"), { timeout: 300_000 });
+      const doubleResponse = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/fileUpload"), { timeout: 30_000 });
       void doubleResponse.catch(() => undefined);
       await Promise.all([
         secondForm.locator('input[type="submit"]').click(),
         secondForm.locator('input[type="submit"]').click().catch(() => undefined),
       ]);
       await doubleResponse;
-      await page.locator("#action-area .file-row").filter({ hasText: "browser-double.png" }).waitFor({ state: "visible", timeout: 300_000 });
+      await page.locator("#action-area .file-row").filter({ hasText: "browser-double.png" }).waitFor({ state: "visible", timeout: 30_000 });
       const doubleInventory = await this.#rpc("page_get_files", { site_id: this.#siteId, page_id: pageFixture.page_id, deleted: false });
       return {
         url,

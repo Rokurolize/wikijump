@@ -108,7 +108,7 @@ test("M1042_BROWSER_LIFECYCLE has exactly one executable denominator owner", asy
 test("the Playwright file is collection-only and the case set owns candidate receipts", () => {
   const spec = read("framerail/tests/open43-media-files-candidate.spec.ts");
   const adapter = read("install/local/wikidot-verification/src/open43-media-browser-candidate.mjs");
-  const pageRoute = read("framerail/src/routes/[slug]/[...extra]/page.svelte");
+  const pageRoute = read("framerail/src/routes/[slug]/[...extra]/PageView.svelte");
   const runner = read("install/local/wikidot-verification/src/candidate-case-runner.mjs");
 
   assert.match(spec, /candidate-case-command/u);

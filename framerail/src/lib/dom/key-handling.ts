@@ -18,7 +18,7 @@ export interface KeyHandler {
   /** If true, fires `evt.preventDefault()` for the keystroke. */
   preventDefault?: boolean
   /** Callback to fire. */
-  do?: (...params: any[]) => any
+  do?: () => unknown
 }
 
 export class KeyObserver {

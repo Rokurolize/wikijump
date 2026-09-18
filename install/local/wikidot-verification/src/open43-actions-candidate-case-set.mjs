@@ -421,7 +421,7 @@ export function createOpen43ActionsCandidateCaseSet({
     "deepwell/src/services/render/legacy_actions.rs",
     "framerail/src/lib/wikidot/wikidot-legacy-action-request.js",
     "framerail/src/lib/wikidot/wikidot-legacy-actions.js",
-    "framerail/src/routes/[slug]/[...extra]/page.svelte",
+    "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
     "install/local/wikidot-verification/package.json",
     "install/local/wikidot-verification/pnpm-lock.yaml",
   ]);

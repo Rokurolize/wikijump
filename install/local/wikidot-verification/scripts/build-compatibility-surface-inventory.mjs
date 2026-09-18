@@ -4,13 +4,14 @@ import fs from "node:fs/promises"
 import { constants as fsConstants } from "node:fs"
 import { createHash } from "node:crypto"
 import { execFileSync, spawnSync } from "node:child_process"
+import { readFileSync } from "node:fs"
 import path from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
 
 import { CANDIDATE_CASE_SETS } from "../src/candidate-case-command.mjs"
 
-const SCHEMA = "wikijump.compatibility_surface_inventory.v2"
+const SCHEMA = "wikijump.compatibility_surface_inventory.v3"
 const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_ROOT = path.resolve(SCRIPT_DIRECTORY, "../../../..")
 const DEFAULT_OUTPUT = "docs/development/compatibility-surface-inventory.json"
@@ -674,6 +675,22 @@ function sha256(value) {
   return createHash("sha256").update(value).digest("hex")
 }
 
+function gitBlobOid(value) {
+  const bytes = Buffer.isBuffer(value) ? value : Buffer.from(value)
+  return createHash("sha1")
+    .update(`blob ${bytes.length}\0`)
+    .update(bytes)
+    .digest("hex")
+}
+
+function sourceInputSetSha256(registries) {
+  return sha256(
+    JSON.stringify(
+      registries.map(({ path: registryPath, sha256: digest }) => [registryPath, digest])
+    )
+  )
+}
+
 function resolveGitObject(gitArguments, revision, label) {
   let value
   try {
@@ -701,18 +718,24 @@ async function sourceProvenance(root, sourceRevision) {
   if (!manifestRevision || !lockRevision || lockRevision[1] !== manifestRevision || lockRevision[2] !== manifestRevision) {
     throw new Error("Deepwell FTML manifest and lock identities do not match")
   }
-  if (!/^[0-9a-f]{40}$/u.test(sourceRevision ?? "")) {
-    throw new Error("Wikijump source revision must be an exact commit")
+  let wikijump = null
+  if (sourceRevision !== null) {
+    if (!/^[0-9a-f]{40}$/u.test(sourceRevision ?? "")) {
+      throw new Error("Wikijump source revision must be an exact commit")
+    }
+    const wikijumpCommit = resolveGitObject(
+      ["-C", root],
+      `${sourceRevision}^{commit}`,
+      "Wikijump commit"
+    )
+    if (wikijumpCommit !== sourceRevision) {
+      throw new Error("Wikijump source revision does not resolve to itself")
+    }
+    wikijump = {
+      commit: wikijumpCommit,
+      tree: resolveGitObject(["-C", root], `${wikijumpCommit}^{tree}`, "Wikijump tree")
+    }
   }
-  const wikijumpCommit = resolveGitObject(
-    ["-C", root],
-    `${sourceRevision}^{commit}`,
-    "Wikijump commit"
-  )
-  if (wikijumpCommit !== sourceRevision) {
-    throw new Error("Wikijump source revision does not resolve to itself")
-  }
-  const wikijumpTree = resolveGitObject(["-C", root], `${wikijumpCommit}^{tree}`, "Wikijump tree")
   const ftmlCommit = resolveGitObject(
     [`--git-dir=${FTML_GIT_DIR}`],
     `${manifestRevision}^{commit}`,
@@ -724,70 +747,169 @@ async function sourceProvenance(root, sourceRevision) {
     "FTML tree"
   )
   return {
-    wikijump: { commit: wikijumpCommit, tree: wikijumpTree },
+    wikijump,
     ftml: { commit: ftmlCommit, tree: ftmlTree }
   }
 }
 
-function verifyRegistryBlobs(root, sourceRevision) {
-  for (const [registryPath, source] of SOURCE_INPUTS) {
-    let pinnedSource
-    try {
-      pinnedSource = execFileSync(
-        GIT_EXECUTABLE,
-        ["--no-replace-objects", "-C", root, "show", `${sourceRevision}:${registryPath}`],
-        { env: GIT_ENVIRONMENT, stdio: ["ignore", "pipe", "ignore"] }
-      )
-    } catch {
-      throw new Error(`registry is missing from pinned revision: ${registryPath}`)
+function parseGitLsTree(output, label) {
+  const entries = new Map()
+  for (const row of output.toString("utf8").split("\0").filter(Boolean)) {
+    const match = /^(\d+) ([a-z]+) ([0-9a-f]{40})\t(.+)$/u.exec(row)
+    if (!match || match[2] !== "blob") continue
+    const [, , , oid, objectPath] = match
+    if (entries.has(objectPath)) throw new Error(`${label} contains duplicate path: ${objectPath}`)
+    entries.set(objectPath, oid)
+  }
+  return entries
+}
+
+function listGitTreeBlobs(gitArguments, revision, label) {
+  const listing = spawnSync(
+    GIT_EXECUTABLE,
+    ["--no-replace-objects", ...gitArguments, "ls-tree", "-r", "-z", revision],
+    {
+      env: GIT_ENVIRONMENT,
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "pipe"]
     }
-    if (sha256(pinnedSource) !== sha256(source)) {
+  )
+  if (listing.status !== 0 || listing.error) {
+    throw new Error(`cannot list ${label}: ${listing.error?.message ?? listing.stderr?.toString("utf8").trim() ?? "unknown error"}`)
+  }
+  return parseGitLsTree(listing.stdout, label)
+}
+
+function readGitBlobBatch(gitArguments, requests, label) {
+  if (requests.length === 0) return new Map()
+  const child = spawnSync(
+    GIT_EXECUTABLE,
+    ["--no-replace-objects", ...gitArguments, "cat-file", "--batch"],
+    {
+      input: `${requests.map(({ oid }) => oid).join("\n")}\n`,
+      env: GIT_ENVIRONMENT,
+      maxBuffer: 128 * 1024 * 1024,
+      stdio: ["pipe", "pipe", "pipe"]
+    }
+  )
+  if (child.status !== 0 || child.error) {
+    const detail = child.error?.message ?? child.stderr?.toString("utf8").trim() ?? "unknown error"
+    throw new Error(`cannot read ${label}: ${detail}`)
+  }
+  const output = child.stdout
+  const result = new Map()
+  let offset = 0
+  for (const request of requests) {
+    const newline = output.indexOf(0x0a, offset)
+    if (newline < 0) throw new Error(`${label} batch response ended before ${request.path}`)
+    const header = output.subarray(offset, newline).toString("utf8")
+    const match = /^([0-9a-f]{40}) blob (\d+)$/u.exec(header)
+    if (!match || match[1] !== request.oid) {
+      throw new Error(`${label} batch identity drift for ${request.path}`)
+    }
+    const size = Number(match[2])
+    const start = newline + 1
+    const end = start + size
+    if (!Number.isSafeInteger(size) || end >= output.length || output[end] !== 0x0a) {
+      throw new Error(`${label} batch payload is truncated for ${request.path}`)
+    }
+    result.set(request.path, Buffer.from(output.subarray(start, end)))
+    offset = end + 1
+  }
+  if (offset !== output.length) throw new Error(`${label} batch response has trailing bytes`)
+  return result
+}
+
+function readGitSpecBatch(gitArguments, specs, label) {
+  const uniqueSpecs = [...new Set(specs)]
+  if (uniqueSpecs.length === 0) return new Map()
+  const child = spawnSync(
+    GIT_EXECUTABLE,
+    ["--no-replace-objects", ...gitArguments, "cat-file", "--batch"],
+    {
+      input: `${uniqueSpecs.join("\n")}\n`,
+      env: GIT_ENVIRONMENT,
+      maxBuffer: 256 * 1024 * 1024,
+      stdio: ["pipe", "pipe", "pipe"]
+    }
+  )
+  if (child.status !== 0 || child.error) {
+    const detail = child.error?.message ?? child.stderr?.toString("utf8").trim() ?? "unknown error"
+    throw new Error(`cannot read ${label}: ${detail}`)
+  }
+  const output = child.stdout
+  const result = new Map()
+  let offset = 0
+  for (const spec of uniqueSpecs) {
+    const newline = output.indexOf(0x0a, offset)
+    if (newline < 0) throw new Error(`${label} batch response ended before ${spec}`)
+    const header = output.subarray(offset, newline).toString("utf8")
+    if (header === `${spec} missing`) throw new Error(`${label} is missing ${spec}`)
+    const match = /^([0-9a-f]{40}) ([a-z]+) (\d+)$/u.exec(header)
+    if (!match || match[2] !== "blob") throw new Error(`${label} is not a blob: ${spec}`)
+    const size = Number(match[3])
+    const start = newline + 1
+    const end = start + size
+    if (!Number.isSafeInteger(size) || end >= output.length || output[end] !== 0x0a) {
+      throw new Error(`${label} batch payload is truncated for ${spec}`)
+    }
+    result.set(spec, Buffer.from(output.subarray(start, end)))
+    offset = end + 1
+  }
+  if (offset !== output.length) throw new Error(`${label} batch response has trailing bytes`)
+  return result
+}
+
+function verifyRegistryBlobs(root, sourceRevision) {
+  if (sourceRevision === null) return
+  const tree = listGitTreeBlobs(["-C", root], sourceRevision, "pinned Wikijump tree")
+  const requests = [...SOURCE_INPUTS.keys()].map((registryPath) => {
+    const oid = tree.get(registryPath)
+    if (!oid) throw new Error(`registry is missing from pinned revision: ${registryPath}`)
+    return { path: registryPath, oid }
+  })
+  const blobs = readGitBlobBatch(["-C", root], requests, "pinned Wikijump registries")
+  for (const [registryPath, source] of SOURCE_INPUTS) {
+    if (sha256(blobs.get(registryPath)) !== sha256(source)) {
       throw new Error(`registry blob drift: ${registryPath}`)
     }
   }
 }
 
-function readFtmlObject(revision, objectPath, sources) {
-  let bytes
-  try {
-    bytes = execFileSync(
-      GIT_EXECUTABLE,
-      ["--no-replace-objects", `--git-dir=${FTML_GIT_DIR}`, "show", `${revision}:${objectPath}`],
-      { env: GIT_ENVIRONMENT, stdio: ["ignore", "pipe", "ignore"] }
+function loadFtmlSnapshot(revision) {
+  const tree = listGitTreeBlobs([`--git-dir=${FTML_GIT_DIR}`], revision, "pinned FTML tree")
+  const moduleRoot = "src/parsing/rule/impls/block/blocks/module/modules/"
+  const rendererRoot = "src/render/html/element/"
+  const fixedPaths = new Set([
+    "src/parsing/lexer.pest",
+    "src/preproc/parser_functions/mod.rs",
+    "conf/blocks.toml",
+    "src/tree/element/object.rs",
+    "src/delayed.rs",
+    "src/render/html/element/mod.rs"
+  ])
+  const selected = [...tree.entries()]
+    .filter(([objectPath]) =>
+      fixedPaths.has(objectPath) ||
+      (objectPath.startsWith(moduleRoot) && objectPath.endsWith(".rs") && !objectPath.endsWith("/mod.rs")) ||
+      (objectPath.startsWith(rendererRoot) && objectPath.endsWith(".rs")) ||
+      (objectPath.startsWith("test/") && objectPath.endsWith("/wikidot.html"))
     )
-  } catch {
-    throw new Error(`cannot read pinned FTML source: ${objectPath}`)
+    .map(([path, oid]) => ({ path, oid }))
+    .sort((left, right) => left.path.localeCompare(right.path, "en"))
+  for (const objectPath of fixedPaths) {
+    if (!tree.has(objectPath)) throw new Error(`cannot read pinned FTML source: ${objectPath}`)
   }
-  const blob = resolveGitObject(
-    [`--git-dir=${FTML_GIT_DIR}`],
-    `${revision}:${objectPath}`,
-    `FTML source ${objectPath}`
-  )
-  sources.set(objectPath, { path: objectPath, blob, sha256: sha256(bytes) })
-  return bytes.toString("utf8")
-}
-
-function listFtmlFiles(revision, prefix) {
-  let output
-  try {
-    output = execFileSync(
-      GIT_EXECUTABLE,
-      [
-        "--no-replace-objects",
-        `--git-dir=${FTML_GIT_DIR}`,
-        "ls-tree",
-        "-r",
-        "--name-only",
-        revision,
-        "--",
-        prefix
-      ],
-      { encoding: "utf8", env: GIT_ENVIRONMENT, stdio: ["ignore", "pipe", "ignore"] }
-    )
-  } catch {
-    throw new Error(`cannot list pinned FTML source: ${prefix}`)
+  const blobs = readGitBlobBatch([`--git-dir=${FTML_GIT_DIR}`], selected, "pinned FTML source")
+  const read = (objectPath, sources) => {
+    const bytes = blobs.get(objectPath)
+    const blob = tree.get(objectPath)
+    if (!bytes || !blob) throw new Error(`cannot read pinned FTML source: ${objectPath}`)
+    sources.set(objectPath, { path: objectPath, blob, sha256: sha256(bytes) })
+    return bytes.toString("utf8")
   }
-  return output.trim().split("\n").filter(Boolean)
+  const list = (prefix) => [...tree.keys()].filter((objectPath) => objectPath.startsWith(`${prefix}/`) || objectPath === prefix)
+  return { read, list }
 }
 
 function rustEnumVariants(source, enumName, sourcePath) {
@@ -874,24 +996,25 @@ function buildFtmlCrosswalk(catalog, recordIds, semantics) {
 
 function discoverFtmlRawSurfaceManifest(ftmlSource, catalog, semantics) {
   const revision = ftmlSource.commit
+  const snapshot = loadFtmlSnapshot(revision)
   const sources = new Map()
   const records = []
   const add = (record) => records.push(record)
 
   const lexerPath = "src/parsing/lexer.pest"
-  const lexer = readFtmlObject(revision, lexerPath, sources)
+  const lexer = snapshot.read(lexerPath, sources)
   for (const name of [...lexer.matchAll(/^([a-z_][a-z0-9_]*)\s*=/gmu)].map((match) => match[1])) {
     add(ftmlRecord(`ftml.tokenizer:${name}`, "lexer_rule", name, lexerPath))
   }
 
   const parserFunctionsPath = "src/preproc/parser_functions/mod.rs"
-  const parserFunctions = readFtmlObject(revision, parserFunctionsPath, sources)
+  const parserFunctions = snapshot.read(parserFunctionsPath, sources)
   for (const name of [...parserFunctions.matchAll(/^\s*"(if|ifexpr|expr)"\s*=>\s*ParserFunctionKind::/gmu)].map((match) => `#${match[1]}`)) {
     add(ftmlRecord(`ftml.preprocessor:${name}`, "parser_function", name, parserFunctionsPath))
   }
 
   const blocksPath = "conf/blocks.toml"
-  const blocks = readFtmlObject(revision, blocksPath, sources)
+  const blocks = snapshot.read(blocksPath, sources)
   const sections = [...blocks.matchAll(/^\[([a-z0-9-]+)\]$/gmu)]
   for (const [index, section] of sections.entries()) {
     const name = section[1]
@@ -906,21 +1029,21 @@ function discoverFtmlRawSurfaceManifest(ftmlSource, catalog, semantics) {
   }
 
   const moduleRoot = "src/parsing/rule/impls/block/blocks/module/modules"
-  for (const modulePath of listFtmlFiles(revision, moduleRoot).filter((value) => value.endsWith(".rs") && !value.endsWith("/mod.rs"))) {
-    const moduleSource = readFtmlObject(revision, modulePath, sources)
+  for (const modulePath of snapshot.list(moduleRoot).filter((value) => value.endsWith(".rs") && !value.endsWith("/mod.rs"))) {
+    const moduleSource = snapshot.read(modulePath, sources)
     const name = /accepts_names:\s*&\["([A-Za-z]+)"\]/u.exec(moduleSource)?.[1]
     if (!name) throw new Error(`${modulePath} has no typed module name`)
     add(ftmlRecord(`ftml.module:${name}`, "typed_module", name, modulePath))
   }
 
   const astPath = "src/tree/element/object.rs"
-  const ast = readFtmlObject(revision, astPath, sources)
+  const ast = snapshot.read(astPath, sources)
   for (const name of rustEnumVariants(ast, "Element", astPath)) {
     add(ftmlRecord(`ftml.ast:${name}`, "ast_variant", name, astPath))
   }
 
   const delayedPath = "src/delayed.rs"
-  const delayed = readFtmlObject(revision, delayedPath, sources)
+  const delayed = snapshot.read(delayedPath, sources)
   for (const name of rustEnumVariants(delayed, "DelayedNode", delayedPath)) {
     add(ftmlRecord(`ftml.delayed:${name}`, "delayed_form", name, delayedPath))
   }
@@ -930,16 +1053,16 @@ function discoverFtmlRawSurfaceManifest(ftmlSource, catalog, semantics) {
 
   const rendererRoot = "src/render/html/element"
   const rendererIndexPath = `${rendererRoot}/mod.rs`
-  const rendererIndex = readFtmlObject(revision, rendererIndexPath, sources)
+  const rendererIndex = snapshot.read(rendererIndexPath, sources)
   add(ftmlRecord("ftml.renderer:dispatcher", "renderer_module", "dispatcher", rendererIndexPath))
   for (const name of [...rendererIndex.matchAll(/^mod\s+([a-z_]+);$/gmu)].map((match) => match[1])) {
     const rendererPath = `${rendererRoot}/${name}.rs`
-    readFtmlObject(revision, rendererPath, sources)
+    snapshot.read(rendererPath, sources)
     add(ftmlRecord(`ftml.renderer:${name}`, "renderer_module", name, rendererPath))
   }
 
-  for (const fixturePath of listFtmlFiles(revision, "test").filter((value) => value.endsWith("/wikidot.html"))) {
-    readFtmlObject(revision, fixturePath, sources)
+  for (const fixturePath of snapshot.list("test").filter((value) => value.endsWith("/wikidot.html"))) {
+    snapshot.read(fixturePath, sources)
     const name = fixturePath.slice(0, -"/wikidot.html".length)
     add(ftmlRecord(`ftml.fixture:${name}`, "wikidot_fixture", name, fixturePath))
   }
@@ -1703,25 +1826,59 @@ async function discoverFramerailRoutes(root) {
   return [...routeRecords, ...actionRecords]
 }
 
+const PINNED_TEXT_CACHE = new Map()
+const PINNED_TREE_CACHE = new Map()
+
+function preloadPinnedRevisionTexts(root, revision, sourcePaths) {
+  if (revision === null) {
+    for (const sourcePath of uniqueSortedStrings(sourcePaths)) {
+      const key = `${root}\0WORKTREE\0${sourcePath}`
+      if (PINNED_TEXT_CACHE.has(key)) continue
+      let source = null
+      try {
+        source = readFileSync(repositoryPath(root, sourcePath), "utf8")
+      } catch {
+        source = null
+      }
+      PINNED_TEXT_CACHE.set(key, source)
+    }
+    return
+  }
+  const treeKey = `${root}\0${revision}`
+  let tree = PINNED_TREE_CACHE.get(treeKey)
+  if (!tree) {
+    tree = listGitTreeBlobs(["-C", root], revision, `pinned source tree ${revision}`)
+    PINNED_TREE_CACHE.set(treeKey, tree)
+  }
+  const requests = []
+  for (const sourcePath of uniqueSortedStrings(sourcePaths)) {
+    const key = `${root}\0${revision}\0${sourcePath}`
+    if (PINNED_TEXT_CACHE.has(key)) continue
+    const oid = tree.get(sourcePath)
+    if (!oid) {
+      PINNED_TEXT_CACHE.set(key, null)
+      continue
+    }
+    requests.push({ path: sourcePath, oid })
+  }
+  const blobs = readGitBlobBatch(["-C", root], requests, `pinned source texts ${revision}`)
+  for (const request of requests) {
+    PINNED_TEXT_CACHE.set(
+      `${root}\0${revision}\0${request.path}`,
+      blobs.get(request.path)?.toString("utf8") ?? null
+    )
+  }
+}
+
+function pinnedRevisionText(root, revision, sourcePath) {
+  const key = `${root}\0${revision ?? "WORKTREE"}\0${sourcePath}`
+  if (PINNED_TEXT_CACHE.has(key)) return PINNED_TEXT_CACHE.get(key)
+  preloadPinnedRevisionTexts(root, revision, [sourcePath])
+  return PINNED_TEXT_CACHE.get(key) ?? null
+}
+
 function gitRevisionContains(root, revision, sourcePath, literal) {
-  const result = spawnSync(
-    GIT_EXECUTABLE,
-    [
-      "--no-replace-objects",
-      "-C",
-      root,
-      "grep",
-      "-F",
-      "-q",
-      "-e",
-      literal,
-      revision,
-      "--",
-      sourcePath
-    ],
-    { env: GIT_ENVIRONMENT, stdio: "ignore" }
-  )
-  return result.status === 0
+  return pinnedRevisionText(root, revision, sourcePath)?.includes(literal) === true
 }
 
 async function applyFramerailRouteActionEvidence(root, records, sourceRevision) {
@@ -1749,6 +1906,19 @@ async function applyFramerailRouteActionEvidence(root, records, sourceRevision) 
   }
   const evidenceById = new Map(
     registry.records.map((record) => [record.surface_id, record])
+  )
+  preloadPinnedRevisionTexts(
+    root,
+    sourceRevision,
+    registry.records.flatMap((record) =>
+      Array.isArray(record.tests)
+        ? record.tests.flatMap((reference) => {
+            if (typeof reference !== "string") return []
+            const separator = reference.indexOf("::")
+            return separator > 0 ? [reference.slice(0, separator)] : []
+          })
+        : []
+    )
   )
   let linked = 0
   let gaps = 0
@@ -2262,6 +2432,7 @@ function applyFramerailAmcTests(root, records, sourceRevision) {
       throw new Error(`Framerail AMC test mapping targets an unknown surface: ${surfaceId}`)
     }
   }
+  preloadPinnedRevisionTexts(root, sourceRevision, [FRAMERAIL_AMC_TEST_PATH])
   let linked = 0
   const projected = records.map((record) => {
     const testNames = FRAMERAIL_AMC_TESTS.get(record.surface_id) ?? []
@@ -2991,10 +3162,10 @@ async function applyWwsContractEvidence(root, records, sourceRevision) {
     if (sha256(sourceBytes) !== input.sha256) {
       throw new Error(`${denominatorPath} source identity drift: ${input.path}`)
     }
-    if (
-      resolveGitObject(["-C", root], `${sourceRevision}:${input.path}`, "WWS source blob") !==
-      input.git_blob
-    ) {
+    const sourceBlob = sourceRevision === null
+      ? gitBlobOid(sourceBytes)
+      : resolveGitObject(["-C", root], `${sourceRevision}:${input.path}`, "WWS source blob")
+    if (sourceBlob !== input.git_blob) {
       throw new Error(`${denominatorPath} pinned source identity drift: ${input.path}`)
     }
   }
@@ -3146,7 +3317,7 @@ function candidateCaseTests() {
   return references
 }
 
-async function authoritativeAuditTests(root, auditPath, issue, sourceRevision) {
+async function authoritativeAuditTests(root, auditPath, issue, sourceRevision, pinnedSources) {
   const testsByCase = new Map()
   const descriptors = []
   if (issue.authoritative_manifest !== undefined) descriptors.push(issue.authoritative_manifest)
@@ -3171,13 +3342,9 @@ async function authoritativeAuditTests(root, auditPath, issue, sourceRevision) {
     if (!/^[0-9a-f]{40}$/u.test(revision ?? "")) {
       throw new Error(`${auditPath} ${descriptor.path} has invalid authoritative manifest source_revision`)
     }
-    let bytes
-    try {
-      bytes = execFileSync(GIT_EXECUTABLE, ["-C", root, "show", `${revision}:${descriptor.path}`], {
-        env: GIT_ENVIRONMENT,
-        stdio: ["ignore", "pipe", "ignore"]
-      })
-    } catch {
+    const spec = `${revision}:${descriptor.path}`
+    const bytes = pinnedSources.get(spec)
+    if (!bytes) {
       throw new Error(`${auditPath} cannot read authoritative manifest ${revision}:${descriptor.path}`)
     }
     if (sha256(bytes) !== descriptor.sha256) {
@@ -3263,6 +3430,7 @@ function validateNestedAuditSources(root, auditPath, audit, sourceRevision) {
   if (!/^[0-9a-f]{40}$/u.test(sourceRevision ?? "")) {
     throw new Error(`${auditPath} has no source_revision`)
   }
+  const references = []
   const visit = (value) => {
     if (!value || typeof value !== "object") return
     if (!Array.isArray(value) && typeof value.path === "string" && value.sha256 !== undefined) {
@@ -3281,23 +3449,37 @@ function validateNestedAuditSources(root, auditPath, audit, sourceRevision) {
         if (value.source_revision === sourceRevision) {
           throw new Error(`${auditPath} ${value.path} has a redundant source_revision`)
         }
-        let source
-        try {
-          source = execFileSync(GIT_EXECUTABLE, ["-C", root, "show", `${revision}:${value.path}`], {
-            env: GIT_ENVIRONMENT,
-            stdio: ["ignore", "pipe", "ignore"]
-          })
-        } catch {
-          throw new Error(`${auditPath} cannot read nested source ${revision}:${value.path}`)
-        }
-        if (sha256(source) !== value.sha256) {
-          throw new Error(`${auditPath} nested source digest does not match ${revision}:${value.path}`)
-        }
+        references.push({
+          spec: `${revision}:${value.path}`,
+          revision,
+          path: value.path,
+          sha256: value.sha256
+        })
       }
     }
     for (const nested of Object.values(value)) visit(nested)
   }
   visit(audit)
+  let pinnedSources
+  try {
+    pinnedSources = readGitSpecBatch(
+      ["-C", root],
+      references.map(({ spec }) => spec),
+      `${auditPath} nested sources`
+    )
+  } catch (error) {
+    throw new Error(`${auditPath} cannot read nested source: ${error.message}`)
+  }
+  for (const reference of references) {
+    const source = pinnedSources.get(reference.spec)
+    if (!source) {
+      throw new Error(`${auditPath} cannot read nested source ${reference.revision}:${reference.path}`)
+    }
+    if (sha256(source) !== reference.sha256) {
+      throw new Error(`${auditPath} nested source digest does not match ${reference.revision}:${reference.path}`)
+    }
+  }
+  return pinnedSources
 }
 
 async function discoverOpen43AuditCases(root) {
@@ -3363,7 +3545,12 @@ async function discoverOpen43AuditCases(root) {
     if (reconciliationAudit.sha256 !== sha256(auditText)) {
       throw new Error(`${auditPath} reconciliation digest does not match`)
     }
-    validateNestedAuditSources(root, auditPath, audit, reconciliationAudit.source_revision)
+    const pinnedAuditSources = validateNestedAuditSources(
+      root,
+      auditPath,
+      audit,
+      reconciliationAudit.source_revision
+    )
     const currentAuditRows = []
     const fallbackOwner = typeof audit.schema === "string" ? audit.schema : "open43-audit"
     for (const issue of audit.issues) {
@@ -3375,7 +3562,8 @@ async function discoverOpen43AuditCases(root) {
         root,
         auditPath,
         issue,
-        reconciliationAudit.source_revision
+        reconciliationAudit.source_revision,
+        pinnedAuditSources
       )
       const classifiedRows = []
       if (Array.isArray(issue.subrows)) {
@@ -3692,6 +3880,18 @@ async function applyCatalogSourceAttribution(root, surfaces, sourceRevision) {
   if (new Set(recordIds).size !== recordIds.length) {
     throw new Error(`${CATALOG_SOURCE_ATTRIBUTION} has duplicate surface ids`)
   }
+  preloadPinnedRevisionTexts(
+    root,
+    sourceRevision,
+    registry.records.flatMap((record) =>
+      [...(Array.isArray(record.sources) ? record.sources : []), ...(Array.isArray(record.tests) ? record.tests : [])]
+        .flatMap((witness) =>
+          typeof witness?.path === "string" && witness.path !== "" && !path.isAbsolute(witness.path)
+            ? [witness.path]
+            : []
+        )
+    )
+  )
   const verified = new Map()
   for (const record of registry.records) {
     if (
@@ -4032,17 +4232,17 @@ async function buildInventory(root, sourceRevision) {
     ? await applyFramerailRouteActionEvidence(
         root,
         framerailRoutes,
-        provenance.wikijump.commit
+        sourceRevision
       )
     : framerailRoutes
   const projectedAmcEvidence = await applySiteChangesEvidence(root, amc)
   const projectedAmc = auditedOwnershipActive
-    ? applyFramerailAmcTests(root, projectedAmcEvidence, provenance.wikijump.commit)
+    ? applyFramerailAmcTests(root, projectedAmcEvidence, sourceRevision)
     : projectedAmcEvidence
   const projectedWws = auditedOwnershipActive
-    ? await applyWwsContractEvidence(root, wws, provenance.wikijump.commit)
+    ? await applyWwsContractEvidence(root, wws, sourceRevision)
     : wws
-  verifyRegistryBlobs(root, provenance.wikijump.commit)
+  verifyRegistryBlobs(root, sourceRevision)
   const ftmlProjectedSources = applyFtmlCatalogSourceProjection([
     ...catalog,
     ...deepwell,
@@ -4057,7 +4257,7 @@ async function buildInventory(root, sourceRevision) {
   const projectedSources = await applyCatalogSourceAttribution(
     root,
     ftmlProjectedSources,
-    provenance.wikijump.commit
+    sourceRevision
   )
   const surfaces = normalizeSurfaceOwners(
     applyAuditedIssueOwnership(projectedSources, auditedOwnershipActive),
@@ -4071,16 +4271,20 @@ async function buildInventory(root, sourceRevision) {
   for (const kind of uniqueSortedStrings(surfaces.map(({ kind }) => kind))) {
     byKind[kind] = surfaces.filter((surfaceRecord) => surfaceRecord.kind === kind).length
   }
+  const registries = [...SOURCE_INPUTS]
+    .map(([registryPath, source]) => ({ path: registryPath, sha256: sha256(source) }))
+    .sort((left, right) => left.path.localeCompare(right.path, "en"))
   return {
     schema: SCHEMA,
     relationship_edge_types: [...semantics.relationship_edge_types],
     ...relationshipModel,
     ftml_raw_surface_manifest: ftmlRawSurfaceManifest,
     provenance: {
-      ...provenance,
-      registries: [...SOURCE_INPUTS]
-        .map(([registryPath, source]) => ({ path: registryPath, sha256: sha256(source) }))
-        .sort((left, right) => left.path.localeCompare(right.path, "en"))
+      wikijump: {
+        source_input_set_sha256: sourceInputSetSha256(registries)
+      },
+      ftml: provenance.ftml,
+      registries
     },
     sources: {
       catalog: "docs/wikidot-specifications/catalog.json",
@@ -4119,14 +4323,7 @@ async function buildInventory(root, sourceRevision) {
 
 async function pinnedSourceRevision(root, requestedRevision) {
   if (requestedRevision) return requestedRevision
-  const inventoryPath = path.join(root, DEFAULT_OUTPUT)
-  let inventory
-  try {
-    inventory = JSON.parse(await fs.readFile(inventoryPath, "utf8"))
-  } catch {
-    throw new Error("--source-revision is required when no tracked inventory pin exists")
-  }
-  return inventory.provenance?.wikijump?.commit
+  return null
 }
 
 async function main() {

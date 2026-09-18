@@ -3,7 +3,7 @@ import assert from "node:assert/strict"
 import { fileURLToPath } from "node:url"
 import test from "node:test"
 
-import { createServer } from "vite"
+import { createTestViteServer } from "./vite-test-server.js"
 
 const root = fileURLToPath(new URL("..", import.meta.url))
 
@@ -15,12 +15,7 @@ test("page creation binds parent follow-up to the assigned autonumbered slug", a
 
   try {
     process.chdir(root)
-    vite = await createServer({
-      root,
-      appType: "custom",
-      logLevel: "silent",
-      server: { middlewareMode: true }
-    })
+    vite = await createTestViteServer()
     ;({ client } = await vite.ssrLoadModule("/src/lib/server/deepwell/index.ts"))
     const { pageEditAction } = await vite.ssrLoadModule(
       "/src/lib/server/load/page/page-edit-actions.ts"

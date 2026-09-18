@@ -33,7 +33,7 @@
     /** If true, the input will be as wide as possible. */
     wide?: boolean
 
-    [key: string]: any
+    [key: string]: unknown
   } = $props()
 </script>
 

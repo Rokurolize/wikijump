@@ -8,7 +8,7 @@ import { sha256Value } from "./standing-browser-parity-util.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const DEFAULT_VIEWPORT = Object.freeze({ width: 1280, height: 900 });
-const CAPTURE_TIMEOUT_MS = 300_000;
+const CAPTURE_TIMEOUT_MS = 30_000;
 
 async function submittedSettingsRevision(response) {
   const request = response.request();

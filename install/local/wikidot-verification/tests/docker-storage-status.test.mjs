@@ -218,8 +218,7 @@ test("docker storage CLI exposes parsing and orchestration without process side 
   }]);
 });
 
-test("cli help, usage errors, and quiet status smoke", async (t) => {
-  const statusPath = await tempStatus(t);
+test("cli help and usage errors run without live Docker probes", () => {
   const help = spawnSync(process.execPath, [CLI_SCRIPT, "--help"], {cwd: PACKAGE_ROOT, encoding: "utf8"});
   assert.equal(help.status, 0);
   assert.match(help.stdout, /Usage/);
@@ -228,12 +227,4 @@ test("cli help, usage errors, and quiet status smoke", async (t) => {
   assert.equal(unknown.status, 2);
   assert.match(unknown.stderr, /Usage/);
 
-  const quiet = spawnSync(process.execPath, [CLI_SCRIPT, "--quiet", "--status", statusPath], {
-    cwd: PACKAGE_ROOT,
-    encoding: "utf8",
-    timeout: 40000,
-  });
-  assert.equal(quiet.status, 0);
-  assert.equal(quiet.stdout, "");
-  assert.equal(JSON.parse(readFileSync(statusPath, "utf8")).schemaVersion, 1);
 });

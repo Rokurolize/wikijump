@@ -34,7 +34,7 @@ const DIRECTORY_CAPTURE = Object.freeze({
   ]),
 });
 const VIEWPORT = Object.freeze({ width: 1280, height: 900 });
-const TIMEOUT_MS = 300_000;
+const TIMEOUT_MS = 30_000;
 
 function sha256Text(value) {
   return createHash("sha256").update(value).digest("hex");

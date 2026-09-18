@@ -1,4 +1,4 @@
-import pkg from "./package.json"
+import pkg from "./package.json" with { type: "json" }
 
 import { sveltekit } from "@sveltejs/kit/vite"
 import { rmSync } from "fs"

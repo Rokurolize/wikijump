@@ -162,7 +162,7 @@ const SOURCE_FILES = Object.freeze([...new Set([
   "install/local/wikidot-verification/src/open43-settings-candidate-http.mjs",
   "install/local/wikidot-verification/src/deepwell-rpc-auth.mjs",
   "framerail/src/routes/[slug]/[...extra]/page.scss",
-  "framerail/src/routes/[slug]/[...extra]/page.svelte",
+  "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
   "framerail/src/routes/[slug]/[...extra]/WikidotFoundPageTags.svelte",
   "framerail/src/lib/wikidot/wikidot-page-tags.js",
   "framerail/src/routes/+layout.svelte",

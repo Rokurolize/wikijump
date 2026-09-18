@@ -679,21 +679,11 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   assert.equal(result.status, 0, result.stderr)
   assert.equal(result.stdout, "wrote 51 compatibility surfaces to inventory.json\n")
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
-  assert.equal(inventory.schema, "wikijump.compatibility_surface_inventory.v2")
+  assert.equal(inventory.schema, "wikijump.compatibility_surface_inventory.v3")
   assert.equal(inventory.sources.live_observations, "docs/wikidot-specifications/live-observations.json")
   assert.equal(inventory.sources.source_coverage, "docs/wikidot-specifications/source-coverage.json")
-  const fixtureCommit = spawnSync("git", ["rev-parse", "HEAD^{commit}"], {
-    cwd: root,
-    encoding: "utf8"
-  }).stdout.trim()
-  const fixtureTree = spawnSync("git", ["rev-parse", "HEAD^{tree}"], {
-    cwd: root,
-    encoding: "utf8"
-  }).stdout.trim()
-  assert.deepEqual(inventory.provenance.wikijump, {
-    commit: fixtureCommit,
-    tree: fixtureTree
-  })
+  assert.deepEqual(Object.keys(inventory.provenance.wikijump), ["source_input_set_sha256"])
+  assert.match(inventory.provenance.wikijump.source_input_set_sha256, /^[0-9a-f]{64}$/u)
   assert.equal(inventory.provenance.ftml.commit, ftmlRevision)
   assert.match(inventory.provenance.ftml.tree, /^[0-9a-f]{40}$/u)
   assert.ok(inventory.provenance.registries.length > 10)
@@ -1019,9 +1009,9 @@ test("CLI keeps an explicit source revision across metadata commits and rejects 
   )
   assert.equal(second.status, 0, second.stderr)
   assert.equal(await fs.readFile(secondOutput, "utf8"), await fs.readFile(firstOutput, "utf8"))
-  assert.equal(
-    JSON.parse(await fs.readFile(secondOutput, "utf8")).provenance.wikijump.commit,
-    sourceRevision
+  assert.match(
+    JSON.parse(await fs.readFile(secondOutput, "utf8")).provenance.wikijump.source_input_set_sha256,
+    /^[0-9a-f]{64}$/u
   )
 
   await fs.appendFile(path.join(root, "deepwell/src/api.rs"), 'register!("drift", drift);\n')
@@ -1805,16 +1795,13 @@ test("tracked compatibility inventory exactly matches one generator run", async 
   cleanupFixture(t, outputRoot)
   const trackedPath = path.join(repositoryRoot, "docs/development/compatibility-surface-inventory.json")
   const trackedBytes = await fs.readFile(trackedPath)
-  const trackedInventory = JSON.parse(trackedBytes)
   const outputPath = path.join(outputRoot, "inventory.json")
   const result = spawnSync(process.execPath, [
     cliPath,
     "--root",
     repositoryRoot,
     "--output",
-    outputPath,
-    "--source-revision",
-    trackedInventory.provenance.wikijump.commit
+    outputPath
   ], { encoding: "utf8" })
 
   assert.equal(result.status, 0, result.stderr)

@@ -1,5 +1,5 @@
 {
-  "schema": "wikijump.compatibility_surface_inventory.v2",
+  "schema": "wikijump.compatibility_surface_inventory.v3",
   "relationship_edge_types": [
     "alias",
     "equivalence",
@@ -11385,8 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "98ffb88f071590842a931c322382eca53d96831c",
-      "tree": "f4711ca924f413ccc7b77edea33e1a8316fff283"
+      "source_input_set_sha256": "32b506e3e880a882fb04b51f7bde47b1005c21bab2510af87baf3ab7cd85a2a5"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11535,7 +11534,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "6e7a26c9dc24b398d5a8caaf74961bdfe2503d78f738239d292cdc721f0eec08"
+        "sha256": "3c6c091a4d294915b4f99b979f065ddb5a16bfea06096d463e6b07d6198c8e80"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11591,7 +11590,7 @@
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
-        "sha256": "77661ed3c274d5891a89d037f0af3adf6ab362c2ddd409c746b638eedd87f120"
+        "sha256": "97a90cf80605614fb1c416bbeb4fd1cca862b162760f05fc1809e34337fa9dc3"
       },
       {
         "path": "docs/development/wikidot-py-amc-client-parity.json",
@@ -11615,7 +11614,7 @@
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "1e5503962e105b70a13fd0ad5d2ecd508465d1a3225a6a26b60f3079978c3392"
+        "sha256": "09dc8f3fd51300043b7eb6e5080b82fea2bf275ec2a9e11239cf6f07b9d9613c"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
@@ -11663,7 +11662,7 @@
       },
       {
         "path": "framerail/src/routes/[slug]/[...extra]/+page.svelte",
-        "sha256": "429c73e8f3f22d8591ad7c01adb96e43e67b9d4c887a57246261e2f0c1190299"
+        "sha256": "e06ad941b8a6ed3e5a0cfe58b46368407d0cda0881377933bc81248a268b6a7c"
       },
       {
         "path": "framerail/src/routes/[x+2d]/[slug]/[...extra]/+page.svelte",
@@ -11727,7 +11726,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/user/[slug]/+page.svelte",
-        "sha256": "74b5ede23d12f3555ba5b2c93d79f9ae3c5256c0780578bc16c72887d8cc5fc9"
+        "sha256": "ba5235f176bef8e4c588f310d69e20027b73307927406aa153594efe32a67cc3"
       },
       {
         "path": "framerail/src/routes/[x+2d]/user/+page.server.ts",
@@ -11735,7 +11734,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/user/+page.svelte",
-        "sha256": "c0cebb2394f1391182fdf4bc304870b228803cbe10cf3faf3403973a99a9ff30"
+        "sha256": "c592d4803a24c7a6fef3aec416df6ce2864f6543a1d3b1bf41722fd9a2f16989"
       },
       {
         "path": "framerail/src/routes/[x+2d]/wikidot-interwiki/interwikiFrame.html/+server.ts",
@@ -11759,11 +11758,11 @@
       },
       {
         "path": "framerail/src/routes/+page.svelte",
-        "sha256": "9ddcf2d1c06d70db362d301cb04514b9d2a21c1cd087711dadcbd97f50fb7323"
+        "sha256": "15a849f58fde4826da26fc43dc78e154b37e9b78199442c5f4342a468b7183b9"
       },
       {
         "path": "framerail/src/routes/ajax-module-connector.php/+server.ts",
-        "sha256": "632b8c9f77d0eecd480f9ecf23b1568fb64631ec678f1884138cb101bab3fbd8"
+        "sha256": "01d967c7030621ccbd15f9c17f328c400dddf512e5c8fd2250bfa0cae82449c2"
       },
       {
         "path": "framerail/src/routes/common--images/jquery-raty/[asset]/+server.ts",
@@ -11831,7 +11830,7 @@
       },
       {
         "path": "framerail/src/routes/user[x+3a]info/[target]/+page.svelte",
-        "sha256": "23d70bc26fa0419b82642b0f2c9cce9740f3e5afb53955f086b6546aa1ad20cb"
+        "sha256": "858f11779c611647caa09e10ecb8953889fb6865d7f0256e8739dfa34b9f81e9"
       },
       {
         "path": "framerail/src/routes/xml-rpc-api.php/+server.ts",
@@ -11851,7 +11850,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "1e5503962e105b70a13fd0ad5d2ecd508465d1a3225a6a26b60f3079978c3392"
+        "sha256": "09dc8f3fd51300043b7eb6e5080b82fea2bf275ec2a9e11239cf6f07b9d9613c"
       },
       {
         "path": "wws/src/route.rs",
@@ -12690,7 +12689,7 @@
         "status": "implemented",
         "references": [
           "framerail/src/hooks.server.ts#export const handle: Handle = async ({ event, resolve }) =>",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte#use:wikidotLegacyActions={legacyActionParameters}"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte#use:wikidotLegacyActions={legacyActionParameters}"
         ]
       },
       "candidate": {
@@ -13054,7 +13053,7 @@
           "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte",
           "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#pageId: creating ? 0 : pageId",
           "framerail/src/routes/[slug]/[...extra]/EditorPane.svelte",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {
@@ -19381,8 +19380,8 @@
         "references": [
           "framerail/src/lib/wikidot/wikidot-page-tags.js",
           "framerail/src/lib/wikidot/wikidot-page-tags.js#export const buildWikidotPageTagsHtml = (",
-          "framerail/src/routes/[slug]/[...extra]/WikidotFoundPageTags.svelte",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
+          "framerail/src/routes/[slug]/[...extra]/WikidotFoundPageTags.svelte"
         ]
       },
       "candidate": {
@@ -50140,7 +50139,7 @@
         "deepwell/src/services/view/backlinks.rs",
         "docs/development/wikidot-page-action-surfaces.json",
         "framerail/src/routes/[slug]/[...extra]/BacklinksPane.svelte",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -50163,7 +50162,7 @@
         "references": [
           "deepwell/src/services/view/backlinks.rs",
           "framerail/src/routes/[slug]/[...extra]/BacklinksPane.svelte",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {
@@ -50233,7 +50232,7 @@
       "kind": "page_action",
       "public_reference": [
         "docs/development/wikidot-page-action-surfaces.json",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -50253,7 +50252,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {
@@ -50278,7 +50277,7 @@
       "kind": "page_action",
       "public_reference": [
         "docs/development/wikidot-page-action-surfaces.json",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -50298,7 +50297,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {
@@ -50324,7 +50323,7 @@
       "public_reference": [
         "docs/development/wikidot-page-action-surfaces.json",
         "framerail/src/routes/[slug]/[...extra]/AppendPane.svelte",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -50345,7 +50344,7 @@
         "status": "implemented",
         "references": [
           "framerail/src/routes/[slug]/[...extra]/AppendPane.svelte",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {
@@ -50371,7 +50370,7 @@
       "public_reference": [
         "docs/development/wikidot-page-action-surfaces.json",
         "framerail/src/routes/[slug]/[...extra]/EditMetaPane.svelte",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte",
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
         "framerail/src/routes/ajax-module-connector.php/+server.ts"
       ],
       "existing_refs": {
@@ -50395,7 +50394,7 @@
         "status": "implemented",
         "references": [
           "framerail/src/routes/[slug]/[...extra]/EditMetaPane.svelte",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte",
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
           "framerail/src/routes/ajax-module-connector.php/+server.ts"
         ]
       },
@@ -50423,7 +50422,7 @@
         "docs/development/wikidot-page-action-surfaces.json",
         "framerail/src/lib/wikidot/wikidot-edit-sections.js",
         "framerail/src/routes/[slug]/[...extra]/EditSectionPane.svelte",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -50445,7 +50444,7 @@
         "references": [
           "framerail/src/lib/wikidot/wikidot-edit-sections.js",
           "framerail/src/routes/[slug]/[...extra]/EditSectionPane.svelte",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {
@@ -50879,7 +50878,7 @@
       "kind": "page_action",
       "public_reference": [
         "docs/development/wikidot-page-action-surfaces.json",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -50899,7 +50898,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {
@@ -51198,7 +51197,7 @@
       "kind": "page_action",
       "public_reference": [
         "docs/development/wikidot-page-action-surfaces.json",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -51219,7 +51218,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {

@@ -14,7 +14,7 @@
 
     <h1 class="profile-title">
       {#if data.user.avatar}
-        <img src={data.user.avatar} alt="" />
+        <img alt="" src={data.user.avatar} />
       {/if}
       {data.user.name}
     </h1>

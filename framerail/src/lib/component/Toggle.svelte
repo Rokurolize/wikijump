@@ -3,6 +3,7 @@
 -->
 <script lang="ts">
   import { keyHandle } from "$lib/dom/svelte-adapters"
+  import type { Snippet } from "svelte"
 
   let {
     name = "",
@@ -32,8 +33,8 @@
     /** Flips the position of the label and the toggle. */
     flipped?: boolean
 
-    children?: any
-    [key: string]: any
+    children?: Snippet
+    [key: string]: unknown
   } = $props()
 </script>
 

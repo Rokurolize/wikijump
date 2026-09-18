@@ -4,14 +4,27 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, Q778_WIKIDOT_AUTHOR, S758_AUTONUMBER_CANDIDATE_PRECONDITION, b689BasaltUserFixtures, b689Scp8980CandidateFixtures, b689Scp8980UserFixtures, bindS758AutonumberFixture, buildQ1026InsertOnlyUserSeedSql, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs, validateS758AutonumberCandidateCategory } from "../src/compatibility-candidate-input-producer.mjs";
+import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, COMPATIBILITY_CASE_SET_PRIVATE_INPUTS, Q778_WIKIDOT_AUTHOR, S758_AUTONUMBER_CANDIDATE_PRECONDITION, b689BasaltUserFixtures, b689Scp8980CandidateFixtures, b689Scp8980UserFixtures, bindS758AutonumberFixture, buildQ1026InsertOnlyUserSeedSql, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs, validateS758AutonumberCandidateCategory } from "../src/compatibility-candidate-input-producer.mjs";
+import { CANDIDATE_CASE_SETS } from "../src/candidate-case-command.mjs";
 
 test("compatibility candidate input producer requires distinct identity-bound paths", () => {
-  assert.equal(COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, "wikijump.compatibility_candidate_input_receipt.v1");
+  assert.equal(COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, "wikijump.compatibility_candidate_input_receipt.v2");
   const parsed = parseCompatibilityCandidateInputArgs(["--candidate-identity", "candidate.json", "--private-runtime", "runtime.json", "--template-private-dir", "template", "--output-private-dir", "output", "--receipt", "receipt.json", "--b690-attachments-dir", "attachments"]);
   assert.match(parsed["candidate-identity"], /candidate\.json$/u);
   assert.notEqual(parsed["template-private-dir"], parsed["output-private-dir"]);
   assert.throws(() => parseCompatibilityCandidateInputArgs(["--candidate-identity", "candidate.json"]), /Usage/u);
+});
+
+test("compatibility candidate input producer maps every executable case set to one produced private input", () => {
+  const executable = Object.entries(CANDIDATE_CASE_SETS)
+    .filter(([, registered]) => registered.aliasOf === undefined)
+    .map(([name]) => name)
+    .sort();
+  assert.deepEqual(Object.keys(COMPATIBILITY_CASE_SET_PRIVATE_INPUTS).sort(), executable);
+  assert.equal(COMPATIBILITY_CASE_SET_PRIVATE_INPUTS["open43-q1035-sitechanges"], "q1035-r23.json");
+  assert.equal(COMPATIBILITY_CASE_SET_PRIVATE_INPUTS["open43-690-geometry"], "b690-r11.json");
+  assert.equal(COMPATIBILITY_CASE_SET_PRIVATE_INPUTS["open43-media-browser"], "media-browser.json");
+  assert.equal(COMPATIBILITY_CASE_SET_PRIVATE_INPUTS["open43-issue1041-action-lifecycle"], "issue1041-r24.json");
 });
 
 test("S758 producer binds a fresh disabled allocator and rejects reused state", () => {

@@ -3,7 +3,7 @@ import { strict as assert } from "node:assert"
 import { fileURLToPath } from "node:url"
 import test from "node:test"
 
-import { createServer } from "vite"
+import { createTestViteServer } from "./vite-test-server.js"
 
 const root = fileURLToPath(new URL("..", import.meta.url))
 
@@ -41,12 +41,7 @@ test("user settings bind persistence to the server session actor", async () => {
 
   try {
     process.chdir(root)
-    vite = await createServer({
-      root,
-      appType: "custom",
-      logLevel: "silent",
-      server: { middlewareMode: true }
-    })
+    vite = await createTestViteServer()
     ;({ client } = await vite.ssrLoadModule("/src/lib/server/deepwell/index.ts"))
     const { loadUserSettings, userDisplaySettingsAction } = await vite.ssrLoadModule(
       "/src/lib/server/load/user-settings.ts"

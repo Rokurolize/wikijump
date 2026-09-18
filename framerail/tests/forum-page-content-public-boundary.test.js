@@ -4,7 +4,7 @@ import { createServer as createHttpServer } from "node:http"
 import { fileURLToPath } from "node:url"
 import { after, before, test } from "node:test"
 
-import { createServer as createViteServer } from "vite"
+import { createTestViteServer } from "./vite-test-server.js"
 
 const root = fileURLToPath(new URL("..", import.meta.url))
 const siteHeaders = {
@@ -124,12 +124,7 @@ before(async () => {
   process.env.DEEPWELL_PORT = String(deepwellAddress.port)
   process.env.DEEPWELL_RPC_TOKEN = "0".repeat(64)
 
-  vite = await createViteServer({
-    root,
-    appType: "custom",
-    logLevel: "silent",
-    server: { middlewareMode: true }
-  })
+  vite = await createTestViteServer()
 
   server = createHttpServer((request, response) => vite.middlewares(request, response))
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve))

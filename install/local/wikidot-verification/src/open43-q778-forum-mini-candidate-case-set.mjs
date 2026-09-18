@@ -351,7 +351,7 @@ class Open43Q778Run {
         index: 0,
         contract: BROWSER_CONTRACT,
         viewport: VIEWPORT,
-        timeoutMs: 300_000,
+        timeoutMs: 30_000,
         settleMs: 0,
         navigate: async ({ page: target, url: targetUrl, timeoutMs }) => {
           const response = await target.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs });

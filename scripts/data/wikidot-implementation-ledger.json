@@ -363,7 +363,7 @@
         "framerail/src/routes/+error.svelte",
         "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte",
         "framerail/src/routes/[slug]/[...extra]/EditorPane.svelte",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "documentation_evidence": [
         "specifications/data-forms/data-forms-creating-new-page.md"
@@ -4223,7 +4223,7 @@
         }
       ],
       "implementation_files": [
-        "framerail/src/routes/[slug]/[...extra]/page.svelte",
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
         "framerail/src/routes/[slug]/[...extra]/WikidotFoundPageTags.svelte",
         "framerail/src/lib/wikidot/wikidot-page-tags.js"
       ],
@@ -5223,7 +5223,7 @@
           "framerail/src/routes/+error.svelte",
           "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte",
           "framerail/src/routes/[slug]/[...extra]/EditorPane.svelte",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ],
         "test_references": [
           "framerail/tests/data-form-create-flow.spec.ts#data-form create and edit browser flow",
@@ -5771,8 +5771,8 @@
         "owner": "wikijump.framerail",
         "source_references": [
           "framerail/src/lib/wikidot/wikidot-page-tags.js",
-          "framerail/src/routes/[slug]/[...extra]/WikidotFoundPageTags.svelte",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
+          "framerail/src/routes/[slug]/[...extra]/WikidotFoundPageTags.svelte"
         ],
         "test_references": [
           "framerail/tests/wikidot-found-page-tags-public-boundary.test.js",

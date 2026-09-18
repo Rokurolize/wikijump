@@ -76,9 +76,9 @@
         <input
           id="membership-password"
           class="text"
-          type="password"
-          maxlength="50"
           autocomplete="new-password"
+          maxlength="50"
+          type="password"
           bind:value={$form.password}
         />
         <div class="sub">
@@ -110,17 +110,17 @@
               <td>Options:</td>
               <td class="application-actions">
                 <form action="?/membershipReview" method="POST">
-                  <input type="hidden" name="siteId" value={data.site.site_id} />
-                  <input type="hidden" name="userId" value={application.user_id} />
-                  <input type="hidden" name="reply" value="" />
-                  <button class="link-button" type="submit" name="decision" value="accept"
+                  <input name="siteId" type="hidden" value={data.site.site_id} />
+                  <input name="userId" type="hidden" value={application.user_id} />
+                  <input name="reply" type="hidden" value="" />
+                  <button name="decision" class="link-button" type="submit" value="accept"
                     >accept</button
                   >
                   <span> or </span>
                   <button
+                    name="decision"
                     class="link-button"
                     type="submit"
-                    name="decision"
                     value="decline">decline</button
                   >
                 </form>
@@ -145,12 +145,12 @@
   }
 
   .link-button {
-    border: 0;
     padding: 0;
-    background: none;
-    color: inherit;
     font: inherit;
+    color: inherit;
     text-decoration: underline;
     cursor: pointer;
+    background: none;
+    border: 0;
   }
 </style>

@@ -40,6 +40,18 @@ const PUBLIC_REGRESSION_TEST_ROOTS = [
   "install/standing/tests/",
   "wws/tests/",
 ];
+const REPOSITORY_EVIDENCE_SOURCE_CACHE = new Map();
+
+function cachedRepositoryEvidenceSource(realPath, fileStatus, relativePath) {
+  const signature = `${fileStatus.dev}:${fileStatus.ino}:${fileStatus.size}:${fileStatus.mtimeMs}`;
+  const cached = REPOSITORY_EVIDENCE_SOURCE_CACHE.get(realPath);
+  if (cached?.signature === signature) return cached;
+  const source = readFileSync(realPath, "utf8");
+  const declaredTests = extractDeclaredPublicTests(relativePath, source);
+  const value = { signature, source, declaredTests };
+  REPOSITORY_EVIDENCE_SOURCE_CACHE.set(realPath, value);
+  return value;
+}
 
 function invariant(condition, message) {
   if (!condition) {
@@ -673,9 +685,11 @@ function parseRepositoryEvidenceReference({
     `${label} resolves outside the repository: ${relativePath}`,
   );
 
-  const source = anchor === null ? null : readFileSync(realPath, "utf8");
+  const cachedSource = anchor === null
+    ? null
+    : cachedRepositoryEvidenceSource(realPath, fileStatus, relativePath);
   if (requirePublicTest) {
-    const declaredTests = extractDeclaredPublicTests(relativePath, source);
+    const declaredTests = cachedSource.declaredTests;
     invariant(
       declaredTests !== null,
       `${label} path is not a supported public test file: ${relativePath}`,
@@ -686,7 +700,7 @@ function parseRepositoryEvidenceReference({
     );
   } else if (anchor !== null) {
     invariant(
-      source.includes(anchor),
+      cachedSource.source.includes(anchor),
       `${label} anchor does not exist in ${relativePath}: ${anchor}`,
     );
   }

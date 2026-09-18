@@ -490,8 +490,8 @@
         {data.internationalization?.["wiki-page-revision-diff.swap"]}
       </button>
       <button
-        class="action-button clickable"
         bind:this={revisionDiffCompareButton}
+        class="action-button clickable"
         disabled={revisionDiffLoading}
         onclick={fetchRevisionDiff}
         type="button"
@@ -508,15 +508,15 @@
         <pre
           class="revision-diff"
           aria-live="polite">{#each revisionDiff.lines as line, lineIndex (lineIndex)}<span
+              class="revision-diff-line"
               class:added={line.kind === "added"}
               class:removed={line.kind === "removed"}
               class:unchanged={line.kind === "unchanged"}
-              class="revision-diff-line"
               >{line.kind === "added"
                 ? "+"
                 : line.kind === "removed"
                   ? "-"
-                  : " "}{line.text}{"\n"}</span
+                  : " "}{line.text}&#10;</span
             >{/each}</pre>
       {/if}
     {/if}

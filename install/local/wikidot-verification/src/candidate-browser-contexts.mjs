@@ -7,7 +7,7 @@ import { captureBrowserParityObservation } from "./standing-browser-parity-obser
 import { sha256Value } from "./standing-browser-parity-util.mjs";
 
 const DEFAULT_VIEWPORT = Object.freeze({ width: 1280, height: 900 });
-const DEFAULT_TIMEOUT_MS = 300_000;
+const DEFAULT_TIMEOUT_MS = 30_000;
 const POLICY = Object.freeze({
   policy_version: "candidate-case-browser-v1",
   completion: "DOMContentLoaded followed by the shared bounded resource completion",

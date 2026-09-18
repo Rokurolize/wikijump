@@ -77,7 +77,7 @@ const pageSlugFromReferer = (request: Request): string | undefined => {
 }
 
 export const POST: RequestHandler = async ({ request, cookies, getClientAddress }) => {
-  const { siteId, siteSlug } = loadSiteInfo(request.headers)
+  const { siteId } = loadSiteInfo(request.headers)
   const sessionToken = cookies.get("wikijump_token")
   const sourcePage = pageSlugFromReferer(request)
   const requestContext = {
@@ -286,8 +286,9 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
       slug: string
     }) => {
       const userId = await resolveNewPageUserId()
-      if (userId === undefined)
+      if (userId === undefined) {
         throw new Error("page draft removal requires a mutation actor")
+      }
       await pageDraftRemove(
         { siteId: requestSiteId, userId, pageId, slug },
         { ...requestContext, page: slug }

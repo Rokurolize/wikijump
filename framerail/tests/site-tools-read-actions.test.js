@@ -173,7 +173,7 @@ test("ListDrafts renders the bounded row hierarchy and escapes draft fields", ()
 
 test("saved Wikidot Site tools action lazily activates the compatibility pane", async () => {
   const pageSource = await readFile(
-    new URL("../src/routes/[slug]/[...extra]/page.svelte", import.meta.url),
+    new URL("../src/routes/[slug]/[...extra]/PageView.svelte", import.meta.url),
     "utf8"
   )
   const paneSource = await readFile(

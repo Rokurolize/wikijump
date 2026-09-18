@@ -467,7 +467,7 @@ const SOURCE_FILES = Object.freeze([
     "framerail/src/lib/wikidot/wikidot-page-actions.js",
     "framerail/src/lib/wikidot/wikidot-print-view.js",
     "framerail/src/routes/+layout.svelte",
-    "framerail/src/routes/[slug]/[...extra]/page.svelte",
+    "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
     "framerail/src/routes/printer--friendly/[...path]/+page.server.ts",
     "framerail/src/routes/printer--friendly/[...path]/+page.svelte",
     "deepwell/src/services/render/legacy_actions.rs",

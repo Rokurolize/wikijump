@@ -14,6 +14,19 @@ const INVENTORY = "docs/development/compatibility-surface-inventory.json";
 const SEMANTICS = "docs/development/compatibility-surface-semantics.json";
 const DEEPWELL = "docs/development/deepwell-jsonrpc-contract-manifest.json";
 const WWS = "docs/development/wws-route-registration-denominator.json";
+const GIT = "/usr/bin/git";
+const GIT_ENV = Object.freeze({
+  GIT_CONFIG_GLOBAL: "/dev/null",
+  GIT_CONFIG_NOSYSTEM: "1",
+  GIT_NO_LAZY_FETCH: "1",
+  GIT_NO_REPLACE_OBJECTS: "1",
+  GIT_OPTIONAL_LOCKS: "0",
+  GIT_PAGER: "cat",
+  GIT_TERMINAL_PROMPT: "0",
+  LANG: "C",
+  LC_ALL: "C",
+  PATH: "/usr/bin:/bin",
+});
 
 function usage() {
   return `Usage: node ${path.basename(process.argv[1])} [--root REPOSITORY] [--full]\n\n` +
@@ -54,14 +67,29 @@ async function readJson(root, relativePath) {
   return JSON.parse(await fs.readFile(path.join(root, relativePath), "utf8"));
 }
 
+function exactHeadCommit(root) {
+  const result = spawnSync(
+    GIT,
+    ["--no-replace-objects", "-C", root, "rev-parse", "--verify", "HEAD^{commit}"],
+    {
+      encoding: "utf8",
+      env: GIT_ENV,
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+  const commit = result.stdout?.trim() ?? "";
+  if (result.status !== 0 || !/^[0-9a-f]{40}$/u.test(commit)) {
+    throw new Error("cannot resolve exact local HEAD commit");
+  }
+  return commit;
+}
+
 async function verifyFullInventory(root) {
   const temporary = `.compatibility-surface-inventory.verify-${process.pid}.json`;
   const temporaryPath = path.join(root, temporary);
   try {
     await fs.rm(temporaryPath, { force: true });
-    const trackedInventory = await readJson(root, INVENTORY);
-    const sourceRevision = trackedInventory?.provenance?.wikijump?.commit;
-    if (!/^[0-9a-f]{40}$/u.test(sourceRevision ?? "")) throw new Error(`${INVENTORY} has no exact pinned Wikijump source commit`);
+    const sourceRevision = exactHeadCommit(root);
     run(root, "install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs", [
       "--root", root,
       "--output", temporaryPath,
@@ -72,7 +100,7 @@ async function verifyFullInventory(root) {
       fs.readFile(temporaryPath),
     ]);
     if (!tracked.equals(regenerated)) throw new Error(`${INVENTORY} is stale; regenerate it from the exact current source identity`);
-    process.stdout.write(`verified full compatibility inventory bytes: ${INVENTORY}\n`);
+    process.stdout.write(`verified full compatibility inventory bytes at ${sourceRevision}: ${INVENTORY}\n`);
   } finally {
     await fs.rm(temporaryPath, { force: true });
   }

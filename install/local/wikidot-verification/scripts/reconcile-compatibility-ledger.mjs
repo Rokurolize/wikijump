@@ -12,7 +12,10 @@ import {
 export const RECONCILED_LEDGER_SCHEMA = "wikijump.compatibility_ledger.v1";
 
 const DENOMINATOR_SCHEMA = "wikijump.compatibility_final_zero_denominator.v1";
-const INVENTORY_SCHEMA = "wikijump.compatibility_surface_inventory.v2";
+const INVENTORY_SCHEMAS = new Set([
+  "wikijump.compatibility_surface_inventory.v2",
+  "wikijump.compatibility_surface_inventory.v3",
+]);
 const CANDIDATE_MAP_SCHEMA = "wikijump.compatibility_candidate_map.v1";
 const STANDING_MATRIX_SCHEMA = "wikijump.compatibility_standing_matrix.v2";
 const SURFACE_ID = /^surface:[0-9]{8}$/u;
@@ -86,7 +89,7 @@ function denominatorMap(value) {
 }
 
 function inventoryMap(value) {
-  if (value?.schema !== INVENTORY_SCHEMA || value.counts?.total !== value.surfaces?.length) {
+  if (!INVENTORY_SCHEMAS.has(value?.schema) || value.counts?.total !== value.surfaces?.length) {
     fail("final reconciliation inventory is incomplete");
   }
   const result = new Map();
