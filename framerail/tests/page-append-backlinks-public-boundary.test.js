@@ -158,7 +158,7 @@ test("Append submission preserves metadata and commits only the appended source 
 
 test("saved Wikidot options expose Append and Backlinks in captured relative order", async () => {
   const source = await readFile(
-    new URL("../src/routes/[slug]/[...extra]/page.svelte", import.meta.url),
+    new URL("../src/routes/[slug]/[...extra]/PageView.svelte", import.meta.url),
     "utf8"
   )
   const appendIndex = source.indexOf('id="edit-append-button"')
@@ -174,7 +174,7 @@ test("saved Wikidot options expose Append and Backlinks in captured relative ord
 
 test("saved Wikidot options expose More Options and View Source controls", async () => {
   const source = await readFile(
-    new URL("../src/routes/[slug]/[...extra]/page.svelte", import.meta.url),
+    new URL("../src/routes/[slug]/[...extra]/PageView.svelte", import.meta.url),
     "utf8"
   )
   const moreOptionsIndex = source.indexOf('id="more-options-button"')

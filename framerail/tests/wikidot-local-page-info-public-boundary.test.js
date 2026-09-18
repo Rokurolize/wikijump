@@ -27,7 +27,7 @@ before(async () => {
 
   ;({ render } = await vite.ssrLoadModule("svelte/server"))
   ;({ default: pageComponent } = await vite.ssrLoadModule(
-    "/src/routes/[slug]/[...extra]/page.svelte"
+    "/src/routes/[slug]/[...extra]/PageView.svelte"
   ))
   ;({ buildWikidotPagePresentation } = await vite.ssrLoadModule(
     "/src/lib/server/load/page/page-presentation.ts"

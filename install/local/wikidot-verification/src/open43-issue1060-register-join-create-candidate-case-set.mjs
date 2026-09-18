@@ -564,7 +564,7 @@ const SOURCE_FILES = Object.freeze([
     "framerail/src/lib/server/load/logout.ts",
     "framerail/src/routes/[x+2d]/register/+page.svelte",
     "framerail/src/routes/[x+2d]/login/+page.svelte",
-    "framerail/src/routes/[slug]/[...extra]/page.svelte",
+    "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
     "framerail/src/routes/[slug]/[...extra]/EditorPane.svelte",
     "deepwell/src/database/seeder/data.rs",
     "deepwell/src/endpoints/site_member.rs",

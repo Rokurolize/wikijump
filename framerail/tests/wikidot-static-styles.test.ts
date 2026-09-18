@@ -112,7 +112,7 @@ test("the modern top bar styles cannot match imported Wikidot navigation", async
 test("the modern page-tag layout cannot override imported Wikidot theme CSS", async () => {
   const [page, pageStyles] = await Promise.all([
     fs.readFile(
-      new URL("../src/routes/[slug]/[...extra]/page.svelte", import.meta.url),
+      new URL("../src/routes/[slug]/[...extra]/PageView.svelte", import.meta.url),
       "utf8"
     ),
     fs.readFile(

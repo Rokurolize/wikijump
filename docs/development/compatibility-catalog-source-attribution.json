@@ -1169,7 +1169,7 @@
       "surface_id": "catalog-feature:browser-support",
       "sources": [
         { "path": "framerail/src/hooks.server.ts", "anchor": "export const handle: Handle = async ({ event, resolve }) =>" },
-        { "path": "framerail/src/routes/[slug]/[...extra]/page.svelte", "anchor": "use:wikidotLegacyActions={legacyActionParameters}" }
+        { "path": "framerail/src/routes/[slug]/[...extra]/PageView.svelte", "anchor": "use:wikidotLegacyActions={legacyActionParameters}" }
       ],
       "tests": [
         { "path": "framerail/playwright.browser-support.config.ts", "anchor": "projects: [" },
