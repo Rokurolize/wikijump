@@ -105,3 +105,12 @@ test("repository-only generated contract CLI is package-install-free and passes 
   assert.match(result.stdout, /verified 34 WWS route registrations/u);
   assert.match(result.stdout, /verified repository generated-contract consistency/u);
 });
+
+test("full generated contract CLI regenerates v3 inventory from exact local HEAD", () => {
+  const result = spawnSync(process.execPath, [cli, "--root", root, "--full"], {
+    cwd: root,
+    encoding: "utf8",
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /verified full compatibility inventory bytes at [0-9a-f]{40}/u);
+});
