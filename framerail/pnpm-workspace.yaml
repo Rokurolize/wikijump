@@ -8,3 +8,5 @@ overrides:
   brace-expansion: 5.0.7
   cookie: 0.7.0
   js-yaml: 4.3.0
+patchedDependencies:
+  include-media@2.0.0: patches/include-media@2.0.0.patch

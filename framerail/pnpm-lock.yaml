@@ -9,6 +9,9 @@ overrides:
   cookie: 0.7.0
   js-yaml: 4.3.0
 
+patchedDependencies:
+  include-media@2.0.0: 42816a102b76e501d695bc6446e747adce6155194ad91bdf2dc40d9413670acb
+
 importers:
 
   .:
@@ -30,7 +33,7 @@ importers:
         version: 3.0.2
       include-media:
         specifier: ^2.0.0
-        version: 2.0.0
+        version: 2.0.0(patch_hash=42816a102b76e501d695bc6446e747adce6155194ad91bdf2dc40d9413670acb)
       jquery:
         specifier: 4.0.0
         version: 4.0.0
@@ -3653,7 +3656,7 @@ snapshots:
 
   imurmurhash@0.1.4: {}
 
-  include-media@2.0.0: {}
+  include-media@2.0.0(patch_hash=42816a102b76e501d695bc6446e747adce6155194ad91bdf2dc40d9413670acb): {}
 
   ini@1.3.8: {}
 
