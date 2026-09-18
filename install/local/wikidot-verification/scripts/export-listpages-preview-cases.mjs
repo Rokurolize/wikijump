@@ -2,6 +2,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import { readJsonlArtifactVariant } from "../src/compressed-artifact-io.mjs";
 
 const SYNTAX_CASE_SCHEMA = "wikijump_syntax_differential.syntax_case.v1";
 
@@ -60,9 +61,7 @@ function printHelp() {
 }
 
 async function readJsonl(filePath) {
-  const text = await fs.readFile(filePath, "utf8");
-  if (!text.trim()) return [];
-  return text.trimEnd().split(/\r?\n/u).map((line) => JSON.parse(line));
+  return readJsonlArtifactVariant(filePath);
 }
 
 async function laneRows(matrixDir, lane) {

@@ -2,6 +2,14 @@
 
 The scripts in this directory import frozen Wikidot corpus data, inspect a local runtime, capture browser evidence, and reduce large runs into machine-readable verdicts. Expected behavior must come from the frozen corpus, reviewed compatibility policy, or sealed real-Wikidot evidence. Local Wikijump output is diagnostic evidence, not an oracle.
 
+Large retained JSON/JSONL artifacts are stored as deterministic gzip when their
+expanded representation would exceed the repository's raw-artifact budget.
+Consumers use `src/compressed-artifact-io.mjs`, so `.json.gz` and `.jsonl.gz`
+are storage encodings only: hashes that define evidence identity are computed
+from the expanded bytes unless a contract explicitly says otherwise. The test
+suite rejects raw verification JSON/JSONL artifacts larger than 8 MiB to keep
+new campaign evidence from silently bloating checkouts and repeated I/O.
+
 ## Compatibility surface inventory
 
 `scripts/build-compatibility-surface-inventory.mjs` generates `docs/development/compatibility-surface-inventory.json` from the feature catalog, implementation ledger, source coverage, live observations, declared Deepwell JSON-RPC registry, SvelteKit routes and named server actions, Framerail AMC and XML-RPC registries, WWS routes, and the seven audits listed by `open43-blocked-evidence-routing.json`. Inventory v3 keeps the tracked Wikijump inventory content-addressed: it records a stable SHA-256 over the exact registry digest set instead of embedding the Wikijump commit/tree that contains the generated file. FTML remains pinned to its exact external commit/tree, and every registry file read keeps its SHA-256. The pinned `docs/development/compatibility-surface-semantics.json` registry holds the exact 295-record FTML raw denominator, the Catalog-to-FTML crosswalk, closed specification and implementation owner keys, legacy-owner mappings, and the typed edge vocabulary. Raw FTML implementation records remain outside the public feature denominator. Each public surface has one stable identifier, closed owners, typed implementation relationships where evidenced, and independent evidence, source, candidate, standing, and closure fields. The command rejects identity drift, duplicate identifiers or edges, same-count FTML substitutions, Catalog and ledger orphans, missing or extra ownership records, unsupported registry declarations, and values outside the closed vocabularies.

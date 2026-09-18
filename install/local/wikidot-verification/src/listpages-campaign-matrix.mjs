@@ -1,5 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import {
+  readJsonArtifactVariant,
+  readJsonlArtifactVariant,
+  writeJsonlGzip,
+} from "./compressed-artifact-io.mjs";
 
 export const LISTPAGES_MATRIX_SCHEMA =
   "wikijump_listpages_compat.differential_matrix.v1";
@@ -9,16 +14,11 @@ function jsonLine(record) {
 }
 
 async function readJson(filePath) {
-  return JSON.parse(await fs.readFile(filePath, "utf8"));
+  return readJsonArtifactVariant(filePath);
 }
 
 async function readJsonl(filePath) {
-  const text = await fs.readFile(filePath, "utf8");
-  if (!text.trim()) return [];
-  return text
-    .trimEnd()
-    .split(/\r?\n/u)
-    .map((line) => JSON.parse(line));
+  return readJsonlArtifactVariant(filePath);
 }
 
 function firstByCluster(invocations) {
@@ -613,8 +613,8 @@ export async function writeListPagesMatrix(matrix, outputDir) {
           inputs: matrix.inputs,
           summary: matrix.summary,
           files: {
-            corpus_cluster_cases: "corpus-cluster-cases.jsonl",
-            corpus_invocation_cases: "corpus-invocation-cases.jsonl",
+            corpus_cluster_cases: "corpus-cluster-cases.jsonl.gz",
+            corpus_invocation_cases: "corpus-invocation-cases.jsonl.gz",
             generated_cases: "generated-listpages-cases.jsonl",
             navigation_cases: "navigation-cases.jsonl",
             hash_magic_cases: "hash-magic-audit-cases.jsonl",
@@ -625,15 +625,13 @@ export async function writeListPagesMatrix(matrix, outputDir) {
       )}\n`,
       { mode: 0o600 },
     ),
-    fs.writeFile(
-      path.join(outputDir, "corpus-cluster-cases.jsonl"),
-      matrix.corpus_cluster_cases.map(jsonLine).join(""),
-      { mode: 0o600 },
+    writeJsonlGzip(
+      path.join(outputDir, "corpus-cluster-cases.jsonl.gz"),
+      matrix.corpus_cluster_cases,
     ),
-    fs.writeFile(
-      path.join(outputDir, "corpus-invocation-cases.jsonl"),
-      matrix.corpus_invocation_cases.map(jsonLine).join(""),
-      { mode: 0o600 },
+    writeJsonlGzip(
+      path.join(outputDir, "corpus-invocation-cases.jsonl.gz"),
+      matrix.corpus_invocation_cases,
     ),
     fs.writeFile(
       path.join(outputDir, "generated-listpages-cases.jsonl"),
