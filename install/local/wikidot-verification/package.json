@@ -40,7 +40,7 @@
     "candidate-account-provision": "node scripts/provision-candidate-account.mjs"
   },
   "dependencies": {
-    "devalue": "5.9.0",
+    "devalue": "5.9.1",
     "parse5": "^8.0.1",
     "pg": "^8.22.0"
   },
