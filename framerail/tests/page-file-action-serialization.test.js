@@ -188,8 +188,9 @@ test("public file upload commits the pending blob without returning the File obj
         presign_url: "https://uploads.example.test/pending-public-commit"
       }
     }
-    if (method === "file_create")
+    if (method === "file_create") {
       return { file_id: 1062, file_revision_id: 1063, blob_created: true }
+    }
     throw new Error(`Unexpected Deepwell method ${method}`)
   }
   globalThis.fetch = async (url, init) => {

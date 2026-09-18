@@ -4,8 +4,7 @@
  * `NodeJS.Timeout`.
  */
 export class Timeout<T = void> {
-  // typed as any to avoid NodeJS.Timeout
-  declare private timeout: any
+  declare private timeout: ReturnType<typeof setTimeout> | undefined
 
   /** Function that resolves the timeout's `promise` Promise. */
   declare private promiseResolve: (resolved: T) => void

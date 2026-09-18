@@ -1,6 +1,7 @@
 import sharedConfig from "./playwright.config.ts"
 
-const { webServer: _mockFixtureServer, ...candidateConfig } = sharedConfig
+const { webServer: mockFixtureServer, ...candidateConfig } = sharedConfig
+void mockFixtureServer
 const outputDir = process.env.OPEN43_MEDIA_OUTPUT_DIR
 
 export default {

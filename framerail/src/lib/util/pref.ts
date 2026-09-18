@@ -17,7 +17,7 @@ export class PreferenceHandler {
    */
   private processName(name: string) {
     if (name.startsWith(this.prefix)) return name
-    return (name = this.prefix + name)
+    return this.prefix + name
   }
 
   /**

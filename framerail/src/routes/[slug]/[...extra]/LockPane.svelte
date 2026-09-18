@@ -340,12 +340,12 @@
 
   .btn-remove-lock-text {
     padding: 0;
+    font-size: inherit;
     color: var(--danger, #c0392b);
+    text-decoration: none;
+    cursor: pointer;
     background: none;
     border: none;
-    cursor: pointer;
-    text-decoration: none;
-    font-size: inherit;
 
     &:hover {
       text-decoration: underline;
@@ -355,10 +355,10 @@
   .btn-remove-lock {
     padding: 0.2em 0.6em;
     color: var(--danger, #c0392b);
+    cursor: pointer;
     background: none;
     border: 1px solid var(--danger, #c0392b);
     border-radius: 0.25em;
-    cursor: pointer;
 
     &:hover {
       color: var(--background);

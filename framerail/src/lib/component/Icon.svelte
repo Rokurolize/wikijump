@@ -19,7 +19,7 @@
     size?: string
     /** String given to the CSS `margin` property. */
     margin?: string
-    [key: string]: any
+    [key: string]: unknown
   } = $props()
 
   let icon = $state<Required<IconifyIcon> | null | undefined>(null)

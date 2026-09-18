@@ -49,7 +49,7 @@ class BreakpointMapping {
   }
 
   has(name: string): name is BreakpointName {
-    return this.map.has(name as any)
+    return BREAKPOINTS.some(([breakpoint]) => breakpoint === name)
   }
 
   active() {
@@ -68,7 +68,13 @@ class BreakpointMapping {
  * @see {@link Media}
  */
 class MediaQueryHandler {
-  store = writable<MediaQueryStore>({} as any)
+  store = writable<MediaQueryStore>({
+    reducedMotion: false,
+    colorScheme: "light",
+    canHover: true,
+    breakpoint: "normal",
+    orientation: "landscape"
+  })
   subscribe = this.store.subscribe
 
   private _reducedMotion = this.addQuery("(prefers-reduced-motion: reduce)")
@@ -168,7 +174,7 @@ class MediaQueryHandler {
 
     const match = /^[=<>]+/.exec(query)
 
-    if (match && OPERATORS.includes(match[0] as any)) {
+    if (match && OPERATORS.includes(match[0] as Operator)) {
       operator = match[0] as Operator
     } else if (match) {
       throw new Error(`Bad operator (${match[0]}) given in breakpoint string!`)

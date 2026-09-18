@@ -450,9 +450,9 @@
     <div
       id="page-content"
       class:hidden={dataFormEditing}
+      use:wikidotGalleryLightbox={showRevision ? revision?.wikitext : data.wikitext}
       use:wikidotLegacyActions={legacyActionParameters}
       use:wikidotMembershipActions={membershipActionParameters}
-      use:wikidotGalleryLightbox={showRevision ? revision?.wikitext : data.wikitext}
       use:wikidotTabviews
     >
       {@html showRevision ? revision?.compiled_body_html : data.compiled_body_html}

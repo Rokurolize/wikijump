@@ -51,7 +51,7 @@
     /** Sets the text, if any, to be displayed alongside the spinner. */
     description?: string
 
-    [key: string]: any
+    [key: string]: unknown
   } = $props()
 
   let label = $state("")
@@ -102,7 +102,7 @@
   <div class="spinny-symbol" aria-hidden="true">
     {#if status === "active"}
       {#if !inline}
-        {#await sleep(wait) then _}
+        {#await sleep(wait) then}
           <div
             transition:anim={{
               duration: 1000,
