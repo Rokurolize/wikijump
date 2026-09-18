@@ -136,27 +136,53 @@ async function endpointSources(root) {
   const byHandler = new Map()
   for (const file of files) {
     const relativePath = `${ENDPOINTS_DIRECTORY}/${file}`
-    const source = await readText(root, relativePath)
-    const fileFunctions = new Map()
-    for (const match of source.matchAll(/^[ \t]*(?:(pub(?:\s*\([^)]*\))?)\s+)?(async\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s*<[^>{}]*>)?\s*\(/gmu)) {
-      const entry = {
-        handler: match[3],
-        source,
-        sourcePath: relativePath,
-        offset: match.index,
-        body: rustFunctionBody(source, match.index, `${relativePath}#${match[3]}`)
+    const moduleFiles = [relativePath]
+    const moduleDirectory = path.join(
+      absoluteDirectory,
+      file.replace(/\.rs$/u, "")
+    )
+    try {
+      const pending = [moduleDirectory]
+      while (pending.length > 0) {
+        const directory = pending.pop()
+        for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+          const target = path.join(directory, entry.name)
+          if (entry.isDirectory()) pending.push(target)
+          else if (entry.isFile() && entry.name.endsWith(".rs")) {
+            moduleFiles.push(toPosix(path.relative(root, target)))
+          }
+        }
       }
-      const localMatches = fileFunctions.get(entry.handler) ?? []
-      localMatches.push(entry)
-      fileFunctions.set(entry.handler, localMatches)
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error
     }
-    for (const entries of fileFunctions.values()) {
-      for (const entry of entries) entry.fileFunctions = fileFunctions
-      if (entries[0].source.slice(entries[0].offset).trimStart().startsWith("pub async fn")) {
-        const matches = byHandler.get(entries[0].handler) ?? []
-        matches.push(...entries)
-        byHandler.set(entries[0].handler, matches)
+
+    const moduleFunctions = new Map()
+    const topLevelFunctions = []
+    for (const modulePath of moduleFiles.sort()) {
+      const source = await readText(root, modulePath)
+      for (const match of source.matchAll(/^[ \t]*(?:(pub(?:\s*\([^)]*\))?)\s+)?(async\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s*<[^>{}]*>)?\s*\(/gmu)) {
+        const entry = {
+          handler: match[3],
+          source,
+          sourcePath: modulePath,
+          offset: match.index,
+          body: rustFunctionBody(source, match.index, `${modulePath}#${match[3]}`)
+        }
+        const matches = moduleFunctions.get(entry.handler) ?? []
+        matches.push(entry)
+        moduleFunctions.set(entry.handler, matches)
+        if (modulePath === relativePath) topLevelFunctions.push(entry)
       }
+    }
+    for (const entries of moduleFunctions.values()) {
+      for (const entry of entries) entry.fileFunctions = moduleFunctions
+    }
+    for (const entry of topLevelFunctions) {
+      if (!entry.source.slice(entry.offset).trimStart().startsWith("pub async fn")) continue
+      const matches = byHandler.get(entry.handler) ?? []
+      matches.push(entry)
+      byHandler.set(entry.handler, matches)
     }
   }
   return byHandler
@@ -208,8 +234,9 @@ function localFunctionClosure(entry) {
   const closure = []
   const visited = new Set()
   function visit(current) {
-    if (visited.has(current.handler)) return
-    visited.add(current.handler)
+    const identity = `${current.sourcePath}#${current.handler}`
+    if (visited.has(identity)) return
+    visited.add(identity)
     closure.push(current)
     for (const match of current.body.matchAll(/\b([A-Za-z_][A-Za-z0-9_]*)\s*\(/gu)) {
       const matches = current.fileFunctions.get(match[1]) ?? []
