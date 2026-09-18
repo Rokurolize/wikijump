@@ -50,7 +50,7 @@ test("candidate browser settling uses conditions instead of multi-second fixed s
 });
 
 
-test("focused Cargo child commands stay within the two-minute failure budget", () => {
+test("focused Cargo child commands stay within the thirty-second failure budget", () => {
   const files = [
     "open43-a1030-rate-candidate-case-set.mjs",
     "open43-issue1060-register-join-create-candidate-case-set.mjs",
@@ -59,6 +59,6 @@ test("focused Cargo child commands stay within the two-minute failure budget", (
     const source = fs.readFileSync(path.join(ROOT, name), "utf8");
     const match = /const CARGO_TIMEOUT_MS = (\d[\d_]*);/u.exec(source);
     assert.ok(match, `${name} must declare CARGO_TIMEOUT_MS`);
-    assert.ok(Number(match[1].replaceAll("_", "")) <= 120_000, `${name} Cargo timeout exceeds two minutes`);
+    assert.ok(Number(match[1].replaceAll("_", "")) <= 30_000, `${name} Cargo timeout exceeds thirty seconds`);
   }
 });

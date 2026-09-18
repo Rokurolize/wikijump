@@ -972,7 +972,7 @@ export class DeepwellRpcAdapter {
       method: 'POST',
       headers: {'content-type': 'application/json', ...headers, authorization: this.rpcAuthorization},
       body: JSON.stringify({jsonrpc: '2.0', id: this.nextId++, method, params}),
-      signal: AbortSignal.timeout(300_000),
+      signal: AbortSignal.timeout(30_000),
     });
     const body = await response.json();
     if (!response.ok || body.error) {

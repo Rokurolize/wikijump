@@ -4,6 +4,7 @@ import fs from "node:fs/promises"
 import { constants as fsConstants } from "node:fs"
 import { createHash } from "node:crypto"
 import { execFileSync, spawnSync } from "node:child_process"
+import { readFileSync } from "node:fs"
 import path from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
@@ -674,6 +675,14 @@ function sha256(value) {
   return createHash("sha256").update(value).digest("hex")
 }
 
+function gitBlobOid(value) {
+  const bytes = Buffer.isBuffer(value) ? value : Buffer.from(value)
+  return createHash("sha1")
+    .update(`blob ${bytes.length}\0`)
+    .update(bytes)
+    .digest("hex")
+}
+
 function sourceInputSetSha256(registries) {
   return sha256(
     JSON.stringify(
@@ -709,18 +718,24 @@ async function sourceProvenance(root, sourceRevision) {
   if (!manifestRevision || !lockRevision || lockRevision[1] !== manifestRevision || lockRevision[2] !== manifestRevision) {
     throw new Error("Deepwell FTML manifest and lock identities do not match")
   }
-  if (!/^[0-9a-f]{40}$/u.test(sourceRevision ?? "")) {
-    throw new Error("Wikijump source revision must be an exact commit")
+  let wikijump = null
+  if (sourceRevision !== null) {
+    if (!/^[0-9a-f]{40}$/u.test(sourceRevision ?? "")) {
+      throw new Error("Wikijump source revision must be an exact commit")
+    }
+    const wikijumpCommit = resolveGitObject(
+      ["-C", root],
+      `${sourceRevision}^{commit}`,
+      "Wikijump commit"
+    )
+    if (wikijumpCommit !== sourceRevision) {
+      throw new Error("Wikijump source revision does not resolve to itself")
+    }
+    wikijump = {
+      commit: wikijumpCommit,
+      tree: resolveGitObject(["-C", root], `${wikijumpCommit}^{tree}`, "Wikijump tree")
+    }
   }
-  const wikijumpCommit = resolveGitObject(
-    ["-C", root],
-    `${sourceRevision}^{commit}`,
-    "Wikijump commit"
-  )
-  if (wikijumpCommit !== sourceRevision) {
-    throw new Error("Wikijump source revision does not resolve to itself")
-  }
-  const wikijumpTree = resolveGitObject(["-C", root], `${wikijumpCommit}^{tree}`, "Wikijump tree")
   const ftmlCommit = resolveGitObject(
     [`--git-dir=${FTML_GIT_DIR}`],
     `${manifestRevision}^{commit}`,
@@ -732,7 +747,7 @@ async function sourceProvenance(root, sourceRevision) {
     "FTML tree"
   )
   return {
-    wikijump: { commit: wikijumpCommit, tree: wikijumpTree },
+    wikijump,
     ftml: { commit: ftmlCommit, tree: ftmlTree }
   }
 }
@@ -846,6 +861,7 @@ function readGitSpecBatch(gitArguments, specs, label) {
 }
 
 function verifyRegistryBlobs(root, sourceRevision) {
+  if (sourceRevision === null) return
   const tree = listGitTreeBlobs(["-C", root], sourceRevision, "pinned Wikijump tree")
   const requests = [...SOURCE_INPUTS.keys()].map((registryPath) => {
     const oid = tree.get(registryPath)
@@ -1814,6 +1830,20 @@ const PINNED_TEXT_CACHE = new Map()
 const PINNED_TREE_CACHE = new Map()
 
 function preloadPinnedRevisionTexts(root, revision, sourcePaths) {
+  if (revision === null) {
+    for (const sourcePath of uniqueSortedStrings(sourcePaths)) {
+      const key = `${root}\0WORKTREE\0${sourcePath}`
+      if (PINNED_TEXT_CACHE.has(key)) continue
+      let source = null
+      try {
+        source = readFileSync(repositoryPath(root, sourcePath), "utf8")
+      } catch {
+        source = null
+      }
+      PINNED_TEXT_CACHE.set(key, source)
+    }
+    return
+  }
   const treeKey = `${root}\0${revision}`
   let tree = PINNED_TREE_CACHE.get(treeKey)
   if (!tree) {
@@ -1841,7 +1871,7 @@ function preloadPinnedRevisionTexts(root, revision, sourcePaths) {
 }
 
 function pinnedRevisionText(root, revision, sourcePath) {
-  const key = `${root}\0${revision}\0${sourcePath}`
+  const key = `${root}\0${revision ?? "WORKTREE"}\0${sourcePath}`
   if (PINNED_TEXT_CACHE.has(key)) return PINNED_TEXT_CACHE.get(key)
   preloadPinnedRevisionTexts(root, revision, [sourcePath])
   return PINNED_TEXT_CACHE.get(key) ?? null
@@ -3132,10 +3162,10 @@ async function applyWwsContractEvidence(root, records, sourceRevision) {
     if (sha256(sourceBytes) !== input.sha256) {
       throw new Error(`${denominatorPath} source identity drift: ${input.path}`)
     }
-    if (
-      resolveGitObject(["-C", root], `${sourceRevision}:${input.path}`, "WWS source blob") !==
-      input.git_blob
-    ) {
+    const sourceBlob = sourceRevision === null
+      ? gitBlobOid(sourceBytes)
+      : resolveGitObject(["-C", root], `${sourceRevision}:${input.path}`, "WWS source blob")
+    if (sourceBlob !== input.git_blob) {
       throw new Error(`${denominatorPath} pinned source identity drift: ${input.path}`)
     }
   }
@@ -4202,17 +4232,17 @@ async function buildInventory(root, sourceRevision) {
     ? await applyFramerailRouteActionEvidence(
         root,
         framerailRoutes,
-        provenance.wikijump.commit
+        sourceRevision
       )
     : framerailRoutes
   const projectedAmcEvidence = await applySiteChangesEvidence(root, amc)
   const projectedAmc = auditedOwnershipActive
-    ? applyFramerailAmcTests(root, projectedAmcEvidence, provenance.wikijump.commit)
+    ? applyFramerailAmcTests(root, projectedAmcEvidence, sourceRevision)
     : projectedAmcEvidence
   const projectedWws = auditedOwnershipActive
-    ? await applyWwsContractEvidence(root, wws, provenance.wikijump.commit)
+    ? await applyWwsContractEvidence(root, wws, sourceRevision)
     : wws
-  verifyRegistryBlobs(root, provenance.wikijump.commit)
+  verifyRegistryBlobs(root, sourceRevision)
   const ftmlProjectedSources = applyFtmlCatalogSourceProjection([
     ...catalog,
     ...deepwell,
@@ -4227,7 +4257,7 @@ async function buildInventory(root, sourceRevision) {
   const projectedSources = await applyCatalogSourceAttribution(
     root,
     ftmlProjectedSources,
-    provenance.wikijump.commit
+    sourceRevision
   )
   const surfaces = normalizeSurfaceOwners(
     applyAuditedIssueOwnership(projectedSources, auditedOwnershipActive),
@@ -4293,7 +4323,7 @@ async function buildInventory(root, sourceRevision) {
 
 async function pinnedSourceRevision(root, requestedRevision) {
   if (requestedRevision) return requestedRevision
-  return resolveGitObject(["-C", root], "HEAD^{commit}", "Wikijump HEAD")
+  return null
 }
 
 async function main() {

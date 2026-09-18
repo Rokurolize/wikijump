@@ -22,7 +22,7 @@ const SITE_SLUG = "scpaiueouiuiuiui";
 const SITE_HOST = `${SITE_SLUG}.wikijump.localhost`;
 const REPOSITORY_ROOT = new URL("../../../../", import.meta.url);
 const ACTORS = Object.freeze(["administrator", "editor"]);
-const CARGO_TIMEOUT_MS = 120_000;
+const CARGO_TIMEOUT_MS = 30_000;
 const RATE_SOURCE = "[[module Rate]]";
 const RUST_MATRIX_COMMANDS = Object.freeze([
   Object.freeze([
