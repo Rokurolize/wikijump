@@ -68,6 +68,22 @@ pnpm test
 pnpm build
 ```
 
+Node unit tests run through `../scripts/run-framerail-unit-tests.sh`. The runner
+performs one SvelteKit sync before starting Node test workers and keeps external
+network access blocked. Tests that need a Vite SSR server must use
+`tests/vite-test-server.js` rather than creating their own server configuration:
+the helper disables file watching because unit-test source is immutable during a
+run and avoids passing a redundant Vite `root` after the test has already
+changed into the Framerail directory. Keep SvelteKit's generated `outDir` and
+Vite cache isolated per Node test worker. Sharing the generated SvelteKit tree
+between concurrent workers can invalidate another worker's module graph and
+break module-identity assertions even when all source files are unchanged.
+
+On the 2026-09-18 compatibility-campaign WSL host, the isolated-worker full unit
+suite (644 tests) completed in 38.46 seconds after this harness cleanup, versus
+roughly 97 seconds before it. Treat that number as a diagnostic benchmark, not a
+fixed performance gate.
+
 ## Node deployment
 
 Production uses `@sveltejs/adapter-node`, configured in `svelte.config.js`. Build the adapter output and start the repository server entry point:
