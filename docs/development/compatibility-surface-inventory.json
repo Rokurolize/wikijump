@@ -11385,7 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "fea276274797c305b1e15a32f0aac77345639767a6b000d1bb80d8d5884dc6bb"
+      "source_input_set_sha256": "32b506e3e880a882fb04b51f7bde47b1005c21bab2510af87baf3ab7cd85a2a5"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11614,7 +11614,7 @@
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "5c14678c2353e051a54f82c859d4f2915ce2ea3a8311e7ce6220293c7582aec6"
+        "sha256": "09dc8f3fd51300043b7eb6e5080b82fea2bf275ec2a9e11239cf6f07b9d9613c"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
@@ -11850,7 +11850,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "5c14678c2353e051a54f82c859d4f2915ce2ea3a8311e7ce6220293c7582aec6"
+        "sha256": "09dc8f3fd51300043b7eb6e5080b82fea2bf275ec2a9e11239cf6f07b9d9613c"
       },
       {
         "path": "wws/src/route.rs",
