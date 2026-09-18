@@ -12,6 +12,7 @@ const LINE_BUDGETS = new Map([
     3_000,
   ],
   ["deepwell/src/services/render/runtime_modules.rs", 2_800],
+  ["deepwell/src/endpoints/page.rs", 1_600],
   ["deepwell/src/services/render/service.rs", 4_800],
 ]);
 
