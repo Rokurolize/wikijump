@@ -11385,7 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "32b506e3e880a882fb04b51f7bde47b1005c21bab2510af87baf3ab7cd85a2a5"
+      "source_input_set_sha256": "2ee1ce5387f8c8a998be58064ebeaab2e3eccb541b9fb657f13c14d7463a8614"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11486,7 +11486,7 @@
       },
       {
         "path": "deepwell/src/endpoints/page.rs",
-        "sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9"
+        "sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8"
       },
       {
         "path": "deepwell/src/endpoints/parent.rs",
@@ -11542,7 +11542,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "c57f51e39cb0772479055f3260500e6fe982640c7d90c6e644dd3c2d403fadbd"
+        "sha256": "91bd2f04884ed184e3092c1f55fc9b343897fa04f985705980d3504fef9fcf10"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11614,7 +11614,7 @@
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "09dc8f3fd51300043b7eb6e5080b82fea2bf275ec2a9e11239cf6f07b9d9613c"
+        "sha256": "f5cc251cff52c981eda1fa084f87209d2f33329a7814a90f9571bd4b5cd0161c"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
@@ -11626,7 +11626,7 @@
       },
       {
         "path": "framerail/src/lib/server/ajax-module-connector.js",
-        "sha256": "bb5c10a26757c5e67b5445b2c1d8e9c25c88bb1d83f364b16d70d4c355716ddc"
+        "sha256": "738c27871f8e49009ccbcc786431a29090ac0da6c6e7c4b1a2ff9d16ecab6811"
       },
       {
         "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -11850,7 +11850,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "09dc8f3fd51300043b7eb6e5080b82fea2bf275ec2a9e11239cf6f07b9d9613c"
+        "sha256": "f5cc251cff52c981eda1fa084f87209d2f33329a7814a90f9571bd4b5cd0161c"
       },
       {
         "path": "wws/src/route.rs",
@@ -16830,9 +16830,9 @@
           "docs/wikidot-specifications/home/roku/wjlab/runtime/wikijump-standing/served-a3249375d/receipt.json",
           "docs/wikidot-specifications/home/roku/wjlab/runtime/wikijump-standing/standing-rpc-a3249375d.json",
           "docs/wikidot-specifications/home/roku/wjlab/runtime/wikijump-standing/wikijump-identifier-leaks-a3249375d.json",
-          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-clusters.json",
-          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl",
-          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-campaign-inventory/documentation-inventory.json",
+          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-clusters.json.gz",
+          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl.gz",
+          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-campaign-inventory/documentation-inventory.json.gz",
           "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260806.json",
           "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json",
           "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-runtime-budget-envelope.json",

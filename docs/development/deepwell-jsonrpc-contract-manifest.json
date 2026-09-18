@@ -5010,7 +5010,7 @@
         "component": "deepwell",
         "handler": "page_create",
         "source": "deepwell/src/endpoints/page.rs#page_create",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "a1795c6c876a0ae2dfcd7f509622ace05a32f3a5dfc5cb90c901b67c402a6a70"
       },
       "params_schema": {
@@ -5045,10 +5045,10 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_create_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#page_create",
-          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_create_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -5196,7 +5196,7 @@
         "component": "deepwell",
         "handler": "page_delete",
         "source": "deepwell/src/endpoints/page.rs#page_delete",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "49010156cf12ffbab3164bcf1a210eac499ca4011de7635f488213ad8b404713"
       },
       "params_schema": {
@@ -5231,10 +5231,10 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#page_delete",
-          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -5280,7 +5280,7 @@
         "component": "deepwell",
         "handler": "page_draft_exists",
         "source": "deepwell/src/endpoints/page.rs#page_draft_exists",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "afeb152d463cbde2b060df9fddc2ffa29064d51a825c648ad4d015fd156eafd9"
       },
       "params_schema": {
@@ -5339,7 +5339,7 @@
         "component": "deepwell",
         "handler": "page_draft_remove",
         "source": "deepwell/src/endpoints/page.rs#page_draft_remove",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "fa08ea9bb82782e05d69e51b05d3b3147fe623f7882c02ff54ca5d97bbf6ca8f"
       },
       "params_schema": {
@@ -5400,7 +5400,7 @@
         "component": "deepwell",
         "handler": "page_draft_save",
         "source": "deepwell/src/endpoints/page.rs#page_draft_save",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "c7f232dbcf634ec9128f0f23ebb4c6eaf4896fc5e1dac49857a9b221cf192f72"
       },
       "params_schema": {
@@ -5461,7 +5461,7 @@
         "component": "deepwell",
         "handler": "page_edit",
         "source": "deepwell/src/endpoints/page.rs#page_edit",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "52b6b8d9000a16406587ed6c818b6215be05f081b47d7bac588fab70419d0e02"
       },
       "params_schema": {
@@ -5496,11 +5496,11 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_edit_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#page_edit",
-          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_edit_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -5558,7 +5558,7 @@
         "component": "deepwell",
         "handler": "page_edit_permission",
         "source": "deepwell/src/endpoints/page.rs#page_edit_permission",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "ba17dcc0b6081af29bea2fb6f25682121481e9e0db2d429757277173635cedf7"
       },
       "params_schema": {
@@ -5611,7 +5611,7 @@
         "component": "deepwell",
         "handler": "page_get",
         "source": "deepwell/src/endpoints/page.rs#page_get",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "b623d7dd95527844b2f373d5393e65b94a2c507d4258ced16c9c5c31f91c5bd6"
       },
       "params_schema": {
@@ -5643,8 +5643,8 @@
         ],
         "requirements": [],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#build_page_output",
-          "deepwell/src/endpoints/page.rs#page_get"
+          "deepwell/src/endpoints/page.rs#page_get",
+          "deepwell/src/endpoints/page/output.rs#build_page_output"
         ]
       },
       "mutation_class": {
@@ -5798,7 +5798,7 @@
         "component": "deepwell",
         "handler": "page_get_deleted",
         "source": "deepwell/src/endpoints/page.rs#page_get_deleted",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "4aa23228e8542d8e37d6aba25c8a6bc773ea188946178dbcd8fb593d70d40f9f"
       },
       "params_schema": {
@@ -5833,8 +5833,8 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#build_page_deleted_output",
-          "deepwell/src/endpoints/page.rs#page_get_deleted"
+          "deepwell/src/endpoints/page.rs#page_get_deleted",
+          "deepwell/src/endpoints/page/output.rs#build_page_deleted_output"
         ]
       },
       "mutation_class": {
@@ -5858,7 +5858,7 @@
         "component": "deepwell",
         "handler": "page_get_direct",
         "source": "deepwell/src/endpoints/page.rs#page_get_direct",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "f48c2d77fcbcafe8f0ba209f309d836c89b31efced8f60a31391fec68a7b4eb0"
       },
       "params_schema": {
@@ -5890,8 +5890,8 @@
         ],
         "requirements": [],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#build_page_output",
-          "deepwell/src/endpoints/page.rs#page_get_direct"
+          "deepwell/src/endpoints/page.rs#page_get_direct",
+          "deepwell/src/endpoints/page/output.rs#build_page_output"
         ]
       },
       "mutation_class": {
@@ -5912,7 +5912,7 @@
         "component": "deepwell",
         "handler": "page_get_files",
         "source": "deepwell/src/endpoints/page.rs#page_get_files",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "fb409630646397cb79b1726980d0fdc30440a1f5b1291c49ab5b9b34a4911547"
       },
       "params_schema": {
@@ -5947,9 +5947,9 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#build_page_file_output",
-          "deepwell/src/endpoints/page.rs#ensure_page_view_permission",
-          "deepwell/src/endpoints/page.rs#page_get_files"
+          "deepwell/src/endpoints/page.rs#page_get_files",
+          "deepwell/src/endpoints/page/output.rs#build_page_file_output",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_view_permission"
         ]
       },
       "mutation_class": {
@@ -6150,7 +6150,7 @@
         "component": "deepwell",
         "handler": "page_get_score",
         "source": "deepwell/src/endpoints/page.rs#page_get_score",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "9e52abbcdbcde5883e247c14b1b0f3a174b03651f0673dab81f26661d3ee3a94"
       },
       "params_schema": {
@@ -6185,8 +6185,8 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_view_permission",
-          "deepwell/src/endpoints/page.rs#page_get_score"
+          "deepwell/src/endpoints/page.rs#page_get_score",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_view_permission"
         ]
       },
       "mutation_class": {
@@ -6327,7 +6327,7 @@
         "component": "deepwell",
         "handler": "page_lifecycle_identity",
         "source": "deepwell/src/endpoints/page.rs#page_lifecycle_identity",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "bd13af430ad9a8c29efdc77ad76cd69789d9228dfcabc9dfd6c71d7da769d5d8"
       },
       "params_schema": {
@@ -6742,7 +6742,7 @@
         "component": "deepwell",
         "handler": "page_move",
         "source": "deepwell/src/endpoints/page.rs#page_move",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "1e4ca994753e5ad5751f39103be9f77314b080f092f447d6a295d3cfaa6056c8"
       },
       "params_schema": {
@@ -6777,11 +6777,11 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_create_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#page_move",
-          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_create_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -6810,7 +6810,7 @@
         "component": "deepwell",
         "handler": "page_rerender",
         "source": "deepwell/src/endpoints/page.rs#page_rerender",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "1f1b6c326636f2fd4282b9558e31bb32ee3bf0f62bc030716d47f714dcfa9275"
       },
       "params_schema": {
@@ -6845,10 +6845,10 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_edit_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
-          "deepwell/src/endpoints/page.rs#page_rerender"
+          "deepwell/src/endpoints/page.rs#page_rerender",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_edit_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -6898,7 +6898,7 @@
         "component": "deepwell",
         "handler": "page_restore",
         "source": "deepwell/src/endpoints/page.rs#page_restore",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "ece3ed38a16f98cbfbc48799c55618a131ceb9a1eff2f103e0fa00fceaa4301f"
       },
       "params_schema": {
@@ -6933,11 +6933,11 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_deleted_page_delete_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_create_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#page_restore",
-          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_deleted_page_delete_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_create_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -7338,7 +7338,7 @@
         "component": "deepwell",
         "handler": "page_rollback",
         "source": "deepwell/src/endpoints/page.rs#page_rollback",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "b7d77e03adfc5b16a54697a2249e196f3cfef609e8d601a3d72a8f17430a305c"
       },
       "params_schema": {
@@ -7373,11 +7373,11 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_edit_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#page_rollback",
-          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_edit_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -7400,7 +7400,7 @@
         "component": "deepwell",
         "handler": "page_select",
         "source": "deepwell/src/endpoints/page.rs#page_select",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "b7a6ca59e10098b12187c4f720442545e08bc4b88c84876b3f2b0e254f1605d9"
       },
       "params_schema": {
@@ -7459,7 +7459,7 @@
         "component": "deepwell",
         "handler": "page_set_layout",
         "source": "deepwell/src/endpoints/page.rs#page_set_layout",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "977fe460240ffce3a16bf8c92de7801416fd5a22886b087c56a21c56f015e52a"
       },
       "params_schema": {
@@ -7494,11 +7494,11 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_edit_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#page_set_layout",
-          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_edit_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -7521,7 +7521,7 @@
         "component": "deepwell",
         "handler": "page_tags_select",
         "source": "deepwell/src/endpoints/page.rs#page_tags_select",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "2f3071353b00a9a376cbba0dfcdbc26c7ee76952f61f6e2d84386950d3a15759"
       },
       "params_schema": {
@@ -7705,7 +7705,7 @@
         "component": "deepwell",
         "handler": "page_view_permission",
         "source": "deepwell/src/endpoints/page.rs#page_view_permission",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "ef2a81c07c7c8ef9c360eab8d5c512f057c7eccd52739246a0838374b72f698f"
       },
       "params_schema": {
@@ -7761,7 +7761,7 @@
         "component": "deepwell",
         "handler": "page_watchers",
         "source": "deepwell/src/endpoints/page.rs#page_watchers",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "ca0cdcc3523ea985d83dcf10864d65ea63dd12110c60f273401bec19f16f45ac"
       },
       "params_schema": {
@@ -7796,8 +7796,8 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_view_permission",
-          "deepwell/src/endpoints/page.rs#page_watchers"
+          "deepwell/src/endpoints/page.rs#page_watchers",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_view_permission"
         ]
       },
       "mutation_class": {
@@ -7818,7 +7818,7 @@
         "component": "deepwell",
         "handler": "page_who_rated",
         "source": "deepwell/src/endpoints/page.rs#page_who_rated",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "b0297cf5c1501948db0e32a72c9f9fe6b18aa63d24c55567b1f488b447aafbf1"
       },
       "params_schema": {
@@ -10728,7 +10728,7 @@
         "component": "deepwell",
         "handler": "wikidot_categories_page_list_module",
         "source": "deepwell/src/endpoints/page.rs#wikidot_categories_page_list_module",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "15c20bf38915436f5f5f3baf568fa679bd7bb4dcb9c61f2b92f2dc7037b8a128"
       },
       "params_schema": {
@@ -10789,7 +10789,7 @@
         "component": "deepwell",
         "handler": "wikidot_forum_module",
         "source": "deepwell/src/endpoints/page.rs#wikidot_forum_module",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "fedc64aecf8e93b066571aee7fdf94570d0c045e7536803485e674499588497a"
       },
       "params_schema": {
@@ -10910,7 +10910,7 @@
         "component": "deepwell",
         "handler": "wikidot_legacy_set_tags",
         "source": "deepwell/src/endpoints/page.rs#wikidot_legacy_set_tags",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "08c3842b48585b8b6d8f3aa1aa49549109e41483a6dc830500e1f9e195882ff8"
       },
       "params_schema": {
@@ -10946,11 +10946,11 @@
           "site_context"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_edit_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
-          "deepwell/src/endpoints/page.rs#wikidot_legacy_set_tags"
+          "deepwell/src/endpoints/page.rs#wikidot_legacy_set_tags",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_edit_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -10975,7 +10975,7 @@
         "component": "deepwell",
         "handler": "wikidot_list_pages_feed",
         "source": "deepwell/src/endpoints/page.rs#wikidot_list_pages_feed",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "afc5630e3ff49c3f77e724fc050e7562ed8e4395917f441f7eaeed05d66533e2"
       },
       "params_schema": {
@@ -11030,7 +11030,7 @@
         "component": "deepwell",
         "handler": "wikidot_list_pages_module",
         "source": "deepwell/src/endpoints/page.rs#wikidot_list_pages_module",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "e55d6650fc839bf4d3a888fde29e45b1ec79691e0d1902805b32fb8a009b354f"
       },
       "params_schema": {
@@ -11092,7 +11092,7 @@
         "component": "deepwell",
         "handler": "wikidot_members_list_module",
         "source": "deepwell/src/endpoints/page.rs#wikidot_members_list_module",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "e1173789be897cb6ae21d7b662d564b960a504b00da9270e00d575f3bf3d7526"
       },
       "params_schema": {
@@ -11147,7 +11147,7 @@
         "component": "deepwell",
         "handler": "wikidot_page_discussion_create",
         "source": "deepwell/src/endpoints/page.rs#wikidot_page_discussion_create",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "1b283518869a34d7e5c04d6dada4724161533a0516af80df98824af8cb545032"
       },
       "params_schema": {
@@ -11210,7 +11210,7 @@
         "component": "deepwell",
         "handler": "wikidot_page_preview",
         "source": "deepwell/src/endpoints/page.rs#wikidot_page_preview",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "1499b112f8523c15a05198ba5f74758df99429b62fe016d724124c3cd2c5ba19"
       },
       "params_schema": {
@@ -11331,7 +11331,7 @@
         "component": "deepwell",
         "handler": "wikidot_site_changes_module",
         "source": "deepwell/src/endpoints/page.rs#wikidot_site_changes_module",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8",
         "function_sha256": "cf16981f5d7af5363ff031de89be51dce1bbcda63c1f5d4f511f6c8996c9a093"
       },
       "params_schema": {

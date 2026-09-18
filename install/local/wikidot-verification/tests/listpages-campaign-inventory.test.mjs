@@ -255,6 +255,6 @@ test("campaign inventory CLI writes split machine-readable artifacts", async () 
 
   const summary = JSON.parse(stdout);
   assert.equal(summary.corpus.invocation_count, 1);
-  assert.ok((await fs.stat(path.join(outputDir, "documentation-claims.jsonl"))).isFile());
-  assert.ok((await fs.stat(path.join(outputDir, "corpus-listpages-invocations.jsonl"))).isFile());
+  assert.ok((await fs.stat(path.join(outputDir, "documentation-claims.jsonl.gz"))).isFile());
+  assert.ok((await fs.stat(path.join(outputDir, "corpus-listpages-invocations.jsonl.gz"))).isFile());
 });

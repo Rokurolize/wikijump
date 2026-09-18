@@ -2,7 +2,7 @@
   "schema": "wikijump_listpages_compat.corpus_replay_scope.v1",
   "campaign_issue": 968,
   "invocations": {
-    "path": "install/local/wikidot-verification/artifacts/listpages-campaign-matrix/corpus-invocation-cases.jsonl",
+    "path": "install/local/wikidot-verification/artifacts/listpages-campaign-matrix/corpus-invocation-cases.jsonl.gz",
     "sha256": "b9fd4f5fdfa775cba403682ec67485d6c13f5131a30999420cbc14f7a244f641",
     "invocation_count": 23964,
     "unique_invocation_id_count": 23964,

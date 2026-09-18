@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import {
   buildListPagesRuntimeBudgetEnvelope,
 } from "../src/listpages-runtime-budget-envelope.mjs";
+import { readArtifactText } from "../src/compressed-artifact-io.mjs";
 
 const VERIFIER_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -15,7 +16,7 @@ const VERIFIER_ROOT = path.resolve(
 );
 const DEFAULT_INVENTORY = path.join(
   VERIFIER_ROOT,
-  "artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl",
+  "artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl.gz",
 );
 const DEFAULT_OUTPUT = path.join(
   VERIFIER_ROOT,
@@ -66,7 +67,7 @@ export async function main(argv = process.argv) {
     return;
   }
 
-  const inventoryText = await fs.readFile(options.inventory, "utf8");
+  const inventoryText = await readArtifactText(options.inventory);
   const records = inventoryText
     .split("\n")
     .filter(Boolean)

@@ -210,6 +210,16 @@ test("matrix writer and CLI create split case files", async () => {
       await fs.stat(path.join(outputDir, "generated-listpages-cases.jsonl"))
     ).isFile(),
   );
+  assert.ok(
+    (
+      await fs.stat(path.join(outputDir, "corpus-cluster-cases.jsonl.gz"))
+    ).isFile(),
+  );
+  assert.ok(
+    (
+      await fs.stat(path.join(outputDir, "corpus-invocation-cases.jsonl.gz"))
+    ).isFile(),
+  );
 
   const cliOutputDir = path.join(root, "cli-out");
   const { stdout } = await execFileAsync(process.execPath, [

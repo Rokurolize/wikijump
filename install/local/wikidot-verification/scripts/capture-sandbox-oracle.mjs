@@ -394,7 +394,7 @@ async function captureFixtureObservation({
         settleMs,
       }),
       `${label} capture ${fixtureId}`,
-      900_000,
+      120_000,
     );
   } catch (error) {
     return {

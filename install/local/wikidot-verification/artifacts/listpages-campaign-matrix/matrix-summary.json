@@ -16,8 +16,8 @@
     "pending_live_count": 41860
   },
   "files": {
-    "corpus_cluster_cases": "corpus-cluster-cases.jsonl",
-    "corpus_invocation_cases": "corpus-invocation-cases.jsonl",
+    "corpus_cluster_cases": "corpus-cluster-cases.jsonl.gz",
+    "corpus_invocation_cases": "corpus-invocation-cases.jsonl.gz",
     "generated_cases": "generated-listpages-cases.jsonl",
     "navigation_cases": "navigation-cases.jsonl",
     "hash_magic_cases": "hash-magic-audit-cases.jsonl"

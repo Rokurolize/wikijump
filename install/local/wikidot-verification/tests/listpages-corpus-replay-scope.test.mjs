@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
 import test from "node:test";
+import { readArtifactText } from "../src/compressed-artifact-io.mjs";
 
 import {
   LISTPAGES_CORPUS_REPLAY_SCOPE_PATH,
@@ -10,7 +11,7 @@ import {
 } from "../src/listpages-corpus-replay-scope.mjs";
 
 const INVOCATIONS = new URL(
-  "../artifacts/listpages-campaign-matrix/corpus-invocation-cases.jsonl",
+  "../artifacts/listpages-campaign-matrix/corpus-invocation-cases.jsonl.gz",
   import.meta.url,
 );
 
@@ -28,7 +29,7 @@ test("historical ListPages reads reject a non-commit object identity", async () 
 });
 
 test("repository campaign scope binds every current ListPages invocation and replay key", async () => {
-  const invocationsText = await fs.readFile(INVOCATIONS, "utf8");
+  const invocationsText = await readArtifactText(INVOCATIONS);
   const invocations = invocationsText
     .trimEnd()
     .split(/\r?\n/u)
