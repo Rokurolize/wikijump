@@ -134,7 +134,7 @@ test("live reference capture requires an identity-bound persistent document cach
   ]);
   assert.equal(args.mode, "live-reference");
   assert.deepEqual(args.viewport, { width: 1440, height: 960 });
-  assert.equal(args.timeoutMs, 900_000);
+  assert.equal(args.timeoutMs, 120_000);
   assert.equal(args.sourceResponseCacheDir, "/tmp/standing-source-cache");
   assert.equal(args.sourceResponseCacheDocuments, true);
   const cached = parseStandingBrowserParityArgs([
