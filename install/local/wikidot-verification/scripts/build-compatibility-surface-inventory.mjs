@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url"
 
 import { CANDIDATE_CASE_SETS } from "../src/candidate-case-command.mjs"
 
-const SCHEMA = "wikijump.compatibility_surface_inventory.v2"
+const SCHEMA = "wikijump.compatibility_surface_inventory.v3"
 const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_ROOT = path.resolve(SCRIPT_DIRECTORY, "../../../..")
 const DEFAULT_OUTPUT = "docs/development/compatibility-surface-inventory.json"
@@ -672,6 +672,14 @@ function validatedBrowserIntervalProof(proof, registryPath, controlId) {
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex")
+}
+
+function sourceInputSetSha256(registries) {
+  return sha256(
+    JSON.stringify(
+      registries.map(({ path: registryPath, sha256: digest }) => [registryPath, digest])
+    )
+  )
 }
 
 function resolveGitObject(gitArguments, revision, label) {
@@ -4233,16 +4241,20 @@ async function buildInventory(root, sourceRevision) {
   for (const kind of uniqueSortedStrings(surfaces.map(({ kind }) => kind))) {
     byKind[kind] = surfaces.filter((surfaceRecord) => surfaceRecord.kind === kind).length
   }
+  const registries = [...SOURCE_INPUTS]
+    .map(([registryPath, source]) => ({ path: registryPath, sha256: sha256(source) }))
+    .sort((left, right) => left.path.localeCompare(right.path, "en"))
   return {
     schema: SCHEMA,
     relationship_edge_types: [...semantics.relationship_edge_types],
     ...relationshipModel,
     ftml_raw_surface_manifest: ftmlRawSurfaceManifest,
     provenance: {
-      ...provenance,
-      registries: [...SOURCE_INPUTS]
-        .map(([registryPath, source]) => ({ path: registryPath, sha256: sha256(source) }))
-        .sort((left, right) => left.path.localeCompare(right.path, "en"))
+      wikijump: {
+        source_input_set_sha256: sourceInputSetSha256(registries)
+      },
+      ftml: provenance.ftml,
+      registries
     },
     sources: {
       catalog: "docs/wikidot-specifications/catalog.json",
@@ -4281,14 +4293,7 @@ async function buildInventory(root, sourceRevision) {
 
 async function pinnedSourceRevision(root, requestedRevision) {
   if (requestedRevision) return requestedRevision
-  const inventoryPath = path.join(root, DEFAULT_OUTPUT)
-  let inventory
-  try {
-    inventory = JSON.parse(await fs.readFile(inventoryPath, "utf8"))
-  } catch {
-    throw new Error("--source-revision is required when no tracked inventory pin exists")
-  }
-  return inventory.provenance?.wikijump?.commit
+  return resolveGitObject(["-C", root], "HEAD^{commit}", "Wikijump HEAD")
 }
 
 async function main() {

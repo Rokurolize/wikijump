@@ -1,5 +1,5 @@
 {
-  "schema": "wikijump.compatibility_surface_inventory.v2",
+  "schema": "wikijump.compatibility_surface_inventory.v3",
   "relationship_edge_types": [
     "alias",
     "equivalence",
@@ -11385,8 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "98ffb88f071590842a931c322382eca53d96831c",
-      "tree": "f4711ca924f413ccc7b77edea33e1a8316fff283"
+      "source_input_set_sha256": "cf8db93a238737b50eb87b0dda707a7f01ec68af5807ec7507d9da8e70e30b11"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",

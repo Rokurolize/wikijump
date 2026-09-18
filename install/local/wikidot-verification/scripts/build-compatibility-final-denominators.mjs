@@ -12,7 +12,10 @@ import {
 } from "../src/compatibility-deferred-scope.mjs";
 import {runCliIfMain} from "../src/cli-entry.mjs";
 
-const INVENTORY_SCHEMA = "wikijump.compatibility_surface_inventory.v2";
+const INVENTORY_SCHEMAS = new Set([
+  "wikijump.compatibility_surface_inventory.v2",
+  "wikijump.compatibility_surface_inventory.v3",
+]);
 const LEDGER_SCHEMA = "wikijump.compatibility_ledger.v1";
 const CURRENT_SCHEMA = "wikijump.compatibility_final_zero_denominator.v1";
 const DEFERRED_SCHEMA = "wikijump.compatibility_deferred_denominator.v1";
@@ -155,7 +158,7 @@ function semanticTuple(record) {
 }
 
 export function buildCompatibilityFinalDenominators({inventory, inventoryPath, inventoryBytes, ledger}) {
-  if (inventory?.schema !== INVENTORY_SCHEMA || inventory.counts?.total !== inventory.surfaces?.length) {
+  if (!INVENTORY_SCHEMAS.has(inventory?.schema) || inventory.counts?.total !== inventory.surfaces?.length) {
     fail("unsupported or incomplete compatibility inventory");
   }
   if (ledger?.schema !== LEDGER_SCHEMA) fail("unsupported canonical compatibility ledger");
