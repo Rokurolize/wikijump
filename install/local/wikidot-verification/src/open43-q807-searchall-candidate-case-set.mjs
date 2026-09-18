@@ -27,7 +27,7 @@ const NEGATIVE_CASES = Object.freeze([
   fixtureCase("searchall-route-query-without-area"),
 ]);
 const DEFAULT_VIEWPORT = Object.freeze({ width: 1280, height: 900 });
-const CAPTURE_TIMEOUT_MS = 300_000;
+const CAPTURE_TIMEOUT_MS = 30_000;
 
 function freeze(value) {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {

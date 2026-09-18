@@ -59,7 +59,7 @@ const UNSELALED_LIVE_VALUES = Object.freeze([
 ]);
 
 const DEFAULT_VIEWPORT = Object.freeze({ width: 1280, height: 900 });
-const CAPTURE_TIMEOUT_MS = 300_000;
+const CAPTURE_TIMEOUT_MS = 30_000;
 const EXPECTED_CANCELLED_SIGMA_ASSETS = new Set([
   "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/sigma/fonts/Sans-Normalcy.woff2",
   "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/sigma/images/header-logo.svg",

@@ -254,7 +254,7 @@ class Open43CategoriesRun {
           index: actor === "anonymous" ? 0 : 1,
           contract: { slug: "q1028-categories", theme_family: "wikidot", geometry_selectors: [], presence_probes: [] },
           viewport: { width: 1280, height: 900 },
-          timeoutMs: 300_000,
+          timeoutMs: 30_000,
           settleMs: 0,
           navigate: ({ page: targetPage, url: targetUrl, timeoutMs }) => targetPage.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs }),
         });

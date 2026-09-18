@@ -7,7 +7,7 @@ const STAR_WIDGET = ".page-rate-widget-start";
 const STAR_IMAGE = `${STAR_WIDGET} img`;
 const STAR_SCORE_INPUT = `${STAR_WIDGET} input[name="score"]`;
 const VIEWPORT = Object.freeze({ width: 1280, height: 900 });
-const TIMEOUT_MS = 300_000;
+const TIMEOUT_MS = 30_000;
 
 async function widgetState(page, { widget, point = false, star = false }) {
   return await page.evaluate(({ widget: widgetSelector, point, star }) => {

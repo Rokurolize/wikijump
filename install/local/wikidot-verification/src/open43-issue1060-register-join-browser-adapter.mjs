@@ -1,6 +1,6 @@
 const JOIN_SELECTOR = 'div > a[href="javascript:;"][onclick="WIKIDOT.page.listeners.join(event, \'unified\')"]';
 const VIEWPORT = Object.freeze({ width: 1280, height: 900 });
-const TIMEOUT_MS = 300_000;
+const TIMEOUT_MS = 30_000;
 const COOKIE_SETTLE_TIMEOUT_MS = 10_000;
 const REGISTER_PATH = "/-/register";
 const LOGIN_PATH = "/-/login";

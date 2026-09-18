@@ -1,6 +1,6 @@
 const JOIN_SELECTOR = 'div > a[href="javascript:;"][onclick="WIKIDOT.page.listeners.join(event, \'unified\')"]';
 const VIEWPORT = Object.freeze({ width: 1280, height: 900 });
-const TIMEOUT_MS = 300_000;
+const TIMEOUT_MS = 30_000;
 const PROBE_KEY = "__open43Issue1029Join";
 const PROBE_STORAGE_KEY = "__open43Issue1029JoinState";
 const CAPTURE_CONTRACT = Object.freeze({

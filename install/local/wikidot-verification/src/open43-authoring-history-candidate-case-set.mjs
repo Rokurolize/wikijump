@@ -363,7 +363,7 @@ class Open43AuthoringHistoryRun {
       index,
       contract,
       viewport: VIEWPORT,
-      timeoutMs: 300_000,
+      timeoutMs: 30_000,
       settleMs: 0,
       ...(navigate === null ? {} : { navigate }),
     });
@@ -396,7 +396,7 @@ class Open43AuthoringHistoryRun {
     const url = servedUrl(this.#session.pageOrigin, this.#slug, "_history");
     let workflow = null;
     try {
-      await page.goto(new URL("/", this.#session.pageOrigin).href, { waitUntil: "domcontentloaded", timeout: 300_000 });
+      await page.goto(new URL("/", this.#session.pageOrigin).href, { waitUntil: "domcontentloaded", timeout: 30_000 });
       const capture = await this.#capture({
         context: owned.context,
         page,
@@ -417,10 +417,10 @@ class Open43AuthoringHistoryRun {
       const failClosed = await runHistoryFailClosedWorkflow(page);
       failClosed.error_text_sha256 = sha256Value(failClosed.error_text_sha256_input);
       delete failClosed.error_text_sha256_input;
-      const back = await page.goBack({ waitUntil: "domcontentloaded", timeout: 300_000 });
+      const back = await page.goBack({ waitUntil: "domcontentloaded", timeout: 30_000 });
       const backUrl = page.url();
-      const forward = await page.goForward({ waitUntil: "domcontentloaded", timeout: 300_000 });
-      await page.waitForSelector(".revision-diff-controls", { timeout: 300_000 });
+      const forward = await page.goForward({ waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.waitForSelector(".revision-diff-controls", { timeout: 30_000 });
       const forwardUrl = page.url();
       return {
         actor: "anonymous",
@@ -455,7 +455,7 @@ class Open43AuthoringHistoryRun {
     const anonymousPage = await anonymousOwned.context.newPage();
     let anonymous;
     try {
-      const response = await anonymousPage.goto(settingsUrl, { waitUntil: "domcontentloaded", timeout: 300_000 });
+      const response = await anonymousPage.goto(settingsUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
       anonymous = {
         navigation_status: captureStatus(response),
         final_url: anonymousPage.url(),
@@ -507,7 +507,7 @@ class Open43AuthoringHistoryRun {
         return { status: response.status, body: await response.text() };
       }, { operation: "submit-settings-form" });
       const invalid = await responseObservation(invalidResponse);
-      await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
+      await page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
       const afterInvalidReload = await settingsState(page);
 
       const desired = sameStrings(this.#originalLocales, ["ja-JP", "en-US"])
@@ -527,7 +527,7 @@ class Open43AuthoringHistoryRun {
       }, { operation: "submit-settings-form" });
       const saved = await responseObservation(saveResponse);
       const saveRequestBody = saveResponse.request_body ?? postBodies.at(-1) ?? "";
-      await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
+      await page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
       await waitForSettingsInputValue(page, desired);
       const afterSaveReload = await settingsState(page);
       const persisted = await this.#user();
@@ -540,11 +540,11 @@ class Open43AuthoringHistoryRun {
         data: new URLSearchParams({ locales: desired.join(" ") }).toString(),
       });
       const csrf = await responseObservation(csrfResponse);
-      await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
+      await page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
       const afterCsrfReload = await settingsState(page);
 
       await this.#restoreSettings();
-      await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
+      await page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
       const restored = await settingsState(page);
       return {
         actor: { user_id: this.#session.editorUserId, submitted_user_id: 999 },

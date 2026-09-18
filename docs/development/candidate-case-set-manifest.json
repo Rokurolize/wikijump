@@ -1,5 +1,5 @@
 {
-  "schema": "wikijump.candidate_case_set_manifest.v1",
+  "schema": "wikijump.candidate_case_set_manifest.v2",
   "registry": "install/local/wikidot-verification/src/candidate-case-command.mjs#candidateCaseSet",
   "case_set_count": 48,
   "execution_case_set_count": 47,
@@ -7,12 +7,14 @@
   "case_sets": [
     {
       "name": "comments-hideform-browser",
+      "execution_class": "exclusive",
       "case_ids": [
         "M1367_COMMENTS_HIDEFORM_ACTOR_FORM_STATE"
       ]
     },
     {
       "name": "framerail-route-action-browser",
+      "execution_class": "exclusive",
       "case_ids": [
         "DENIAL_DENIAL_CONTROL_CREATE",
         "DENIAL_DENIAL_CONTROL_RESTORE",
@@ -102,18 +104,21 @@
     },
     {
       "name": "ftml-marker-contract",
+      "execution_class": "read_only",
       "case_ids": [
         "F1380_FTML_MARKER_CONTRACT"
       ]
     },
     {
       "name": "issue1373-amc-new-page",
+      "execution_class": "exclusive",
       "case_ids": [
         "M1373_AMC_NEW_PAGE_AUTOSAVE"
       ]
     },
     {
       "name": "open43-689-tabview",
+      "execution_class": "read_only",
       "case_ids": [
         "B689_TABVIEW_INITIAL",
         "B689_TABVIEW_SETTLED",
@@ -122,6 +127,7 @@
     },
     {
       "name": "open43-690-geometry",
+      "execution_class": "read_only",
       "case_ids": [
         "B690_GEOMETRY_INITIAL",
         "B690_GEOMETRY_SETTLED",
@@ -130,6 +136,7 @@
     },
     {
       "name": "open43-a1030-rate",
+      "execution_class": "exclusive",
       "case_ids": [
         "A1030_CENTRAL_RUST_MATRIX",
         "A1030_TWO_TRANSACTION_CONTENTION",
@@ -138,6 +145,7 @@
     },
     {
       "name": "open43-a1037-forms",
+      "execution_class": "exclusive",
       "case_ids": [
         "A1037_NEWPAGE_EXACT_CANDIDATE",
         "A1037_REDIRECT_EXACT_CANDIDATE"
@@ -145,12 +153,14 @@
     },
     {
       "name": "open43-a1038-admin-boundary",
+      "execution_class": "read_only",
       "case_ids": [
         "A1038_AUTHENTICATED_NON_ADMIN_DENIAL"
       ]
     },
     {
       "name": "open43-actions",
+      "execution_class": "exclusive",
       "case_ids": [
         "A1041_CENTRAL_REGISTRY_AND_MUTATION",
         "A1041_SET_TAGS_CONTENTION"
@@ -158,6 +168,7 @@
     },
     {
       "name": "open43-authoring",
+      "execution_class": "exclusive",
       "case_ids": [
         "A1061_EXACT_PUBLIC_SLICE_CANDIDATE",
         "A1061_EXACT_POST_COMMIT_WORKER_CANDIDATE",
@@ -166,6 +177,7 @@
     },
     {
       "name": "open43-authoring-history",
+      "execution_class": "exclusive",
       "case_ids": [
         "A1063_EXACT_PUBLIC_SOURCE_CANDIDATE",
         "A1063_DIFF_BROWSER_WORKFLOW",
@@ -174,18 +186,21 @@
     },
     {
       "name": "open43-b610-shell",
+      "execution_class": "read_only",
       "case_ids": [
         "B610_SHELL_PUBLIC_CONTRACT"
       ]
     },
     {
       "name": "open43-backlinks",
+      "execution_class": "exclusive",
       "case_ids": [
         "Q1027_BACKLINKS_PREVIEW_SAVED_FAIL_CLOSED"
       ]
     },
     {
       "name": "open43-categories",
+      "execution_class": "exclusive",
       "case_ids": [
         "Q1028_CATEGORY_LIFECYCLE_AND_CACHE",
         "Q1028_EXPAND_LIST_ACTION"
@@ -193,30 +208,35 @@
     },
     {
       "name": "open43-embedvideo-browser",
+      "execution_class": "exclusive",
       "case_ids": [
         "M1042_BROWSER_LIFECYCLE"
       ]
     },
     {
       "name": "open43-featuredsite",
+      "execution_class": "read_only",
       "case_ids": [
         "Q810_CANDIDATE_FAIL_CLOSED_NETWORK"
       ]
     },
     {
       "name": "open43-issue1029-join",
+      "execution_class": "exclusive",
       "case_ids": [
         "A1029_EXACT_BROWSER_TRANSITIONS"
       ]
     },
     {
       "name": "open43-issue1041-action-lifecycle",
+      "execution_class": "exclusive",
       "case_ids": [
         "A1041_EXACT_BROWSER_LIFECYCLE"
       ]
     },
     {
       "name": "open43-issue1060-register-join-create",
+      "execution_class": "exclusive",
       "case_ids": [
         "A1060_BROWSER_REGISTER_JOIN_CREATE",
         "A1060_CONCURRENT_SELF_JOIN_AND_CREATE",
@@ -225,24 +245,28 @@
     },
     {
       "name": "open43-issue775-edit",
+      "execution_class": "exclusive",
       "case_ids": [
         "A775_ACTOR_NAVIGATION_BROWSER"
       ]
     },
     {
       "name": "open43-issue777-print",
+      "execution_class": "exclusive",
       "case_ids": [
         "A777_BROWSER_PRINT_LIFECYCLE"
       ]
     },
     {
       "name": "open43-mailform-fail-closed",
+      "execution_class": "exclusive",
       "case_ids": [
         "A1037_MAILFORM_FAIL_CLOSED_SERVED"
       ]
     },
     {
       "name": "open43-media-browser",
+      "execution_class": "exclusive",
       "case_ids": [
         "M756_BROWSER_CACHE_TRANSITIONS",
         "M776_BROWSER_GEOMETRY_AND_NETWORK",
@@ -253,6 +277,7 @@
     },
     {
       "name": "open43-media-files",
+      "execution_class": "exclusive",
       "case_ids": [
         "M756_LOCAL_ROUTE_BYTES",
         "M1039_MUTATION_TO_NEXT_READ",
@@ -263,6 +288,7 @@
     },
     {
       "name": "open43-membership",
+      "execution_class": "exclusive",
       "case_ids": [
         "A1060_ORDINARY_MEMBER_PAGE_CREATE",
         "A1033_CENTRAL_STATIC_MODULE_MATRIX"
@@ -270,6 +296,7 @@
     },
     {
       "name": "open43-membership-join",
+      "execution_class": "exclusive",
       "case_ids": [
         "A1029_CENTRAL_PUBLIC_SEAMS",
         "A1029_TWO_TRANSACTION_CONTENTION"
@@ -277,18 +304,21 @@
     },
     {
       "name": "open43-page-query-nextprevious",
+      "execution_class": "exclusive",
       "case_ids": [
         "Q811_DEFAULT_AUTHOR_DATE_AND_SERVED_MUTATION_CANDIDATE"
       ]
     },
     {
       "name": "open43-page-tree",
+      "execution_class": "exclusive",
       "case_ids": [
         "Q779_EXPLICIT_ROOT_ACTOR_AND_LIFECYCLE_CANDIDATE"
       ]
     },
     {
       "name": "open43-q1026-user-identity",
+      "execution_class": "exclusive",
       "case_ids": [
         "Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY",
         "Q1026_BROWSER_PRINTUSER_INTERVALS",
@@ -297,12 +327,14 @@
     },
     {
       "name": "open43-q1027",
+      "execution_class": "exclusive",
       "case_ids": [
         "Q1027_RENAME_DELETE_RESTORE_CACHE_AND_SERVED_CANDIDATE"
       ]
     },
     {
       "name": "open43-q1032-members-userinfo",
+      "execution_class": "read_only",
       "case_ids": [
         "Q1032_EXACT_CANDIDATE_DIRECTORY_MATRIX",
         "Q1032_MEMBERS_AJAX_EXACT_CANDIDATE",
@@ -311,6 +343,7 @@
     },
     {
       "name": "open43-q1034-forum",
+      "execution_class": "read_only",
       "case_ids": [
         "Q1034_EXACT_CANDIDATE_PUBLIC_READ_MODELS",
         "Q1034_EXACT_CANDIDATE_FORUM_ROUTES_AND_AJAX",
@@ -319,6 +352,7 @@
     },
     {
       "name": "open43-q1035-sitechanges",
+      "execution_class": "read_only",
       "case_ids": [
         "Q1035_SITECHANGES_DEFAULT_INITIAL_SNAPSHOT",
         "Q1035_SITECHANGES_PERMISSION_BEFORE_LIMIT",
@@ -328,18 +362,21 @@
     },
     {
       "name": "open43-q1036-search-feed",
+      "execution_class": "read_only",
       "case_ids": [
         "Q1036_EXACT_CANDIDATE_PREVIEW_SAVED_BOUNDARIES"
       ]
     },
     {
       "name": "open43-q1040",
+      "execution_class": "exclusive",
       "case_ids": [
         "Q1040_DEFAULT_AUTHOR_DATE_AND_SERVED_MUTATION_CANDIDATE"
       ]
     },
     {
       "name": "open43-q748-topbar-search",
+      "execution_class": "exclusive",
       "case_ids": [
         "Q748_LIVE_TOPBAR_SUBMISSION_CONTRACT",
         "Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION"
@@ -347,6 +384,7 @@
     },
     {
       "name": "open43-q778-forum-mini",
+      "execution_class": "read_only",
       "case_ids": [
         "Q778_EXACT_CANDIDATE_24_CASE_REPLAY",
         "Q778_EXACT_CANDIDATE_SAVED_PAGE_RUNTIME",
@@ -355,6 +393,7 @@
     },
     {
       "name": "open43-q809",
+      "execution_class": "exclusive",
       "case_ids": [
         "Q809_PERMISSION_BEFORE_LIMIT_CANDIDATE",
         "Q809_SERVED_MUTATION_AND_BROWSER_CANDIDATE"
@@ -362,12 +401,14 @@
     },
     {
       "name": "open43-searchall",
+      "execution_class": "read_only",
       "case_ids": [
         "Q807_EXACT_CANDIDATE_FORM_ROUTE_BROWSER"
       ]
     },
     {
       "name": "open43-settings-admin",
+      "execution_class": "exclusive",
       "case_ids": [
         "S1046_ADMIN_INITIAL",
         "S1046_ADMIN_SETTLED",
@@ -376,6 +417,7 @@
     },
     {
       "name": "open43-settings-analytics",
+      "execution_class": "exclusive",
       "case_ids": [
         "S754_ANALYTICS_INITIAL",
         "S754_ANALYTICS_SETTLED"
@@ -383,6 +425,7 @@
     },
     {
       "name": "open43-settings-lifecycle",
+      "execution_class": "exclusive",
       "case_ids": [
         "S758_CREATE_INITIAL",
         "S758_CREATE_SETTLED"
@@ -390,6 +433,7 @@
     },
     {
       "name": "open43-settings-page-tags",
+      "execution_class": "exclusive",
       "case_ids": [
         "B822_PAGE_TAGS_INITIAL",
         "B822_PAGE_TAGS_SETTLED"
@@ -397,6 +441,7 @@
     },
     {
       "name": "open43-settings-theme",
+      "execution_class": "exclusive",
       "case_ids": [
         "S755_THEME_INITIAL",
         "S755_THEME_SETTLED"
@@ -404,6 +449,7 @@
     },
     {
       "name": "open43-settings-toolbar",
+      "execution_class": "exclusive",
       "case_ids": [
         "S757_TOOLBAR_INITIAL",
         "S757_TOOLBAR_SETTLED"
@@ -411,6 +457,7 @@
     },
     {
       "name": "open43-simpletodo-read-only",
+      "execution_class": "exclusive",
       "case_ids": [
         "A1037_SIMPLETODO_READ_ONLY_SERVED"
       ]

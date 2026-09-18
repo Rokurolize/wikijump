@@ -792,8 +792,8 @@ export function createOpen43B690GeometryCandidateCaseSet() {
                 index,
                 contract: canary,
                 viewport: VIEWPORT,
-                timeoutMs: 300_000,
-                settleMs: 8_000,
+                timeoutMs: 30_000,
+                settleMs: 0,
                 async onPhase(phase) {
                   await candidateBrowserContexts.setActiveFixture(
                     phase === "settled"
