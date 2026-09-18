@@ -13,6 +13,7 @@ const LINE_BUDGETS = new Map([
   ],
   ["deepwell/src/services/render/runtime_modules.rs", 2_800],
   ["deepwell/src/endpoints/page.rs", 1_600],
+  ["framerail/src/lib/server/ajax-module-connector.js", 1_500],
   ["deepwell/src/services/render/service.rs", 4_800],
 ]);
 
