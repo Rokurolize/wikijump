@@ -15,6 +15,7 @@ const LINE_BUDGETS = new Map([
     "install/local/wikidot-verification/src/listpages-preview-classification.mjs",
     2_300,
   ],
+  ["deepwell/src/services/data_form.rs", 1_450],
   ["deepwell/src/services/render/runtime_modules.rs", 1_900],
   ["deepwell/src/services/render/list_pages/scanner.rs", 2_700],
   ["deepwell/src/services/render/list_pages/rendering.rs", 300],
@@ -27,6 +28,7 @@ const LINE_BUDGETS = new Map([
 ]);
 
 const SPLIT_RUNTIME_MODULE_BUDGET = 700;
+const SPLIT_DATA_FORM_BUDGET = 700;
 const SPLIT_RENDER_SERVICE_BUDGET = 1_000;
 const SPLIT_LISTPAGES_SCANNER_BUDGET = 900;
 const SPLIT_LISTPAGES_RENDERING_BUDGET = 1_500;
@@ -67,6 +69,26 @@ test("split runtime-module implementation files stay bounded", () => {
       };
     })
     .filter(({ actual }) => actual > SPLIT_RUNTIME_MODULE_BUDGET)
+    .sort((left, right) => right.actual - left.actual);
+  assert.deepEqual(offenders, []);
+});
+
+test("split data-form implementation files stay bounded", () => {
+  const directory = path.join(
+    REPOSITORY_ROOT,
+    "deepwell/src/services/data_form",
+  );
+  const offenders = fs
+    .readdirSync(directory)
+    .filter((name) => name.endsWith(".rs"))
+    .map((name) => {
+      const relativePath = "deepwell/src/services/data_form/" + name;
+      return {
+        file: relativePath,
+        actual: lineCount(relativePath),
+      };
+    })
+    .filter(({ actual }) => actual > SPLIT_DATA_FORM_BUDGET)
     .sort((left, right) => right.actual - left.actual);
   assert.deepEqual(offenders, []);
 });
