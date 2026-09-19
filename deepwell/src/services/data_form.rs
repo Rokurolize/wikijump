@@ -30,10 +30,7 @@ pub use self::render::{
     render_wikidot_data_form_table, render_wikidot_data_form_table_with_runtime_html,
     render_wikidot_data_form_table_with_wiki_html,
 };
-pub use self::runtime::{
-    load_data_form_definitions, load_wikidot_data_form_pagepaths,
-    resolve_wikidot_data_form_pagepath_display_values,
-};
+pub use self::runtime::{load_data_form_definitions, load_wikidot_data_form_pagepaths};
 pub(crate) use self::scalar::parse_wikidot_stored_text_scalar;
 pub use self::values::parse_observed_wikidot_data_form_values;
 
@@ -44,7 +41,26 @@ use self::definition::{
     wikidot_checkbox_default_is_checked,
 };
 
+use crate::error::prelude::Result;
+use crate::services::ServiceContext;
 use std::collections::{BTreeMap, BTreeSet};
+
+pub async fn resolve_wikidot_data_form_pagepath_display_values(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    definition: &DataFormDefinition,
+    values: &BTreeMap<String, String>,
+    viewer_user_id: Option<i64>,
+) -> Result<BTreeMap<String, String>> {
+    runtime::resolve_wikidot_data_form_pagepath_display_values(
+        ctx,
+        site_id,
+        definition,
+        values,
+        viewer_user_id,
+    )
+    .await
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
 pub struct DataFormDefinition {
