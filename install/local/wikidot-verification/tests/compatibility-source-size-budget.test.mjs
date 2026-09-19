@@ -30,6 +30,7 @@ const SPLIT_LISTPAGES_SCANNER_BUDGET = 900;
 const SPLIT_LISTPAGES_RENDERING_BUDGET = 1_500;
 const SPLIT_LISTPAGES_SUBSTITUTION_BUDGET = 500;
 const SPLIT_LISTPAGES_PREVIEW_CLASSIFICATION_BUDGET = 1_000;
+const SPLIT_COMPATIBILITY_INVENTORY_BUDGET = 700;
 
 function lineCount(relativePath) {
   const text = fs.readFileSync(path.join(REPOSITORY_ROOT, relativePath), "utf8");
@@ -176,6 +177,28 @@ test("split ListPages preview-classification helpers stay bounded", () => {
       ({ actual }) =>
         actual > SPLIT_LISTPAGES_PREVIEW_CLASSIFICATION_BUDGET,
     )
+    .sort((left, right) => right.actual - left.actual);
+  assert.deepEqual(offenders, []);
+});
+
+test("split compatibility-inventory source-discovery helpers stay bounded", () => {
+  const directory = path.join(
+    REPOSITORY_ROOT,
+    "install/local/wikidot-verification/src/compatibility-inventory",
+  );
+  const offenders = fs
+    .readdirSync(directory)
+    .filter((name) => name.endsWith(".mjs"))
+    .map((name) => {
+      const relativePath =
+        "install/local/wikidot-verification/src/compatibility-inventory/" +
+        name;
+      return {
+        file: relativePath,
+        actual: lineCount(relativePath),
+      };
+    })
+    .filter(({ actual }) => actual > SPLIT_COMPATIBILITY_INVENTORY_BUDGET)
     .sort((left, right) => right.actual - left.actual);
   assert.deepEqual(offenders, []);
 });
