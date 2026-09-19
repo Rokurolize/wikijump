@@ -494,7 +494,7 @@
     {
       "surface_id": "catalog-feature:data-forms-deleting-form",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "fn wikidot_data_form_comment_wrapper(" }
+        { "path": "deepwell/src/services/data_form/definition.rs", "anchor": "fn wikidot_data_form_comment_wrapper(" }
       ],
       "tests": [
         { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "data_form_template_deletion_requires_actual_form_removal" }
@@ -511,7 +511,7 @@
     {
       "surface_id": "catalog-feature:data-forms-field-properties",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn parse_wikidot_data_form_definition" },
+        { "path": "deepwell/src/services/data_form/definition.rs", "anchor": "pub fn parse_wikidot_data_form_definition" },
         { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "field.match_pattern" }
       ],
       "tests": [{ "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form field properties and PCRE-style match behavior follow live Wikidot" }]
@@ -551,7 +551,7 @@
     {
       "surface_id": "catalog-feature:data-forms-youtube",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn substitute_wikidot_data_form_layout_variables_with_display(" },
+        { "path": "deepwell/src/services/data_form/layout.rs", "anchor": "pub fn substitute_wikidot_data_form_layout_variables_with_display(" },
         { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls(" },
         { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "field.field_type === \"wiki\"" }
       ],
@@ -562,7 +562,7 @@
     },
     {
       "surface_id": "catalog-feature:data-forms-displaying",
-      "sources": [{ "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" }],
+      "sources": [{ "path": "deepwell/src/services/data_form/render.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" }],
       "tests": [{ "path": "deepwell/tests/page_template_assignment.rs", "anchor": "page_view_exposes_live_checkbox_and_wiki_contract" }]
     },
     {
@@ -778,7 +778,7 @@
     {
       "surface_id": "catalog-feature:data-forms-password-field",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "Some(\"password\") =>" },
+        { "path": "deepwell/src/services/data_form/render.rs", "anchor": "Some(\"password\") =>" },
         { "path": "framerail/src/lib/wikidot/wikidot-data-form.js", "anchor": "case \"password\":" }
       ],
       "tests": [{ "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js", "anchor": "password-create-plaintext-source-masked-display exposes the password control contract" }]
@@ -794,7 +794,7 @@
     {
       "surface_id": "catalog-feature:data-forms-url-field",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "Some(\"url\") =>" },
+        { "path": "deepwell/src/services/data_form/render.rs", "anchor": "Some(\"url\") =>" },
         { "path": "framerail/src/lib/wikidot/wikidot-data-form.js", "anchor": "case \"url\":" }
       ],
       "tests": [{ "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js", "anchor": "url-default-schema-applies-to-display without rewriting storage" }]
@@ -802,7 +802,7 @@
     {
       "surface_id": "catalog-feature:data-forms-css-styling",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" },
+        { "path": "deepwell/src/services/data_form/render.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" },
         { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "class=\"form-horizontal data-form\"" }
       ],
       "tests": [
@@ -813,7 +813,7 @@
     {
       "surface_id": "catalog-feature:data-forms-links",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn substitute_wikidot_data_form_layout_variables(" },
+        { "path": "deepwell/src/services/data_form/layout.rs", "anchor": "pub fn substitute_wikidot_data_form_layout_variables(" },
         { "path": "deepwell/src/services/blueprint/service.rs", "anchor": "pub(crate) async fn apply_page_template(" },
         { "path": "deepwell/src/services/view/service.rs", "anchor": "data_form.definition.default_layout" },
         { "path": "framerail/src/lib/wikidot/wikidot-data-form.js", "anchor": "export const wikidotDataFormUrlDisplay = (value) =>" }
@@ -826,7 +826,7 @@
     {
       "surface_id": "catalog-feature:data-forms-output-style",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn substitute_wikidot_data_form_layout_variables(" },
+        { "path": "deepwell/src/services/data_form/layout.rs", "anchor": "pub fn substitute_wikidot_data_form_layout_variables(" },
         { "path": "deepwell/src/services/blueprint/service.rs", "anchor": "pub(crate) async fn apply_page_template(" },
         { "path": "deepwell/src/services/view/service.rs", "anchor": "data_form.definition.default_layout" }
       ],
@@ -835,8 +835,8 @@
     {
       "surface_id": "catalog-feature:data-forms-howto",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>" },
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" },
+        { "path": "deepwell/src/services/data_form/definition.rs", "anchor": "pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>" },
+        { "path": "deepwell/src/services/data_form/render.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" },
         { "path": "framerail/src/lib/server/load/page/page-edit-actions.ts", "anchor": "export async function pageEditAction(event: RequestEvent)" },
         { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "class=\"form-horizontal data-form\"" }
       ],
@@ -848,8 +848,8 @@
     {
       "surface_id": "catalog-feature:data-forms-overview",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>" },
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" },
+        { "path": "deepwell/src/services/data_form/definition.rs", "anchor": "pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>" },
+        { "path": "deepwell/src/services/data_form/render.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" },
         { "path": "framerail/src/lib/server/load/page/page-edit-actions.ts", "anchor": "export async function pageEditAction(event: RequestEvent)" },
         { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "class=\"form-horizontal data-form\"" }
       ],
