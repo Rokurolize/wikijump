@@ -11385,7 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "8b4b80687b46a9f1b01b6725da52786adbc9ea67947267b4f01cc0050efc03c5"
+      "source_input_set_sha256": "a56708d22e4a87e2041ba81cdd2976dd2948205717cab0f4746f43d67dc23fb6"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11534,7 +11534,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "bb24959e03d08658728e463282e3ec08ea244e5acca3a55ac4071ae520c95561"
+        "sha256": "a9858a1b03f22a6b52d1d721cfb857969c81c5ed1d74bbbf1da7fcc2827d6ff6"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -13099,7 +13099,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/data_form.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
+          "deepwell/src/services/data_form/render.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
           "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#class=\"form-horizontal data-form\""
         ]
       },
@@ -13253,7 +13253,7 @@
         "status": "implemented",
         "references": [
           "deepwell/src/services/data_form.rs",
-          "deepwell/src/services/data_form.rs#fn wikidot_data_form_comment_wrapper(",
+          "deepwell/src/services/data_form/definition.rs#fn wikidot_data_form_comment_wrapper(",
           "deepwell/src/services/view/service.rs"
         ]
       },
@@ -13301,7 +13301,7 @@
         "status": "implemented",
         "references": [
           "deepwell/src/services/data_form.rs",
-          "deepwell/src/services/data_form.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
+          "deepwell/src/services/data_form/render.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
           "deepwell/src/services/render/list_pages/data_forms.rs",
           "deepwell/src/services/render/service.rs",
           "deepwell/src/services/view/service.rs"
@@ -13356,7 +13356,7 @@
         "status": "implemented",
         "references": [
           "deepwell/src/services/data_form.rs",
-          "deepwell/src/services/data_form.rs#pub fn parse_wikidot_data_form_definition",
+          "deepwell/src/services/data_form/definition.rs#pub fn parse_wikidot_data_form_definition",
           "framerail/src/lib/server/deepwell/views.ts",
           "framerail/src/lib/wikidot/wikidot-data-form-match.worker.ts",
           "framerail/src/lib/wikidot/wikidot-data-form.js",
@@ -13579,8 +13579,8 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/data_form.rs#pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>",
-          "deepwell/src/services/data_form.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
+          "deepwell/src/services/data_form/definition.rs#pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>",
+          "deepwell/src/services/data_form/render.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
           "framerail/src/lib/server/load/page/page-edit-actions.ts#export async function pageEditAction(event: RequestEvent)",
           "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#class=\"form-horizontal data-form\""
         ]
@@ -13684,7 +13684,7 @@
         "status": "implemented",
         "references": [
           "deepwell/src/services/blueprint/service.rs#pub(crate) async fn apply_page_template(",
-          "deepwell/src/services/data_form.rs#pub fn substitute_wikidot_data_form_layout_variables(",
+          "deepwell/src/services/data_form/layout.rs#pub fn substitute_wikidot_data_form_layout_variables(",
           "deepwell/src/services/view/service.rs#data_form.definition.default_layout",
           "framerail/src/lib/wikidot/wikidot-data-form.js#export const wikidotDataFormUrlDisplay = (value) =>"
         ]
@@ -13732,7 +13732,7 @@
         "status": "implemented",
         "references": [
           "deepwell/src/services/blueprint/service.rs#pub(crate) async fn apply_page_template(",
-          "deepwell/src/services/data_form.rs#pub fn substitute_wikidot_data_form_layout_variables(",
+          "deepwell/src/services/data_form/layout.rs#pub fn substitute_wikidot_data_form_layout_variables(",
           "deepwell/src/services/view/service.rs#data_form.definition.default_layout"
         ]
       },
@@ -13779,8 +13779,8 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/data_form.rs#pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>",
-          "deepwell/src/services/data_form.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
+          "deepwell/src/services/data_form/definition.rs#pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>",
+          "deepwell/src/services/data_form/render.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
           "framerail/src/lib/server/load/page/page-edit-actions.ts#export async function pageEditAction(event: RequestEvent)",
           "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#class=\"form-horizontal data-form\""
         ]
@@ -13933,7 +13933,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/data_form.rs#Some(\"password\") =>",
+          "deepwell/src/services/data_form/render.rs#Some(\"password\") =>",
           "framerail/src/lib/wikidot/wikidot-data-form.js#case \"password\":"
         ]
       },
@@ -14251,7 +14251,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/data_form.rs#Some(\"url\") =>",
+          "deepwell/src/services/data_form/render.rs#Some(\"url\") =>",
           "framerail/src/lib/wikidot/wikidot-data-form.js#case \"url\":"
         ]
       },
@@ -14355,7 +14355,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/data_form.rs#pub fn substitute_wikidot_data_form_layout_variables_with_display(",
+          "deepwell/src/services/data_form/layout.rs#pub fn substitute_wikidot_data_form_layout_variables_with_display(",
           "deepwell/src/services/render/service.rs#pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls(",
           "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#field.field_type === \"wiki\""
         ]
