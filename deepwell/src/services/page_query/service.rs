@@ -39,7 +39,6 @@ use crate::services::ServiceContext;
 use crate::services::score::ScoreValue;
 use crate::services::{PageService, ParentService, ScoreService};
 use crate::types::{ConnectionType, Reference};
-use sea_orm::DatabaseTransaction;
 use sea_orm::FromQueryResult;
 use sea_orm::{
     ColumnTrait, Condition, ConnectionTrait, EntityTrait, ExprTrait, JoinType,
@@ -48,7 +47,7 @@ use sea_orm::{
 use sea_query::extension::postgres::PgBinOper;
 use sea_query::{Alias, Expr, Query, SimpleExpr, Value};
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 mod score_filter;
 
