@@ -356,7 +356,7 @@ mod www_special_module_tests {
         assert_eq!(html.matches(time_input).count(), 1);
         assert!(
             value >= before && value <= after,
-            "CreateAccount time input {value} should be rendered from the current clock [{before}, {after}]",
+            "CreateAccount time input should be rendered from the current clock window",
         );
         assert!(!WWW_DELETE_ACCOUNT_INVALID_CODE_HTML.contains(time_input));
         assert!(!WWW_NEW_SITE_ANONYMOUS_HTML.contains(time_input));
