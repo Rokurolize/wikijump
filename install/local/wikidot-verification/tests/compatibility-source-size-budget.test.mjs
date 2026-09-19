@@ -11,6 +11,10 @@ const LINE_BUDGETS = new Map([
     "install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs",
     3_000,
   ],
+  [
+    "install/local/wikidot-verification/src/listpages-preview-classification.mjs",
+    2_300,
+  ],
   ["deepwell/src/services/render/runtime_modules.rs", 1_900],
   ["deepwell/src/services/render/list_pages/scanner.rs", 2_700],
   ["deepwell/src/services/render/list_pages/substitution.rs", 2_700],
@@ -23,6 +27,7 @@ const SPLIT_RUNTIME_MODULE_BUDGET = 700;
 const SPLIT_RENDER_SERVICE_BUDGET = 1_000;
 const SPLIT_LISTPAGES_SCANNER_BUDGET = 900;
 const SPLIT_LISTPAGES_SUBSTITUTION_BUDGET = 500;
+const SPLIT_LISTPAGES_PREVIEW_CLASSIFICATION_BUDGET = 1_000;
 
 function lineCount(relativePath) {
   const text = fs.readFileSync(path.join(REPOSITORY_ROOT, relativePath), "utf8");
@@ -123,6 +128,31 @@ test("split ListPages substitution implementation files stay bounded", () => {
       };
     })
     .filter(({ actual }) => actual > SPLIT_LISTPAGES_SUBSTITUTION_BUDGET)
+    .sort((left, right) => right.actual - left.actual);
+  assert.deepEqual(offenders, []);
+});
+
+test("split ListPages preview-classification helpers stay bounded", () => {
+  const directory = path.join(
+    REPOSITORY_ROOT,
+    "install/local/wikidot-verification/src/listpages-preview-classification",
+  );
+  const offenders = fs
+    .readdirSync(directory)
+    .filter((name) => name.endsWith(".mjs"))
+    .map((name) => {
+      const relativePath =
+        "install/local/wikidot-verification/src/listpages-preview-classification/" +
+        name;
+      return {
+        file: relativePath,
+        actual: lineCount(relativePath),
+      };
+    })
+    .filter(
+      ({ actual }) =>
+        actual > SPLIT_LISTPAGES_PREVIEW_CLASSIFICATION_BUDGET,
+    )
     .sort((left, right) => right.actual - left.actual);
   assert.deepEqual(offenders, []);
 });
