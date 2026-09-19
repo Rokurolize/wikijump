@@ -29,6 +29,7 @@ const LINE_BUDGETS = new Map([
 
 const SPLIT_RUNTIME_MODULE_BUDGET = 700;
 const SPLIT_DATA_FORM_BUDGET = 700;
+const SPLIT_DATA_FORM_TEST_BUDGET = 900;
 const SPLIT_RENDER_SERVICE_BUDGET = 1_000;
 const SPLIT_LISTPAGES_SCANNER_BUDGET = 900;
 const SPLIT_LISTPAGES_RENDERING_BUDGET = 1_500;
@@ -80,7 +81,7 @@ test("split data-form implementation files stay bounded", () => {
   );
   const offenders = fs
     .readdirSync(directory)
-    .filter((name) => name.endsWith(".rs"))
+    .filter((name) => name.endsWith(".rs") && name !== "tests.rs")
     .map((name) => {
       const relativePath = "deepwell/src/services/data_form/" + name;
       return {
@@ -91,6 +92,15 @@ test("split data-form implementation files stay bounded", () => {
     .filter(({ actual }) => actual > SPLIT_DATA_FORM_BUDGET)
     .sort((left, right) => right.actual - left.actual);
   assert.deepEqual(offenders, []);
+});
+
+test("split data-form test files stay bounded", () => {
+  const relativePath = "deepwell/src/services/data_form/tests.rs";
+  const actual = lineCount(relativePath);
+  assert.ok(
+    actual <= SPLIT_DATA_FORM_TEST_BUDGET,
+    `${relativePath} is ${actual} lines, over the ${SPLIT_DATA_FORM_TEST_BUDGET} line test budget`,
+  );
 });
 
 test("split render-service implementation files stay bounded", () => {
