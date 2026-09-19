@@ -12,6 +12,7 @@ const LINE_BUDGETS = new Map([
     3_000,
   ],
   ["deepwell/src/services/render/runtime_modules.rs", 1_900],
+  ["deepwell/src/services/render/list_pages/scanner.rs", 2_700],
   ["deepwell/src/endpoints/page.rs", 1_600],
   ["framerail/src/lib/server/ajax-module-connector.js", 1_500],
   ["deepwell/src/services/render/service.rs", 4_000],
@@ -19,6 +20,7 @@ const LINE_BUDGETS = new Map([
 
 const SPLIT_RUNTIME_MODULE_BUDGET = 700;
 const SPLIT_RENDER_SERVICE_BUDGET = 1_000;
+const SPLIT_LISTPAGES_SCANNER_BUDGET = 900;
 
 function lineCount(relativePath) {
   const text = fs.readFileSync(path.join(REPOSITORY_ROOT, relativePath), "utf8");
@@ -72,6 +74,32 @@ test("split render-service implementation files stay bounded", () => {
       };
     })
     .filter(({ actual }) => actual > SPLIT_RENDER_SERVICE_BUDGET)
+    .sort((left, right) => right.actual - left.actual);
+  assert.deepEqual(offenders, []);
+});
+
+test("split ListPages scanner implementation files stay bounded", () => {
+  const directory = path.join(
+    REPOSITORY_ROOT,
+    "deepwell/src/services/render/list_pages/scanner",
+  );
+  const offenders = fs
+    .readdirSync(directory)
+    .filter(
+      (name) =>
+        name.endsWith(".rs") &&
+        !name.endsWith("_tests.rs") &&
+        name !== "tests.rs",
+    )
+    .map((name) => {
+      const relativePath =
+        "deepwell/src/services/render/list_pages/scanner/" + name;
+      return {
+        file: relativePath,
+        actual: lineCount(relativePath),
+      };
+    })
+    .filter(({ actual }) => actual > SPLIT_LISTPAGES_SCANNER_BUDGET)
     .sort((left, right) => right.actual - left.actual);
   assert.deepEqual(offenders, []);
 });
