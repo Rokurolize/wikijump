@@ -15,7 +15,6 @@ import {
   SITE_CHANGES_EVIDENCE_ARTIFACT
 } from "../src/compatibility-inventory/site-changes-evidence.mjs"
 import { discoverWwsRouteRecords } from "../src/compatibility-inventory/wws-route-parser.mjs"
-import { scanRustTokens } from "../src/compatibility-inventory/rust-source.mjs"
 import { extractBalanced, importedBinding, maskTypeScriptCommentsAndLiterals, objectPropertyNames, splitTopLevel } from "../src/compatibility-inventory/typescript-source.mjs"
 import {
   CANONICAL_IMPLEMENTATION_LEDGER,
@@ -25,7 +24,7 @@ import {
   surface,
   uniqueSortedStrings
 } from "../src/compatibility-inventory/catalog-surfaces.mjs"
-import { discoverFtmlRawSurfaceManifest } from "../src/compatibility-inventory/ftml-surface-manifest.mjs"
+import { discoverFtmlRawSurfaceManifest } from "../src/compatibility-inventory/ftml-raw-surface-manifest.mjs"
 import { createPinnedSourceAccess } from "../src/compatibility-inventory/pinned-source.mjs"
 
 import { CANDIDATE_CASE_SETS } from "../src/candidate-case-command.mjs"
@@ -1987,7 +1986,11 @@ async function buildInventory(root, sourceRevision) {
     provenance.ftml,
     JSON.parse(SOURCE_INPUTS.get("docs/wikidot-specifications/catalog.json")),
     semantics,
-    { git: pinnedSource, semanticsRegistryPath: SEMANTICS_REGISTRY }
+    {
+      ftmlGitDir: FTML_GIT_DIR,
+      listGitTreeBlobs: pinnedSource.listGitTreeBlobs,
+      readGitBlobBatch: pinnedSource.readGitBlobBatch
+    }
   )
   const auditedOwnershipActive =
     sha256(SOURCE_INPUTS.get("docs/wikidot-specifications/catalog.json")) === AUDITED_CATALOG_SHA256

@@ -9,7 +9,11 @@ const REPOSITORY_ROOT = fileURLToPath(new URL("../../../..", import.meta.url));
 const LINE_BUDGETS = new Map([
   [
     "install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs",
-    3_000,
+    2_750,
+  ],
+  [
+    "install/local/wikidot-verification/src/compatibility-inventory/ftml-raw-surface-manifest.mjs",
+    300,
   ],
   [
     "install/local/wikidot-verification/src/listpages-preview-classification.mjs",

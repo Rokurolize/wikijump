@@ -1,6 +1,14 @@
 import { createHash } from "node:crypto"
+import path from "node:path"
+import process from "node:process"
 
 import { scanRustTokens } from "./rust-source.mjs"
+
+const SEMANTICS_REGISTRY = "docs/development/compatibility-surface-semantics.json"
+const DEFAULT_FTML_GIT_DIR = path.join(
+  process.env.WIKIJUMP_FTML_CHECKOUT ?? "/home/roku/src/Rokurolize/ftml",
+  ".git"
+)
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex")
@@ -10,7 +18,10 @@ function uniqueSortedStrings(values) {
   return [...new Set(values.filter((value) => typeof value === "string" && value !== ""))].sort()
 }
 
-export function loadFtmlSnapshot(revision, { ftmlGitDir, listGitTreeBlobs, readGitBlobBatch }) {
+function loadFtmlSnapshot(
+  revision,
+  { ftmlGitDir = DEFAULT_FTML_GIT_DIR, listGitTreeBlobs, readGitBlobBatch }
+) {
   const tree = listGitTreeBlobs([`--git-dir=${ftmlGitDir}`], revision, "pinned FTML tree")
   const moduleRoot = "src/parsing/rule/impls/block/blocks/module/modules/"
   const rendererRoot = "src/render/html/element/"
@@ -46,7 +57,7 @@ export function loadFtmlSnapshot(revision, { ftmlGitDir, listGitTreeBlobs, readG
   return { read, list }
 }
 
-export function rustEnumVariants(source, enumName, sourcePath) {
+function rustEnumVariants(source, enumName, sourcePath) {
   const tokens = scanRustTokens(source, sourcePath)
   const enumIndex = tokens.findIndex(
     (token, index) => token.value === "enum" && tokens[index + 1]?.value === enumName
@@ -80,7 +91,7 @@ export function rustEnumVariants(source, enumName, sourcePath) {
   return variants
 }
 
-export function ftmlRecord(surfaceId, kind, name, sourcePath, extra = {}) {
+function ftmlRecord(surfaceId, kind, name, sourcePath, extra = {}) {
   return {
     surface_id: surfaceId,
     kind,
@@ -90,7 +101,7 @@ export function ftmlRecord(surfaceId, kind, name, sourcePath, extra = {}) {
   }
 }
 
-export function buildFtmlCrosswalk(catalog, recordIds, semantics, semanticsRegistryPath) {
+function buildFtmlCrosswalk(catalog, recordIds, semantics) {
   const nominated = catalog.features
     .filter((feature) =>
       (feature.suggested_tdd_seams ?? []).some((seam) => seam.includes("FTML public parse/render"))
@@ -98,22 +109,22 @@ export function buildFtmlCrosswalk(catalog, recordIds, semantics, semanticsRegis
     .map(({ id }) => id)
     .sort()
   const rows = semantics.ftml?.catalog_crosswalk
-  if (!Array.isArray(rows)) throw new Error(`${semanticsRegistryPath} has no FTML catalog crosswalk`)
+  if (!Array.isArray(rows)) throw new Error(`${SEMANTICS_REGISTRY} has no FTML catalog crosswalk`)
   const featureIds = rows.map(({ feature_id: featureId }) => featureId)
   if (
     new Set(featureIds).size !== featureIds.length ||
     JSON.stringify([...featureIds].sort()) !== JSON.stringify(nominated)
   ) {
-    throw new Error(`${semanticsRegistryPath} FTML crosswalk does not exactly match Catalog nominations`)
+    throw new Error(`${SEMANTICS_REGISTRY} FTML crosswalk does not exactly match Catalog nominations`)
   }
   for (const row of rows) {
     const fields = ["parsed_by", "rendered_by", "tested_by"]
     if (fields.some((field) => !Array.isArray(row[field]))) {
-      throw new Error(`${semanticsRegistryPath} has malformed FTML crosswalk row: ${row.feature_id}`)
+      throw new Error(`${SEMANTICS_REGISTRY} has malformed FTML crosswalk row: ${row.feature_id}`)
     }
     const ftmlSurfaces = uniqueSortedStrings(fields.flatMap((field) => row[field]))
     if (JSON.stringify(ftmlSurfaces) !== JSON.stringify(row.ftml_surfaces)) {
-      throw new Error(`${semanticsRegistryPath} has inconsistent FTML crosswalk row: ${row.feature_id}`)
+      throw new Error(`${SEMANTICS_REGISTRY} has inconsistent FTML crosswalk row: ${row.feature_id}`)
     }
     for (const surfaceId of ftmlSurfaces) {
       if (!recordIds.has(surfaceId)) throw new Error(`${row.feature_id} links unknown FTML surface: ${surfaceId}`)
@@ -122,7 +133,7 @@ export function buildFtmlCrosswalk(catalog, recordIds, semantics, semanticsRegis
       row.runtime_owner !== null &&
       row.runtime_owner !== `wikijump.runtime:${row.feature_id}`
     ) {
-      throw new Error(`${semanticsRegistryPath} has invalid runtime owner: ${row.feature_id}`)
+      throw new Error(`${SEMANTICS_REGISTRY} has invalid runtime owner: ${row.feature_id}`)
     }
   }
   return rows.map((row) => ({ ...row }))
@@ -132,10 +143,10 @@ export function discoverFtmlRawSurfaceManifest(
   ftmlSource,
   catalog,
   semantics,
-  { git, semanticsRegistryPath }
+  dependencies
 ) {
   const revision = ftmlSource.commit
-  const snapshot = loadFtmlSnapshot(revision, git)
+  const snapshot = loadFtmlSnapshot(revision, dependencies)
   const sources = new Map()
   const records = []
   const add = (record) => records.push(record)
@@ -241,6 +252,6 @@ export function discoverFtmlRawSurfaceManifest(
     registries: [...sources.values()].sort((left, right) => left.path.localeCompare(right.path, "en")),
     counts,
     records: records.sort((left, right) => left.surface_id.localeCompare(right.surface_id, "en")),
-    catalog_crosswalk: buildFtmlCrosswalk(catalog, recordIds, semantics, semanticsRegistryPath)
+    catalog_crosswalk: buildFtmlCrosswalk(catalog, recordIds, semantics)
   }
 }
