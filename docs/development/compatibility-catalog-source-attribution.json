@@ -591,7 +591,7 @@
     {
       "surface_id": "catalog-feature:syntax-images",
       "sources": [
-        { "path": "deepwell/src/services/render/service.rs", "anchor": "fn expand_wikidot_image_block_includes(" },
+        { "path": "deepwell/src/services/render/service/wikidot_preprocess.rs", "anchor": "fn expand_wikidot_image_block_includes(" },
         { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) fn localize_wikidot_local_file_urls(" }
       ],
       "tests": [{ "path": "deepwell/tests/media.rs", "anchor": "image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page" }]
@@ -770,7 +770,7 @@
     {
       "surface_id": "catalog-feature:expressions",
       "sources": [
-        { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) fn resolve_wikidot_parser_functions(value: &str) -> String" },
+        { "path": "deepwell/src/services/render/service/wikidot_preprocess.rs", "anchor": "pub(in crate::services::render) fn resolve_wikidot_parser_functions(" },
         { "path": "deepwell/src/services/render/page_preview.rs", "anchor": "WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);" }
       ],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "documented_expression_parser_functions_render_at_the_public_preview_seam" }, { "path": "deepwell/tests/page.rs", "anchor": "expression_size_budget_matches_the_public_preview_seam" }]
@@ -872,7 +872,7 @@
     {
       "surface_id": "catalog-feature:syntax-collapsible-blocks",
       "sources": [
-        { "path": "deepwell/src/services/render/service.rs", "anchor": "fn normalize_wikidot_cross_closed_div_collapsibles(" },
+        { "path": "deepwell/src/services/render/service/wikidot_preprocess.rs", "anchor": "fn normalize_wikidot_cross_closed_div_collapsibles(" },
         { "path": "framerail/src/lib/wikidot/wikidot-collapsibles.ts", "anchor": "export function wikidotCollapsibles(node: HTMLElement)" }
       ],
       "tests": [{ "path": "framerail/tests/wikidot-collapsible.spec.ts", "anchor": "Wikidot-compatible collapsibles preserve legacy interaction" }]

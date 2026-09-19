@@ -11385,7 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "0a774b5e7d1411ffe4b2f2b5ccb2157d0bb677bb2e2e167a6af2aa45197b7059"
+      "source_input_set_sha256": "8b4b80687b46a9f1b01b6725da52786adbc9ea67947267b4f01cc0050efc03c5"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11534,7 +11534,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "3c686839ad27f13764a5e741b53ddf551c721e797959fdc9249780be68d6e0a6"
+        "sha256": "bb24959e03d08658728e463282e3ec08ea244e5acca3a55ac4071ae520c95561"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -14461,7 +14461,7 @@
         "status": "implemented",
         "references": [
           "deepwell/src/services/render/page_preview.rs#WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);",
-          "deepwell/src/services/render/service.rs#pub(super) fn resolve_wikidot_parser_functions(value: &str) -> String"
+          "deepwell/src/services/render/service/wikidot_preprocess.rs#pub(in crate::services::render) fn resolve_wikidot_parser_functions("
         ]
       },
       "candidate": {
@@ -20532,7 +20532,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/render/service.rs#fn normalize_wikidot_cross_closed_div_collapsibles(",
+          "deepwell/src/services/render/service/wikidot_preprocess.rs#fn normalize_wikidot_cross_closed_div_collapsibles(",
           "framerail/src/lib/wikidot/wikidot-collapsibles.ts#export function wikidotCollapsibles(node: HTMLElement)"
         ]
       },
@@ -21148,8 +21148,8 @@
           "deepwell/Cargo.toml",
           "deepwell/src/services/context.rs",
           "deepwell/src/services/file_revision/service.rs",
-          "deepwell/src/services/render/service.rs#fn expand_wikidot_image_block_includes(",
-          "deepwell/src/services/render/service.rs#pub(super) fn localize_wikidot_local_file_urls("
+          "deepwell/src/services/render/service.rs#pub(super) fn localize_wikidot_local_file_urls(",
+          "deepwell/src/services/render/service/wikidot_preprocess.rs#fn expand_wikidot_image_block_includes("
         ]
       },
       "candidate": {
