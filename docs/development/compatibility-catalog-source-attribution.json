@@ -26,7 +26,7 @@
     {
       "surface_id": "catalog-feature:module-createaccount",
       "sources": [
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "render_www_special_system_module" },
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "render_www_special_system_module" },
         { "path": "deepwell/src/services/render/url_arguments.rs", "anchor": "wikitext_has_www_special_runtime_module" }
       ],
       "tests": [
@@ -37,15 +37,15 @@
     {
       "surface_id": "catalog-feature:module-deleteaccount",
       "sources": [
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "WWW_DELETE_ACCOUNT_INVALID_CODE_HTML" },
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "render_www_special_system_module" }
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "WWW_DELETE_ACCOUNT_INVALID_CODE_HTML" },
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "render_www_special_system_module" }
       ],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "hardened_www_special_modules_execute_only_on_their_system_pages" }]
     },
     {
       "surface_id": "catalog-feature:module-frontspecialmini",
       "sources": [
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "render_www_front_special_mini" },
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "render_www_front_special_mini" },
         { "path": "deepwell/src/services/render/url_arguments.rs", "anchor": "WWW_SPECIAL_RUNTIME_MODULE_REGEX" }
       ],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "hardened_www_special_modules_execute_only_on_their_system_pages" }]
@@ -53,17 +53,17 @@
     {
       "surface_id": "catalog-feature:module-newsite",
       "sources": [
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "WWW_NEW_SITE_ANONYMOUS_HTML" },
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "WWW_NEW_SITE_AUTHENTICATED_HTML" },
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "render_www_special_system_module" }
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "WWW_NEW_SITE_ANONYMOUS_HTML" },
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "WWW_NEW_SITE_AUTHENTICATED_HTML" },
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "render_www_special_system_module" }
       ],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "hardened_www_special_modules_execute_only_on_their_system_pages" }]
     },
     {
       "surface_id": "catalog-feature:module-sitestagcloud",
       "sources": [
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "render_www_sites_tag_cloud" },
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "WWW_SPECIAL_SYSTEM_MODULE_REGEX" }
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "render_www_sites_tag_cloud" },
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "WWW_SPECIAL_SYSTEM_MODULE_REGEX" }
       ],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "hardened_www_special_modules_execute_only_on_their_system_pages" }]
     },
@@ -249,7 +249,7 @@
     },
     {
       "surface_id": "catalog-feature:module-listdrafts",
-      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_list_drafts_modules" }],
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules/user_lists.rs", "anchor": "expand_list_drafts_modules" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "listdrafts_module_matches_live_empty_draft_state" }]
     },
     {
@@ -277,12 +277,12 @@
     },
     {
       "surface_id": "catalog-feature:module-membershipapply",
-      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_membership_apply_modules" }],
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules/membership.rs", "anchor": "expand_membership_apply_modules" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "public_membership_module_states_are_distinct_and_opaque" }]
     },
     {
       "surface_id": "catalog-feature:module-membershipbypassword",
-      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_membership_by_password_modules" }],
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules/membership.rs", "anchor": "expand_membership_by_password_modules" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "membership_by_password_module_matches_live_anonymous_and_member_output" }]
     },
     {
@@ -304,7 +304,7 @@
     },
     {
       "surface_id": "catalog-feature:module-currencyconvert",
-      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn expand_www_currency_convert_system_module(" }],
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "fn expand_www_currency_convert_system_module(" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "currencyconvert_executes_only_on_the_www_plans_system_page" }]
     },
     {
@@ -388,7 +388,7 @@
     },
     {
       "surface_id": "catalog-feature:module-tagcloud",
-      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_tag_cloud_modules" }],
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules/tag_cloud.rs", "anchor": "expand_tag_cloud_modules" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "tagcloud_module_renders_live_category_links_styles_and_boolean_quirks" }]
     },
     {
@@ -1158,7 +1158,7 @@
     {
       "surface_id": "catalog-feature:subscription-plan-matrix",
       "sources": [
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn expand_www_currency_convert_system_module(" },
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "fn expand_www_currency_convert_system_module(" },
         { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) async fn render_inner(" }
       ],
       "tests": [
