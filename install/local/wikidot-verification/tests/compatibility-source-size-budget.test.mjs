@@ -11,11 +11,13 @@ const LINE_BUDGETS = new Map([
     "install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs",
     3_000,
   ],
-  ["deepwell/src/services/render/runtime_modules.rs", 2_800],
+  ["deepwell/src/services/render/runtime_modules.rs", 1_900],
   ["deepwell/src/endpoints/page.rs", 1_600],
   ["framerail/src/lib/server/ajax-module-connector.js", 1_500],
   ["deepwell/src/services/render/service.rs", 4_800],
 ]);
+
+const SPLIT_RUNTIME_MODULE_BUDGET = 700;
 
 function lineCount(relativePath) {
   const text = fs.readFileSync(path.join(REPOSITORY_ROOT, relativePath), "utf8");
@@ -30,5 +32,25 @@ test("compatibility-sensitive production entrypoints stay within their source-si
       offenders.push({ file: relativePath, actual, maximum });
     }
   }
+  assert.deepEqual(offenders, []);
+});
+
+test("split runtime-module implementation files stay bounded", () => {
+  const directory = path.join(
+    REPOSITORY_ROOT,
+    "deepwell/src/services/render/runtime_modules",
+  );
+  const offenders = fs
+    .readdirSync(directory)
+    .filter((name) => name.endsWith(".rs"))
+    .map((name) => {
+      const relativePath = "deepwell/src/services/render/runtime_modules/" + name;
+      return {
+        file: relativePath,
+        actual: lineCount(relativePath),
+      };
+    })
+    .filter(({ actual }) => actual > SPLIT_RUNTIME_MODULE_BUDGET)
+    .sort((left, right) => right.actual - left.actual);
   assert.deepEqual(offenders, []);
 });
