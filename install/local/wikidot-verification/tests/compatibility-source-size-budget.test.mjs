@@ -9,13 +9,20 @@ const REPOSITORY_ROOT = fileURLToPath(new URL("../../../..", import.meta.url));
 const LINE_BUDGETS = new Map([
   [
     "install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs",
-    3_000,
+    2_750,
+  ],
+  [
+    "install/local/wikidot-verification/src/compatibility-inventory/ftml-raw-surface-manifest.mjs",
+    300,
   ],
   [
     "install/local/wikidot-verification/src/listpages-preview-classification.mjs",
     2_300,
   ],
+  ["deepwell/src/services/data_form.rs", 1_450],
   ["deepwell/src/services/render/runtime_modules.rs", 1_900],
+  ["deepwell/src/services/render/list_pages/mod.rs", 1_500],
+  ["deepwell/src/services/render/list_pages/bounded_expansion.rs", 1_000],
   ["deepwell/src/services/render/list_pages/scanner.rs", 2_700],
   ["deepwell/src/services/render/list_pages/rendering.rs", 300],
   ["deepwell/src/services/render/list_pages/substitution.rs", 2_700],
@@ -27,6 +34,7 @@ const LINE_BUDGETS = new Map([
 ]);
 
 const SPLIT_RUNTIME_MODULE_BUDGET = 700;
+const SPLIT_DATA_FORM_BUDGET = 700;
 const SPLIT_RENDER_SERVICE_BUDGET = 1_000;
 const SPLIT_LISTPAGES_SCANNER_BUDGET = 900;
 const SPLIT_LISTPAGES_RENDERING_BUDGET = 1_500;
@@ -34,6 +42,7 @@ const SPLIT_LISTPAGES_SUBSTITUTION_BUDGET = 500;
 const SPLIT_LISTPAGES_DELAYED_BUDGET = 700;
 const SPLIT_PAGE_QUERY_SERVICE_BUDGET = 700;
 const SPLIT_LISTPAGES_PREVIEW_CLASSIFICATION_BUDGET = 1_000;
+const SPLIT_COMPATIBILITY_INVENTORY_BUDGET = 700;
 
 function lineCount(relativePath) {
   const text = fs.readFileSync(path.join(REPOSITORY_ROOT, relativePath), "utf8");
@@ -67,6 +76,26 @@ test("split runtime-module implementation files stay bounded", () => {
       };
     })
     .filter(({ actual }) => actual > SPLIT_RUNTIME_MODULE_BUDGET)
+    .sort((left, right) => right.actual - left.actual);
+  assert.deepEqual(offenders, []);
+});
+
+test("split data-form implementation files stay bounded", () => {
+  const directory = path.join(
+    REPOSITORY_ROOT,
+    "deepwell/src/services/data_form",
+  );
+  const offenders = fs
+    .readdirSync(directory)
+    .filter((name) => name.endsWith(".rs"))
+    .map((name) => {
+      const relativePath = "deepwell/src/services/data_form/" + name;
+      return {
+        file: relativePath,
+        actual: lineCount(relativePath),
+      };
+    })
+    .filter(({ actual }) => actual > SPLIT_DATA_FORM_BUDGET)
     .sort((left, right) => right.actual - left.actual);
   assert.deepEqual(offenders, []);
 });
@@ -221,6 +250,28 @@ test("split ListPages preview-classification helpers stay bounded", () => {
       ({ actual }) =>
         actual > SPLIT_LISTPAGES_PREVIEW_CLASSIFICATION_BUDGET,
     )
+    .sort((left, right) => right.actual - left.actual);
+  assert.deepEqual(offenders, []);
+});
+
+test("split compatibility-inventory source-discovery helpers stay bounded", () => {
+  const directory = path.join(
+    REPOSITORY_ROOT,
+    "install/local/wikidot-verification/src/compatibility-inventory",
+  );
+  const offenders = fs
+    .readdirSync(directory)
+    .filter((name) => name.endsWith(".mjs"))
+    .map((name) => {
+      const relativePath =
+        "install/local/wikidot-verification/src/compatibility-inventory/" +
+        name;
+      return {
+        file: relativePath,
+        actual: lineCount(relativePath),
+      };
+    })
+    .filter(({ actual }) => actual > SPLIT_COMPATIBILITY_INVENTORY_BUDGET)
     .sort((left, right) => right.actual - left.actual);
   assert.deepEqual(offenders, []);
 });
