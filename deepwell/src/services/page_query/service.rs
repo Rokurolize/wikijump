@@ -51,6 +51,7 @@ use std::collections::BTreeMap;
 mod filtering;
 mod ordering;
 mod projection;
+mod relational_filtering;
 mod score_filter;
 
 #[cfg(test)]
@@ -72,6 +73,10 @@ use self::ordering::{
 use self::projection::{
     PageQueryProjection, PageQuerySelectedPage, current_parent_ids,
     project_page_query_results,
+};
+
+use self::relational_filtering::{
+    author_condition, outgoing_link_condition, page_parent_condition,
 };
 
 #[cfg(test)]
@@ -303,96 +308,17 @@ impl PageQueryService {
         };
         condition = condition.add(page_category_condition);
 
-        let page_parent_condition = match page_parent {
-            PageParentSelector::All => None,
-            PageParentSelector::NoParent => Some(
-                page::Column::PageId.not_in_subquery(
-                    Query::select()
-                        .column(page_parent::Column::ChildPageId)
-                        .from(PageParent)
-                        .to_owned(),
-                ),
-            ),
-
-            PageParentSelector::SameParents => Some(
-                page::Column::PageId.in_subquery(
-                    Query::select()
-                        .column(page_parent::Column::ChildPageId)
-                        .from(PageParent)
-                        .and_where(
-                            page_parent::Column::ParentPageId.is_in(
-                                current_parent_ids(ctx, current_site_id, current_page_id)
-                                    .await
-                                    .or_raise(make_error)?,
-                            ),
-                        )
-                        .to_owned(),
-                ),
-            ),
-
-            PageParentSelector::DifferentParents => {
-                condition = condition.add(
-                    page::Column::PageId.in_subquery(
-                        Query::select()
-                            .column(page_parent::Column::ChildPageId)
-                            .from(PageParent)
-                            .to_owned(),
-                    ),
-                );
-                Some(
-                    page::Column::PageId.not_in_subquery(
-                        Query::select()
-                            .column(page_parent::Column::ChildPageId)
-                            .from(PageParent)
-                            .and_where(
-                                page_parent::Column::ParentPageId.is_in(
-                                    current_parent_ids(
-                                        ctx,
-                                        current_site_id,
-                                        current_page_id,
-                                    )
-                                    .await
-                                    .or_raise(make_error)?,
-                                ),
-                            )
-                            .to_owned(),
-                    ),
-                )
-            }
-
-            PageParentSelector::ChildOf => Some(
-                page::Column::PageId.in_subquery(
-                    Query::select()
-                        .column(page_parent::Column::ChildPageId)
-                        .from(PageParent)
-                        .and_where(page_parent::Column::ParentPageId.eq(current_page_id))
-                        .to_owned(),
-                ),
-            ),
-
-            // Wikidot's parent selector is any-of rather than all-of.
-            PageParentSelector::HasParents(parents) => {
-                let parent_ids = PageService::get_pages(ctx, queried_site_id, parents)
-                    .await
-                    .or_raise(make_error)?
-                    .into_iter()
-                    .map(|page| page.page_id);
-
-                Some(
-                    page::Column::PageId.in_subquery(
-                        Query::select()
-                            .column(page_parent::Column::ChildPageId)
-                            .from(PageParent)
-                            .and_where(
-                                page_parent::Column::ParentPageId.is_in(parent_ids),
-                            )
-                            .to_owned(),
-                    ),
-                )
-            }
-        };
-        if let Some(page_parent_condition) = page_parent_condition {
-            condition = condition.add(page_parent_condition);
+        if let Some(parent_condition) = page_parent_condition(
+            ctx,
+            current_site_id,
+            queried_site_id,
+            current_page_id,
+            page_parent,
+        )
+        .await
+        .or_raise(make_error)?
+        {
+            condition = condition.add(parent_condition);
         }
 
         // Slug
@@ -445,126 +371,15 @@ impl PageQueryService {
             }
         }
 
-        // Initial page author. Local pages use the user ID on their earliest available revision. Corpus imports intentionally keep the Wikidot display name in wikidot_page_snapshot instead of fabricating local users, so the two representations are combined with OR semantics.
-        match author {
-            AuthorSelector::All => {}
-            AuthorSelector::None => {
-                condition = condition.add(SimpleExpr::Custom("FALSE".into()));
-            }
-            AuthorSelector::Any {
-                user_ids,
-                wikidot_snapshot_names,
-            } => {
-                let normalized_snapshot_names = wikidot_snapshot_names
-                    .iter()
-                    .map(|name| normalize_wikidot_author_name(name))
-                    .filter(|name| !name.is_empty())
-                    .collect::<Vec<_>>();
-                let mut author_condition = Condition::any();
-                let mut has_author_condition = false;
-
-                if !user_ids.is_empty() {
-                    let placeholders = postgres_bind_placeholders(user_ids.len());
-                    author_condition = author_condition.add(Expr::cust_with_values(
-                        format!(
-                            "EXISTS (SELECT 1 FROM page_revision pr WHERE pr.page_id = page.page_id AND pr.user_id IN ({placeholders}) AND pr.revision_id = (SELECT pr2.revision_id FROM page_revision pr2 WHERE pr2.page_id = page.page_id ORDER BY pr2.revision_number ASC, pr2.revision_id ASC LIMIT 1))"
-                        ),
-                        user_ids.iter().copied(),
-                    ));
-                    has_author_condition = true;
-                }
-
-                if !normalized_snapshot_names.is_empty() {
-                    let placeholders =
-                        postgres_bind_placeholders(normalized_snapshot_names.len());
-                    let normalized_name_sql =
-                        wikidot_author_name_sql("snapshot.created_by_name");
-                    author_condition = author_condition.add(Expr::cust_with_values(
-                        format!(
-                            "EXISTS (SELECT 1 FROM wikidot_page_snapshot snapshot WHERE snapshot.page_id = page.page_id AND {normalized_name_sql} IN ({placeholders}))"
-                        ),
-                        normalized_snapshot_names,
-                    ));
-                    has_author_condition = true;
-                }
-
-                if has_author_condition {
-                    condition = condition.add(author_condition);
-                } else {
-                    condition = condition.add(SimpleExpr::Custom("FALSE".into()));
-                }
-            }
-            AuthorSelector::NotAny {
-                user_ids,
-                wikidot_snapshot_names,
-            } => {
-                let normalized_snapshot_names = wikidot_snapshot_names
-                    .iter()
-                    .map(|name| normalize_wikidot_author_name(name))
-                    .filter(|name| !name.is_empty())
-                    .collect::<Vec<_>>();
-
-                if !user_ids.is_empty() {
-                    let placeholders = postgres_bind_placeholders(user_ids.len());
-                    condition = condition.add(Expr::cust_with_values(
-                        format!(
-                            "NOT EXISTS (SELECT 1 FROM page_revision pr WHERE pr.page_id = page.page_id AND pr.user_id IN ({placeholders}) AND pr.revision_id = (SELECT pr2.revision_id FROM page_revision pr2 WHERE pr2.page_id = page.page_id ORDER BY pr2.revision_number ASC, pr2.revision_id ASC LIMIT 1))"
-                        ),
-                        user_ids.iter().copied(),
-                    ));
-                }
-
-                if !normalized_snapshot_names.is_empty() {
-                    let placeholders =
-                        postgres_bind_placeholders(normalized_snapshot_names.len());
-                    let normalized_name_sql =
-                        wikidot_author_name_sql("snapshot.created_by_name");
-                    condition = condition.add(Expr::cust_with_values(
-                        format!(
-                            "NOT EXISTS (SELECT 1 FROM wikidot_page_snapshot snapshot WHERE snapshot.page_id = page.page_id AND {normalized_name_sql} IN ({placeholders}))"
-                        ),
-                        normalized_snapshot_names,
-                    ));
-                }
-            }
+        if let Some(author_condition) = author_condition(author) {
+            condition = condition.add(author_condition);
         }
-
-        // Contains-link
-        //
-        // Selects pages that have an outgoing link (`from_page_id`)
-        // to a specified page (`to_page_id`). An empty selector means
-        // no link constraint; adding an empty subquery here makes every
-        // ordinary ListPages query return no rows.
-        if !contains_outgoing_links.is_empty() {
-            condition = condition.add(
-                page::Column::PageId.in_subquery(
-                    Query::select()
-                        .column(page_connection::Column::FromPageId)
-                        .from(PageConnection)
-                        .and_where({
-                            let incoming_ids = PageService::get_pages(
-                                ctx,
-                                queried_site_id,
-                                contains_outgoing_links,
-                            )
-                            .await
-                            .or_raise(make_error)?
-                            .into_iter()
-                            .map(|page| page.page_id);
-
-                            page_connection::Column::ToPageId.is_in(incoming_ids)
-                        })
-                        .and_where(
-                            page_connection::Column::ConnectionType
-                                .eq(ConnectionType::Link),
-                        )
-                        .and_where(
-                            Expr::col(page_connection::Column::FromPageId)
-                                .ne(Expr::col(page_connection::Column::ToPageId)),
-                        )
-                        .to_owned(),
-                ),
-            );
+        if let Some(outgoing_link_condition) =
+            outgoing_link_condition(ctx, queried_site_id, contains_outgoing_links)
+                .await
+                .or_raise(make_error)?
+        {
+            condition = condition.add(outgoing_link_condition);
         }
 
         condition = condition.add(date_selector_condition(
