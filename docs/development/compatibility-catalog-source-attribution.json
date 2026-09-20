@@ -862,7 +862,7 @@
     {
       "surface_id": "catalog-feature:syntax-attachment",
       "sources": [{ "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) fn localize_wikidot_local_file_urls(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "listpages_content_executes_attachment_syntax_with_selected_page_owner" }]
+      "tests": [{ "path": "deepwell/tests/page/list_pages_runtime.rs", "anchor": "listpages_content_executes_attachment_syntax_with_selected_page_owner" }]
     },
     {
       "surface_id": "catalog-feature:syntax-buttons",
