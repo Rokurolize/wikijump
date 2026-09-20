@@ -13,6 +13,8 @@
 #![allow(clippy::wildcard_imports)]
 
 use super::*;
+#[cfg(test)]
+use crate::services::render::list_pages::template::ListPagesTemplatePlan;
 
 #[cfg(test)]
 pub(in crate::services::render) fn list_pages_body_variables_supported(
