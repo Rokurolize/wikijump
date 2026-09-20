@@ -53,11 +53,10 @@ macro_rules! run_endpoint_err {
         // Not using .expect_err() because we want a custom panic message
         match deepwell::endpoints::all::$endpoint($runner.context(), $params).await {
             Err(error) => error,
-            Ok(result) => {
+            Ok(_) => {
                 panic!(
-                    "Call to method '{}' succeeded when it should have failed\n{:?}",
+                    "Call to method '{}' succeeded when it should have failed",
                     stringify!($endpoint),
-                    result,
                 );
             }
         }

@@ -11385,7 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "a56708d22e4a87e2041ba81cdd2976dd2948205717cab0f4746f43d67dc23fb6"
+      "source_input_set_sha256": "d1ec6618185fccbfa944deb8d8d2a8189be6730b8dde58e6e38e794d54b50a00"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11534,7 +11534,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "a9858a1b03f22a6b52d1d721cfb857969c81c5ed1d74bbbf1da7fcc2827d6ff6"
+        "sha256": "9f98e83f9620d9f9f6c0ca6c7cdad3e9a39890c53afd4978d4461960493e983f"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11542,7 +11542,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "91bd2f04884ed184e3092c1f55fc9b343897fa04f985705980d3504fef9fcf10"
+        "sha256": "1ef2bb8504d5f429041e9d0eab5f50ceff033cc8ef1527c4fa2ed01c68198879"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11606,7 +11606,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "e4dc2b9250ec7f0f351bb14a52a3237c1cc77c09a799afbaef281b5407bbdd24"
+        "sha256": "dd3f114c8282190b109c10acc3a7875063729140a8ed966fdeb1fe9ff9776f95"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -14551,7 +14551,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
         ]
       },
       "evidence": {
@@ -14595,7 +14595,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
         ]
       },
       "evidence": {
@@ -14639,7 +14639,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
         ]
       },
       "evidence": {
@@ -14683,7 +14683,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
           "deepwell/tests/user.rs#user_mutations_enforce_request_actor_and_staff_only_fields",
           "framerail/tests/account-route-boundaries.test.js#display settings persist the forum signature through the existing account mutation"
         ]
@@ -14732,7 +14732,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
         ]
       },
       "evidence": {
@@ -14776,7 +14776,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
         ]
       },
       "evidence": {
@@ -15590,7 +15590,8 @@
         "cases": [],
         "tests": [
           "deepwell/tests/page.rs#backlinks_module_ignores_arguments_like_live_wikidot",
-          "deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links"
+          "deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_renders_current_page_incoming_links"
         ]
       },
       "evidence": {
@@ -15645,9 +15646,9 @@
           "deepwell/src/services/render/categories.rs::tests::default_category_is_visible_even_when_hidden_categories_are_not",
           "deepwell/src/services/render/categories.rs::tests::include_hidden_categories_emit_live_options_marker",
           "deepwell/src/services/render/categories.rs::tests::include_hidden_matches_live_exact_quoted_argument",
-          "deepwell/tests/page.rs#categories_module_lists_active_categories_and_honors_include_hidden",
           "deepwell/tests/page.rs::categories_module_lists_active_categories_and_honors_include_hidden",
-          "deepwell/tests/page.rs::categories_runtime_inventory_is_scoped_to_the_request_actor"
+          "deepwell/tests/page.rs::categories_runtime_inventory_is_scoped_to_the_request_actor",
+          "deepwell/tests/page/page_modules.rs#categories_module_lists_active_categories_and_honors_include_hidden"
         ]
       },
       "evidence": {
@@ -15801,6 +15802,7 @@
         "tests": [
           "deepwell/tests/page.rs#forum_comments_list_resolves_only_visible_page_discussions",
           "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "framerail/tests/ajax-module-connector.test.js#dispatches the sealed page comments reads without adding mutation authority",
           "install/local/wikidot-verification/tests/comments-hideform-actor-artifact.test.mjs#authenticated Comments hideForm evidence preserves the exact actor and form-state differential",
           "install/local/wikidot-verification/tests/comments-hideform-browser-candidate-case-set.test.mjs#Comments hideForm is registered as one executable candidate case with both actor controls"
@@ -16381,6 +16383,7 @@
         "tests": [
           "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/page/forum.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "framerail/tests/ajax-module-connector.test.js#dispatches the sealed read-only forum modules with Wikidot metadata",
           "framerail/tests/forum-routes.test.js#the observed category pager suffix reaches the exact AMC page"
         ]
@@ -16435,7 +16438,8 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries"
+          "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#forum_modules_match_live_missing_context_and_owner_boundaries"
         ]
       },
       "evidence": {
@@ -16482,8 +16486,8 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/page/forum.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "framerail/tests/ajax-module-connector.test.js#dispatches the sealed read-only forum modules with Wikidot metadata",
           "framerail/tests/forum-routes.test.js#forum route loads use the exact sealed read-only module requests"
         ]
@@ -16540,6 +16544,7 @@
         "tests": [
           "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/page/forum.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "framerail/tests/ajax-module-connector.test.js#dispatches the sealed read-only forum modules with Wikidot metadata",
           "framerail/tests/forum-routes.test.js#forum route loads use the exact sealed read-only module requests"
         ]
@@ -16601,6 +16606,7 @@
           "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
           "deepwell/tests/page.rs#frontforum_custom_body_matches_observed_public_preview_boundaries",
+          "deepwell/tests/page/forum.rs#frontforum_custom_body_matches_observed_public_preview_boundaries",
           "install/local/wikidot-verification/tests/frontforum-custom-body-artifact.test.mjs#FrontForum custom-body artifact seals the documented variable and owner boundaries"
         ]
       },
@@ -17176,7 +17182,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#public_membership_module_states_are_distinct_and_opaque"
+          "deepwell/tests/page/membership.rs#public_membership_module_states_are_distinct_and_opaque"
         ]
       },
       "evidence": {
@@ -17222,8 +17228,8 @@
         "tests": [
           "deepwell/src/services/render/render_dependency.rs::tests::render_dependency_viewer_module_is_viewer_dependent",
           "deepwell/src/services/render/url_arguments.rs::tests::a_pages_module_always_requires_runtime_rendering",
-          "deepwell/tests/page.rs#membership_by_password_module_matches_live_anonymous_and_member_output",
-          "deepwell/tests/page.rs::membership_by_password_module_matches_live_anonymous_and_member_output"
+          "deepwell/tests/page.rs::membership_by_password_module_matches_live_anonymous_and_member_output",
+          "deepwell/tests/page/membership.rs#membership_by_password_module_matches_live_anonymous_and_member_output"
         ]
       },
       "evidence": {
@@ -17319,7 +17325,8 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
+          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
         ]
       },
       "evidence": {
@@ -17368,7 +17375,8 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
+          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
         ]
       },
       "evidence": {
@@ -17417,7 +17425,8 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
+          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
         ]
       },
       "evidence": {
@@ -18165,8 +18174,8 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/page/forum.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "framerail/tests/ajax-module-connector.test.js#dispatches the sealed read-only forum modules with Wikidot metadata"
         ]
       },
@@ -18220,7 +18229,8 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#recent_threads_matches_live_placeholder_and_owner_boundaries"
+          "deepwell/tests/page.rs#recent_threads_matches_live_placeholder_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#recent_threads_matches_live_placeholder_and_owner_boundaries"
         ]
       },
       "evidence": {
@@ -19090,7 +19100,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#categories_module_lists_active_categories_and_honors_include_hidden"
+          "deepwell/tests/page/page_modules.rs#categories_module_lists_active_categories_and_honors_include_hidden"
         ]
       },
       "evidence": {
@@ -19274,7 +19284,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#page_backlinks_view_filters_before_exposing_titles_and_slugs"
+          "deepwell/tests/page/page_modules.rs#page_backlinks_view_filters_before_exposing_titles_and_slugs"
         ]
       },
       "evidence": {
@@ -19413,7 +19423,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
+          "deepwell/tests/page/page_modules.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
           "deepwell/tests/page_template_assignment.rs#category_page_template_prefills_new_page_source_and_can_be_cleared"
         ]
       },
@@ -25273,7 +25283,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract"
+          "deepwell/tests/page/membership.rs#membership_application_and_password_mutations_match_disposable_live_contract"
         ]
       },
       "evidence": {
@@ -25318,7 +25328,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract"
+          "deepwell/tests/page/membership.rs#membership_application_and_password_mutations_match_disposable_live_contract"
         ]
       },
       "evidence": {
@@ -25363,7 +25373,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract"
+          "deepwell/tests/page/membership.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract"
         ]
       },
       "evidence": {
@@ -25453,7 +25463,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract"
+          "deepwell/tests/page/membership.rs#membership_application_and_password_mutations_match_disposable_live_contract"
         ]
       },
       "evidence": {
@@ -26038,7 +26048,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#page_backlinks_view_filters_before_exposing_titles_and_slugs"
+          "deepwell/tests/page/page_modules.rs#page_backlinks_view_filters_before_exposing_titles_and_slugs"
         ]
       },
       "evidence": {
@@ -28828,7 +28838,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#site_tools_orphaned_pages_filters_before_exposing_ordered_rows"
+          "deepwell/tests/page/page_modules.rs#site_tools_orphaned_pages_filters_before_exposing_ordered_rows"
         ]
       },
       "evidence": {
@@ -28873,7 +28883,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#site_tools_wanted_pages_filters_sources_before_grouping_ordered_targets"
+          "deepwell/tests/page/page_modules.rs#site_tools_wanted_pages_filters_sources_before_grouping_ordered_targets"
         ]
       },
       "evidence": {
@@ -29908,7 +29918,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#wikidot_listpages_feed_queries_newest_viewable_pages"
+          "deepwell/tests/page/page_modules.rs#wikidot_listpages_feed_queries_newest_viewable_pages"
         ]
       },
       "evidence": {
@@ -38979,7 +38989,6 @@
           "A1037_NEWPAGE_PAGE_FORM"
         ],
         "tests": [
-          "deepwell/tests/page.rs::newpage_module_resolves_existing_templates_in_rendered_pages",
           "framerail/tests/ajax-module-connector.test.js"
         ]
       },
@@ -45200,8 +45209,7 @@
           "Q1028_INITIAL_CATEGORY_DOM_AND_ARGUMENTS"
         ],
         "tests": [
-          "deepwell/src/services/render/categories.rs::tests",
-          "deepwell/tests/page.rs::categories_module_lists_active_categories_and_honors_include_hidden"
+          "deepwell/src/services/render/categories.rs::tests"
         ]
       },
       "evidence": {
