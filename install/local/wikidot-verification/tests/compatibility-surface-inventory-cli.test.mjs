@@ -1229,7 +1229,7 @@ test("CLI projects the current Deepwell contract evidence without promoting sour
   assert.deepEqual(
     rows.find(({ surface_id: surfaceId }) => surfaceId === "deepwell-jsonrpc:category_get")
       .existing_refs.tests,
-    ["deepwell/tests/page.rs#page_move_render_failure_rolls_back_destination_identity"]
+    ["deepwell/tests/page/page_move.rs#page_move_render_failure_rolls_back_destination_identity"]
   )
   assert.deepEqual(
     rows.find(({ surface_id: surfaceId }) => surfaceId === "deepwell-jsonrpc:membership_email_invitation_accept")
