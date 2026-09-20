@@ -97,8 +97,7 @@ async fn public_membership_module_states_are_distinct_and_opaque() {
     for secret in ["invitation-secret", "unsubscribe-secret"] {
         assert!(
             !anonymous.body.contains(secret),
-            "opaque token failures must not reflect {secret:?}:\n{}",
-            anonymous.body,
+            "opaque token failures must not reflect their input tokens",
         );
     }
     assert!(
