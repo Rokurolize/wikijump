@@ -12223,8 +12223,7 @@ async fn loginstatus_page_source_matches_live_unavailable_module() {
             preview.body.contains(
                 r#"<div class="error-block">[[module <em>LoginStatus</em>]] No such module, please <a href="http://www.wikidot.com/doc:modules" target="_blank">check available modules</a> and fix this page.</div>"#
             ),
-            "LoginStatus in page source should match live Wikidot's unavailable-module error for viewer {user_id:?}:\n{}",
-            preview.body,
+            "LoginStatus in page source should match live Wikidot's unavailable-module error",
         );
     }
 }
@@ -13211,7 +13210,7 @@ async fn hardened_www_special_modules_execute_only_on_their_system_pages() {
             && create_account.contains("Please leave this checkbox blank")
             && create_account.contains("Terms of Service")
             && !create_account.contains("No such module"),
-        "anonymous www start page must render CreateAccount:\n{create_account}",
+        "anonymous www start page must render CreateAccount",
     );
     let delete_account = anonymous_view(&mut runner, "action:deleteaccount").await;
     assert_eq!(
