@@ -4,13 +4,11 @@ import fs from "node:fs/promises"
 import { constants as fsConstants } from "node:fs"
 import { createHash } from "node:crypto"
 import { execFileSync, spawnSync } from "node:child_process"
-import { readFileSync } from "node:fs"
 import path from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
 import { discoverFramerailAmc as discoverFramerailAmcFromSource } from "../src/compatibility-inventory/framerail-amc.mjs"
 import { discoverFramerailRouteDescriptors } from "../src/compatibility-inventory/framerail-routes.mjs"
-import { discoverFtmlRawSurfaceManifest } from "../src/compatibility-inventory/ftml-raw-surface-manifest.mjs"
 import { discoverOpen43AuditCases as discoverOpen43AuditCasesFromSource } from "../src/compatibility-inventory/open43-audits.mjs"
 import {
   applySiteChangesEvidence as applySiteChangesEvidenceFromSource,
@@ -18,6 +16,16 @@ import {
 } from "../src/compatibility-inventory/site-changes-evidence.mjs"
 import { discoverWwsRouteRecords } from "../src/compatibility-inventory/wws-route-parser.mjs"
 import { extractBalanced, importedBinding, maskTypeScriptCommentsAndLiterals, objectPropertyNames, splitTopLevel } from "../src/compatibility-inventory/typescript-source.mjs"
+import {
+  CANONICAL_IMPLEMENTATION_LEDGER,
+  LEDGER_STATUSES,
+  discoverCatalogFeatures,
+  phase,
+  surface,
+  uniqueSortedStrings
+} from "../src/compatibility-inventory/catalog-surfaces.mjs"
+import { discoverFtmlRawSurfaceManifest } from "../src/compatibility-inventory/ftml-raw-surface-manifest.mjs"
+import { createPinnedSourceAccess } from "../src/compatibility-inventory/pinned-source.mjs"
 
 import { CANDIDATE_CASE_SETS } from "../src/candidate-case-command.mjs"
 
@@ -27,9 +35,6 @@ const DEFAULT_ROOT = path.resolve(SCRIPT_DIRECTORY, "../../../..")
 const DEFAULT_OUTPUT = "docs/development/compatibility-surface-inventory.json"
 const SEMANTICS_REGISTRY = "docs/development/compatibility-surface-semantics.json"
 const CATALOG_SOURCE_ATTRIBUTION = "docs/development/compatibility-catalog-source-attribution.json"
-const CANONICAL_IMPLEMENTATION_LEDGER = "scripts/data/wikidot-implementation-ledger.json"
-const DATA_FORM_SPECIFICATION_PREFIX = "docs/wikidot-specifications/specifications/data-forms/"
-const MODULE_SPECIFICATION_PREFIX = "docs/wikidot-specifications/specifications/module/"
 const WIKIDOT_PY_GIT_DIR = path.join(process.env.WIKIDOT_PY_CHECKOUT ?? "/home/roku/src/Rokurolize/wikidot.py", ".git")
 const FTML_GIT_DIR = path.join(process.env.WIKIJUMP_FTML_CHECKOUT ?? "/home/roku/src/Rokurolize/ftml", ".git")
 const GIT_EXECUTABLE = "/usr/bin/git"
@@ -289,15 +294,6 @@ const PHASE_STATUSES = {
   standing: new Set(["passed", "failed", "pending", "blocked", "not_applicable"]),
   closure: new Set(["closed", "open", "blocked"])
 }
-const LEDGER_STATUSES = new Set(["implemented", "in_progress", "pending", "blocked"])
-const DOCUMENTATION_STATUSES = new Set([
-  "documented",
-  "documented-deprecated",
-  "documented-negative",
-  "documented-plan-capability",
-  "high-level-documentation",
-  "invocation-only"
-])
 const MISSING_PAGE_CONTROL_CONTRACTS = new Map([
   [
     "create",
@@ -451,47 +447,22 @@ async function readAbsoluteText(root, absolutePath) {
   return readText(root, relativeReference(root, absolutePath))
 }
 
-function phase(status, references = []) {
-  return { status, references: uniqueSortedStrings(references) }
-}
-
-function surface({
-  surfaceId,
-  kind,
-  publicOwner,
-  publicReference,
-  issues = [],
-  cases = [],
-  tests = [],
-  evidence = phase("missing"),
-  source = phase("implemented"),
-  candidate = phase("pending"),
-  standing = phase("pending"),
-  closure = phase("open"),
-  implementationOwnerRecords = []
-}) {
-  return {
-    surface_id: surfaceId,
-    kind,
-    public_owner: publicOwner,
-    public_reference: uniqueSortedStrings(publicReference),
-    existing_refs: {
-      issues: [...new Set(issues)].sort((left, right) => left - right),
-      cases: uniqueSortedStrings(cases),
-      tests: uniqueSortedStrings(tests)
-    },
-    evidence,
-    source,
-    candidate,
-    standing,
-    closure,
-    implementation_owner_records: implementationOwnerRecords
-  }
-}
-
-function uniqueSortedStrings(values) {
-  return [...new Set(values.filter((value) => typeof value === "string" && value !== ""))].sort()
-}
+const pinnedSource = createPinnedSourceAccess({
+  sourceInputs: SOURCE_INPUTS,
+  readText,
+  repositoryPath,
+  gitExecutable: GIT_EXECUTABLE,
+  gitEnvironment: GIT_ENVIRONMENT,
+  ftmlGitDir: FTML_GIT_DIR
+})
+const {
+  resolveGitObject,
+  sourceProvenance,
+  readGitSpecBatch,
+  verifyRegistryBlobs,
+  preloadPinnedRevisionTexts,
+  gitRevisionContains
+} = pinnedSource
 
 function auditedLinesSha256(lines) {
   return sha256(`${[...lines].sort().join("\n")}\n`)
@@ -649,477 +620,6 @@ function sourceInputSetSha256(registries) {
   )
 }
 
-function resolveGitObject(gitArguments, revision, label) {
-  let value
-  try {
-    value = execFileSync(
-      GIT_EXECUTABLE,
-      ["--no-replace-objects", ...gitArguments, "rev-parse", "--verify", revision],
-      { encoding: "utf8", env: GIT_ENVIRONMENT, stdio: ["ignore", "pipe", "ignore"] }
-    ).trim()
-  } catch {
-    throw new Error(`cannot resolve ${label}: ${revision}`)
-  }
-  if (!/^[0-9a-f]{40}$/u.test(value)) throw new Error(`${label} is not a Git object`)
-  return value
-}
-
-async function sourceProvenance(root, sourceRevision) {
-  const manifestPath = "deepwell/Cargo.toml"
-  const lockPath = "deepwell/Cargo.lock"
-  const [manifest, lock] = await Promise.all([
-    readText(root, manifestPath),
-    readText(root, lockPath)
-  ])
-  const manifestRevision = /ftml\s*=\s*\{[^\n]*\brev\s*=\s*"([0-9a-f]{40})"/u.exec(manifest)?.[1]
-  const lockRevision = /git\+https:\/\/github\.com\/Rokurolize\/ftml\?rev=([0-9a-f]{40})#([0-9a-f]{40})/u.exec(lock)
-  if (!manifestRevision || !lockRevision || lockRevision[1] !== manifestRevision || lockRevision[2] !== manifestRevision) {
-    throw new Error("Deepwell FTML manifest and lock identities do not match")
-  }
-  let wikijump = null
-  if (sourceRevision !== null) {
-    if (!/^[0-9a-f]{40}$/u.test(sourceRevision ?? "")) {
-      throw new Error("Wikijump source revision must be an exact commit")
-    }
-    const wikijumpCommit = resolveGitObject(
-      ["-C", root],
-      `${sourceRevision}^{commit}`,
-      "Wikijump commit"
-    )
-    if (wikijumpCommit !== sourceRevision) {
-      throw new Error("Wikijump source revision does not resolve to itself")
-    }
-    wikijump = {
-      commit: wikijumpCommit,
-      tree: resolveGitObject(["-C", root], `${wikijumpCommit}^{tree}`, "Wikijump tree")
-    }
-  }
-  const ftmlCommit = resolveGitObject(
-    [`--git-dir=${FTML_GIT_DIR}`],
-    `${manifestRevision}^{commit}`,
-    "FTML commit"
-  )
-  const ftmlTree = resolveGitObject(
-    [`--git-dir=${FTML_GIT_DIR}`],
-    `${ftmlCommit}^{tree}`,
-    "FTML tree"
-  )
-  return {
-    wikijump,
-    ftml: { commit: ftmlCommit, tree: ftmlTree }
-  }
-}
-
-function parseGitLsTree(output, label) {
-  const entries = new Map()
-  for (const row of output.toString("utf8").split("\0").filter(Boolean)) {
-    const match = /^(\d+) ([a-z]+) ([0-9a-f]{40})\t(.+)$/u.exec(row)
-    if (!match || match[2] !== "blob") continue
-    const [, , , oid, objectPath] = match
-    if (entries.has(objectPath)) throw new Error(`${label} contains duplicate path: ${objectPath}`)
-    entries.set(objectPath, oid)
-  }
-  return entries
-}
-
-function listGitTreeBlobs(gitArguments, revision, label) {
-  const listing = spawnSync(
-    GIT_EXECUTABLE,
-    ["--no-replace-objects", ...gitArguments, "ls-tree", "-r", "-z", revision],
-    {
-      env: GIT_ENVIRONMENT,
-      maxBuffer: 64 * 1024 * 1024,
-      stdio: ["ignore", "pipe", "pipe"]
-    }
-  )
-  if (listing.status !== 0 || listing.error) {
-    throw new Error(`cannot list ${label}: ${listing.error?.message ?? listing.stderr?.toString("utf8").trim() ?? "unknown error"}`)
-  }
-  return parseGitLsTree(listing.stdout, label)
-}
-
-function readGitBlobBatch(gitArguments, requests, label) {
-  if (requests.length === 0) return new Map()
-  const child = spawnSync(
-    GIT_EXECUTABLE,
-    ["--no-replace-objects", ...gitArguments, "cat-file", "--batch"],
-    {
-      input: `${requests.map(({ oid }) => oid).join("\n")}\n`,
-      env: GIT_ENVIRONMENT,
-      maxBuffer: 128 * 1024 * 1024,
-      stdio: ["pipe", "pipe", "pipe"]
-    }
-  )
-  if (child.status !== 0 || child.error) {
-    const detail = child.error?.message ?? child.stderr?.toString("utf8").trim() ?? "unknown error"
-    throw new Error(`cannot read ${label}: ${detail}`)
-  }
-  const output = child.stdout
-  const result = new Map()
-  let offset = 0
-  for (const request of requests) {
-    const newline = output.indexOf(0x0a, offset)
-    if (newline < 0) throw new Error(`${label} batch response ended before ${request.path}`)
-    const header = output.subarray(offset, newline).toString("utf8")
-    const match = /^([0-9a-f]{40}) blob (\d+)$/u.exec(header)
-    if (!match || match[1] !== request.oid) {
-      throw new Error(`${label} batch identity drift for ${request.path}`)
-    }
-    const size = Number(match[2])
-    const start = newline + 1
-    const end = start + size
-    if (!Number.isSafeInteger(size) || end >= output.length || output[end] !== 0x0a) {
-      throw new Error(`${label} batch payload is truncated for ${request.path}`)
-    }
-    result.set(request.path, Buffer.from(output.subarray(start, end)))
-    offset = end + 1
-  }
-  if (offset !== output.length) throw new Error(`${label} batch response has trailing bytes`)
-  return result
-}
-
-function readGitSpecBatch(gitArguments, specs, label) {
-  const uniqueSpecs = [...new Set(specs)]
-  if (uniqueSpecs.length === 0) return new Map()
-  const child = spawnSync(
-    GIT_EXECUTABLE,
-    ["--no-replace-objects", ...gitArguments, "cat-file", "--batch"],
-    {
-      input: `${uniqueSpecs.join("\n")}\n`,
-      env: GIT_ENVIRONMENT,
-      maxBuffer: 256 * 1024 * 1024,
-      stdio: ["pipe", "pipe", "pipe"]
-    }
-  )
-  if (child.status !== 0 || child.error) {
-    const detail = child.error?.message ?? child.stderr?.toString("utf8").trim() ?? "unknown error"
-    throw new Error(`cannot read ${label}: ${detail}`)
-  }
-  const output = child.stdout
-  const result = new Map()
-  let offset = 0
-  for (const spec of uniqueSpecs) {
-    const newline = output.indexOf(0x0a, offset)
-    if (newline < 0) throw new Error(`${label} batch response ended before ${spec}`)
-    const header = output.subarray(offset, newline).toString("utf8")
-    if (header === `${spec} missing`) throw new Error(`${label} is missing ${spec}`)
-    const match = /^([0-9a-f]{40}) ([a-z]+) (\d+)$/u.exec(header)
-    if (!match || match[2] !== "blob") throw new Error(`${label} is not a blob: ${spec}`)
-    const size = Number(match[3])
-    const start = newline + 1
-    const end = start + size
-    if (!Number.isSafeInteger(size) || end >= output.length || output[end] !== 0x0a) {
-      throw new Error(`${label} batch payload is truncated for ${spec}`)
-    }
-    result.set(spec, Buffer.from(output.subarray(start, end)))
-    offset = end + 1
-  }
-  if (offset !== output.length) throw new Error(`${label} batch response has trailing bytes`)
-  return result
-}
-
-function verifyRegistryBlobs(root, sourceRevision) {
-  if (sourceRevision === null) return
-  const tree = listGitTreeBlobs(["-C", root], sourceRevision, "pinned Wikijump tree")
-  const requests = [...SOURCE_INPUTS.keys()].map((registryPath) => {
-    const oid = tree.get(registryPath)
-    if (!oid) throw new Error(`registry is missing from pinned revision: ${registryPath}`)
-    return { path: registryPath, oid }
-  })
-  const blobs = readGitBlobBatch(["-C", root], requests, "pinned Wikijump registries")
-  for (const [registryPath, source] of SOURCE_INPUTS) {
-    if (sha256(blobs.get(registryPath)) !== sha256(source)) {
-      throw new Error(`registry blob drift: ${registryPath}`)
-    }
-  }
-}
-
-function testReferences(tests) {
-  if (!Array.isArray(tests)) return []
-  return tests.flatMap((entry) => {
-    if (typeof entry === "string") return [entry]
-    if (!entry || typeof entry !== "object") return []
-    if (typeof entry.path !== "string") return []
-    return [typeof entry.name === "string" ? `${entry.path}#${entry.name}` : entry.path]
-  })
-}
-
-async function validateCatalogOwnerRecords(root, featureId, ledgerEntry, ownerManifest, ledgerPath) {
-  assertExactKeys(ownerManifest, ["issue_scope", "owners"], `${ledgerPath} ${featureId}`)
-  assertExactKeys(ownerManifest.issue_scope, ["status", "references"], `${ledgerPath} ${featureId} issue_scope`)
-  if (!(ownerManifest.issue_scope.status === "resolved" || ownerManifest.issue_scope.status === "unresolved")) {
-    throw new Error(`${ledgerPath} ${featureId} has an unknown issue scope status`)
-  }
-  const issueReferences = ownerManifest.issue_scope.references
-  if (
-    !Array.isArray(issueReferences) ||
-    JSON.stringify(issueReferences) !== JSON.stringify([...new Set(issueReferences)].sort((left, right) => left - right)) ||
-    issueReferences.some((issue) => !Number.isSafeInteger(issue) || issue <= 0) ||
-    (ownerManifest.issue_scope.status === "unresolved" && issueReferences.length !== 0) ||
-    (ownerManifest.issue_scope.status === "resolved" && issueReferences.length === 0)
-  ) {
-    throw new Error(`${ledgerPath} ${featureId} has invalid issue scope references`)
-  }
-  if (!Array.isArray(ownerManifest.owners)) {
-    throw new Error(`${ledgerPath} ${featureId} owners must be an array`)
-  }
-  const sourceReferences = new Set(ledgerEntry.implementation_files ?? [])
-  const testReferenceSet = new Set(testReferences(ledgerEntry.tests))
-  const owners = new Set()
-  for (const ownerRecord of ownerManifest.owners) {
-    assertExactKeys(ownerRecord, ["owner", "source_references", "test_references"], `${ledgerPath} ${featureId} owner`)
-    if (typeof ownerRecord.owner !== "string" || ownerRecord.owner === "" || owners.has(ownerRecord.owner)) {
-      throw new Error(`${ledgerPath} ${featureId} has a missing or duplicate owner`)
-    }
-    owners.add(ownerRecord.owner)
-    assertCanonicalStrings(ownerRecord.source_references, `${ledgerPath} ${featureId} ${ownerRecord.owner} source_references`)
-    assertCanonicalStrings(ownerRecord.test_references, `${ledgerPath} ${featureId} ${ownerRecord.owner} test_references`)
-    if (ownerRecord.source_references.length === 0 || ownerRecord.test_references.length === 0) {
-      throw new Error(`${ledgerPath} ${featureId} ${ownerRecord.owner} must cite source and test identities`)
-    }
-    for (const sourceReference of ownerRecord.source_references) {
-      if (!sourceReferences.has(sourceReference)) {
-        throw new Error(`${ledgerPath} ${featureId} ${ownerRecord.owner} cites an unlisted source: ${sourceReference}`)
-      }
-      try {
-        await fs.access(path.join(root, sourceReference))
-      } catch {
-        throw new Error(`${ledgerPath} ${featureId} cites a missing source: ${sourceReference}`)
-      }
-    }
-    for (const testReference of ownerRecord.test_references) {
-      if (!testReferenceSet.has(testReference)) {
-        throw new Error(`${ledgerPath} ${featureId} ${ownerRecord.owner} cites an unlisted test: ${testReference}`)
-      }
-      for (const testPath of testReference.split("; ")
-        .map((reference) => reference.split(/#|::/u, 1)[0])
-        .filter((reference, index) => index === 0 || reference.includes("/"))) {
-        try {
-          await fs.access(path.join(root, testPath))
-        } catch {
-          throw new Error(`${ledgerPath} ${featureId} cites a missing test: ${testPath}`)
-        }
-      }
-    }
-  }
-  return ownerManifest
-}
-
-async function discoverCatalogFeatures(root) {
-  const catalogPath = "docs/wikidot-specifications/catalog.json"
-  const ledgerPath = "docs/wikidot-specifications/implementation-ledger.json"
-  const observationsPath = "docs/wikidot-specifications/live-observations.json"
-  const coveragePath = "docs/wikidot-specifications/source-coverage.json"
-  const [catalog, mirrorLedger, canonicalLedger, liveObservations, sourceCoverage] = await Promise.all([
-    readJson(root, catalogPath),
-    readJson(root, ledgerPath),
-    readJson(root, CANONICAL_IMPLEMENTATION_LEDGER),
-    readJson(root, observationsPath),
-    readJson(root, coveragePath)
-  ])
-  if (SOURCE_INPUTS.get(ledgerPath) !== SOURCE_INPUTS.get(CANONICAL_IMPLEMENTATION_LEDGER)) {
-    throw new Error(`${CANONICAL_IMPLEMENTATION_LEDGER} and ${ledgerPath} must be byte-identical`)
-  }
-  const ledger = canonicalLedger
-  if (ledger.catalog_sha256 !== sha256(SOURCE_INPUTS.get(catalogPath))) {
-    throw new Error(`${CANONICAL_IMPLEMENTATION_LEDGER} catalog_sha256 does not match ${catalogPath}`)
-  }
-  if (!Array.isArray(catalog.features)) throw new Error(`${catalogPath} features must be an array`)
-  if (catalog.feature_count !== undefined && catalog.feature_count !== catalog.features.length) {
-    throw new Error(`${catalogPath} feature_count does not match its feature denominator`)
-  }
-  if (!ledger.features || Array.isArray(ledger.features) || typeof ledger.features !== "object") {
-    throw new Error(`${CANONICAL_IMPLEMENTATION_LEDGER} features must be an object`)
-  }
-  if (!Array.isArray(liveObservations.observations)) {
-    throw new Error(`${observationsPath} observations must be an array`)
-  }
-  if (!Array.isArray(sourceCoverage.pages)) {
-    throw new Error(`${coveragePath} pages must be an array`)
-  }
-
-  const ownerFeaturePrefixes = [
-    DATA_FORM_SPECIFICATION_PREFIX,
-    MODULE_SPECIFICATION_PREFIX,
-    "docs/wikidot-specifications/specifications/site-structure/"
-  ]
-  const ownerFeatures = catalog.features.filter(({ specification }) =>
-    ownerFeaturePrefixes.some((prefix) =>
-      path.posix.join("docs/wikidot-specifications", specification).startsWith(prefix)
-    )
-  )
-  const ownerManifests = ledger.implementation_owner_records ?? {}
-  const ownerManifestIds = Object.keys(ownerManifests).sort()
-  const ownerFeatureIds = ownerFeatures.map(({ id }) => id).sort()
-  if (JSON.stringify(ownerManifestIds) !== JSON.stringify(ownerFeatureIds)) {
-    throw new Error(`${CANONICAL_IMPLEMENTATION_LEDGER} implementation_owner_records must exactly cover owned catalog groups`)
-  }
-
-  const catalogIds = new Set()
-  const records = []
-  for (const feature of catalog.features) {
-    if (!feature || typeof feature.id !== "string" || feature.id === "") {
-      throw new Error(`${catalogPath} contains a feature without an id`)
-    }
-    if (catalogIds.has(feature.id)) throw new Error(`duplicate catalog feature: ${feature.id}`)
-    catalogIds.add(feature.id)
-    if (!DOCUMENTATION_STATUSES.has(feature.documentation_status)) {
-      throw new Error(
-        `unknown documentation status for ${feature.id}: ${feature.documentation_status}`
-      )
-    }
-    if (typeof feature.specification !== "string" || feature.specification === "") {
-      throw new Error(`missing public reference for catalog feature: ${feature.id}`)
-    }
-    const ledgerEntry = ledger.features[feature.id]
-    if (!ledgerEntry) throw new Error(`catalog feature has no ledger entry: ${feature.id}`)
-    if (!LEDGER_STATUSES.has(ledgerEntry.status)) {
-      throw new Error(`unknown ledger status for ${feature.id}: ${ledgerEntry.status}`)
-    }
-    const specification = path.posix.join("docs/wikidot-specifications", feature.specification)
-    const documentationEvidence = (ledgerEntry.documentation_evidence ?? []).map((entry) =>
-      entry.startsWith("docs/")
-        ? entry
-        : path.posix.join("docs/wikidot-specifications", entry)
-    )
-    const ownerManifest = ownerFeaturePrefixes.some((prefix) => specification.startsWith(prefix))
-      ? await validateCatalogOwnerRecords(
-        root,
-        feature.id,
-        ledgerEntry,
-        ownerManifests[feature.id],
-        CANONICAL_IMPLEMENTATION_LEDGER
-      )
-      : null
-    records.push(
-      surface({
-        surfaceId: `catalog-feature:${feature.id}`,
-        kind: "catalog_feature",
-        publicOwner: "docs/wikidot-specifications",
-        publicReference: [specification],
-        issues: ownerManifest?.issue_scope.references ?? [],
-        tests: testReferences(ledgerEntry.tests),
-        evidence: phase("available", [specification, ...documentationEvidence, ...(ledgerEntry.live_oracle_evidence ?? [])]),
-        source: phase(ledgerEntry.status, ledgerEntry.implementation_files ?? []),
-        implementationOwnerRecords: ownerManifest?.owners ?? []
-      })
-    )
-  }
-  for (const ledgerId of Object.keys(ledger.features)) {
-    if (!catalogIds.has(ledgerId)) throw new Error(`orphan ledger feature: ${ledgerId}`)
-  }
-
-  const coveragePages = new Map()
-  for (const page of sourceCoverage.pages) {
-    if (!page || typeof page.source_path !== "string" || page.source_path === "") {
-      throw new Error(`${coveragePath} contains a page without source_path`)
-    }
-    if (coveragePages.has(page.source_path)) {
-      throw new Error(`${coveragePath} contains duplicate page: ${page.source_path}`)
-    }
-    if (!/^[0-9a-f]{64}$/u.test(page.source_sha256 ?? "")) {
-      throw new Error(`${coveragePath} has invalid source hash: ${page.source_path}`)
-    }
-    if (!Array.isArray(page.feature_ids)) {
-      throw new Error(`${coveragePath} ${page.source_path} feature_ids must be an array`)
-    }
-    if (new Set(page.feature_ids).size !== page.feature_ids.length) {
-      throw new Error(`${coveragePath} ${page.source_path} has duplicate feature edges`)
-    }
-    for (const featureId of page.feature_ids) {
-      if (!catalogIds.has(featureId)) throw new Error(`${coveragePath} links unknown feature: ${featureId}`)
-    }
-    coveragePages.set(page.source_path, page)
-  }
-  if (sourceCoverage.listed_page_count !== sourceCoverage.pages.length) {
-    throw new Error(`${coveragePath} listed_page_count does not match its page denominator`)
-  }
-  if (
-    sourceCoverage.page_count !==
-    sourceCoverage.listed_page_count + sourceCoverage.excluded_data_record_count
-  ) {
-    throw new Error(`${coveragePath} page_count does not match listed and excluded pages`)
-  }
-  const classifiedPageCount = Object.values(sourceCoverage.classification_counts ?? {}).reduce(
-    (sum, count) => sum + count,
-    0
-  )
-  if (classifiedPageCount !== sourceCoverage.page_count || sourceCoverage.unclassified_count !== 0) {
-    throw new Error(`${coveragePath} classification denominator does not match`)
-  }
-  for (const feature of catalog.features) {
-    const sourceEdges = new Set()
-    for (const source of feature.sources ?? []) {
-      const sourceEdge = JSON.stringify([
-        source.path,
-        source.start_line ?? null,
-        source.end_line ?? null,
-        source.role ?? null
-      ])
-      if (sourceEdges.has(sourceEdge)) {
-        throw new Error(`catalog feature ${feature.id} has duplicate source edge: ${source.path}`)
-      }
-      sourceEdges.add(sourceEdge)
-      const coveragePage = coveragePages.get(source.path)
-      if (!coveragePage || coveragePage.source_sha256 !== source.source_sha256) {
-        throw new Error(`catalog feature ${feature.id} source coverage drift: ${source.path}`)
-      }
-      if (!coveragePage.feature_ids.includes(feature.id)) {
-        throw new Error(`catalog feature ${feature.id} source edge is missing from coverage: ${source.path}`)
-      }
-    }
-  }
-
-  const observationsById = new Map()
-  for (const observation of liveObservations.observations) {
-    if (!observation || typeof observation.id !== "string" || observation.id === "") {
-      throw new Error(`${observationsPath} contains an observation without an id`)
-    }
-    if (observationsById.has(observation.id)) {
-      throw new Error(`duplicate live observation: ${observation.id}`)
-    }
-    if (!Array.isArray(observation.feature_ids)) {
-      throw new Error(`live observation ${observation.id} feature_ids must be an array`)
-    }
-    const featureIds = new Set()
-    for (const featureId of observation.feature_ids) {
-      if (featureIds.has(featureId)) {
-        throw new Error(`live observation ${observation.id} has duplicate feature link: ${featureId}`)
-      }
-      featureIds.add(featureId)
-      if (!catalogIds.has(featureId)) throw new Error(`unknown catalog feature: ${featureId}`)
-    }
-    observationsById.set(observation.id, featureIds)
-  }
-
-  for (const feature of catalog.features) {
-    if (!Array.isArray(feature.live_observation_ids)) {
-      throw new Error(`catalog feature ${feature.id} live_observation_ids must be an array`)
-    }
-    const observationIds = new Set()
-    for (const observationId of feature.live_observation_ids) {
-      if (observationIds.has(observationId)) {
-        throw new Error(`catalog feature ${feature.id} has duplicate observation link: ${observationId}`)
-      }
-      observationIds.add(observationId)
-      const featureIds = observationsById.get(observationId)
-      if (!featureIds) throw new Error(`unknown live observation: ${observationId}`)
-      if (!featureIds.has(feature.id)) {
-        throw new Error(`catalog ${feature.id} links ${observationId} without a reverse link`)
-      }
-    }
-  }
-  for (const [observationId, featureIds] of observationsById) {
-    for (const featureId of featureIds) {
-      const feature = catalog.features.find(({ id }) => id === featureId)
-      if (!feature.live_observation_ids.includes(observationId)) {
-        throw new Error(`live observation ${observationId} links ${featureId} without a reverse link`)
-      }
-    }
-  }
-  return records
-}
-
 async function discoverDeepwellJsonRpc(root) {
   const registryPath = "deepwell/src/api.rs"
   const manifestPath = "docs/development/deepwell-jsonrpc-contract-manifest.json"
@@ -1250,61 +750,6 @@ async function discoverFramerailRoutes(root) {
       readAbsoluteText: (absolutePath) => readAbsoluteText(root, absolutePath)
     })
   ).map((descriptor) => surface(descriptor))
-}
-
-const PINNED_TEXT_CACHE = new Map()
-const PINNED_TREE_CACHE = new Map()
-
-function preloadPinnedRevisionTexts(root, revision, sourcePaths) {
-  if (revision === null) {
-    for (const sourcePath of uniqueSortedStrings(sourcePaths)) {
-      const key = `${root}\0WORKTREE\0${sourcePath}`
-      if (PINNED_TEXT_CACHE.has(key)) continue
-      let source = null
-      try {
-        source = readFileSync(repositoryPath(root, sourcePath), "utf8")
-      } catch {
-        source = null
-      }
-      PINNED_TEXT_CACHE.set(key, source)
-    }
-    return
-  }
-  const treeKey = `${root}\0${revision}`
-  let tree = PINNED_TREE_CACHE.get(treeKey)
-  if (!tree) {
-    tree = listGitTreeBlobs(["-C", root], revision, `pinned source tree ${revision}`)
-    PINNED_TREE_CACHE.set(treeKey, tree)
-  }
-  const requests = []
-  for (const sourcePath of uniqueSortedStrings(sourcePaths)) {
-    const key = `${root}\0${revision}\0${sourcePath}`
-    if (PINNED_TEXT_CACHE.has(key)) continue
-    const oid = tree.get(sourcePath)
-    if (!oid) {
-      PINNED_TEXT_CACHE.set(key, null)
-      continue
-    }
-    requests.push({ path: sourcePath, oid })
-  }
-  const blobs = readGitBlobBatch(["-C", root], requests, `pinned source texts ${revision}`)
-  for (const request of requests) {
-    PINNED_TEXT_CACHE.set(
-      `${root}\0${revision}\0${request.path}`,
-      blobs.get(request.path)?.toString("utf8") ?? null
-    )
-  }
-}
-
-function pinnedRevisionText(root, revision, sourcePath) {
-  const key = `${root}\0${revision ?? "WORKTREE"}\0${sourcePath}`
-  if (PINNED_TEXT_CACHE.has(key)) return PINNED_TEXT_CACHE.get(key)
-  preloadPinnedRevisionTexts(root, revision, [sourcePath])
-  return PINNED_TEXT_CACHE.get(key) ?? null
-}
-
-function gitRevisionContains(root, revision, sourcePath, literal) {
-  return pinnedRevisionText(root, revision, sourcePath)?.includes(literal) === true
 }
 
 async function applyFramerailRouteActionEvidence(root, records, sourceRevision) {
@@ -2525,7 +1970,7 @@ async function buildInventory(root, sourceRevision) {
   ] =
     await Promise.all([
       sourceProvenance(root, sourceRevision),
-      discoverCatalogFeatures(root),
+      discoverCatalogFeatures(root, { readJson, sourceInputs: SOURCE_INPUTS }),
       discoverDeepwellJsonRpc(root),
       discoverFramerailRoutes(root),
       discoverFramerailAmc(root),
@@ -2543,8 +1988,8 @@ async function buildInventory(root, sourceRevision) {
     semantics,
     {
       ftmlGitDir: FTML_GIT_DIR,
-      listGitTreeBlobs,
-      readGitBlobBatch
+      listGitTreeBlobs: pinnedSource.listGitTreeBlobs,
+      readGitBlobBatch: pinnedSource.readGitBlobBatch
     }
   )
   const auditedOwnershipActive =
