@@ -169,12 +169,12 @@
     {
       "surface_id": "catalog-feature:module-backlinks",
       "sources": [{ "path": "deepwell/src/services/render/backlinks.rs", "anchor": "expand_backlinks_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "backlinks_module_renders_current_page_incoming_links" }]
+      "tests": [{ "path": "deepwell/tests/page/page_modules.rs", "anchor": "backlinks_module_renders_current_page_incoming_links" }]
     },
     {
       "surface_id": "catalog-feature:module-categories",
       "sources": [{ "path": "deepwell/src/services/render/categories.rs", "anchor": "expand_categories_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "categories_module_lists_active_categories_and_honors_include_hidden" }]
+      "tests": [{ "path": "deepwell/tests/page/page_modules.rs", "anchor": "categories_module_lists_active_categories_and_honors_include_hidden" }]
     },
     {
       "surface_id": "catalog-feature:module-clone",
@@ -187,7 +187,7 @@
         { "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" },
         { "path": "deepwell/src/services/render/forum_comments.rs", "anchor": "fn render_comments(" }
       ],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-dashboard",
@@ -222,22 +222,22 @@
     {
       "surface_id": "catalog-feature:module-forumcategory",
       "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-forumnewthread",
       "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-forumstart",
       "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-forumthread",
       "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-frontforum",
@@ -245,7 +245,7 @@
         { "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" },
         { "path": "deepwell/src/services/render/forum_front.rs", "anchor": "pub(super) fn render(" }
       ],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "frontforum_custom_body_matches_observed_public_preview_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "frontforum_custom_body_matches_observed_public_preview_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-listdrafts",
@@ -278,12 +278,12 @@
     {
       "surface_id": "catalog-feature:module-membershipapply",
       "sources": [{ "path": "deepwell/src/services/render/runtime_modules/membership.rs", "anchor": "expand_membership_apply_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "public_membership_module_states_are_distinct_and_opaque" }]
+      "tests": [{ "path": "deepwell/tests/page/membership.rs", "anchor": "public_membership_module_states_are_distinct_and_opaque" }]
     },
     {
       "surface_id": "catalog-feature:module-membershipbypassword",
       "sources": [{ "path": "deepwell/src/services/render/runtime_modules/membership.rs", "anchor": "expand_membership_by_password_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "membership_by_password_module_matches_live_anonymous_and_member_output" }]
+      "tests": [{ "path": "deepwell/tests/page/membership.rs", "anchor": "membership_by_password_module_matches_live_anonymous_and_member_output" }]
     },
     {
       "surface_id": "catalog-feature:module-membershipemailinvitation",
@@ -310,17 +310,17 @@
     {
       "surface_id": "catalog-feature:module-miniactivethreads",
       "sources": [{ "path": "deepwell/src/services/render/forum_mini.rs", "anchor": "expand_forum_mini_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-minirecentposts",
       "sources": [{ "path": "deepwell/src/services/render/forum_mini.rs", "anchor": "expand_forum_mini_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-minirecentthreads",
       "sources": [{ "path": "deepwell/src/services/render/forum_mini.rs", "anchor": "expand_forum_mini_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-navibar",
@@ -351,12 +351,12 @@
     {
       "surface_id": "catalog-feature:module-recentposts",
       "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-recentthreads",
       "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "recent_threads_matches_live_placeholder_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "recent_threads_matches_live_placeholder_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-search",
@@ -615,22 +615,22 @@
     {
       "surface_id": "catalog-feature:forum-category-groups",
       "sources": [{ "path": "deepwell/src/services/forum/service.rs", "anchor": "pub async fn create_group(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
     },
     {
       "surface_id": "catalog-feature:forum-categories",
       "sources": [{ "path": "deepwell/src/services/forum/service.rs", "anchor": "pub async fn create_category(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
     },
     {
       "surface_id": "catalog-feature:forum-threads",
       "sources": [{ "path": "deepwell/src/services/forum_thread/service.rs", "anchor": "pub async fn create(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
     },
     {
       "surface_id": "catalog-feature:forum-posts",
       "sources": [{ "path": "deepwell/src/services/forum_post/service.rs", "anchor": "pub async fn create(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
     },
     {
       "surface_id": "catalog-feature:educational-site-status",
@@ -654,7 +654,7 @@
       ],
       "tests": [
         { "path": "deepwell/tests/user.rs", "anchor": "user_mutations_enforce_request_actor_and_staff_only_fields" },
-        { "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" },
+        { "path": "deepwell/tests/page/forum.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" },
         { "path": "framerail/tests/account-route-boundaries.test.js", "anchor": "display settings persist the forum signature through the existing account mutation" }
       ]
     },
@@ -673,12 +673,12 @@
     {
       "surface_id": "catalog-feature:forums-overview",
       "sources": [{ "path": "deepwell/src/services/render/forum_read_routes.rs", "anchor": "pub async fn render_wikidot_forum_module(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
     },
     {
       "surface_id": "catalog-feature:page-categories",
       "sources": [{ "path": "deepwell/src/services/category/service.rs", "anchor": "pub async fn get_or_create(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "categories_module_lists_active_categories_and_honors_include_hidden" }]
+      "tests": [{ "path": "deepwell/tests/page/page_modules.rs", "anchor": "categories_module_lists_active_categories_and_honors_include_hidden" }]
     },
     {
       "surface_id": "catalog-feature:page-forum-integration",
@@ -693,7 +693,7 @@
     {
       "surface_id": "catalog-feature:page-links",
       "sources": [{ "path": "deepwell/src/services/link/service.rs", "anchor": "pub async fn update(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "page_backlinks_view_filters_before_exposing_titles_and_slugs" }]
+      "tests": [{ "path": "deepwell/tests/page/page_modules.rs", "anchor": "page_backlinks_view_filters_before_exposing_titles_and_slugs" }]
     },
     {
       "surface_id": "catalog-feature:page-editing-history",
@@ -1101,7 +1101,7 @@
       ],
       "tests": [
         { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "category_page_template_prefills_new_page_source_and_can_be_cleared" },
-        { "path": "deepwell/tests/page.rs", "anchor": "saved_newpage_views_resolve_templates_from_current_anonymous_state" }
+        { "path": "deepwell/tests/page/page_modules.rs", "anchor": "saved_newpage_views_resolve_templates_from_current_anonymous_state" }
       ]
     },
     {
