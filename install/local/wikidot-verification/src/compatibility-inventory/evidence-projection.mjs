@@ -101,8 +101,6 @@ export async function applyFramerailRouteActionEvidence(root, records, sourceRev
 }
 
 
-
-
 export async function applyWwsContractEvidence(root, records, sourceRevision, helpers) {
   const { readJson, isCanonicalRepositoryReference, sha256, gitBlobOid, resolveGitObject, readText } = helpers
   const denominatorPath = "docs/development/wws-route-registration-denominator.json"
