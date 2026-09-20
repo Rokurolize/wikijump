@@ -21,6 +21,8 @@ const LINE_BUDGETS = new Map([
   ],
   ["deepwell/src/services/data_form.rs", 1_450],
   ["deepwell/src/services/render/runtime_modules.rs", 1_900],
+  ["deepwell/src/services/render/list_pages/mod.rs", 1_500],
+  ["deepwell/src/services/render/list_pages/bounded_expansion.rs", 1_000],
   ["deepwell/src/services/render/list_pages/scanner.rs", 2_700],
   ["deepwell/src/services/render/list_pages/rendering.rs", 300],
   ["deepwell/src/services/render/list_pages/substitution.rs", 2_700],
