@@ -1955,16 +1955,16 @@ fn generated_list_pages_pager_still_renders_without_forgeable_marker() {
     assert!(
         rendered
             .contains(r#"<div class="pager"><span class="pager-no">page 1 of 3</span>"#,),
-        "{rendered}",
+        "generated pager should preserve the expected block structure",
     );
     assert!(
         !rendered.contains(r#"<div class="pager"><p>"#),
-        "{rendered}"
+        "generated pager should not gain an extra paragraph wrapper"
     );
     assert!(rendered.contains(r#"<span class="pager-no">page 1 of 3</span>"#));
     assert!(
         rendered.contains(r#"<a href="/scp-7243/p/2">2</a>"#),
-        "{rendered}"
+        "generated pager should preserve the expected saved-page route"
     );
     assert!(!rendered.contains("data-wikijump-compat-pager"));
 }
@@ -2000,7 +2000,7 @@ fn generated_list_pages_pager_keeps_untrusted_slug_inside_href() {
 
     assert!(
         rendered.contains(&format!(r#"<a href="/{encoded_slug}/p/2">2</a>"#)),
-        "{rendered}"
+        "generated pager should keep the encoded slug inside the href"
     );
     assert_eq!(rendered.matches(r#"class="owned""#).count(), 0);
     assert_eq!(rendered.matches("<a href=").count(), 3);
