@@ -1234,7 +1234,7 @@ test("CLI projects the current Deepwell contract evidence without promoting sour
   assert.deepEqual(
     rows.find(({ surface_id: surfaceId }) => surfaceId === "deepwell-jsonrpc:membership_email_invitation_accept")
       .existing_refs.tests,
-    ["deepwell/tests/page.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract"]
+    ["deepwell/tests/page/membership.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract"]
   )
 })
 
