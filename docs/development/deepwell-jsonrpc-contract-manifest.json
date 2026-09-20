@@ -1730,7 +1730,7 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "rpc_behavioral",
-        "reference": "deepwell/tests/page.rs#page_move_render_failure_rolls_back_destination_identity",
+        "reference": "deepwell/tests/page/page_move.rs#page_move_render_failure_rolls_back_destination_identity",
         "alternatives": [],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -1908,7 +1908,7 @@
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/page.rs#deleted_category_navigation_does_not_fall_back_to_site_navigation",
         "alternatives": [
-          "deepwell/tests/page.rs#page_move_renders_with_destination_category_context",
+          "deepwell/tests/page/page_move.rs#page_move_renders_with_destination_category_context",
           "deepwell/tests/page_template_assignment.rs#assigned_data_form_template_edit_invalidates_warm_imported_article_cache",
           "deepwell/tests/page_template_assignment.rs#category_page_template_prefills_new_page_source_and_can_be_cleared",
           "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_remains_editable_and_renders_form_variables",
@@ -5112,7 +5112,6 @@
           "deepwell/tests/page.rs#article_view_uses_category_license_and_site_fallback",
           "deepwell/tests/page.rs#article_view_uses_effective_page_discussion_policy_and_stored_nesting",
           "deepwell/tests/page.rs#basic_edit",
-          "deepwell/tests/page.rs#basic_move",
           "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
           "deepwell/tests/page.rs#component_css_include_visibility_and_lifecycle_matrix",
           "deepwell/tests/page.rs#countpages_saved_page_views_follow_current_matching_page_state",
@@ -5141,7 +5140,6 @@
           "deepwell/tests/page.rs#page_get_deleted_filters_pages_by_delete_permission",
           "deepwell/tests/page.rs#page_get_files_requires_parent_page_view_permission",
           "deepwell/tests/page.rs#page_get_score_requires_view_permission_and_site_ownership",
-          "deepwell/tests/page.rs#page_move_renders_with_destination_category_context",
           "deepwell/tests/page.rs#page_move_requires_destination_create_permission",
           "deepwell/tests/page.rs#page_mutations_require_page_permissions",
           "deepwell/tests/page.rs#page_preview_omits_iftags_in_included_sources",
@@ -5173,6 +5171,8 @@
           "deepwell/tests/page/list_pages_runtime.rs#first_revision_current_page_listpages_uses_render_page_info",
           "deepwell/tests/page/page_modules.rs#orphanedpages_module_refreshes_after_linker_soft_delete",
           "deepwell/tests/page/page_modules.rs#site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link_rules",
+          "deepwell/tests/page/page_move.rs#basic_move",
+          "deepwell/tests/page/page_move.rs#page_move_renders_with_destination_category_context",
           "deepwell/tests/page_discussion.rs#imported_page_discussion_pointer_can_be_claimed_by_only_one_page",
           "deepwell/tests/page_discussion.rs#page_discussions_reject_deleted_containers_and_skip_deleted_groups",
           "deepwell/tests/page_discussion.rs#wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_deleted_pages",
@@ -5518,7 +5518,6 @@
           "deepwell/tests/list_pages.rs#imported_revision_count_current_page_only_adds_local_revisions",
           "deepwell/tests/list_pages.rs#wikidot_ajax_listpages_returns_unwrapped_client_rows",
           "deepwell/tests/page.rs#basic_edit",
-          "deepwell/tests/page.rs#basic_move",
           "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
           "deepwell/tests/page.rs#component_css_include_visibility_and_lifecycle_matrix",
           "deepwell/tests/page.rs#page_editing_history_preserves_each_page_change_as_a_recoverable_revision",
@@ -5542,6 +5541,7 @@
           "deepwell/tests/page/page_modules.rs#backlinks_module_forgets_removed_links_and_collapses_duplicate_linkers",
           "deepwell/tests/page/page_modules.rs#nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
           "deepwell/tests/page/page_modules.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
+          "deepwell/tests/page/page_move.rs#basic_move",
           "deepwell/tests/page_lifecycle_identity.rs#lifecycle_identity_preserves_imported_native_and_mixed_display_names",
           "deepwell/tests/page_template_assignment.rs#assigned_data_form_template_edit_invalidates_warm_imported_article_cache",
           "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal",
@@ -5662,7 +5662,6 @@
           "deepwell/tests/page.rs#article_cache_and_include_dependencies_use_exact_template_source",
           "deepwell/tests/page.rs#basalt_runtime_state_users_rerender_identity_profile_subtrees",
           "deepwell/tests/page.rs#basic_edit",
-          "deepwell/tests/page.rs#basic_move",
           "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not",
           "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
           "deepwell/tests/page.rs#component_css_include_visibility_and_lifecycle_matrix",
@@ -5787,6 +5786,7 @@
           "deepwell/tests/page/page_modules.rs#pages_module_renders_documented_arguments_and_live_fallbacks",
           "deepwell/tests/page/page_modules.rs#pages_module_renders_the_site_index_and_clamps_pagination",
           "deepwell/tests/page/page_modules.rs#wantedpages_module_groups_missing_internal_links_by_target",
+          "deepwell/tests/page/page_move.rs#basic_move",
           "deepwell/tests/parent.rs#direct_parent_metadata_rejects_missing_deleted_and_cross_site_parents"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -6795,11 +6795,11 @@
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/list_pages.rs#imported_revision_count_adds_local_lifecycle_revisions_for_order_and_substitution",
         "alternatives": [
-          "deepwell/tests/page.rs#basic_move",
           "deepwell/tests/page.rs#page_editing_history_preserves_each_page_change_as_a_recoverable_revision",
-          "deepwell/tests/page.rs#page_move_renders_with_destination_category_context",
           "deepwell/tests/page.rs#page_move_requires_destination_create_permission",
-          "deepwell/tests/page/page_modules.rs#pages_by_tag_saved_page_views_follow_current_tagged_page_state"
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_saved_page_views_follow_current_tagged_page_state",
+          "deepwell/tests/page/page_move.rs#basic_move",
+          "deepwell/tests/page/page_move.rs#page_move_renders_with_destination_category_context"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -7635,7 +7635,6 @@
           "deepwell/tests/page.rs#listusers_module_matches_live_preview_and_runtime_viewer",
           "deepwell/tests/page.rs#mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views",
           "deepwell/tests/page.rs#members_module_ssr_and_ajax_share_100_row_duplicate_relation_boundary",
-          "deepwell/tests/page.rs#page_move_renders_with_destination_category_context",
           "deepwell/tests/page.rs#page_view_rerenders_stale_persisted_compiled_artifact",
           "deepwell/tests/page.rs#page_view_separates_generated_css_modules_from_compiled_body_html",
           "deepwell/tests/page.rs#pagecalendar_module_renders_live_category_links_and_counts",
@@ -7681,6 +7680,7 @@
           "deepwell/tests/page/page_modules.rs#pages_by_tag_saved_page_views_follow_current_tagged_page_state",
           "deepwell/tests/page/page_modules.rs#pages_module_renders_the_site_index_and_clamps_pagination",
           "deepwell/tests/page/page_modules.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
+          "deepwell/tests/page/page_move.rs#page_move_renders_with_destination_category_context",
           "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_remains_editable_and_renders_form_variables",
           "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_resolves_pagepath_data_but_preserves_form_raw",
           "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal",
@@ -9087,7 +9087,6 @@
           "deepwell/tests/page.rs#autonumber_allocator_holds_the_category_lock_until_request_completion",
           "deepwell/tests/page.rs#basalt_runtime_state_users_rerender_identity_profile_subtrees",
           "deepwell/tests/page.rs#basic_edit",
-          "deepwell/tests/page.rs#basic_move",
           "deepwell/tests/page.rs#categories_runtime_inventory_is_scoped_to_the_request_actor",
           "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not",
           "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
@@ -9194,7 +9193,6 @@
           "deepwell/tests/page.rs#page_get_deleted_filters_pages_by_delete_permission",
           "deepwell/tests/page.rs#page_get_files_requires_parent_page_view_permission",
           "deepwell/tests/page.rs#page_get_score_requires_view_permission_and_site_ownership",
-          "deepwell/tests/page.rs#page_move_renders_with_destination_category_context",
           "deepwell/tests/page.rs#page_move_requires_destination_create_permission",
           "deepwell/tests/page.rs#page_mutations_require_page_permissions",
           "deepwell/tests/page.rs#page_preview_omits_iftags_in_included_sources",
@@ -9405,6 +9403,8 @@
           "deepwell/tests/page/page_modules.rs#wantedpages_module_groups_missing_internal_links_by_target",
           "deepwell/tests/page/page_modules.rs#wikidot_listpages_feed_queries_newest_viewable_pages",
           "deepwell/tests/page/page_modules.rs#wikidot_listpages_feed_uses_imported_creator_identity_provenance",
+          "deepwell/tests/page/page_move.rs#basic_move",
+          "deepwell/tests/page/page_move.rs#page_move_renders_with_destination_category_context",
           "deepwell/tests/page_discussion.rs#imported_page_discussion_pointer_can_be_claimed_by_only_one_page",
           "deepwell/tests/page_discussion.rs#page_discussion_page_lookup_holds_an_exclusive_row_lock",
           "deepwell/tests/page_discussion.rs#page_discussion_policy_lookup_holds_an_exclusive_category_lock",

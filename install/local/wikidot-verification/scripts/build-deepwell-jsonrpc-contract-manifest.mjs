@@ -20,7 +20,7 @@ const HISTORICAL_EVIDENCE = [
 const CURATED_RPC_WITNESSES = [
   {
     method: "category_get",
-    source_path: "deepwell/tests/page.rs",
+    source_path: "deepwell/tests/page/page_move.rs",
     test_name: "page_move_render_failure_rolls_back_destination_identity",
     required_fragments: [
       "page_move_rpc_request(",
