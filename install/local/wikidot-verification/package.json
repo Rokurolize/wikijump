@@ -10,6 +10,10 @@
   "scripts": {
     "test": "../../../scripts/run-test-no-external-network.sh node --test tests/*.test.mjs",
     "test:ci": "../../../scripts/run-test-no-external-network.sh node --test tests/*.test.mjs",
+    "offline": "pnpm run test:ci && pnpm run offline:syntax",
+    "offline:syntax": "../../../scripts/run-offline-syntax-compatibility.sh",
+    "offline:browser": "../../../scripts/run-test-no-external-network.sh --allow-blocked-destination '[2001:4860:4860::8888]:443' node scripts/run-offline-browser-oracle.mjs",
+    "offline:all": "pnpm run offline && pnpm run offline:browser",
     "generated-contracts:verify": "node scripts/verify-repository-generated-contracts.mjs --full",
     "generated-contracts:verify:repository": "node scripts/verify-repository-generated-contracts.mjs",
     "completion": "node scripts/run-completion-controller.mjs",

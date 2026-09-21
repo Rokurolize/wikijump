@@ -1,19 +1,52 @@
-name: '[wikidot] Verification tests'
+name: '[wikidot] Offline compatibility'
 
 on:
+  pull_request:
+  push:
+    branches:
+      - develop
+      - prod
   workflow_dispatch:
 
-permissions: {}
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('wikidot-offline-pr-{0}', github.event.pull_request.number) || format('wikidot-offline-{0}-{1}', github.ref, github.run_id) }}
+  cancel-in-progress: true
 
 jobs:
-  disabled:
-    name: Local-only policy
+  offline:
+    name: Frozen oracle regression
     runs-on: ubuntu-latest
-    timeout-minutes: 1
+    timeout-minutes: 20
     steps:
-      - name: Compatibility verification is local-only
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.18.0
+
+      - name: Install JavaScript dependencies
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.10.0 --activate
+          pnpm --dir install/local/wikidot-verification install --frozen-lockfile
+
+      - name: Prepare pinned Rust dependencies
+        run: |
+          rustup toolchain install 1.95.0 --profile minimal
+          cargo +1.95.0 fetch --locked --manifest-path deepwell/Cargo.toml
+
+      - name: Run hermetic compatibility suite
+        run: pnpm --dir install/local/wikidot-verification run offline
+
+      - name: Explain live-acquisition boundary
+        if: always()
         run: |
           printf '%s\n' \
-            'Wikidot verification is intentionally disabled in GitHub Actions.' \
-            'Run it in the maintained WSL workspace with the persistent identity-bound response cache.' \
-            'A retained cache hit must perform zero external requests.'
+            'This workflow never acquires Wikidot/WDFiles compatibility evidence.' \
+            'Live-reference, authenticated probes, and sandbox mutations remain explicit operator-only acquisition workflows.' \
+            'The SCP-9506 full-page browser oracle remains a local standing-runtime gate because it binds the retained Chromium executable and local TLS/runtime identity.'

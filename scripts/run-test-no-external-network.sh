@@ -10,12 +10,36 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 EXPECT_BLOCKED=false
-if [[ "${1:-}" == "--expect-blocked" ]]; then
-  EXPECT_BLOCKED=true
-  shift
-fi
+ALLOW_BLOCKED_DESTINATIONS=()
+while [[ $# -gt 0 ]]; do
+  case "${1}" in
+    --expect-blocked)
+      EXPECT_BLOCKED=true
+      shift
+      ;;
+    --allow-blocked-destination)
+      if [[ -z "${2:-}" ]]; then
+        echo "--allow-blocked-destination requires an exact logged destination" >&2
+        exit 2
+      fi
+      ALLOW_BLOCKED_DESTINATIONS+=("${2}")
+      shift 2
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
 if [[ $# -eq 0 ]]; then
-  echo "usage: scripts/run-test-no-external-network.sh [--expect-blocked] COMMAND [ARG...]" >&2
+  echo "usage: scripts/run-test-no-external-network.sh [--expect-blocked] [--allow-blocked-destination DEST ...] COMMAND [ARG...]" >&2
+  exit 2
+fi
+if "${EXPECT_BLOCKED}" && [[ ${#ALLOW_BLOCKED_DESTINATIONS[@]} -ne 0 ]]; then
+  echo "--expect-blocked cannot be combined with --allow-blocked-destination" >&2
   exit 2
 fi
 
@@ -60,6 +84,20 @@ if [[ -s "${LOG}" ]]; then
   BLOCKED="$(wc -l <"${LOG}")"
 fi
 
+UNAPPROVED_LOG="${TMP}/unapproved-blocked.log"
+cp -- "${LOG}" "${UNAPPROVED_LOG}"
+for destination in "${ALLOW_BLOCKED_DESTINATIONS[@]}"; do
+  FILTERED="${TMP}/unapproved-blocked.next.log"
+  awk -F '\t' -v allowed="${destination}" '$2 != allowed { print }' \
+    "${UNAPPROVED_LOG}" >"${FILTERED}"
+  mv -- "${FILTERED}" "${UNAPPROVED_LOG}"
+done
+UNAPPROVED_BLOCKED=0
+if [[ -s "${UNAPPROVED_LOG}" ]]; then
+  UNAPPROVED_BLOCKED="$(wc -l <"${UNAPPROVED_LOG}")"
+fi
+APPROVED_BLOCKED=$((BLOCKED - UNAPPROVED_BLOCKED))
+
 if "${EXPECT_BLOCKED}"; then
   if [[ ${STATUS} -ne 0 ]]; then
     echo "test network guard self-check command failed with status ${STATUS}" >&2
@@ -73,13 +111,17 @@ if "${EXPECT_BLOCKED}"; then
   exit 0
 fi
 
-if [[ ${BLOCKED} -ne 0 ]]; then
+if [[ ${UNAPPROVED_BLOCKED} -ne 0 ]]; then
   echo "test network guard: external network attempt(s) detected; suite is non-hermetic" >&2
-  sed -n '1,40p' "${LOG}" >&2
-  if [[ ${BLOCKED} -gt 40 ]]; then
-    printf '... %s additional blocked attempt(s)\n' "$((BLOCKED - 40))" >&2
+  sed -n '1,40p' "${UNAPPROVED_LOG}" >&2
+  if [[ ${UNAPPROVED_BLOCKED} -gt 40 ]]; then
+    printf '... %s additional blocked attempt(s)\n' "$((UNAPPROVED_BLOCKED - 40))" >&2
   fi
   exit 86
+fi
+
+if [[ ${APPROVED_BLOCKED} -ne 0 ]]; then
+  printf 'test network guard blocked %s explicitly allowlisted background attempt(s) before transmission\n' "${APPROVED_BLOCKED}" >&2
 fi
 
 exit "${STATUS}"

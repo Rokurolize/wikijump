@@ -2,6 +2,26 @@
 
 The scripts in this directory import frozen Wikidot corpus data, inspect a local runtime, capture browser evidence, and reduce large runs into machine-readable verdicts. Expected behavior must come from the frozen corpus, reviewed compatibility policy, or sealed real-Wikidot evidence. Local Wikijump output is diagnostic evidence, not an oracle.
 
+## Routine compatibility regression is offline
+
+The completed compatibility campaign is an evidence-acquisition history, not the normal test loop. Routine development must consume repository-owned frozen observations and must not reacquire Wikidot, WDFiles, theme CDNs, fonts, or any other public compatibility dependency.
+
+Run the hermetic contract/unit suite plus the checked-in syntax differential with:
+
+```sh
+pnpm --dir install/local/wikidot-verification offline
+```
+
+Run the full-page SCP-9506 browser oracle against a local standing runtime with:
+
+```sh
+pnpm --dir install/local/wikidot-verification offline:browser
+```
+
+`offline:browser` uses `fixtures/offline-compatibility/scp-9506-final-zero-oracle.json`, the exact final-zero Chromium identity, a repository-owned external-response fixture, and the final-zero-accepted full-page Wikijump image. Public stylesheet/font/image responses are replayed from the fixture. Any missing public response fails closed instead of fetching it. The semantic comparison uses the frozen Wikidot browser observation; the visual comparison uses normalized ImageMagick RMSE against the Wikijump image that passed that same final-zero live comparison. The process network guard blocks non-loopback connects before transmission; the exact Chromium 149 Google-DNS background probe is allowed only as a *blocked* syscall because it cannot be disabled reliably in that retained browser build. Any other blocked destination still fails the suite.
+
+Run both layers with `pnpm --dir install/local/wikidot-verification offline:all`. Live-reference, preview-capture, authenticated probe, and sandbox-mutation commands below are acquisition tools for discovering a behavior that is not yet represented by a frozen fixture. They are never prerequisites for an ordinary regression run. After a reviewed acquisition, reduce the observation to a checked-in fixture and test it offline thereafter.
+
 Large retained JSON/JSONL artifacts are stored as deterministic gzip when their
 expanded representation would exceed the repository's raw-artifact budget.
 Consumers use `src/compressed-artifact-io.mjs`, so `.json.gz` and `.jsonl.gz`
@@ -94,7 +114,13 @@ install/local/wikidot-verification/.venv/bin/python \
   --output /absolute/evidence/path/preview-references.jsonl
 ```
 
-Build FTML's `render_html_jsonl` example once, then reuse that executable for every local run:
+Routine regression uses Deepwell's exact pinned FTML dependency rather than a separate developer checkout:
+
+```sh
+pnpm --dir install/local/wikidot-verification offline:syntax
+```
+
+The command builds `deepwell/src/bin/wikidot_syntax_renderer.rs` with Cargo `--offline --locked`, then streams the checked-in `preview-references.jsonl` through that renderer. This keeps the oracle bound to the FTML revision actually used by Wikijump. For diagnostic work against another explicitly chosen FTML executable, the lower-level runner remains available:
 
 ```sh
 cargo build --manifest-path /path/to/ftml/Cargo.toml --example render_html_jsonl
