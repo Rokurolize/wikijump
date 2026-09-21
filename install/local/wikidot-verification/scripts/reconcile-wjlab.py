@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the active /home/roku/wjlab catalog without mutating artifacts."""
+"""Catalog an explicitly supplied historical WJLab archive without mutation."""
 
 from __future__ import annotations
 
@@ -14,7 +14,6 @@ from pathlib import Path
 
 
 SCHEMA = "roku.wjlab.inventory.v1"
-PATH_PATTERN = re.compile(r"/home/roku/wjlab(?:/[A-Za-z0-9_.:@+%~-]+)+")
 CONTROL_NAMES = ("receipt", "manifest", "index", "state", "ledger", "verdict", "plan", "handoff")
 CONTROL_SUFFIXES = {".json", ".jsonl", ".md", ".txt", ".yaml", ".yml", ".toml"}
 REPOSITORY_TEXT_SUFFIXES = CONTROL_SUFFIXES | {".js", ".mjs", ".ts", ".py", ".sh"}
@@ -28,12 +27,7 @@ ENTRY_FILES = {
 DEFAULT_RELEASE_REGISTRY = (
     Path(__file__).resolve().parents[1] / "config" / "wjlab-release-conditions.json"
 )
-DEFAULT_REPOSITORIES = (
-    Path("/home/roku/src/Rokurolize/wikijump"),
-    Path("/home/roku/src/Rokurolize/ftml"),
-    Path("/home/roku/src/Rokurolize/wikidot.py"),
-    Path("/home/roku/src/Rokurolize/wikidot-verification"),
-)
+DEFAULT_REPOSITORIES = (Path(__file__).resolve().parents[4],)
 
 
 def run(command: list[str], *, cwd: Path | None = None) -> str:
@@ -125,9 +119,12 @@ def docker_references(root: Path) -> list[dict[str, object]]:
     if not raw:
         return []
     records = []
+    path_pattern = re.compile(
+        re.escape(str(root)) + r"(?:/[A-Za-z0-9_.:@+%~-]+)+"
+    )
     for item in json.loads(raw):
         encoded = json.dumps(item, sort_keys=True)
-        paths = sorted(set(PATH_PATTERN.findall(encoded)))
+        paths = sorted(set(path_pattern.findall(encoded)))
         paths = [path.rstrip(".,;:\\") for path in paths if path.startswith(str(root))]
         if paths:
             records.append(
@@ -307,20 +304,34 @@ def load_release_rules(
     return document["rules"], known_assets, []
 
 
-def matching_release_rules(path: Path, rules: list[dict[str, object]]) -> list[str]:
+def matching_release_rules(
+    path: Path, root: Path, rules: list[dict[str, object]]
+) -> list[str]:
     value = str(path)
     matches = []
     for rule in rules:
         selectors = rule.get("selectors", {})
         patterns = selectors.get("path_globs", []) if isinstance(selectors, dict) else []
-        if any(fnmatch.fnmatchcase(value, pattern) for pattern in patterns):
+        portable_patterns = [
+            str(root) + pattern.removeprefix("/home/roku/wjlab")
+            if pattern == "/home/roku/wjlab"
+            or pattern.startswith("/home/roku/wjlab/")
+            else pattern
+            for pattern in patterns
+        ]
+        if any(fnmatch.fnmatchcase(value, pattern) for pattern in portable_patterns):
             matches.append(str(rule["id"]))
     return sorted(matches)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=Path, default=Path("/home/roku/wjlab"))
+    parser.add_argument(
+        "--root",
+        type=Path,
+        required=True,
+        help="absolute historical WJLab archive root to inspect",
+    )
     parser.add_argument("--catalog", type=Path)
     parser.add_argument("--release-registry", type=Path, default=DEFAULT_RELEASE_REGISTRY)
     parser.add_argument("--repository", action="append", type=Path)
@@ -360,7 +371,7 @@ def main() -> int:
             lifecycle, evidence = classify(
                 path, root, processes, worktrees, containers, cited_paths
             )
-            release_rule_ids = matching_release_rules(path, release_rules)
+            release_rule_ids = matching_release_rules(path, root, release_rules)
             entries.append(
                 {
                     "path": str(path),
