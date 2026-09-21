@@ -4,8 +4,21 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if [[ "${WIKIJUMP_TEST_NETWORK_GUARD_ACTIVE:-}" != "1" ]]; then
+  # Resolve the already-installed pinned toolchain before entering the network
+  # guard. Calling the rustup proxy from inside the guard can trigger a channel
+  # update check even when the toolchain itself is already present.
+  export WIKIJUMP_OFFLINE_CARGO="$(rustup which --toolchain 1.95.0 cargo)"
+  export WIKIJUMP_OFFLINE_RUSTC="$(rustup which --toolchain 1.95.0 rustc)"
   exec "${ROOT}/scripts/run-test-no-external-network.sh" "$0" "$@"
 fi
+
+CARGO="${WIKIJUMP_OFFLINE_CARGO:-$(command -v cargo)}"
+RUSTC="${WIKIJUMP_OFFLINE_RUSTC:-$(command -v rustc)}"
+if [[ ! -x "${CARGO}" || ! -x "${RUSTC}" ]]; then
+  echo "offline syntax compatibility requires executable Cargo and rustc paths" >&2
+  exit 2
+fi
+export RUSTC
 
 OUTPUT="${1:-}"
 TMP=""
@@ -15,13 +28,13 @@ if [[ -z "${OUTPUT}" ]]; then
   OUTPUT="${TMP}/verdict.json"
 fi
 
-cargo build \
+"${CARGO}" build \
   --offline \
   --locked \
   --manifest-path "${ROOT}/deepwell/Cargo.toml" \
   --bin wikidot_syntax_renderer
 
-TARGET_DIR="$(cargo metadata \
+TARGET_DIR="$("${CARGO}" metadata \
   --offline \
   --locked \
   --no-deps \
