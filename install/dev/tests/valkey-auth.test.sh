@@ -5,7 +5,7 @@ repo_root=$(CDPATH='' cd -- "$(dirname -- "$0")/../../.." && pwd)
 compose_file="$repo_root/install/dev/docker-compose.yaml"
 project="wikijump-valkey-auth-test-$$"
 password='CodexValkey_420-safe'
-base_image='valkey/valkey:8.1-alpine@sha256:a038175878d66b9d274fbf8be73c0305e93798b83917647f167e18cef3c71eec'
+base_image='valkey/valkey:9.1-alpine@sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11'
 DEEPWELL_RPC_TOKEN='0000000000000000000000000000000000000000000000000000000000000000'
 POSTGRES_PASSWORD='unused-valkey-test-password'
 export DEEPWELL_RPC_TOKEN POSTGRES_PASSWORD
