@@ -13,6 +13,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -22,8 +23,10 @@ from typing import Any
 from volume_contract import (
     ARCHIVE_ROLES,
     ARCHIVE_VOLUMES,
+    CADDY_VOLUMES,
     DURABLE_VOLUMES,
     LEGACY_VOLUMES,
+    PERSISTENT_VOLUMES,
     PROJECT_NAME,
 )
 
@@ -35,6 +38,7 @@ POST_CUTOVER_SCHEMA = "wikijump.standing_volume_cutover.v1"
 ROLES = ("database", "files", "cache")
 DEFAULT_HELPER_CONTAINER = f"{PROJECT_NAME}-deepwell-1"
 SHA256_RE = set("0123456789abcdef")
+VOLUME_PREFIX_RE = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,62}-$")
 
 
 class VolumeTransferError(RuntimeError):
@@ -300,18 +304,28 @@ def create_durable_volume(role: str, *, replace: bool) -> str:
     return durable
 
 
-def create_restored_volume(role: str, volume: str) -> str:
+def create_restored_volume(
+    role: str, volume: str, *, restored_from: str | None = None
+) -> str:
     if volume_exists(volume):
         raise VolumeTransferError(f"restore destination already exists: {volume}")
-    result = docker(
+    args = [
         "volume",
         "create",
         "--label",
         "com.rokurolize.wikijump.owner=standing-runtime",
         "--label",
         f"com.rokurolize.wikijump.role={role}",
-        volume,
-    )
+    ]
+    if restored_from:
+        args.extend(
+            [
+                "--label",
+                f"com.rokurolize.wikijump.restored_from={restored_from}",
+            ]
+        )
+    args.append(volume)
+    result = docker(*args)
     if result.stdout.strip() != volume:
         raise VolumeTransferError(f"docker returned an unexpected volume name for {volume}")
     return volume
@@ -423,6 +437,63 @@ def load_migration_receipt(path: Path) -> dict[str, object]:
     return value
 
 
+def bind_runtime_home_to_durable_volumes(
+    runtime_home: Path, *, migration_receipt_sha256: str
+) -> dict[str, object]:
+    root = runtime_home.resolve()
+    compose_path = root / "compose.yaml"
+    identity_path = root / "identity.json"
+    if not compose_path.is_file() or not identity_path.is_file():
+        raise VolumeTransferError(
+            "runtime home must contain compose.yaml and identity.json"
+        )
+
+    compose = compose_path.read_text(encoding="utf-8")
+    legacy_mentions = sorted(
+        name for name in LEGACY_VOLUMES.values() if name in compose
+    )
+    if legacy_mentions:
+        raise VolumeTransferError(
+            "runtime home compose still names legacy volume(s): "
+            + ", ".join(legacy_mentions)
+        )
+    missing_durable = sorted(
+        name for name in DURABLE_VOLUMES.values() if name not in compose
+    )
+    if missing_durable:
+        raise VolumeTransferError(
+            "runtime home compose is missing durable volume(s): "
+            + ", ".join(missing_durable)
+        )
+
+    identity = json.loads(identity_path.read_text(encoding="utf-8"))
+    if not isinstance(identity, dict) or identity.get("project_name") != PROJECT_NAME:
+        raise VolumeTransferError("runtime identity does not name the standing project")
+    current_volumes = identity.get("persistent_volumes")
+    # The historical identity used the three legacy application-data names
+    # followed by the two stable Caddy names. A repeated post-cutover check may
+    # already contain the durable list and is intentionally idempotent.
+    legacy_identity = [*LEGACY_VOLUMES.values(), *CADDY_VOLUMES]
+    if current_volumes not in (legacy_identity, list(PERSISTENT_VOLUMES)):
+        raise VolumeTransferError(
+            "runtime identity persistent volume set is neither legacy nor durable"
+        )
+    identity["persistent_volumes"] = list(PERSISTENT_VOLUMES)
+    identity["volume_migration"] = {
+        "schema": SCHEMA,
+        "receipt_sha256": exact_sha256(
+            migration_receipt_sha256, "runtime identity migration receipt"
+        ),
+    }
+    atomic_json(identity_path, identity)
+    return {
+        "runtime_home": str(root),
+        "identity_path": str(identity_path),
+        "identity_sha256": sha256_file(identity_path),
+        "persistent_volumes": list(PERSISTENT_VOLUMES),
+    }
+
+
 def post_cutover(args: argparse.Namespace) -> int:
     receipt = load_migration_receipt(args.receipt.resolve())
     running = running_project_containers()
@@ -459,17 +530,25 @@ def post_cutover(args: argparse.Namespace) -> int:
             "legacy rollback volume(s) disappeared before validation: "
             + ", ".join(sorted(missing_rollback))
         )
+    migration_receipt_sha256 = sha256_file(args.receipt.resolve())
+    runtime_binding = None
+    if getattr(args, "runtime_home", None) is not None:
+        runtime_binding = bind_runtime_home_to_durable_volumes(
+            args.runtime_home,
+            migration_receipt_sha256=migration_receipt_sha256,
+        )
     value = {
         "schema": POST_CUTOVER_SCHEMA,
         "status": "pass",
         "checked_at": utc_now(),
-        "migration_receipt_sha256": sha256_file(args.receipt.resolve()),
+        "migration_receipt_sha256": migration_receipt_sha256,
         "migration": receipt,
         "project": PROJECT_NAME,
         "running_containers": sorted(running),
         "active_durable_consumers": durable_consumers,
         "legacy_consumers": legacy_consumers,
         "legacy_retained": True,
+        "runtime_binding": runtime_binding,
     }
     atomic_json(args.output.resolve(), value)
     print(json.dumps({"status": "pass", "receipt": str(args.output.resolve())}))
@@ -615,13 +694,19 @@ def restore(args: argparse.Namespace) -> int:
     if set(by_role) != set(ARCHIVE_ROLES):
         raise VolumeTransferError("archive manifest role set is non-canonical")
     helper = resolve_helper_image(args.helper_image)
+    prefix = getattr(args, "volume_prefix", None)
+    if prefix is not None and not VOLUME_PREFIX_RE.fullmatch(prefix):
+        raise VolumeTransferError(
+            "restore volume prefix must be lowercase Docker-safe text ending in '-'"
+        )
     validated: list[tuple[str, str, Path, str]] = []
     for role in ARCHIVE_ROLES:
-        volume = ARCHIVE_VOLUMES[role]
+        canonical_volume = ARCHIVE_VOLUMES[role]
+        volume = f"{prefix or ''}{canonical_volume}"
         if volume_exists(volume):
             raise VolumeTransferError(f"restore destination already exists: {volume}")
         row = by_role[role]
-        if row.get("volume") != volume:
+        if row.get("volume") != canonical_volume:
             raise VolumeTransferError(f"archive volume name drift for {role}")
         archive = root / str(row.get("archive"))
         if not archive.is_file() or archive.parent != root:
@@ -637,7 +722,11 @@ def restore(args: argparse.Namespace) -> int:
 
     for role, volume, archive, compression in validated:
         row = by_role[role]
-        create_restored_volume(role, volume)
+        create_restored_volume(
+            role,
+            volume,
+            restored_from=ARCHIVE_VOLUMES[role] if prefix else None,
+        )
         extract_archive(
             helper,
             volume,
@@ -647,7 +736,19 @@ def restore(args: argparse.Namespace) -> int:
         current = tree_digest(helper, volume)
         if current != row.get("tree"):
             raise VolumeTransferError(f"restored tree verification failed for {role}")
-    print(json.dumps({"status": "restored", "manifest": str(manifest_path)}))
+    print(
+        json.dumps(
+            {
+                "status": "restored",
+                "manifest": str(manifest_path),
+                "volume_prefix": prefix,
+                "volumes": {
+                    role: f"{prefix or ''}{ARCHIVE_VOLUMES[role]}"
+                    for role in ARCHIVE_ROLES
+                },
+            }
+        )
+    )
     return 0
 
 
@@ -664,6 +765,11 @@ def parser() -> argparse.ArgumentParser:
     cutover_parser = commands.add_parser("post-cutover")
     cutover_parser.add_argument("--receipt", type=Path, required=True)
     cutover_parser.add_argument("--output", type=Path, required=True)
+    cutover_parser.add_argument(
+        "--runtime-home",
+        type=Path,
+        help="bind the canonical runtime identity to the durable volume names",
+    )
     cutover_parser.set_defaults(handler=post_cutover)
 
     backup_parser = commands.add_parser("backup")
@@ -675,6 +781,13 @@ def parser() -> argparse.ArgumentParser:
     restore_parser = commands.add_parser("restore")
     restore_parser.add_argument("--input-dir", type=Path, required=True)
     restore_parser.add_argument("--helper-image", required=True)
+    restore_parser.add_argument(
+        "--volume-prefix",
+        help=(
+            "restore into prefixed Docker volumes for a non-destructive local "
+            "restore rehearsal; omit on a clean target host"
+        ),
+    )
     restore_parser.set_defaults(handler=restore)
     return result
 

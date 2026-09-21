@@ -101,7 +101,8 @@ three legacy rollback inputs still exist:
 ```sh
 python install/standing/volume_transfer.py post-cutover \
   --receipt "$runtime_home/legacy-volume-migration.json" \
-  --output "$runtime_home/legacy-volume-cutover.json"
+  --output "$runtime_home/legacy-volume-cutover.json" \
+  --runtime-home "$runtime_home"
 
 pnpm --dir install/local/wikidot-verification run offline:browser
 ```
@@ -111,7 +112,10 @@ database/cache, WIKIREQUEST, AJAX ListPages, and `wikidot.py` canaries. Only
 after those pass and `docker ps -a` shows no container mounting a
 `runtime50x-*` volume may the three legacy volumes be removed. Their removal is
 an explicit operator action; neither Compose nor `volume_transfer.py` performs
-it implicitly.
+it implicitly. The optional `--runtime-home` binding is part of the cutover
+proof: it refuses a Compose file that still names a legacy volume and updates
+only `identity.json`'s persistent-volume identity plus the migration receipt
+hash, so an older rendered home cannot keep advertising the retired names.
 
 ### Portable backup and clean-Ubuntu restore
 
@@ -151,6 +155,23 @@ standing home from the clean checkout into
 normal merged-head promotion path, and rerun the same standing/browser
 canaries. No `/home/roku/wjlab` path is required; an old WJLab tree is archive
 provenance only.
+
+The archive can also be rehearsed non-destructively on the source host while
+the canonical durable volumes still exist. Supply a temporary lowercase Docker
+volume prefix ending in `-`; the archive still has to name the canonical source
+volumes, but extraction and tree verification use prefixed destinations:
+
+```sh
+python install/standing/volume_transfer.py restore \
+  --input-dir /absolute/backup/wikijump-standing \
+  --helper-image sha256:<local-helper-image-id> \
+  --volume-prefix restore-rehearsal-
+```
+
+After a successful rehearsal, remove only those explicitly prefixed temporary
+volumes. This is the same archive-hash, extraction, ownership/xattr, sparse-file,
+and deterministic-tree verification path used by a clean-host restore; it does
+not read from the live source volumes.
 
 ## Sealed Tier 2 receipt verifiers
 
