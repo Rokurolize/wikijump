@@ -202,6 +202,7 @@ digest="$({ tar \
   --numeric-owner \
   --acls \
   --xattrs \
+  --sparse \
   --format=posix \
   --pax-option=delete=atime,delete=ctime \
   -cf - .; } | sha256sum | awk '{print $1}')"
@@ -217,8 +218,8 @@ if find /destination -mindepth 1 -print -quit | grep -q .; then
   echo 'destination volume is not empty' >&2
   exit 71
 fi
-tar --numeric-owner --acls --xattrs -C /source -cf - . \
-  | tar --numeric-owner --acls --xattrs -C /destination -xpf -
+tar --numeric-owner --acls --xattrs --sparse -C /source -cf - . \
+  | tar --numeric-owner --acls --xattrs --sparse -C /destination -xpf -
 """.strip()
 
 
@@ -502,6 +503,7 @@ def stream_archive(image: str, volume: str, output: Path, *, gzip: bool) -> None
         "--numeric-owner",
         "--acls",
         "--xattrs",
+        "--sparse",
         "-C",
         "/volume",
         "-czf" if gzip else "-cf",
@@ -579,6 +581,7 @@ def extract_archive(
         "--numeric-owner",
         "--acls",
         "--xattrs",
+        "--sparse",
         "-C",
         "/volume",
         "-xzf" if gzip else "-xf",
