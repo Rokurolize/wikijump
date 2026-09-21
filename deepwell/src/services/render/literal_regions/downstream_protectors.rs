@@ -224,7 +224,7 @@ fn collect_anchor_marker_ranges(
         .captures_iter(source)
         .filter_map(|captures| {
             let matched = captures.get(0)?;
-            if literal_regions.contains(matched.start()) {
+            if literal_regions.advance_and_contains(matched.start()) {
                 return None;
             }
             let name = captures.name("name")?;
@@ -258,7 +258,7 @@ fn collect_current_page_link_ranges(
             let matched = captures.get(0)?;
             if source[..matched.start()].ends_with('[')
                 || source[matched.end()..].starts_with(']')
-                || literal_regions.contains(matched.start())
+                || literal_regions.advance_and_contains(matched.start())
             {
                 return None;
             }
@@ -291,7 +291,7 @@ fn collect_star_local_link_ranges(
         .captures_iter(source)
         .filter_map(|captures| {
             let matched = captures.get(0)?;
-            if literal_regions.contains(matched.start()) {
+            if literal_regions.advance_and_contains(matched.start()) {
                 return None;
             }
             let target = captures.name("target")?;
@@ -324,7 +324,10 @@ fn collect_wikipedia_link_ranges(
         .captures_iter(source)
         .filter_map(|captures| {
             let matched = captures.get(0)?;
-            if literal_regions.containing_end(matched.start()).is_some() {
+            if literal_regions
+                .advance_to_containing_end(matched.start())
+                .is_some()
+            {
                 return None;
             }
             let target = captures.name("target")?;
@@ -497,7 +500,7 @@ impl LegacyLiteralStartIndex {
 }
 
 impl LegacyLiteralStartCursor<'_> {
-    fn contains(&mut self, offset: usize) -> bool {
+    fn advance_and_contains(&mut self, offset: usize) -> bool {
         while self
             .ranges
             .get(self.cursor)
@@ -735,7 +738,12 @@ mod tests {
         let mut cursor = index.monotone_cursor();
         let observed = WIKIDOT_CURRENT_PAGE_LINK_REGEX
             .find_iter(source)
-            .map(|matched| (matched.as_str(), cursor.contains(matched.start())))
+            .map(|matched| {
+                (
+                    matched.as_str(),
+                    cursor.advance_and_contains(matched.start()),
+                )
+            })
             .collect::<Vec<_>>();
 
         assert_eq!(

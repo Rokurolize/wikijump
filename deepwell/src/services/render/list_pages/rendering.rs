@@ -77,7 +77,7 @@ use super::{
     list_pages_argument_error_with_parent_precedence,
     list_pages_body_is_no_visible_tracking_markup,
     list_pages_body_starts_with_preparsed_block, list_pages_body_uses_first_image,
-    list_pages_content_query_target, list_pages_created_by_unix,
+    list_pages_content_query_target, list_pages_created_by_slug,
     list_pages_feed_info_html, list_pages_feed_only_render_result,
     list_pages_first_paragraph, list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector,

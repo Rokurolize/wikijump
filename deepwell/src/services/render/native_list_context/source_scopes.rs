@@ -38,7 +38,7 @@ pub(in crate::services::render) fn collect_unproven_scope_ranges(
     let mut cursor = 0usize;
 
     while cursor < bytes.len() {
-        if let Some(end) = literal_cursor.containing_end(cursor) {
+        if let Some(end) = literal_cursor.advance_to_containing_end(cursor) {
             cursor = end;
             continue;
         }
@@ -130,7 +130,7 @@ pub(in crate::services::render) fn matching_source_scope_close(
     let mut cursor = scope_start;
 
     while cursor < bytes.len() {
-        if let Some(end) = literal_cursor.containing_end(cursor) {
+        if let Some(end) = literal_cursor.advance_to_containing_end(cursor) {
             cursor = end;
             continue;
         }

@@ -80,7 +80,7 @@ pub(super) fn validate_generic_head_arguments(
                 while cursor < head_end {
                     if bytes[cursor] == b'"'
                         && !quote_is_escaped(bytes, cursor, &text_tokens)
-                        && !text_tokens.contains(cursor)
+                        && !text_tokens.advance_and_contains(cursor)
                     {
                         let (ends, inspected) = pinned_double_quote_ends_generic_argument(
                             bytes,
@@ -174,7 +174,7 @@ pub(super) fn pinned_double_quote_ends_generic_argument(
         {
             return (true, cursor + 1 - start);
         }
-        if bytes[cursor] == b'=' && !text_tokens.contains(cursor) {
+        if bytes[cursor] == b'=' && !text_tokens.advance_and_contains(cursor) {
             return (saw_key, cursor + 1 - start);
         }
 
@@ -185,7 +185,7 @@ pub(super) fn pinned_double_quote_ends_generic_argument(
         {
             cursor += 1;
         }
-        if cursor == key_start || text_tokens.contains(key_start) {
+        if cursor == key_start || text_tokens.advance_and_contains(key_start) {
             return (false, cursor.saturating_add(1).saturating_sub(start));
         }
         saw_key = true;
@@ -278,7 +278,7 @@ pub(super) fn validate_module_head(
             {
                 break;
             }
-            if let Some(end) = text_tokens.range_end_at(cursor) {
+            if let Some(end) = text_tokens.advance_to_range_end_at(cursor) {
                 runtime_safe = false;
                 if bytes[cursor..end].contains(&b'=') {
                     syntax_crossing_token_end = Some(end);
@@ -387,7 +387,7 @@ pub(super) fn validate_module_head(
         let quote_owned = matches!(quote, b'\'' | b'"')
             && !list_pages_url_value
             && (syntax_crossing_token_end.is_some_and(|end| cursor < end)
-                || text_tokens.contains(cursor));
+                || text_tokens.advance_and_contains(cursor));
         if matches!(quote, b'\'' | b'"') {
             let quote_crosses_syntax_token =
                 quote_owned && syntax_crossing_token_end.is_some_and(|end| cursor < end);
@@ -410,7 +410,7 @@ pub(super) fn validate_module_head(
                     if !list_pages_url_quote_end
                         && !list_pages_comment_quote_end
                         && (syntax_crossing_token_end.is_some_and(|end| cursor < end)
-                            || text_tokens.contains(cursor))
+                            || text_tokens.advance_and_contains(cursor))
                     {
                         runtime_safe = false;
                         cursor += 1;
@@ -714,7 +714,7 @@ pub(super) fn scanner_argument_boundary_at(
     if cursor == key_start {
         return false;
     }
-    if lookahead_tokens.contains(key_start) {
+    if lookahead_tokens.advance_and_contains(key_start) {
         return false;
     }
     let key_end = cursor;
@@ -742,7 +742,7 @@ pub(super) fn scanner_argument_boundary_at(
     if bytes.get(cursor) == Some(&b'!') {
         cursor += 1;
     }
-    bytes.get(cursor) == Some(&b'=') && !lookahead_tokens.contains(cursor)
+    bytes.get(cursor) == Some(&b'=') && !lookahead_tokens.advance_and_contains(cursor)
 }
 
 pub(super) fn physical_line_resume(bytes: &[u8], line_end: usize) -> usize {

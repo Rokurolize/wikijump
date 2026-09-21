@@ -289,7 +289,8 @@ fn collect_wikidot_literal_ranges(
                     }
                 }
                 WikidotLiteralState::Normal
-                    if remaining.starts_with(b"@@") && !text_tokens.contains(cursor) =>
+                    if remaining.starts_with(b"@@")
+                        && !text_tokens.advance_and_contains(cursor) =>
                 {
                     let run_len = bytes[cursor..body_end]
                         .iter()
@@ -328,7 +329,7 @@ fn collect_wikidot_literal_ranges(
                 WikidotLiteralState::Normal
                     if policy.runtime_extended
                         && remaining.starts_with(b"@<")
-                        && !text_tokens.contains(cursor) =>
+                        && !text_tokens.advance_and_contains(cursor) =>
                 {
                     if last_right_raw.is_some_and(|last_close| cursor < last_close)
                         && let Some(close) = find_right_raw(source, cursor + 2, body_end)
@@ -350,7 +351,7 @@ fn collect_wikidot_literal_ranges(
                 WikidotLiteralState::Comment { start }
                     if remaining.starts_with(b"--]")
                         && comment_close_is_token(bytes, cursor)
-                        && !text_tokens.contains(cursor) =>
+                        && !text_tokens.advance_and_contains(cursor) =>
                 {
                     cursor += 3;
                     ranges.push(start..cursor);

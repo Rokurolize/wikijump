@@ -94,7 +94,10 @@ pub(super) fn recognize_count_pages_modules(source: &str) -> CountPagesModuleRec
             .expect("a CountPages capture always has a head");
         let head = head_match.as_str();
         if source_projection_ranges.as_mut().is_some_and(|ranges| {
-            !ranges.range_is_unchanged(source, head_match.start()..head_match.end())
+            !ranges.advance_to_range_and_check_unchanged(
+                source,
+                head_match.start()..head_match.end(),
+            )
         }) {
             continue;
         }

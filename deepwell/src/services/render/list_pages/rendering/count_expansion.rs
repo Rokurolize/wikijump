@@ -90,8 +90,10 @@ impl RenderService {
             let body = body_match.map_or("", |matched| matched.as_str());
 
             if source_projection_ranges.as_mut().is_some_and(|ranges| {
-                !ranges
-                    .range_is_unchanged(&wikitext, head_match.start()..head_match.end())
+                !ranges.advance_to_range_and_check_unchanged(
+                    &wikitext,
+                    head_match.start()..head_match.end(),
+                )
             }) {
                 expanded.push_str(&compat_text.push_escaped_html_text(mtch.as_str()));
                 cursor = mtch.end();
@@ -271,7 +273,10 @@ impl RenderService {
             }
             let head_match = captures.name("head").unwrap();
             if source_projection_ranges.as_mut().is_some_and(|ranges| {
-                !ranges.range_is_unchanged(wikitext, head_match.start()..head_match.end())
+                !ranges.advance_to_range_and_check_unchanged(
+                    wikitext,
+                    head_match.start()..head_match.end(),
+                )
             }) {
                 continue;
             }

@@ -13,7 +13,6 @@
 mod anchor_candidates;
 mod base_candidates;
 mod block_candidates;
-mod common;
 mod count_pages;
 #[allow(dead_code)]
 mod downstream_protectors;
@@ -22,8 +21,8 @@ mod parser_candidates;
 mod text_owners;
 mod token_boundaries;
 mod wikidot;
+mod wikidot_ranges;
 
-use self::common::{collect_wikidot_block_ranges, collect_wikidot_tag_ranges};
 use self::count_pages::collect_count_pages_literal_ranges;
 #[allow(unused_imports)]
 pub(in crate::services::render) use self::downstream_protectors::{
@@ -48,6 +47,7 @@ pub(super) use self::token_boundaries::{
 };
 use self::wikidot::collect_wikidot_conditional_literal_ranges;
 pub(super) use self::wikidot::{double_quote_ends_wikidot_argument, quote_is_escaped};
+use self::wikidot_ranges::{collect_wikidot_block_ranges, collect_wikidot_tag_ranges};
 use regex::Regex;
 use std::ops::Range;
 use std::sync::LazyLock;
@@ -373,10 +373,10 @@ fn select_owned_ranges<const N: usize>(
 impl LiteralRegionCursor<'_> {
     #[cfg(test)]
     pub(super) fn contains(&mut self, offset: usize) -> bool {
-        self.containing_end(offset).is_some()
+        self.advance_to_containing_end(offset).is_some()
     }
 
-    pub(super) fn containing_end(&mut self, offset: usize) -> Option<usize> {
+    pub(super) fn advance_to_containing_end(&mut self, offset: usize) -> Option<usize> {
         debug_assert!(
             self.last_offset.is_none_or(|previous| previous <= offset),
             "literal-region cursor offsets must be monotone",

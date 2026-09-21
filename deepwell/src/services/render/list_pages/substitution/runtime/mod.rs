@@ -104,7 +104,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
             })
         })
         .unwrap_or_default();
-    let created_by_unix = list_pages_created_by_unix(
+    let created_by_unix = list_pages_created_by_slug(
         page,
         context.user_displays,
         context.snapshot_displays,

@@ -250,7 +250,7 @@ impl CompatHtmlFragments {
             let body_end = body_start + relative_end;
             output.push_str(&text[cursor..start]);
             let body = &text[body_start..body_end];
-            if parent_stack.parent_is_safe(&output)
+            if parent_stack.advance_and_check_parent_is_safe(&output)
                 && let Some((restored, trim_preceding_space)) =
                     self.block_marker_paragraph(body)
             {
@@ -410,7 +410,7 @@ impl CompatHtmlFragments {
                         .is_some_and(u8::is_ascii_whitespace)
                     {
                         output.pop();
-                        parent_stack.truncate_trailing_ascii_whitespace(output.len());
+                        parent_stack.clamp_parsed_len(output.len());
                     }
                     let allow_span_parent = matches!(
                         &self.fragments[index],
@@ -453,7 +453,10 @@ impl CompatHtmlFragments {
                             Some(fragment_start)
                         } else {
                             if !parent_stack
-                                .parent_accepts_block_fragment(&output, allow_span_parent)
+                                .advance_and_check_parent_accepts_block_fragment(
+                                    &output,
+                                    allow_span_parent,
+                                )
                             {
                                 output.push_str(&text[start..marker_end]);
                                 cursor = marker_end;
@@ -540,7 +543,7 @@ fn restore_block_html_from_paragraph(
     if !contains_only_text_breaks_and_balanced_inline_elements(trailing) {
         return None;
     }
-    if !parent_stack.parent_is_safe(&output[..paragraph_start]) {
+    if !parent_stack.advance_and_check_parent_is_safe(&output[..paragraph_start]) {
         return None;
     }
 
@@ -570,7 +573,7 @@ fn restore_block_html_from_paragraph(
             .is_some_and(u8::is_ascii_whitespace)
     {
         output.pop();
-        parent_stack.truncate_trailing_ascii_whitespace(output.len());
+        parent_stack.clamp_parsed_len(output.len());
     }
     let fragment_start = output.len();
     output.push_str(fragment);
@@ -716,7 +719,7 @@ impl Default for IncrementalHtmlElementStack {
 }
 
 impl IncrementalHtmlElementStack {
-    fn truncate_trailing_ascii_whitespace(&mut self, new_len: usize) {
+    fn clamp_parsed_len(&mut self, new_len: usize) {
         self.parsed = self.parsed.min(new_len);
     }
 
@@ -754,11 +757,11 @@ impl IncrementalHtmlElementStack {
         self.parsed = start + closing.len();
     }
 
-    fn parent_is_safe(&mut self, html: &str) -> bool {
-        self.parent_accepts_block_fragment(html, false)
+    fn advance_and_check_parent_is_safe(&mut self, html: &str) -> bool {
+        self.advance_and_check_parent_accepts_block_fragment(html, false)
     }
 
-    fn parent_accepts_block_fragment(
+    fn advance_and_check_parent_accepts_block_fragment(
         &mut self,
         html: &str,
         allow_span_parent: bool,

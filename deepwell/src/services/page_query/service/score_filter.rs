@@ -37,7 +37,7 @@ impl ScoreFilterCacheKey {
                             ScoreFilterCacheValue::Float(value.to_bits())
                         }
                     };
-                    let comparison = match selector.comparison {
+                    let comparison_code = match selector.comparison {
                         ComparisonOperation::GreaterThan => 0,
                         ComparisonOperation::LessThan => 1,
                         ComparisonOperation::GreaterOrEqualThan => 2,
@@ -45,7 +45,7 @@ impl ScoreFilterCacheKey {
                         ComparisonOperation::Equal => 4,
                         ComparisonOperation::NotEqual => 5,
                     };
-                    (comparison, value)
+                    (comparison_code, value)
                 })
                 .collect(),
         }
@@ -111,7 +111,7 @@ impl PageQueryScoreFilterCache {
         self.memberships.get(key).cloned()
     }
 
-    pub(super) fn lookup(
+    pub(super) fn touch(
         &mut self,
         key: &ScoreFilterCacheKey,
         register_logical_use: bool,
@@ -213,7 +213,7 @@ pub(super) async fn apply_score_filters(
                 .unwrap_or(true);
             let lookup = cache
                 .as_deref_mut()
-                .map(|cache| cache.lookup(&key, register_logical_use));
+                .map(|cache| cache.touch(&key, register_logical_use));
 
             match lookup {
                 Some(ScoreFilterCacheLookup::Materialized(membership)) => {

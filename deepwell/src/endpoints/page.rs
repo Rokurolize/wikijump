@@ -24,9 +24,9 @@ mod permissions;
 
 use output::{build_page_deleted_output, build_page_file_output, build_page_output};
 use permissions::{
-    ensure_deleted_page_delete_permission, ensure_page_action_permission,
-    ensure_page_create_permission, ensure_page_edit_permission, ensure_page_permission,
-    ensure_page_view_permission,
+    ensure_deleted_page_delete_permission_and_get_category_id,
+    ensure_page_action_permission, ensure_page_create_permission,
+    ensure_page_edit_permission, ensure_page_permission, ensure_page_view_permission,
 };
 
 use crate::models::file::Model as FileModel;
@@ -1347,7 +1347,7 @@ pub async fn page_restore(
         .or_raise(|| {
             Error::new("failed to authenticate page restore actor", ErrorType::Page)
         })?;
-    let original_category_id = ensure_deleted_page_delete_permission(
+    let original_category_id = ensure_deleted_page_delete_permission_and_get_category_id(
         ctx,
         input.site_id,
         input.page_id,

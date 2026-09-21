@@ -588,7 +588,10 @@ impl<'a> ModuleEventScanner<'a> {
                                 &self.source[*marker + 3..],
                             )
                     })
-                    && self.literal_regions.containing_end(marker).is_none()
+                    && self
+                        .literal_regions
+                        .advance_to_containing_end(marker)
+                        .is_none()
                 {
                     self.ambiguous_whole_head = true;
                     self.advance_to(self.lowercase.len());
@@ -603,7 +606,7 @@ impl<'a> ModuleEventScanner<'a> {
                 continue;
             }
 
-            if let Some(end) = self.literal_regions.containing_end(start) {
+            if let Some(end) = self.literal_regions.advance_to_containing_end(start) {
                 self.advance_to(end);
                 continue;
             }
@@ -737,7 +740,7 @@ impl<'a> ModuleEventScanner<'a> {
         }
         while cursor < bytes.len() {
             if bare_image_link {
-                if bytes[cursor] == b'\t' && tag_tokens.contains(cursor) {
+                if bytes[cursor] == b'\t' && tag_tokens.advance_and_contains(cursor) {
                     cursor += 1;
                     continue;
                 } else if matches!(bytes[cursor], b' ' | b'\t' | b'\n' | b'\r') {
@@ -768,7 +771,7 @@ impl<'a> ModuleEventScanner<'a> {
             }
             if bytes[cursor] == b'['
                 && bytes.get(cursor + 1) == Some(&b'[')
-                && !tag_tokens.contains(cursor)
+                && !tag_tokens.advance_and_contains(cursor)
             {
                 let (block_start, run_end) = left_block_start_in_run(bytes, cursor);
                 let rollback_marker =
@@ -815,7 +818,7 @@ impl<'a> ModuleEventScanner<'a> {
             match (quote, bytes[cursor]) {
                 (Some(b'"'), b'"')
                     if !quote_is_escaped(bytes, cursor, &tag_tokens)
-                        && !tag_tokens.contains(cursor)
+                        && !tag_tokens.advance_and_contains(cursor)
                         && double_quote_ends_scanner_argument(
                             bytes,
                             cursor,
@@ -827,14 +830,14 @@ impl<'a> ModuleEventScanner<'a> {
                 }
                 (Some(b'\''), b'\'')
                     if !quote_is_escaped(bytes, cursor, &tag_tokens)
-                        && !tag_tokens.contains(cursor) =>
+                        && !tag_tokens.advance_and_contains(cursor) =>
                 {
                     quote = None;
                     quote_started_owned = false;
                 }
                 (None, b'\'' | b'"')
                     if !quote_is_escaped(bytes, cursor, &tag_tokens)
-                        && (!tag_tokens.contains(cursor)
+                        && (!tag_tokens.advance_and_contains(cursor)
                             || quote_follows_argument_equals(
                                 bytes,
                                 cursor,
@@ -842,7 +845,7 @@ impl<'a> ModuleEventScanner<'a> {
                             )) =>
                 {
                     quote = Some(bytes[cursor]);
-                    quote_started_owned = tag_tokens.contains(cursor);
+                    quote_started_owned = tag_tokens.advance_and_contains(cursor);
                 }
                 (None, b'=') => {
                     let mut value_start = cursor + 1;
@@ -1079,7 +1082,7 @@ impl<'a> ModuleEventScanner<'a> {
             }
             if bytes[cursor] == b'['
                 && bytes.get(cursor + 1) == Some(&b'[')
-                && !head_tokens.contains(cursor)
+                && !head_tokens.advance_and_contains(cursor)
             {
                 let head_end =
                     source[..cursor].trim_end_matches(char::is_whitespace).len();
@@ -1207,7 +1210,7 @@ impl<'a> ModuleEventScanner<'a> {
             match (quote, bytes[cursor]) {
                 (Some(b'"'), b'"')
                     if !quote_is_escaped(bytes, cursor, &head_tokens)
-                        && (!head_tokens.contains(cursor)
+                        && (!head_tokens.advance_and_contains(cursor)
                             || (list_pages_compatibility
                                 && list_pages_url_value_quote_ends_at(
                                     bytes,
@@ -1240,13 +1243,13 @@ impl<'a> ModuleEventScanner<'a> {
                 }
                 (Some(b'\''), b'\'')
                     if !quote_is_escaped(bytes, cursor, &head_tokens)
-                        && !head_tokens.contains(cursor) =>
+                        && !head_tokens.advance_and_contains(cursor) =>
                 {
                     quote = None;
                 }
                 (None, b'\'' | b'"')
                     if !quote_is_escaped(bytes, cursor, &head_tokens)
-                        && (!head_tokens.contains(cursor)
+                        && (!head_tokens.advance_and_contains(cursor)
                             || quote_follows_argument_equals(
                                 bytes,
                                 cursor,
@@ -1721,9 +1724,11 @@ fn find_list_pages_module_matches_with_cursor_work_context_lowercase<'a>(
             let mut events = Vec::with_capacity(projected_events.len());
             for event in projected_events {
                 let event = map_projected_event(event, projection, source.len());
-                if original_css_cursor.containing_end(event.start()).is_none()
+                if original_css_cursor
+                    .advance_to_containing_end(event.start())
+                    .is_none()
                     && original_anchor_cursor
-                        .containing_end(event.start())
+                        .advance_to_containing_end(event.start())
                         .is_none()
                 {
                     events.push(event);

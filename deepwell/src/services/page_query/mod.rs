@@ -20,7 +20,7 @@
 
 mod compat_select;
 mod count_pages;
-mod list_pages;
+mod list_pages_diagnostics;
 mod service;
 mod structs;
 
@@ -29,7 +29,7 @@ pub use self::count_pages::{
     CountPagesExactCountEligibilityDiagnostics, CountPagesExactCountEligibilityInput,
     count_pages_exact_count_eligibility_diagnostics,
 };
-pub use self::list_pages::{
+pub use self::list_pages_diagnostics::{
     ListPagesRenderDiagnosticsInput, list_pages_render_diagnostics,
 };
 pub use self::service::PageQueryService;

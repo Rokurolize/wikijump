@@ -1,5 +1,5 @@
 /*
- * endpoints/misc.rs
+ * endpoints/diagnostics.rs
  *
  * DEEPWELL - Wikijump API provider and database manager
  * Copyright (C) 2019-2026 Wikijump Team
@@ -20,7 +20,6 @@
 
 use super::prelude::*;
 use serde_json::Value as JsonValue;
-use wikidot_normalize::normalize;
 
 pub async fn echo(
     _ctx: &ServiceContext<'_>,
@@ -50,13 +49,4 @@ pub async fn config_dump(
 ) -> Result<String> {
     info!("Dumping raw DEEPWELL configuration for debugging");
     Ok(ctx.config().raw_toml.to_string())
-}
-
-pub async fn normalize_method(
-    _ctx: &ServiceContext<'_>,
-    params: Params<'static>,
-) -> Result<String> {
-    let mut value: String = parse_one!(params);
-    normalize(&mut value);
-    Ok(value)
 }

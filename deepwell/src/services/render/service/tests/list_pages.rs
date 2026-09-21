@@ -1125,7 +1125,10 @@ fn dense_count_pages_projection_checks_are_linear_per_pass() {
             checked += 1;
             checked_head_bytes += head.len();
             assert!(
-                !projection_ranges.range_is_unchanged(&source, head.start()..head.end()),
+                !projection_ranges.advance_to_range_and_check_unchanged(
+                    &source,
+                    head.start()..head.end()
+                ),
                 "tab-expanded CountPages head must be projection-changed on pass {pass}",
             );
         }

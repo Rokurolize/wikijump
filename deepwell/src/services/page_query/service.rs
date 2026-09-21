@@ -334,14 +334,14 @@ impl PageQueryService {
             if let Some(patterns) =
                 category_local_wikidot_name_patterns(included_categories, slug)
             {
-                let mut local_name = Condition::any();
+                let mut local_slug_condition = Condition::any();
                 for pattern in patterns {
-                    local_name = local_name.add(
+                    local_slug_condition = local_slug_condition.add(
                         Expr::col((Page, page::Column::Slug))
                             .binary(PgBinOper::ILike, Expr::val(pattern)),
                     );
                 }
-                condition = condition.add(local_name);
+                condition = condition.add(local_slug_condition);
             } else {
                 condition = condition.add(page::Column::Slug.eq(slug));
             }
@@ -354,14 +354,14 @@ impl PageQueryService {
             if let Some(patterns) =
                 category_local_wikidot_name_patterns(included_categories, name.as_ref())
             {
-                let mut local_name = Condition::any();
+                let mut local_slug_condition = Condition::any();
                 for pattern in patterns {
-                    local_name = local_name.add(
+                    local_slug_condition = local_slug_condition.add(
                         Expr::col((Page, page::Column::Slug))
                             .binary(PgBinOper::ILike, Expr::val(pattern)),
                     );
                 }
-                condition = condition.add(local_name);
+                condition = condition.add(local_slug_condition);
             } else {
                 let pattern = wikidot_name_pattern(name.as_ref());
                 condition = condition.add(

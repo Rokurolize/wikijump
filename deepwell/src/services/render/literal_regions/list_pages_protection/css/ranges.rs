@@ -82,7 +82,9 @@ pub(in crate::services::render::literal_regions::list_pages_protection) fn colle
     let mut openers = Vec::new();
 
     for opener in &scan.pinned_openers {
-        if literal_cursor.containing_end(opener.start).is_some()
+        if literal_cursor
+            .advance_to_containing_end(opener.start)
+            .is_some()
             || sorted_ranges_contains(&quote_ranges, &mut quote_cursor, opener.start)
         {
             continue;
@@ -431,7 +433,9 @@ fn collect_regex_css_module_ranges(
         if open.start < cursor {
             continue;
         }
-        if open_literals.containing_end(open.start).is_some()
+        if open_literals
+            .advance_to_containing_end(open.start)
+            .is_some()
             || sorted_ranges_contains(quote_ranges, &mut quote_cursor, open.start)
         {
             cursor = open.end;
@@ -474,7 +478,9 @@ fn collect_pinned_css_module_ranges(
         if open.start < cursor {
             continue;
         }
-        if open_literals.containing_end(open.start).is_some()
+        if open_literals
+            .advance_to_containing_end(open.start)
+            .is_some()
             || sorted_ranges_contains(quote_ranges, &mut quote_cursor, open.start)
         {
             continue;
@@ -559,7 +565,10 @@ fn find_regex_module_close(
 ) -> Option<Range<usize>> {
     loop {
         let candidate = MODULE_CLOSE_REGEX.find_at(source, cursor)?;
-        if close_literals.containing_end(candidate.start()).is_none() {
+        if close_literals
+            .advance_to_containing_end(candidate.start())
+            .is_none()
+        {
             return Some(candidate.start()..candidate.end());
         }
         cursor = candidate.end();

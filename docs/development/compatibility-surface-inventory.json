@@ -11385,7 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "32f8e11c86f070f548435ae2396531e0534fb760008fcf6405957071f1f2fac3"
+      "source_input_set_sha256": "5ae0320da6429006ec63ed873959aaf3be11c751ccaf5082e03ac2cd744ca5d7"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11419,6 +11419,10 @@
       {
         "path": "deepwell/src/endpoints/category.rs",
         "sha256": "8bba7e0c1e31bb9f4bf043ab3ce7e4511bece0a5a1c614859a4c50a0e0dbd0a8"
+      },
+      {
+        "path": "deepwell/src/endpoints/diagnostics.rs",
+        "sha256": "5bf539cb403f697225caf6e10a26b0b5b3b754924b35bacdea05f1a4ac98709c"
       },
       {
         "path": "deepwell/src/endpoints/domain.rs",
@@ -11465,8 +11469,8 @@
         "sha256": "8c59a13afd68cb2554ba9886d2f0b2d3e0888376a33b5884ef5c3ca3a397c9aa"
       },
       {
-        "path": "deepwell/src/endpoints/misc.rs",
-        "sha256": "b3950434237d54beb2cdc46b46cfecd29ad54981032a600f16cd0ed35a0fc3a8"
+        "path": "deepwell/src/endpoints/normalize.rs",
+        "sha256": "f9b4b506d0c3430f166a8f92104b2fbfe5d24a05fed04be4b8f6048a167417a8"
       },
       {
         "path": "deepwell/src/endpoints/page_attribution.rs",
@@ -11486,7 +11490,7 @@
       },
       {
         "path": "deepwell/src/endpoints/page.rs",
-        "sha256": "d817d231beda7e289f8b0e6c037b097c78a48563ace9f55c9526079c3335e9d8"
+        "sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b"
       },
       {
         "path": "deepwell/src/endpoints/parent.rs",
@@ -11542,7 +11546,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "07cd3b50484eefe92bed7bfa732afdaa97fb9c8aa38a691ca33bafbbb7ad16df"
+        "sha256": "cc21ba71208447d9f4da2b9fc9e13e2a303fa4b2f4c74aec95a407fa420ce471"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -23700,7 +23704,7 @@
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
         "deepwell/src/api.rs#register:config",
-        "deepwell/src/endpoints/misc.rs#config_dump"
+        "deepwell/src/endpoints/diagnostics.rs#config_dump"
       ],
       "existing_refs": {
         "issues": [
@@ -23720,7 +23724,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/endpoints/misc.rs"
+          "deepwell/src/endpoints/diagnostics.rs"
         ]
       },
       "candidate": {
@@ -23925,7 +23929,7 @@
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
         "deepwell/src/api.rs#register:echo",
-        "deepwell/src/endpoints/misc.rs#echo"
+        "deepwell/src/endpoints/diagnostics.rs#echo"
       ],
       "existing_refs": {
         "issues": [
@@ -23945,7 +23949,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/endpoints/misc.rs"
+          "deepwell/src/endpoints/diagnostics.rs"
         ]
       },
       "candidate": {
@@ -24015,7 +24019,7 @@
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
         "deepwell/src/api.rs#register:error",
-        "deepwell/src/endpoints/misc.rs#yield_error"
+        "deepwell/src/endpoints/diagnostics.rs#yield_error"
       ],
       "existing_refs": {
         "issues": [
@@ -24035,7 +24039,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/endpoints/misc.rs"
+          "deepwell/src/endpoints/diagnostics.rs"
         ]
       },
       "candidate": {
@@ -25860,7 +25864,7 @@
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
         "deepwell/src/api.rs#register:normalize",
-        "deepwell/src/endpoints/misc.rs#normalize_method"
+        "deepwell/src/endpoints/normalize.rs#normalize_method"
       ],
       "existing_refs": {
         "issues": [
@@ -25880,7 +25884,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/endpoints/misc.rs"
+          "deepwell/src/endpoints/normalize.rs"
         ]
       },
       "candidate": {

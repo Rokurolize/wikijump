@@ -80,8 +80,9 @@ pub(in crate::services::render) use self::selectors::{
     list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_static_category_preflight,
     list_pages_static_url_fallback_marker_range, list_pages_url_fallback,
-    parse_list_pages_numeric_argument, resolve_url_selector, split_list_pages_tag_values,
-    static_list_pages_selector, substitute_list_pages_current_data_form_variables,
+    parse_list_pages_numeric_argument, preflight_static_list_pages_selector,
+    resolve_url_selector, split_list_pages_tag_values,
+    substitute_list_pages_current_data_form_variables,
 };
 
 use super::template::{
@@ -104,7 +105,7 @@ use wikidot_normalize::normalize;
 use super::super::compat::CompatHtmlFragments;
 use super::super::compat::preparation::neutralize_authored_markers;
 use super::super::compat::text_fragments::{CompatTextFragments, escape_html_text};
-use super::super::ftml_page_existence::WikidotCompatLinkTitleMap;
+use super::super::ftml_render::WikidotCompatLinkTitleMap;
 use super::super::literal_regions::LiteralRegionCursor;
 use super::super::module_arguments::{
     WikidotModuleArgumentValueKind, wikidot_list_pages_arguments,
@@ -124,7 +125,7 @@ use super::delayed::{ListPagesGeneratedSlot, ListPagesRuntimeTextRange};
 use super::parents::ListPagesParentDisplay;
 use super::presentation::{
     format_list_pages_created_at, is_list_pages_hidden_tag, is_list_pages_visible_tag,
-    list_pages_created_by_unix, list_pages_tag_target_prefix,
+    list_pages_created_by_slug, list_pages_tag_target_prefix,
     protect_list_pages_generated_html, render_list_pages_snapshot_user,
     render_list_pages_snapshot_wikidot_user, render_list_pages_tags,
     render_list_pages_wikidot_user,
@@ -1406,7 +1407,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                         continue;
                     }
                 };
-                let value = static_list_pages_selector(
+                let value = preflight_static_list_pages_selector(
                     value,
                     &mut unsupported_count_pages_filter,
                 )?;

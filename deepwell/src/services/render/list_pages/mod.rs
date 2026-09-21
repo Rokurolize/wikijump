@@ -116,7 +116,7 @@ pub(super) use self::presentation::{
     substitute_list_pages_variables,
 };
 pub(super) use self::presentation::{
-    is_list_pages_visible_tag, list_pages_created_by_unix, list_pages_parent_fullname,
+    is_list_pages_visible_tag, list_pages_created_by_slug, list_pages_parent_fullname,
     render_list_pages_wikidot_user, substitute_count_pages_variables,
 };
 pub(super) use self::random_cache::seed_random_list_pages_order;

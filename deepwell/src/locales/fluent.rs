@@ -338,7 +338,7 @@ mod tests {
     use std::fs;
     use std::process;
 
-    fn locale_dir(name: &str) -> PathBuf {
+    fn fresh_locale_dir(name: &str) -> PathBuf {
         let path = env::temp_dir()
             .join(format!("deepwell-fluent-test-{name}-{}", process::id()));
         let _ = fs::remove_dir_all(&path);
@@ -357,7 +357,7 @@ mod tests {
 
     #[tokio::test]
     async fn open_translates_values_attributes_and_locale_fallbacks() {
-        let root = locale_dir("translate");
+        let root = fresh_locale_dir("translate");
         fs::write(
             root.join("fluent/core/en.ftl"),
             "hello = Hello { $name }\n    .title = Title { $name }\n",
@@ -384,7 +384,7 @@ mod tests {
 
     #[tokio::test]
     async fn translate_option_propagates_wrapped_missing_translation_errors() {
-        let root = locale_dir("missing");
+        let root = fresh_locale_dir("missing");
         fs::write(root.join("fluent/core/en.ftl"), "hello = Hello\n").unwrap();
         let localizations = Localizations::open(&root).await.unwrap();
         let en: LanguageIdentifier = "en".parse().unwrap();
@@ -416,7 +416,7 @@ mod tests {
 
     #[tokio::test]
     async fn open_reports_invalid_fluent_resources() {
-        let root = locale_dir("invalid");
+        let root = fresh_locale_dir("invalid");
         fs::write(root.join("fluent/core/en.ftl"), "broken = {").unwrap();
 
         let error = Localizations::open(&root).await.unwrap_err();
@@ -427,7 +427,7 @@ mod tests {
 
     #[tokio::test]
     async fn debug_reports_bundle_count_without_dumping_bundles() {
-        let root = locale_dir("debug");
+        let root = fresh_locale_dir("debug");
         fs::write(root.join("fluent/core/en.ftl"), "hello = Hello\n").unwrap();
         let localizations = Localizations::open(&root).await.unwrap();
 

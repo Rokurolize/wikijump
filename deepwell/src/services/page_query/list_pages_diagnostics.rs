@@ -1,5 +1,5 @@
 /*
- * services/page_query/list_pages.rs
+ * services/page_query/list_pages_diagnostics.rs
  *
  * DEEPWELL - Wikijump API provider and database manager
  * Copyright (C) 2019-2026 Wikijump Team

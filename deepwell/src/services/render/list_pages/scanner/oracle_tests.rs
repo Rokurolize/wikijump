@@ -97,7 +97,7 @@ fn right_bracket_scanner_matches_pinned_tokens_for_short_runs_and_marker_ownersh
             let comment_owned = start >= 2
                 && bytes.get(start - 2..start) == Some(&b"--"[..])
                 && bytes.get(start.wrapping_sub(3)) != Some(&b'-')
-                && !text_tokens.contains(start - 2);
+                && !text_tokens.advance_and_contains(start - 2);
             let (actual_is_right_block, actual_len) =
                 wikidot_right_bracket_token(bytes, start, bytes.len(), &mut text_tokens);
             let (oracle_token, oracle_span) =
@@ -228,7 +228,7 @@ fn text_token_cursor_matches_pinned_url_and_email_spans() {
                 matches!(token, Token::Url | Token::Email) && span.contains(&offset)
             });
             assert_eq!(
-                cursor.contains(offset),
+                cursor.advance_and_contains(offset),
                 oracle_contains,
                 "source={source:?}, offset={offset}, tokens={tokens:?}",
             );
