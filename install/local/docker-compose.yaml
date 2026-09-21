@@ -15,6 +15,8 @@ services:
     healthcheck:
       test: ["CMD", "wikijump-health-check"]
       interval: 10s
+      start_period: 30s
+      start_interval: 500ms
       timeout: 5s
       retries: 6
 
@@ -35,6 +37,8 @@ services:
     healthcheck:
       test: ["CMD", "/healthcheck.sh"]
       interval: 10s
+      start_period: 30s
+      start_interval: 500ms
       timeout: 5s
       retries: 3
 
@@ -48,6 +52,8 @@ services:
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 10s
+      start_period: 30s
+      start_interval: 500ms
       timeout: 5s
       retries: 3
 
@@ -84,7 +90,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 600s
-      start_interval: 10s
+      start_interval: 500ms
     depends_on:
       cache:
         condition: service_healthy
@@ -113,6 +119,8 @@ services:
     healthcheck:
       test: ["CMD", "wikijump-health-check"]
       interval: 120s
+      start_period: 30s
+      start_interval: 500ms
       timeout: 2s
       retries: 3
     depends_on:
@@ -155,7 +163,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 600s
-      start_interval: 10s
+      start_interval: 500ms
     depends_on:
       deepwell:
         condition: service_healthy
@@ -181,6 +189,8 @@ services:
     healthcheck:
       test: ["CMD", "wikijump-health-check"]
       interval: 30s
+      start_period: 60s
+      start_interval: 500ms
       timeout: 2s
       retries: 3
 

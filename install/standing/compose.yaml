@@ -28,6 +28,8 @@ services:
     healthcheck:
       test: ["CMD", "wikijump-health-check"]
       interval: 10s
+      start_period: 30s
+      start_interval: 500ms
       timeout: 5s
       retries: 6
 
@@ -52,6 +54,8 @@ services:
     healthcheck:
       test: ["CMD", "/healthcheck.sh"]
       interval: 10s
+      start_period: 30s
+      start_interval: 500ms
       timeout: 5s
       retries: 3
 
@@ -67,6 +71,8 @@ services:
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 10s
+      start_period: 30s
+      start_interval: 500ms
       timeout: 5s
       retries: 3
 
@@ -104,7 +110,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 600s
-      start_interval: 10s
+      start_interval: 500ms
     depends_on:
       cache:
         condition: service_healthy
@@ -132,6 +138,8 @@ services:
     healthcheck:
       test: ["CMD", "node", "-e", "const net=require('node:net');const socket=net.connect(3393,'127.0.0.1',()=>{socket.destroy();process.exit(0)});socket.on('error',()=>process.exit(1));setTimeout(()=>process.exit(1),1500)"]
       interval: 10s
+      start_period: 30s
+      start_interval: 500ms
       timeout: 2s
       retries: 60
     depends_on:
@@ -168,7 +176,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 600s
-      start_interval: 10s
+      start_interval: 500ms
     depends_on:
       cache:
         condition: service_healthy
@@ -200,6 +208,8 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "curl --insecure --fail --silent --show-error -I -H 'Host: scp-wiki.wikijump.localhost' https://localhost/-/health-check/caddy >/dev/null"]
       interval: 30s
+      start_period: 60s
+      start_interval: 500ms
       timeout: 2s
       retries: 3
     depends_on:
