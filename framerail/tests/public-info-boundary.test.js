@@ -3,7 +3,7 @@ import assert from "node:assert/strict"
 import { fileURLToPath } from "node:url"
 import { after, before, test } from "node:test"
 
-import { createServer as createViteServer } from "vite"
+import { createTestViteServer } from "./vite-test-server.js"
 
 const root = fileURLToPath(new URL("..", import.meta.url))
 
@@ -40,12 +40,7 @@ let aboutRoute
 before(async () => {
   previousWorkingDirectory = process.cwd()
   process.chdir(root)
-  vite = await createViteServer({
-    root,
-    appType: "custom",
-    logLevel: "silent",
-    server: { middlewareMode: true }
-  })
+  vite = await createTestViteServer()
 
   ;({ render } = await vite.ssrLoadModule("svelte/server"))
   ;({ client } = await vite.ssrLoadModule("/src/lib/server/deepwell/index.ts"))

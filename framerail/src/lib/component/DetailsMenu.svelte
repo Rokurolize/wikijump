@@ -3,6 +3,7 @@
   import { getFoci, keyHandle, onHover } from "$lib/dom"
   import { popover } from "./scripts/popper"
   import { guard } from "./scripts/use-guard"
+  import type { Snippet } from "svelte"
 
   let {
     hoverable = false,
@@ -24,9 +25,9 @@
     /** Popover placement location for the menu. */
     placement?: Placement
 
-    button?: any
-    children?: any
-    [key: string]: any
+    button?: Snippet
+    children?: Snippet<[boolean]>
+    [key: string]: unknown
   } = $props()
 
   let details: HTMLElement

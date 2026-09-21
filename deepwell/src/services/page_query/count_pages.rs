@@ -457,7 +457,7 @@ mod tests {
     }
 
     #[test]
-    fn count_pages_exact_count_diagnostics_keep_denial_priority_order() {
+    fn count_pages_exact_count_diagnostics_prioritize_unsupported_over_other_denials() {
         let mut metadata = exact_metadata();
         metadata.unsupported_reason = Some("unsupported selector".to_owned());
         metadata.cap_exceeded = true;

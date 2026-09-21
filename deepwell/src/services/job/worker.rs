@@ -201,9 +201,13 @@ impl JobWorker {
 
         let no_more_retries =
             is_final_attempt(data.rc, self.state.config.job_max_attempts);
-        let job = decode_job_message(&mut self.rsmq, &data, no_more_retries)
-            .await
-            .or_raise(make_error)?;
+        let job = decode_job_message_or_delete_final_malformed(
+            &mut self.rsmq,
+            &data,
+            no_more_retries,
+        )
+        .await
+        .or_raise(make_error)?;
         let job_kind = job.kind();
         debug!(
             "Received job from queue: worker_id={}, message_id={}, kind={}, receive_count={}, max_attempts={}, final_attempt={}, sent_at={}, first_received_at={}",
@@ -340,7 +344,7 @@ impl JobWorker {
     }
 }
 
-async fn decode_job_message<Q: JobQueue>(
+async fn decode_job_message_or_delete_final_malformed<Q: JobQueue>(
     queue: &mut Q,
     data: &RsmqMessage<Vec<u8>>,
     no_more_retries: bool,
@@ -469,9 +473,13 @@ mod tests {
     #[tokio::test]
     async fn malformed_retryable_job_is_retained() {
         let mut queue = MockJobQueue::default();
-        let error = decode_job_message(&mut queue, &message(b"not-json", 1), false)
-            .await
-            .unwrap_err();
+        let error = decode_job_message_or_delete_final_malformed(
+            &mut queue,
+            &message(b"not-json", 1),
+            false,
+        )
+        .await
+        .unwrap_err();
         assert_eq!(error.error_type, ErrorType::Job);
         assert!(queue.deleted.is_empty());
     }
@@ -479,9 +487,13 @@ mod tests {
     #[tokio::test]
     async fn malformed_final_job_is_deleted() {
         let mut queue = MockJobQueue::default();
-        decode_job_message(&mut queue, &message(br#"{"unknown-job":true}"#, 3), true)
-            .await
-            .unwrap_err();
+        decode_job_message_or_delete_final_malformed(
+            &mut queue,
+            &message(br#"{"unknown-job":true}"#, 3),
+            true,
+        )
+        .await
+        .unwrap_err();
         assert_eq!(queue.deleted, ["message-id"]);
     }
 

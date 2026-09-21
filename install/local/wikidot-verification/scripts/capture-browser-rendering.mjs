@@ -31,7 +31,7 @@ import {
   writeEvidenceArtifacts,
 } from "../src/browser-render-evidence.mjs";
 
-const DEFAULT_TIMEOUT_MS = 900_000;
+const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_SETTLE_MS = 1_000;
 const POST_NAVIGATION_STATE_TIMEOUT_MS = 2_000;
 const VISIBLE_TEXT_SCOPES = new Set(["main-frame"]);
@@ -168,7 +168,7 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--storage-state FILE | --source-storage-state FILE --local-storage-state FILE] [--source-response-cache-dir DIR --source-response-cache-identity ID --cache-source-documents] [--actor-label LABEL] [--local-url-field local_https_url] [--timeout-ms 900000] [--settle-ms 1000] [--visible-text-scope main-frame] [--ignore-https-errors] [--no-screenshot] [--json]
+  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--storage-state FILE | --source-storage-state FILE --local-storage-state FILE] [--source-response-cache-dir DIR --source-response-cache-identity ID --cache-source-documents] [--actor-label LABEL] [--local-url-field local_https_url] [--timeout-ms 120000] [--settle-ms 1000] [--visible-text-scope main-frame] [--ignore-https-errors] [--no-screenshot] [--json]
 
 Writes validator-compatible browser rendering evidence JSON plus DOM/screenshot artifacts for selected corpus inventory rows. The output directory should live under one of the render validator evidence roots, for example:
 

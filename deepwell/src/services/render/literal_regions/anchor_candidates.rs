@@ -34,7 +34,7 @@ pub(super) fn collect_pinned_anchor_candidates_with_text_tokens(
         let candidate = cursor + relative;
         let (block_start, run_end) = left_block_start_in_run(bytes, candidate);
         cursor = candidate + 1;
-        if block_start != Some(candidate) || text_tokens.contains(candidate) {
+        if block_start != Some(candidate) || text_tokens.advance_and_contains(candidate) {
             cursor = cursor.max(run_end);
             continue;
         }

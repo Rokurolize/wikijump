@@ -3,7 +3,7 @@ import assert from "node:assert/strict"
 import { fileURLToPath } from "node:url"
 import { after, before, test } from "node:test"
 
-import { createServer as createViteServer } from "vite"
+import { createTestViteServer } from "./vite-test-server.js"
 
 const root = fileURLToPath(new URL("..", import.meta.url))
 
@@ -16,12 +16,7 @@ let originalClientRequest
 before(async () => {
   previousWorkingDirectory = process.cwd()
   process.chdir(root)
-  vite = await createViteServer({
-    root,
-    appType: "custom",
-    logLevel: "silent",
-    server: { middlewareMode: true }
-  })
+  vite = await createTestViteServer()
   ;({ actions } = await vite.ssrLoadModule(
     "/src/routes/[slug]/[...extra]/+page.server.ts"
   ))
@@ -188,8 +183,9 @@ test("public file upload commits the pending blob without returning the File obj
         presign_url: "https://uploads.example.test/pending-public-commit"
       }
     }
-    if (method === "file_create")
+    if (method === "file_create") {
       return { file_id: 1062, file_revision_id: 1063, blob_created: true }
+    }
     throw new Error(`Unexpected Deepwell method ${method}`)
   }
   globalThis.fetch = async (url, init) => {

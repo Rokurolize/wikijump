@@ -6,6 +6,10 @@ import path from "node:path";
 import {
   buildListPagesCampaignInventory,
 } from "../src/listpages-campaign-inventory.mjs";
+import {
+  writeJsonGzip,
+  writeJsonlGzip,
+} from "../src/compressed-artifact-io.mjs";
 
 function nextValue(argv, index, option) {
   const value = argv[index + 1];
@@ -90,28 +94,28 @@ export async function main(argv = process.argv) {
     docs_root: inventory.docs.docs_root,
     corpus_root: inventory.corpus.corpus_root,
     files: {
-      documentation_inventory: "documentation-inventory.json",
-      documentation_claims: "documentation-claims.jsonl",
+      documentation_inventory: "documentation-inventory.json.gz",
+      documentation_claims: "documentation-claims.jsonl.gz",
       documentation_missing_references: "documentation-missing-references.jsonl",
-      corpus_invocations: "corpus-listpages-invocations.jsonl",
-      corpus_clusters: "corpus-listpages-clusters.json",
+      corpus_invocations: "corpus-listpages-invocations.jsonl.gz",
+      corpus_clusters: "corpus-listpages-clusters.json.gz",
       summary: "summary.json",
     },
     summary: inventory.summary,
   };
   await Promise.all([
     writeJson(path.join(args.outputDir, "campaign-inventory.json"), manifest),
-    writeJson(path.join(args.outputDir, "documentation-inventory.json"), inventory.docs),
-    writeJsonl(path.join(args.outputDir, "documentation-claims.jsonl"), inventory.docs.claims),
+    writeJsonGzip(path.join(args.outputDir, "documentation-inventory.json.gz"), inventory.docs),
+    writeJsonlGzip(path.join(args.outputDir, "documentation-claims.jsonl.gz"), inventory.docs.claims),
     writeJsonl(
       path.join(args.outputDir, "documentation-missing-references.jsonl"),
       inventory.docs.missing_references,
     ),
     writeJsonl(
-      path.join(args.outputDir, "corpus-listpages-invocations.jsonl"),
+      path.join(args.outputDir, "corpus-listpages-invocations.jsonl.gz"),
       inventory.corpus.invocations,
     ),
-    writeJson(path.join(args.outputDir, "corpus-listpages-clusters.json"), {
+    writeJsonGzip(path.join(args.outputDir, "corpus-listpages-clusters.json.gz"), {
       schema: `${inventory.corpus.schema}.clusters`,
       generated_at: inventory.corpus.generated_at,
       corpus_root: inventory.corpus.corpus_root,

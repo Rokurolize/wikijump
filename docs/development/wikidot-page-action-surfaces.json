@@ -7,7 +7,7 @@
     {
       "action_id": "edit",
       "source_status": "implemented",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"],
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/PageView.svelte"],
       "test_references": ["framerail/tests/page-action-request-context.test.js"]
     },
     {
@@ -25,7 +25,7 @@
     {
       "action_id": "discuss",
       "source_status": "implemented",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"],
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/PageView.svelte"],
       "test_references": ["framerail/tests/wikidot-page-actions.test.js"]
     },
     {
@@ -66,7 +66,7 @@
     {
       "action_id": "more-options",
       "source_status": "implemented",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"],
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/PageView.svelte"],
       "test_references": ["framerail/tests/page-append-backlinks-public-boundary.test.js"]
     },
     {
@@ -75,7 +75,7 @@
       "public_references": [
         "framerail/src/lib/wikidot/wikidot-edit-sections.js",
         "framerail/src/routes/[slug]/[...extra]/EditSectionPane.svelte",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "test_references": ["framerail/tests/wikidot-edit-sections.test.js"]
     },
@@ -83,7 +83,7 @@
       "action_id": "edit-append",
       "source_status": "implemented",
       "public_references": [
-        "framerail/src/routes/[slug]/[...extra]/page.svelte",
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
         "framerail/src/routes/[slug]/[...extra]/AppendPane.svelte"
       ],
       "test_references": [
@@ -94,7 +94,7 @@
       "action_id": "edit-meta",
       "source_status": "implemented",
       "public_references": [
-        "framerail/src/routes/[slug]/[...extra]/page.svelte",
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
         "framerail/src/routes/[slug]/[...extra]/EditMetaPane.svelte",
         "framerail/src/routes/ajax-module-connector.php/+server.ts"
       ],
@@ -120,7 +120,7 @@
       "action_id": "backlinks",
       "source_status": "implemented",
       "public_references": [
-        "framerail/src/routes/[slug]/[...extra]/page.svelte",
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
         "framerail/src/routes/[slug]/[...extra]/BacklinksPane.svelte",
         "deepwell/src/services/view/backlinks.rs"
       ],
@@ -132,7 +132,7 @@
     {
       "action_id": "view-source",
       "source_status": "implemented",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"],
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/PageView.svelte"],
       "test_references": [
         "framerail/tests/page-append-backlinks-public-boundary.test.js",
         "framerail/tests/ajax-module-connector.test.js"

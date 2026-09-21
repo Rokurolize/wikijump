@@ -26,7 +26,7 @@
     {
       "surface_id": "catalog-feature:module-createaccount",
       "sources": [
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "render_www_special_system_module" },
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "render_www_special_system_module" },
         { "path": "deepwell/src/services/render/url_arguments.rs", "anchor": "wikitext_has_www_special_runtime_module" }
       ],
       "tests": [
@@ -37,15 +37,15 @@
     {
       "surface_id": "catalog-feature:module-deleteaccount",
       "sources": [
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "WWW_DELETE_ACCOUNT_INVALID_CODE_HTML" },
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "render_www_special_system_module" }
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "WWW_DELETE_ACCOUNT_INVALID_CODE_HTML" },
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "render_www_special_system_module" }
       ],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "hardened_www_special_modules_execute_only_on_their_system_pages" }]
     },
     {
       "surface_id": "catalog-feature:module-frontspecialmini",
       "sources": [
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "render_www_front_special_mini" },
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "render_www_front_special_mini" },
         { "path": "deepwell/src/services/render/url_arguments.rs", "anchor": "WWW_SPECIAL_RUNTIME_MODULE_REGEX" }
       ],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "hardened_www_special_modules_execute_only_on_their_system_pages" }]
@@ -53,17 +53,17 @@
     {
       "surface_id": "catalog-feature:module-newsite",
       "sources": [
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "WWW_NEW_SITE_ANONYMOUS_HTML" },
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "WWW_NEW_SITE_AUTHENTICATED_HTML" },
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "render_www_special_system_module" }
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "WWW_NEW_SITE_ANONYMOUS_HTML" },
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "WWW_NEW_SITE_AUTHENTICATED_HTML" },
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "render_www_special_system_module" }
       ],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "hardened_www_special_modules_execute_only_on_their_system_pages" }]
     },
     {
       "surface_id": "catalog-feature:module-sitestagcloud",
       "sources": [
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "render_www_sites_tag_cloud" },
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "WWW_SPECIAL_SYSTEM_MODULE_REGEX" }
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "render_www_sites_tag_cloud" },
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "WWW_SPECIAL_SYSTEM_MODULE_REGEX" }
       ],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "hardened_www_special_modules_execute_only_on_their_system_pages" }]
     },
@@ -169,12 +169,12 @@
     {
       "surface_id": "catalog-feature:module-backlinks",
       "sources": [{ "path": "deepwell/src/services/render/backlinks.rs", "anchor": "expand_backlinks_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "backlinks_module_renders_current_page_incoming_links" }]
+      "tests": [{ "path": "deepwell/tests/page/page_modules.rs", "anchor": "backlinks_module_renders_current_page_incoming_links" }]
     },
     {
       "surface_id": "catalog-feature:module-categories",
       "sources": [{ "path": "deepwell/src/services/render/categories.rs", "anchor": "expand_categories_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "categories_module_lists_active_categories_and_honors_include_hidden" }]
+      "tests": [{ "path": "deepwell/tests/page/page_modules.rs", "anchor": "categories_module_lists_active_categories_and_honors_include_hidden" }]
     },
     {
       "surface_id": "catalog-feature:module-clone",
@@ -187,7 +187,7 @@
         { "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" },
         { "path": "deepwell/src/services/render/forum_comments.rs", "anchor": "fn render_comments(" }
       ],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-dashboard",
@@ -222,22 +222,22 @@
     {
       "surface_id": "catalog-feature:module-forumcategory",
       "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-forumnewthread",
       "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-forumstart",
       "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-forumthread",
       "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-frontforum",
@@ -245,11 +245,11 @@
         { "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" },
         { "path": "deepwell/src/services/render/forum_front.rs", "anchor": "pub(super) fn render(" }
       ],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "frontforum_custom_body_matches_observed_public_preview_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "frontforum_custom_body_matches_observed_public_preview_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-listdrafts",
-      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_list_drafts_modules" }],
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules/user_lists.rs", "anchor": "expand_list_drafts_modules" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "listdrafts_module_matches_live_empty_draft_state" }]
     },
     {
@@ -277,13 +277,13 @@
     },
     {
       "surface_id": "catalog-feature:module-membershipapply",
-      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_membership_apply_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "public_membership_module_states_are_distinct_and_opaque" }]
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules/membership.rs", "anchor": "expand_membership_apply_modules" }],
+      "tests": [{ "path": "deepwell/tests/page/membership.rs", "anchor": "public_membership_module_states_are_distinct_and_opaque" }]
     },
     {
       "surface_id": "catalog-feature:module-membershipbypassword",
-      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_membership_by_password_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "membership_by_password_module_matches_live_anonymous_and_member_output" }]
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules/membership.rs", "anchor": "expand_membership_by_password_modules" }],
+      "tests": [{ "path": "deepwell/tests/page/membership.rs", "anchor": "membership_by_password_module_matches_live_anonymous_and_member_output" }]
     },
     {
       "surface_id": "catalog-feature:module-membershipemailinvitation",
@@ -304,23 +304,23 @@
     },
     {
       "surface_id": "catalog-feature:module-currencyconvert",
-      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn expand_www_currency_convert_system_module(" }],
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "fn expand_www_currency_convert_system_module(" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "currencyconvert_executes_only_on_the_www_plans_system_page" }]
     },
     {
       "surface_id": "catalog-feature:module-miniactivethreads",
       "sources": [{ "path": "deepwell/src/services/render/forum_mini.rs", "anchor": "expand_forum_mini_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-minirecentposts",
       "sources": [{ "path": "deepwell/src/services/render/forum_mini.rs", "anchor": "expand_forum_mini_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-minirecentthreads",
       "sources": [{ "path": "deepwell/src/services/render/forum_mini.rs", "anchor": "expand_forum_mini_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-navibar",
@@ -351,12 +351,12 @@
     {
       "surface_id": "catalog-feature:module-recentposts",
       "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-recentthreads",
       "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "recent_threads_matches_live_placeholder_and_owner_boundaries" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "recent_threads_matches_live_placeholder_and_owner_boundaries" }]
     },
     {
       "surface_id": "catalog-feature:module-search",
@@ -388,7 +388,7 @@
     },
     {
       "surface_id": "catalog-feature:module-tagcloud",
-      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_tag_cloud_modules" }],
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules/tag_cloud.rs", "anchor": "expand_tag_cloud_modules" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "tagcloud_module_renders_live_category_links_styles_and_boolean_quirks" }]
     },
     {
@@ -494,7 +494,7 @@
     {
       "surface_id": "catalog-feature:data-forms-deleting-form",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "fn wikidot_data_form_comment_wrapper(" }
+        { "path": "deepwell/src/services/data_form/definition.rs", "anchor": "fn wikidot_data_form_comment_wrapper(" }
       ],
       "tests": [
         { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "data_form_template_deletion_requires_actual_form_removal" }
@@ -511,7 +511,7 @@
     {
       "surface_id": "catalog-feature:data-forms-field-properties",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn parse_wikidot_data_form_definition" },
+        { "path": "deepwell/src/services/data_form/definition.rs", "anchor": "pub fn parse_wikidot_data_form_definition" },
         { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "field.match_pattern" }
       ],
       "tests": [{ "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form field properties and PCRE-style match behavior follow live Wikidot" }]
@@ -551,7 +551,7 @@
     {
       "surface_id": "catalog-feature:data-forms-youtube",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn substitute_wikidot_data_form_layout_variables_with_display(" },
+        { "path": "deepwell/src/services/data_form/layout.rs", "anchor": "pub fn substitute_wikidot_data_form_layout_variables_with_display(" },
         { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls(" },
         { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "field.field_type === \"wiki\"" }
       ],
@@ -562,7 +562,7 @@
     },
     {
       "surface_id": "catalog-feature:data-forms-displaying",
-      "sources": [{ "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" }],
+      "sources": [{ "path": "deepwell/src/services/data_form/render.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" }],
       "tests": [{ "path": "deepwell/tests/page_template_assignment.rs", "anchor": "page_view_exposes_live_checkbox_and_wiki_contract" }]
     },
     {
@@ -591,7 +591,7 @@
     {
       "surface_id": "catalog-feature:syntax-images",
       "sources": [
-        { "path": "deepwell/src/services/render/service.rs", "anchor": "fn expand_wikidot_image_block_includes(" },
+        { "path": "deepwell/src/services/render/service/wikidot_preprocess.rs", "anchor": "fn expand_wikidot_image_block_includes(" },
         { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) fn localize_wikidot_local_file_urls(" }
       ],
       "tests": [{ "path": "deepwell/tests/media.rs", "anchor": "image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page" }]
@@ -615,22 +615,22 @@
     {
       "surface_id": "catalog-feature:forum-category-groups",
       "sources": [{ "path": "deepwell/src/services/forum/service.rs", "anchor": "pub async fn create_group(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
     },
     {
       "surface_id": "catalog-feature:forum-categories",
       "sources": [{ "path": "deepwell/src/services/forum/service.rs", "anchor": "pub async fn create_category(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
     },
     {
       "surface_id": "catalog-feature:forum-threads",
       "sources": [{ "path": "deepwell/src/services/forum_thread/service.rs", "anchor": "pub async fn create(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
     },
     {
       "surface_id": "catalog-feature:forum-posts",
       "sources": [{ "path": "deepwell/src/services/forum_post/service.rs", "anchor": "pub async fn create(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
     },
     {
       "surface_id": "catalog-feature:educational-site-status",
@@ -654,7 +654,7 @@
       ],
       "tests": [
         { "path": "deepwell/tests/user.rs", "anchor": "user_mutations_enforce_request_actor_and_staff_only_fields" },
-        { "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" },
+        { "path": "deepwell/tests/page/forum.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" },
         { "path": "framerail/tests/account-route-boundaries.test.js", "anchor": "display settings persist the forum signature through the existing account mutation" }
       ]
     },
@@ -673,12 +673,12 @@
     {
       "surface_id": "catalog-feature:forums-overview",
       "sources": [{ "path": "deepwell/src/services/render/forum_read_routes.rs", "anchor": "pub async fn render_wikidot_forum_module(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
+      "tests": [{ "path": "deepwell/tests/page/forum.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
     },
     {
       "surface_id": "catalog-feature:page-categories",
       "sources": [{ "path": "deepwell/src/services/category/service.rs", "anchor": "pub async fn get_or_create(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "categories_module_lists_active_categories_and_honors_include_hidden" }]
+      "tests": [{ "path": "deepwell/tests/page/page_modules.rs", "anchor": "categories_module_lists_active_categories_and_honors_include_hidden" }]
     },
     {
       "surface_id": "catalog-feature:page-forum-integration",
@@ -693,7 +693,7 @@
     {
       "surface_id": "catalog-feature:page-links",
       "sources": [{ "path": "deepwell/src/services/link/service.rs", "anchor": "pub async fn update(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "page_backlinks_view_filters_before_exposing_titles_and_slugs" }]
+      "tests": [{ "path": "deepwell/tests/page/page_modules.rs", "anchor": "page_backlinks_view_filters_before_exposing_titles_and_slugs" }]
     },
     {
       "surface_id": "catalog-feature:page-editing-history",
@@ -770,7 +770,7 @@
     {
       "surface_id": "catalog-feature:expressions",
       "sources": [
-        { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) fn resolve_wikidot_parser_functions(value: &str) -> String" },
+        { "path": "deepwell/src/services/render/service/wikidot_preprocess.rs", "anchor": "pub(in crate::services::render) fn resolve_wikidot_parser_functions(" },
         { "path": "deepwell/src/services/render/page_preview.rs", "anchor": "WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);" }
       ],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "documented_expression_parser_functions_render_at_the_public_preview_seam" }, { "path": "deepwell/tests/page.rs", "anchor": "expression_size_budget_matches_the_public_preview_seam" }]
@@ -778,7 +778,7 @@
     {
       "surface_id": "catalog-feature:data-forms-password-field",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "Some(\"password\") =>" },
+        { "path": "deepwell/src/services/data_form/render.rs", "anchor": "Some(\"password\") =>" },
         { "path": "framerail/src/lib/wikidot/wikidot-data-form.js", "anchor": "case \"password\":" }
       ],
       "tests": [{ "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js", "anchor": "password-create-plaintext-source-masked-display exposes the password control contract" }]
@@ -794,7 +794,7 @@
     {
       "surface_id": "catalog-feature:data-forms-url-field",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "Some(\"url\") =>" },
+        { "path": "deepwell/src/services/data_form/render.rs", "anchor": "Some(\"url\") =>" },
         { "path": "framerail/src/lib/wikidot/wikidot-data-form.js", "anchor": "case \"url\":" }
       ],
       "tests": [{ "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js", "anchor": "url-default-schema-applies-to-display without rewriting storage" }]
@@ -802,7 +802,7 @@
     {
       "surface_id": "catalog-feature:data-forms-css-styling",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" },
+        { "path": "deepwell/src/services/data_form/render.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" },
         { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "class=\"form-horizontal data-form\"" }
       ],
       "tests": [
@@ -813,7 +813,7 @@
     {
       "surface_id": "catalog-feature:data-forms-links",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn substitute_wikidot_data_form_layout_variables(" },
+        { "path": "deepwell/src/services/data_form/layout.rs", "anchor": "pub fn substitute_wikidot_data_form_layout_variables(" },
         { "path": "deepwell/src/services/blueprint/service.rs", "anchor": "pub(crate) async fn apply_page_template(" },
         { "path": "deepwell/src/services/view/service.rs", "anchor": "data_form.definition.default_layout" },
         { "path": "framerail/src/lib/wikidot/wikidot-data-form.js", "anchor": "export const wikidotDataFormUrlDisplay = (value) =>" }
@@ -826,7 +826,7 @@
     {
       "surface_id": "catalog-feature:data-forms-output-style",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn substitute_wikidot_data_form_layout_variables(" },
+        { "path": "deepwell/src/services/data_form/layout.rs", "anchor": "pub fn substitute_wikidot_data_form_layout_variables(" },
         { "path": "deepwell/src/services/blueprint/service.rs", "anchor": "pub(crate) async fn apply_page_template(" },
         { "path": "deepwell/src/services/view/service.rs", "anchor": "data_form.definition.default_layout" }
       ],
@@ -835,8 +835,8 @@
     {
       "surface_id": "catalog-feature:data-forms-howto",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>" },
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" },
+        { "path": "deepwell/src/services/data_form/definition.rs", "anchor": "pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>" },
+        { "path": "deepwell/src/services/data_form/render.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" },
         { "path": "framerail/src/lib/server/load/page/page-edit-actions.ts", "anchor": "export async function pageEditAction(event: RequestEvent)" },
         { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "class=\"form-horizontal data-form\"" }
       ],
@@ -848,8 +848,8 @@
     {
       "surface_id": "catalog-feature:data-forms-overview",
       "sources": [
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>" },
-        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" },
+        { "path": "deepwell/src/services/data_form/definition.rs", "anchor": "pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>" },
+        { "path": "deepwell/src/services/data_form/render.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" },
         { "path": "framerail/src/lib/server/load/page/page-edit-actions.ts", "anchor": "export async function pageEditAction(event: RequestEvent)" },
         { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "class=\"form-horizontal data-form\"" }
       ],
@@ -862,7 +862,7 @@
     {
       "surface_id": "catalog-feature:syntax-attachment",
       "sources": [{ "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) fn localize_wikidot_local_file_urls(" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "listpages_content_executes_attachment_syntax_with_selected_page_owner" }]
+      "tests": [{ "path": "deepwell/tests/page/list_pages_runtime.rs", "anchor": "listpages_content_executes_attachment_syntax_with_selected_page_owner" }]
     },
     {
       "surface_id": "catalog-feature:syntax-buttons",
@@ -872,7 +872,7 @@
     {
       "surface_id": "catalog-feature:syntax-collapsible-blocks",
       "sources": [
-        { "path": "deepwell/src/services/render/service.rs", "anchor": "fn normalize_wikidot_cross_closed_div_collapsibles(" },
+        { "path": "deepwell/src/services/render/service/wikidot_preprocess.rs", "anchor": "fn normalize_wikidot_cross_closed_div_collapsibles(" },
         { "path": "framerail/src/lib/wikidot/wikidot-collapsibles.ts", "anchor": "export function wikidotCollapsibles(node: HTMLElement)" }
       ],
       "tests": [{ "path": "framerail/tests/wikidot-collapsible.spec.ts", "anchor": "Wikidot-compatible collapsibles preserve legacy interaction" }]
@@ -1101,7 +1101,7 @@
       ],
       "tests": [
         { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "category_page_template_prefills_new_page_source_and_can_be_cleared" },
-        { "path": "deepwell/tests/page.rs", "anchor": "saved_newpage_views_resolve_templates_from_current_anonymous_state" }
+        { "path": "deepwell/tests/page/page_modules.rs", "anchor": "saved_newpage_views_resolve_templates_from_current_anonymous_state" }
       ]
     },
     {
@@ -1158,7 +1158,7 @@
     {
       "surface_id": "catalog-feature:subscription-plan-matrix",
       "sources": [
-        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn expand_www_currency_convert_system_module(" },
+        { "path": "deepwell/src/services/render/runtime_modules/www.rs", "anchor": "fn expand_www_currency_convert_system_module(" },
         { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) async fn render_inner(" }
       ],
       "tests": [
@@ -1169,7 +1169,7 @@
       "surface_id": "catalog-feature:browser-support",
       "sources": [
         { "path": "framerail/src/hooks.server.ts", "anchor": "export const handle: Handle = async ({ event, resolve }) =>" },
-        { "path": "framerail/src/routes/[slug]/[...extra]/page.svelte", "anchor": "use:wikidotLegacyActions={legacyActionParameters}" }
+        { "path": "framerail/src/routes/[slug]/[...extra]/PageView.svelte", "anchor": "use:wikidotLegacyActions={legacyActionParameters}" }
       ],
       "tests": [
         { "path": "framerail/playwright.browser-support.config.ts", "anchor": "projects: [" },

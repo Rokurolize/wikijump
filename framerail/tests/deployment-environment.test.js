@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+  csrfTrustedOrigins,
   parseCsrfCheckOrigin,
   parseDeploymentEnvironment
 } from "../src/lib/server/deployment-environment.js"
@@ -47,6 +48,19 @@ test("allows production builds to force CSRF origin checks for local CSP", () =>
       deploymentEnvironment: "local"
     }),
     true
+  )
+})
+
+test("maps legacy CSRF origin policy onto current SvelteKit trusted origins", () => {
+  assert.deepEqual(csrfTrustedOrigins({ deploymentEnvironment: "prod" }), [])
+  assert.deepEqual(csrfTrustedOrigins({ deploymentEnvironment: "dev" }), [])
+  assert.deepEqual(csrfTrustedOrigins({ deploymentEnvironment: "local" }), ["*"])
+  assert.deepEqual(
+    csrfTrustedOrigins({
+      csrfCheckOrigin: "true",
+      deploymentEnvironment: "local"
+    }),
+    []
   )
 })
 

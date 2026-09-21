@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Page from "./[slug]/[...extra]/page.svelte"
+  import Page from "./[slug]/[...extra]/PageView.svelte"
   let props = $props()
 </script>
 

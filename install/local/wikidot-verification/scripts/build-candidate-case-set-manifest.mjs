@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url"
 import { runCliIfMain } from "../src/cli-entry.mjs"
 import { CANDIDATE_CASE_SET_NAMES, CANDIDATE_CASE_SETS } from "../src/candidate-case-command.mjs"
 
-const SCHEMA = "wikijump.candidate_case_set_manifest.v1"
+const SCHEMA = "wikijump.candidate_case_set_manifest.v2"
 const REGISTRY_REFERENCE = "install/local/wikidot-verification/src/candidate-case-command.mjs#candidateCaseSet"
 const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_OUTPUT = path.resolve(SCRIPT_DIRECTORY, "../../../../docs/development/candidate-case-set-manifest.json")
@@ -48,7 +48,7 @@ export function buildCandidateCaseSetManifest() {
         case_ids: [...registered.caseIds],
       })
     } else {
-      caseSets.push({ name, case_ids: [...registered.caseIds] })
+      caseSets.push({ name, execution_class: registered.executionClass, case_ids: [...registered.caseIds] })
     }
   }
   caseSets.sort((left, right) => left.name.localeCompare(right.name, "en"))
@@ -108,8 +108,14 @@ export function verifyCandidateCaseSetManifest(value) {
 
   const owners = new Map()
   for (const row of value.case_sets) {
-    requireRowFields(row, ["case_ids", "name"], "selected case set")
+    requireRowFields(row, ["case_ids", "execution_class", "name"], "selected case set")
     if (typeof row.name !== "string" || row.name.length === 0) throw new Error("selected case set has an empty name")
+    if (!new Set(["exclusive", "read_only"]).has(row.execution_class)) {
+      throw new Error(`selected case set ${row.name} has an invalid execution_class`)
+    }
+    if (CANDIDATE_CASE_SETS[row.name]?.executionClass !== row.execution_class) {
+      throw new Error(`selected case set ${row.name} execution_class drifted from the registry`)
+    }
     requireCaseIds(row.name, row.case_ids, "selected case set")
     for (const caseId of row.case_ids) {
       const existing = owners.get(caseId)

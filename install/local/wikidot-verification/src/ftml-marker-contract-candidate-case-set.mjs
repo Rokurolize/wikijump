@@ -206,7 +206,7 @@ export function createFtmlMarkerContractCandidateCaseSet() {
                     theme_family: "ftml-marker-contract",
                   },
                   viewport: { width: 1280, height: 900 },
-                  timeoutMs: 300_000,
+                  timeoutMs: 30_000,
                   settleMs: 0,
                 });
                 const pageObservation = await observedPage(page);

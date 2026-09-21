@@ -63,28 +63,22 @@ export function search<T, TR>(
 }
 
 /** Checks if an array or object is empty. Will return true for non-objects. */
-export function isEmpty(obj: any) {
+export function isEmpty(obj: unknown) {
   if (!obj) return true
-  if (obj instanceof Array) return obj.length === 0
-  if (obj.constructor === Object) return Object.keys(obj).length === 0
+  if (Array.isArray(obj)) return obj.length === 0
+  if (typeof obj === "object" && Object.getPrototypeOf(obj) === Object.prototype) {
+    return Object.keys(obj).length === 0
+  }
   return true
 }
-
-/** Creates a type that is the type of `T` if it had a known property `K`. */
-type Has<K extends string, T> =
-  T extends Partial<Record<K, infer R>> ? Omit<T, K> & Record<K, R> : never
 
 /**
  * Returns if an object `T` has a key `K`, and only returns true if the
  * value of that key isn't undefined.
  */
-export function has<K extends string, T>(
-  key: K,
-  obj: T
-): obj is T extends Record<any, any> ? Has<K, T> : never {
-  if (typeof obj !== "object") return false
-  // @ts-ignore
-  return key in obj && obj[key] !== undefined
+export function has<K extends string, T>(key: K, obj: T): obj is T & Record<K, unknown> {
+  if (typeof obj !== "object" || obj === null) return false
+  return key in obj && (obj as Record<string, unknown>)[key] !== undefined
 }
 
 /** Removes all properties assigned to `undefined` in an object. */
@@ -208,9 +202,9 @@ export function sleep(ms: number): Promise<void> {
  */
 export function animationFrame(): Promise<void>
 export function animationFrame<T>(fn: () => T): Promise<T>
-export function animationFrame(fn?: () => any): Promise<void> {
+export function animationFrame(fn?: () => unknown): Promise<unknown> {
   // simple delay
-  if (!fn) return new Promise((resolve) => requestAnimationFrame(() => resolve()))
+  if (!fn) return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
   // callback based
   return new Promise((resolve) =>
     requestAnimationFrame(() => {
@@ -240,7 +234,7 @@ export function throttle<T extends AnyFunction>(
   let timeout: number | null = null
   let initialCall = true
 
-  return function (this: any, ...args: Parameters<T>) {
+  return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
     const callNow = immediate && initialCall
     const next = () => {
       // @ts-ignore
@@ -258,8 +252,8 @@ export function throttle<T extends AnyFunction>(
 // Credit: https://gist.github.com/vincentorback/9649034
 /** Returns a 'debounced' variant of the given function. */
 export function debounce<T extends AnyFunction>(fn: T, wait = 1) {
-  let timeout: any
-  return function (this: any, ...args: Parameters<T>) {
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
     clearTimeout(timeout)
     timeout = setTimeout(() => void fn.call(this, ...args), wait)
   }
@@ -288,7 +282,7 @@ export async function waitFor(
  */
 export function createLock<T extends AnyFunction>(fn: T) {
   type Return = PromiseValue<ReturnType<T>>
-  const call = async (args: any[]) => {
+  const call = async (args: Parameters<T>) => {
     return (await fn(...args)) as Return
   }
 
@@ -315,12 +309,12 @@ export function createLock<T extends AnyFunction>(fn: T) {
  */
 export function createMutatingLock<T extends AnyFunction>(fn: T) {
   type Return = PromiseValue<ReturnType<T>>
-  const call = async (args: any[]) => {
+  const call = async (args: Parameters<T>) => {
     return (await fn(...args)) as Return
   }
 
   let running: boolean
-  let useArgs: any[] = []
+  let useArgs: Parameters<T> | null = null
   return async (...args: Parameters<T>): Promise<Return | null> => {
     useArgs = args
     if (running) return null
@@ -328,12 +322,11 @@ export function createMutatingLock<T extends AnyFunction>(fn: T) {
     let result = await call(args)
     // loop to catch if other calls mutate the arguments
     // if they don't this gets skipped
-    while (useArgs !== args) {
-      // @ts-ignore
+    while (useArgs !== null && useArgs !== args) {
       args = useArgs
       result = await call(args)
     }
-    useArgs = []
+    useArgs = null
     running = false
     return result
   }
@@ -353,14 +346,13 @@ export function createMutatingLock<T extends AnyFunction>(fn: T) {
  */
 export function createAnimQueued<T extends AnyFunction>(fn: T) {
   let queued: boolean
-  let useArgs: any[] = []
+  let useArgs: Parameters<T> | null = null
   return (...args: Parameters<T>): void => {
     useArgs = args
     if (queued !== true) {
       queued = true
       requestAnimationFrame(async () => {
-        // @ts-ignore
-        await fn(...useArgs)
+        if (useArgs !== null) await fn(...useArgs)
         queued = false
       })
     }
@@ -390,7 +382,7 @@ export function idleCallback<T>(fn: () => T, timeout?: number): Promise<T> {
  */
 export function createIdleQueued<T extends AnyFunction>(fn: T, timeout = 100) {
   let queued: boolean
-  let useArgs: any[] = []
+  let useArgs: Parameters<T> | null = null
   return (...args: Parameters<T>): void => {
     useArgs = args
     if (queued !== true) {
@@ -398,8 +390,7 @@ export function createIdleQueued<T extends AnyFunction>(fn: T, timeout = 100) {
       // @ts-ignore
       requestIdleCallback(
         async () => {
-          // @ts-ignore
-          await fn(...useArgs)
+          if (useArgs !== null) await fn(...useArgs)
           queued = false
         },
         { timeout }
@@ -504,7 +495,7 @@ export function isLowercased(str: string, locale?: string | string[]) {
 }
 
 /** Helper for turning a relative `?url` import into an absolute path. */
-export async function url(imp: Promise<any>) {
+export async function url(imp: Promise<{ default: string }>) {
   return new URL((await imp).default, import.meta.url).toString()
 }
 
@@ -514,8 +505,8 @@ export async function url(imp: Promise<any>) {
  * @param arr - The array to deduplicate.
  * @param insert - Additional values to insert into the array, if desired.
  */
-export function dedupe<T extends any[]>(arr: T, ...insert: T) {
-  return [...new Set([...arr, ...insert])] as T
+export function dedupe<T>(arr: T[], ...insert: T[]) {
+  return [...new Set([...arr, ...insert])]
 }
 
 /**

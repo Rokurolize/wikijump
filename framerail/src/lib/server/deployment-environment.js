@@ -41,3 +41,13 @@ export const parseCsrfCheckOrigin = ({
     `Invalid FRAMERAIL_CSRF_CHECK_ORIGIN: ${JSON.stringify(csrfCheckOrigin)}`
   )
 }
+
+/**
+ * Maps the legacy deployment/env switch onto SvelteKit's current CSRF API.
+ * An empty trusted-origin list preserves same-origin checking; "*" is the
+ * documented replacement for the former checkOrigin=false behavior.
+ *
+ * @param {Parameters<typeof parseCsrfCheckOrigin>[0]} [input]
+ * @returns {string[]}
+ */
+export const csrfTrustedOrigins = (input) => (parseCsrfCheckOrigin(input) ? [] : ["*"])

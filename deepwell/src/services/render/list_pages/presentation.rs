@@ -299,7 +299,7 @@ pub(in crate::services::render) fn list_pages_parent_fullname<'a>(
     (!parent_fullname.is_empty()).then_some(parent_fullname)
 }
 
-pub(in crate::services::render) fn list_pages_created_by_unix(
+pub(in crate::services::render) fn list_pages_created_by_slug(
     page: &FoundPageRow,
     user_displays: &BTreeMap<i64, WikidotUserDisplay>,
     snapshot_displays: &BTreeMap<i64, ListPagesSnapshotDisplay>,

@@ -134,7 +134,7 @@ pub(in crate::services::render::literal_regions) fn collect_head_candidate_strea
         let (block_start, run_end) = left_block_start_in_run(bytes, candidate);
         cursor = candidate + 1;
         if block_start != Some(candidate)
-            || text_tokens.contains(candidate)
+            || text_tokens.advance_and_contains(candidate)
             || matches!(bytes.get(candidate + 2), Some(b'/' | b'#' | b'$'))
         {
             cursor = cursor.max(run_end);

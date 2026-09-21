@@ -31,7 +31,7 @@ export const OPEN43_EMBEDVIDEO_BROWSER_CASE_IDS = Object.freeze([ROW.case_id]);
 const SITE_SLUG = "scpaiueouiuiuiui";
 const VIEWPORT = Object.freeze({ width: 1280, height: 900 });
 const NARROW_VIEWPORT = Object.freeze({ width: 640, height: 900 });
-const TIMEOUT_MS = 300_000;
+const TIMEOUT_MS = 30_000;
 const PROVIDER_ORIGINS = Object.freeze([
   "https://www.youtube.com",
   "https://embed.acast.com",

@@ -122,7 +122,8 @@ export default defineConfig(
       "svelte/prefer-style-directive": "warn",
       "svelte/shorthand-attribute": "warn",
       "svelte/shorthand-directive": "warn",
-      "svelte/sort-attributes": "warn",
+      // Attribute order is compatibility-visible in byte-level Wikidot SSR fixtures.
+      "svelte/sort-attributes": "off",
       "svelte/spaced-html-comment": "warn",
 
       // Bindable props are observable by their parent even when not read again locally.

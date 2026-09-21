@@ -4,7 +4,7 @@ import { createServer as createHttpServer } from "node:http"
 import { fileURLToPath } from "node:url"
 import { after, before, test } from "node:test"
 
-import { createServer as createViteServer } from "vite"
+import { createTestViteServer } from "./vite-test-server.js"
 import { resetDevelopmentArticleResponseCacheStores } from "../src/lib/server/cache/article-response/runtime.js"
 
 const root = fileURLToPath(new URL("..", import.meta.url))
@@ -258,12 +258,7 @@ before(async () => {
   process.env.WIKIDOT_API_KEY = "fixture-key"
 
   process.chdir(root)
-  vite = await createViteServer({
-    root,
-    appType: "custom",
-    logLevel: "silent",
-    server: { middlewareMode: true }
-  })
+  vite = await createTestViteServer()
   framerailServer = createHttpServer((request, response) =>
     vite.middlewares(request, response)
   )

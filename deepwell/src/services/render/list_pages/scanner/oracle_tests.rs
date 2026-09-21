@@ -19,8 +19,9 @@
  */
 
 use super::super::super::literal_regions::{
-    ListPagesSourceProjection, TextTokenCursor, left_block_start_in_run,
-    right_bracket_token, wikidot_right_bracket_token, wikidot_trimmed_name,
+    ListPagesSourceProjection, TextTokenCursor,
+    classify_wikidot_right_bracket_and_advance_text_tokens, left_block_start_in_run,
+    right_bracket_token, wikidot_trimmed_name,
 };
 use ftml::parsing::Token;
 use std::ops::Range;
@@ -97,9 +98,14 @@ fn right_bracket_scanner_matches_pinned_tokens_for_short_runs_and_marker_ownersh
             let comment_owned = start >= 2
                 && bytes.get(start - 2..start) == Some(&b"--"[..])
                 && bytes.get(start.wrapping_sub(3)) != Some(&b'-')
-                && !text_tokens.contains(start - 2);
+                && !text_tokens.advance_and_contains(start - 2);
             let (actual_is_right_block, actual_len) =
-                wikidot_right_bracket_token(bytes, start, bytes.len(), &mut text_tokens);
+                classify_wikidot_right_bracket_and_advance_text_tokens(
+                    bytes,
+                    start,
+                    bytes.len(),
+                    &mut text_tokens,
+                );
             let (oracle_token, oracle_span) =
                 token_covering(&tokens, start).expect("every bracket belongs to a token");
             if comment_owned {
@@ -228,7 +234,7 @@ fn text_token_cursor_matches_pinned_url_and_email_spans() {
                 matches!(token, Token::Url | Token::Email) && span.contains(&offset)
             });
             assert_eq!(
-                cursor.contains(offset),
+                cursor.advance_and_contains(offset),
                 oracle_contains,
                 "source={source:?}, offset={offset}, tokens={tokens:?}",
             );

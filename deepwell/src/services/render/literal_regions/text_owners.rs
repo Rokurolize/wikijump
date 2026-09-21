@@ -238,7 +238,7 @@ impl TokenIndex {
 
         while cursor < bytes.len() {
             record_work(1);
-            if let Some(end) = text_tokens.range_end_at(cursor) {
+            if let Some(end) = text_tokens.advance_to_range_end_at(cursor) {
                 cursor = end;
                 continue;
             }

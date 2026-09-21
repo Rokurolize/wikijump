@@ -24,7 +24,7 @@ const JOIN_SOURCE = "[[module Join]]";
 const CONTENT_SOURCE = "Created by the public self-join browser candidate.";
 const REPOSITORY_ROOT = new URL("../../../../", import.meta.url);
 const ACTORS = Object.freeze(["administrator", "eligible"]);
-const CARGO_TIMEOUT_MS = 1_800_000;
+const CARGO_TIMEOUT_MS = 30_000;
 const FRESH_SEED_COMMANDS = Object.freeze([
   Object.freeze([
     "cargo", "test", "--manifest-path", "deepwell/Cargo.toml",
@@ -564,7 +564,7 @@ const SOURCE_FILES = Object.freeze([
     "framerail/src/lib/server/load/logout.ts",
     "framerail/src/routes/[x+2d]/register/+page.svelte",
     "framerail/src/routes/[x+2d]/login/+page.svelte",
-    "framerail/src/routes/[slug]/[...extra]/page.svelte",
+    "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
     "framerail/src/routes/[slug]/[...extra]/EditorPane.svelte",
     "deepwell/src/database/seeder/data.rs",
     "deepwell/src/endpoints/site_member.rs",

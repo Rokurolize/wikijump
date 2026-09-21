@@ -1,5 +1,5 @@
 {
-  "schema": "wikijump.compatibility_surface_inventory.v2",
+  "schema": "wikijump.compatibility_surface_inventory.v3",
   "relationship_edge_types": [
     "alias",
     "equivalence",
@@ -11385,8 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "98ffb88f071590842a931c322382eca53d96831c",
-      "tree": "f4711ca924f413ccc7b77edea33e1a8316fff283"
+      "source_input_set_sha256": "5ae0320da6429006ec63ed873959aaf3be11c751ccaf5082e03ac2cd744ca5d7"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11420,6 +11419,10 @@
       {
         "path": "deepwell/src/endpoints/category.rs",
         "sha256": "8bba7e0c1e31bb9f4bf043ab3ce7e4511bece0a5a1c614859a4c50a0e0dbd0a8"
+      },
+      {
+        "path": "deepwell/src/endpoints/diagnostics.rs",
+        "sha256": "5bf539cb403f697225caf6e10a26b0b5b3b754924b35bacdea05f1a4ac98709c"
       },
       {
         "path": "deepwell/src/endpoints/domain.rs",
@@ -11466,8 +11469,8 @@
         "sha256": "8c59a13afd68cb2554ba9886d2f0b2d3e0888376a33b5884ef5c3ca3a397c9aa"
       },
       {
-        "path": "deepwell/src/endpoints/misc.rs",
-        "sha256": "b3950434237d54beb2cdc46b46cfecd29ad54981032a600f16cd0ed35a0fc3a8"
+        "path": "deepwell/src/endpoints/normalize.rs",
+        "sha256": "f9b4b506d0c3430f166a8f92104b2fbfe5d24a05fed04be4b8f6048a167417a8"
       },
       {
         "path": "deepwell/src/endpoints/page_attribution.rs",
@@ -11487,7 +11490,7 @@
       },
       {
         "path": "deepwell/src/endpoints/page.rs",
-        "sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9"
+        "sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b"
       },
       {
         "path": "deepwell/src/endpoints/parent.rs",
@@ -11535,7 +11538,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "6e7a26c9dc24b398d5a8caaf74961bdfe2503d78f738239d292cdc721f0eec08"
+        "sha256": "e2074a00fe48901c3f2704536255544ecb5dadda28434e7d66f6ea13d9dca59a"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11543,7 +11546,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "c57f51e39cb0772479055f3260500e6fe982640c7d90c6e644dd3c2d403fadbd"
+        "sha256": "cc21ba71208447d9f4da2b9fc9e13e2a303fa4b2f4c74aec95a407fa420ce471"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11591,7 +11594,7 @@
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
-        "sha256": "77661ed3c274d5891a89d037f0af3adf6ab362c2ddd409c746b638eedd87f120"
+        "sha256": "97a90cf80605614fb1c416bbeb4fd1cca862b162760f05fc1809e34337fa9dc3"
       },
       {
         "path": "docs/development/wikidot-py-amc-client-parity.json",
@@ -11607,7 +11610,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "e4dc2b9250ec7f0f351bb14a52a3237c1cc77c09a799afbaef281b5407bbdd24"
+        "sha256": "bf41c639991f956a38df9e6f738cd9e22d8d4340f3d436e22c88697f6c4feef0"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11615,7 +11618,7 @@
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "1e5503962e105b70a13fd0ad5d2ecd508465d1a3225a6a26b60f3079978c3392"
+        "sha256": "f5cc251cff52c981eda1fa084f87209d2f33329a7814a90f9571bd4b5cd0161c"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
@@ -11627,7 +11630,7 @@
       },
       {
         "path": "framerail/src/lib/server/ajax-module-connector.js",
-        "sha256": "bb5c10a26757c5e67b5445b2c1d8e9c25c88bb1d83f364b16d70d4c355716ddc"
+        "sha256": "738c27871f8e49009ccbcc786431a29090ac0da6c6e7c4b1a2ff9d16ecab6811"
       },
       {
         "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -11663,7 +11666,7 @@
       },
       {
         "path": "framerail/src/routes/[slug]/[...extra]/+page.svelte",
-        "sha256": "429c73e8f3f22d8591ad7c01adb96e43e67b9d4c887a57246261e2f0c1190299"
+        "sha256": "e06ad941b8a6ed3e5a0cfe58b46368407d0cda0881377933bc81248a268b6a7c"
       },
       {
         "path": "framerail/src/routes/[x+2d]/[slug]/[...extra]/+page.svelte",
@@ -11727,7 +11730,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/user/[slug]/+page.svelte",
-        "sha256": "74b5ede23d12f3555ba5b2c93d79f9ae3c5256c0780578bc16c72887d8cc5fc9"
+        "sha256": "ba5235f176bef8e4c588f310d69e20027b73307927406aa153594efe32a67cc3"
       },
       {
         "path": "framerail/src/routes/[x+2d]/user/+page.server.ts",
@@ -11735,7 +11738,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/user/+page.svelte",
-        "sha256": "c0cebb2394f1391182fdf4bc304870b228803cbe10cf3faf3403973a99a9ff30"
+        "sha256": "c592d4803a24c7a6fef3aec416df6ce2864f6543a1d3b1bf41722fd9a2f16989"
       },
       {
         "path": "framerail/src/routes/[x+2d]/wikidot-interwiki/interwikiFrame.html/+server.ts",
@@ -11759,11 +11762,11 @@
       },
       {
         "path": "framerail/src/routes/+page.svelte",
-        "sha256": "9ddcf2d1c06d70db362d301cb04514b9d2a21c1cd087711dadcbd97f50fb7323"
+        "sha256": "15a849f58fde4826da26fc43dc78e154b37e9b78199442c5f4342a468b7183b9"
       },
       {
         "path": "framerail/src/routes/ajax-module-connector.php/+server.ts",
-        "sha256": "632b8c9f77d0eecd480f9ecf23b1568fb64631ec678f1884138cb101bab3fbd8"
+        "sha256": "01d967c7030621ccbd15f9c17f328c400dddf512e5c8fd2250bfa0cae82449c2"
       },
       {
         "path": "framerail/src/routes/common--images/jquery-raty/[asset]/+server.ts",
@@ -11831,7 +11834,7 @@
       },
       {
         "path": "framerail/src/routes/user[x+3a]info/[target]/+page.svelte",
-        "sha256": "23d70bc26fa0419b82642b0f2c9cce9740f3e5afb53955f086b6546aa1ad20cb"
+        "sha256": "858f11779c611647caa09e10ecb8953889fb6865d7f0256e8739dfa34b9f81e9"
       },
       {
         "path": "framerail/src/routes/xml-rpc-api.php/+server.ts",
@@ -11851,7 +11854,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "1e5503962e105b70a13fd0ad5d2ecd508465d1a3225a6a26b60f3079978c3392"
+        "sha256": "f5cc251cff52c981eda1fa084f87209d2f33329a7814a90f9571bd4b5cd0161c"
       },
       {
         "path": "wws/src/route.rs",
@@ -12690,7 +12693,7 @@
         "status": "implemented",
         "references": [
           "framerail/src/hooks.server.ts#export const handle: Handle = async ({ event, resolve }) =>",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte#use:wikidotLegacyActions={legacyActionParameters}"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte#use:wikidotLegacyActions={legacyActionParameters}"
         ]
       },
       "candidate": {
@@ -13054,7 +13057,7 @@
           "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte",
           "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#pageId: creating ? 0 : pageId",
           "framerail/src/routes/[slug]/[...extra]/EditorPane.svelte",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {
@@ -13100,7 +13103,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/data_form.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
+          "deepwell/src/services/data_form/render.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
           "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#class=\"form-horizontal data-form\""
         ]
       },
@@ -13254,7 +13257,7 @@
         "status": "implemented",
         "references": [
           "deepwell/src/services/data_form.rs",
-          "deepwell/src/services/data_form.rs#fn wikidot_data_form_comment_wrapper(",
+          "deepwell/src/services/data_form/definition.rs#fn wikidot_data_form_comment_wrapper(",
           "deepwell/src/services/view/service.rs"
         ]
       },
@@ -13302,7 +13305,7 @@
         "status": "implemented",
         "references": [
           "deepwell/src/services/data_form.rs",
-          "deepwell/src/services/data_form.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
+          "deepwell/src/services/data_form/render.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
           "deepwell/src/services/render/list_pages/data_forms.rs",
           "deepwell/src/services/render/service.rs",
           "deepwell/src/services/view/service.rs"
@@ -13357,7 +13360,7 @@
         "status": "implemented",
         "references": [
           "deepwell/src/services/data_form.rs",
-          "deepwell/src/services/data_form.rs#pub fn parse_wikidot_data_form_definition",
+          "deepwell/src/services/data_form/definition.rs#pub fn parse_wikidot_data_form_definition",
           "framerail/src/lib/server/deepwell/views.ts",
           "framerail/src/lib/wikidot/wikidot-data-form-match.worker.ts",
           "framerail/src/lib/wikidot/wikidot-data-form.js",
@@ -13580,8 +13583,8 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/data_form.rs#pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>",
-          "deepwell/src/services/data_form.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
+          "deepwell/src/services/data_form/definition.rs#pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>",
+          "deepwell/src/services/data_form/render.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
           "framerail/src/lib/server/load/page/page-edit-actions.ts#export async function pageEditAction(event: RequestEvent)",
           "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#class=\"form-horizontal data-form\""
         ]
@@ -13685,7 +13688,7 @@
         "status": "implemented",
         "references": [
           "deepwell/src/services/blueprint/service.rs#pub(crate) async fn apply_page_template(",
-          "deepwell/src/services/data_form.rs#pub fn substitute_wikidot_data_form_layout_variables(",
+          "deepwell/src/services/data_form/layout.rs#pub fn substitute_wikidot_data_form_layout_variables(",
           "deepwell/src/services/view/service.rs#data_form.definition.default_layout",
           "framerail/src/lib/wikidot/wikidot-data-form.js#export const wikidotDataFormUrlDisplay = (value) =>"
         ]
@@ -13733,7 +13736,7 @@
         "status": "implemented",
         "references": [
           "deepwell/src/services/blueprint/service.rs#pub(crate) async fn apply_page_template(",
-          "deepwell/src/services/data_form.rs#pub fn substitute_wikidot_data_form_layout_variables(",
+          "deepwell/src/services/data_form/layout.rs#pub fn substitute_wikidot_data_form_layout_variables(",
           "deepwell/src/services/view/service.rs#data_form.definition.default_layout"
         ]
       },
@@ -13780,8 +13783,8 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/data_form.rs#pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>",
-          "deepwell/src/services/data_form.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
+          "deepwell/src/services/data_form/definition.rs#pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>",
+          "deepwell/src/services/data_form/render.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
           "framerail/src/lib/server/load/page/page-edit-actions.ts#export async function pageEditAction(event: RequestEvent)",
           "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#class=\"form-horizontal data-form\""
         ]
@@ -13934,7 +13937,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/data_form.rs#Some(\"password\") =>",
+          "deepwell/src/services/data_form/render.rs#Some(\"password\") =>",
           "framerail/src/lib/wikidot/wikidot-data-form.js#case \"password\":"
         ]
       },
@@ -14252,7 +14255,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/data_form.rs#Some(\"url\") =>",
+          "deepwell/src/services/data_form/render.rs#Some(\"url\") =>",
           "framerail/src/lib/wikidot/wikidot-data-form.js#case \"url\":"
         ]
       },
@@ -14356,7 +14359,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/data_form.rs#pub fn substitute_wikidot_data_form_layout_variables_with_display(",
+          "deepwell/src/services/data_form/layout.rs#pub fn substitute_wikidot_data_form_layout_variables_with_display(",
           "deepwell/src/services/render/service.rs#pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls(",
           "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#field.field_type === \"wiki\""
         ]
@@ -14462,7 +14465,7 @@
         "status": "implemented",
         "references": [
           "deepwell/src/services/render/page_preview.rs#WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);",
-          "deepwell/src/services/render/service.rs#pub(super) fn resolve_wikidot_parser_functions(value: &str) -> String"
+          "deepwell/src/services/render/service/wikidot_preprocess.rs#pub(in crate::services::render) fn resolve_wikidot_parser_functions("
         ]
       },
       "candidate": {
@@ -14552,7 +14555,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
         ]
       },
       "evidence": {
@@ -14596,7 +14599,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
         ]
       },
       "evidence": {
@@ -14640,7 +14643,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
         ]
       },
       "evidence": {
@@ -14684,7 +14687,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
           "deepwell/tests/user.rs#user_mutations_enforce_request_actor_and_staff_only_fields",
           "framerail/tests/account-route-boundaries.test.js#display settings persist the forum signature through the existing account mutation"
         ]
@@ -14733,7 +14736,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
         ]
       },
       "evidence": {
@@ -14777,7 +14780,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
         ]
       },
       "evidence": {
@@ -15591,7 +15594,8 @@
         "cases": [],
         "tests": [
           "deepwell/tests/page.rs#backlinks_module_ignores_arguments_like_live_wikidot",
-          "deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links"
+          "deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_renders_current_page_incoming_links"
         ]
       },
       "evidence": {
@@ -15646,9 +15650,9 @@
           "deepwell/src/services/render/categories.rs::tests::default_category_is_visible_even_when_hidden_categories_are_not",
           "deepwell/src/services/render/categories.rs::tests::include_hidden_categories_emit_live_options_marker",
           "deepwell/src/services/render/categories.rs::tests::include_hidden_matches_live_exact_quoted_argument",
-          "deepwell/tests/page.rs#categories_module_lists_active_categories_and_honors_include_hidden",
           "deepwell/tests/page.rs::categories_module_lists_active_categories_and_honors_include_hidden",
-          "deepwell/tests/page.rs::categories_runtime_inventory_is_scoped_to_the_request_actor"
+          "deepwell/tests/page.rs::categories_runtime_inventory_is_scoped_to_the_request_actor",
+          "deepwell/tests/page/page_modules.rs#categories_module_lists_active_categories_and_honors_include_hidden"
         ]
       },
       "evidence": {
@@ -15802,6 +15806,7 @@
         "tests": [
           "deepwell/tests/page.rs#forum_comments_list_resolves_only_visible_page_discussions",
           "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "framerail/tests/ajax-module-connector.test.js#dispatches the sealed page comments reads without adding mutation authority",
           "install/local/wikidot-verification/tests/comments-hideform-actor-artifact.test.mjs#authenticated Comments hideForm evidence preserves the exact actor and form-state differential",
           "install/local/wikidot-verification/tests/comments-hideform-browser-candidate-case-set.test.mjs#Comments hideForm is registered as one executable candidate case with both actor controls"
@@ -15941,7 +15946,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/render/runtime_modules.rs#render_www_special_system_module",
+          "deepwell/src/services/render/runtime_modules/www.rs#render_www_special_system_module",
           "deepwell/src/services/render/url_arguments.rs#wikitext_has_www_special_runtime_module"
         ]
       },
@@ -16032,7 +16037,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/render/runtime_modules.rs#fn expand_www_currency_convert_system_module("
+          "deepwell/src/services/render/runtime_modules/www.rs#fn expand_www_currency_convert_system_module("
         ]
       },
       "candidate": {
@@ -16120,8 +16125,8 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/render/runtime_modules.rs#WWW_DELETE_ACCOUNT_INVALID_CODE_HTML",
-          "deepwell/src/services/render/runtime_modules.rs#render_www_special_system_module"
+          "deepwell/src/services/render/runtime_modules/www.rs#WWW_DELETE_ACCOUNT_INVALID_CODE_HTML",
+          "deepwell/src/services/render/runtime_modules/www.rs#render_www_special_system_module"
         ]
       },
       "candidate": {
@@ -16382,6 +16387,7 @@
         "tests": [
           "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/page/forum.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "framerail/tests/ajax-module-connector.test.js#dispatches the sealed read-only forum modules with Wikidot metadata",
           "framerail/tests/forum-routes.test.js#the observed category pager suffix reaches the exact AMC page"
         ]
@@ -16436,7 +16442,8 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries"
+          "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#forum_modules_match_live_missing_context_and_owner_boundaries"
         ]
       },
       "evidence": {
@@ -16483,8 +16490,8 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/page/forum.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "framerail/tests/ajax-module-connector.test.js#dispatches the sealed read-only forum modules with Wikidot metadata",
           "framerail/tests/forum-routes.test.js#forum route loads use the exact sealed read-only module requests"
         ]
@@ -16541,6 +16548,7 @@
         "tests": [
           "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/page/forum.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "framerail/tests/ajax-module-connector.test.js#dispatches the sealed read-only forum modules with Wikidot metadata",
           "framerail/tests/forum-routes.test.js#forum route loads use the exact sealed read-only module requests"
         ]
@@ -16602,6 +16610,7 @@
           "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
           "deepwell/tests/page.rs#frontforum_custom_body_matches_observed_public_preview_boundaries",
+          "deepwell/tests/page/forum.rs#frontforum_custom_body_matches_observed_public_preview_boundaries",
           "install/local/wikidot-verification/tests/frontforum-custom-body-artifact.test.mjs#FrontForum custom-body artifact seals the documented variable and owner boundaries"
         ]
       },
@@ -16666,7 +16675,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/render/runtime_modules.rs#render_www_front_special_mini",
+          "deepwell/src/services/render/runtime_modules/www.rs#render_www_front_special_mini",
           "deepwell/src/services/render/url_arguments.rs#WWW_SPECIAL_RUNTIME_MODULE_REGEX"
         ]
       },
@@ -16763,7 +16772,7 @@
         "status": "implemented",
         "references": [
           "deepwell/src/services/render/runtime_modules.rs",
-          "deepwell/src/services/render/runtime_modules.rs#expand_list_drafts_modules",
+          "deepwell/src/services/render/runtime_modules/user_lists.rs#expand_list_drafts_modules",
           "deepwell/src/services/render/url_arguments.rs"
         ]
       },
@@ -16831,9 +16840,9 @@
           "docs/wikidot-specifications/home/roku/wjlab/runtime/wikijump-standing/served-a3249375d/receipt.json",
           "docs/wikidot-specifications/home/roku/wjlab/runtime/wikijump-standing/standing-rpc-a3249375d.json",
           "docs/wikidot-specifications/home/roku/wjlab/runtime/wikijump-standing/wikijump-identifier-leaks-a3249375d.json",
-          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-clusters.json",
-          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl",
-          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-campaign-inventory/documentation-inventory.json",
+          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-clusters.json.gz",
+          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl.gz",
+          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-campaign-inventory/documentation-inventory.json.gz",
           "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260806.json",
           "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json",
           "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-runtime-budget-envelope.json",
@@ -17177,7 +17186,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#public_membership_module_states_are_distinct_and_opaque"
+          "deepwell/tests/page/membership.rs#public_membership_module_states_are_distinct_and_opaque"
         ]
       },
       "evidence": {
@@ -17189,7 +17198,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/render/runtime_modules.rs#expand_membership_apply_modules"
+          "deepwell/src/services/render/runtime_modules/membership.rs#expand_membership_apply_modules"
         ]
       },
       "candidate": {
@@ -17223,8 +17232,8 @@
         "tests": [
           "deepwell/src/services/render/render_dependency.rs::tests::render_dependency_viewer_module_is_viewer_dependent",
           "deepwell/src/services/render/url_arguments.rs::tests::a_pages_module_always_requires_runtime_rendering",
-          "deepwell/tests/page.rs#membership_by_password_module_matches_live_anonymous_and_member_output",
-          "deepwell/tests/page.rs::membership_by_password_module_matches_live_anonymous_and_member_output"
+          "deepwell/tests/page.rs::membership_by_password_module_matches_live_anonymous_and_member_output",
+          "deepwell/tests/page/membership.rs#membership_by_password_module_matches_live_anonymous_and_member_output"
         ]
       },
       "evidence": {
@@ -17239,7 +17248,7 @@
         "references": [
           "deepwell/src/services/render/render_dependency.rs",
           "deepwell/src/services/render/runtime_modules.rs",
-          "deepwell/src/services/render/runtime_modules.rs#expand_membership_by_password_modules",
+          "deepwell/src/services/render/runtime_modules/membership.rs#expand_membership_by_password_modules",
           "deepwell/src/services/render/url_arguments.rs"
         ]
       },
@@ -17320,7 +17329,8 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
+          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
         ]
       },
       "evidence": {
@@ -17369,7 +17379,8 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
+          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
         ]
       },
       "evidence": {
@@ -17418,7 +17429,8 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
+          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
         ]
       },
       "evidence": {
@@ -17607,9 +17619,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/render/runtime_modules.rs#WWW_NEW_SITE_ANONYMOUS_HTML",
-          "deepwell/src/services/render/runtime_modules.rs#WWW_NEW_SITE_AUTHENTICATED_HTML",
-          "deepwell/src/services/render/runtime_modules.rs#render_www_special_system_module"
+          "deepwell/src/services/render/runtime_modules/www.rs#WWW_NEW_SITE_ANONYMOUS_HTML",
+          "deepwell/src/services/render/runtime_modules/www.rs#WWW_NEW_SITE_AUTHENTICATED_HTML",
+          "deepwell/src/services/render/runtime_modules/www.rs#render_www_special_system_module"
         ]
       },
       "candidate": {
@@ -18166,8 +18178,8 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/page/forum.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "framerail/tests/ajax-module-connector.test.js#dispatches the sealed read-only forum modules with Wikidot metadata"
         ]
       },
@@ -18221,7 +18233,8 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#recent_threads_matches_live_placeholder_and_owner_boundaries"
+          "deepwell/tests/page.rs#recent_threads_matches_live_placeholder_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#recent_threads_matches_live_placeholder_and_owner_boundaries"
         ]
       },
       "evidence": {
@@ -18698,8 +18711,8 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/render/runtime_modules.rs#WWW_SPECIAL_SYSTEM_MODULE_REGEX",
-          "deepwell/src/services/render/runtime_modules.rs#render_www_sites_tag_cloud"
+          "deepwell/src/services/render/runtime_modules/www.rs#WWW_SPECIAL_SYSTEM_MODULE_REGEX",
+          "deepwell/src/services/render/runtime_modules/www.rs#render_www_sites_tag_cloud"
         ]
       },
       "candidate": {
@@ -18753,7 +18766,7 @@
           "deepwell/src/services/render/list_pages/mod.rs",
           "deepwell/src/services/render/list_pages/presentation.rs",
           "deepwell/src/services/render/runtime_modules.rs",
-          "deepwell/src/services/render/runtime_modules.rs#expand_tag_cloud_modules",
+          "deepwell/src/services/render/runtime_modules/tag_cloud.rs#expand_tag_cloud_modules",
           "deepwell/src/services/render/service.rs",
           "deepwell/src/services/render/service/tests.rs",
           "deepwell/src/services/render/url_arguments.rs",
@@ -19091,7 +19104,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#categories_module_lists_active_categories_and_honors_include_hidden"
+          "deepwell/tests/page/page_modules.rs#categories_module_lists_active_categories_and_honors_include_hidden"
         ]
       },
       "evidence": {
@@ -19275,7 +19288,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#page_backlinks_view_filters_before_exposing_titles_and_slugs"
+          "deepwell/tests/page/page_modules.rs#page_backlinks_view_filters_before_exposing_titles_and_slugs"
         ]
       },
       "evidence": {
@@ -19381,8 +19394,8 @@
         "references": [
           "framerail/src/lib/wikidot/wikidot-page-tags.js",
           "framerail/src/lib/wikidot/wikidot-page-tags.js#export const buildWikidotPageTagsHtml = (",
-          "framerail/src/routes/[slug]/[...extra]/WikidotFoundPageTags.svelte",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
+          "framerail/src/routes/[slug]/[...extra]/WikidotFoundPageTags.svelte"
         ]
       },
       "candidate": {
@@ -19414,7 +19427,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
+          "deepwell/tests/page/page_modules.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
           "deepwell/tests/page_template_assignment.rs#category_page_template_prefills_new_page_source_and_can_be_cleared"
         ]
       },
@@ -20169,7 +20182,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/render/runtime_modules.rs#fn expand_www_currency_convert_system_module(",
+          "deepwell/src/services/render/runtime_modules/www.rs#fn expand_www_currency_convert_system_module(",
           "deepwell/src/services/render/service.rs#pub(super) async fn render_inner("
         ]
       },
@@ -20246,7 +20259,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#listpages_content_executes_attachment_syntax_with_selected_page_owner"
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_content_executes_attachment_syntax_with_selected_page_owner"
         ]
       },
       "evidence": {
@@ -20533,7 +20546,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/render/service.rs#fn normalize_wikidot_cross_closed_div_collapsibles(",
+          "deepwell/src/services/render/service/wikidot_preprocess.rs#fn normalize_wikidot_cross_closed_div_collapsibles(",
           "framerail/src/lib/wikidot/wikidot-collapsibles.ts#export function wikidotCollapsibles(node: HTMLElement)"
         ]
       },
@@ -21149,8 +21162,8 @@
           "deepwell/Cargo.toml",
           "deepwell/src/services/context.rs",
           "deepwell/src/services/file_revision/service.rs",
-          "deepwell/src/services/render/service.rs#fn expand_wikidot_image_block_includes(",
-          "deepwell/src/services/render/service.rs#pub(super) fn localize_wikidot_local_file_urls("
+          "deepwell/src/services/render/service.rs#pub(super) fn localize_wikidot_local_file_urls(",
+          "deepwell/src/services/render/service/wikidot_preprocess.rs#fn expand_wikidot_image_block_includes("
         ]
       },
       "candidate": {
@@ -23519,7 +23532,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#page_move_render_failure_rolls_back_destination_identity"
+          "deepwell/tests/page/page_move.rs#page_move_render_failure_rolls_back_destination_identity"
         ]
       },
       "evidence": {
@@ -23691,7 +23704,7 @@
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
         "deepwell/src/api.rs#register:config",
-        "deepwell/src/endpoints/misc.rs#config_dump"
+        "deepwell/src/endpoints/diagnostics.rs#config_dump"
       ],
       "existing_refs": {
         "issues": [
@@ -23711,7 +23724,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/endpoints/misc.rs"
+          "deepwell/src/endpoints/diagnostics.rs"
         ]
       },
       "candidate": {
@@ -23916,7 +23929,7 @@
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
         "deepwell/src/api.rs#register:echo",
-        "deepwell/src/endpoints/misc.rs#echo"
+        "deepwell/src/endpoints/diagnostics.rs#echo"
       ],
       "existing_refs": {
         "issues": [
@@ -23936,7 +23949,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/endpoints/misc.rs"
+          "deepwell/src/endpoints/diagnostics.rs"
         ]
       },
       "candidate": {
@@ -24006,7 +24019,7 @@
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
         "deepwell/src/api.rs#register:error",
-        "deepwell/src/endpoints/misc.rs#yield_error"
+        "deepwell/src/endpoints/diagnostics.rs#yield_error"
       ],
       "existing_refs": {
         "issues": [
@@ -24026,7 +24039,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/endpoints/misc.rs"
+          "deepwell/src/endpoints/diagnostics.rs"
         ]
       },
       "candidate": {
@@ -25274,7 +25287,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract"
+          "deepwell/tests/page/membership.rs#membership_application_and_password_mutations_match_disposable_live_contract"
         ]
       },
       "evidence": {
@@ -25319,7 +25332,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract"
+          "deepwell/tests/page/membership.rs#membership_application_and_password_mutations_match_disposable_live_contract"
         ]
       },
       "evidence": {
@@ -25364,7 +25377,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract"
+          "deepwell/tests/page/membership.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract"
         ]
       },
       "evidence": {
@@ -25454,7 +25467,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract"
+          "deepwell/tests/page/membership.rs#membership_application_and_password_mutations_match_disposable_live_contract"
         ]
       },
       "evidence": {
@@ -25851,7 +25864,7 @@
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
         "deepwell/src/api.rs#register:normalize",
-        "deepwell/src/endpoints/misc.rs#normalize_method"
+        "deepwell/src/endpoints/normalize.rs#normalize_method"
       ],
       "existing_refs": {
         "issues": [
@@ -25871,7 +25884,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/endpoints/misc.rs"
+          "deepwell/src/endpoints/normalize.rs"
         ]
       },
       "candidate": {
@@ -26039,7 +26052,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#page_backlinks_view_filters_before_exposing_titles_and_slugs"
+          "deepwell/tests/page/page_modules.rs#page_backlinks_view_filters_before_exposing_titles_and_slugs"
         ]
       },
       "evidence": {
@@ -28829,7 +28842,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#site_tools_orphaned_pages_filters_before_exposing_ordered_rows"
+          "deepwell/tests/page/page_modules.rs#site_tools_orphaned_pages_filters_before_exposing_ordered_rows"
         ]
       },
       "evidence": {
@@ -28874,7 +28887,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#site_tools_wanted_pages_filters_sources_before_grouping_ordered_targets"
+          "deepwell/tests/page/page_modules.rs#site_tools_wanted_pages_filters_sources_before_grouping_ordered_targets"
         ]
       },
       "evidence": {
@@ -29909,7 +29922,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#wikidot_listpages_feed_queries_newest_viewable_pages"
+          "deepwell/tests/page/page_modules.rs#wikidot_listpages_feed_queries_newest_viewable_pages"
         ]
       },
       "evidence": {
@@ -38980,7 +38993,6 @@
           "A1037_NEWPAGE_PAGE_FORM"
         ],
         "tests": [
-          "deepwell/tests/page.rs::newpage_module_resolves_existing_templates_in_rendered_pages",
           "framerail/tests/ajax-module-connector.test.js"
         ]
       },
@@ -45201,8 +45213,7 @@
           "Q1028_INITIAL_CATEGORY_DOM_AND_ARGUMENTS"
         ],
         "tests": [
-          "deepwell/src/services/render/categories.rs::tests",
-          "deepwell/tests/page.rs::categories_module_lists_active_categories_and_honors_include_hidden"
+          "deepwell/src/services/render/categories.rs::tests"
         ]
       },
       "evidence": {
@@ -50140,7 +50151,7 @@
         "deepwell/src/services/view/backlinks.rs",
         "docs/development/wikidot-page-action-surfaces.json",
         "framerail/src/routes/[slug]/[...extra]/BacklinksPane.svelte",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -50163,7 +50174,7 @@
         "references": [
           "deepwell/src/services/view/backlinks.rs",
           "framerail/src/routes/[slug]/[...extra]/BacklinksPane.svelte",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {
@@ -50233,7 +50244,7 @@
       "kind": "page_action",
       "public_reference": [
         "docs/development/wikidot-page-action-surfaces.json",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -50253,7 +50264,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {
@@ -50278,7 +50289,7 @@
       "kind": "page_action",
       "public_reference": [
         "docs/development/wikidot-page-action-surfaces.json",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -50298,7 +50309,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {
@@ -50324,7 +50335,7 @@
       "public_reference": [
         "docs/development/wikidot-page-action-surfaces.json",
         "framerail/src/routes/[slug]/[...extra]/AppendPane.svelte",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -50345,7 +50356,7 @@
         "status": "implemented",
         "references": [
           "framerail/src/routes/[slug]/[...extra]/AppendPane.svelte",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {
@@ -50371,7 +50382,7 @@
       "public_reference": [
         "docs/development/wikidot-page-action-surfaces.json",
         "framerail/src/routes/[slug]/[...extra]/EditMetaPane.svelte",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte",
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
         "framerail/src/routes/ajax-module-connector.php/+server.ts"
       ],
       "existing_refs": {
@@ -50395,7 +50406,7 @@
         "status": "implemented",
         "references": [
           "framerail/src/routes/[slug]/[...extra]/EditMetaPane.svelte",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte",
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
           "framerail/src/routes/ajax-module-connector.php/+server.ts"
         ]
       },
@@ -50423,7 +50434,7 @@
         "docs/development/wikidot-page-action-surfaces.json",
         "framerail/src/lib/wikidot/wikidot-edit-sections.js",
         "framerail/src/routes/[slug]/[...extra]/EditSectionPane.svelte",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -50445,7 +50456,7 @@
         "references": [
           "framerail/src/lib/wikidot/wikidot-edit-sections.js",
           "framerail/src/routes/[slug]/[...extra]/EditSectionPane.svelte",
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {
@@ -50879,7 +50890,7 @@
       "kind": "page_action",
       "public_reference": [
         "docs/development/wikidot-page-action-surfaces.json",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -50899,7 +50910,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {
@@ -51198,7 +51209,7 @@
       "kind": "page_action",
       "public_reference": [
         "docs/development/wikidot-page-action-surfaces.json",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -51219,7 +51230,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "framerail/src/routes/[slug]/[...extra]/PageView.svelte"
         ]
       },
       "candidate": {

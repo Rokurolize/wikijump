@@ -29,11 +29,11 @@ export const LISTPAGES_CORPUS_REPLAY_SCOPE_PATH = path.join(
 export const LISTPAGES_CORPUS_REPLAY_SCOPE_SCHEMA =
   "wikijump_listpages_compat.corpus_replay_scope.v1";
 export const LISTPAGES_CORPUS_REPLAY_SCOPE_SHA256 =
-  "d1d9aca68fa8377a6381a96e132c2db94b4f81ceca92c5ca52568f6b7e2aabe1";
+  "b6535111795377273b6f9229d2d93f409caf60617421b4f95a05d90a0499571e";
 
 const EXPECTED_INVOCATIONS = Object.freeze({
   path:
-    "install/local/wikidot-verification/artifacts/listpages-campaign-matrix/corpus-invocation-cases.jsonl",
+    "install/local/wikidot-verification/artifacts/listpages-campaign-matrix/corpus-invocation-cases.jsonl.gz",
   sha256: "b9fd4f5fdfa775cba403682ec67485d6c13f5131a30999420cbc14f7a244f641",
   invocation_count: 23964,
   unique_invocation_id_count: 23964,

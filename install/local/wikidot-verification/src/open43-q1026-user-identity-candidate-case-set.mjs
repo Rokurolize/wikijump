@@ -27,7 +27,7 @@ export const OPEN43_Q1026_USER_IDENTITY_CASE_IDS = Object.freeze([
 const SITE_HOST = "scpaiueouiuiuiui.wikijump.localhost";
 const FIXTURE_ID = "Q1026_PRINTUSER_INTERVALS";
 const DEFAULT_VIEWPORT = Object.freeze({ width: 1280, height: 900 });
-const CAPTURE_TIMEOUT_MS = 300_000;
+const CAPTURE_TIMEOUT_MS = 30_000;
 
 export const Q1026_FIXTURE_PROVENANCE = Object.freeze({
   path: "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries",

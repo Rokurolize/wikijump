@@ -2,6 +2,8 @@
   @component Generic floating card.
 -->
 <script lang="ts">
+  import type { Snippet } from "svelte"
+
   let {
     title = "",
     subtitle = "",
@@ -29,9 +31,9 @@
      */
     width?: string
 
-    actions?: any
-    children?: any
-    [key: string]: any
+    actions?: Snippet
+    children?: Snippet
+    [key: string]: unknown
   } = $props()
 </script>
 

@@ -8,6 +8,7 @@
   import { tip as tippy } from "./scripts/tippy"
   import Sprite from "./Sprite.svelte"
   import { resolve } from "$app/paths"
+  import type { Snippet } from "svelte"
 
   let {
     i = "",
@@ -75,8 +76,8 @@
     /** Removes the round corners (`border-radius`) from the styling. */
     sharp?: boolean
 
-    children?: any
-    [key: string]: any
+    children?: Snippet
+    [key: string]: unknown
   } = $props()
 </script>
 

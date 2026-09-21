@@ -36,7 +36,7 @@ export function pauseObservation(
     // counts how many instances of the function are running to prevent races
     let runCount = 0
 
-    descriptor.value = async function (this: typeof target, ...args: any[]) {
+    descriptor.value = async function (this: typeof target, ...args: unknown[]) {
       this.observer.disconnect()
       runCount++
       const result = await method.apply(this, args)
@@ -45,7 +45,7 @@ export function pauseObservation(
       return result
     }
   } else {
-    descriptor.value = function (this: typeof target, ...args: any[]) {
+    descriptor.value = function (this: typeof target, ...args: unknown[]) {
       this.observer.disconnect()
       const result = method.apply(this, args)
       this.observer.observe(this, OBSERVER_CONFIG)

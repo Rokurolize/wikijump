@@ -208,7 +208,7 @@ test("Deepwell JSON-RPC generator follows sync and qualified or generic local he
     ])
   }
   assert.ok(byMethod.get("page_edit").actor_context.requirement_sources.includes(
-    "deepwell/src/endpoints/page.rs#ensure_page_edit_permission"
+    "deepwell/src/endpoints/page/permissions.rs#ensure_page_edit_permission"
   ))
 })
 

@@ -1,19 +1,24 @@
 import { createHash } from "node:crypto"
 
+import {
+  handleNewPageHelperRequest,
+  resolveCanCreateNewPage,
+  toWikidotUnixName
+} from "./ajax-module-connector/new-page.js"
+import {
+  CONTROL_FIELDS,
+  fieldValue,
+  forumNumericParametersAreCanonical,
+  isCanonicalNonNegativeDecimal,
+  isPositiveSafeDecimal,
+  isSupportedPageReadShape,
+  readUrlEncodedForm,
+  requestWikidotTokenCookie
+} from "./ajax-module-connector/request.js"
+import { jsonResponse } from "./ajax-module-connector/response.js"
+
 import { classifyWikidotSiteChangesRequest } from "./wikidot-site-changes.js"
 
-const AJAX_MODULE_CONNECTOR_HEADERS = {
-  "cache-control": "no-store",
-  "content-type": "text/plain; charset=UTF-8"
-}
-const MAX_AJAX_MODULE_CONNECTOR_BODY_BYTES = 131_072
-const CONTROL_FIELDS = new Set([
-  "moduleName",
-  "module_body",
-  "wikidot_token7",
-  "callbackIndex",
-  "eventSource"
-])
 const FORUM_READ_MODULE_PARAMETERS = new Map([
   ["forum/ForumStartModule", [new Set(), new Set(["hidden"])]],
   ["forum/ForumCommentsListModule", [new Set(["pageId"]), new Set(["pageId", "order"])]],
@@ -22,7 +27,6 @@ const FORUM_READ_MODULE_PARAMETERS = new Map([
   ["forum/ForumViewThreadPostsModule", [new Set(["t", "pageNo"])]],
   ["forum/ForumRecentPostsListModule", [new Set(["page", "categoryId"])]]
 ])
-const FORUM_POSITIVE_DECIMAL_FIELDS = new Set(["pageId", "c", "p", "t", "pageNo", "page"])
 const SITE_CHANGES_MODULE = "changes/SiteChangesListModule"
 const MEMBERS_LIST_MODULE = "membership/MembersListModule"
 const CATEGORIES_PAGE_LIST_MODULE = "list/WikiCategoriesPageListModule"
@@ -192,16 +196,6 @@ const EDIT_META_ACTION_FIELDS = new Set([
   "moduleName",
   "wikidot_token7"
 ])
-const NEWPAGE_AUTOSAVE_MODES = new Set(["save-and-refresh", "save-and-go"])
-const NEWPAGE_NO_NAME_MESSAGE = "You should provide a page name"
-const NEWPAGE_INCORRECT_NAME_MESSAGE =
-  "The page name is not correct: please fix it and try again"
-const NEWPAGE_NO_PERMISSION_MESSAGE =
-  'Sorry, you can not create a new page in this category. Only members of this site, site administrators and perhaps selected moderators are allowed to do it. <a href="#action:login">Sign in as Wikidot user</a>'
-const NEWPAGE_GENERIC_ERROR_MESSAGE = "An error occurred while processing the request."
-const MAX_WIKIDOT_PAGE_UNIX_NAME_LENGTH = 60
-const MAX_NEWPAGE_PAGE_NAME_LENGTH = 128
-const MAX_NEWPAGE_FORMAT_LENGTH = 512
 
 /**
  * @typedef {{
@@ -349,412 +343,11 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  * }} AjaxModuleConnectorOptions
  */
 
-const isValidAjaxModuleStatus = (status) =>
-  typeof status === "string" && status.length > 0
-
-/**
- * @param {Record<string, unknown>} body
- * @param {number} [status]
- * @param {HeadersInit} [extraHeaders]
- */
-const jsonResponse = (body, status = 200, extraHeaders = {}) =>
-  new Response(
-    JSON.stringify(
-      isValidAjaxModuleStatus(body.status) ? body : { ...body, status: "not_ok" }
-    ),
-    {
-      status,
-      headers: { ...AJAX_MODULE_CONNECTOR_HEADERS, ...extraHeaders }
-    }
-  )
-
 /**
  * @param {string} moduleName
  * @param {Record<string, string>} parameters
  */
-const isSupportedPageReadShape = (moduleName, parameters) => {
-  if (moduleName === "pagerate/WhoRatedPageModule") {
-    return isPositiveSafeDecimal(parameters.pageId)
-  }
-  if (
-    moduleName === "viewsource/ViewSourceModule" ||
-    moduleName === "files/PageFilesModule"
-  ) {
-    return isPositiveSafeDecimal(parameters.page_id)
-  }
-  if (moduleName === "history/PageRevisionListModule") {
-    return (
-      isPositiveSafeDecimal(parameters.page_id) &&
-      parameters.options === "{'all': True}" &&
-      parameters.perpage === "100000000"
-    )
-  }
-  return isPositiveSafeDecimal(parameters.revision_id)
-}
-
-/**
- * @param {Request} request
- * @returns {Promise<{
- *   fields: Map<string, string>
- *   duplicateFields: Set<string>
- * }>}
- */
-const readUrlEncodedForm = async (request) => {
-  const contentType = request.headers.get("content-type")?.split(";", 1)[0].trim()
-  if (contentType !== "application/x-www-form-urlencoded") {
-    throw new TypeError("AJAX Module Connector requires URL-encoded form data")
-  }
-
-  const contentLength = request.headers.get("content-length")
-  if (contentLength !== null) {
-    const normalized = contentLength.trim()
-    if (!/^\d+$/.test(normalized)) {
-      throw new TypeError("AJAX Module Connector content length is invalid")
-    }
-    if (Number.parseInt(normalized, 10) > MAX_AJAX_MODULE_CONNECTOR_BODY_BYTES) {
-      throw new RangeError("AJAX Module Connector request body is too large")
-    }
-  }
-
-  const reader = request.body?.getReader()
-  if (reader === undefined) {
-    return { fields: new Map(), duplicateFields: new Set() }
-  }
-
-  /** @type {Uint8Array[]} */
-  const chunks = []
-  let byteLength = 0
-  try {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      byteLength += value.byteLength
-      if (byteLength > MAX_AJAX_MODULE_CONNECTOR_BODY_BYTES) {
-        throw new RangeError("AJAX Module Connector request body is too large")
-      }
-      chunks.push(value)
-    }
-  } finally {
-    reader.releaseLock()
-  }
-
-  const bytes = new Uint8Array(byteLength)
-  let offset = 0
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset)
-    offset += chunk.byteLength
-  }
-  const body = new TextDecoder("utf-8", { fatal: true }).decode(bytes)
-  const form = new URLSearchParams(body)
-  const values = new Map()
-  const duplicateFields = new Set()
-  for (const [key, value] of form) {
-    if (values.has(key)) duplicateFields.add(key)
-    values.set(key, value)
-  }
-  return { fields: values, duplicateFields }
-}
-
-/**
- * @param {Map<string, string>} fields
- * @param {string} name
- */
-const fieldValue = (fields, name) => fields.get(name) ?? ""
-
-/**
- * Selected public token from the request cookie jar. Live Wikidot binds
- * the ListPages `wikidot_token7` form field to the presented cookie by
- * exact echo: any echoed value is accepted and any mismatch fails with
- * `wrong_token7`, without a server-issued allowlist. Duplicate cookie
- * names keep the first value, matching the observed Wikidot cookie
- * parser.
- *
- * @param {Request} request
- */
-const requestWikidotTokenCookie = (request) => {
-  const header = request.headers.get("cookie")
-  if (header === null) return undefined
-  let selected
-  for (const part of header.split(";")) {
-    const separator = part.indexOf("=")
-    if (separator === -1) continue
-    if (part.slice(0, separator).trim() !== "wikidot_token7") continue
-    if (selected === undefined) selected = part.slice(separator + 1).trim()
-  }
-  return selected
-}
-
-/** @param {string} value */
-const isCanonicalPositiveDecimal = (value) => /^[1-9][0-9]*$/u.test(value)
-
-/** @param {string} value */
-const isCanonicalNonNegativeDecimal = (value) =>
-  /^(?:0|[1-9][0-9]*)$/u.test(value) && Number.isSafeInteger(Number.parseInt(value, 10))
-
-/** @param {string} value */
-const isPositiveSafeDecimal = (value) => {
-  if (!isCanonicalPositiveDecimal(value)) return false
-  return Number.isSafeInteger(Number.parseInt(value, 10))
-}
-
-/** @param {Record<string, string>} parameters */
-const forumNumericParametersAreCanonical = (parameters) => {
-  for (const field of FORUM_POSITIVE_DECIMAL_FIELDS) {
-    const value = parameters[field]
-    if (value !== undefined && !isCanonicalPositiveDecimal(value)) return false
-  }
-  const categoryId = parameters.categoryId
-  return (
-    categoryId === undefined ||
-    categoryId === "" ||
-    isCanonicalPositiveDecimal(categoryId)
-  )
-}
-
 /** @param {string} tags */
-const splitNewPageTags = (tags) => tags.split(/\s+/u).filter((tag) => tag.length > 0)
-
-/** @param {string} value */
-const escapeHtml = (value) =>
-  value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-
-/** @param {{ pageName: string; categoryName: string }} input */
-const toWikidotUnixName = ({ pageName, categoryName }) => {
-  const normalizedCategory = categoryName === "_default" ? "" : categoryName
-  const prefixed =
-    normalizedCategory.length > 0 ? `${normalizedCategory}:${pageName}` : pageName
-  return prefixed.slice(0, MAX_WIKIDOT_PAGE_UNIX_NAME_LENGTH)
-}
-
-/**
- * @param {string} format
- * @returns {RegExp | null}
- */
-const parseDelimitedRegex = (format) => {
-  if (!format.startsWith("/")) return null
-
-  const delimiter = format.lastIndexOf("/")
-  if (delimiter <= 0) return null
-
-  const pattern = format.slice(1, delimiter)
-  const rawFlags = format.slice(delimiter + 1)
-  let flags = ""
-  if (rawFlags.includes("i")) flags += "i"
-  if (rawFlags.includes("m")) flags += "m"
-  try {
-    return new RegExp(pattern, flags)
-  } catch {
-    return null
-  }
-}
-
-/**
- * Reject regex features whose backtracking cost cannot be bounded by this
- * synchronous request handler. The accepted NewPage formats are simple
- * anchored patterns; nested quantifiers, ambiguous alternation,
- * lookarounds, and backreferences are unsupported and fail closed.
- *
- * @param {string} format
- */
-const newPageFormatIsSafe = (format) => {
-  if (format.length > MAX_NEWPAGE_FORMAT_LENGTH) return false
-  if (!format.startsWith("/")) return true
-
-  const delimiter = format.lastIndexOf("/")
-  if (delimiter <= 0) return true
-
-  const pattern = format.slice(1, delimiter)
-  const groups = [{ hasQuantifier: false, hasAlternation: false }]
-  let escaped = false
-  let inCharacterClass = false
-  let previousWasQuantifier = false
-
-  for (let index = 0; index < pattern.length; index += 1) {
-    const character = pattern[index]
-    if (escaped) {
-      if (/^[1-9]$/u.test(character)) return false
-      escaped = false
-      previousWasQuantifier = false
-      continue
-    }
-    if (character === "\\") {
-      escaped = true
-      continue
-    }
-    if (inCharacterClass) {
-      if (character === "]") inCharacterClass = false
-      continue
-    }
-    if (character === "[") {
-      inCharacterClass = true
-      previousWasQuantifier = false
-      continue
-    }
-    if (character === "(") {
-      if (pattern[index + 1] === "?" && pattern[index + 2] !== ":") return false
-      groups.push({ hasQuantifier: false, hasAlternation: false })
-      previousWasQuantifier = false
-      continue
-    }
-    if (character === "|") {
-      groups.at(-1).hasAlternation = true
-      previousWasQuantifier = false
-      continue
-    }
-    if (character === ")") {
-      if (groups.length === 1) return false
-      const group = groups.pop()
-      const next = pattern[index + 1]
-      const quantifiesGroup = next === "*" || next === "+" || next === "?" || next === "{"
-      if (quantifiesGroup && (group.hasQuantifier || group.hasAlternation)) return false
-      if (quantifiesGroup) groups.at(-1).hasQuantifier = true
-      previousWasQuantifier = false
-      continue
-    }
-    if (
-      character === "*" ||
-      character === "+" ||
-      character === "?" ||
-      character === "{"
-    ) {
-      if (previousWasQuantifier) return false
-      groups.at(-1).hasQuantifier = true
-      previousWasQuantifier = true
-      continue
-    }
-    previousWasQuantifier = false
-  }
-
-  // Let the parser's existing malformed-format fallback handle unclosed
-  // delimiters and groups; only recognized, executable patterns are subject
-  // to the safety decision above.
-  return true
-}
-
-/**
- * @param {string} pageName
- * @param {string} format
- */
-const matchesNewPageFormat = (pageName, format) => {
-  if (format.length === 0) return true
-
-  if (pageName.length > MAX_NEWPAGE_PAGE_NAME_LENGTH) return false
-  if (!newPageFormatIsSafe(format)) return false
-
-  const regex = parseDelimitedRegex(format)
-  if (!regex) return true
-  return regex.test(pageName)
-}
-
-/** @param {AjaxModuleConnectorOptions["canCreateNewPage"]} canCreateNewPage */
-const resolveCanCreateNewPage = async (canCreateNewPage) => {
-  if (typeof canCreateNewPage === "function") return Boolean(await canCreateNewPage())
-  return Boolean(canCreateNewPage)
-}
-
-/**
- * @param {Map<string, string>} fields
- * @param {Pick<
- *   AjaxModuleConnectorOptions,
- *   "createNewPage" | "canCreateNewPage" | "pageExists"
- * >} options
- */
-const handleNewPageHelperRequest = async (
-  fields,
-  { createNewPage, canCreateNewPage, pageExists }
-) => {
-  const pageName = fieldValue(fields, "pageName")
-  if (pageName.length === 0) {
-    return jsonResponse({
-      status: "no_name",
-      message: NEWPAGE_NO_NAME_MESSAGE
-    })
-  }
-
-  const unixName = toWikidotUnixName({
-    pageName,
-    categoryName: fieldValue(fields, "categoryName")
-  })
-  if (pageExists && (await pageExists(unixName))) {
-    const escapedUnixName = escapeHtml(unixName)
-    return jsonResponse({
-      status: "page_exists",
-      message: `The page <em>${escapedUnixName}</em> already exists. <a href="/${escapedUnixName}">Jump to it</a> if you wish.`
-    })
-  }
-
-  if (!matchesNewPageFormat(pageName, fieldValue(fields, "format"))) {
-    return jsonResponse({
-      status: "incorrect_name",
-      message: NEWPAGE_INCORRECT_NAME_MESSAGE
-    })
-  }
-
-  const pageTitle = pageName
-  const tags = fieldValue(fields, "tags")
-  const parentPage = fieldValue(fields, "parent")
-  const templateId = fieldValue(fields, "template")
-  const mode = fieldValue(fields, "mode")
-
-  if (NEWPAGE_AUTOSAVE_MODES.has(mode)) {
-    if (!(await resolveCanCreateNewPage(canCreateNewPage))) {
-      return jsonResponse({
-        status: "no_permission",
-        message: NEWPAGE_NO_PERMISSION_MESSAGE
-      })
-    }
-    if (templateId.length > 0 && tags.length > 0) {
-      return jsonResponse({
-        status: "not_ok",
-        message: NEWPAGE_GENERIC_ERROR_MESSAGE
-      })
-    }
-    if (!createNewPage) {
-      return jsonResponse({
-        status: "not_ok",
-        message: "NewPage autosave is unavailable"
-      })
-    }
-
-    await createNewPage({
-      slug: unixName,
-      title: pageTitle,
-      wikitext: "",
-      tags: templateId.length > 0 ? [] : splitNewPageTags(tags),
-      parentPage: templateId.length > 0 ? "" : parentPage
-    })
-
-    return jsonResponse({
-      status: "ok",
-      goToUrl: mode === "save-and-refresh" ? "." : fieldValue(fields, "goTo") || unixName
-    })
-  }
-
-  /**
-   * @type {{
-   *   status: string
-   *   unixName: string
-   *   pageTitle: string
-   *   tags: string
-   *   parentPage: string
-   *   templateId?: string
-   * }}
-   */
-  const response = {
-    status: "ok",
-    unixName,
-    pageTitle,
-    tags,
-    parentPage
-  }
-  if (templateId.length > 0) response.templateId = templateId
-  return jsonResponse(response)
-}
-
 /**
  * @param {Request} request
  * @param {AjaxModuleConnectorOptions} options

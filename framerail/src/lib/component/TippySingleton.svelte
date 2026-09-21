@@ -7,6 +7,7 @@
     type Instance,
     type Props
   } from "tippy.js"
+  import type { Snippet } from "svelte"
   import { DEFAULT_TIPPY_OPTS, parseTipOpts } from "./scripts/tippy"
 
   const DEFAULT_SINGLETON_PROPS: Partial<CreateSingletonProps> = {
@@ -18,7 +19,7 @@
     children
   }: {
     opts?: Partial<CreateSingletonProps>
-    children?: any
+    children?: Snippet<[typeof tip]>
   } = $props()
 
   let singleton = createSingleton([])

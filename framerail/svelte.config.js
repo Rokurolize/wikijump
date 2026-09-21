@@ -5,7 +5,7 @@ import { dirname, resolve } from "path"
 import { sveltePreprocess } from "svelte-preprocess"
 import { fileURLToPath } from "url"
 import {
-  parseCsrfCheckOrigin,
+  csrfTrustedOrigins,
   parseDeploymentEnvironment
 } from "./src/lib/server/deployment-environment.js"
 
@@ -139,7 +139,7 @@ const config = {
     adapter: adapter(),
     ...(testOutDir ? { outDir: testOutDir } : {}),
     csrf: {
-      checkOrigin: parseCsrfCheckOrigin({ deploymentEnvironment })
+      trustedOrigins: csrfTrustedOrigins({ deploymentEnvironment })
     },
     csp: {
       mode: "auto",

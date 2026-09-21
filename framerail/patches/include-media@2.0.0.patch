@@ -1,0 +1,31 @@
+diff --git a/dist/_include-media.scss b/dist/_include-media.scss
+index 8bc15a1350009ccf78465f43d8362bd2ce758ea7..e46e6bfdb042416a7fc60c22121ac494c3075598 100644
+--- a/dist/_include-media.scss
++++ b/dist/_include-media.scss
+@@ -307,7 +307,7 @@ $im-no-media-expressions: ('screen', 'portrait', 'landscape') !default;
+ /// @return {String} - `min` or `max`
+ ///
+ @function get-expression-prefix($operator) {
+-  @return if(list.index(('<', '<=', '≤'), $operator), 'max', 'min');
++  @return if(sass(list.index(('<', '<=', '≤'), $operator)): 'max'; else: 'min');
+ }
+ 
+ ///
+@@ -442,7 +442,7 @@ $im-no-media-expressions: ('screen', 'portrait', 'landscape') !default;
+     $character: string.slice($value, $i, $i);
+ 
+     @if not(list.index(map.keys($numbers), $character) or $character == '.') {
+-      @return to-length(if($minus, -$result, $result), string.slice($value, $i));
++      @return to-length(if(sass($minus): -$result; else: $result), string.slice($value, $i));
+     }
+ 
+     @if $character == '.' {
+@@ -455,7 +455,7 @@ $im-no-media-expressions: ('screen', 'portrait', 'landscape') !default;
+     }
+   }
+ 
+-  @return if($minus, -$result, $result);
++  @return if(sass($minus): -$result; else: $result);
+ }
+ 
+ ///

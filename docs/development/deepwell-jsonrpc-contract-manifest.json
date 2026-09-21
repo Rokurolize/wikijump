@@ -1730,7 +1730,7 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "rpc_behavioral",
-        "reference": "deepwell/tests/page.rs#page_move_render_failure_rolls_back_destination_identity",
+        "reference": "deepwell/tests/page/page_move.rs#page_move_render_failure_rolls_back_destination_identity",
         "alternatives": [],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -1908,7 +1908,7 @@
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/page.rs#deleted_category_navigation_does_not_fall_back_to_site_navigation",
         "alternatives": [
-          "deepwell/tests/page.rs#page_move_renders_with_destination_category_context",
+          "deepwell/tests/page/page_move.rs#page_move_renders_with_destination_category_context",
           "deepwell/tests/page_template_assignment.rs#assigned_data_form_template_edit_invalidates_warm_imported_article_cache",
           "deepwell/tests/page_template_assignment.rs#category_page_template_prefills_new_page_source_and_can_be_cleared",
           "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_remains_editable_and_renders_form_variables",
@@ -1933,8 +1933,8 @@
       "endpoint_owner": {
         "component": "deepwell",
         "handler": "config_dump",
-        "source": "deepwell/src/endpoints/misc.rs#config_dump",
-        "source_sha256": "b3950434237d54beb2cdc46b46cfecd29ad54981032a600f16cd0ed35a0fc3a8",
+        "source": "deepwell/src/endpoints/diagnostics.rs#config_dump",
+        "source_sha256": "5bf539cb403f697225caf6e10a26b0b5b3b754924b35bacdea05f1a4ac98709c",
         "function_sha256": "b2503b23fc24fdd47ccb9bbe37b325f4ade6753bce66dc8468a0847fb63b3201"
       },
       "params_schema": {
@@ -1966,7 +1966,7 @@
         ],
         "requirements": [],
         "requirement_sources": [
-          "deepwell/src/endpoints/misc.rs#config_dump"
+          "deepwell/src/endpoints/diagnostics.rs#config_dump"
         ]
       },
       "mutation_class": {
@@ -2232,8 +2232,8 @@
       "endpoint_owner": {
         "component": "deepwell",
         "handler": "echo",
-        "source": "deepwell/src/endpoints/misc.rs#echo",
-        "source_sha256": "b3950434237d54beb2cdc46b46cfecd29ad54981032a600f16cd0ed35a0fc3a8",
+        "source": "deepwell/src/endpoints/diagnostics.rs#echo",
+        "source_sha256": "5bf539cb403f697225caf6e10a26b0b5b3b754924b35bacdea05f1a4ac98709c",
         "function_sha256": "f96580a1ee707dafb204b83457659522756b8216a69b0c8a5370b46df840bd7a"
       },
       "params_schema": {
@@ -2265,7 +2265,7 @@
         ],
         "requirements": [],
         "requirement_sources": [
-          "deepwell/src/endpoints/misc.rs#echo"
+          "deepwell/src/endpoints/diagnostics.rs#echo"
         ]
       },
       "mutation_class": {
@@ -2344,8 +2344,8 @@
       "endpoint_owner": {
         "component": "deepwell",
         "handler": "yield_error",
-        "source": "deepwell/src/endpoints/misc.rs#yield_error",
-        "source_sha256": "b3950434237d54beb2cdc46b46cfecd29ad54981032a600f16cd0ed35a0fc3a8",
+        "source": "deepwell/src/endpoints/diagnostics.rs#yield_error",
+        "source_sha256": "5bf539cb403f697225caf6e10a26b0b5b3b754924b35bacdea05f1a4ac98709c",
         "function_sha256": "2a097bedf0978e8e2cdd13631635bce911191e217b4a372c760d74e3373122f4"
       },
       "params_schema": {
@@ -2377,7 +2377,7 @@
         ],
         "requirements": [],
         "requirement_sources": [
-          "deepwell/src/endpoints/misc.rs#yield_error"
+          "deepwell/src/endpoints/diagnostics.rs#yield_error"
         ]
       },
       "mutation_class": {
@@ -4030,7 +4030,7 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract",
+        "reference": "deepwell/tests/page/membership.rs#membership_application_and_password_mutations_match_disposable_live_contract",
         "alternatives": [],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -4085,7 +4085,7 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract",
+        "reference": "deepwell/tests/page/membership.rs#membership_application_and_password_mutations_match_disposable_live_contract",
         "alternatives": [],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -4140,7 +4140,7 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/page.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract",
+        "reference": "deepwell/tests/page/membership.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract",
         "alternatives": [],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -4250,7 +4250,7 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract",
+        "reference": "deepwell/tests/page/membership.rs#membership_application_and_password_mutations_match_disposable_live_contract",
         "alternatives": [],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -4726,8 +4726,8 @@
       "endpoint_owner": {
         "component": "deepwell",
         "handler": "normalize_method",
-        "source": "deepwell/src/endpoints/misc.rs#normalize_method",
-        "source_sha256": "b3950434237d54beb2cdc46b46cfecd29ad54981032a600f16cd0ed35a0fc3a8",
+        "source": "deepwell/src/endpoints/normalize.rs#normalize_method",
+        "source_sha256": "f9b4b506d0c3430f166a8f92104b2fbfe5d24a05fed04be4b8f6048a167417a8",
         "function_sha256": "e379085367e1df251904cd51d0692ba1125dd9f8006795c8ad97fef50b7596e8"
       },
       "params_schema": {
@@ -4759,7 +4759,7 @@
         ],
         "requirements": [],
         "requirement_sources": [
-          "deepwell/src/endpoints/misc.rs#normalize_method"
+          "deepwell/src/endpoints/normalize.rs#normalize_method"
         ]
       },
       "mutation_class": {
@@ -4999,7 +4999,7 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/page.rs#page_backlinks_view_filters_before_exposing_titles_and_slugs",
+        "reference": "deepwell/tests/page/page_modules.rs#page_backlinks_view_filters_before_exposing_titles_and_slugs",
         "alternatives": [],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -5010,7 +5010,7 @@
         "component": "deepwell",
         "handler": "page_create",
         "source": "deepwell/src/endpoints/page.rs#page_create",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "a1795c6c876a0ae2dfcd7f509622ace05a32f3a5dfc5cb90c901b67c402a6a70"
       },
       "params_schema": {
@@ -5045,10 +5045,10 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_create_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#page_create",
-          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_create_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -5112,17 +5112,14 @@
           "deepwell/tests/page.rs#article_view_uses_category_license_and_site_fallback",
           "deepwell/tests/page.rs#article_view_uses_effective_page_discussion_policy_and_stored_nesting",
           "deepwell/tests/page.rs#basic_edit",
-          "deepwell/tests/page.rs#basic_move",
           "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
           "deepwell/tests/page.rs#component_css_include_visibility_and_lifecycle_matrix",
           "deepwell/tests/page.rs#countpages_saved_page_views_follow_current_matching_page_state",
-          "deepwell/tests/page.rs#current_page_listpages_created_by_uses_creation_revision",
           "deepwell/tests/page.rs#failed_page_create_rolls_back_its_allocated_number",
           "deepwell/tests/page.rs#file_get_requires_parent_page_view_permission",
           "deepwell/tests/page.rs#file_mutations_require_parent_page_edit_permission",
           "deepwell/tests/page.rs#file_revision_reads_require_parent_page_view_permission_and_tuple_binding",
           "deepwell/tests/page.rs#first_revision_countpages_rating_filter_renders_exact_count",
-          "deepwell/tests/page.rs#first_revision_current_page_listpages_uses_render_page_info",
           "deepwell/tests/page.rs#first_revision_rerenders_included_countpages",
           "deepwell/tests/page.rs#first_revision_rerenders_tag_dependent_countpages",
           "deepwell/tests/page.rs#first_revision_rerenders_tagcloud",
@@ -5137,18 +5134,15 @@
           "deepwell/tests/page.rs#latest_page_revision_still_cannot_hide_wikitext",
           "deepwell/tests/page.rs#missing_remote_site_include_does_not_fall_back_to_same_slug_local_page",
           "deepwell/tests/page.rs#normal_page_create_allocates_category_numbers_without_consuming_conflicts",
-          "deepwell/tests/page.rs#orphanedpages_module_refreshes_after_linker_soft_delete",
           "deepwell/tests/page.rs#page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision",
           "deepwell/tests/page.rs#page_delete_ignores_deleted_include_consumers_during_outdating",
           "deepwell/tests/page.rs#page_editing_history_preserves_each_page_change_as_a_recoverable_revision",
           "deepwell/tests/page.rs#page_get_deleted_filters_pages_by_delete_permission",
           "deepwell/tests/page.rs#page_get_files_requires_parent_page_view_permission",
           "deepwell/tests/page.rs#page_get_score_requires_view_permission_and_site_ownership",
-          "deepwell/tests/page.rs#page_move_renders_with_destination_category_context",
           "deepwell/tests/page.rs#page_move_requires_destination_create_permission",
           "deepwell/tests/page.rs#page_mutations_require_page_permissions",
           "deepwell/tests/page.rs#page_preview_omits_iftags_in_included_sources",
-          "deepwell/tests/page.rs#page_query_score_order_returns_results",
           "deepwell/tests/page.rs#page_restore_default_slug_requires_destination_create_permission",
           "deepwell/tests/page.rs#page_revision_range_returns_resolved_authors_and_hides_missing_identities",
           "deepwell/tests/page.rs#page_revision_reads_reject_legacy_unknown_hidden_fields_without_panicking",
@@ -5165,7 +5159,6 @@
           "deepwell/tests/page.rs#restored_literal_and_unsupported_countpages_shapes_stay_inert",
           "deepwell/tests/page.rs#restored_page_uses_destination_template_countpages_after_explicit_restore",
           "deepwell/tests/page.rs#revision_diff_returns_typed_lines_without_exposing_hidden_source",
-          "deepwell/tests/page.rs#site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link_rules",
           "deepwell/tests/page.rs#startup_backfills_legacy_html_sha1_and_validates_constraint",
           "deepwell/tests/page.rs#text_block_get_index_requires_parent_page_view_permission",
           "deepwell/tests/page.rs#unbound_include_variables_remain_literal_in_attributes_and_text",
@@ -5173,6 +5166,13 @@
           "deepwell/tests/page.rs#wikidot_set_tags_action_resolves_server_descriptor_and_is_revision_idempotent",
           "deepwell/tests/page.rs#wikidot_site_include_uses_local_dependency_page_for_site_qualified_include",
           "deepwell/tests/page.rs#wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars",
+          "deepwell/tests/page/list_pages_runtime.rs#current_page_listpages_created_by_uses_creation_revision",
+          "deepwell/tests/page/list_pages_runtime.rs#first_revision_current_page_listpages_uses_render_page_info",
+          "deepwell/tests/page/page_modules.rs#orphanedpages_module_refreshes_after_linker_soft_delete",
+          "deepwell/tests/page/page_modules.rs#site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link_rules",
+          "deepwell/tests/page/page_move.rs#basic_move",
+          "deepwell/tests/page/page_move.rs#page_move_renders_with_destination_category_context",
+          "deepwell/tests/page/page_query.rs#page_query_score_order_returns_results",
           "deepwell/tests/page_discussion.rs#imported_page_discussion_pointer_can_be_claimed_by_only_one_page",
           "deepwell/tests/page_discussion.rs#page_discussions_reject_deleted_containers_and_skip_deleted_groups",
           "deepwell/tests/page_discussion.rs#wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_deleted_pages",
@@ -5196,7 +5196,7 @@
         "component": "deepwell",
         "handler": "page_delete",
         "source": "deepwell/src/endpoints/page.rs#page_delete",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "49010156cf12ffbab3164bcf1a210eac499ca4011de7635f488213ad8b404713"
       },
       "params_schema": {
@@ -5231,10 +5231,10 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#page_delete",
-          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -5248,24 +5248,24 @@
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/list_pages.rs#imported_revision_count_adds_local_lifecycle_revisions_for_order_and_substitution",
         "alternatives": [
-          "deepwell/tests/page.rs#categories_module_refreshes_inventory_after_category_pages_come_and_go",
           "deepwell/tests/page.rs#component_css_include_visibility_and_lifecycle_matrix",
           "deepwell/tests/page.rs#countpages_saved_page_views_follow_current_matching_page_state",
           "deepwell/tests/page.rs#deleted_category_navigation_does_not_fall_back_to_site_navigation",
           "deepwell/tests/page.rs#deleted_site_navigation_is_absent_from_found_and_missing_page_views",
-          "deepwell/tests/page.rs#orphanedpages_module_refreshes_after_linker_soft_delete",
           "deepwell/tests/page.rs#page_delete_ignores_deleted_include_consumers_during_outdating",
           "deepwell/tests/page.rs#page_get_deleted_filters_pages_by_delete_permission",
           "deepwell/tests/page.rs#page_mutations_require_page_permissions",
           "deepwell/tests/page.rs#page_restore_default_slug_requires_destination_create_permission",
-          "deepwell/tests/page.rs#pages_by_tag_saved_page_views_follow_current_tagged_page_state",
           "deepwell/tests/page.rs#restore_rerender_failure_rolls_back_resurrection_identity_and_revision",
           "deepwell/tests/page.rs#restored_countpages_page_stores_and_serves_its_current_self_count",
           "deepwell/tests/page.rs#restored_literal_and_unsupported_countpages_shapes_stay_inert",
           "deepwell/tests/page.rs#restored_page_uses_destination_template_countpages_after_explicit_restore",
-          "deepwell/tests/page.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
-          "deepwell/tests/page.rs#site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link_rules",
           "deepwell/tests/page.rs#wikidot_set_tags_denials_preserve_public_page_state",
+          "deepwell/tests/page/page_modules.rs#categories_module_refreshes_inventory_after_category_pages_come_and_go",
+          "deepwell/tests/page/page_modules.rs#orphanedpages_module_refreshes_after_linker_soft_delete",
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_saved_page_views_follow_current_tagged_page_state",
+          "deepwell/tests/page/page_modules.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
+          "deepwell/tests/page/page_modules.rs#site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link_rules",
           "deepwell/tests/page_discussion.rs#wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_deleted_pages",
           "deepwell/tests/parent.rs#changed_parent_relationships_queue_parent_rerenders",
           "deepwell/tests/parent.rs#direct_parent_metadata_rejects_missing_deleted_and_cross_site_parents",
@@ -5280,7 +5280,7 @@
         "component": "deepwell",
         "handler": "page_draft_exists",
         "source": "deepwell/src/endpoints/page.rs#page_draft_exists",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "afeb152d463cbde2b060df9fddc2ffa29064d51a825c648ad4d015fd156eafd9"
       },
       "params_schema": {
@@ -5339,7 +5339,7 @@
         "component": "deepwell",
         "handler": "page_draft_remove",
         "source": "deepwell/src/endpoints/page.rs#page_draft_remove",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "fa08ea9bb82782e05d69e51b05d3b3147fe623f7882c02ff54ca5d97bbf6ca8f"
       },
       "params_schema": {
@@ -5400,7 +5400,7 @@
         "component": "deepwell",
         "handler": "page_draft_save",
         "source": "deepwell/src/endpoints/page.rs#page_draft_save",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "c7f232dbcf634ec9128f0f23ebb4c6eaf4896fc5e1dac49857a9b221cf192f72"
       },
       "params_schema": {
@@ -5461,7 +5461,7 @@
         "component": "deepwell",
         "handler": "page_edit",
         "source": "deepwell/src/endpoints/page.rs#page_edit",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "52b6b8d9000a16406587ed6c818b6215be05f081b47d7bac588fab70419d0e02"
       },
       "params_schema": {
@@ -5496,11 +5496,11 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_edit_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#page_edit",
-          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_edit_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -5517,31 +5517,31 @@
           "deepwell/tests/list_pages.rs#imported_revision_count_adds_local_lifecycle_revisions_for_order_and_substitution",
           "deepwell/tests/list_pages.rs#imported_revision_count_current_page_only_adds_local_revisions",
           "deepwell/tests/list_pages.rs#wikidot_ajax_listpages_returns_unwrapped_client_rows",
-          "deepwell/tests/page.rs#backlinks_module_forgets_removed_links_and_collapses_duplicate_linkers",
           "deepwell/tests/page.rs#basic_edit",
-          "deepwell/tests/page.rs#basic_move",
           "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
           "deepwell/tests/page.rs#component_css_include_visibility_and_lifecycle_matrix",
-          "deepwell/tests/page.rs#current_page_listpages_created_by_uses_creation_revision",
-          "deepwell/tests/page.rs#listpages_content_body_supports_bounded_ordered_child_results",
-          "deepwell/tests/page.rs#listpages_content_executes_attachment_syntax_with_selected_page_owner",
-          "deepwell/tests/page.rs#listpages_content_keeps_same_named_attachment_owners_per_row",
-          "deepwell/tests/page.rs#listpages_fragment_content_executes_child_includes",
-          "deepwell/tests/page.rs#listpages_fragment_content_skips_hidden_pages_by_default",
-          "deepwell/tests/page.rs#listpages_link_to_dot_selects_links_to_the_current_page",
-          "deepwell/tests/page.rs#listpages_metadata_selectors_honor_target_view_permissions",
-          "deepwell/tests/page.rs#listpages_template_selectors_can_use_current_page_data_form_values",
-          "deepwell/tests/page.rs#nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
           "deepwell/tests/page.rs#page_editing_history_preserves_each_page_change_as_a_recoverable_revision",
           "deepwell/tests/page.rs#page_mutations_require_page_permissions",
-          "deepwell/tests/page.rs#page_query_revision_order_keeps_unrequested_count_out_of_results",
           "deepwell/tests/page.rs#page_revision_range_returns_resolved_authors_and_hides_missing_identities",
           "deepwell/tests/page.rs#page_revision_visibility_accepts_only_known_fields_and_fails_closed",
           "deepwell/tests/page.rs#page_select_rejects_non_finite_rating_filters",
           "deepwell/tests/page.rs#rerender_uses_latest_navigation_page_revision",
           "deepwell/tests/page.rs#revision_diff_returns_typed_lines_without_exposing_hidden_source",
-          "deepwell/tests/page.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
           "deepwell/tests/page.rs#wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page",
+          "deepwell/tests/page/list_pages_runtime.rs#current_page_listpages_created_by_uses_creation_revision",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_content_body_supports_bounded_ordered_child_results",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_content_executes_attachment_syntax_with_selected_page_owner",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_content_keeps_same_named_attachment_owners_per_row",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_fragment_content_executes_child_includes",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_fragment_content_skips_hidden_pages_by_default",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_link_to_dot_selects_links_to_the_current_page",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_metadata_selectors_honor_target_view_permissions",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_template_selectors_can_use_current_page_data_form_values",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_forgets_removed_links_and_collapses_duplicate_linkers",
+          "deepwell/tests/page/page_modules.rs#nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
+          "deepwell/tests/page/page_modules.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
+          "deepwell/tests/page/page_move.rs#basic_move",
+          "deepwell/tests/page/page_query.rs#page_query_revision_order_keeps_unrequested_count_out_of_results",
           "deepwell/tests/page_lifecycle_identity.rs#lifecycle_identity_preserves_imported_native_and_mixed_display_names",
           "deepwell/tests/page_template_assignment.rs#assigned_data_form_template_edit_invalidates_warm_imported_article_cache",
           "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal",
@@ -5558,7 +5558,7 @@
         "component": "deepwell",
         "handler": "page_edit_permission",
         "source": "deepwell/src/endpoints/page.rs#page_edit_permission",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "ba17dcc0b6081af29bea2fb6f25682121481e9e0db2d429757277173635cedf7"
       },
       "params_schema": {
@@ -5611,7 +5611,7 @@
         "component": "deepwell",
         "handler": "page_get",
         "source": "deepwell/src/endpoints/page.rs#page_get",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "b623d7dd95527844b2f373d5393e65b94a2c507d4258ced16c9c5c31f91c5bd6"
       },
       "params_schema": {
@@ -5643,8 +5643,8 @@
         ],
         "requirements": [],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#build_page_output",
-          "deepwell/src/endpoints/page.rs#page_get"
+          "deepwell/src/endpoints/page.rs#page_get",
+          "deepwell/src/endpoints/page/output.rs#build_page_output"
         ]
       },
       "mutation_class": {
@@ -5660,37 +5660,22 @@
           "deepwell/tests/media.rs#embedvideo_preview_and_saved_page_share_rendered_body",
           "deepwell/tests/media.rs#source_less_local_images_keep_original_and_resized_asset_identities",
           "deepwell/tests/page.rs#article_cache_and_include_dependencies_use_exact_template_source",
-          "deepwell/tests/page.rs#backlinks_module_forgets_removed_links_and_collapses_duplicate_linkers",
-          "deepwell/tests/page.rs#backlinks_module_ignores_arguments_like_live_wikidot",
-          "deepwell/tests/page.rs#backlinks_module_page_preview_renders_current_page_incoming_links",
-          "deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links",
-          "deepwell/tests/page.rs#backlinks_page_preview_controls_identity_visibility_and_scan_boundaries",
           "deepwell/tests/page.rs#basalt_runtime_state_users_rerender_identity_profile_subtrees",
           "deepwell/tests/page.rs#basic_edit",
-          "deepwell/tests/page.rs#basic_move",
-          "deepwell/tests/page.rs#categories_module_lists_active_categories_and_honors_include_hidden",
-          "deepwell/tests/page.rs#categories_module_refreshes_inventory_after_category_pages_come_and_go",
           "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not",
-          "deepwell/tests/page.rs#childpages_module_renders_live_child_list_and_empty_state",
           "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
           "deepwell/tests/page.rs#component_css_include_visibility_and_lifecycle_matrix",
           "deepwell/tests/page.rs#corpus_render_supports_dense_includes_without_raising_public_limit",
           "deepwell/tests/page.rs#countpages_artwork_hub_url_fallback_ignores_display_options",
           "deepwell/tests/page.rs#countpages_category_filter_counts_matching_pages",
           "deepwell/tests/page.rs#countpages_current_author_uses_creation_revision_after_first_render",
-          "deepwell/tests/page.rs#countpages_does_not_execute_modules_owned_by_ftml_text_constructs",
           "deepwell/tests/page.rs#countpages_inside_code_block_remains_literal",
           "deepwell/tests/page.rs#countpages_inside_listpages_body_matches_live_empty_item_behavior",
-          "deepwell/tests/page.rs#countpages_preserves_runtime_unsafe_outer_heads_without_executing_inner_modules",
           "deepwell/tests/page.rs#countpages_saved_page_views_follow_current_matching_page_state",
           "deepwell/tests/page.rs#countpages_static_tag_filter_without_limit_substitutes_total",
           "deepwell/tests/page.rs#countpages_unprefixed_tags_use_or_semantics",
           "deepwell/tests/page.rs#countpages_with_limit_defaults_to_current_category",
           "deepwell/tests/page.rs#countpages_without_selectors_uses_current_category_and_normal_page_defaults",
-          "deepwell/tests/page.rs#current_page_listpages_created_by_uses_creation_revision",
-          "deepwell/tests/page.rs#exact_name_listpages_batch_preserves_order_and_permissions",
-          "deepwell/tests/page.rs#excessive_score_selectors_preserve_listpages_and_countpages_modules",
-          "deepwell/tests/page.rs#fallback_link_title_batch_preserves_singular_permission",
           "deepwell/tests/page.rs#file_create_commits_only_its_actor_and_route_owned_pending_blob",
           "deepwell/tests/page.rs#file_create_file_revision_and_audit_roll_back_together",
           "deepwell/tests/page.rs#file_create_public_endpoint_audits_success_once_and_not_denial",
@@ -5700,53 +5685,26 @@
           "deepwell/tests/page.rs#file_rollback_public_endpoint_audits_only_created_revisions",
           "deepwell/tests/page.rs#file_rollback_revision_and_audit_roll_back_together",
           "deepwell/tests/page.rs#first_revision_countpages_rating_filter_renders_exact_count",
-          "deepwell/tests/page.rs#first_revision_current_page_listpages_uses_render_page_info",
           "deepwell/tests/page.rs#first_revision_rerenders_included_countpages",
           "deepwell/tests/page.rs#first_revision_rerenders_tag_dependent_countpages",
           "deepwell/tests/page.rs#first_revision_rerenders_tagcloud",
-          "deepwell/tests/page.rs#imported_listpages_authors_use_snapshot_names_and_rerender_stably",
           "deepwell/tests/page.rs#include_parser_functions_follow_argument_and_caller_ownership_phases",
-          "deepwell/tests/page.rs#included_author_tool_coauthored_branch_renders_named_page_box",
           "deepwell/tests/page.rs#included_iftags_closer_survives_unmatched_inline_raw_on_an_earlier_line",
           "deepwell/tests/page.rs#inline_countpages_inside_listpages_body_matches_live_legacy_split_behavior",
-          "deepwell/tests/page.rs#list_pages_url_category_selector_reads_the_url_category_argument",
-          "deepwell/tests/page.rs#list_pages_url_page_number_composes_with_the_module_offset",
-          "deepwell/tests/page.rs#list_pages_url_tag_selector_reads_the_url_tag_argument",
           "deepwell/tests/page.rs#listpages_aggregate_generated_output_budget_preserves_overflowing_module",
-          "deepwell/tests/page.rs#listpages_content_body_supports_bounded_ordered_child_results",
-          "deepwell/tests/page.rs#listpages_content_executes_attachment_syntax_with_selected_page_owner",
           "deepwell/tests/page.rs#listpages_content_fragment_restoration_counts_toward_generated_output_budget",
-          "deepwell/tests/page.rs#listpages_content_keeps_same_named_attachment_owners_per_row",
           "deepwell/tests/page.rs#listpages_content_runtime_budget_preserves_later_modules",
-          "deepwell/tests/page.rs#listpages_current_metric_selectors_match_the_saved_page_live_fixture",
           "deepwell/tests/page.rs#listpages_current_page_content_shares_the_module_work_budget",
-          "deepwell/tests/page.rs#listpages_default_category_and_bare_tags_follow_wikidot_semantics",
-          "deepwell/tests/page.rs#listpages_fixture_subset_renders_titles_slugs_order_and_tag_filter",
           "deepwell/tests/page.rs#listpages_following_paragraph_boundary_counts_toward_generated_output_budget",
-          "deepwell/tests/page.rs#listpages_fragment_content_executes_child_includes",
-          "deepwell/tests/page.rs#listpages_fragment_content_skips_hidden_pages_by_default",
-          "deepwell/tests/page.rs#listpages_legacy_skip_current_and_tag_target_match_live_wikidot",
           "deepwell/tests/page.rs#listpages_module_count_over_the_render_budget_remains_literal",
           "deepwell/tests/page.rs#listpages_module_source_over_the_render_budget_remains_literal",
-          "deepwell/tests/page.rs#listpages_parent_selectors_match_the_saved_page_live_fixture",
           "deepwell/tests/page.rs#listpages_perpage_renders_wikidot_pager_controls",
-          "deepwell/tests/page.rs#listpages_plain_content_executes_selected_page_includes_only",
           "deepwell/tests/page.rs#listpages_plain_content_shares_the_outer_include_budget",
-          "deepwell/tests/page.rs#listpages_range_selectors_match_the_saved_page_live_fixture",
-          "deepwell/tests/page.rs#listpages_stored_title_remains_literal_in_listing_output",
-          "deepwell/tests/page.rs#listpages_url_parent_does_not_reveal_private_parent_rows",
           "deepwell/tests/page.rs#listpages_zero_row_content_modules_do_not_exhaust_the_work_budget",
           "deepwell/tests/page.rs#listusers_module_matches_live_preview_and_runtime_viewer",
           "deepwell/tests/page.rs#missing_remote_site_include_does_not_fall_back_to_same_slug_local_page",
           "deepwell/tests/page.rs#nested_include_image_blocks_keep_their_attachment_page_owner",
-          "deepwell/tests/page.rs#newpage_module_resolves_existing_templates_in_rendered_pages",
-          "deepwell/tests/page.rs#newpage_modules_after_the_per_render_budget_remain_literal",
-          "deepwell/tests/page.rs#newpage_over_budget_template_list_remains_literal",
-          "deepwell/tests/page.rs#nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
-          "deepwell/tests/page.rs#orphanedpages_module_lists_pages_without_incoming_internal_links",
           "deepwell/tests/page.rs#page_select_rejects_non_finite_rating_filters",
-          "deepwell/tests/page.rs#page_tree_module_renders_current_page_hierarchy_with_live_depth_dom",
-          "deepwell/tests/page.rs#page_tree_resource_bounds_fail_closed_without_partial_visible_rows",
           "deepwell/tests/page.rs#page_view_separates_generated_css_modules_from_compiled_body_html",
           "deepwell/tests/page.rs#page_watchers_fails_closed_instead_of_returning_a_saturated_prefix",
           "deepwell/tests/page.rs#page_watchers_fails_closed_when_any_active_identity_is_incomplete",
@@ -5756,13 +5714,6 @@
           "deepwell/tests/page.rs#page_who_rated_fails_closed_only_after_a_scan_above_observed_live_counts",
           "deepwell/tests/page.rs#page_who_rated_returns_only_current_typed_votes_in_creation_order",
           "deepwell/tests/page.rs#pagecalendar_module_matches_live_tag_url_and_current_category_quirks",
-          "deepwell/tests/page.rs#pages_by_tag_module_filters_module_and_url_categories",
-          "deepwell/tests/page.rs#pages_by_tag_module_reads_the_url_tag_argument",
-          "deepwell/tests/page.rs#pages_by_tag_module_renders_empty_list_and_preserves_unevidenced_forms",
-          "deepwell/tests/page.rs#pages_by_tag_module_renders_tagged_pages_ordered_by_title",
-          "deepwell/tests/page.rs#pages_by_tag_saved_page_views_follow_current_tagged_page_state",
-          "deepwell/tests/page.rs#pages_module_renders_documented_arguments_and_live_fallbacks",
-          "deepwell/tests/page.rs#pages_module_renders_the_site_index_and_clamps_pagination",
           "deepwell/tests/page.rs#random_countpages_capped_sample_does_not_reveal_private_matches",
           "deepwell/tests/page.rs#render_scoped_include_source_cache_preserves_occurrence_semantics",
           "deepwell/tests/page.rs#request_argument_page_views_do_not_persist_hosted_text_blocks",
@@ -5772,21 +5723,70 @@
           "deepwell/tests/page.rs#restored_literal_and_unsupported_countpages_shapes_stay_inert",
           "deepwell/tests/page.rs#restored_page_uses_destination_template_countpages_after_explicit_restore",
           "deepwell/tests/page.rs#saved_rate_sidecar_binds_exact_revision_and_mutates_idempotently",
-          "deepwell/tests/page.rs#score_selectors_at_limit_render_countpages_normally",
-          "deepwell/tests/page.rs#score_selectors_at_limit_render_listpages_normally",
           "deepwell/tests/page.rs#simpletodo_and_sendinvitations_modules_match_live_preview_basics",
           "deepwell/tests/page.rs#tagcloud_module_filters_anonymous_hidden_category_pages_before_loading_tags",
           "deepwell/tests/page.rs#tagcloud_module_renders_live_category_links_styles_and_boolean_quirks",
           "deepwell/tests/page.rs#tagcloud_module_renders_live_sitewide_skip_3d_and_color_error",
           "deepwell/tests/page.rs#unbound_include_variables_remain_literal_in_attributes_and_text",
           "deepwell/tests/page.rs#unknown_module_dispatch_requires_a_valid_legacy_name",
-          "deepwell/tests/page.rs#wantedpages_module_groups_missing_internal_links_by_target",
           "deepwell/tests/page.rs#wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page",
           "deepwell/tests/page.rs#wikidot_set_tags_action_resolves_server_descriptor_and_is_revision_idempotent",
           "deepwell/tests/page.rs#wikidot_set_tags_denials_preserve_public_page_state",
           "deepwell/tests/page.rs#wikidot_site_changes_ajax_endpoint_filters_before_pagination_and_matches_observed_reads",
           "deepwell/tests/page.rs#wikidot_site_include_uses_local_dependency_page_for_site_qualified_include",
           "deepwell/tests/page.rs#wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars",
+          "deepwell/tests/page/list_pages_runtime.rs#current_page_listpages_created_by_uses_creation_revision",
+          "deepwell/tests/page/list_pages_runtime.rs#exact_name_listpages_batch_preserves_order_and_permissions",
+          "deepwell/tests/page/list_pages_runtime.rs#fallback_link_title_batch_preserves_singular_permission",
+          "deepwell/tests/page/list_pages_runtime.rs#first_revision_current_page_listpages_uses_render_page_info",
+          "deepwell/tests/page/list_pages_runtime.rs#imported_listpages_authors_use_snapshot_names_and_rerender_stably",
+          "deepwell/tests/page/list_pages_runtime.rs#included_author_tool_coauthored_branch_renders_named_page_box",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_content_body_supports_bounded_ordered_child_results",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_content_executes_attachment_syntax_with_selected_page_owner",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_content_keeps_same_named_attachment_owners_per_row",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_default_category_and_bare_tags_follow_wikidot_semantics",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_fixture_subset_renders_titles_slugs_order_and_tag_filter",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_fragment_content_executes_child_includes",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_fragment_content_skips_hidden_pages_by_default",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_legacy_skip_current_and_tag_target_match_live_wikidot",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_plain_content_executes_selected_page_includes_only",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_stored_title_remains_literal_in_listing_output",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_forgets_removed_links_and_collapses_duplicate_linkers",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_ignores_arguments_like_live_wikidot",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_page_preview_renders_current_page_incoming_links",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_renders_current_page_incoming_links",
+          "deepwell/tests/page/page_modules.rs#backlinks_page_preview_controls_identity_visibility_and_scan_boundaries",
+          "deepwell/tests/page/page_modules.rs#categories_module_lists_active_categories_and_honors_include_hidden",
+          "deepwell/tests/page/page_modules.rs#categories_module_refreshes_inventory_after_category_pages_come_and_go",
+          "deepwell/tests/page/page_modules.rs#childpages_module_renders_live_child_list_and_empty_state",
+          "deepwell/tests/page/page_modules.rs#list_pages_url_category_selector_reads_the_url_category_argument",
+          "deepwell/tests/page/page_modules.rs#list_pages_url_page_number_composes_with_the_module_offset",
+          "deepwell/tests/page/page_modules.rs#list_pages_url_tag_selector_reads_the_url_tag_argument",
+          "deepwell/tests/page/page_modules.rs#listpages_current_metric_selectors_match_the_saved_page_live_fixture",
+          "deepwell/tests/page/page_modules.rs#listpages_parent_selectors_match_the_saved_page_live_fixture",
+          "deepwell/tests/page/page_modules.rs#listpages_range_selectors_match_the_saved_page_live_fixture",
+          "deepwell/tests/page/page_modules.rs#listpages_url_parent_does_not_reveal_private_parent_rows",
+          "deepwell/tests/page/page_modules.rs#newpage_module_resolves_existing_templates_in_rendered_pages",
+          "deepwell/tests/page/page_modules.rs#newpage_modules_after_the_per_render_budget_remain_literal",
+          "deepwell/tests/page/page_modules.rs#newpage_over_budget_template_list_remains_literal",
+          "deepwell/tests/page/page_modules.rs#nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
+          "deepwell/tests/page/page_modules.rs#orphanedpages_module_lists_pages_without_incoming_internal_links",
+          "deepwell/tests/page/page_modules.rs#page_tree_module_renders_current_page_hierarchy_with_live_depth_dom",
+          "deepwell/tests/page/page_modules.rs#page_tree_resource_bounds_fail_closed_without_partial_visible_rows",
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_module_filters_module_and_url_categories",
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_module_reads_the_url_tag_argument",
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_module_renders_empty_list_and_preserves_unevidenced_forms",
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_module_renders_tagged_pages_ordered_by_title",
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_saved_page_views_follow_current_tagged_page_state",
+          "deepwell/tests/page/page_modules.rs#pages_module_renders_documented_arguments_and_live_fallbacks",
+          "deepwell/tests/page/page_modules.rs#pages_module_renders_the_site_index_and_clamps_pagination",
+          "deepwell/tests/page/page_modules.rs#wantedpages_module_groups_missing_internal_links_by_target",
+          "deepwell/tests/page/page_move.rs#basic_move",
+          "deepwell/tests/page/page_query.rs#countpages_does_not_execute_modules_owned_by_ftml_text_constructs",
+          "deepwell/tests/page/page_query.rs#countpages_preserves_runtime_unsafe_outer_heads_without_executing_inner_modules",
+          "deepwell/tests/page/page_query.rs#excessive_score_selectors_preserve_listpages_and_countpages_modules",
+          "deepwell/tests/page/page_query.rs#score_selectors_at_limit_render_countpages_normally",
+          "deepwell/tests/page/page_query.rs#score_selectors_at_limit_render_listpages_normally",
           "deepwell/tests/parent.rs#direct_parent_metadata_rejects_missing_deleted_and_cross_site_parents"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -5798,7 +5798,7 @@
         "component": "deepwell",
         "handler": "page_get_deleted",
         "source": "deepwell/src/endpoints/page.rs#page_get_deleted",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "4aa23228e8542d8e37d6aba25c8a6bc773ea188946178dbcd8fb593d70d40f9f"
       },
       "params_schema": {
@@ -5833,8 +5833,8 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#build_page_deleted_output",
-          "deepwell/src/endpoints/page.rs#page_get_deleted"
+          "deepwell/src/endpoints/page.rs#page_get_deleted",
+          "deepwell/src/endpoints/page/output.rs#build_page_deleted_output"
         ]
       },
       "mutation_class": {
@@ -5858,7 +5858,7 @@
         "component": "deepwell",
         "handler": "page_get_direct",
         "source": "deepwell/src/endpoints/page.rs#page_get_direct",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "f48c2d77fcbcafe8f0ba209f309d836c89b31efced8f60a31391fec68a7b4eb0"
       },
       "params_schema": {
@@ -5890,8 +5890,8 @@
         ],
         "requirements": [],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#build_page_output",
-          "deepwell/src/endpoints/page.rs#page_get_direct"
+          "deepwell/src/endpoints/page.rs#page_get_direct",
+          "deepwell/src/endpoints/page/output.rs#build_page_output"
         ]
       },
       "mutation_class": {
@@ -5912,7 +5912,7 @@
         "component": "deepwell",
         "handler": "page_get_files",
         "source": "deepwell/src/endpoints/page.rs#page_get_files",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "fb409630646397cb79b1726980d0fdc30440a1f5b1291c49ab5b9b34a4911547"
       },
       "params_schema": {
@@ -5947,9 +5947,9 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#build_page_file_output",
-          "deepwell/src/endpoints/page.rs#ensure_page_view_permission",
-          "deepwell/src/endpoints/page.rs#page_get_files"
+          "deepwell/src/endpoints/page.rs#page_get_files",
+          "deepwell/src/endpoints/page/output.rs#build_page_file_output",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_view_permission"
         ]
       },
       "mutation_class": {
@@ -6150,7 +6150,7 @@
         "component": "deepwell",
         "handler": "page_get_score",
         "source": "deepwell/src/endpoints/page.rs#page_get_score",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "9e52abbcdbcde5883e247c14b1b0f3a174b03651f0673dab81f26661d3ee3a94"
       },
       "params_schema": {
@@ -6185,8 +6185,8 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_view_permission",
-          "deepwell/src/endpoints/page.rs#page_get_score"
+          "deepwell/src/endpoints/page.rs#page_get_score",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_view_permission"
         ]
       },
       "mutation_class": {
@@ -6327,7 +6327,7 @@
         "component": "deepwell",
         "handler": "page_lifecycle_identity",
         "source": "deepwell/src/endpoints/page.rs#page_lifecycle_identity",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "bd13af430ad9a8c29efdc77ad76cd69789d9228dfcabc9dfd6c71d7da769d5d8"
       },
       "params_schema": {
@@ -6742,7 +6742,7 @@
         "component": "deepwell",
         "handler": "page_move",
         "source": "deepwell/src/endpoints/page.rs#page_move",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "1e4ca994753e5ad5751f39103be9f77314b080f092f447d6a295d3cfaa6056c8"
       },
       "params_schema": {
@@ -6777,11 +6777,11 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_create_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#page_move",
-          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_create_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -6795,11 +6795,11 @@
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/list_pages.rs#imported_revision_count_adds_local_lifecycle_revisions_for_order_and_substitution",
         "alternatives": [
-          "deepwell/tests/page.rs#basic_move",
           "deepwell/tests/page.rs#page_editing_history_preserves_each_page_change_as_a_recoverable_revision",
-          "deepwell/tests/page.rs#page_move_renders_with_destination_category_context",
           "deepwell/tests/page.rs#page_move_requires_destination_create_permission",
-          "deepwell/tests/page.rs#pages_by_tag_saved_page_views_follow_current_tagged_page_state"
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_saved_page_views_follow_current_tagged_page_state",
+          "deepwell/tests/page/page_move.rs#basic_move",
+          "deepwell/tests/page/page_move.rs#page_move_renders_with_destination_category_context"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -6810,7 +6810,7 @@
         "component": "deepwell",
         "handler": "page_rerender",
         "source": "deepwell/src/endpoints/page.rs#page_rerender",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "1f1b6c326636f2fd4282b9558e31bb32ee3bf0f62bc030716d47f714dcfa9275"
       },
       "params_schema": {
@@ -6845,10 +6845,10 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_edit_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
-          "deepwell/src/endpoints/page.rs#page_rerender"
+          "deepwell/src/endpoints/page.rs#page_rerender",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_edit_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -6863,31 +6863,31 @@
         "reference": "deepwell/tests/link.rs#repeated_explicit_site_includes_keep_count_and_timestamps",
         "alternatives": [
           "deepwell/tests/list_pages.rs#imported_revision_count_current_page_only_adds_local_revisions",
-          "deepwell/tests/page.rs#backlinks_module_forgets_removed_links_and_collapses_duplicate_linkers",
-          "deepwell/tests/page.rs#backlinks_module_ignores_arguments_like_live_wikidot",
-          "deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links",
           "deepwell/tests/page.rs#basalt_runtime_state_users_rerender_identity_profile_subtrees",
-          "deepwell/tests/page.rs#categories_module_refreshes_inventory_after_category_pages_come_and_go",
-          "deepwell/tests/page.rs#childpages_module_renders_live_child_list_and_empty_state",
-          "deepwell/tests/page.rs#current_page_listpages_created_by_uses_creation_revision",
-          "deepwell/tests/page.rs#imported_listpages_authors_use_snapshot_names_and_rerender_stably",
-          "deepwell/tests/page.rs#listpages_current_metric_selectors_match_the_saved_page_live_fixture",
-          "deepwell/tests/page.rs#listpages_legacy_skip_current_and_tag_target_match_live_wikidot",
-          "deepwell/tests/page.rs#listpages_parent_selectors_match_the_saved_page_live_fixture",
-          "deepwell/tests/page.rs#listpages_range_selectors_match_the_saved_page_live_fixture",
-          "deepwell/tests/page.rs#newpage_module_resolves_existing_templates_in_rendered_pages",
-          "deepwell/tests/page.rs#newpage_modules_after_the_per_render_budget_remain_literal",
-          "deepwell/tests/page.rs#newpage_over_budget_template_list_remains_literal",
-          "deepwell/tests/page.rs#orphanedpages_module_lists_pages_without_incoming_internal_links",
           "deepwell/tests/page.rs#page_render_star_rate_module_consumes_body_and_substitutes_live_variables",
-          "deepwell/tests/page.rs#page_tree_module_renders_current_page_hierarchy_with_live_depth_dom",
           "deepwell/tests/page.rs#pagecalendar_module_matches_live_tag_url_and_current_category_quirks",
-          "deepwell/tests/page.rs#pages_by_tag_module_renders_empty_list_and_preserves_unevidenced_forms",
-          "deepwell/tests/page.rs#pages_by_tag_module_renders_tagged_pages_ordered_by_title",
           "deepwell/tests/page.rs#rerender_uses_latest_navigation_page_revision",
-          "deepwell/tests/page.rs#wantedpages_module_groups_missing_internal_links_by_target",
           "deepwell/tests/page.rs#wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page",
-          "deepwell/tests/page.rs#wikidot_gallery_saved_page_view_enforces_order_and_last_occurrence_matrix"
+          "deepwell/tests/page.rs#wikidot_gallery_saved_page_view_enforces_order_and_last_occurrence_matrix",
+          "deepwell/tests/page/list_pages_runtime.rs#current_page_listpages_created_by_uses_creation_revision",
+          "deepwell/tests/page/list_pages_runtime.rs#imported_listpages_authors_use_snapshot_names_and_rerender_stably",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_legacy_skip_current_and_tag_target_match_live_wikidot",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_forgets_removed_links_and_collapses_duplicate_linkers",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_ignores_arguments_like_live_wikidot",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_renders_current_page_incoming_links",
+          "deepwell/tests/page/page_modules.rs#categories_module_refreshes_inventory_after_category_pages_come_and_go",
+          "deepwell/tests/page/page_modules.rs#childpages_module_renders_live_child_list_and_empty_state",
+          "deepwell/tests/page/page_modules.rs#listpages_current_metric_selectors_match_the_saved_page_live_fixture",
+          "deepwell/tests/page/page_modules.rs#listpages_parent_selectors_match_the_saved_page_live_fixture",
+          "deepwell/tests/page/page_modules.rs#listpages_range_selectors_match_the_saved_page_live_fixture",
+          "deepwell/tests/page/page_modules.rs#newpage_module_resolves_existing_templates_in_rendered_pages",
+          "deepwell/tests/page/page_modules.rs#newpage_modules_after_the_per_render_budget_remain_literal",
+          "deepwell/tests/page/page_modules.rs#newpage_over_budget_template_list_remains_literal",
+          "deepwell/tests/page/page_modules.rs#orphanedpages_module_lists_pages_without_incoming_internal_links",
+          "deepwell/tests/page/page_modules.rs#page_tree_module_renders_current_page_hierarchy_with_live_depth_dom",
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_module_renders_empty_list_and_preserves_unevidenced_forms",
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_module_renders_tagged_pages_ordered_by_title",
+          "deepwell/tests/page/page_modules.rs#wantedpages_module_groups_missing_internal_links_by_target"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -6898,8 +6898,8 @@
         "component": "deepwell",
         "handler": "page_restore",
         "source": "deepwell/src/endpoints/page.rs#page_restore",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
-        "function_sha256": "ece3ed38a16f98cbfbc48799c55618a131ceb9a1eff2f103e0fa00fceaa4301f"
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
+        "function_sha256": "2aa51f3d91c28d70a035d63cba1bbd6bf854d49073fcd2d5088226c98274696a"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -6933,11 +6933,11 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_deleted_page_delete_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_create_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#page_restore",
-          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_deleted_page_delete_permission_and_get_category_id",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_create_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -6956,7 +6956,7 @@
           "deepwell/tests/page.rs#restored_countpages_page_stores_and_serves_its_current_self_count",
           "deepwell/tests/page.rs#restored_literal_and_unsupported_countpages_shapes_stay_inert",
           "deepwell/tests/page.rs#restored_page_uses_destination_template_countpages_after_explicit_restore",
-          "deepwell/tests/page.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state"
+          "deepwell/tests/page/page_modules.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -7338,7 +7338,7 @@
         "component": "deepwell",
         "handler": "page_rollback",
         "source": "deepwell/src/endpoints/page.rs#page_rollback",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "b7d77e03adfc5b16a54697a2249e196f3cfef609e8d601a3d72a8f17430a305c"
       },
       "params_schema": {
@@ -7373,11 +7373,11 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_edit_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#page_rollback",
-          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_edit_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -7400,7 +7400,7 @@
         "component": "deepwell",
         "handler": "page_select",
         "source": "deepwell/src/endpoints/page.rs#page_select",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "b7a6ca59e10098b12187c4f720442545e08bc4b88c84876b3f2b0e254f1605d9"
       },
       "params_schema": {
@@ -7459,7 +7459,7 @@
         "component": "deepwell",
         "handler": "page_set_layout",
         "source": "deepwell/src/endpoints/page.rs#page_set_layout",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "977fe460240ffce3a16bf8c92de7801416fd5a22886b087c56a21c56f015e52a"
       },
       "params_schema": {
@@ -7494,11 +7494,11 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_edit_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#page_set_layout",
-          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_edit_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -7521,7 +7521,7 @@
         "component": "deepwell",
         "handler": "page_tags_select",
         "source": "deepwell/src/endpoints/page.rs#page_tags_select",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "2f3071353b00a9a376cbba0dfcdbc26c7ee76952f61f6e2d84386950d3a15759"
       },
       "params_schema": {
@@ -7623,41 +7623,21 @@
         "alternatives": [
           "deepwell/tests/page.rs#anonymous_page_and_site_utility_modules_match_frozen_safe_states",
           "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
-          "deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links",
           "deepwell/tests/page.rs#categories_runtime_inventory_is_scoped_to_the_request_actor",
-          "deepwell/tests/page.rs#childpages_module_renders_live_child_list_and_empty_state",
           "deepwell/tests/page.rs#countpages_saved_page_views_follow_current_matching_page_state",
           "deepwell/tests/page.rs#currencyconvert_executes_only_on_the_www_plans_system_page",
-          "deepwell/tests/page.rs#forum_comments_list_resolves_only_visible_page_discussions",
-          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
-          "deepwell/tests/page.rs#frontforum_feed_arguments_preserve_the_ordinary_public_render",
           "deepwell/tests/page.rs#hardened_www_special_modules_execute_only_on_their_system_pages",
           "deepwell/tests/page.rs#initial_page_creation_explicit_layout_beats_destination_category_layout",
           "deepwell/tests/page.rs#initial_page_creation_uses_destination_category_layout",
           "deepwell/tests/page.rs#initial_page_creation_without_category_override_uses_site_layout",
-          "deepwell/tests/page.rs#list_pages_prefixed_url_arguments_address_only_the_matching_module",
-          "deepwell/tests/page.rs#list_pages_saved_view_preserves_argument_order_around_the_pager",
-          "deepwell/tests/page.rs#list_pages_saved_view_preserves_live_pagination_path_shapes",
-          "deepwell/tests/page.rs#list_pages_url_offset_selector_reads_the_request_route",
           "deepwell/tests/page.rs#listdrafts_module_matches_live_empty_draft_state",
           "deepwell/tests/page.rs#listpages_generated_html_preview_saved_section_controls",
           "deepwell/tests/page.rs#listusers_module_matches_live_preview_and_runtime_viewer",
           "deepwell/tests/page.rs#mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views",
           "deepwell/tests/page.rs#members_module_ssr_and_ajax_share_100_row_duplicate_relation_boundary",
-          "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract",
-          "deepwell/tests/page.rs#membership_by_password_module_matches_live_anonymous_and_member_output",
-          "deepwell/tests/page.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract",
-          "deepwell/tests/page.rs#nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
-          "deepwell/tests/page.rs#orphanedpages_module_refreshes_after_linker_soft_delete",
-          "deepwell/tests/page.rs#page_move_renders_with_destination_category_context",
-          "deepwell/tests/page.rs#page_tree_module_renders_current_page_hierarchy_with_live_depth_dom",
-          "deepwell/tests/page.rs#page_tree_resource_bounds_fail_closed_without_partial_visible_rows",
           "deepwell/tests/page.rs#page_view_rerenders_stale_persisted_compiled_artifact",
           "deepwell/tests/page.rs#page_view_separates_generated_css_modules_from_compiled_body_html",
           "deepwell/tests/page.rs#pagecalendar_module_renders_live_category_links_and_counts",
-          "deepwell/tests/page.rs#pages_by_tag_saved_page_views_follow_current_tagged_page_state",
-          "deepwell/tests/page.rs#pages_module_renders_the_site_index_and_clamps_pagination",
           "deepwell/tests/page.rs#renderer_epoch_invalidates_pre_freeze_compiled_artifacts",
           "deepwell/tests/page.rs#request_argument_page_views_do_not_persist_hosted_text_blocks",
           "deepwell/tests/page.rs#rerender_uses_latest_navigation_page_revision",
@@ -7665,7 +7645,6 @@
           "deepwell/tests/page.rs#restored_countpages_page_stores_and_serves_its_current_self_count",
           "deepwell/tests/page.rs#restored_literal_and_unsupported_countpages_shapes_stay_inert",
           "deepwell/tests/page.rs#restored_page_uses_destination_template_countpages_after_explicit_restore",
-          "deepwell/tests/page.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
           "deepwell/tests/page.rs#saved_page_view_rewrites_cn_interwiki_embeds_after_listpages_expansion",
           "deepwell/tests/page.rs#saved_page_view_rewrites_exact_cn_interwiki_embed_iframes",
           "deepwell/tests/page.rs#saved_rate_sidecar_binds_exact_revision_and_mutates_idempotently",
@@ -7681,6 +7660,27 @@
           "deepwell/tests/page.rs#wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execute_them",
           "deepwell/tests/page.rs#wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars",
           "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries",
+          "deepwell/tests/page/forum.rs#forum_comments_list_resolves_only_visible_page_discussions",
+          "deepwell/tests/page/forum.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/page/forum.rs#frontforum_feed_arguments_preserve_the_ordinary_public_render",
+          "deepwell/tests/page/membership.rs#membership_application_and_password_mutations_match_disposable_live_contract",
+          "deepwell/tests/page/membership.rs#membership_by_password_module_matches_live_anonymous_and_member_output",
+          "deepwell/tests/page/membership.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_renders_current_page_incoming_links",
+          "deepwell/tests/page/page_modules.rs#childpages_module_renders_live_child_list_and_empty_state",
+          "deepwell/tests/page/page_modules.rs#list_pages_prefixed_url_arguments_address_only_the_matching_module",
+          "deepwell/tests/page/page_modules.rs#list_pages_saved_view_preserves_argument_order_around_the_pager",
+          "deepwell/tests/page/page_modules.rs#list_pages_saved_view_preserves_live_pagination_path_shapes",
+          "deepwell/tests/page/page_modules.rs#list_pages_url_offset_selector_reads_the_request_route",
+          "deepwell/tests/page/page_modules.rs#nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
+          "deepwell/tests/page/page_modules.rs#orphanedpages_module_refreshes_after_linker_soft_delete",
+          "deepwell/tests/page/page_modules.rs#page_tree_module_renders_current_page_hierarchy_with_live_depth_dom",
+          "deepwell/tests/page/page_modules.rs#page_tree_resource_bounds_fail_closed_without_partial_visible_rows",
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_saved_page_views_follow_current_tagged_page_state",
+          "deepwell/tests/page/page_modules.rs#pages_module_renders_the_site_index_and_clamps_pagination",
+          "deepwell/tests/page/page_modules.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
+          "deepwell/tests/page/page_move.rs#page_move_renders_with_destination_category_context",
           "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_remains_editable_and_renders_form_variables",
           "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_resolves_pagepath_data_but_preserves_form_raw",
           "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal",
@@ -7705,7 +7705,7 @@
         "component": "deepwell",
         "handler": "page_view_permission",
         "source": "deepwell/src/endpoints/page.rs#page_view_permission",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "ef2a81c07c7c8ef9c360eab8d5c512f057c7eccd52739246a0838374b72f698f"
       },
       "params_schema": {
@@ -7761,7 +7761,7 @@
         "component": "deepwell",
         "handler": "page_watchers",
         "source": "deepwell/src/endpoints/page.rs#page_watchers",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "ca0cdcc3523ea985d83dcf10864d65ea63dd12110c60f273401bec19f16f45ac"
       },
       "params_schema": {
@@ -7796,8 +7796,8 @@
           "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_view_permission",
-          "deepwell/src/endpoints/page.rs#page_watchers"
+          "deepwell/src/endpoints/page.rs#page_watchers",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_view_permission"
         ]
       },
       "mutation_class": {
@@ -7818,7 +7818,7 @@
         "component": "deepwell",
         "handler": "page_who_rated",
         "source": "deepwell/src/endpoints/page.rs#page_who_rated",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "b0297cf5c1501948db0e32a72c9f9fe6b18aa63d24c55567b1f488b447aafbf1"
       },
       "params_schema": {
@@ -9076,9 +9076,6 @@
           "deepwell/tests/members_freshness.rs#saved_members_pages_refresh_after_membership_changes_without_mutating_revision_html",
           "deepwell/tests/page.rs#ad_module_page_source_matches_live_empty_output",
           "deepwell/tests/page.rs#adsenseunit_module_matches_live_deprecated_empty_output",
-          "deepwell/tests/page.rs#ajax_listpages_recursively_renders_balanced_nested_modules",
-          "deepwell/tests/page.rs#ajax_listpages_rejects_forged_literal_compat_markers",
-          "deepwell/tests/page.rs#ajax_listpages_renders_unbalanced_module_markers_literally",
           "deepwell/tests/page.rs#anonymous_forum_post_create_persists_private_derived_guest_identity_and_renders_gravatar",
           "deepwell/tests/page.rs#anonymous_page_and_site_utility_modules_match_frozen_safe_states",
           "deepwell/tests/page.rs#article_cache_and_include_dependencies_use_exact_template_source",
@@ -9087,21 +9084,11 @@
           "deepwell/tests/page.rs#article_view_uses_effective_page_discussion_policy_and_stored_nesting",
           "deepwell/tests/page.rs#authenticated_site_utility_preview_denies_only_non_administrators",
           "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
-          "deepwell/tests/page.rs#authored_listpages_user_marker_cannot_forge_trusted_html",
           "deepwell/tests/page.rs#autonumber_allocator_holds_the_category_lock_until_request_completion",
-          "deepwell/tests/page.rs#backlinks_module_forgets_removed_links_and_collapses_duplicate_linkers",
-          "deepwell/tests/page.rs#backlinks_module_ignores_arguments_like_live_wikidot",
-          "deepwell/tests/page.rs#backlinks_module_page_preview_renders_current_page_incoming_links",
-          "deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links",
-          "deepwell/tests/page.rs#backlinks_page_preview_controls_identity_visibility_and_scan_boundaries",
           "deepwell/tests/page.rs#basalt_runtime_state_users_rerender_identity_profile_subtrees",
           "deepwell/tests/page.rs#basic_edit",
-          "deepwell/tests/page.rs#basic_move",
-          "deepwell/tests/page.rs#categories_module_lists_active_categories_and_honors_include_hidden",
-          "deepwell/tests/page.rs#categories_module_refreshes_inventory_after_category_pages_come_and_go",
           "deepwell/tests/page.rs#categories_runtime_inventory_is_scoped_to_the_request_actor",
           "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not",
-          "deepwell/tests/page.rs#childpages_module_renders_live_child_list_and_empty_state",
           "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
           "deepwell/tests/page.rs#component_css_include_visibility_and_lifecycle_matrix",
           "deepwell/tests/page.rs#corpus_render_supports_dense_includes_without_raising_public_limit",
@@ -9113,14 +9100,12 @@
           "deepwell/tests/page.rs#countpages_current_page_category_filters_remain_literal",
           "deepwell/tests/page.rs#countpages_current_page_filters_remain_literal",
           "deepwell/tests/page.rs#countpages_current_page_tag_selectors_remain_literal",
-          "deepwell/tests/page.rs#countpages_does_not_execute_modules_owned_by_ftml_text_constructs",
           "deepwell/tests/page.rs#countpages_dynamic_selectors_remain_literal",
           "deepwell/tests/page.rs#countpages_inside_code_block_remains_literal",
           "deepwell/tests/page.rs#countpages_inside_listpages_body_matches_live_empty_item_behavior",
           "deepwell/tests/page.rs#countpages_limit_above_scan_cap_remains_literal",
           "deepwell/tests/page.rs#countpages_no_tags_selector_remains_literal",
           "deepwell/tests/page.rs#countpages_not_current_author_selector_remains_literal",
-          "deepwell/tests/page.rs#countpages_preserves_runtime_unsafe_outer_heads_without_executing_inner_modules",
           "deepwell/tests/page.rs#countpages_rating_filters_apply_scores",
           "deepwell/tests/page.rs#countpages_saved_page_views_follow_current_matching_page_state",
           "deepwell/tests/page.rs#countpages_static_tag_filter_without_limit_substitutes_total",
@@ -9130,16 +9115,12 @@
           "deepwell/tests/page.rs#countpages_with_limit_defaults_to_current_category",
           "deepwell/tests/page.rs#countpages_without_selectors_uses_current_category_and_normal_page_defaults",
           "deepwell/tests/page.rs#currencyconvert_executes_only_on_the_www_plans_system_page",
-          "deepwell/tests/page.rs#current_page_listpages_created_by_uses_creation_revision",
           "deepwell/tests/page.rs#deleted_category_navigation_does_not_fall_back_to_site_navigation",
           "deepwell/tests/page.rs#deleted_site_navigation_is_absent_from_found_and_missing_page_views",
           "deepwell/tests/page.rs#documented_expression_parser_functions_render_at_the_public_preview_seam",
           "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions",
-          "deepwell/tests/page.rs#exact_name_listpages_batch_preserves_order_and_permissions",
-          "deepwell/tests/page.rs#excessive_score_selectors_preserve_listpages_and_countpages_modules",
           "deepwell/tests/page.rs#expression_size_budget_matches_the_public_preview_seam",
           "deepwell/tests/page.rs#failed_page_create_rolls_back_its_allocated_number",
-          "deepwell/tests/page.rs#fallback_link_title_batch_preserves_singular_permission",
           "deepwell/tests/page.rs#featuredsite_fails_closed_without_a_local_featured_site_authority",
           "deepwell/tests/page.rs#file_create_commits_only_its_actor_and_route_owned_pending_blob",
           "deepwell/tests/page.rs#file_create_file_revision_and_audit_roll_back_together",
@@ -9154,27 +9135,18 @@
           "deepwell/tests/page.rs#file_rollback_public_endpoint_audits_only_created_revisions",
           "deepwell/tests/page.rs#file_rollback_revision_and_audit_roll_back_together",
           "deepwell/tests/page.rs#first_revision_countpages_rating_filter_renders_exact_count",
-          "deepwell/tests/page.rs#first_revision_current_page_listpages_uses_render_page_info",
           "deepwell/tests/page.rs#first_revision_rerenders_included_countpages",
           "deepwell/tests/page.rs#first_revision_rerenders_tag_dependent_countpages",
           "deepwell/tests/page.rs#first_revision_rerenders_tagcloud",
           "deepwell/tests/page.rs#foldable_list_initial_dom_matches_frozen_live_page_preview",
-          "deepwell/tests/page.rs#forum_comments_list_resolves_only_visible_page_discussions",
-          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
-          "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_post_reads_require_parent_page_view_permission",
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
-          "deepwell/tests/page.rs#frontforum_custom_body_matches_observed_public_preview_boundaries",
-          "deepwell/tests/page.rs#frontforum_feed_arguments_preserve_the_ordinary_public_render",
           "deepwell/tests/page.rs#hardened_www_special_modules_execute_only_on_their_system_pages",
           "deepwell/tests/page.rs#html_block_render_leaves_image_block_include_literal",
           "deepwell/tests/page.rs#imported_breadcrumbs_hide_private_and_deleted_ancestors",
           "deepwell/tests/page.rs#imported_countpages_sources_are_excluded_from_article_view_cache_metadata",
-          "deepwell/tests/page.rs#imported_listpages_authors_use_snapshot_names_and_rerender_stably",
           "deepwell/tests/page.rs#imported_page_layout_provenance_preserves_explicit_page_override",
           "deepwell/tests/page.rs#imported_redirect_noredirect_renders_live_error_block",
           "deepwell/tests/page.rs#include_parser_functions_follow_argument_and_caller_ownership_phases",
-          "deepwell/tests/page.rs#included_author_tool_coauthored_branch_renders_named_page_box",
           "deepwell/tests/page.rs#included_iftags_closer_survives_unmatched_inline_raw_on_an_earlier_line",
           "deepwell/tests/page.rs#initial_page_creation_explicit_layout_beats_destination_category_layout",
           "deepwell/tests/page.rs#initial_page_creation_uses_destination_category_layout",
@@ -9182,84 +9154,21 @@
           "deepwell/tests/page.rs#inline_countpages_inside_listpages_body_matches_live_legacy_split_behavior",
           "deepwell/tests/page.rs#latest_page_revision_still_cannot_hide_wikitext",
           "deepwell/tests/page.rs#layout_only_modules_page_source_match_live_unavailable_module",
-          "deepwell/tests/page.rs#list_pages_prefixed_url_arguments_address_only_the_matching_module",
-          "deepwell/tests/page.rs#list_pages_saved_view_preserves_argument_order_around_the_pager",
-          "deepwell/tests/page.rs#list_pages_saved_view_preserves_live_pagination_path_shapes",
-          "deepwell/tests/page.rs#list_pages_url_category_selector_reads_the_url_category_argument",
-          "deepwell/tests/page.rs#list_pages_url_offset_selector_reads_the_request_route",
-          "deepwell/tests/page.rs#list_pages_url_page_number_composes_with_the_module_offset",
-          "deepwell/tests/page.rs#list_pages_url_tag_selector_reads_the_url_tag_argument",
           "deepwell/tests/page.rs#listdrafts_module_matches_live_empty_draft_state",
           "deepwell/tests/page.rs#listdrafts_module_reads_persisted_drafts_and_enforces_target_filters",
           "deepwell/tests/page.rs#listpages_aggregate_generated_output_budget_preserves_overflowing_module",
-          "deepwell/tests/page.rs#listpages_append_line_cannot_forge_generated_html_provenance",
-          "deepwell/tests/page.rs#listpages_append_line_matches_wikidot_row_and_pager_ordering",
-          "deepwell/tests/page.rs#listpages_authored_preview_compat_marker_cannot_forge_trusted_html",
-          "deepwell/tests/page.rs#listpages_categories_alias_selects_only_default_category_rows",
-          "deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot",
-          "deepwell/tests/page.rs#listpages_code_and_html_bodies_follow_the_live_preparse_failure_shape",
-          "deepwell/tests/page.rs#listpages_combined_and_separate_templates_match_live_container_dom",
-          "deepwell/tests/page.rs#listpages_content_body_supports_bounded_ordered_child_results",
-          "deepwell/tests/page.rs#listpages_content_executes_attachment_syntax_with_selected_page_owner",
           "deepwell/tests/page.rs#listpages_content_fragment_restoration_counts_toward_generated_output_budget",
-          "deepwell/tests/page.rs#listpages_content_keeps_same_named_attachment_owners_per_row",
           "deepwell/tests/page.rs#listpages_content_runtime_budget_preserves_later_modules",
-          "deepwell/tests/page.rs#listpages_created_at_order_renders_results",
-          "deepwell/tests/page.rs#listpages_current_metric_selectors_match_the_saved_page_live_fixture",
           "deepwell/tests/page.rs#listpages_current_page_content_shares_the_module_work_budget",
-          "deepwell/tests/page.rs#listpages_current_tag_selectors_match_the_saved_page_live_fixture",
-          "deepwell/tests/page.rs#listpages_data_form_variables_match_live_wikidot",
-          "deepwell/tests/page.rs#listpages_date_formats_are_deferred_to_the_wikidot_client_phase",
-          "deepwell/tests/page.rs#listpages_default_category_and_bare_tags_follow_wikidot_semantics",
-          "deepwell/tests/page.rs#listpages_default_summary_unwraps_residual_div_before_recursive_error",
-          "deepwell/tests/page.rs#listpages_deferred_forms_remain_unsupported",
-          "deepwell/tests/page.rs#listpages_fixture_subset_renders_titles_slugs_order_and_tag_filter",
           "deepwell/tests/page.rs#listpages_following_paragraph_boundary_counts_toward_generated_output_budget",
-          "deepwell/tests/page.rs#listpages_fragment_content_executes_child_includes",
-          "deepwell/tests/page.rs#listpages_fragment_content_skips_hidden_pages_by_default",
           "deepwell/tests/page.rs#listpages_generated_html_preview_saved_section_controls",
-          "deepwell/tests/page.rs#listpages_generated_pager_keeps_ascii_dots_after_authored_typography",
-          "deepwell/tests/page.rs#listpages_imported_commenter_identity_uses_structured_corpus_provenance",
-          "deepwell/tests/page.rs#listpages_imported_creator_identity_uses_structured_corpus_provenance",
-          "deepwell/tests/page.rs#listpages_imported_editor_identity_uses_structured_corpus_provenance",
-          "deepwell/tests/page.rs#listpages_imported_empty_title_uses_wikidot_page_name_label",
-          "deepwell/tests/page.rs#listpages_index_remains_absolute_after_offset",
-          "deepwell/tests/page.rs#listpages_last_comment_variables_match_live_wikidot",
-          "deepwell/tests/page.rs#listpages_legacy_skip_current_and_tag_target_match_live_wikidot",
-          "deepwell/tests/page.rs#listpages_legacy_updated_author_aliases_match_live_wikidot",
           "deepwell/tests/page.rs#listpages_limit_two_caps_ordered_results",
-          "deepwell/tests/page.rs#listpages_link_to_dot_selects_links_to_the_current_page",
-          "deepwell/tests/page.rs#listpages_link_uses_the_unsuffixed_wikidot_page_url",
-          "deepwell/tests/page.rs#listpages_live_evidenced_noop_arguments_render_rows",
-          "deepwell/tests/page.rs#listpages_metadata_selectors_honor_target_view_permissions",
-          "deepwell/tests/page.rs#listpages_missing_data_form_variables_stay_literal_without_blocking_rows",
           "deepwell/tests/page.rs#listpages_module_count_over_the_render_budget_remains_literal",
           "deepwell/tests/page.rs#listpages_module_source_over_the_render_budget_remains_literal",
-          "deepwell/tests/page.rs#listpages_no_comment_variables_match_live_wikidot",
-          "deepwell/tests/page.rs#listpages_numbered_content_does_not_recursively_expand_selected_page_includes",
-          "deepwell/tests/page.rs#listpages_parent_selectors_match_the_saved_page_live_fixture",
           "deepwell/tests/page.rs#listpages_perpage_renders_wikidot_pager_controls",
-          "deepwell/tests/page.rs#listpages_plain_content_executes_selected_page_includes_only",
           "deepwell/tests/page.rs#listpages_plain_content_shares_the_outer_include_budget",
-          "deepwell/tests/page.rs#listpages_preview_summary_and_content_aliases_match_live_wikidot",
-          "deepwell/tests/page.rs#listpages_preview_uses_rendered_plain_text_and_legacy_word_limits",
-          "deepwell/tests/page.rs#listpages_range_selectors_match_the_saved_page_live_fixture",
-          "deepwell/tests/page.rs#listpages_reverse_boolean_coercion_matches_live_wikidot",
-          "deepwell/tests/page.rs#listpages_reverse_yes_reverses_the_selected_ordered_rows",
-          "deepwell/tests/page.rs#listpages_rss_link_and_rss_only_match_live_wikidot_markup",
-          "deepwell/tests/page.rs#listpages_section_summary_and_separate_lines_match_live_wikidot",
-          "deepwell/tests/page.rs#listpages_sections_follow_live_separation_and_empty_result_rules",
-          "deepwell/tests/page.rs#listpages_star_rating_variables_match_live_wikidot",
-          "deepwell/tests/page.rs#listpages_stored_title_remains_literal_in_listing_output",
-          "deepwell/tests/page.rs#listpages_structural_identity_and_site_variables_match_live_wikidot",
-          "deepwell/tests/page.rs#listpages_summary_aliases_cover_the_first_section_but_first_paragraph_does_not",
           "deepwell/tests/page.rs#listpages_template_body_over_the_render_budget_remains_literal",
           "deepwell/tests/page.rs#listpages_template_parser_functions_run_after_row_variable_substitution",
-          "deepwell/tests/page.rs#listpages_template_selectors_can_use_current_page_data_form_values",
-          "deepwell/tests/page.rs#listpages_total_does_not_expose_raw_private_candidate_threshold",
-          "deepwell/tests/page.rs#listpages_unclosed_empty_body_uses_the_live_default_template",
-          "deepwell/tests/page.rs#listpages_url_parent_does_not_reveal_private_parent_rows",
-          "deepwell/tests/page.rs#listpages_variable_suffixes_are_specific_to_each_variable_family",
           "deepwell/tests/page.rs#listpages_zero_row_content_modules_do_not_exhaust_the_work_budget",
           "deepwell/tests/page.rs#listusers_module_matches_live_preview_and_runtime_viewer",
           "deepwell/tests/page.rs#loginstatus_page_source_matches_live_unavailable_module",
@@ -9267,47 +9176,21 @@
           "deepwell/tests/page.rs#members_list_ajax_paginates_only_filtered_site_identities",
           "deepwell/tests/page.rs#members_module_queries_only_visible_site_members_and_roles",
           "deepwell/tests/page.rs#members_module_ssr_and_ajax_share_100_row_duplicate_relation_boundary",
-          "deepwell/tests/page.rs#membership_application_and_password_mutations_match_disposable_live_contract",
-          "deepwell/tests/page.rs#membership_by_password_module_matches_live_anonymous_and_member_output",
-          "deepwell/tests/page.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract",
           "deepwell/tests/page.rs#missing_remote_site_include_does_not_fall_back_to_same_slug_local_page",
           "deepwell/tests/page.rs#nested_include_image_blocks_keep_their_attachment_page_owner",
-          "deepwell/tests/page.rs#newpage_module_resolves_existing_templates_in_rendered_pages",
-          "deepwell/tests/page.rs#newpage_modules_after_the_per_render_budget_remain_literal",
-          "deepwell/tests/page.rs#newpage_over_budget_template_list_remains_literal",
-          "deepwell/tests/page.rs#nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
-          "deepwell/tests/page.rs#nextpreviouspage_names_private_adjacent_pages_for_every_viewer",
-          "deepwell/tests/page.rs#nextpreviouspage_preview_without_page_context_renders_live_range_error",
-          "deepwell/tests/page.rs#nextpreviouspage_title_tie_uses_creation_order_and_previous_stays_inclusive",
           "deepwell/tests/page.rs#normal_page_create_allocates_category_numbers_without_consuming_conflicts",
           "deepwell/tests/page.rs#normal_page_creates_serialize_conflict_checks_on_category_settings",
-          "deepwell/tests/page.rs#orphanedpages_module_lists_pages_without_incoming_internal_links",
-          "deepwell/tests/page.rs#orphanedpages_module_refreshes_after_linker_soft_delete",
           "deepwell/tests/page.rs#page_attribution_delete_refreshes_cached_article_only_when_rows_are_cleared",
           "deepwell/tests/page.rs#page_attribution_update_refreshes_cached_anonymous_article_view",
-          "deepwell/tests/page.rs#page_backlinks_view_filters_before_exposing_titles_and_slugs",
           "deepwell/tests/page.rs#page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision",
           "deepwell/tests/page.rs#page_delete_ignores_deleted_include_consumers_during_outdating",
           "deepwell/tests/page.rs#page_editing_history_preserves_each_page_change_as_a_recoverable_revision",
           "deepwell/tests/page.rs#page_get_deleted_filters_pages_by_delete_permission",
           "deepwell/tests/page.rs#page_get_files_requires_parent_page_view_permission",
           "deepwell/tests/page.rs#page_get_score_requires_view_permission_and_site_ownership",
-          "deepwell/tests/page.rs#page_move_renders_with_destination_category_context",
           "deepwell/tests/page.rs#page_move_requires_destination_create_permission",
           "deepwell/tests/page.rs#page_mutations_require_page_permissions",
           "deepwell/tests/page.rs#page_preview_omits_iftags_in_included_sources",
-          "deepwell/tests/page.rs#page_query_created_by_uses_earliest_available_revision",
-          "deepwell/tests/page.rs#page_query_data_form_candidate_cap_marks_partial_result_incomplete",
-          "deepwell/tests/page.rs#page_query_data_form_field_ordering_uses_static_form_values",
-          "deepwell/tests/page.rs#page_query_equal_sort_values_follow_wikidot_source_identity",
-          "deepwell/tests/page.rs#page_query_find_with_metadata_marks_deferred_score_ordering",
-          "deepwell/tests/page.rs#page_query_find_with_metadata_marks_sql_limited_results",
-          "deepwell/tests/page.rs#page_query_orders_by_page_slug_without_category_prefix",
-          "deepwell/tests/page.rs#page_query_page_slug_ties_follow_wikidot_source_identity",
-          "deepwell/tests/page.rs#page_query_revision_order_keeps_unrequested_count_out_of_results",
-          "deepwell/tests/page.rs#page_query_score_filter_plans_preserve_imported_and_local_vote_semantics",
-          "deepwell/tests/page.rs#page_query_score_order_returns_results",
-          "deepwell/tests/page.rs#page_query_vote_filter_and_order_use_imported_snapshot_vote_counts",
           "deepwell/tests/page.rs#page_render_rate_widget_matches_actor_and_rating_mode_matrix",
           "deepwell/tests/page.rs#page_render_star_rate_module_consumes_body_and_substitutes_live_variables",
           "deepwell/tests/page.rs#page_restore_default_slug_requires_destination_create_permission",
@@ -9324,8 +9207,6 @@
           "deepwell/tests/page.rs#page_select_treats_blank_optional_filters_as_absent",
           "deepwell/tests/page.rs#page_tags_select_filters_latest_page_tags",
           "deepwell/tests/page.rs#page_tags_select_filters_pages_by_authenticated_view_permission",
-          "deepwell/tests/page.rs#page_tree_module_renders_current_page_hierarchy_with_live_depth_dom",
-          "deepwell/tests/page.rs#page_tree_resource_bounds_fail_closed_without_partial_visible_rows",
           "deepwell/tests/page.rs#page_view_rerenders_stale_persisted_compiled_artifact",
           "deepwell/tests/page.rs#page_view_separates_generated_css_modules_from_compiled_body_html",
           "deepwell/tests/page.rs#page_watchers_fails_closed_instead_of_returning_a_saturated_prefix",
@@ -9337,17 +9218,8 @@
           "deepwell/tests/page.rs#page_who_rated_returns_only_current_typed_votes_in_creation_order",
           "deepwell/tests/page.rs#pagecalendar_module_matches_live_tag_url_and_current_category_quirks",
           "deepwell/tests/page.rs#pagecalendar_module_renders_live_category_links_and_counts",
-          "deepwell/tests/page.rs#pages_by_tag_module_filters_module_and_url_categories",
-          "deepwell/tests/page.rs#pages_by_tag_module_reads_the_url_tag_argument",
-          "deepwell/tests/page.rs#pages_by_tag_module_renders_empty_list_and_preserves_unevidenced_forms",
-          "deepwell/tests/page.rs#pages_by_tag_module_renders_tagged_pages_ordered_by_title",
-          "deepwell/tests/page.rs#pages_by_tag_saved_page_views_follow_current_tagged_page_state",
-          "deepwell/tests/page.rs#pages_module_renders_documented_arguments_and_live_fallbacks",
-          "deepwell/tests/page.rs#pages_module_renders_the_site_index_and_clamps_pagination",
           "deepwell/tests/page.rs#parent_mutations_require_child_page_edit_permission",
-          "deepwell/tests/page.rs#public_membership_module_states_are_distinct_and_opaque",
           "deepwell/tests/page.rs#random_countpages_capped_sample_does_not_reveal_private_matches",
-          "deepwell/tests/page.rs#recent_threads_matches_live_placeholder_and_owner_boundaries",
           "deepwell/tests/page.rs#render_scoped_include_source_cache_preserves_occurrence_semantics",
           "deepwell/tests/page.rs#renderer_epoch_invalidates_pre_freeze_compiled_artifacts",
           "deepwell/tests/page.rs#request_argument_page_views_do_not_persist_hosted_text_blocks",
@@ -9357,20 +9229,14 @@
           "deepwell/tests/page.rs#restored_literal_and_unsupported_countpages_shapes_stay_inert",
           "deepwell/tests/page.rs#restored_page_uses_destination_template_countpages_after_explicit_restore",
           "deepwell/tests/page.rs#revision_diff_returns_typed_lines_without_exposing_hidden_source",
-          "deepwell/tests/page.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
           "deepwell/tests/page.rs#saved_page_view_rewrites_cn_interwiki_embeds_after_listpages_expansion",
           "deepwell/tests/page.rs#saved_page_view_rewrites_exact_cn_interwiki_embed_iframes",
           "deepwell/tests/page.rs#saved_rate_sidecar_binds_exact_revision_and_mutates_idempotently",
           "deepwell/tests/page.rs#saved_site_utility_modules_recheck_the_session_actor",
           "deepwell/tests/page.rs#saved_tagcloud_page_view_follows_independent_tag_mutations",
-          "deepwell/tests/page.rs#score_selectors_at_limit_render_countpages_normally",
-          "deepwell/tests/page.rs#score_selectors_at_limit_render_listpages_normally",
           "deepwell/tests/page.rs#search_and_feed_modules_match_live_preview_and_page_view_boundaries",
           "deepwell/tests/page.rs#searchall_module_matches_live_form_and_unavailable_route_contract",
           "deepwell/tests/page.rs#simpletodo_and_sendinvitations_modules_match_live_preview_basics",
-          "deepwell/tests/page.rs#site_tools_orphaned_pages_filters_before_exposing_ordered_rows",
-          "deepwell/tests/page.rs#site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link_rules",
-          "deepwell/tests/page.rs#site_tools_wanted_pages_filters_sources_before_grouping_ordered_targets",
           "deepwell/tests/page.rs#site_utility_modules_preserve_literal_and_reject_unsupported_shapes",
           "deepwell/tests/page.rs#sitechanges_default_snapshot_filters_before_the_initial_page_limit",
           "deepwell/tests/page.rs#social_syntax_matches_frozen_live_service_selection_and_widget_identity",
@@ -9384,7 +9250,6 @@
           "deepwell/tests/page.rs#unbound_include_variables_remain_literal_in_attributes_and_text",
           "deepwell/tests/page.rs#unclosed_countpages_all_category_uses_live_default_shell",
           "deepwell/tests/page.rs#unknown_module_dispatch_requires_a_valid_legacy_name",
-          "deepwell/tests/page.rs#wantedpages_module_groups_missing_internal_links_by_target",
           "deepwell/tests/page.rs#wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts",
           "deepwell/tests/page.rs#wikidot_files_saved_empty_module_matches_the_live_container_and_refresh_script",
           "deepwell/tests/page.rs#wikidot_files_saved_modules_use_distinct_container_suffixes",
@@ -9396,8 +9261,6 @@
           "deepwell/tests/page.rs#wikidot_gallery_preview_uses_the_typed_no_page_error_boundary",
           "deepwell/tests/page.rs#wikidot_gallery_saved_page_view_enforces_order_and_last_occurrence_matrix",
           "deepwell/tests/page.rs#wikidot_gallery_selects_authorized_current_page_images_after_page_acl",
-          "deepwell/tests/page.rs#wikidot_listpages_feed_queries_newest_viewable_pages",
-          "deepwell/tests/page.rs#wikidot_listpages_feed_uses_imported_creator_identity_provenance",
           "deepwell/tests/page.rs#wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execute_them",
           "deepwell/tests/page.rs#wikidot_set_tags_action_resolves_server_descriptor_and_is_revision_idempotent",
           "deepwell/tests/page.rs#wikidot_set_tags_denials_preserve_public_page_state",
@@ -9405,6 +9268,143 @@
           "deepwell/tests/page.rs#wikidot_site_include_uses_local_dependency_page_for_site_qualified_include",
           "deepwell/tests/page.rs#wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars",
           "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries",
+          "deepwell/tests/page/forum.rs#forum_comments_list_resolves_only_visible_page_discussions",
+          "deepwell/tests/page/forum.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/page/forum.rs#frontforum_custom_body_matches_observed_public_preview_boundaries",
+          "deepwell/tests/page/forum.rs#frontforum_feed_arguments_preserve_the_ordinary_public_render",
+          "deepwell/tests/page/forum.rs#recent_threads_matches_live_placeholder_and_owner_boundaries",
+          "deepwell/tests/page/list_pages_runtime.rs#ajax_listpages_rejects_forged_literal_compat_markers",
+          "deepwell/tests/page/list_pages_runtime.rs#authored_listpages_user_marker_cannot_forge_trusted_html",
+          "deepwell/tests/page/list_pages_runtime.rs#current_page_listpages_created_by_uses_creation_revision",
+          "deepwell/tests/page/list_pages_runtime.rs#exact_name_listpages_batch_preserves_order_and_permissions",
+          "deepwell/tests/page/list_pages_runtime.rs#fallback_link_title_batch_preserves_singular_permission",
+          "deepwell/tests/page/list_pages_runtime.rs#first_revision_current_page_listpages_uses_render_page_info",
+          "deepwell/tests/page/list_pages_runtime.rs#imported_listpages_authors_use_snapshot_names_and_rerender_stably",
+          "deepwell/tests/page/list_pages_runtime.rs#included_author_tool_coauthored_branch_renders_named_page_box",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_append_line_cannot_forge_generated_html_provenance",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_append_line_matches_wikidot_row_and_pager_ordering",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_authored_preview_compat_marker_cannot_forge_trusted_html",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_categories_alias_selects_only_default_category_rows",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_code_and_html_bodies_follow_the_live_preparse_failure_shape",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_combined_and_separate_templates_match_live_container_dom",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_content_body_supports_bounded_ordered_child_results",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_content_executes_attachment_syntax_with_selected_page_owner",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_content_keeps_same_named_attachment_owners_per_row",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_data_form_variables_match_live_wikidot",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_date_formats_are_deferred_to_the_wikidot_client_phase",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_default_category_and_bare_tags_follow_wikidot_semantics",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_default_summary_unwraps_residual_div_before_recursive_error",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_fixture_subset_renders_titles_slugs_order_and_tag_filter",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_fragment_content_executes_child_includes",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_fragment_content_skips_hidden_pages_by_default",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_generated_pager_keeps_ascii_dots_after_authored_typography",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_imported_commenter_identity_uses_structured_corpus_provenance",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_imported_creator_identity_uses_structured_corpus_provenance",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_imported_editor_identity_uses_structured_corpus_provenance",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_imported_empty_title_uses_wikidot_page_name_label",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_index_remains_absolute_after_offset",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_last_comment_variables_match_live_wikidot",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_legacy_skip_current_and_tag_target_match_live_wikidot",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_legacy_updated_author_aliases_match_live_wikidot",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_link_to_dot_selects_links_to_the_current_page",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_link_uses_the_unsuffixed_wikidot_page_url",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_live_evidenced_noop_arguments_render_rows",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_metadata_selectors_honor_target_view_permissions",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_missing_data_form_variables_stay_literal_without_blocking_rows",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_no_comment_variables_match_live_wikidot",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_numbered_content_does_not_recursively_expand_selected_page_includes",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_plain_content_executes_selected_page_includes_only",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_preview_summary_and_content_aliases_match_live_wikidot",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_preview_uses_rendered_plain_text_and_legacy_word_limits",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_reverse_boolean_coercion_matches_live_wikidot",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_reverse_yes_reverses_the_selected_ordered_rows",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_section_summary_and_separate_lines_match_live_wikidot",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_sections_follow_live_separation_and_empty_result_rules",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_star_rating_variables_match_live_wikidot",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_stored_title_remains_literal_in_listing_output",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_structural_identity_and_site_variables_match_live_wikidot",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_summary_aliases_cover_the_first_section_but_first_paragraph_does_not",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_template_selectors_can_use_current_page_data_form_values",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_total_does_not_expose_raw_private_candidate_threshold",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_unclosed_empty_body_uses_the_live_default_template",
+          "deepwell/tests/page/list_pages_runtime.rs#listpages_variable_suffixes_are_specific_to_each_variable_family",
+          "deepwell/tests/page/membership.rs#membership_application_and_password_mutations_match_disposable_live_contract",
+          "deepwell/tests/page/membership.rs#membership_by_password_module_matches_live_anonymous_and_member_output",
+          "deepwell/tests/page/membership.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract",
+          "deepwell/tests/page/membership.rs#public_membership_module_states_are_distinct_and_opaque",
+          "deepwell/tests/page/page_modules.rs#ajax_listpages_recursively_renders_balanced_nested_modules",
+          "deepwell/tests/page/page_modules.rs#ajax_listpages_renders_unbalanced_module_markers_literally",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_forgets_removed_links_and_collapses_duplicate_linkers",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_ignores_arguments_like_live_wikidot",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_page_preview_renders_current_page_incoming_links",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_renders_current_page_incoming_links",
+          "deepwell/tests/page/page_modules.rs#backlinks_page_preview_controls_identity_visibility_and_scan_boundaries",
+          "deepwell/tests/page/page_modules.rs#categories_module_lists_active_categories_and_honors_include_hidden",
+          "deepwell/tests/page/page_modules.rs#categories_module_refreshes_inventory_after_category_pages_come_and_go",
+          "deepwell/tests/page/page_modules.rs#childpages_module_renders_live_child_list_and_empty_state",
+          "deepwell/tests/page/page_modules.rs#list_pages_prefixed_url_arguments_address_only_the_matching_module",
+          "deepwell/tests/page/page_modules.rs#list_pages_saved_view_preserves_argument_order_around_the_pager",
+          "deepwell/tests/page/page_modules.rs#list_pages_saved_view_preserves_live_pagination_path_shapes",
+          "deepwell/tests/page/page_modules.rs#list_pages_url_category_selector_reads_the_url_category_argument",
+          "deepwell/tests/page/page_modules.rs#list_pages_url_offset_selector_reads_the_request_route",
+          "deepwell/tests/page/page_modules.rs#list_pages_url_page_number_composes_with_the_module_offset",
+          "deepwell/tests/page/page_modules.rs#list_pages_url_tag_selector_reads_the_url_tag_argument",
+          "deepwell/tests/page/page_modules.rs#listpages_current_metric_selectors_match_the_saved_page_live_fixture",
+          "deepwell/tests/page/page_modules.rs#listpages_current_tag_selectors_match_the_saved_page_live_fixture",
+          "deepwell/tests/page/page_modules.rs#listpages_parent_selectors_match_the_saved_page_live_fixture",
+          "deepwell/tests/page/page_modules.rs#listpages_range_selectors_match_the_saved_page_live_fixture",
+          "deepwell/tests/page/page_modules.rs#listpages_rss_link_and_rss_only_match_live_wikidot_markup",
+          "deepwell/tests/page/page_modules.rs#listpages_url_parent_does_not_reveal_private_parent_rows",
+          "deepwell/tests/page/page_modules.rs#newpage_module_resolves_existing_templates_in_rendered_pages",
+          "deepwell/tests/page/page_modules.rs#newpage_modules_after_the_per_render_budget_remain_literal",
+          "deepwell/tests/page/page_modules.rs#newpage_over_budget_template_list_remains_literal",
+          "deepwell/tests/page/page_modules.rs#nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
+          "deepwell/tests/page/page_modules.rs#nextpreviouspage_names_private_adjacent_pages_for_every_viewer",
+          "deepwell/tests/page/page_modules.rs#nextpreviouspage_preview_without_page_context_renders_live_range_error",
+          "deepwell/tests/page/page_modules.rs#nextpreviouspage_title_tie_uses_creation_order_and_previous_stays_inclusive",
+          "deepwell/tests/page/page_modules.rs#orphanedpages_module_lists_pages_without_incoming_internal_links",
+          "deepwell/tests/page/page_modules.rs#orphanedpages_module_refreshes_after_linker_soft_delete",
+          "deepwell/tests/page/page_modules.rs#page_backlinks_view_filters_before_exposing_titles_and_slugs",
+          "deepwell/tests/page/page_modules.rs#page_tree_module_renders_current_page_hierarchy_with_live_depth_dom",
+          "deepwell/tests/page/page_modules.rs#page_tree_resource_bounds_fail_closed_without_partial_visible_rows",
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_module_filters_module_and_url_categories",
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_module_reads_the_url_tag_argument",
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_module_renders_empty_list_and_preserves_unevidenced_forms",
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_module_renders_tagged_pages_ordered_by_title",
+          "deepwell/tests/page/page_modules.rs#pages_by_tag_saved_page_views_follow_current_tagged_page_state",
+          "deepwell/tests/page/page_modules.rs#pages_module_renders_documented_arguments_and_live_fallbacks",
+          "deepwell/tests/page/page_modules.rs#pages_module_renders_the_site_index_and_clamps_pagination",
+          "deepwell/tests/page/page_modules.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
+          "deepwell/tests/page/page_modules.rs#site_tools_orphaned_pages_filters_before_exposing_ordered_rows",
+          "deepwell/tests/page/page_modules.rs#site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link_rules",
+          "deepwell/tests/page/page_modules.rs#site_tools_wanted_pages_filters_sources_before_grouping_ordered_targets",
+          "deepwell/tests/page/page_modules.rs#wantedpages_module_groups_missing_internal_links_by_target",
+          "deepwell/tests/page/page_modules.rs#wikidot_listpages_feed_queries_newest_viewable_pages",
+          "deepwell/tests/page/page_modules.rs#wikidot_listpages_feed_uses_imported_creator_identity_provenance",
+          "deepwell/tests/page/page_move.rs#basic_move",
+          "deepwell/tests/page/page_move.rs#page_move_renders_with_destination_category_context",
+          "deepwell/tests/page/page_query.rs#countpages_does_not_execute_modules_owned_by_ftml_text_constructs",
+          "deepwell/tests/page/page_query.rs#countpages_preserves_runtime_unsafe_outer_heads_without_executing_inner_modules",
+          "deepwell/tests/page/page_query.rs#excessive_score_selectors_preserve_listpages_and_countpages_modules",
+          "deepwell/tests/page/page_query.rs#listpages_created_at_order_renders_results",
+          "deepwell/tests/page/page_query.rs#listpages_deferred_forms_remain_unsupported",
+          "deepwell/tests/page/page_query.rs#page_query_created_by_uses_earliest_available_revision",
+          "deepwell/tests/page/page_query.rs#page_query_data_form_candidate_cap_marks_partial_result_incomplete",
+          "deepwell/tests/page/page_query.rs#page_query_data_form_field_ordering_uses_static_form_values",
+          "deepwell/tests/page/page_query.rs#page_query_equal_sort_values_follow_wikidot_source_identity",
+          "deepwell/tests/page/page_query.rs#page_query_find_with_metadata_marks_deferred_score_ordering",
+          "deepwell/tests/page/page_query.rs#page_query_find_with_metadata_marks_sql_limited_results",
+          "deepwell/tests/page/page_query.rs#page_query_orders_by_page_slug_without_category_prefix",
+          "deepwell/tests/page/page_query.rs#page_query_page_slug_ties_follow_wikidot_source_identity",
+          "deepwell/tests/page/page_query.rs#page_query_revision_order_keeps_unrequested_count_out_of_results",
+          "deepwell/tests/page/page_query.rs#page_query_score_filter_plans_preserve_imported_and_local_vote_semantics",
+          "deepwell/tests/page/page_query.rs#page_query_score_order_returns_results",
+          "deepwell/tests/page/page_query.rs#page_query_vote_filter_and_order_use_imported_snapshot_vote_counts",
+          "deepwell/tests/page/page_query.rs#score_selectors_at_limit_render_countpages_normally",
+          "deepwell/tests/page/page_query.rs#score_selectors_at_limit_render_listpages_normally",
           "deepwell/tests/page_discussion.rs#imported_page_discussion_pointer_can_be_claimed_by_only_one_page",
           "deepwell/tests/page_discussion.rs#page_discussion_page_lookup_holds_an_exclusive_row_lock",
           "deepwell/tests/page_discussion.rs#page_discussion_policy_lookup_holds_an_exclusive_category_lock",
@@ -9564,9 +9564,9 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/page.rs#site_tools_orphaned_pages_filters_before_exposing_ordered_rows",
+        "reference": "deepwell/tests/page/page_modules.rs#site_tools_orphaned_pages_filters_before_exposing_ordered_rows",
         "alternatives": [
-          "deepwell/tests/page.rs#site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link_rules"
+          "deepwell/tests/page/page_modules.rs#site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link_rules"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -9619,7 +9619,7 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/page.rs#site_tools_wanted_pages_filters_sources_before_grouping_ordered_targets",
+        "reference": "deepwell/tests/page/page_modules.rs#site_tools_wanted_pages_filters_sources_before_grouping_ordered_targets",
         "alternatives": [],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -10728,7 +10728,7 @@
         "component": "deepwell",
         "handler": "wikidot_categories_page_list_module",
         "source": "deepwell/src/endpoints/page.rs#wikidot_categories_page_list_module",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "15c20bf38915436f5f5f3baf568fa679bd7bb4dcb9c61f2b92f2dc7037b8a128"
       },
       "params_schema": {
@@ -10789,7 +10789,7 @@
         "component": "deepwell",
         "handler": "wikidot_forum_module",
         "source": "deepwell/src/endpoints/page.rs#wikidot_forum_module",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "fedc64aecf8e93b066571aee7fdf94570d0c045e7536803485e674499588497a"
       },
       "params_schema": {
@@ -10833,8 +10833,8 @@
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/page.rs#anonymous_forum_post_create_persists_private_derived_guest_identity_and_renders_gravatar",
         "alternatives": [
-          "deepwell/tests/page.rs#forum_comments_list_resolves_only_visible_page_discussions",
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+          "deepwell/tests/page/forum.rs#forum_comments_list_resolves_only_visible_page_discussions",
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -10910,7 +10910,7 @@
         "component": "deepwell",
         "handler": "wikidot_legacy_set_tags",
         "source": "deepwell/src/endpoints/page.rs#wikidot_legacy_set_tags",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "08c3842b48585b8b6d8f3aa1aa49549109e41483a6dc830500e1f9e195882ff8"
       },
       "params_schema": {
@@ -10946,11 +10946,11 @@
           "site_context"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_edit_permission",
-          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
-          "deepwell/src/endpoints/page.rs#wikidot_legacy_set_tags"
+          "deepwell/src/endpoints/page.rs#wikidot_legacy_set_tags",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_edit_permission",
+          "deepwell/src/endpoints/page/permissions.rs#ensure_page_permission"
         ]
       },
       "mutation_class": {
@@ -10975,7 +10975,7 @@
         "component": "deepwell",
         "handler": "wikidot_list_pages_feed",
         "source": "deepwell/src/endpoints/page.rs#wikidot_list_pages_feed",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "afc5630e3ff49c3f77e724fc050e7562ed8e4395917f441f7eaeed05d66533e2"
       },
       "params_schema": {
@@ -11017,9 +11017,9 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/page.rs#wikidot_listpages_feed_queries_newest_viewable_pages",
+        "reference": "deepwell/tests/page/page_modules.rs#wikidot_listpages_feed_queries_newest_viewable_pages",
         "alternatives": [
-          "deepwell/tests/page.rs#wikidot_listpages_feed_uses_imported_creator_identity_provenance"
+          "deepwell/tests/page/page_modules.rs#wikidot_listpages_feed_uses_imported_creator_identity_provenance"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -11030,7 +11030,7 @@
         "component": "deepwell",
         "handler": "wikidot_list_pages_module",
         "source": "deepwell/src/endpoints/page.rs#wikidot_list_pages_module",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "e55d6650fc839bf4d3a888fde29e45b1ec79691e0d1902805b32fb8a009b354f"
       },
       "params_schema": {
@@ -11079,9 +11079,9 @@
           "deepwell/tests/list_pages.rs#wikidot_ajax_listpages_p_parameter_selects_the_rendered_page",
           "deepwell/tests/list_pages.rs#wikidot_ajax_listpages_returns_unwrapped_client_rows",
           "deepwell/tests/list_pages_random.rs#wikidot_ajax_random_listpages_rejects_invalid_pager_values",
-          "deepwell/tests/page.rs#ajax_listpages_recursively_renders_balanced_nested_modules",
-          "deepwell/tests/page.rs#ajax_listpages_rejects_forged_literal_compat_markers",
-          "deepwell/tests/page.rs#ajax_listpages_renders_unbalanced_module_markers_literally"
+          "deepwell/tests/page/list_pages_runtime.rs#ajax_listpages_rejects_forged_literal_compat_markers",
+          "deepwell/tests/page/page_modules.rs#ajax_listpages_recursively_renders_balanced_nested_modules",
+          "deepwell/tests/page/page_modules.rs#ajax_listpages_renders_unbalanced_module_markers_literally"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -11092,7 +11092,7 @@
         "component": "deepwell",
         "handler": "wikidot_members_list_module",
         "source": "deepwell/src/endpoints/page.rs#wikidot_members_list_module",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "e1173789be897cb6ae21d7b662d564b960a504b00da9270e00d575f3bf3d7526"
       },
       "params_schema": {
@@ -11147,7 +11147,7 @@
         "component": "deepwell",
         "handler": "wikidot_page_discussion_create",
         "source": "deepwell/src/endpoints/page.rs#wikidot_page_discussion_create",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "1b283518869a34d7e5c04d6dada4724161533a0516af80df98824af8cb545032"
       },
       "params_schema": {
@@ -11210,7 +11210,7 @@
         "component": "deepwell",
         "handler": "wikidot_page_preview",
         "source": "deepwell/src/endpoints/page.rs#wikidot_page_preview",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "1499b112f8523c15a05198ba5f74758df99429b62fe016d724124c3cd2c5ba19"
       },
       "params_schema": {
@@ -11271,19 +11271,12 @@
           "deepwell/tests/page.rs#anonymous_page_and_site_utility_modules_match_frozen_safe_states",
           "deepwell/tests/page.rs#authenticated_site_utility_preview_denies_only_non_administrators",
           "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
-          "deepwell/tests/page.rs#backlinks_module_page_preview_renders_current_page_incoming_links",
-          "deepwell/tests/page.rs#backlinks_page_preview_controls_identity_visibility_and_scan_boundaries",
           "deepwell/tests/page.rs#currencyconvert_executes_only_on_the_www_plans_system_page",
           "deepwell/tests/page.rs#documented_expression_parser_functions_render_at_the_public_preview_seam",
           "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions",
           "deepwell/tests/page.rs#expression_size_budget_matches_the_public_preview_seam",
           "deepwell/tests/page.rs#featuredsite_fails_closed_without_a_local_featured_site_authority",
           "deepwell/tests/page.rs#foldable_list_initial_dom_matches_frozen_live_page_preview",
-          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
-          "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
-          "deepwell/tests/page.rs#frontforum_custom_body_matches_observed_public_preview_boundaries",
-          "deepwell/tests/page.rs#frontforum_feed_arguments_preserve_the_ordinary_public_render",
           "deepwell/tests/page.rs#hardened_www_special_modules_execute_only_on_their_system_pages",
           "deepwell/tests/page.rs#include_parser_functions_follow_argument_and_caller_ownership_phases",
           "deepwell/tests/page.rs#layout_only_modules_page_source_match_live_unavailable_module",
@@ -11295,12 +11288,7 @@
           "deepwell/tests/page.rs#mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views",
           "deepwell/tests/page.rs#members_module_queries_only_visible_site_members_and_roles",
           "deepwell/tests/page.rs#members_module_ssr_and_ajax_share_100_row_duplicate_relation_boundary",
-          "deepwell/tests/page.rs#membership_by_password_module_matches_live_anonymous_and_member_output",
-          "deepwell/tests/page.rs#nextpreviouspage_preview_without_page_context_renders_live_range_error",
-          "deepwell/tests/page.rs#nextpreviouspage_title_tie_uses_creation_order_and_previous_stays_inclusive",
           "deepwell/tests/page.rs#page_preview_omits_iftags_in_included_sources",
-          "deepwell/tests/page.rs#public_membership_module_states_are_distinct_and_opaque",
-          "deepwell/tests/page.rs#recent_threads_matches_live_placeholder_and_owner_boundaries",
           "deepwell/tests/page.rs#search_and_feed_modules_match_live_preview_and_page_view_boundaries",
           "deepwell/tests/page.rs#searchall_module_matches_live_form_and_unavailable_route_contract",
           "deepwell/tests/page.rs#simpletodo_and_sendinvitations_modules_match_live_preview_basics",
@@ -11320,6 +11308,18 @@
           "deepwell/tests/page.rs#wikidot_site_changes_ajax_endpoint_filters_before_pagination_and_matches_observed_reads",
           "deepwell/tests/page.rs#wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars",
           "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries",
+          "deepwell/tests/page/forum.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
+          "deepwell/tests/page/forum.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/page/forum.rs#frontforum_custom_body_matches_observed_public_preview_boundaries",
+          "deepwell/tests/page/forum.rs#frontforum_feed_arguments_preserve_the_ordinary_public_render",
+          "deepwell/tests/page/forum.rs#recent_threads_matches_live_placeholder_and_owner_boundaries",
+          "deepwell/tests/page/membership.rs#membership_by_password_module_matches_live_anonymous_and_member_output",
+          "deepwell/tests/page/membership.rs#public_membership_module_states_are_distinct_and_opaque",
+          "deepwell/tests/page/page_modules.rs#backlinks_module_page_preview_renders_current_page_incoming_links",
+          "deepwell/tests/page/page_modules.rs#backlinks_page_preview_controls_identity_visibility_and_scan_boundaries",
+          "deepwell/tests/page/page_modules.rs#nextpreviouspage_preview_without_page_context_renders_live_range_error",
+          "deepwell/tests/page/page_modules.rs#nextpreviouspage_title_tie_uses_creation_order_and_previous_stays_inclusive",
           "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -11331,7 +11331,7 @@
         "component": "deepwell",
         "handler": "wikidot_site_changes_module",
         "source": "deepwell/src/endpoints/page.rs#wikidot_site_changes_module",
-        "source_sha256": "827041ffcb6477a76d5b8191f179b46073a7b3922568a1adac61b56aae01c4d9",
+        "source_sha256": "5cea474e4f8aa90f3b520e43058928c2a2acc348bb5c3aa7f670d7ba21a3f89b",
         "function_sha256": "cf16981f5d7af5363ff031de89be51dce1bbcda63c1f5d4f511f6c8996c9a093"
       },
       "params_schema": {

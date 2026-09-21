@@ -13,7 +13,7 @@
 -->
 <script lang="ts">
   import { focusGroup } from "$lib/dom"
-  import { onMount, setContext } from "svelte"
+  import { onMount, setContext, type Snippet } from "svelte"
   import { writable, type Writable } from "svelte/store"
 
   let {
@@ -27,18 +27,18 @@
     noborder?: boolean
     contained?: boolean
     compact?: boolean
-    children?: any
+    children?: Snippet
   } = $props()
 
   let ready = $state(false)
 
   let buttons: HTMLElement | undefined
 
-  let key = writable<any>(null)
+  let key = writable<string | null>(null)
 
   interface Tabs {
     buttons?: HTMLElement
-    key: Writable<any>
+    key: Writable<string | null>
     conditional: boolean
   }
 

@@ -21,13 +21,14 @@ import { Q1035_SAVED_SOURCES } from "./open43-q1035-sitechanges-candidate-case-s
 import { OPEN43_B690_GEOMETRY_FIXTURE } from "./open43-browser-690-candidate-case-set.mjs";
 import { captureUrlsSha256 } from "../scripts/capture-framerail-route-action-temporal.mjs";
 import { defaultBrowserRoot, loadPlaywright } from "./browser-session.mjs";
+import { CANDIDATE_CASE_SETS } from "./candidate-case-command.mjs";
 import { readJsonObject, sealJsonNoReplace, sha256File } from "./standing-browser-parity-util.mjs";
 
 function clearCandidateRedisCache(cache) {
   execFileSync("docker", ["exec", cache, "redis-cli", "EVAL", "local keys=redis.call('keys','*'); local deleted=0; for _,key in ipairs(keys) do if string.sub(key,1,5) ~= 'rsmq:' then redis.call('del',key); deleted=deleted+1 end end; return deleted", "0"], { stdio: "ignore" });
 }
 
-export const COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA = "wikijump.compatibility_candidate_input_receipt.v1";
+export const COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA = "wikijump.compatibility_candidate_input_receipt.v2";
 const SITE_ID = 6_000_003;
 const SITE_SLUG = "scpaiueouiuiuiui";
 const STANDARD_SITE_SLUG = "scp-wiki";
@@ -155,6 +156,75 @@ const GENERATED_PRIVATE_INPUTS = new Set([
   "media-browser.json",
   "media-files.json",
 ]);
+
+export const COMPATIBILITY_CASE_SET_PRIVATE_INPUTS = Object.freeze({
+  "comments-hideform-browser": "general-r11.json",
+  "framerail-route-action-browser": "framerail-route-action-browser.json",
+  "ftml-marker-contract": "general-r11.json",
+  "issue1373-amc-new-page": "general-r11.json",
+  "open43-689-tabview": "b689-r11.json",
+  "open43-690-geometry": "b690-r11.json",
+  "open43-a1030-rate": "base-admin-r11.json",
+  "open43-a1037-forms": "framerail-route-action-browser.json",
+  "open43-a1038-admin-boundary": "base-admin-r11.json",
+  "open43-actions": "base-admin-r11.json",
+  "open43-authoring": "media-files.json",
+  "open43-authoring-history": "media-files.json",
+  "open43-b610-shell": "b610-r11.json",
+  "open43-backlinks": "backlinks-r23.json",
+  "open43-categories": "general-r11.json",
+  "open43-embedvideo-browser": "general-r11.json",
+  "open43-featuredsite": "general-r11.json",
+  "open43-issue1029-join": "base-admin-r11.json",
+  "open43-issue1041-action-lifecycle": "issue1041-r24.json",
+  "open43-issue1060-register-join-create": "base-admin-r11.json",
+  "open43-issue775-edit": "issue775-r24.json",
+  "open43-issue777-print": "general-r11.json",
+  "open43-mailform-fail-closed": "general-r11.json",
+  "open43-media-browser": "media-browser.json",
+  "open43-media-files": "media-files.json",
+  "open43-membership": "base-admin-r11.json",
+  "open43-membership-join": "base-admin-r11.json",
+  "open43-page-query-nextprevious": "general-r11.json",
+  "open43-page-tree": "general-r11.json",
+  "open43-q1026-user-identity": "q1026-r11.json",
+  "open43-q1027": "general-r11.json",
+  "open43-q1032-members-userinfo": "general-r11.json",
+  "open43-q1034-forum": "q1034-r23.json",
+  "open43-q1035-sitechanges": "q1035-r23.json",
+  "open43-q1036-search-feed": "general-r11.json",
+  "open43-q1040": "general-r11.json",
+  "open43-q748-topbar-search": "general-r11.json",
+  "open43-q778-forum-mini": "general-r11.json",
+  "open43-q809": "q809.json",
+  "open43-searchall": "general-r11.json",
+  "open43-settings-admin": "base-admin-r11.json",
+  "open43-settings-analytics": "base-admin-r11.json",
+  "open43-settings-lifecycle": "base-admin-r11.json",
+  "open43-settings-page-tags": "base-admin-r11.json",
+  "open43-settings-theme": "base-admin-r11.json",
+  "open43-settings-toolbar": "base-admin-r11.json",
+  "open43-simpletodo-read-only": "general-r11.json",
+});
+
+function validateCaseSetPrivateInputMap(privateFiles) {
+  const executionNames = Object.entries(CANDIDATE_CASE_SETS)
+    .filter(([, registered]) => registered.aliasOf === undefined)
+    .map(([name]) => name)
+    .sort((left, right) => left.localeCompare(right, "en"));
+  const mappedNames = Object.keys(COMPATIBILITY_CASE_SET_PRIVATE_INPUTS)
+    .sort((left, right) => left.localeCompare(right, "en"));
+  if (JSON.stringify(mappedNames) !== JSON.stringify(executionNames)) {
+    throw new Error("candidate private-input mapping does not exactly cover the execution case-set registry");
+  }
+  const available = new Set(privateFiles);
+  for (const [caseSet, filename] of Object.entries(COMPATIBILITY_CASE_SET_PRIVATE_INPUTS)) {
+    if (!available.has(filename)) {
+      throw new Error(`candidate private-input mapping for ${caseSet} references an unproduced file: ${filename}`);
+    }
+  }
+  return COMPATIBILITY_CASE_SET_PRIVATE_INPUTS;
+}
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
 export const S758_AUTONUMBER_CANDIDATE_PRECONDITION = Object.freeze({
@@ -955,7 +1025,8 @@ export async function prepareCompatibilityCandidateInputs(args) {
     await fs.writeFile(generalPath, `${JSON.stringify(general, null, 2)}\n`, { mode: 0o600 });
     await propagateActors();
     clearCandidateRedisCache(cache);
-    const receipt = { schema: COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, status: "pass", generated_at: new Date().toISOString(), candidate: { wikijump_commit: candidate.wikijump_commit, wikijump_tree: candidate.wikijump_tree, ftml_sha: candidate.ftml_sha, compose_project: project, editable_identity_sha256: identitySha256 }, output_private_dir: args["output-private-dir"], private_files: privateFiles, fixture_counts: { members: 151, ftml_markers: markerPages.length, q1034_pagination_threads: 221, q1034_page_comment_posts: 24, q778_posts: 5, q1035_public_revisions: 2105, q1032_watchers_rows: 20, q1032_whoinvited_actors: 4, q1032_whoinvited_targets: 4 }, fixtures: { a1037_redirect_source: redirectSource.page_id, b610_canary_attachments: b610Attachments, b690_canary_attachments: b690Attachments, ftml_markers: markerPages.map(({ page_id, revision_id, slug }) => ({ page_id, revision_id, slug })), q1032_members: members.page_id, q1032_readonly_evidence: OPEN43_Q1032_EVIDENCE.readonly, q1036_saved: q1036.page_id, q1026_identity: q1026Page.page_id, q810_saved: featured.page_id, q778_saved: forumMini.page_id, q809_private: q809Private.page_id, q1035_sitechanges: q1035Site.page_id } };
+    const caseSetPrivateInputs = validateCaseSetPrivateInputMap(privateFiles);
+    const receipt = { schema: COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, status: "pass", generated_at: new Date().toISOString(), candidate: { wikijump_commit: candidate.wikijump_commit, wikijump_tree: candidate.wikijump_tree, ftml_sha: candidate.ftml_sha, compose_project: project, editable_identity_sha256: identitySha256 }, output_private_dir: args["output-private-dir"], private_files: privateFiles, case_set_private_inputs: caseSetPrivateInputs, fixture_counts: { members: 151, ftml_markers: markerPages.length, q1034_pagination_threads: 221, q1034_page_comment_posts: 24, q778_posts: 5, q1035_public_revisions: 2105, q1032_watchers_rows: 20, q1032_whoinvited_actors: 4, q1032_whoinvited_targets: 4 }, fixtures: { a1037_redirect_source: redirectSource.page_id, b610_canary_attachments: b610Attachments, b690_canary_attachments: b690Attachments, ftml_markers: markerPages.map(({ page_id, revision_id, slug }) => ({ page_id, revision_id, slug })), q1032_members: members.page_id, q1032_readonly_evidence: OPEN43_Q1032_EVIDENCE.readonly, q1036_saved: q1036.page_id, q1026_identity: q1026Page.page_id, q810_saved: featured.page_id, q778_saved: forumMini.page_id, q809_private: q809Private.page_id, q1035_sitechanges: q1035Site.page_id } };
     const publication = await sealJsonNoReplace(args.receipt, receipt);
     if (publication.publication !== "created") throw new Error(`candidate input receipt already exists: ${args.receipt}`);
     return { receipt: { path: args.receipt, sha256: publication.sha256 }, private_dir: args["output-private-dir"] };

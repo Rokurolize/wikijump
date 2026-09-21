@@ -71,7 +71,7 @@ fn collect_inline_scope_ranges(
     let mut cursor = 0usize;
 
     while cursor < bytes.len() {
-        if let Some(end) = literal_cursor.containing_end(cursor) {
+        if let Some(end) = literal_cursor.advance_to_containing_end(cursor) {
             cursor = end;
             continue;
         }
@@ -160,7 +160,7 @@ fn collect_inline_delimiter_scope_ranges(
         let mut cursor = 0usize;
 
         while cursor < bytes.len() {
-            if let Some(end) = literal_cursor.containing_end(cursor) {
+            if let Some(end) = literal_cursor.advance_to_containing_end(cursor) {
                 if let Some(start) = open.take() {
                     // An opener crossing a literal boundary is too ambiguous
                     // for this lightweight scanner. Preserve subsequent list

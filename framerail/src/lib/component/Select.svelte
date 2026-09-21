@@ -3,6 +3,7 @@
   import Icon from "./Icon.svelte"
   import Sprite from "./Sprite.svelte"
   import { tip } from "./scripts/tippy"
+  import type { Snippet } from "svelte"
 
   let {
     name = "",
@@ -26,8 +27,8 @@
     required?: boolean
     /** If true, the input will be as wide as possible. */
     wide?: boolean
-    children?: any
-    [key: string]: any
+    children?: Snippet
+    [key: string]: unknown
   } = $props()
 </script>
 

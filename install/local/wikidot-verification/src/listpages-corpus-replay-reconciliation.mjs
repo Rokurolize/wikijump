@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { readArtifactText } from "./compressed-artifact-io.mjs";
 
 import { sha256 } from "./syntax-differential.mjs";
 import {
@@ -131,7 +132,7 @@ export async function reconcileListPagesCorpusReplay({
       "authoritative reconciliation requires one scope-pinned reference set",
     );
   }
-  const invocationsText = await fs.readFile(invocationsPath, "utf8");
+  const invocationsText = await readArtifactText(invocationsPath);
   const invocations = readJsonlText(invocationsText);
   if (authoritative && invocations.length === 0) {
     throw new Error("authoritative corpus replay invocations must not be empty");

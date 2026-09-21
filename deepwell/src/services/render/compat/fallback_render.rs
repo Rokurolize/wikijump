@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::super::ftml_page_existence::{
+use super::super::ftml_render::{
     WikidotCompatLinkTitleMap, collect_fallback_page_references,
 };
 use super::super::service::{
@@ -220,7 +220,7 @@ impl RenderService {
                     .await?
             };
             if let Some(page) = page
-                && authorized_selector.page_is_viewable(&page).await?
+                && authorized_selector.check_page_viewability(&page).await?
             {
                 selected_pages.push(page);
             }

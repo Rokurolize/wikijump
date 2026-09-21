@@ -7,7 +7,7 @@ const read = (relativePath) =>
 
 test("Edit Meta is a lazy native pane and never mounts the legacy response HTML", async () => {
   const [page, content, pane] = await Promise.all([
-    read("src/routes/[slug]/[...extra]/page.svelte"),
+    read("src/routes/[slug]/[...extra]/PageView.svelte"),
     read("src/routes/[slug]/[...extra]/PagePaneContent.svelte"),
     read("src/routes/[slug]/[...extra]/EditMetaPane.svelte")
   ])
@@ -21,7 +21,7 @@ test("Edit Meta is a lazy native pane and never mounts the legacy response HTML"
 
 test("effective metadata is projected through escaped Svelte head attributes", async () => {
   const [page, head] = await Promise.all([
-    read("src/routes/[slug]/[...extra]/page.svelte"),
+    read("src/routes/[slug]/[...extra]/PageView.svelte"),
     read("src/routes/[slug]/[...extra]/PageHead.svelte")
   ])
   assert.match(page, /metaTags=\{showRevision \? \[\] : \(data\.meta_tags \?\? \[\]\)\}/u)

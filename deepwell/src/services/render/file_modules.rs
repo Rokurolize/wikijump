@@ -221,7 +221,7 @@ async fn load_files_module_state(
         return Ok(FilesModuleState::Unsupported);
     };
     let mut authorized = AuthorizedPageSelector::new(ctx, viewer_user_id);
-    if !authorized.page_is_viewable(&page).await? {
+    if !authorized.check_page_viewability(&page).await? {
         return Ok(FilesModuleState::Unsupported);
     }
 

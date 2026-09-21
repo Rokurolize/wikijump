@@ -8,7 +8,7 @@ import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
 import { requireNonEmptyString, requirePlainObject } from "./standing-browser-parity-util.mjs";
 
 const MAX_BODY = 20 * 1024 * 1024;
-const TIMEOUT_MS = 300_000;
+const TIMEOUT_MS = 30_000;
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
 function loopback(value, name) {

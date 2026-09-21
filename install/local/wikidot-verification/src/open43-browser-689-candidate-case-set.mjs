@@ -111,7 +111,7 @@ const VIEWPORT = Object.freeze({
   width: OPEN43_B689_TABVIEW_LIVE_ORACLE.viewport.width,
   height: OPEN43_B689_TABVIEW_LIVE_ORACLE.viewport.height,
 });
-const B689_SETTLE_MS = 8_000;
+const B689_SETTLE_MS = 0;
 const CANARIES = Object.freeze(
   OPEN43_B689_TABVIEW_FIXTURE.canary_slugs.map((slug) =>
     STANDING_BROWSER_CANARIES.find((canary) => canary.slug === slug),
@@ -423,10 +423,10 @@ async function readSelectionState(page) {
 }
 
 async function readSelectionStateAfterNavigation(page, expectedUrl) {
-  await page.waitForURL(expectedUrl, { waitUntil: "domcontentloaded", timeout: 300_000 });
+  await page.waitForURL(expectedUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
   for (let attempt = 0; attempt < 10; attempt += 1) {
     try {
-      await page.waitForLoadState("domcontentloaded", { timeout: 300_000 });
+      await page.waitForLoadState("domcontentloaded", { timeout: 30_000 });
       return await readSelectionState(page);
     } catch (error) {
       if (!/Execution context was destroyed|most likely because of a navigation/u.test(String(error?.message ?? error))) throw error;
@@ -498,16 +498,16 @@ async function runNavigationLifecycle(page, awayUrl) {
   // hop; keep the candidate document and its local application/file assets exact.
   await page.route("**/*", lifecycleRoute);
   try {
-    const away = await page.goto(awayUrl, { waitUntil: "domcontentloaded", timeout: 300_000 });
+    const away = await page.goto(awayUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
     const awayStatus = away?.status() ?? 0;
     const awayUrlAfter = page.url();
-    await page.goBack({ waitUntil: "domcontentloaded", timeout: 300_000 });
+    await page.goBack({ waitUntil: "domcontentloaded", timeout: 30_000 });
     const afterBack = await readSelectionStateAfterNavigation(page, originalUrl);
     const backUrl = page.url();
-    await page.goForward({ waitUntil: "domcontentloaded", timeout: 300_000 });
-    await page.waitForURL(awayUrl, { waitUntil: "domcontentloaded", timeout: 300_000 });
+    await page.goForward({ waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForURL(awayUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
     const forwardUrl = page.url();
-    await page.goBack({ waitUntil: "domcontentloaded", timeout: 300_000 });
+    await page.goBack({ waitUntil: "domcontentloaded", timeout: 30_000 });
     const afterSecondBack = await readSelectionStateAfterNavigation(page, originalUrl);
     return Object.freeze({
       selected_after_click: selectedAfterClick,
@@ -759,7 +759,7 @@ export function createOpen43B689TabviewCandidateCaseSet() {
                 index,
                 contract: canary,
                 viewport: VIEWPORT,
-                timeoutMs: 300_000,
+                timeoutMs: 30_000,
                 settleMs: B689_SETTLE_MS,
                 navigate: async ({ page: capturePage, url: captureUrl, timeoutMs }) => {
                   await installDomContentLoadedTabviewCapture(capturePage);
@@ -804,7 +804,7 @@ export function createOpen43B689TabviewCandidateCaseSet() {
           const navigationErrors = attachErrors(navigationPage);
           let navigationRow;
           try {
-            const response = await navigationPage.goto(scp8980Url, { waitUntil: "domcontentloaded", timeout: 300_000 });
+            const response = await navigationPage.goto(scp8980Url, { waitUntil: "domcontentloaded", timeout: 30_000 });
             navigationRow = {
               slug: "scp-8980",
               input_url: scp8980Url,

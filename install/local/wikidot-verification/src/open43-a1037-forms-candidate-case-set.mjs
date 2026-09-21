@@ -29,7 +29,7 @@ const NEWPAGE_BUTTON = 'value="Create page"';
 const NEWPAGE_NO_NAME_MESSAGE = "You should provide a page name";
 const NEWPAGE_INCORRECT_NAME_MESSAGE = "The page name is not correct: please fix it and try again";
 const VIEWPORT = Object.freeze({ width: 1280, height: 900 });
-const TIMEOUT_MS = 300_000;
+const TIMEOUT_MS = 30_000;
 
 class Open43A1037CandidateSession {
   #session;

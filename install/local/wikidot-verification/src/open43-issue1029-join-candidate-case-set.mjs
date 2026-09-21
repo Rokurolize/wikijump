@@ -272,7 +272,7 @@ const SOURCE_FILES = Object.freeze([
     "install/local/wikidot-verification/src/standing-browser-parity-receipt.mjs",
     "framerail/src/lib/wikidot/wikidot-membership-actions.js",
     "framerail/src/lib/wikidot/wikidot-membership-action-request.js",
-    "framerail/src/routes/[slug]/[...extra]/page.svelte",
+    "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
     "deepwell/src/endpoints/site_member.rs",
     "deepwell/src/services/membership/service.rs",
     "deepwell/src/services/render/membership_actions.rs",

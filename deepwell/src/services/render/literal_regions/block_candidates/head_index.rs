@@ -52,7 +52,7 @@ impl HeadContext {
         let mut key_end = vec![NO_OFFSET; bytes.len() + 1];
         let mut text_tokens = text_tokens.cursor();
         for cursor in 0..bytes.len() {
-            if let Some(end) = text_tokens.range_end_at(cursor) {
+            if let Some(end) = text_tokens.advance_to_range_end_at(cursor) {
                 text_owned[cursor..end].fill(true);
                 key_end[cursor] = compact_offset(end);
             }

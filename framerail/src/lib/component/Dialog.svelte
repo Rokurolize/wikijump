@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
   import { scrollElement } from "$lib/dom/scrolling"
-  import { createEventDispatcher, onMount, type Component } from "svelte"
+  import { createEventDispatcher, onMount, type Component, type Snippet } from "svelte"
 
   // the additional methods are what it is in the spec and fulfilled by the polyfill
   let dialog:
@@ -31,7 +31,7 @@
      * A prop object passed to the {@link component}, if one has been
      * provided.
      */
-    detail?: Record<string, any>
+    detail?: Record<string, unknown>
 
     /** If true, the dialog is displayed. */
     open?: boolean
@@ -42,8 +42,8 @@
      */
     lazy?: boolean
 
-    children?: any
-    [key: string]: any
+    children?: Snippet
+    [key: string]: unknown
   } = $props()
 
   /**
@@ -52,7 +52,6 @@
    */
   const closeDialog = () => void (open = false)
 
-  // svelte-ignore state_referenced_locally
   let state = $state(open)
   let previousFocus: HTMLElement | null = null
 

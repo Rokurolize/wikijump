@@ -4,7 +4,7 @@ export const STANDING_BROWSER_CANARY_SCHEMA =
   "wikijump_local_lab.standing_browser_canaries.v1";
 export const DEFAULT_VIEWPORT = Object.freeze({ width: 1366, height: 900 });
 export const DEFAULT_SETTLE_MS = 1_000;
-export const DEFAULT_TIMEOUT_MS = 900_000;
+export const DEFAULT_TIMEOUT_MS = 120_000;
 export const COMMON_GEOMETRY_SELECTORS = Object.freeze([
   "#main-content",
   "#page-content",

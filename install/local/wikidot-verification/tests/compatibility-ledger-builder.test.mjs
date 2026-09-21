@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -477,19 +478,35 @@ test("compatibility ledger builder partitions the pinned inventory without FTML 
   const input = path.join(directory, "inventory.json");
   const output = path.join(directory, "ledger.json");
   const guardedOutput = path.join(directory, "ledger-guarded.json");
+  const bindingPath = path.join(directory, "binding.json");
   const inventoryPath = path.join(
     root,
     "docs/development/compatibility-surface-inventory.json",
   );
   try {
+    const inventoryBytes = readFileSync(inventoryPath);
+    const inventory = JSON.parse(inventoryBytes);
+    const commit = execFileSync("git", ["rev-parse", "HEAD^{commit}"], { cwd: root, encoding: "utf8" }).trim();
+    const tree = execFileSync("git", ["rev-parse", "HEAD^{tree}"], { cwd: root, encoding: "utf8" }).trim();
+    writeFileSync(bindingPath, JSON.stringify({
+      schema: "wikijump.compatibility_inventory_source_binding.v1",
+      status: "pass",
+      inventory: {
+        path: "docs/development/compatibility-surface-inventory.json",
+        sha256: createHash("sha256").update(inventoryBytes).digest("hex"),
+        source_input_set_sha256: inventory.provenance.wikijump.source_input_set_sha256,
+      },
+      wikijump: { commit, tree },
+    }));
     execFileSync(process.execPath, [
       script,
       "--inventory",
       inventoryPath,
       "--output",
       output,
+      "--wikijump-binding",
+      bindingPath,
     ]);
-    const inventory = JSON.parse(readFileSync(inventoryPath));
     const ledger = JSON.parse(readFileSync(output));
     const rawIds = new Set([
       ...inventory.surfaces.map(({ surface_id: surfaceId }) => surfaceId),
@@ -549,6 +566,9 @@ test("compatibility ledger builder partitions the pinned inventory without FTML 
     });
     ftmlMatch.ftml_raw_surface_manifest.counts.total += 1;
     writeFileSync(input, JSON.stringify(ftmlMatch));
+    const rebound = JSON.parse(readFileSync(bindingPath));
+    rebound.inventory.sha256 = createHash("sha256").update(readFileSync(input)).digest("hex");
+    writeFileSync(bindingPath, JSON.stringify(rebound));
     execFileSync(process.execPath, [
       script,
       "--inventory",
@@ -557,6 +577,8 @@ test("compatibility ledger builder partitions the pinned inventory without FTML 
       guardedOutput,
       "--previous",
       output,
+      "--wikijump-binding",
+      bindingPath,
     ]);
     const guardedLedger = JSON.parse(readFileSync(guardedOutput));
     assert.equal(guardedLedger.deferred_exclusions.count, 54);

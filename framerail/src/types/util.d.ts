@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unsafe-function-type */
 declare global {
   /** Represents any function, without using the {@link Function} object. */
-  type AnyFunction<R = unknown> = (...args: any) => R
+  type AnyFunction<R = unknown> = (...args: never[]) => R
 
   /** Represents the eventual value of a `Promise`. */
   type PromiseValue<PromiseType, Otherwise = PromiseType> =
@@ -37,7 +37,7 @@ declare global {
    * Filters a record for any properties which are equivalent to a given
    * type.
    */
-  type FilterFor<O extends Record<string, any>, T> = {
+  type FilterFor<O extends object, T> = {
     [Property in keyof O as O[Property] extends T ? Property : never]: O[Property]
   }
 
@@ -45,7 +45,7 @@ declare global {
    * Filters out of a record any properties which are equivalent to a given
    * type.
    */
-  type FilterOut<O extends Record<string, any>, T> = {
+  type FilterOut<O extends object, T> = {
     [Property in keyof O as O[Property] extends T ? never : Property]: O[Property]
   }
 
@@ -56,15 +56,16 @@ declare global {
    * A type which may either be the given type or a function returning the
    * given type.
    */
-  type Functionable<T, A = any, G = this> = T | ((this: G, ...args: A) => T)
+  type Functionable<T, A extends unknown[] = [], G = this> =
+    T | ((this: G, ...args: A) => T)
 
   /** Represents a constructor function (a class, effectively) */
-  type Constructor<T = {}, A extends any[] | void = void> = A extends any[]
+  type Constructor<T = {}, A extends unknown[] | void = void> = A extends unknown[]
     ? new (...args: A) => T
     : new () => T
 
   /** Represents an abstract class constructor function. */
-  type AbstractClass<T = {}, A extends any[] | void = void> = A extends any[]
+  type AbstractClass<T = {}, A extends unknown[] | void = void> = A extends unknown[]
     ? abstract new (...args: A) => T
     : abstract new () => T
 

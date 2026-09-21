@@ -119,9 +119,9 @@ features["module-listpages"] = {
   documentation_evidence: [
     "docs/wikidot-specifications/specifications/module/module-listpages.md",
     "docs/wikidot-specifications/live-observations.json",
-    "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/documentation-inventory.json",
-    "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl",
-    "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-clusters.json",
+    "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/documentation-inventory.json.gz",
+    "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl.gz",
+    "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-clusters.json.gz",
   ],
   live_oracle_evidence: [
     "install/local/wikidot-verification/artifacts/listpages-campaign-live-fixture-classification.json",

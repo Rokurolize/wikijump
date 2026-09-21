@@ -267,7 +267,7 @@ class Q1040Run {
         index: 1,
         contract: CAPTURE_CONTRACT,
         viewport: { width: 1280, height: 900 },
-        timeoutMs: 300_000,
+        timeoutMs: 30_000,
         settleMs: 0,
         navigate: ({ page: targetPage, url: targetUrl, timeoutMs }) => targetPage.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs }),
       });

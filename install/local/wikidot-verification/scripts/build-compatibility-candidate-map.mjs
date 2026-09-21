@@ -12,7 +12,10 @@ import {
 export const CANDIDATE_MAP_SCHEMA = "wikijump.compatibility_candidate_map.v1";
 
 const DENOMINATOR_SCHEMA = "wikijump.compatibility_final_zero_denominator.v1";
-const INVENTORY_SCHEMA = "wikijump.compatibility_surface_inventory.v2";
+const INVENTORY_SCHEMAS = new Set([
+  "wikijump.compatibility_surface_inventory.v2",
+  "wikijump.compatibility_surface_inventory.v3",
+]);
 const AGGREGATE_SCHEMA = "wikijump.candidate_campaign_aggregate.v1";
 const PARITY_ADMISSION_SCHEMA = "wikijump.standing_candidate_parity_admission.v1";
 const SURFACE_ID = /^surface:[0-9]{8}$/u;
@@ -66,7 +69,7 @@ function semanticDenominatorRows(value) {
 }
 
 function inventoryBySurface(value) {
-  if (value?.schema !== INVENTORY_SCHEMA || value.counts?.total !== value.surfaces?.length) {
+  if (!INVENTORY_SCHEMAS.has(value?.schema) || value.counts?.total !== value.surfaces?.length) {
     fail("candidate map inventory is not complete");
   }
   return new Map(value.surfaces.map((row) => [row.surface_id, row]));

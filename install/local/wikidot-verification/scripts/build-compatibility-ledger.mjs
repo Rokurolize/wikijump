@@ -15,9 +15,19 @@ import {deferredCompatibilityOwner} from "../src/compatibility-deferred-scope.mj
 
 const rawArguments = process.argv.slice(2);
 const argumentsList = rawArguments[0] === "--" ? rawArguments.slice(1) : rawArguments;
-if (![4, 6].includes(argumentsList.length) || argumentsList[0] !== "--inventory" || argumentsList[2] !== "--output") throw new Error("usage: build-compatibility-ledger.mjs --inventory PATH --output PATH [--previous PATH]");
-const [, inventoryPathArgument, , outputPathArgument, previousFlag, previousPathArgument] = argumentsList;
-if (argumentsList.length === 6 && previousFlag !== "--previous") throw new Error("usage: build-compatibility-ledger.mjs --inventory PATH --output PATH [--previous PATH]");
+const usage = "usage: build-compatibility-ledger.mjs --inventory PATH --output PATH [--previous PATH] [--wikijump-binding PATH]";
+const cli = {};
+for (let index = 0; index < argumentsList.length; index += 2) {
+  const flag = argumentsList[index];
+  const value = argumentsList[index + 1];
+  if (!["--inventory", "--output", "--previous", "--wikijump-binding"].includes(flag) || !value || value.startsWith("--") || Object.hasOwn(cli, flag)) throw new Error(usage);
+  cli[flag] = value;
+}
+if (!cli["--inventory"] || !cli["--output"]) throw new Error(usage);
+const inventoryPathArgument = cli["--inventory"];
+const outputPathArgument = cli["--output"];
+const previousPathArgument = cli["--previous"];
+const wikijumpBindingPathArgument = cli["--wikijump-binding"];
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const resolveRepositoryPath = (value) => path.isAbsolute(value) ? value : path.resolve(repositoryRoot, value);
 const outputPath = resolveRepositoryPath(outputPathArgument);
@@ -26,6 +36,28 @@ const previousPath = previousPathArgument ? resolveRepositoryPath(previousPathAr
 const inventoryPath = resolveRepositoryPath(inventoryPathArgument);
 const inventoryBytes = await readFile(inventoryPath);
 const inventory = JSON.parse(inventoryBytes);
+const inventorySha256 = sha256Hex(inventoryBytes);
+
+let wikijumpIdentity;
+if (inventory.schema === "wikijump.compatibility_surface_inventory.v2") {
+  wikijumpIdentity = inventory.provenance?.wikijump;
+} else if (inventory.schema === "wikijump.compatibility_surface_inventory.v3") {
+  if (!wikijumpBindingPathArgument) fail("v3 inventory requires --wikijump-binding");
+  const binding = JSON.parse(await readFile(resolveRepositoryPath(wikijumpBindingPathArgument), "utf8"));
+  if (
+    binding?.schema !== "wikijump.compatibility_inventory_source_binding.v1" ||
+    binding.status !== "pass" ||
+    binding.inventory?.sha256 !== inventorySha256 ||
+    binding.inventory?.source_input_set_sha256 !== inventory.provenance?.wikijump?.source_input_set_sha256 ||
+    !/^[0-9a-f]{40}$/u.test(binding.wikijump?.commit ?? "") ||
+    !/^[0-9a-f]{40}$/u.test(binding.wikijump?.tree ?? "")
+  ) {
+    fail("v3 inventory source binding is invalid");
+  }
+  wikijumpIdentity = binding.wikijump;
+} else {
+  fail("unsupported inventory schema");
+}
 
 function fail(message) {
   throw new Error(message);
@@ -49,8 +81,6 @@ function nextId(prefix, used) {
   return value;
 }
 
-if (inventory.schema !== "wikijump.compatibility_surface_inventory.v2")
-  fail("unsupported inventory schema");
 if (inventory.counts?.total !== inventory.surfaces?.length)
   fail("inventory surface count differs");
 if (
@@ -237,7 +267,6 @@ const previousRelationshipByKey = new Map(
   }),
 );
 const usedRelationshipIds = new Set(previousRelationshipByKey.values());
-const inventorySha256 = sha256Hex(inventoryBytes);
 const manifestByClass = {
   wikijump: "manifest:00000001",
   ftml: "manifest:00000002",
@@ -249,8 +278,8 @@ const source_manifests = [
     source_class: "wikijump-consolidated-inventory",
     schema_id: inventory.schema,
     repository: "Rokurolize/wikijump",
-    commit: inventory.provenance.wikijump.commit,
-    tree: inventory.provenance.wikijump.tree,
+    commit: wikijumpIdentity.commit,
+    tree: wikijumpIdentity.tree,
     path: inventoryPath,
     sha256: inventorySha256,
   },
@@ -426,7 +455,7 @@ const ledger = {
   },
   inputs: {
     inventory: { path: inventoryPath, sha256: inventorySha256 },
-    wikijump: inventory.provenance.wikijump,
+    wikijump: wikijumpIdentity,
     ftml: inventory.provenance.ftml,
   },
   source_manifests,

@@ -25,7 +25,7 @@ test("focused unit tests use the same sync and network-guard bootstrap as the fu
   assert.match(runner, /node --test/)
 })
 
-test("node test workers isolate SvelteKit and Vite generated state by process", async () => {
+test("node test workers isolate SvelteKit generated state and Vite caches by process", async () => {
   assert.equal(process.env.NODE_TEST_CONTEXT, "child-v8")
   assert.equal(
     config.kit.outDir,

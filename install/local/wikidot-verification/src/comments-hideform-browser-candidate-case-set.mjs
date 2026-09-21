@@ -161,7 +161,7 @@ class CommentsHideformRun {
       index,
       contract: BROWSER_CONTRACT,
       viewport: { width: 1280, height: 900 },
-      timeoutMs: 300_000,
+      timeoutMs: 30_000,
       settleMs: 0,
       onPhase: (phase) => this.#browserContexts.setActiveFixture(`M1367_${actorLabel}_${caseLabel}_${phase === "settled" ? "SETTLED" : "DOMCONTENTLOADED"}`),
     });
