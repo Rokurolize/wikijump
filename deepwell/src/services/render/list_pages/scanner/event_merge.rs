@@ -190,7 +190,10 @@ pub(super) fn mark_projection_changed_direct_heads(
             continue;
         };
         if projection_guard_start.is_some_and(|guard| {
-            !guard_ranges.range_is_unchanged(original, guard..current.opening_end)
+            !guard_ranges.advance_to_range_and_check_unchanged(
+                original,
+                guard..current.opening_end,
+            )
         }) {
             *direct = None;
             continue;
@@ -206,7 +209,10 @@ pub(super) fn mark_projection_changed_direct_heads(
         {
             head_start += 1;
         }
-        if !head_ranges.range_is_unchanged(original, head_start..direct.opening_end) {
+        if !head_ranges.advance_to_range_and_check_unchanged(
+            original,
+            head_start..direct.opening_end,
+        ) {
             direct.runtime_safe = false;
         }
     }

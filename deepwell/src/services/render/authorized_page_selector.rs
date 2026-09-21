@@ -40,7 +40,7 @@ impl<'a, 'ctx> AuthorizedPageSelector<'a, 'ctx> {
     ) -> Result<Vec<PageModel>> {
         let mut viewable = Vec::new();
         for page in pages {
-            if self.page_is_viewable(&page).await? {
+            if self.check_page_viewability(&page).await? {
                 viewable.push(page);
             }
         }
@@ -56,7 +56,10 @@ impl<'a, 'ctx> AuthorizedPageSelector<'a, 'ctx> {
         self.filter_models(pages).await
     }
 
-    pub(crate) async fn page_is_viewable(&mut self, page: &PageModel) -> Result<bool> {
+    pub(crate) async fn check_page_viewability(
+        &mut self,
+        page: &PageModel,
+    ) -> Result<bool> {
         let key = (page.site_id, page.page_id, page.page_category_id);
         if let Some(decision) = self.decisions.get(&key) {
             return Ok(*decision);

@@ -81,7 +81,7 @@ pub(super) async fn ensure_page_action_permission<'a>(
     .await
 }
 
-pub(super) async fn ensure_deleted_page_delete_permission(
+pub(super) async fn ensure_deleted_page_delete_permission_and_get_category_id(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     page_id: i64,

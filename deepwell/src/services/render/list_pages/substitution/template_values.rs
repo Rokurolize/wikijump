@@ -1,5 +1,5 @@
 /*
- * services/render/list_pages/substitution/generated_values.rs
+ * services/render/list_pages/substitution/template_values.rs
  *
  * DEEPWELL - Wikijump API provider and database manager
  * Copyright (C) 2019-2026 Wikijump Team

@@ -33,7 +33,7 @@ pub struct UpdateGoogleAnalyticsSettings {
 }
 
 impl UpdateGoogleAnalyticsSettings {
-    pub fn profile(&self) -> Result<Option<&str>> {
+    pub fn validated_profile(&self) -> Result<Option<&str>> {
         if !self.enabled && self.profile.is_empty() {
             return Ok(None);
         }
@@ -60,7 +60,7 @@ impl UpdateGoogleAnalyticsSettings {
     }
 
     pub fn validate(&self) -> Result<()> {
-        self.profile()?;
+        self.validated_profile()?;
         Ok(())
     }
 }

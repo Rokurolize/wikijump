@@ -61,7 +61,7 @@ pub(super) fn collect_all_pinned_css_module_openers_with_heads(
     source: &str,
     heads: &HeadContext,
 ) -> Vec<Range<usize>> {
-    collect_css_prefixes(source)
+    collect_css_prefixes_with_work(source)
         .0
         .into_iter()
         .filter_map(|(start, scan_start)| heads.map_end(scan_start).map(|end| start..end))
@@ -74,7 +74,7 @@ fn collect_all_pinned_css_module_openers_with_work(
     if source.len() >= u32::MAX as usize {
         return (Vec::new(), source.len());
     }
-    let (prefixes, mut work) = collect_css_prefixes(source);
+    let (prefixes, mut work) = collect_css_prefixes_with_work(source);
     if prefixes.is_empty() {
         return (Vec::new(), work);
     }
@@ -90,7 +90,7 @@ fn collect_all_pinned_css_module_openers_with_work(
     (openers, work.saturating_add(source.len()))
 }
 
-fn collect_css_prefixes(source: &str) -> (Vec<(usize, usize)>, usize) {
+fn collect_css_prefixes_with_work(source: &str) -> (Vec<(usize, usize)>, usize) {
     let bytes = source.as_bytes();
     let mut prefixes = Vec::new();
     let mut cursor = 0usize;

@@ -9,7 +9,8 @@ use super::{
     FromQueryResult, ListPagesPageContext, ListPagesSourceProjection, LiteralRegionIndex,
     MAX_LISTPAGES_RENDER_SCAN_ROWS, PageInfo, Permission, PermissionService, Reference,
     RenderService, Resource, Result, ResultExt, ServiceContext, Statement, UrlArguments,
-    Value, WikitextSettings, count_pages_capture_is_literal,
+    Value, WikitextSettings,
+    advance_literal_cursor_and_check_count_pages_capture_containment,
     count_pages_required_tag_batch_result, count_pages_required_tag_batch_selector,
     count_pages_should_remain_literal, has_count_pages_module_opening_candidate,
     list_pages_has_unsupported_page_type_selector,
@@ -79,7 +80,10 @@ impl RenderService {
         for captures in COUNTPAGES_MODULE_REGEX.captures_iter(&wikitext) {
             let mtch = captures.get(0).unwrap();
             expanded.push_str(&wikitext[cursor..mtch.start()]);
-            if count_pages_capture_is_literal(&mut literal_regions, mtch.start()) {
+            if advance_literal_cursor_and_check_count_pages_capture_containment(
+                &mut literal_regions,
+                mtch.start(),
+            ) {
                 expanded.push_str(mtch.as_str());
                 cursor = mtch.end();
                 continue;
@@ -90,8 +94,10 @@ impl RenderService {
             let body = body_match.map_or("", |matched| matched.as_str());
 
             if source_projection_ranges.as_mut().is_some_and(|ranges| {
-                !ranges
-                    .range_is_unchanged(&wikitext, head_match.start()..head_match.end())
+                !ranges.advance_to_range_and_check_unchanged(
+                    &wikitext,
+                    head_match.start()..head_match.end(),
+                )
             }) {
                 expanded.push_str(&compat_text.push_escaped_html_text(mtch.as_str()));
                 cursor = mtch.end();
@@ -261,7 +267,10 @@ impl RenderService {
             source_projection.map(ListPagesSourceProjection::original_range_cursor);
         for captures in COUNTPAGES_MODULE_REGEX.captures_iter(wikitext) {
             let mtch = captures.get(0).unwrap();
-            if count_pages_capture_is_literal(&mut literal_regions, mtch.start()) {
+            if advance_literal_cursor_and_check_count_pages_capture_containment(
+                &mut literal_regions,
+                mtch.start(),
+            ) {
                 continue;
             }
             if !close_reachability
@@ -271,7 +280,10 @@ impl RenderService {
             }
             let head_match = captures.name("head").unwrap();
             if source_projection_ranges.as_mut().is_some_and(|ranges| {
-                !ranges.range_is_unchanged(wikitext, head_match.start()..head_match.end())
+                !ranges.advance_to_range_and_check_unchanged(
+                    wikitext,
+                    head_match.start()..head_match.end(),
+                )
             }) {
                 continue;
             }

@@ -73,7 +73,7 @@ use super::diagnostics::{
     StageGuard,
 };
 use super::forum_modules::resolve_typed_root_recent_threads_runtime_modules;
-use super::ftml_page_existence::{
+use super::ftml_render::{
     FtmlRenderOutput, InnerPreparedRenderWikitext, ParsedFtmlRender,
     WikidotCompatLinkTitleMap, native_list_page_link_ref,
 };
@@ -96,7 +96,7 @@ use super::include_attachment_owners::{
 use super::include_comment_branches::{
     remove_nested_include_boundaries, remove_unresolved_include_comment_branches,
 };
-use super::include_missing::{
+use super::include_resolution::{
     PreparedIncluder, collect_include_display_pages,
     collect_missing_include_replacements, expand_malformed_include_targets,
     wikidot_no_such_include_replacement,
@@ -1205,7 +1205,7 @@ impl RenderService {
         html_output.styles.extend(body_styles);
         let styles_json =
             serde_json::to_string(&html_output.styles).or_raise(make_error)?;
-        let compiled_body_styles_hash = Self::compiled_text_hash(
+        let compiled_body_styles_hash = Self::persist_or_hash_compiled_text(
             ctx,
             None,
             &styles_json,
@@ -2290,7 +2290,7 @@ impl RenderService {
                     html_output.body.len(),
                 );
             }
-            let compiled_hash = Self::compiled_text_hash(
+            let compiled_hash = Self::persist_or_hash_compiled_text(
                 ctx,
                 trace,
                 &html_output.body,
@@ -2679,7 +2679,7 @@ impl RenderService {
             }
         }
 
-        let compiled_hash = Self::compiled_text_hash(
+        let compiled_hash = Self::persist_or_hash_compiled_text(
             ctx,
             trace,
             &html_output.body,
@@ -2761,7 +2761,7 @@ impl RenderService {
         })
     }
 
-    async fn compiled_text_hash(
+    async fn persist_or_hash_compiled_text(
         ctx: &ServiceContext<'_>,
         trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
         html: &str,

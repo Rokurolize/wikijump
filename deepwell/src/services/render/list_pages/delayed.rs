@@ -29,7 +29,7 @@ use crate::services::page_query::FoundPageRow;
 use crate::services::render::compat::CompatHtmlFragments;
 use crate::services::render::compat::preparation::neutralize_authored_markers;
 use crate::services::render::compat::text_fragments::CompatTextFragments;
-use crate::services::render::ftml_page_existence::WikidotCompatLinkTitleMap;
+use crate::services::render::ftml_render::WikidotCompatLinkTitleMap;
 use crate::services::render::iftags::resolve_outermost_wikidot_iftags;
 use crate::services::render::literal_regions::LiteralRegionIndex;
 use crate::services::render::render_budget::SharedRenderCostBudget;

@@ -117,12 +117,12 @@ pub(super) async fn project_page_query_results(
                         let ordering = left_score
                             .partial_cmp(&right_score)
                             .unwrap_or(Ordering::Equal);
-                        let score_ordering = if order.ascending {
+                        let score_comparison = if order.ascending {
                             ordering
                         } else {
                             ordering.reverse()
                         };
-                        score_ordering
+                        score_comparison
                             .then_with(|| {
                                 compare_ordering_titles(
                                     ordering_title_by_page_id

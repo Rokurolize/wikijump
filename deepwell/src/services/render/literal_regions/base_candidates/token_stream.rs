@@ -78,7 +78,7 @@ impl DelimiterIndex {
 
         while cursor < bytes.len() {
             record_event_scan_advance();
-            if let Some(end) = text_tokens.range_end_at(cursor) {
+            if let Some(end) = text_tokens.advance_to_range_end_at(cursor) {
                 cursor = end;
                 continue;
             }
@@ -90,7 +90,7 @@ impl DelimiterIndex {
                             kind: DelimiterKind::DoubleAt,
                             start: cursor,
                         },
-                        line_end: lines.body_end_at(cursor),
+                        line_end: lines.advance_to_body_end_at(cursor),
                     },
                 }),
                 Some(DelimiterKind::LeftRaw) => {
@@ -99,7 +99,7 @@ impl DelimiterIndex {
                             kind: DelimiterKind::LeftRaw,
                             start: cursor,
                         },
-                        line_end: lines.body_end_at(cursor),
+                        line_end: lines.advance_to_body_end_at(cursor),
                     });
                 }
                 Some(DelimiterKind::RightRaw) => {
@@ -114,7 +114,7 @@ impl DelimiterIndex {
                             kind: DelimiterKind::InlineMathOpen,
                             start: cursor,
                         },
-                        line_end: lines.body_end_at(cursor),
+                        line_end: lines.advance_to_body_end_at(cursor),
                     });
                 }
                 Some(DelimiterKind::InlineMathClose) => {
@@ -380,7 +380,7 @@ impl<'a> PhysicalLineEndCursor<'a> {
         }
     }
 
-    fn body_end_at(&mut self, offset: usize) -> usize {
+    fn advance_to_body_end_at(&mut self, offset: usize) -> usize {
         while self.line_end <= offset {
             let previous_end = self.line_end;
             self.advance();

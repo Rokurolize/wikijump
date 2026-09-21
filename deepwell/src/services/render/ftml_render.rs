@@ -1,5 +1,5 @@
 /*
- * services/render/ftml_page_existence.rs
+ * services/render/ftml_render.rs
  *
  * DEEPWELL - Wikijump API provider and database manager
  * Copyright (C) 2019-2026 Wikijump Team

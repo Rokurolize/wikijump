@@ -203,7 +203,7 @@ pub(in crate::services::render) fn resolve_url_selector<'a>(
     }
 }
 
-pub(in crate::services::render) fn static_list_pages_selector<'a>(
+pub(in crate::services::render) fn preflight_static_list_pages_selector<'a>(
     value: &'a str,
     unsupported_count_pages_filter: &mut bool,
 ) -> Option<&'a str> {

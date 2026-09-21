@@ -24,8 +24,8 @@ use std::ops::Range;
 
 use super::UrlArguments;
 use super::list_pages::{
-    count_pages_capture_is_literal, count_pages_should_remain_literal,
-    list_pages_has_unsupported_page_type_selector,
+    advance_literal_cursor_and_check_count_pages_capture_containment,
+    count_pages_should_remain_literal, list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector,
     list_pages_recognized_static_url_fallback_ranges,
     parse_list_pages_arguments_with_url,
@@ -84,7 +84,10 @@ pub(super) fn recognize_count_pages_modules(source: &str) -> CountPagesModuleRec
         let module = captures
             .get(0)
             .expect("a CountPages capture always has a complete match");
-        if count_pages_capture_is_literal(&mut literal_regions, module.start()) {
+        if advance_literal_cursor_and_check_count_pages_capture_containment(
+            &mut literal_regions,
+            module.start(),
+        ) {
             recognition.literal_starts.push(module.start());
             continue;
         }
@@ -94,7 +97,10 @@ pub(super) fn recognize_count_pages_modules(source: &str) -> CountPagesModuleRec
             .expect("a CountPages capture always has a head");
         let head = head_match.as_str();
         if source_projection_ranges.as_mut().is_some_and(|ranges| {
-            !ranges.range_is_unchanged(source, head_match.start()..head_match.end())
+            !ranges.advance_to_range_and_check_unchanged(
+                source,
+                head_match.start()..head_match.end(),
+            )
         }) {
             continue;
         }

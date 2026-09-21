@@ -21,11 +21,11 @@
 mod batch;
 mod body;
 mod date_selectors;
-mod generated_values;
 mod query_helpers;
 mod rendered_fragments;
 mod runtime;
 mod selectors;
+mod template_values;
 
 pub(in crate::services::render) use self::batch::{
     CurrentPageAuthorSource, ExactNameListPagesBatchKey, ListPagesAuthorCacheKey,
@@ -43,20 +43,13 @@ pub(in crate::services::render) use self::body::{
     list_pages_body_uses_content_variable, list_pages_body_variables_supported,
 };
 pub(in crate::services::render) use self::date_selectors::parse_list_pages_date_selector;
-pub(in crate::services::render) use self::generated_values::{
-    list_pages_first_paragraph, list_pages_unknown_link_target_slugs,
-    substitute_list_pages_rating_only,
-};
-use self::generated_values::{
-    list_pages_variable_starts_triple_link_target, protect_list_pages_content_insertion,
-};
 pub(in crate::services::render) use self::query_helpers::{
-    count_pages_capture_is_literal, count_pages_exact_count_render_diagnostics,
-    count_pages_required_tag_batch_result, count_pages_required_tag_batch_selector,
-    count_pages_should_remain_literal, is_current_page_tag_selector, is_no_tags_selector,
-    parse_list_pages_comparison, parse_list_pages_order, parse_list_pages_page_type,
-    parse_list_pages_score_selector, split_list_pages_values,
-    wikidot_list_pages_name_slug,
+    advance_literal_cursor_and_check_count_pages_capture_containment,
+    count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
+    count_pages_required_tag_batch_selector, count_pages_should_remain_literal,
+    is_current_page_tag_selector, is_no_tags_selector, parse_list_pages_comparison,
+    parse_list_pages_order, parse_list_pages_page_type, parse_list_pages_score_selector,
+    split_list_pages_values, wikidot_list_pages_name_slug,
 };
 use self::query_helpers::{
     exact_raw_color_list_pages_name, list_pages_comparison_value,
@@ -80,8 +73,16 @@ pub(in crate::services::render) use self::selectors::{
     list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_static_category_preflight,
     list_pages_static_url_fallback_marker_range, list_pages_url_fallback,
-    parse_list_pages_numeric_argument, resolve_url_selector, split_list_pages_tag_values,
-    static_list_pages_selector, substitute_list_pages_current_data_form_variables,
+    parse_list_pages_numeric_argument, preflight_static_list_pages_selector,
+    resolve_url_selector, split_list_pages_tag_values,
+    substitute_list_pages_current_data_form_variables,
+};
+pub(in crate::services::render) use self::template_values::{
+    list_pages_first_paragraph, list_pages_unknown_link_target_slugs,
+    substitute_list_pages_rating_only,
+};
+use self::template_values::{
+    list_pages_variable_starts_triple_link_target, protect_list_pages_content_insertion,
 };
 
 use super::template::{
@@ -104,7 +105,7 @@ use wikidot_normalize::normalize;
 use super::super::compat::CompatHtmlFragments;
 use super::super::compat::preparation::neutralize_authored_markers;
 use super::super::compat::text_fragments::{CompatTextFragments, escape_html_text};
-use super::super::ftml_page_existence::WikidotCompatLinkTitleMap;
+use super::super::ftml_render::WikidotCompatLinkTitleMap;
 use super::super::literal_regions::LiteralRegionCursor;
 use super::super::module_arguments::{
     WikidotModuleArgumentValueKind, wikidot_list_pages_arguments,
@@ -124,7 +125,7 @@ use super::delayed::{ListPagesGeneratedSlot, ListPagesRuntimeTextRange};
 use super::parents::ListPagesParentDisplay;
 use super::presentation::{
     format_list_pages_created_at, is_list_pages_hidden_tag, is_list_pages_visible_tag,
-    list_pages_created_by_unix, list_pages_tag_target_prefix,
+    list_pages_created_by_slug, list_pages_tag_target_prefix,
     protect_list_pages_generated_html, render_list_pages_snapshot_user,
     render_list_pages_snapshot_wikidot_user, render_list_pages_tags,
     render_list_pages_wikidot_user,
@@ -1406,7 +1407,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                         continue;
                     }
                 };
-                let value = static_list_pages_selector(
+                let value = preflight_static_list_pages_selector(
                     value,
                     &mut unsupported_count_pages_filter,
                 )?;

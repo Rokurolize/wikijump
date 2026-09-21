@@ -278,7 +278,8 @@ impl ListPagesSourceProjection {
                     self.original_offsets[projected.start - 1] + 1 != mapped.start
                 };
                 (disconnected_start
-                    || !unchanged.range_is_unchanged(original, mapped.clone()))
+                    || !unchanged
+                        .advance_to_range_and_check_unchanged(original, mapped.clone()))
                 .then_some(mapped)
             })
             .collect()
@@ -339,7 +340,7 @@ fn restore_documented_list_pages_placeholder_ellipsis(
 }
 
 impl ListPagesOriginalRangeCursor<'_> {
-    pub(in crate::services::render) fn range_is_unchanged(
+    pub(in crate::services::render) fn advance_to_range_and_check_unchanged(
         &mut self,
         original: &str,
         range: Range<usize>,

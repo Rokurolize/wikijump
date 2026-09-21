@@ -497,7 +497,7 @@ impl SiteService {
                     Maybe::Set(site.google_analytics_profile.as_deref());
                 changed_fields.google_analytics_enabled = Maybe::Set(analytics.enabled);
                 changed_fields.google_analytics_profile =
-                    Maybe::Set(analytics.profile()?);
+                    Maybe::Set(analytics.validated_profile()?);
             }
             if let Maybe::Set(toolbars) = input.toolbars {
                 previous_fields.show_top_toolbar = Maybe::Set(site.show_top_toolbar);
@@ -614,7 +614,7 @@ impl SiteService {
         if let Maybe::Set(analytics) = input.google_analytics {
             model.google_analytics_enabled = Set(analytics.enabled);
             model.google_analytics_profile =
-                Set(analytics.profile()?.map(ToOwned::to_owned));
+                Set(analytics.validated_profile()?.map(ToOwned::to_owned));
         }
 
         if let Maybe::Set(toolbars) = input.toolbars {

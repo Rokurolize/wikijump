@@ -365,20 +365,20 @@ fn repeated_site_wide_score_key_materializes_once() {
     let key = ScoreFilterCacheKey::new(6_000_006, &selectors);
     let mut cache = PageQueryScoreFilterCache::default();
 
-    assert_eq!(cache.lookup(&key, true), ScoreFilterCacheLookup::FirstUse);
+    assert_eq!(cache.touch(&key, true), ScoreFilterCacheLookup::FirstUse);
     assert_eq!(
-        cache.lookup(&key, true),
+        cache.touch(&key, true),
         ScoreFilterCacheLookup::RepeatedUnmaterialized,
     );
     cache.insert(key.clone(), ScoreFilterMembership::Included(vec![11, 22]));
     assert_eq!(
-        cache.lookup(&key, true),
+        cache.touch(&key, true),
         ScoreFilterCacheLookup::Materialized(ScoreFilterMembership::Included(vec![
             11, 22
         ]),),
     );
     assert_eq!(
-        cache.lookup(&key, true),
+        cache.touch(&key, true),
         ScoreFilterCacheLookup::Materialized(ScoreFilterMembership::Included(vec![
             11, 22
         ]),),
@@ -396,14 +396,14 @@ fn score_filter_session_counts_batches_as_one_logical_use() {
     let mut first_module = PageQueryScoreFilterSession::default();
 
     assert!(first_module.register_use(&key));
-    assert_eq!(cache.lookup(&key, true), ScoreFilterCacheLookup::FirstUse);
+    assert_eq!(cache.touch(&key, true), ScoreFilterCacheLookup::FirstUse);
     assert!(!first_module.register_use(&key));
-    assert_eq!(cache.lookup(&key, false), ScoreFilterCacheLookup::FirstUse);
+    assert_eq!(cache.touch(&key, false), ScoreFilterCacheLookup::FirstUse);
 
     let mut second_module = PageQueryScoreFilterSession::default();
     assert!(second_module.register_use(&key));
     assert_eq!(
-        cache.lookup(&key, true),
+        cache.touch(&key, true),
         ScoreFilterCacheLookup::RepeatedUnmaterialized,
     );
 }
@@ -430,7 +430,7 @@ fn score_cache_separates_sites_comparisons_and_numeric_types() {
         ScoreFilterCacheKey::new(1, &float),
         ScoreFilterCacheKey::new(1, &strict),
     ] {
-        assert_eq!(cache.lookup(&key, true), ScoreFilterCacheLookup::FirstUse);
+        assert_eq!(cache.touch(&key, true), ScoreFilterCacheLookup::FirstUse);
     }
 }
 
@@ -556,10 +556,10 @@ fn materialized_score_ids_are_available_before_probe_without_state_updates() {
     let session = PageQueryScoreFilterSession::default();
 
     assert_eq!(cache.materialized_membership(&key), None);
-    assert_eq!(cache.lookup(&key, true), ScoreFilterCacheLookup::FirstUse);
+    assert_eq!(cache.touch(&key, true), ScoreFilterCacheLookup::FirstUse);
     assert_eq!(cache.materialized_membership(&key), None);
     assert_eq!(
-        cache.lookup(&key, true),
+        cache.touch(&key, true),
         ScoreFilterCacheLookup::RepeatedUnmaterialized,
     );
     assert_eq!(cache.materialized_membership(&key), None);
@@ -657,7 +657,7 @@ fn score_cache_total_id_limit_marks_new_keys_uncacheable() {
     assert!(cache.memberships.contains_key(&first_key));
     assert!(cache.memberships.contains_key(&second_key));
     assert_eq!(
-        cache.lookup(&overflow_key, true),
+        cache.touch(&overflow_key, true),
         ScoreFilterCacheLookup::Uncacheable
     );
     assert_eq!(cache.materialized_membership(&overflow_key), None);
@@ -672,21 +672,15 @@ fn uncacheable_score_key_stays_on_the_site_wide_fallback() {
     let key = ScoreFilterCacheKey::new(6_000_006, &selectors);
     let mut cache = PageQueryScoreFilterCache::default();
 
-    assert_eq!(cache.lookup(&key, true), ScoreFilterCacheLookup::FirstUse);
+    assert_eq!(cache.touch(&key, true), ScoreFilterCacheLookup::FirstUse);
     assert_eq!(
-        cache.lookup(&key, true),
+        cache.touch(&key, true),
         ScoreFilterCacheLookup::RepeatedUnmaterialized,
     );
     cache.insert(key.clone(), ScoreFilterMembership::Included(vec![11, 22]));
     cache.mark_uncacheable(key.clone());
-    assert_eq!(
-        cache.lookup(&key, true),
-        ScoreFilterCacheLookup::Uncacheable
-    );
-    assert_eq!(
-        cache.lookup(&key, true),
-        ScoreFilterCacheLookup::Uncacheable
-    );
+    assert_eq!(cache.touch(&key, true), ScoreFilterCacheLookup::Uncacheable);
+    assert_eq!(cache.touch(&key, true), ScoreFilterCacheLookup::Uncacheable);
     assert_eq!(cache.materialized_membership(&key), None);
     assert!(cache.memberships.is_empty());
 }

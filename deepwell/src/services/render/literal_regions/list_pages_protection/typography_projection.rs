@@ -113,7 +113,7 @@ mod tests {
 
     fn token_owns(source: &str, delimiter: &str) -> bool {
         let offset = source.find(delimiter).unwrap();
-        TextTokenCursor::new(source).contains(offset)
+        TextTokenCursor::new(source).advance_and_contains(offset)
     }
 
     #[test]

@@ -65,11 +65,11 @@ pub(in crate::services::render) fn count_pages_should_remain_literal(
                 || arguments.name_pattern.is_some()))
 }
 
-pub(in crate::services::render) fn count_pages_capture_is_literal(
+pub(in crate::services::render) fn advance_literal_cursor_and_check_count_pages_capture_containment(
     literal_regions: &mut LiteralRegionCursor<'_>,
     offset: usize,
 ) -> bool {
-    literal_regions.containing_end(offset).is_some()
+    literal_regions.advance_to_containing_end(offset).is_some()
 }
 
 pub(in crate::services::render) fn count_pages_required_tag_batch_result(

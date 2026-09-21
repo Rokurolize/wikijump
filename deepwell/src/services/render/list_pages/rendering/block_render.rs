@@ -21,7 +21,7 @@ use super::{
     finish_or_defer_list_pages_delayed_output_with_modes, has_include_opening_candidate,
     has_list_pages_module_opening_candidate, is_list_pages_visible_tag,
     list_pages_body_uses_first_image, list_pages_content_query_target,
-    list_pages_created_by_unix, list_pages_feed_info_html,
+    list_pages_created_by_slug, list_pages_feed_info_html,
     list_pages_feed_only_render_result, list_pages_first_paragraph,
     list_pages_parent_fullname, list_pages_render_diagnostics,
     list_pages_row_markup_bytes, list_pages_row_scan_target,
@@ -816,7 +816,7 @@ impl RenderService {
             .unwrap_or(&empty_runtime_displays);
         if wants_created_by_unix
             && pages.iter().any(|page| {
-                list_pages_created_by_unix(page, user_displays, snapshot_displays)
+                list_pages_created_by_slug(page, user_displays, snapshot_displays)
                     .is_none()
             })
         {

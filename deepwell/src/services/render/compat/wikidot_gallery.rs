@@ -174,7 +174,7 @@ impl<'a, 'ctx> VisibleFileLoader<'a, 'ctx> {
         if let Some(files) = self.files_by_page_id.get(&page.page_id) {
             return Ok(files.clone());
         }
-        if !self.authorized.page_is_viewable(&page).await? {
+        if !self.authorized.check_page_viewability(&page).await? {
             self.files_by_page_id.insert(page.page_id, None);
             return Ok(None);
         }

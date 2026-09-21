@@ -116,7 +116,7 @@ pub(super) use self::presentation::{
     substitute_list_pages_variables,
 };
 pub(super) use self::presentation::{
-    is_list_pages_visible_tag, list_pages_created_by_unix, list_pages_parent_fullname,
+    is_list_pages_visible_tag, list_pages_created_by_slug, list_pages_parent_fullname,
     render_list_pages_wikidot_user, substitute_count_pages_variables,
 };
 pub(super) use self::random_cache::seed_random_list_pages_order;
@@ -136,7 +136,8 @@ pub(super) use self::substitution::{
     CurrentPageAuthorSource, ExactNameListPagesBatchKey, ListPagesArguments,
     ListPagesAuthorCacheKey, ListPagesBatchDisplayRequirements, ListPagesBatchDisplays,
     ListPagesRuntimeDisplay, ListPagesSnapshotDisplay, ListPagesSubstitutionContext,
-    ResolvedListPagesAuthors, WikidotUserDisplay, count_pages_capture_is_literal,
+    ResolvedListPagesAuthors, WikidotUserDisplay,
+    advance_literal_cursor_and_check_count_pages_capture_containment,
     count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
     count_pages_required_tag_batch_selector, count_pages_should_remain_literal,
     exact_name_list_pages_batch_key, list_pages_author_cache_key,
