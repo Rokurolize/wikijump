@@ -818,13 +818,13 @@ pub(super) async fn load_recent_posts_page(
 }
 
 fn recent_post_path(post: &RecentPost, anchor: bool) -> String {
-    let anchor = if anchor {
+    let anchor_suffix = if anchor {
         format!("#post-{}", post.forum_post_id)
     } else {
         String::new()
     };
     match post.page_slug.as_deref() {
-        Some(page_slug) => format!("/{page_slug}/comments/show{anchor}"),
+        Some(page_slug) => format!("/{page_slug}/comments/show{anchor_suffix}"),
         None => format!(
             "/forum/t-{}/{}{}",
             post.forum_thread_id,
@@ -904,7 +904,7 @@ pub(super) fn render_recent_posts_list(page: &RecentPostsPage) -> String {
         let discussion_path = recent_post_path(post, false);
         let category_slug = normalize_page_slug(post.category_name.clone());
         let discussion_title = post.page_title.as_deref().unwrap_or(&post.thread_title);
-        let user = render_forum_user(&post.user, avatar_timestamp);
+        let rendered_user = render_forum_user(&post.user, avatar_timestamp);
         let date = render_forum_date(
             post.created_at,
             "format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover",
@@ -917,7 +917,7 @@ pub(super) fn render_recent_posts_list(page: &RecentPostsPage) -> String {
             post.forum_post_id,
             escape_list_pages_html_attr(&post_path),
             escape_list_pages_html_text(&post.title),
-            user,
+            rendered_user,
             date,
             post.forum_category_id,
             escape_list_pages_html_attr(&category_slug),
@@ -934,7 +934,7 @@ pub(super) fn render_recent_posts_list(page: &RecentPostsPage) -> String {
             }),
             post.forum_post_id,
             escape_list_pages_html_text(&post.title),
-            user,
+            rendered_user,
             date,
         )
         .expect("writing to a String cannot fail");

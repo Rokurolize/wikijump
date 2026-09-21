@@ -610,7 +610,7 @@ function extractDeclaredPublicTests(relativePath, source) {
   return null;
 }
 
-function parseRepositoryEvidenceReference({
+function validateRepositoryEvidenceReference({
   evidence,
   prefix,
   featureId,
@@ -858,7 +858,7 @@ export function validateWikidotImplementationLedger({
             `Implementation ledger property ${featureId}.${axis} references unknown live observation ${observationId}`,
           );
         } else if (evidence.startsWith("test:")) {
-          parseRepositoryEvidenceReference({
+          validateRepositoryEvidenceReference({
             evidence,
             prefix: "test:",
             featureId,
@@ -875,7 +875,7 @@ export function validateWikidotImplementationLedger({
           const prefix = evidence.startsWith("artifact:")
             ? "artifact:"
             : "docs:";
-          parseRepositoryEvidenceReference({
+          validateRepositoryEvidenceReference({
             evidence,
             prefix,
             featureId,

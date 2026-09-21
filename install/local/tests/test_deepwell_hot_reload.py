@@ -238,11 +238,11 @@ class DeepwellHotReloadTest(unittest.TestCase):
             )
 
         script = execute.call_args.args[2]
-        trigger = script.index('touch "$destination/Cargo.toml"')
-        committed = script.index("committed=yes")
-        disarmed = script.index("trap - HUP INT TERM EXIT")
-        self.assertLess(trigger, committed)
-        self.assertLess(committed, disarmed)
+        trigger_index = script.index('touch "$destination/Cargo.toml"')
+        committed_index = script.index("committed=yes")
+        disarmed_index = script.index("trap - HUP INT TERM EXIT")
+        self.assertLess(trigger_index, committed_index)
+        self.assertLess(committed_index, disarmed_index)
 
     def test_failed_candidate_rolls_back_restarts_and_waits_for_stable_daemon(self):
         patches = self.run_patches()

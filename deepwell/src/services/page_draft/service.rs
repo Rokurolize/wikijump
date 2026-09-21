@@ -467,7 +467,7 @@ mod tests {
     use super::{MAX_PAGE_DRAFTS, PageDraftPageType};
 
     #[test]
-    fn draft_list_is_bounded_and_only_exists_is_positive() {
+    fn draft_list_limit_and_exists_variant_are_stable() {
         assert_eq!(MAX_PAGE_DRAFTS, 2_000);
         assert_ne!(PageDraftPageType::All, PageDraftPageType::Exists);
     }

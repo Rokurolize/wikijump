@@ -467,7 +467,7 @@ export function titlecase(str: string, locale?: string | string[]) {
  *   non-ASCII/Latin text when handling casing.
  */
 export function isTitlecased(str: string, locale?: string | string[]) {
-  return uppercase(str[0], locale) === str[0]
+  return titlecase(str, locale) === str
 }
 
 /**

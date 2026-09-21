@@ -904,10 +904,10 @@ impl RenderService {
                     return Ok(response("no_thread", String::new()));
                 };
                 let posts = load_forum_thread_posts(ctx, site_id, thread_id).await?;
-                let posts = render_forum_thread_posts(&posts);
+                let rendered_posts = render_forum_thread_posts(&posts);
                 Ok(response_with_scripts(
                     "ok",
-                    render_forum_thread(&thread, &posts),
+                    render_forum_thread(&thread, &rendered_posts),
                     &[THREAD_POSTS_SCRIPT, THREAD_SCRIPT],
                 ))
             }

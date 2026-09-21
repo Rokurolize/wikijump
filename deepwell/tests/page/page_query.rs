@@ -334,7 +334,8 @@ async fn page_query_page_slug_ties_follow_wikidot_source_identity() {
         (a_newer_id, A_NEWER, 602, "Page Name Tie Author"),
         (c_middle_id, C_MIDDLE, 603, "Page Name Tie Author"),
     ] {
-        set_imported_author(&runner, site_id, IMPORT_RUN_ID, fixture).await;
+        mark_imported_page_with_author_snapshot(&runner, site_id, IMPORT_RUN_ID, fixture)
+            .await;
     }
     let transaction = runner.context().transaction();
     for (page_id, source_page_id) in [
@@ -481,7 +482,8 @@ async fn page_query_equal_sort_values_follow_wikidot_source_identity() {
             "Created At Tie Author",
         ),
     ] {
-        set_imported_author(&runner, site_id, IMPORT_RUN_ID, fixture).await;
+        mark_imported_page_with_author_snapshot(&runner, site_id, IMPORT_RUN_ID, fixture)
+            .await;
     }
     let transaction = runner.context().transaction();
     for (page_id, source_page_id) in [
@@ -1034,7 +1036,7 @@ async fn page_query_vote_filter_and_order_use_imported_snapshot_vote_counts() {
         .expect("inactive vote-count fixtures should be inserted");
 
     create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 1).await;
-    set_imported_author(
+    mark_imported_page_with_author_snapshot(
         &runner,
         site_id,
         IMPORT_RUN_ID,
@@ -1336,14 +1338,14 @@ async fn page_query_score_filter_plans_preserve_imported_and_local_vote_semantic
     }
 
     create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 2).await;
-    set_imported_author(
+    mark_imported_page_with_author_snapshot(
         &runner,
         site_id,
         IMPORT_RUN_ID,
         (imported_id, IMPORTED, 558, "Imported Score Author"),
     )
     .await;
-    set_imported_author(
+    mark_imported_page_with_author_snapshot(
         &runner,
         site_id,
         IMPORT_RUN_ID,

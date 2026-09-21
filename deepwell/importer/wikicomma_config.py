@@ -11,7 +11,7 @@ SiteData = namedtuple("SiteData", ("descr", "slug", "url"))
 logger = logging.getLogger(__name__)
 
 
-def parse_config(path: str) -> WikicommaConfig:
+def load_config(path: str) -> WikicommaConfig:
     with open(path) as file:
         data = json.load(file)
 

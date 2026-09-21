@@ -367,8 +367,8 @@ pub async fn seed(state: &ServerState) -> Result<()> {
             let make_error =
                 || Error::new("failed to load seeder file", ErrorType::DatabaseSeeder);
 
-            // Make sure that paths are only in the local seeder/ directory,
-            // to avoid pulling random files from the filesystem.
+            // Accept only bare filenames so the seeder cannot pull files from
+            // another directory.
             assert_eq!(
                 file_path.parent(),
                 Some(Path::new("")),

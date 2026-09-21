@@ -797,7 +797,7 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
     let bravo_page_id =
         listpages_test_page_id(&runner, site_id, "fixture-nextpreviouspage:bravo").await;
     create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 1).await;
-    set_imported_author(
+    mark_imported_page_with_author_snapshot(
         &runner,
         site_id,
         IMPORT_RUN_ID,
@@ -3516,7 +3516,7 @@ async fn page_backlinks_view_filters_before_exposing_titles_and_slugs() {
         .expect("private backlinks overflow connections should insert");
     assert_eq!(inserted_private_connections.rows_affected(), 501);
 
-    let updated_private_pages = transaction
+    let updated_private_pages_result = transaction
         .execute_raw(Statement::from_sql_and_values(
             transaction.get_database_backend(),
             concat!(
@@ -3531,7 +3531,7 @@ async fn page_backlinks_view_filters_before_exposing_titles_and_slugs() {
         ))
         .await
         .expect("private backlinks overflow pages should receive revisions");
-    assert_eq!(updated_private_pages.rows_affected(), 501);
+    assert_eq!(updated_private_pages_result.rows_affected(), 501);
     PermissionCache::invalidate_site(runner.context(), site_id)
         .await
         .expect("private backlinks overflow permissions should be invalidated");
@@ -4728,7 +4728,7 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
         .await
         .expect("Backlinks scan-boundary sources should be inserted");
     assert_eq!(inserted_connections.rows_affected(), 501);
-    let updated_pages = transaction
+    let updated_pages_result = transaction
         .execute_raw(Statement::from_sql_and_values(
             transaction.get_database_backend(),
             concat!(
@@ -4740,7 +4740,7 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
         ))
         .await
         .expect("Backlinks scan-boundary pages should receive their revisions");
-    assert_eq!(updated_pages.rows_affected(), 501);
+    assert_eq!(updated_pages_result.rows_affected(), 501);
     runner.set_request_context(RequestContext {
         site_id: Some(site_id),
         page_reference: Some(Reference::Id(target.page_id)),
@@ -7149,7 +7149,7 @@ async fn wikidot_listpages_feed_uses_imported_creator_identity_provenance() {
     set_listpages_test_tags(&mut runner, site_id, TARGET_SLUG, revision, &[TAG]).await;
     let target_id = listpages_test_page_id(&runner, site_id, TARGET_SLUG).await;
     create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 1).await;
-    set_imported_author(
+    mark_imported_page_with_author_snapshot(
         &runner,
         site_id,
         IMPORT_RUN_ID,

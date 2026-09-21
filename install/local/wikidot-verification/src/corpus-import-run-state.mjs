@@ -6,7 +6,7 @@ import {
   sqlQuote,
 } from './corpus-import-sql-values.mjs';
 
-export async function ensureCorpusImportRun(args, sqlExecutor, manifestText, manifestRows, selectedRows, completeInventory) {
+export async function createCorpusImportRun(args, sqlExecutor, manifestText, manifestRows, selectedRows, completeInventory) {
   const manifestSha = crypto.createHash('sha256').update(manifestText).digest('hex');
   const sourceSites = new Set(manifestRows.map((row) => row.source_site));
   const sourceBranches = new Set(manifestRows.map((row) => row.source_branch));

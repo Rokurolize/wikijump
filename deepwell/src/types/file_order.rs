@@ -74,7 +74,7 @@ impl FileOrderColumn {
     }
 }
 
-/// Conversion functions for `FileOrder` to a column.
+/// Converts a `FileOrderColumn` into the corresponding file column.
 impl From<FileOrderColumn> for file::Column {
     fn from(order: FileOrderColumn) -> file::Column {
         match order {

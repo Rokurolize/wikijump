@@ -47,7 +47,7 @@ function nonEmptyIdentifier(value, label) {
   return value;
 }
 
-function sha256(value, label) {
+function requireSha256(value, label) {
   if (typeof value !== "string" || !/^[a-f0-9]{64}$/u.test(value)) {
     throw new Error(`${label} must be a lowercase SHA-256`);
   }
@@ -123,7 +123,7 @@ function validateRuntimeIdentityForComparison(value) {
     identity.artifact_key,
     "runtime identity artifact_key",
   );
-  const runtimeConfigSha256 = sha256(
+  const runtimeConfigSha256 = requireSha256(
     identity.runtime_config_sha256,
     "runtime identity runtime_config_sha256",
   );

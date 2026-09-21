@@ -267,7 +267,7 @@ impl ListPagesSourceProjection {
         original: &str,
     ) -> Vec<Range<usize>> {
         let (_, quote_ranges) = collect_list_pages_quote_ranges(&self.source);
-        let mut unchanged = self.original_range_cursor();
+        let mut unchanged_ranges = self.original_range_cursor();
         quote_ranges
             .into_iter()
             .filter_map(|projected| {
@@ -278,7 +278,7 @@ impl ListPagesSourceProjection {
                     self.original_offsets[projected.start - 1] + 1 != mapped.start
                 };
                 (disconnected_start
-                    || !unchanged
+                    || !unchanged_ranges
                         .advance_to_range_and_check_unchanged(original, mapped.clone()))
                 .then_some(mapped)
             })
@@ -387,7 +387,7 @@ fn append_projected_line_prefix(
 ) {
     let mut leading_nonstandard = true;
     for (relative, character) in line.char_indices() {
-        let bytes = character.len_utf8();
+        let character_bytes = character.len_utf8();
         let original = original_start + relative;
         let project_nonstandard =
             leading_nonstandard && matches!(character, '\u{00a0}' | '\u{2007}');
@@ -402,8 +402,10 @@ fn append_projected_line_prefix(
             original_offsets.push(original);
             *changed = true;
         } else {
-            projected.extend_from_slice(&line.as_bytes()[relative..relative + bytes]);
-            original_offsets.extend(original..original + bytes);
+            projected.extend_from_slice(
+                &line.as_bytes()[relative..relative + character_bytes],
+            );
+            original_offsets.extend(original..original + character_bytes);
         }
         leading_nonstandard &= project_nonstandard;
     }

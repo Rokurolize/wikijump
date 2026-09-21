@@ -114,7 +114,7 @@ class ModelFileRewriter:
         for idx, line in self.line_iter:
             match find_regex_match(line):
                 case indent, attribute:
-                    # Insert #[serde] on the line before
+                    # Prepare #[serde] for insertion immediately before the matched field.
                     serde_line = f'{indent}#[serde(with = "{attribute}")]\n'
                     lines_to_insert.append((idx, serde_line))
 
@@ -189,8 +189,8 @@ class ModelFileRewriter:
         if not types_to_import:
             return
 
-        # Apply the line changes in reverse order to not mess up indices
         self.modified = True
+        # Apply line changes in reverse order so earlier indices remain valid.
         for idx, line in reversed(lines_to_change):
             if line is None:
                 del self.lines[idx]

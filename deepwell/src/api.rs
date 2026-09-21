@@ -121,7 +121,7 @@ async fn build_server_state_inner(
     // Load magic data and start MIME thread
     let mime_analyzer = MimeAnalyzer::spawn();
 
-    // Create S3 bucket
+    // Open S3 buckets
     info!("Opening S3 bucket");
 
     let (s3_files_bucket, s3_tblocks_bucket) = {

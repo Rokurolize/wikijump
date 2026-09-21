@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import {test} from "node:test";
 import {parseArgs} from "../scripts/local-browser-console-smoke.mjs";
-import {captureLocalSmoke, classifyFailureUrl, inspectLedger, localSmokeUrl, preflightEnShardManifest, RECORD_SCHEMA, RUNTIME_IDENTITY_SCHEMA, runLocalBrowserSmoke, sha256Value, validateRuntimeIdentity} from "../src/local-browser-console-smoke.mjs";
+import {captureLocalSmoke, classifyFailureUrl, inspectAndRepairLedger, localSmokeUrl, preflightEnShardManifest, RECORD_SCHEMA, RUNTIME_IDENTITY_SCHEMA, runLocalBrowserSmoke, sha256Value, validateRuntimeIdentity} from "../src/local-browser-console-smoke.mjs";
 
 const SHA_A = "a".repeat(64);
 const SHA_B = "b".repeat(64);
@@ -121,16 +121,16 @@ test("resume truncates only an unterminated tail and rejects middle or fabricate
   const output = path.join(root, "records.jsonl");
   const fingerprint = SHA_A;
   await fs.writeFile(output, `${JSON.stringify(validRecord(fingerprint))}\n{"partial"`, "utf8");
-  const repaired = await inspectLedger(output, fingerprint, [rowA]);
+  const repaired = await inspectAndRepairLedger(output, fingerprint, [rowA]);
   assert.equal(repaired.truncatedTail, true);
   assert.deepEqual(repaired.observed, ["EN:a"]);
   assert.equal((await fs.readFile(output, "utf8")).endsWith("\n"), true);
   await fs.writeFile(output, `${JSON.stringify(validRecord(fingerprint))}\n{broken}\n`, "utf8");
-  assert.equal((await inspectLedger(output, fingerprint, [rowA])).ledgerErrors.length, 1);
+  assert.equal((await inspectAndRepairLedger(output, fingerprint, [rowA])).ledgerErrors.length, 1);
   await fs.writeFile(output, `${JSON.stringify({schema: RECORD_SCHEMA, fixture_id: "EN:a", run_fingerprint_sha256: fingerprint})}\n`, "utf8");
-  assert.match((await inspectLedger(output, fingerprint, [rowA])).ledgerErrors[0], /slug\/url contract|status/);
+  assert.match((await inspectAndRepairLedger(output, fingerprint, [rowA])).ledgerErrors[0], /slug\/url contract|status/);
   await fs.writeFile(output, `${JSON.stringify(validRecord(fingerprint, {status: 500, redirect_chain: [{url: localSmokeUrl(rowA), status: 500}], result: "fail"}))}\n`, "utf8");
-  assert.match((await inspectLedger(output, fingerprint, [rowA])).ledgerErrors[0], /only complete exact-URL 2xx pass/);
+  assert.match((await inspectAndRepairLedger(output, fingerprint, [rowA])).ledgerErrors[0], /only complete exact-URL 2xx pass/);
 });
 
 function fakeChromium(version = "Chromium 130") {
@@ -183,6 +183,12 @@ test("driver fingerprints browser/config/inputs, resumes exact records, and owne
   await assert.rejects(fs.stat(`${options.outputPath}.lock`), {code: "ENOENT"});
 });
 
-test("run contract selected-row hash is stable and excludes unselected rows", () => {
-  assert.equal(sha256Value([{fixture_id: rowA.fixture_id, family: rowA.family, slug: rowA.slug, url: localSmokeUrl(rowA)}]).length, 64);
+test("run contract selected-row hash is stable and changes when another row is selected", () => {
+  const selected = [{fixture_id: rowA.fixture_id, family: rowA.family, slug: rowA.slug, url: localSmokeUrl(rowA)}];
+  const rowB = {...rowA, fixture_id: "EN:b", slug: "b", local_https_url: "https://scp-wiki.wikijump.localhost/b"};
+  const withSecondRow = [...selected, {fixture_id: rowB.fixture_id, family: rowB.family, slug: rowB.slug, url: localSmokeUrl(rowB)}];
+  const digest = sha256Value(selected);
+  assert.equal(digest.length, 64);
+  assert.equal(sha256Value(selected), digest);
+  assert.notEqual(sha256Value(withSecondRow), digest);
 });

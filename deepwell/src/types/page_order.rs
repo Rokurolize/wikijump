@@ -74,7 +74,7 @@ impl PageOrderColumn {
     }
 }
 
-/// Conversion functions for `PageOrder` to a column.
+/// Converts a `PageOrderColumn` into the corresponding page column.
 impl From<PageOrderColumn> for page::Column {
     fn from(order: PageOrderColumn) -> page::Column {
         match order {

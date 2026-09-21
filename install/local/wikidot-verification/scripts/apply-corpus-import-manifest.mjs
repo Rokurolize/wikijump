@@ -39,7 +39,7 @@ import {
   sqlTimestamp,
 } from '../src/corpus-import-sql-values.mjs';
 import {
-  ensureCorpusImportRun,
+  createCorpusImportRun,
   finishCorpusImportRun,
   recordCorpusImportItemSql,
 } from '../src/corpus-import-run-state.mjs';
@@ -72,7 +72,7 @@ const precreatedCategoryIds = new Map();
 const SOURCE_TEXT_PRECREATE_MAX_ROWS = 200;
 const SOURCE_TEXT_PRECREATE_MAX_BASE64_BYTES = 4 * 1024 * 1024;
 const DB_SHELL_BATCH_MAX_ROWS = 200;
-const ensureImportRun = ensureCorpusImportRun;
+const createImportRun = createCorpusImportRun;
 const recordItemSql = recordCorpusImportItemSql;
 const finishRun = finishCorpusImportRun;
 
@@ -1522,7 +1522,7 @@ export async function main(argv) {
 
     timePhaseSync(phaseTimingsMs, 'precompute_db_text_hashes', () => precomputeDbTextHashes(args, selectedRows));
     await timePhase(phaseTimingsMs, 'verify_empty_db_import_target', () => assertEmptyDbImportTarget(args, sqlExecutor));
-    const importRunId = await timePhase(phaseTimingsMs, 'ensure_import_run', () => ensureImportRun(args, sqlExecutor, manifestText, allRows, selectedRows, completeInventory));
+    const importRunId = await timePhase(phaseTimingsMs, 'create_import_run', () => createImportRun(args, sqlExecutor, manifestText, allRows, selectedRows, completeInventory));
     await timePhase(phaseTimingsMs, 'precreate_db_shell_body_text', () => precreateDbShellBodyText(args, sqlExecutor, selectedRows));
     await timePhase(phaseTimingsMs, 'precreate_db_source_texts', () => precreateDbSourceTexts(args, sqlExecutor, selectedRows));
     await timePhase(phaseTimingsMs, 'precreate_db_shell_categories', () => precreateDbShellCategories(args, sqlExecutor, selectedRows));

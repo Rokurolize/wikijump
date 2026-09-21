@@ -19758,7 +19758,7 @@ async fn cleanup_committed_page_pending_blob_fixture(
     }
 }
 
-async fn assert_page_file_absent(
+async fn set_context_and_assert_page_file_absent(
     runner: &mut TestRunner,
     user_id: i64,
     site_id: i64,
@@ -20030,7 +20030,7 @@ async fn file_create_commits_only_its_actor_and_route_owned_pending_blob() {
             !format!("{error:?}").contains(&other_actor.pending_blob_id),
             "ownership rejection must not reflect the pending blob token"
         );
-        assert_page_file_absent(
+        set_context_and_assert_page_file_absent(
             &mut runner,
             ADMIN_USER_ID,
             site.site_id,
@@ -20077,7 +20077,7 @@ async fn file_create_commits_only_its_actor_and_route_owned_pending_blob() {
                 !format!("{error:?}").contains(&misplaced.pending_blob_id),
                 "scope rejection must not reflect the pending blob token"
             );
-            assert_page_file_absent(
+            set_context_and_assert_page_file_absent(
                 &mut runner,
                 ADMIN_USER_ID,
                 target_site_id,
@@ -20116,7 +20116,7 @@ async fn file_create_commits_only_its_actor_and_route_owned_pending_blob() {
             !format!("{error:?}").contains(&generic.pending_blob_id),
             "unscoped rejection must not reflect the pending blob token"
         );
-        assert_page_file_absent(
+        set_context_and_assert_page_file_absent(
             &mut runner,
             ADMIN_USER_ID,
             site.site_id,
@@ -23758,7 +23758,7 @@ INSERT INTO wikidot_corpus_import_run (
         .expect("author selector import run fixture should be inserted");
 }
 
-async fn set_imported_author(
+async fn mark_imported_page_with_author_snapshot(
     runner: &TestRunner,
     site_id: i64,
     import_run_id: i64,
@@ -26104,7 +26104,7 @@ async fn saved_tagcloud_page_view_follows_independent_tag_mutations() {
 /// argument names in generated links.
 #[tokio::test]
 async fn tagcloud_module_renders_live_category_links_styles_and_boolean_quirks() {
-    fn section<'a>(html: &'a str, start: &str, end: &str) -> &'a str {
+    fn section_between<'a>(html: &'a str, start: &str, end: &str) -> &'a str {
         html.split_once(start)
             .unwrap_or_else(|| panic!("missing section start {start:?}"))
             .1
@@ -26220,7 +26220,7 @@ async fn tagcloud_module_renders_live_category_links_styles_and_boolean_quirks()
         .compiled_body_html
         .expect("compiled body should be included in page_get details");
 
-    let category_html = section(&html, "CATEGORY_START", "CATEGORY_END");
+    let category_html = section_between(&html, "CATEGORY_START", "CATEGORY_END");
     assert!(
         category_html.contains(r#"<div class="pages-tag-cloud-box">"#)
             && category_html.contains(&format!(
@@ -26241,7 +26241,7 @@ async fn tagcloud_module_renders_live_category_links_styles_and_boolean_quirks()
         "TagCloud category render should match live 2D anchor, style, and filtering behavior:\n{html}",
     );
 
-    let show_false = section(&html, "SHOW_FALSE_START", "SHOW_FALSE_END");
+    let show_false = section_between(&html, "SHOW_FALSE_START", "SHOW_FALSE_END");
     let show_false_beta = show_false
         .find(tag_beta)
         .expect("showHidden=false should include beta");
@@ -26256,13 +26256,13 @@ async fn tagcloud_module_renders_live_category_links_styles_and_boolean_quirks()
         "live Wikidot treats non-empty showHidden values, including \"false\", as enabling hidden tags and sorts hidden tags as if the leading underscore were absent:\n{html}",
     );
 
-    let show_empty = section(&html, "SHOW_EMPTY_START", "SHOW_EMPTY_END");
+    let show_empty = section_between(&html, "SHOW_EMPTY_START", "SHOW_EMPTY_END");
     assert!(
         !show_empty.contains(tag_hidden),
         "an empty showHidden attribute should not enable hidden tags:\n{html}",
     );
 
-    let limit = section(&html, "LIMIT_START", "LIMIT_END");
+    let limit = section_between(&html, "LIMIT_START", "LIMIT_END");
     assert!(
         limit.contains(tag_alpha)
             && limit.contains(tag_beta)
@@ -26271,7 +26271,7 @@ async fn tagcloud_module_renders_live_category_links_styles_and_boolean_quirks()
         "TagCloud limit should truncate the alphabetical tag list before rescaling styles:\n{html}",
     );
 
-    let prefix = section(&html, "PREFIX_START", "PREFIX_END");
+    let prefix = section_between(&html, "PREFIX_START", "PREFIX_END");
     assert!(
         prefix.contains(&format!(
             r#"href="/{category}:target/lp_tag/{tag_alpha}/lp_category/{category}""#
@@ -26279,7 +26279,7 @@ async fn tagcloud_module_renders_live_category_links_styles_and_boolean_quirks()
         "TagCloud urlAttrPrefix should prefix generated tag and category path argument names:\n{html}",
     );
 
-    let custom_style = section(&html, "CUSTOM_STYLE_START", "CUSTOM_STYLE_END");
+    let custom_style = section_between(&html, "CUSTOM_STYLE_START", "CUSTOM_STYLE_END");
     assert!(
         custom_style.contains(r#"style="font-size: 10px; color: rgb(1, 2, 3);""#)
             && custom_style
@@ -26289,7 +26289,7 @@ async fn tagcloud_module_renders_live_category_links_styles_and_boolean_quirks()
         "TagCloud custom size and color interpolation should match live Wikidot:\n{html}",
     );
 
-    let bad_font = section(&html, "BAD_FONT_START", "BAD_FONT_END");
+    let bad_font = section_between(&html, "BAD_FONT_START", "BAD_FONT_END");
     assert!(
         bad_font.contains(r#"<div class="error-block">"#)
             && bad_font.contains(
@@ -26298,7 +26298,7 @@ async fn tagcloud_module_renders_live_category_links_styles_and_boolean_quirks()
         "TagCloud mismatched font units should render the live error block:\n{html}",
     );
 
-    let invalid_limit_partial_style = section(
+    let invalid_limit_partial_style = section_between(
         &html,
         "INVALID_LIMIT_PARTIAL_STYLE_START",
         "INVALID_LIMIT_PARTIAL_STYLE_END",
@@ -26833,7 +26833,7 @@ async fn pagecalendar_module_renders_live_category_links_and_counts() {
 /// carries that category forward in generated links.
 #[tokio::test]
 async fn pagecalendar_module_matches_live_tag_url_and_current_category_quirks() {
-    fn section<'a>(html: &'a str, start: &str, end: &str) -> &'a str {
+    fn section_between<'a>(html: &'a str, start: &str, end: &str) -> &'a str {
         html.split_once(start)
             .unwrap_or_else(|| panic!("missing section start {start:?}"))
             .1
@@ -27066,7 +27066,7 @@ async fn pagecalendar_module_matches_live_tag_url_and_current_category_quirks() 
     .expect("PageCalendar URL render should succeed");
     let html = output.html_output.body;
 
-    let tags = section(&html, "TAGS_START", "TAGS_END");
+    let tags = section_between(&html, "TAGS_START", "TAGS_END");
     assert!(
         tags.contains(r#">2026 (4)</a>"#)
             && tags.contains(&format!(
@@ -27075,7 +27075,7 @@ async fn pagecalendar_module_matches_live_tag_url_and_current_category_quirks() 
         "live PageCalendar ignores tags for counts but carries the tag expression in generated paths with plus signs replaced by spaces:\n{html}",
     );
 
-    let tags_comma = section(&html, "TAGS_COMMA_START", "TAGS_COMMA_END");
+    let tags_comma = section_between(&html, "TAGS_COMMA_START", "TAGS_COMMA_END");
     assert!(
         tags_comma.contains(r#">2026 (4)</a>"#)
             && tags_comma.contains(&format!(
@@ -27084,7 +27084,7 @@ async fn pagecalendar_module_matches_live_tag_url_and_current_category_quirks() 
         "live PageCalendar preserves comma-separated tag expressions in generated paths except for leading plus-to-space conversion:\n{html}",
     );
 
-    let url_default = section(&html, "URL_DEFAULT_START", "URL_DEFAULT_END");
+    let url_default = section_between(&html, "URL_DEFAULT_START", "URL_DEFAULT_END");
     assert!(
         url_default.contains(r#">2026 (1)</a>"#)
             && url_default.contains(&format!(
@@ -27097,7 +27097,7 @@ async fn pagecalendar_module_matches_live_tag_url_and_current_category_quirks() 
 
     let default_html =
         load_listpages_test_compiled_html(&runner, site_id, &default_holder).await;
-    let default = section(&default_html, "DEFAULT_START", "DEFAULT_END");
+    let default = section_between(&default_html, "DEFAULT_START", "DEFAULT_END");
     assert!(
         default.contains(r#">2026 (3)</a>"#)
             && default.contains(&format!(r#"href="/{default_holder}/date/2026""#)),
@@ -27105,7 +27105,7 @@ async fn pagecalendar_module_matches_live_tag_url_and_current_category_quirks() 
     );
 
     let default_target =
-        section(&default_html, "DEFAULT_TARGET_START", "DEFAULT_TARGET_END");
+        section_between(&default_html, "DEFAULT_TARGET_START", "DEFAULT_TARGET_END");
     assert!(
         default_target.contains(&format!(r#"href="/{target}/d_date/2026""#)),
         "default-category PageCalendar should still honor targetPage and urlAttrPrefix:\n{default_html}",

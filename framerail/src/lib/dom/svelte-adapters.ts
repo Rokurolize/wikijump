@@ -6,7 +6,7 @@ import {
 } from "./focus"
 import { HeldObserver, type WhileHeldOpts } from "./held"
 import { HoverObserver, type HoverOpts } from "./hover"
-import { KeyObserver, type KeyHandler } from "./key-handling"
+import { KeyObserver, type InputHandler } from "./key-handling"
 import { SwipeObserver, type SwipeOpts } from "./swipe"
 import { UserLocaleObserver } from "./user-locale"
 
@@ -43,10 +43,10 @@ export function focusGroup(node: HTMLElement, direction: FocusGroupDirection) {
 }
 
 /** Svelte `use` function for handling keypresses. */
-export function keyHandle(target: HTMLElement, handlers: KeyHandler[]) {
+export function keyHandle(target: HTMLElement, handlers: InputHandler[]) {
   const observer = new KeyObserver(target, handlers)
   return {
-    update: (handlers: KeyHandler[]) => observer.update(handlers),
+    update: (handlers: InputHandler[]) => observer.update(handlers),
     destroy: () => observer.destroy()
   }
 }

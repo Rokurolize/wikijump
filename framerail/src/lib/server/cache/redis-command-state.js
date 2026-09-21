@@ -64,6 +64,7 @@ export const resetRedisCommandState = (state, closedMessage) => {
  *   onTimeout: () => void
  * }} input
  * @returns {Promise<unknown>}
+ * @throws {Error} If the Redis socket is unavailable; the returned promise also rejects on timeout or write failure.
  */
 export const writeRedisCommand = ({
   state,

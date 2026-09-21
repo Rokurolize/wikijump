@@ -32,6 +32,7 @@ const parseLine = (buffer, offset) => {
  * @param {Buffer} buffer
  * @param {number} [offset]
  * @returns {ParsedRedisResponse | null}
+ * @throws {Error} For Redis error replies, invalid aggregate lengths, or unsupported response types.
  */
 export const parseRedisResponse = (buffer, offset = 0) => {
   if (offset >= buffer.length) return null

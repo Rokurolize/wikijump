@@ -114,7 +114,7 @@ function classificationCounts(rows) {
 function assertSameCounts(actual, expected, context) {
   for (const key of AUDIT_CLASSIFICATIONS) {
     if (expected?.[key] !== actual[key]) {
-      throw new Error(`${context} ${key} count does not match: expected ${actual[key]}`)
+      throw new Error(`${context} ${key} count does not match: expected ${expected?.[key]}, got ${actual[key]}`)
     }
   }
 }
@@ -396,7 +396,7 @@ export async function discoverOpen43AuditCases(root, { readJson, readText, readG
     for (const issue of audit.issues) {
       const issueNumber = issue.issue ?? issue.number
       if (!Number.isSafeInteger(issueNumber) || issueNumber <= 0) {
-        throw new Error(`${auditPath} contains an audit case without an issue owner`)
+        throw new Error(`${auditPath} contains an audit case with an invalid positive issue number`)
       }
       const authoritativeTests = await authoritativeAuditTests(
         root,

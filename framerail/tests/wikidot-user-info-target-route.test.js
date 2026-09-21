@@ -82,6 +82,20 @@ test("UserInfo calls the typed user view with the route target and no session", 
   assert.deepEqual(calls, [[7, ["en"], undefined, "the-administrator"]])
 })
 
+
+
+test("UserInfo rejects unsupported user-view response variants", async () => {
+  await assert.rejects(
+    loadWikidotUserInfo({
+      siteId: 7,
+      locales: ["en"],
+      target: "the-administrator",
+      userView: async () => ({ type: "unexpected", data: undefined })
+    }),
+    /Unexpected user view response 'unexpected'/u
+  )
+})
+
 test("UserInfo projects only evidenced public identity fields", async () => {
   const result = await loadWikidotUserInfo({
     siteId: 7,

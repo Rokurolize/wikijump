@@ -92,7 +92,7 @@ function caseRunId(campaignRunId, caseSetName) {
   return `candidate-run-${sha256(`${campaignRunId}\0${caseSetName}`).slice(0, 12)}`;
 }
 
-async function ensureNewPrivateDirectory(directory) {
+async function createNewPrivateDirectory(directory) {
   const resolved = path.resolve(directory);
   try {
     await fs.mkdir(resolved, { mode: 0o700 });
@@ -154,7 +154,7 @@ export async function runCandidateCampaign({
   if (inputReceipt.candidate?.editable_identity_sha256 !== candidateIdentitySha256) {
     throw new Error("candidate input receipt is not bound to the supplied editable candidate identity");
   }
-  const output = await ensureNewPrivateDirectory(outputDir);
+  const output = await createNewPrivateDirectory(outputDir);
   const schedule = buildCandidateCampaignSchedule();
   const campaignRunId = `candidate-run-${sha256(`${candidateIdentitySha256}\0${inputReceiptSha256}\0${output}`).slice(0, 12)}`;
   const controller = new AbortController();

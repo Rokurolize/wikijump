@@ -127,7 +127,7 @@ fn render_rated_pages_module(
         let slug = row.slug.as_deref().unwrap_or_default();
         let title = row.title.as_deref().unwrap_or(slug);
         let rating = format_rated_pages_score(row.score.unwrap_or(0.0));
-        let comments = runtime_displays
+        let comment_count = runtime_displays
             .get(&row.page_id)
             .map_or(0, |display| display.comments);
         output.push_str("\t\t\t\t\t<div class=\"list-item\">\n");
@@ -137,7 +137,7 @@ fn render_rated_pages_module(
             escape_list_pages_html_text(title),
         ));
         let label = if include_comments {
-            format!("Rating: {rating}, Comments: {comments}")
+            format!("Rating: {rating}, Comments: {comment_count}")
         } else {
             format!("Rating: {rating}")
         };

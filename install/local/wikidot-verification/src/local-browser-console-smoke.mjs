@@ -198,7 +198,7 @@ function validateLedgerRecord(record, row, fingerprint, resumableOnly) {
   if (resumableOnly && (record.status < 200 || record.status >= 300 || record.final_url !== url || record.result !== "pass" || record.page_content_count !== 1)) throw new Error("only complete exact-URL 2xx pass records are resumable");
 }
 
-async function readLedger(outputPath, repairTail) {
+async function readLedgerWithOptionalTailRepair(outputPath, repairTail) {
   let handle;
   try {
     handle = await fs.open(outputPath, repairTail ? "r+" : "r");
@@ -223,8 +223,8 @@ async function readLedger(outputPath, repairTail) {
   }
 }
 
-export async function inspectLedger(outputPath, fingerprint, rows, {resumableOnly = true, repairTail = true} = {}) {
-  const {text, truncatedTail} = await readLedger(outputPath, repairTail);
+export async function inspectAndRepairLedger(outputPath, fingerprint, rows, {resumableOnly = true, repairTail = true} = {}) {
+  const {text, truncatedTail} = await readLedgerWithOptionalTailRepair(outputPath, repairTail);
   const rowMap = new Map(rows.map((row) => [row.fixture_id, row]));
   const records = [];
   const ledgerErrors = [];
@@ -366,7 +366,7 @@ export async function runLocalBrowserSmoke({chromium, rows, outputPath, runtimeI
         browser: {version: browserVersion, executable: browserExecutable, executable_sha256: browserExecutableSha256},
       };
       const fingerprint = sha256Value(runContract);
-      firstInspection = await inspectLedger(outputPath, fingerprint, rows, {resumableOnly: true, repairTail: true});
+      firstInspection = await inspectAndRepairLedger(outputPath, fingerprint, rows, {resumableOnly: true, repairTail: true});
       if (!firstInspection.ledgerErrors.length && !firstInspection.duplicate.length) {
         const observed = new Set(firstInspection.observed);
         const remaining = rows.filter((row) => !observed.has(row.fixture_id));
@@ -435,7 +435,7 @@ export async function runLocalBrowserSmoke({chromium, rows, outputPath, runtimeI
     let finalInspection = firstInspection;
     if (fingerprint) {
       try {
-        finalInspection = await inspectLedger(outputPath, fingerprint, rows, {resumableOnly: false, repairTail: true});
+        finalInspection = await inspectAndRepairLedger(outputPath, fingerprint, rows, {resumableOnly: false, repairTail: true});
       } catch (error) {
         operationErrors.push(`final ledger inspection: ${error.message ?? String(error)}`);
         finalInspection = {records: [], observed: [], duplicate: [], ledgerErrors: [], truncatedTail: false};

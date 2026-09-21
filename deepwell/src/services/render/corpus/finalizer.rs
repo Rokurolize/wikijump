@@ -1445,7 +1445,7 @@ mod tests {
     }
 
     #[test]
-    fn render_finalizer_passes_retry_failures_and_reclaim_expired_leases() {
+    fn render_finalizer_pass_filters_retryable_failed_and_running_states() {
         for pass in [RenderFinalizerPass::Pass1, RenderFinalizerPass::Pass2] {
             let filter = pass.candidate_filter();
             assert!(filter.contains("'render_failed'"));

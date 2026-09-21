@@ -104,7 +104,7 @@ impl PasswordService {
                     }
                 }
 
-                // Delay a bit on failure to prevent brute-force attacks.
+                // Optionally delay a bit on failure to prevent brute-force attacks.
                 if sleep {
                     Self::failure_sleep(ctx.config()).await;
                 }
@@ -182,7 +182,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn failure_sleep_uses_configured_delay() {
+    async fn failure_sleep_completes_with_zero_configured_delay() {
         let mut config = Config::integration_testing();
         config.authentication_fail_delay = std::time::Duration::from_millis(0);
 

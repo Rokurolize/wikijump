@@ -800,7 +800,7 @@ function verifySettingsBrowser(observations) {
   const cancelled = verifySettingsState(observations.cancel?.state, "cancelled settings state");
   if (observations.cancel.before_post_count !== observations.cancel.after_post_count || cancelled.input_value !== initial.input_value) throw new Error("settings cancel submitted or failed to restore the saved value");
   const invalidReload = verifySettingsState(observations.invalid?.reloaded, "invalid settings reload");
-  if (observations.invalid?.response?.status !== 400 || invalidReload.input_value !== initial.input_value) throw new Error("invalid settings submission changed persisted locales");
+  if (observations.invalid?.response?.status !== 400 || invalidReload.input_value !== initial.input_value) throw new Error("invalid settings submission did not preserve the rejection and persisted-locale contract");
   requireSha256(observations.invalid.response.body_sha256, "invalid settings response SHA-256");
   const expected = observations.save?.expected_locales;
   const savedReload = verifySettingsState(observations.save?.reloaded, "saved settings reload");

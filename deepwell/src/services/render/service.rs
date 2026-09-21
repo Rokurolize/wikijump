@@ -2367,7 +2367,7 @@ impl RenderService {
         );
         let worker_trace = trace.map(|(trace, scope)| (trace.clone(), scope));
         let parse_worker_trace = worker_trace.clone();
-        let parse_page_info = render_page_info.clone();
+        let parser_page_info = render_page_info.clone();
         let parse_settings = render_settings.clone();
         let parse_queued_at = parse_worker_trace.as_ref().map(|_| Instant::now());
         let parse_started = Instant::now();
@@ -2381,7 +2381,7 @@ impl RenderService {
             let prepared = Self::prepare_inner_render_wikitext(outer, &parse_settings);
             let mut parsed = ParsedFtmlRender::parse(
                 prepared,
-                &parse_page_info,
+                &parser_page_info,
                 &parse_settings,
                 trace,
             );

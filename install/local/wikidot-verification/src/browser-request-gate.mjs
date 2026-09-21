@@ -1337,6 +1337,8 @@ async function servePublicRoute(route, {gate, responseCache, cacheOnly = false, 
  *   exemptOrigins?: string[]
  *   responseCache?: object | null
  *   publicOriginPredicate?: ((value: string, resourceType: string, method: string) => boolean) | null
+ *   cacheOnly?: boolean
+ *   cacheOnlyAllowedOrigins?: string[]
  * }} [options]
  */
 export async function installBrowserRequestGate(context, {gate, exemptOrigins = [], responseCache = null, publicOriginPredicate = null, cacheOnly = false, cacheOnlyAllowedOrigins = []} = {}) {

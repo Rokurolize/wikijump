@@ -106,7 +106,7 @@ class PrepareStandingImagesTest(unittest.TestCase):
     def test_prepare_rejects_existing_output_before_identity_or_build(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:
             original_argv = sys.argv
-            original_identity = PREPARE.repository_identity
+            original_repository_identity = PREPARE.repository_identity
             try:
                 PREPARE.repository_identity = lambda _root: (_ for _ in ()).throw(AssertionError("identity was read"))
                 for kind in ("file", "broken symlink"):
@@ -120,7 +120,7 @@ class PrepareStandingImagesTest(unittest.TestCase):
                         with self.assertRaisesRegex(ValueError, "output already exists"):
                             PREPARE.main()
             finally:
-                PREPARE.repository_identity = original_identity
+                PREPARE.repository_identity = original_repository_identity
                 sys.argv = original_argv
 
     def test_prepare_reuses_the_sealed_candidate_application_images(self) -> None:
@@ -140,7 +140,7 @@ class PrepareStandingImagesTest(unittest.TestCase):
                 },
             },
         }
-        original_identity = PREPARE.image_identity
+        original_image_identity = PREPARE.image_identity
         try:
             PREPARE.image_identity = lambda reference, cwd: {
                 "reference": reference,
@@ -156,7 +156,7 @@ class PrepareStandingImagesTest(unittest.TestCase):
             }
             images = PREPARE.prepare_candidate_images(proof, source)
         finally:
-            PREPARE.image_identity = original_identity
+            PREPARE.image_identity = original_image_identity
         self.assertEqual(
             {service: image["id"] for service, image in images.items()},
             proof["build"]["images"],

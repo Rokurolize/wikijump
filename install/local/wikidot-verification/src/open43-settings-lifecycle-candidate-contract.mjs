@@ -167,7 +167,7 @@ export function verifyOpen43SettingsLifecycleCase(caseId, rawObservations, plan)
   if (disabledCreate.assigned_slug !== disable.requested_slug || disabledCreate.redirect_url !== disabledUrl || disabledCreate.title !== fixedPlan.disabled_title || disabledCreate.category_slug !== category || response(disabledCreate.action, `${caseId}.disable.create.action`).http_status !== 200) throw new Error(`${caseId} disabled create did not preserve the requested slug`);
   capture(disabledCreate.capture, `${caseId}.disable.create.capture`, disabledUrl, fixedPlan.disabled_title, fixedPlan.disabled_body);
   pageIdentity(disabledCreate.page, `${caseId}.disable.create.page`);
-  if (disabledCreate.page.slug !== disable.requested_slug || disabledCreate.page.title !== fixedPlan.disabled_title || afterDisabled.enabled !== false || afterDisabled.next !== afterSecond.next) throw new Error(`${caseId} disabled create changed the allocator`);
+  if (disabledCreate.page.slug !== disable.requested_slug || disabledCreate.page.title !== fixedPlan.disabled_title || afterDisabled.enabled !== false || afterDisabled.next !== afterSecond.next) throw new Error(`${caseId} disabled create did not preserve the page identity and allocator state`);
   const cache = object(observations.cache_identity, `${caseId}.cache_identity`);
   for (const [name, value] of Object.entries(cache)) {
     const metadata = object(value, `${caseId}.cache_identity.${name}`);

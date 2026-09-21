@@ -18,7 +18,7 @@ const readDockerfile = (tier) =>
     "utf8"
   )
 
-test("Framerail container entrypoints initialize the production article cache", () => {
+test("Framerail container entrypoints run server.js and retain runtime sources", () => {
   for (const tier of ["prod", "dev"]) {
     const dockerfile = readDockerfile(tier)
 

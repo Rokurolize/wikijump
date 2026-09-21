@@ -25,7 +25,7 @@ async function serializedActionResult(response, expectedType) {
   const result = await response.json();
   const status = result?.type === "error" ? response.status() : result?.status;
   if (result?.type !== expectedType || !Number.isSafeInteger(status) || status < 100 || status > 599) {
-    throw new Error(`settings action did not return one serialized ${expectedType} result`);
+    throw new Error(`settings action did not return one valid serialized ${expectedType} result and HTTP status`);
   }
   return { result, status };
 }

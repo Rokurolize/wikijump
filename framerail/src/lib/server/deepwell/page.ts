@@ -751,7 +751,7 @@ export async function pageLayout(
 }
 
 /* ----- Page Parent Update ----- */
-interface PageParentUpdate {
+interface PageParentUpdateResult {
   added: Nullable<number[]>
   removed: Nullable<boolean[]>
 }
@@ -762,7 +762,7 @@ export async function pageParentUpdate(
   add: Optional<string[]>,
   remove: Optional<string[]>,
   requestContext: RequestContext
-): Promise<PageParentUpdate> {
+): Promise<PageParentUpdateResult> {
   return client.request(
     "parent_update",
     {

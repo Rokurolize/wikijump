@@ -111,7 +111,7 @@ test("same-name nodes use content fingerprints rather than tag names", () => {
   assert.equal(result.next_stable_anchor.live_index, 1);
 });
 
-test("known volatile tabview identities do not conceal later geometry", () => {
+test("known volatile tabview identities are ignored when the remaining element matches", () => {
   const local = element("div", "same", {
     id: "wiki-tabview-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   });

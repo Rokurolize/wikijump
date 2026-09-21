@@ -190,8 +190,8 @@ impl LegacyActionRegistry {
 
     pub fn remove_renderer_ids_from_wikidot_html(&self, body: &mut String) {
         for action in &self.actions {
-            let renderer_id = format!(r#" id="{}""#, action.renderer_id);
-            *body = body.replacen(&renderer_id, "", 1);
+            let renderer_id_attribute = format!(r#" id="{}""#, action.renderer_id);
+            *body = body.replacen(&renderer_id_attribute, "", 1);
         }
     }
 

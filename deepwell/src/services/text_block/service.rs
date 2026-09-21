@@ -570,7 +570,7 @@ impl TextBlockService {
             })
     }
 
-    /// Finds how many text blocks of a type exist for a page.
+    /// Returns the S3 filenames for text blocks of a type on a page.
     async fn get_block_s3_filenames(
         ctx: &ServiceContext<'_>,
         page_id: i64,

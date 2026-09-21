@@ -190,7 +190,7 @@ function git(root, ...arguments_) {
     encoding: "utf8",
     env: gitEnvironment
   })
-  if (result.status !== 0) throw new Error("AMC transport source Git identity drift")
+  if (result.status !== 0) throw new Error("failed to read AMC transport source Git identity")
   return result.stdout.trim()
 }
 
@@ -198,7 +198,7 @@ function gitBytes(root, ...arguments_) {
   const result = spawnSync(gitExecutable, ["-C", root, ...arguments_], {
     env: gitEnvironment
   })
-  if (result.status !== 0) throw new Error("AMC transport source Git identity drift")
+  if (result.status !== 0) throw new Error("failed to read AMC transport source Git bytes")
   return result.stdout
 }
 

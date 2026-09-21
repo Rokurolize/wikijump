@@ -165,7 +165,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
             })
         })
         .unwrap_or_default();
-    let updated_by_unix = if updated_by_snapshot.is_some() {
+    let updated_by_slug = if updated_by_snapshot.is_some() {
         snapshot
             .and_then(|snapshot| snapshot.updated_by_slug.clone())
             .unwrap_or_default()
@@ -189,7 +189,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
         .and_then(|runtime| runtime.commented_by_name.clone())
         .or_else(|| snapshot.and_then(|snapshot| snapshot.commented_by_name.clone()))
         .unwrap_or_default();
-    let commented_by_unix = runtime.and_then(|runtime| runtime.commented_by_slug.clone());
+    let commented_by_slug = runtime.and_then(|runtime| runtime.commented_by_slug.clone());
     let commented_by_id = runtime
         .and_then(|runtime| runtime.commented_by_user_id)
         .map(|user_id| user_id.to_string());
@@ -429,7 +429,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                         compat_html,
                     )
                 }
-                "updated_by_unix" => updated_by_unix.clone(),
+                "updated_by_unix" => updated_by_slug.clone(),
                 "updated_by_id" => updated_by_id.clone(),
                 "updated_at" | "updatedat" | "date_edited" => {
                     protect_list_pages_generated_html(
@@ -455,7 +455,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                 "commented_by_unix" | "commented_by_id" if commented_by.is_empty() => {
                     String::new()
                 }
-                "commented_by_unix" => commented_by_unix
+                "commented_by_unix" => commented_by_slug
                     .clone()
                     .unwrap_or_else(|| captures[0].to_owned()),
                 "commented_by_id" => commented_by_id

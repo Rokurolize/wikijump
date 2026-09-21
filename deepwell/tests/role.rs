@@ -856,7 +856,7 @@ async fn role_delete() {
     );
 
     // Verify role C is now a child of role A
-    let roles = run_endpoint!(
+    let role_c = run_endpoint!(
         runner,
         role_get,
         json!({
@@ -866,7 +866,7 @@ async fn role_delete() {
     );
 
     assert_eq!(
-        roles.parent_role_id,
+        role_c.parent_role_id,
         Some(role_a.role_id),
         "Role C should now be a child of Role A after reparenting"
     );

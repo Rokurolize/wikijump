@@ -554,7 +554,7 @@ mod tests {
     use super::SYNC_PAGE_REVISION_SEQUENCE_SQL;
 
     #[test]
-    fn imported_revision_sequence_sync_is_monotonic() {
+    fn revision_sequence_sync_sql_uses_imported_max_and_current_sequence_state() {
         assert!(
             SYNC_PAGE_REVISION_SEQUENCE_SQL
                 .contains("setval('page_revision_revision_id_seq'")

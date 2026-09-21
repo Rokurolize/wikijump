@@ -272,11 +272,11 @@ pub async fn bot_user_get_bots(
         ));
     }
 
-    let owners = RelationService::get_bots_owned_by_user(ctx, owner_user.user_id)
+    let owned_bots = RelationService::get_bots_owned_by_user(ctx, owner_user.user_id)
         .await
         .or_raise(make_error)?;
 
-    Ok(owners)
+    Ok(owned_bots)
 }
 
 pub async fn bot_user_owner_set(

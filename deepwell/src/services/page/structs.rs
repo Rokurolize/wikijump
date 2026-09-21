@@ -357,6 +357,19 @@ mod tests {
         assert_eq!(output.revision_number, 5);
         assert!(output.parser_errors.is_empty());
     }
+
+    #[test]
+    #[should_panic(expected = "No parser warnings from deleted page revision")]
+    fn restore_page_output_rejects_missing_rerender_parser_errors() {
+        let _ = RestorePageOutput::from((
+            CreatePageRevisionOutput {
+                revision_id: 51,
+                revision_number: 5,
+                parser_errors: None,
+            },
+            str!("restored-page"),
+        ));
+    }
 }
 
 #[derive(Serialize, Debug, Clone)]

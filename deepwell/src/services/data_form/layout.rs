@@ -104,11 +104,11 @@ pub fn substitute_wikidot_data_form_layout_variables_with_display(
                     }
                     _ => value.to_owned(),
                 };
-                let new_window_url = field.field_type.as_deref() == Some("url")
+                let opens_url_in_new_window = field.field_type.as_deref() == Some("url")
                     && output.ends_with('*')
                     && (valid_wikidot_bare_url_scalar(value)
                         || valid_wikidot_ftp_url(value));
-                if new_window_url {
+                if opens_url_in_new_window {
                     (format!("[*{replacement} {replacement}]"), true)
                 } else {
                     (replacement, false)
