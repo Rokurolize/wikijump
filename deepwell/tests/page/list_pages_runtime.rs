@@ -3682,6 +3682,89 @@ async fn ajax_listpages_rejects_forged_literal_compat_markers() {
 }
 
 #[tokio::test]
+async fn ajax_listpages_preserves_one_set_record_per_wikidot_py_field_after_empty_parent()
+{
+    const TARGET_SLUG: &str = "fixture-ajax-listpages-wikidot-py-set-pairs";
+    const WIKIDOT_PY_FIELDS: [&str; 20] = [
+        "fullname",
+        "category",
+        "name",
+        "title",
+        "created_at",
+        "created_by_linked",
+        "updated_at",
+        "updated_by_linked",
+        "commented_at",
+        "commented_by_linked",
+        "parent_fullname",
+        "comments",
+        "size",
+        "children",
+        "rating_votes",
+        "rating",
+        "rating_percent",
+        "revisions",
+        "tags",
+        "_tags",
+    ];
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture Wikidot.py Set Pair Target",
+        "Ordinary page with no parent.",
+    )
+    .await;
+
+    let module_body = format!(
+        "[[div class=\"page\"]]\n{}\n[[/div]]",
+        WIKIDOT_PY_FIELDS
+            .iter()
+            .map(|field| format!(
+                "[[span class=\"set {field}\"]][[span class=\"name\"]] {field} [[/span]][[span class=\"value\"]] %%{field}%% [[/span]][[/span]]"
+            ))
+            .collect::<String>(),
+    );
+
+    let output = run_endpoint!(
+        runner,
+        wikidot_list_pages_module,
+        json!({
+            "site_id": site_id,
+            "module_body": module_body,
+            "parameters": {
+                "category": "*",
+                "name": TARGET_SLUG,
+                "limit": "1",
+            },
+            "path_arguments": [],
+        }),
+    );
+
+    for field in WIKIDOT_PY_FIELDS {
+        let marker = format!(r#"class="set {field}""#);
+        assert_eq!(
+            output.body.matches(&marker).count(),
+            1,
+            "wikidot.py expects exactly one direct set record for {field}:\n{}",
+            output.body,
+        );
+    }
+    assert!(
+        output.body.contains(
+            r#"<span class="set comments"><span class="name">comments</span> <span class="value">0</span></span>"#,
+        ),
+        "the field after empty parent_fullname must retain its name/value pair:\n{}",
+        output.body,
+    );
+}
+
+#[tokio::test]
 async fn listpages_default_category_and_bare_tags_follow_wikidot_semantics() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

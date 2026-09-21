@@ -70,7 +70,7 @@ use wikidot_normalize::normalize;
 
 static WIKIDOT_LIST_PAGES_SET_PAIR_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?s)<span class="set (?P<name_class>[^"]+)"><span class="name">(?P<name>.*?)</span>\s*</span>\s*<span class="set (?P<value_class>[^"]+)"><span class="value">(?P<value>.*?)</span>\s*</span>"#,
+        r#"(?s)<span class="set (?P<name_class>[^"]+)"><span class="name">(?P<name>[^<]*)</span>\s*</span>\s*<span class="set (?P<value_class>[^"]+)"><span class="value">(?P<value>.*?)</span>\s*</span>"#,
     )
     .expect("Wikidot ListPages set-pair expression is valid")
 });
@@ -680,6 +680,30 @@ fn normalize_wikidot_list_pages_set_pairs(body: &str) -> String {
             )
         })
         .into_owned()
+}
+
+#[cfg(test)]
+mod wikidot_list_pages_set_pair_tests {
+    use super::normalize_wikidot_list_pages_set_pairs;
+
+    #[test]
+    fn joins_split_name_and_value_records_after_an_empty_field() {
+        let body = concat!(
+            r#"<span class="set parent_fullname"><span class="name">parent_fullname</span></span> "#,
+            r#"<span class="set comments"><span class="name">comments</span></span> "#,
+            r#"<span class="set comments"><span class="value">79</span></span> "#,
+            r#"<span class="set size"><span class="name">size</span><span class="value">30033</span></span>"#,
+        );
+
+        assert_eq!(
+            normalize_wikidot_list_pages_set_pairs(body),
+            concat!(
+                r#"<span class="set parent_fullname"><span class="name">parent_fullname</span></span> "#,
+                r#"<span class="set comments"><span class="name">comments</span><span class="value">79</span></span> "#,
+                r#"<span class="set size"><span class="name">size</span><span class="value">30033</span></span>"#,
+            ),
+        );
+    }
 }
 
 pub async fn page_create(
