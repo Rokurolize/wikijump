@@ -12,6 +12,23 @@ Run the hermetic contract/unit suite plus the checked-in syntax differential wit
 pnpm --dir install/local/wikidot-verification offline
 ```
 
+Run the product-owned WWS, Framerail, and Deepwell regression suites against
+task-owned local services with external networking denied with:
+
+```sh
+pnpm --dir install/local/wikidot-verification offline:products
+```
+
+`offline:portable` runs both layers. This is the fresh-checkout compatibility
+gate: it does not require `/home/roku/wjlab`, a campaign candidate, or any live
+Wikidot endpoint. `fixtures/offline-compatibility/final-zero-surface-coverage.json`
+freezes the exact 900-surface final-zero denominator and assigns every row to
+repository-owned executable anchors. One hundred rows whose final-zero ledger
+was backed only by candidate/campaign receipts or non-executable source anchors
+are explicitly migrated to ordinary verification/product tests in that fixture;
+the fixture validator rejects a host-specific WJLab path, a live Wikidot/WDFiles
+dependency, a missing anchor file, or a lost denominator row.
+
 Run the full-page SCP-9506 browser oracle against a local standing runtime with:
 
 ```sh
@@ -20,7 +37,13 @@ pnpm --dir install/local/wikidot-verification offline:browser
 
 `offline:browser` uses `fixtures/offline-compatibility/scp-9506-final-zero-oracle.json`, the exact final-zero Chromium identity, a repository-owned external-response fixture, and the final-zero-accepted full-page Wikijump image. Public stylesheet/font/image responses are replayed from the fixture. Any missing public response fails closed instead of fetching it. The semantic comparison uses the frozen Wikidot browser observation; the visual comparison uses normalized ImageMagick RMSE against the Wikijump image that passed that same final-zero live comparison. The browser runs in a fresh user+network namespace with only loopback. A Unix-domain socket bridges that namespace's `127.0.0.1:443` exclusively to the host's existing standing `127.0.0.1:443`; Chromium has no external IP route at all. The harness locally fulfills only the exact `/local--favicon/favicon.gif` browser-internal request to prevent its standing redirect from escaping the sealed fixture model, and records that normalization in the verdict.
 
-Run both layers with `pnpm --dir install/local/wikidot-verification offline:all`. Live-reference, preview-capture, authenticated probe, and sandbox-mutation commands below are acquisition tools for discovering a behavior that is not yet represented by a frozen fixture. They are never prerequisites for an ordinary regression run. After a reviewed acquisition, reduce the observation to a checked-in fixture and test it offline thereafter.
+Run the portable gate plus the local-standing browser oracle with
+`pnpm --dir install/local/wikidot-verification offline:all`. Live-reference,
+preview-capture, authenticated probe, and sandbox-mutation commands below are
+acquisition tools for discovering a behavior that is not yet represented by a
+frozen fixture. They are never prerequisites for an ordinary regression run.
+After a reviewed acquisition, reduce the observation to a checked-in fixture
+and test it offline thereafter.
 
 Large retained JSON/JSONL artifacts are stored as deterministic gzip when their
 expanded representation would exceed the repository's raw-artifact budget.
@@ -36,7 +59,7 @@ new campaign evidence from silently bloating checkouts and repeated I/O.
 
 By default the generator reads the current worktree bytes and records their exact registry digest set, which lets source changes and their regenerated inventory land in the same commit. Pass `--source-revision <exact-commit>` when the run must prove those bytes against a committed Git identity or reproduce an older exact commit. Because the tracked v3 bytes no longer contain the Wikijump commit/tree, a metadata-only commit does not require a second inventory rebind commit. After committing an inventory-bearing source head, seal its exact Git identity with `scripts/bind-compatibility-inventory-source.mjs`; the resulting repo-external receipt proves that the committed inventory bytes and every recorded registry digest exist at that exact commit/tree. Post-commit ledger generation consumes that receipt with `--wikijump-binding`, preserving exact source identity without creating a self-referential tracked artifact. The repository `generated-contracts:verify --full` path resolves exact local `HEAD`, regenerates with that revision pinned, and compares the bytes to the tracked inventory.
 
-`scripts/build-deepwell-jsonrpc-contract-manifest.mjs` generates `docs/development/deepwell-jsonrpc-contract-manifest.json` from the current Deepwell JSON-RPC registry and endpoint sources. It records all registered methods with their handler owner, parameter decoder, observed request context requirements, mutation signals, transaction isolation, source identities, and the source-contract test witness. Use `--verify` in the local WSL review/preflight flow to reject a stale manifest; GitHub CI intentionally runs no verification tests.
+`scripts/build-deepwell-jsonrpc-contract-manifest.mjs` generates `docs/development/deepwell-jsonrpc-contract-manifest.json` from the current Deepwell JSON-RPC registry and endpoint sources. It records all registered methods with their handler owner, parameter decoder, observed request context requirements, mutation signals, transaction isolation, source identities, and the source-contract test witness. Use `--verify` in the local WSL review/preflight flow to reject a stale manifest. GitHub's offline-compatibility workflow now runs the portable frozen-oracle and product regression layers with network acquisition disabled.
 
 `scripts/build-wws-route-registration-denominator.mjs` generates `docs/development/wws-route-registration-denominator.json` from the production route calls in `wws/src/route.rs`. It requires exactly 30 source registrations, records each declared method class and primary or fallback handler owner, binds every route and handler input to the Git blob and SHA-256 of the exact bytes it parsed, and records four compact source-bound issue #1370 behavior rows with checked public-test anchors plus the Git-bound live observation note. Git identity checks use the admitted absolute `/usr/bin/git` executable with a minimal fixed environment, so inherited PATH and `GIT_*` controls cannot select another repository or object store. The command rejects duplicate registration identities, unsupported router-composition forms, uncommitted source drift, omissions, unsupported route declarations, and handler symbols found only in comments, strings, or test modules. Pass `--verify` to require a byte-for-byte current checked artifact. The earlier 27-route PR 1334 attribution artifact remains immutable historical evidence rather than the current denominator.
 

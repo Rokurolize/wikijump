@@ -1,8 +1,18 @@
-# Compatibility execution efficiency
+# Historical compatibility campaign execution efficiency
+
+This file preserves lessons from the retired compatibility campaign. It is not
+the normal Wikidot regression runbook. Routine compatibility validation uses
+the hermetic offline commands in `docs/agents/compatibility/README.md` and
+`install/local/wikidot-verification/README.md`; no developer-specific WJLab
+path is current authority.
 
 ## Work from one current matrix
 
-Build one current matrix from live GitHub issues plus current audits/denominator. Classify incomplete acceptances by finishing authority—local source/test, retained evidence, read-only live, run-owned mutation, candidate-only, standing-only, paid/external provider, or explicit security/product decision—and batch rows sharing authority/causal fix. Use batched GitHub reads per `docs/agents/issue-tracker.md`; scan each case set once as local JSON, not once per case. Search exact files/evidence roots; broad scans of `/home/roku/wjlab`, `/mnt/oracle-store`, or `/home/roku/src` are last resorts: slow and prone to historical-ledger false matches.
+For a future explicitly declared campaign, build one current matrix from GitHub
+issues plus that campaign's checked-in audits/denominator. Classify incomplete
+acceptances by finishing authority and batch rows sharing authority/causal fix.
+Historical developer-local evidence roots may be consulted only as provenance;
+they are not inputs required by the maintained offline suite.
 
 ## Reuse proof by identity
 

@@ -19,7 +19,7 @@ jobs:
   offline:
     name: Frozen oracle regression
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -34,13 +34,17 @@ jobs:
       - name: Install native build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends libmagic-dev
+          sudo apt-get install --yes --no-install-recommends bubblewrap libmagic-dev socat
 
       - name: Install JavaScript dependencies
         run: |
           corepack enable
           corepack prepare pnpm@11.10.0 --activate
           pnpm --dir install/local/wikidot-verification install --frozen-lockfile
+          pnpm --dir framerail install --frozen-lockfile
+
+      - name: Install pinned browser runtime
+        run: pnpm --dir framerail exec playwright install --with-deps chromium
 
       - name: Materialize pinned wikidot.py source dependency
         run: |
@@ -83,15 +87,27 @@ jobs:
 
       - name: Prepare pinned Rust dependencies
         run: |
-          rustup toolchain install 1.95.0 --profile minimal
+          # Install from outside the checkout so rust-toolchain.toml does not
+          # merge development-only clippy/rustfmt/rust-src components into the
+          # hermetic compatibility runner's minimal toolchain.
+          (cd "${RUNNER_TEMP}" && rustup toolchain install 1.95.0 --profile minimal)
           cargo +1.95.0 fetch --locked --manifest-path deepwell/Cargo.toml
+          cargo +1.95.0 fetch --locked --manifest-path wws/Cargo.toml
+
+      - name: Install pinned SQL migration CLI
+        run: |
+          cargo +1.95.0 install sqlx-cli --version 0.8.6 --locked \
+            --no-default-features --features postgres
+
+      - name: Build task-owned integration service images
+        run: scripts/build-deepwell-integration-images.sh
 
       - name: Run hermetic compatibility suite
         env:
           WIKIDOT_PY_CHECKOUT: ${{ runner.temp }}/wikidot.py
           WIKIDOT_PY_TEST_PYTHON: ${{ runner.temp }}/wikidot-py-test-venv/bin/python
           WIKIJUMP_FTML_CHECKOUT: ${{ runner.temp }}/ftml
-        run: pnpm --dir install/local/wikidot-verification run offline
+        run: pnpm --dir install/local/wikidot-verification run offline:portable
 
       - name: Explain live-acquisition boundary
         if: always()

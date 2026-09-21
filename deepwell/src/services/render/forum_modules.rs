@@ -829,7 +829,7 @@ fn recent_post_path(post: &RecentPost, anchor: bool) -> String {
             "/forum/t-{}/{}{}",
             post.forum_thread_id,
             normalize_slug_without_category_separator(&post.thread_title),
-            anchor,
+            anchor_suffix,
         ),
     }
 }
@@ -1217,6 +1217,49 @@ impl RenderService {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn recent_post_for_path(page_slug: Option<&str>) -> RecentPost {
+        RecentPost {
+            forum_post_id: 456,
+            forum_thread_id: 123,
+            forum_category_id: 1,
+            group_name: "Group".to_owned(),
+            category_name: "Category".to_owned(),
+            thread_title: "Thread Title".to_owned(),
+            page_slug: page_slug.map(str::to_owned),
+            page_title: None,
+            user: ForumUserDisplay {
+                user_id: 1,
+                name: "User".to_owned(),
+                slug: None,
+                wikidot_profile: false,
+                guest_gravatar_md5: None,
+            },
+            created_at: time::OffsetDateTime::UNIX_EPOCH,
+            title: "Post".to_owned(),
+            compiled_html: String::new(),
+            signature_html: None,
+        }
+    }
+
+    #[test]
+    fn recent_post_paths_use_the_post_anchor_instead_of_boolean_text() {
+        let thread_post = recent_post_for_path(None);
+        assert_eq!(
+            recent_post_path(&thread_post, true),
+            "/forum/t-123/thread-title#post-456",
+        );
+        assert_eq!(
+            recent_post_path(&thread_post, false),
+            "/forum/t-123/thread-title"
+        );
+
+        let page_post = recent_post_for_path(Some("page-comments"));
+        assert_eq!(
+            recent_post_path(&page_post, true),
+            "/page-comments/comments/show#post-456",
+        );
+    }
 
     #[test]
     fn frontforum_custom_body_malformed_category_suppresses_body() {

@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Exercise the product-owned regression suites that back the frozen Wikidot
+# compatibility surface inventory. Every command runs with external networking
+# disabled; Deepwell provisions only task-owned local backing services.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+GUARD="${ROOT}/scripts/run-test-no-external-network.sh"
+
+cd "${ROOT}"
+
+# Resolve the installed toolchain before entering the external-network guard.
+# Using rustup's proxy from inside the guard can attempt a channel metadata
+# lookup even when the requested toolchain is already installed.
+export WIKIJUMP_OFFLINE_CARGO="$(rustup which --toolchain 1.95.0 cargo)"
+export RUSTC="$(rustup which --toolchain 1.95.0 rustc)"
+export RUSTDOC="$(rustup which --toolchain 1.95.0 rustdoc)"
+
+"${GUARD}" "${WIKIJUMP_OFFLINE_CARGO}" test \
+  --offline \
+  --locked \
+  --manifest-path "${ROOT}/wws/Cargo.toml" \
+  --all-features \
+  -- \
+  --nocapture \
+  --test-threads 1
+
+pnpm --dir "${ROOT}/framerail" test:unit
+pnpm --dir "${ROOT}/framerail" test
+
+"${GUARD}" node \
+  "${ROOT}/install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs"

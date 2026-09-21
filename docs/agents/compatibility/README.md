@@ -1,39 +1,82 @@
-# Compatibility campaign
+# Wikidot compatibility maintenance
 
-This router defines campaign sequence; linked files own branch-specific detail.
+The Wikidot compatibility campaign is retired. Its final-zero acceptance closed
+the 900-surface denominator at Wikijump commit
+`162b0a5fe340ea126c9d0e5bddd8398be511e55e` and tracking issue #1089 was closed
+on 2026-09-17. Campaign candidate/standing receipts and the former WJLab tree are
+historical provenance, not runtime or development prerequisites.
 
-## Authority
+Routine compatibility work is now ordinary hermetic regression work. A normal
+test run must not contact Wikidot, WDFiles, a third-party theme/font/CDN origin,
+or depend on a particular developer's home directory.
 
-Use current checkout, Git/GitHub, maintained receipts, and active runtime. Durable charter/execution policy: `/home/roku/wjlab/plan.md`, `/home/roku/wjlab/execution-policy.md`, `/home/roku/wjlab/devspace-execution-plan.md`; GitHub owns mutable issue/blocker state. Handoffs, archived plans, old candidate counts, and historical final-zero receipts are evidence or navigation only.
+## Current authority
 
-Completion requires: reconciled current denominator; every current-scope product issue closed from evidence-backed standing-complete rows; independent final-zero verifier PASS against freshly captured current-open issue snapshot; tracking #1089 closed last; protected standing data intact; cited acceptance artifacts retained; task-owned resources cleaned; primary checkout clean at current `origin/develop`.
+- Product semantics live in `docs/wikidot-specifications/specifications/`,
+  `docs/wikidot-specifications/live-observations.json`, and reviewed checked-in
+  fixtures. Historical acquisition paths inside old evidence records are
+  provenance strings only.
+- The frozen final-zero ownership map lives in
+  `install/local/wikidot-verification/fixtures/offline-compatibility/final-zero-surface-coverage.json`.
+  It binds all 900 accepted surfaces to repository-owned executable regression
+  anchors and contains no host-specific WJLab dependency.
+- `pnpm --dir install/local/wikidot-verification run offline:portable` is the
+  fresh-checkout compatibility gate. It runs the retained oracle/contract
+  fixtures plus the product-owned WWS, Framerail, and Deepwell suites with
+  external networking denied.
+- `pnpm --dir install/local/wikidot-verification run offline:browser` is the
+  local-standing full-page canary. SCP-9506 is compared against the frozen
+  final-zero Wikidot observation and the Wikijump image accepted by that same
+  final-zero run. Required public assets are replayed from repository-owned
+  responses while Chromium itself has no external route.
+- Git/GitHub own current source and issue state. New regressions are normal
+  product bugs; they do not reopen or recreate the historical campaign by
+  default.
 
-## Where knowledge belongs
+## Normal workflow
 
-- `AGENTS.md` owns invariants; this directory owns reusable campaign method and lessons affecting later execution. Add or extend branch documents when needed.
-- Exact feature specs under `docs/wikidot-specifications/specifications/` plus `live-observations.json` when live corrects the snapshot own product semantics; generated inventory, ledger, audits, and maintained receipts under `docs/development/` plus verification tools own mechanical denominator/ownership. Regenerate inputs; do not bury semantics or narrate counts in runbooks.
-- GitHub issues/dependencies and current WJLab authority files own mutable state; never cache rolling issue counts, branch heads, ports, or session IDs in repo instructions.
-- External observations are immutable identity/cleanup/path/digest artifacts; specs/audits point to them and instructions cover acquisition. Owning README/source/`--help` owns tool mechanics; agent docs carry sequencing/gotchas, not command flags.
+1. Change the smallest coherent product/source unit and add or update focused
+   regression coverage for the behavior being changed.
+2. Run `offline:portable`. A compatibility change is not accepted because an
+   old campaign receipt once passed; the current checkout must pass the frozen
+   executable specification now.
+3. When rendered page/chrome/theme behavior may change, also run
+   `offline:browser` against the local standing runtime. A visually broken
+   SCP-9506 is a regression even when coarse DOM/geometry checks still pass.
+4. If an unknown Wikidot behavior must be learned, perform an explicit,
+   operator-owned acquisition once using the tools documented in
+   `install/local/wikidot-verification/README.md`. Acquisition is not a test.
+   Review the observation, reduce it to a compact fixture/assertion, then test
+   that fixture offline thereafter.
+5. Never put live acquisition in ordinary CI, pre-merge regression commands,
+   or a retry/fallback path. A missing frozen response fails closed rather than
+   silently consulting Wikidot.
+6. Preserve source provenance and content hashes when replacing a frozen
+   oracle. Do not approve current Wikijump output as its own golden merely to
+   make a regression pass.
+7. Add more cases freely. Cheap parser/query/property cases should scale to as
+   many combinations as useful; service and browser cases form progressively
+   more expensive layers above them. Test volume is not a reason to sample away
+   known compatibility behavior.
 
-## Sequence
+## Historical campaign material
 
-1. **Restore:** Fetch current Git; inspect active branch/worktree, GitHub OPEN issues/PRs, campaign authority files, maintained evidence receipts, running candidate/standing identities, leases/locks, protected volume identities. Next-action facts must be current, not handoff assertions.
-2. **Select:** Derive work from current denominator/audit/issue state; read exact specification/current issue acceptance. Each selected row must have actor, input, expected public result, evidence requirement, source owner, cleanup contract, and acceptance owner.
-3. **Evidence:** Use the cheapest authority ladder: retained response/corpus, anonymous/read-only live probe, authenticated read, then run-owned mutation only when required. Read `evidence.md`; every behavior must be evidenced or explicitly blocked by one exact missing authority.
-4. **Source:** Change smallest coherent source batch; preserve architecture boundaries, add focused regression seams, push review head before expensive measurement. Pushed head must be the exact tested/measured tree.
-5. **Review/freeze:** Resolve actionable review; freeze source-owned denominators/reviews/fixtures/tools and source-writer roster; build immutable production artifacts only after source changes end. One review-ready identity must own release suffix; no provisional dirty source remains.
-6. **Candidate:** Build one sealed candidate for material identity; generate candidate-private inputs through maintained producers; run generated executable denominator and required browser parity; aggregate receipts/verify cleanup. Read `runtime.md`; exact candidate identity must pass every candidate contract, and diagnostics do not substitute.
-7. **Merge:** Merge normally through the PR. Merge identity must be a normal two-parent merge accepted by maintained merge-identity rules; it may contain no unreviewed runtime delta beyond explicitly permitted verification-only changes.
-8. **Standing:** Prepare/refresh only through maintained standing tooling; preserve protected volumes; make persisted render artifacts source-fresh; take fresh post-merge observations. Read `runtime.md`; standing must serve merge identity, pass required health/canaries, have saved-page freshness `zero-stale`, and pass browser/full-page proof.
-9. **Closure:** Reconcile fresh candidate/standing proof into current rows; capture current GitHub OPEN issues; close only product issues whose linked current rows are fully complete; run final-zero against exact snapshot; close #1089 last. Read `closure.md`; final-zero cannot pass while a product issue is open or unowned.
-10. **Cleanup:** Remove task-owned candidates/worktrees, temporary databases, browser profiles, disposable sandbox state, and superseded outputs; retain active+rollback runtime material and every cited acceptance artifact. Protected volumes must be unchanged; no task-owned live process may remain; primary checkout must be clean at current `origin/develop`.
+The other documents in this directory preserve the acquisition, candidate,
+standing, reconciliation, and final-zero techniques used to discover and close
+the original compatibility gap. They are reference material for a future
+explicit acquisition or release investigation, not the default development
+sequence:
 
-## Branch pointers
+- `evidence.md`: historical acquisition and browser/live-reference method.
+- `runtime.md`: historical candidate/standing promotion and proof method.
+- `closure.md`: historical reconciliation/final-zero closure method.
+- `execution.md`: historical bulk-analysis and batching lessons.
 
-- `evidence.md`: acquisition, browser identity/routing, caches, authenticated probes, disposable Wikidot sites, mutation rollback, paid-only boundaries.
-- `runtime.md`: candidate production/case execution, promotion, saved-page freshness/rerender, standing proof, runtime drift.
-- `closure.md`: current-open snapshots, ownership/close gates, reconciliation/final-zero, #1089-last ordering.
-- `execution.md`: bulk analysis, adaptive batching, parallel preparation, long-process handling, proof reuse.
-- `install/local/wikidot-verification/README.md`: tool syntax and maintained checker contracts.
-- `docs/deployment/runtime-drift-policy.md`: standing topology and identity policy.
-- `docs/development/cargo-target-policy.md`: storage retention and candidate build targets.
+If a future project deliberately starts a new compatibility campaign, define a
+new denominator and authority in-repository. Do not resurrect mutable state by
+assuming an old WJLab path, candidate, browser cache, Docker container, or
+developer-specific filesystem layout still exists.
+
+Tool syntax and the maintained offline/acquisition boundary are documented in
+`install/local/wikidot-verification/README.md`. Standing topology and identity
+policy remain in `docs/deployment/runtime-drift-policy.md`.
