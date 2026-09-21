@@ -2011,9 +2011,9 @@ Keep the work in one focused campaign and normal review sequence unless reposito
 
 ## Validation and completion
 
-Run focused tests during each slice, then run formatting, linting, clippy/build checks, relevant integration suites, verifier suites, and browser tests in proportion to the changed surfaces. For browser-visible behavior, capture fresh evidence against exact source, dependency, fixture, and runtime identities and check visible intermediate states as well as settled DOM.
+Run focused tests during each slice, then run formatting, linting, clippy/build checks, relevant integration suites, verifier suites, and browser tests in proportion to the changed surfaces. For browser-visible behavior, use the repository-owned frozen browser oracle and local standing/candidate runtime; ordinary validation must not reacquire Wikidot. If a genuinely unknown Wikidot behavior must be learned, perform one explicit reviewed acquisition, reduce it to a checked-in fixture/assertion, and test that fixture offline thereafter.
 
-Do not declare campaign completion from this feature prompt. Feature work is complete only when its current ledger dimensions satisfy the compatibility charter, and campaign completion remains the authoritative final-zero condition in \`/home/roku/wjlab/plan.md\`. In particular, keep generated specification validation green, classify every discovered differential or fuzz result, leave no known reproducible gap without a fix or concrete blocker, and use the normal review/merge/standing process without force or admin merge.
+The historical compatibility campaign is retired. Its final-zero receipt is provenance for the frozen baseline, not mutable execution authority and not a reason to depend on an old WJLab tree. Feature work is complete only when its current ledger dimensions and repository-owned executable regression seams are satisfied. Keep generated specification validation and the hermetic compatibility gate green, classify every discovered differential or fuzz result, leave no known reproducible gap without a fix or concrete blocker, and use the normal review/merge/standing process without force or admin merge.
 
 A merge is not a deployment. After browser-visible changes, refresh the standing runtime and verify the served URL before reporting the behavior fixed.
 `;

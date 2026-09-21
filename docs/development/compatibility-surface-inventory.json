@@ -11385,7 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "3e0cbbb392574205fc164f270ac1c79a0afcaf409a08734cb244b6afd013f0fc"
+      "source_input_set_sha256": "75c04f596dbf9375e31de76fa31289d9c4e642db5b66abb6f90f884a95ce5864"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11849,6 +11849,22 @@
         "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410"
       },
       {
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/catalog-feature-owners.json",
+        "sha256": "63537ec48261f0bb956407e7fa2889a2f33548b596d441191632319907f0f855"
+      },
+      {
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/deepwell-jsonrpc.json",
+        "sha256": "9a55d5a726dd6696639cb1686da11440bf75bc211fbb7b48bac5575e3df4074c"
+      },
+      {
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/framerail-actions.json",
+        "sha256": "d3b461c03d931c3397fcd345b0400fb07e8fbe8621f48cfd80dfd7f6b0ec126b"
+      },
+      {
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/wws-wikidot-py.json",
+        "sha256": "ef87c37c9bd2ebf661d003c361f386c5d979b30aeebb18a6b44c307124f0636c"
+      },
+      {
         "path": "install/local/wikidot-verification/scripts/build-wws-route-registration-denominator.mjs",
         "sha256": "1ed1f1af82d70881cc9b771743878fec1ed3890be4f943b34ec172f632637706"
       },
@@ -11872,19 +11888,19 @@
     "compatibility_catalog_source_attribution": "docs/development/compatibility-catalog-source-attribution.json",
     "audited_ownership_reports": [
       {
-        "path": "/home/roku/wjlab/ownership-mapping-20260815/catalog-feature-owners.json",
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/catalog-feature-owners.json",
         "sha256": "63537ec48261f0bb956407e7fa2889a2f33548b596d441191632319907f0f855"
       },
       {
-        "path": "/home/roku/wjlab/ownership-mapping-20260815/deepwell-jsonrpc.json",
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/deepwell-jsonrpc.json",
         "sha256": "9a55d5a726dd6696639cb1686da11440bf75bc211fbb7b48bac5575e3df4074c"
       },
       {
-        "path": "/home/roku/wjlab/ownership-mapping-20260815/framerail-actions.json",
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/framerail-actions.json",
         "sha256": "d3b461c03d931c3397fcd345b0400fb07e8fbe8621f48cfd80dfd7f6b0ec126b"
       },
       {
-        "path": "/home/roku/wjlab/ownership-mapping-20260815/wws-wikidot-py.json",
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/wws-wikidot-py.json",
         "sha256": "ef87c37c9bd2ebf661d003c361f386c5d979b30aeebb18a6b44c307124f0636c"
       }
     ],

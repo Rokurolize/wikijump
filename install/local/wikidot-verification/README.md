@@ -211,7 +211,7 @@ Before comparing an imported standing page after a new FTML pin, explicitly reco
 WIKIDOT_VERIFY_ADMIN_EMAIL=... WIKIDOT_VERIFY_ADMIN_PASS=... \
 node install/local/wikidot-verification/scripts/rerender-saved-page-runtime.mjs \
   --references /absolute/evidence/path/saved-page-references.jsonl \
-  --runtime-identity /home/roku/wjlab/runtime/wikijump-standing/runtime-differential-identity.json \
+  --runtime-identity "${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/standing/runtime-differential-identity.json" \
   --rpc-url http://127.0.0.1:12747/jsonrpc \
   --output /absolute/evidence/path/saved-page-runtime-rerender-receipt.json
 ```

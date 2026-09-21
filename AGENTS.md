@@ -3,7 +3,7 @@
 ## Start here
 
 1. Recover current truth from the checkout, Git/GitHub, maintained receipts, and the active runtime before acting on a handoff or old plan. A handoff is navigation, not authority.
-2. Compatibility campaign work: read `docs/agents/compatibility/README.md` before selecting or resuming a row. It owns the campaign sequence, completion criteria, and pointers to evidence, runtime, closure, and execution guidance.
+2. Wikidot compatibility work: read `docs/agents/compatibility/README.md`. The historical campaign is retired; routine compatibility maintenance is repository-owned hermetic regression work, not resumption of WJLab campaign state.
 3. Read the exact Wikidot specification for the behavior you are changing before designing against it. `docs/wikidot-specifications/` is the specification universe; live Wikidot evidence and provenance-backed corpus observations override local Wikijump output.
 4. Finish the branch you enter. A source change is complete only after focused validation, coherent commit/push, normal PR delivery, required acceptance, and any required standing proof or cleanup for that branch.
 
@@ -22,7 +22,7 @@
 
 ## Context pointers
 
-- **Compatibility campaign:** `docs/agents/compatibility/README.md` — read for campaign bootstrap, WBS flow, candidate/standing proof, final-zero, issue closure, and cleanup.
+- **Compatibility maintenance:** `docs/agents/compatibility/README.md` — read for the retired-campaign boundary, frozen offline oracle ownership, normal regression workflow, and rules for any future explicit acquisition.
 - **Live evidence and sandbox mutation:** `docs/agents/compatibility/evidence.md` — read before external capture, browser parity, authenticated probes, run-owned mutations, or paid/external authority decisions.
 - **Candidate and standing:** `docs/agents/compatibility/runtime.md` — read before immutable builds, candidate case execution, promotion, saved-page rerender, standing parity, or runtime repair.
 - **Closure:** `docs/agents/compatibility/closure.md` — read before changing audit/ledger state, closing compatibility issues, generating final-zero, or closing tracking issue #1089.
