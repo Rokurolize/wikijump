@@ -2,6 +2,13 @@
 
 `compose.yaml` is the source-owned topology for the browser-facing standing runtime. The rendered home uses the role-based `wikijump-standing` project and the durable external volume names `wikijump-standing-postgres-data`, `wikijump-standing-files-data`, `wikijump-standing-cache-data`, `local-caddy-data`, and `local-caddy-config`. Never run `docker compose down -v` against this topology. Legacy `runtime50x-*` volume names are migration-only rollback inputs and are not part of the active topology.
 
+The durable cache has a source-owned compatibility floor in
+`cache-data-compatibility.json`. A standing/cache image must not be downgraded
+below that Valkey version: persisted AOF/RDB data may use formats introduced by
+the floor release. The hermetic compatibility suite checks both local/dev
+Dockerfiles against that policy so a future base-image cleanup cannot silently
+turn a standing activation into an unreadable-cache rollback incident.
+
 There are two operational tiers. Routine application refreshes use Tier 1. Tier 2 is reserved for operations that can change a named volume attachment, the Compose project name, the network name, or edge routing.
 
 ## Tier 1: routine merged-head refresh

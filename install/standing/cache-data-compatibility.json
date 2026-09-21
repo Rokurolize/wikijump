@@ -1,0 +1,6 @@
+{
+  "schema": "wikijump.standing_cache_data_compatibility.v1",
+  "engine": "valkey",
+  "minimum_version": "9.1.0",
+  "reason": "The durable standing cache may contain RDB format version 80 written by Valkey 9.1; older Valkey releases cannot read that data."
+}
