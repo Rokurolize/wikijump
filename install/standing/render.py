@@ -14,6 +14,8 @@ import subprocess
 import tempfile
 from datetime import UTC, datetime
 
+from volume_contract import PERSISTENT_VOLUMES
+
 
 IMAGE_ARGUMENTS = (
     "database_image",
@@ -147,13 +149,7 @@ def main() -> int:
             "deepwell_domain_override": {"main": "wikijump.localhost", "files": "wjfiles.localhost"},
             **identity,
             "images": images,
-            "persistent_volumes": [
-                "runtime50x-postgres-data",
-                "runtime50x-files-data",
-                "runtime50x-cache-data",
-                "local-caddy-data",
-                "local-caddy-config",
-            ],
+            "persistent_volumes": list(PERSISTENT_VOLUMES),
         }
         (staging / "identity.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         os.chmod(staging / "identity.json", 0o600)

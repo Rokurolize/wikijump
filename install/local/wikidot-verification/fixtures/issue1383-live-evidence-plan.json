@@ -125,7 +125,7 @@
     "sha256": "c1494f51b8445948a22321b70a671c475387415d1478e308feb0dce7b7e783f0"
   },
   "terminal_evidence": {
-    "path": "/home/roku/wjlab/evidence/issue1383-self-canary-20260908-self-r1/terminal-combined-receipt.json",
+    "path": "install/local/wikidot-verification/fixtures/issue1383-retained/terminal-combined-receipt.json",
     "sha256": "6ebba0db456592e66afa72f08e87a70116b76047122249504bb8c737fdd31387",
     "status": "pass",
     "wikijump_head": "5052bc1dbab5b5c0a7579ecc29caab1f3598285d"

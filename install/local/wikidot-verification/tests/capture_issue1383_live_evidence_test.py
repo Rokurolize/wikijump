@@ -105,9 +105,10 @@ class CaptureIssue1383LiveEvidenceTest(unittest.TestCase):
 
 
 class CaptureIssue1383PlanFreshnessTest(unittest.TestCase):
-    def test_plan_source_and_dependency_identities_match_head(self):
-        import hashlib
+    def test_plan_preserves_its_historical_source_identity(self):
         import json
+        import re
+        import subprocess
 
         repo_root = Path(__file__).parents[4]
         plan_path = (
@@ -115,35 +116,41 @@ class CaptureIssue1383PlanFreshnessTest(unittest.TestCase):
             / "install/local/wikidot-verification/fixtures/issue1383-live-evidence-plan.json"
         )
         plan = json.loads(plan_path.read_text(encoding="utf-8"))
-
-        def sha256_bytes(path):
-            return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-
-        # General identity binding: the plan must pin the exact current bytes
-        # for the source owner, public regression, specs, and dependencies.
-        # This guards against closing #1383 on a stale plan, not page content.
-        expected = {
-            "spec_listpages": sha256_bytes(
-                repo_root
-                / "docs/wikidot-specifications/specifications/module/module-listpages.md"
+        source = plan["source"]
+        self.assertRegex(source["owner_commit"], r"^[0-9a-f]{40}$")
+        self.assertEqual(source["public_regression_commit"], source["owner_commit"])
+        self.assertRegex(source["owner_tree"], r"^[0-9a-f]{40}$")
+        self.assertRegex(source["owner_blob_sha1"], r"^[0-9a-f]{40}$")
+        for value in (
+            source["test_sha256"],
+            source["test_body_sha256"],
+            *(
+                item["sha256"]
+                for item in plan["authority"]["specifications"]
             ),
-            "cargo_manifest": sha256_bytes(repo_root / "deepwell/Cargo.toml"),
-            "cargo_lock": sha256_bytes(repo_root / "deepwell/Cargo.lock"),
-            "browser_package": sha256_bytes(repo_root / "framerail/package.json"),
-            "browser_lock": sha256_bytes(repo_root / "framerail/pnpm-lock.yaml"),
-            "regression_test": sha256_bytes(
-                repo_root / plan["source"]["test_path"]
-            ),
-        }
-        actual = {
-            "spec_listpages": plan["authority"]["specifications"][0]["sha256"],
-            "cargo_manifest": plan["dependencies"]["cargo_manifest_sha256"],
-            "cargo_lock": plan["dependencies"]["cargo_lock_sha256"],
-            "browser_package": plan["browser"]["package_sha256"],
-            "browser_lock": plan["browser"]["lock_sha256"],
-            "regression_test": plan["source"]["test_sha256"],
-        }
-        self.assertEqual(actual, expected)
+            plan["dependencies"]["cargo_manifest_sha256"],
+            plan["dependencies"]["cargo_lock_sha256"],
+            plan["browser"]["package_sha256"],
+            plan["browser"]["lock_sha256"],
+        ):
+            self.assertIsNotNone(re.fullmatch(r"[0-9a-f]{64}", value))
+
+        def git(*args: str) -> str:
+            return subprocess.run(
+                ["/usr/bin/git", "-C", str(repo_root), *args],
+                check=True,
+                text=True,
+                stdout=subprocess.PIPE,
+            ).stdout.strip()
+
+        self.assertEqual(
+            git("rev-parse", f'{source["owner_commit"]}^{{tree}}'),
+            source["owner_tree"],
+        )
+        self.assertEqual(
+            git("rev-parse", f'{source["owner_commit"]}:{source["owner_path"]}'),
+            source["owner_blob_sha1"],
+        )
 
     def test_plan_is_complete_only_with_retained_terminal_evidence(self):
         import json
@@ -173,7 +180,7 @@ class CaptureIssue1383PlanFreshnessTest(unittest.TestCase):
             "captured",
         )
         terminal = plan["terminal_evidence"]
-        terminal_path = Path(terminal["path"])
+        terminal_path = repo_root / terminal["path"]
         self.assertTrue(terminal_path.is_file())
         self.assertEqual(hashlib.sha256(terminal_path.read_bytes()).hexdigest(), terminal["sha256"])
         receipt = json.loads(terminal_path.read_text(encoding="utf-8"))

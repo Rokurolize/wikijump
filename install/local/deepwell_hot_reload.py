@@ -72,14 +72,14 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Examples:
-  # A prebuilt corpus runtime discovered through Compose labels
-  %(prog)s --project runtime50x
+  # A local runtime discovered through Compose labels
+  %(prog)s --project wikijump
 
   # Select a container directly and copy from another worktree
-  %(prog)s --container runtime50x-deepwell-1 --source-root /path/to/wikijump
+  %(prog)s --container wikijump-deepwell-1 --source-root /path/to/wikijump
 
   # Validate discovery and safety checks without changing the container
-  %(prog)s --project runtime50x --dry-run --json
+  %(prog)s --project wikijump --dry-run --json
 
 The container must already run cargo-watch and contain /src/deepwell.  The
 helper refuses source bind mounts so it cannot unexpectedly edit host files.

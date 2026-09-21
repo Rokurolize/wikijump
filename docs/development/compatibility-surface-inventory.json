@@ -11385,7 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "3e0cbbb392574205fc164f270ac1c79a0afcaf409a08734cb244b6afd013f0fc"
+      "source_input_set_sha256": "75c04f596dbf9375e31de76fa31289d9c4e642db5b66abb6f90f884a95ce5864"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11849,6 +11849,22 @@
         "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410"
       },
       {
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/catalog-feature-owners.json",
+        "sha256": "63537ec48261f0bb956407e7fa2889a2f33548b596d441191632319907f0f855"
+      },
+      {
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/deepwell-jsonrpc.json",
+        "sha256": "9a55d5a726dd6696639cb1686da11440bf75bc211fbb7b48bac5575e3df4074c"
+      },
+      {
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/framerail-actions.json",
+        "sha256": "d3b461c03d931c3397fcd345b0400fb07e8fbe8621f48cfd80dfd7f6b0ec126b"
+      },
+      {
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/wws-wikidot-py.json",
+        "sha256": "ef87c37c9bd2ebf661d003c361f386c5d979b30aeebb18a6b44c307124f0636c"
+      },
+      {
         "path": "install/local/wikidot-verification/scripts/build-wws-route-registration-denominator.mjs",
         "sha256": "1ed1f1af82d70881cc9b771743878fec1ed3890be4f943b34ec172f632637706"
       },
@@ -11872,19 +11888,19 @@
     "compatibility_catalog_source_attribution": "docs/development/compatibility-catalog-source-attribution.json",
     "audited_ownership_reports": [
       {
-        "path": "/home/roku/wjlab/ownership-mapping-20260815/catalog-feature-owners.json",
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/catalog-feature-owners.json",
         "sha256": "63537ec48261f0bb956407e7fa2889a2f33548b596d441191632319907f0f855"
       },
       {
-        "path": "/home/roku/wjlab/ownership-mapping-20260815/deepwell-jsonrpc.json",
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/deepwell-jsonrpc.json",
         "sha256": "9a55d5a726dd6696639cb1686da11440bf75bc211fbb7b48bac5575e3df4074c"
       },
       {
-        "path": "/home/roku/wjlab/ownership-mapping-20260815/framerail-actions.json",
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/framerail-actions.json",
         "sha256": "d3b461c03d931c3397fcd345b0400fb07e8fbe8621f48cfd80dfd7f6b0ec126b"
       },
       {
-        "path": "/home/roku/wjlab/ownership-mapping-20260815/wws-wikidot-py.json",
+        "path": "install/local/wikidot-verification/fixtures/compatibility-ownership/wws-wikidot-py.json",
         "sha256": "ef87c37c9bd2ebf661d003c361f386c5d979b30aeebb18a6b44c307124f0636c"
       }
     ],
@@ -12968,9 +12984,9 @@
       "evidence": {
         "status": "available",
         "references": [
+          "docs/wikidot-specifications/live-observations.json::data-form-checkbox-control-storage-and-variable-contract",
           "docs/wikidot-specifications/specifications/data-forms/data-forms-checkbox-field.md",
-          "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json (SHA-256 8d806e502db320a3cfb1889368530c3c4f46921b3fb958cca2c660a63a835fe0; cases: checkbox-control-default-storage-display-and-restoration, direct-and-listpages-wiki-checkbox-variables)",
-          "live-observations.json::data-form-checkbox-control-storage-and-variable-contract"
+          "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json (SHA-256 8d806e502db320a3cfb1889368530c3c4f46921b3fb958cca2c660a63a835fe0; cases: checkbox-control-default-storage-display-and-restoration, direct-and-listpages-wiki-checkbox-variables)"
         ]
       },
       "source": {
@@ -13467,9 +13483,9 @@
       "evidence": {
         "status": "available",
         "references": [
+          "docs/wikidot-specifications/live-observations.json::data-form-hidden-field-lifecycle-20260810",
           "docs/wikidot-specifications/specifications/data-forms/data-forms-hidden-field.md",
-          "install/local/wikidot-verification/artifacts/data-form-hidden-password-static-url-live-20260810.json",
-          "live-observations.json::data-form-hidden-field-lifecycle-20260810"
+          "install/local/wikidot-verification/artifacts/data-form-hidden-password-static-url-live-20260810.json"
         ]
       },
       "source": {
@@ -14509,9 +14525,9 @@
         "status": "available",
         "references": [
           "docs/wikidot-specifications/live-observations.json",
+          "docs/wikidot-specifications/live-observations.json::windows-tile-declaration-20260913",
           "docs/wikidot-specifications/specifications/platform/favicons.md",
-          "install/local/wikidot-verification/artifacts/m756-windows-tile-live-20260914.json",
-          "live-observations.json::windows-tile-declaration-20260913"
+          "install/local/wikidot-verification/artifacts/m756-windows-tile-live-20260914.json"
         ]
       },
       "source": {
@@ -15037,8 +15053,8 @@
       "evidence": {
         "status": "available",
         "references": [
-          "docs/wikidot-specifications/specifications/layout/layout-forum.md",
-          "live-observations.json::forum-q1034-readonly-route-core-20260809"
+          "docs/wikidot-specifications/live-observations.json::forum-q1034-readonly-route-core-20260809",
+          "docs/wikidot-specifications/specifications/layout/layout-forum.md"
         ]
       },
       "source": {
@@ -15602,9 +15618,9 @@
         "status": "available",
         "references": [
           "docs/wikidot-specifications/live-observations.json",
+          "docs/wikidot-specifications/live-observations.json::navigation-list-modules-live-dom-and-argument-quirks",
           "docs/wikidot-specifications/specifications/module/module-backlinks.md",
-          "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json",
-          "live-observations.json::navigation-list-modules-live-dom-and-argument-quirks"
+          "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json"
         ]
       },
       "source": {
@@ -15658,9 +15674,9 @@
       "evidence": {
         "status": "available",
         "references": [
+          "docs/wikidot-specifications/live-observations.json::navigation-list-modules-live-dom-and-argument-quirks",
           "docs/wikidot-specifications/specifications/module/module-categories.md",
-          "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json",
-          "live-observations.json::navigation-list-modules-live-dom-and-argument-quirks"
+          "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json"
         ]
       },
       "source": {
@@ -15815,7 +15831,6 @@
       "evidence": {
         "status": "available",
         "references": [
-          "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-comments",
           "docs/wikidot-specifications/specifications/module/module-comments.md",
           "install/local/wikidot-verification/artifacts/forum-comments-hideform-actor-live-20260810.json",
           "install/local/wikidot-verification/artifacts/forum-q1034-comments-attributes-anonymous-20260810.json",
@@ -16395,9 +16410,8 @@
       "evidence": {
         "status": "available",
         "references": [
-          "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumcategory",
-          "docs/wikidot-specifications/specifications/module/module-forumcategory.md",
-          "live-observations.json::forum-q1034-readonly-route-core-20260809"
+          "docs/wikidot-specifications/live-observations.json::forum-q1034-readonly-route-core-20260809",
+          "docs/wikidot-specifications/specifications/module/module-forumcategory.md"
         ]
       },
       "source": {
@@ -16449,7 +16463,6 @@
       "evidence": {
         "status": "available",
         "references": [
-          "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumnewthread",
           "docs/wikidot-specifications/specifications/module/module-forumnewthread.md"
         ]
       },
@@ -16499,9 +16512,8 @@
       "evidence": {
         "status": "available",
         "references": [
-          "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumstart",
-          "docs/wikidot-specifications/specifications/module/module-forumstart.md",
-          "live-observations.json::forum-q1034-readonly-route-core-20260809"
+          "docs/wikidot-specifications/live-observations.json::forum-q1034-readonly-route-core-20260809",
+          "docs/wikidot-specifications/specifications/module/module-forumstart.md"
         ]
       },
       "source": {
@@ -16556,9 +16568,8 @@
       "evidence": {
         "status": "available",
         "references": [
-          "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumthread",
-          "docs/wikidot-specifications/specifications/module/module-forumthread.md",
-          "live-observations.json::forum-q1034-readonly-route-core-20260809"
+          "docs/wikidot-specifications/live-observations.json::forum-q1034-readonly-route-core-20260809",
+          "docs/wikidot-specifications/specifications/module/module-forumthread.md"
         ]
       },
       "source": {
@@ -16617,11 +16628,10 @@
       "evidence": {
         "status": "available",
         "references": [
-          "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-frontforum",
-          "docs/wikidot-specifications/specifications/module/module-frontforum.md",
-          "live-observations.json::forum-q1034-frontforum-custom-body-rendering-20260810",
-          "live-observations.json::forum-q1034-frontforum-scalar-boundaries-20260810",
-          "live-observations.json::forum-q1034-readonly-route-core-20260809"
+          "docs/wikidot-specifications/live-observations.json::forum-q1034-frontforum-custom-body-rendering-20260810",
+          "docs/wikidot-specifications/live-observations.json::forum-q1034-frontforum-scalar-boundaries-20260810",
+          "docs/wikidot-specifications/live-observations.json::forum-q1034-readonly-route-core-20260809",
+          "docs/wikidot-specifications/specifications/module/module-frontforum.md"
         ]
       },
       "source": {
@@ -16835,18 +16845,6 @@
       "evidence": {
         "status": "available",
         "references": [
-          "docs/wikidot-specifications/home/roku/wjlab/evidence/listpages-f8-20260806/acceptance-authoritative-d65bf4ff5-clean-fixture-table.json",
-          "docs/wikidot-specifications/home/roku/wjlab/runtime/wikijump-standing/refresh-receipt.json",
-          "docs/wikidot-specifications/home/roku/wjlab/runtime/wikijump-standing/served-a3249375d/receipt.json",
-          "docs/wikidot-specifications/home/roku/wjlab/runtime/wikijump-standing/standing-rpc-a3249375d.json",
-          "docs/wikidot-specifications/home/roku/wjlab/runtime/wikijump-standing/wikijump-identifier-leaks-a3249375d.json",
-          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-clusters.json.gz",
-          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl.gz",
-          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-campaign-inventory/documentation-inventory.json.gz",
-          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260806.json",
-          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json",
-          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-runtime-budget-envelope.json",
-          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json",
           "docs/wikidot-specifications/live-observations.json",
           "docs/wikidot-specifications/specifications/module/module-listpages.md",
           "install/local/wikidot-verification/artifacts/countpages-inside-listpages-live.json",
@@ -16855,6 +16853,9 @@
           "install/local/wikidot-verification/artifacts/listpages-campaign-feed-endpoint-live.jsonl",
           "install/local/wikidot-verification/artifacts/listpages-campaign-generated-preview-reconciliation.json",
           "install/local/wikidot-verification/artifacts/listpages-campaign-hash-magic-reconciliation.json",
+          "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-clusters.json.gz",
+          "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl.gz",
+          "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/documentation-inventory.json.gz",
           "install/local/wikidot-verification/artifacts/listpages-campaign-live-fixture-classification.json",
           "install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures-navigation-rerun.jsonl",
           "install/local/wikidot-verification/artifacts/listpages-campaign-navigation-coverage.json",
@@ -16862,12 +16863,14 @@
           "install/local/wikidot-verification/artifacts/listpages-campaign-rss-live-preview.jsonl",
           "install/local/wikidot-verification/artifacts/listpages-campaign-rss-selector-live-preview.jsonl",
           "install/local/wikidot-verification/artifacts/listpages-corpus-parser-functions-live.jsonl",
+          "install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260806.json",
           "install/local/wikidot-verification/artifacts/listpages-current-tag-selectors-live-20260730.json",
           "install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json",
           "install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json",
           "install/local/wikidot-verification/artifacts/listpages-offset-extreme-boundary-live.jsonl",
           "install/local/wikidot-verification/artifacts/listpages-p8-temporal-boundary-live-20260730.json",
           "install/local/wikidot-verification/artifacts/listpages-random-idle-cache-live-20260730.json",
+          "install/local/wikidot-verification/artifacts/listpages-runtime-budget-envelope.json",
           "install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json",
           "install/local/wikidot-verification/artifacts/listpages-unquoted-comparison-discriminators-live.jsonl"
         ]
@@ -17132,11 +17135,10 @@
       "evidence": {
         "status": "available",
         "references": [
-          "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-members",
           "docs/wikidot-specifications/live-observations.json",
+          "docs/wikidot-specifications/live-observations.json::members-list-amc-pagination-20260809",
           "docs/wikidot-specifications/specifications/module/module-members.md",
-          "install/local/wikidot-verification/artifacts/members-list-amc-live-20260810.json",
-          "live-observations.json::members-list-amc-pagination-20260809"
+          "install/local/wikidot-verification/artifacts/members-list-amc-live-20260810.json"
         ]
       },
       "source": {
@@ -17717,9 +17719,9 @@
       "evidence": {
         "status": "available",
         "references": [
+          "docs/wikidot-specifications/live-observations.json::link-modules-live-orphaned-and-wanted-pages",
           "docs/wikidot-specifications/specifications/module/module-orphanedpages.md",
-          "install/local/wikidot-verification/artifacts/orphanedpages-module-live.json",
-          "live-observations.json::link-modules-live-orphaned-and-wanted-pages"
+          "install/local/wikidot-verification/artifacts/orphanedpages-module-live.json"
         ]
       },
       "source": {
@@ -17772,9 +17774,9 @@
       "evidence": {
         "status": "available",
         "references": [
+          "docs/wikidot-specifications/live-observations.json::pagecalendar-live-dom-url-and-tag-filter-quirks",
           "docs/wikidot-specifications/specifications/module/module-pagecalendar.md",
-          "install/local/wikidot-verification/artifacts/pagecalendar-module-live.json",
-          "live-observations.json::pagecalendar-live-dom-url-and-tag-filter-quirks"
+          "install/local/wikidot-verification/artifacts/pagecalendar-module-live.json"
         ]
       },
       "source": {
@@ -17971,9 +17973,9 @@
       "evidence": {
         "status": "available",
         "references": [
+          "docs/wikidot-specifications/live-observations.json::navigation-list-modules-live-dom-and-argument-quirks",
           "docs/wikidot-specifications/specifications/module/module-pagetree.md",
-          "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json",
-          "live-observations.json::navigation-list-modules-live-dom-and-argument-quirks"
+          "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json"
         ]
       },
       "source": {
@@ -18186,9 +18188,8 @@
       "evidence": {
         "status": "available",
         "references": [
-          "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-recentposts",
-          "docs/wikidot-specifications/specifications/module/module-recentposts.md",
-          "live-observations.json::forum-q1034-readonly-route-core-20260809"
+          "docs/wikidot-specifications/live-observations.json::forum-q1034-readonly-route-core-20260809",
+          "docs/wikidot-specifications/specifications/module/module-recentposts.md"
         ]
       },
       "source": {
@@ -18240,9 +18241,8 @@
       "evidence": {
         "status": "available",
         "references": [
-          "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-recentthreads",
-          "docs/wikidot-specifications/specifications/module/module-recentthreads.md",
-          "live-observations.json::forum-q1034-readonly-surfaces-20260809"
+          "docs/wikidot-specifications/live-observations.json::forum-q1034-readonly-surfaces-20260809",
+          "docs/wikidot-specifications/specifications/module/module-recentthreads.md"
         ]
       },
       "source": {
@@ -18604,7 +18604,6 @@
       "evidence": {
         "status": "available",
         "references": [
-          "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl::module-own-line-sitechanges",
           "docs/wikidot-specifications/specifications/module/module-sitechanges.md",
           "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json::E_OPEN43_SITECHANGES_AMC_20260810",
           "install/local/wikidot-verification/artifacts/sitechanges-mutation-live-20260908.json::q1035 mutation lifecycle"
@@ -18754,10 +18753,10 @@
       "evidence": {
         "status": "available",
         "references": [
+          "docs/wikidot-specifications/live-observations.json::tagcloud-live-dom-url-style-and-legacy-3d",
           "docs/wikidot-specifications/specifications/module/module-tagcloud.md",
           "install/local/wikidot-verification/artifacts/tagcloud-module-edge-live.json",
-          "install/local/wikidot-verification/artifacts/tagcloud-module-live.json",
-          "live-observations.json::tagcloud-live-dom-url-style-and-legacy-3d"
+          "install/local/wikidot-verification/artifacts/tagcloud-module-live.json"
         ]
       },
       "source": {
@@ -18923,9 +18922,9 @@
       "evidence": {
         "status": "available",
         "references": [
+          "docs/wikidot-specifications/live-observations.json::link-modules-live-orphaned-and-wanted-pages",
           "docs/wikidot-specifications/specifications/module/module-wantedpages.md",
-          "install/local/wikidot-verification/artifacts/wantedpages-module-live.json",
-          "live-observations.json::link-modules-live-orphaned-and-wanted-pages"
+          "install/local/wikidot-verification/artifacts/wantedpages-module-live.json"
         ]
       },
       "source": {
@@ -19384,9 +19383,9 @@
       "evidence": {
         "status": "available",
         "references": [
+          "docs/wikidot-specifications/live-observations.json::found-page-tag-wrapper-dom-20260727",
           "docs/wikidot-specifications/specifications/site-structure/page-tags.md",
-          "install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures.json",
-          "live-observations.json::found-page-tag-wrapper-dom-20260727"
+          "install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures.json"
         ]
       },
       "source": {
@@ -20587,8 +20586,8 @@
         "status": "available",
         "references": [
           "docs/wikidot-specifications/live-observations.json",
-          "docs/wikidot-specifications/specifications/wiki-syntax/syntax-comments.md",
-          "live-observations.json::listpages-literal-context-ownership"
+          "docs/wikidot-specifications/live-observations.json::listpages-literal-context-ownership",
+          "docs/wikidot-specifications/specifications/wiki-syntax/syntax-comments.md"
         ]
       },
       "source": {
@@ -21148,11 +21147,11 @@
         "status": "available",
         "references": [
           "docs/wikidot-specifications/live-observations.json",
+          "docs/wikidot-specifications/live-observations.json::image-argument-boundary-20260913",
+          "docs/wikidot-specifications/live-observations.json::image-head-ascii-whitespace-boundary-20260810",
           "docs/wikidot-specifications/specifications/wiki-syntax/syntax-images.md",
           "install/local/wikidot-verification/artifacts/m776-m806-image-argument-boundary-live.jsonl#E_OPEN43_IMAGE_ARGUMENT_BOUNDARY_20260913",
-          "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json#E_OPEN43_IMAGE_WHITESPACE_BOUNDARY_20260810",
-          "live-observations.json::image-argument-boundary-20260913",
-          "live-observations.json::image-head-ascii-whitespace-boundary-20260810"
+          "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json#E_OPEN43_IMAGE_WHITESPACE_BOUNDARY_20260810"
         ]
       },
       "source": {
@@ -21436,9 +21435,9 @@
       "evidence": {
         "status": "available",
         "references": [
-          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/pr1334-ftml-inline-core-syntax-source-attribution-20260810.json (SHA-256 84c6938b305fb6fd0cebfb2c8459df221a8d163911e3a4e31059ae02574abbcd)",
-          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/pr1334-ftml-lexical-text-source-attribution-20260810.json (SHA-256 436918d4ac62c4977cd8bacc9ab564129dfc7e2b5bcb92cf18f41a9cf39dca45)",
-          "docs/wikidot-specifications/specifications/wiki-syntax/syntax-literal-text.md"
+          "docs/wikidot-specifications/specifications/wiki-syntax/syntax-literal-text.md",
+          "install/local/wikidot-verification/artifacts/pr1334-ftml-inline-core-syntax-source-attribution-20260810.json (SHA-256 84c6938b305fb6fd0cebfb2c8459df221a8d163911e3a4e31059ae02574abbcd)",
+          "install/local/wikidot-verification/artifacts/pr1334-ftml-lexical-text-source-attribution-20260810.json (SHA-256 436918d4ac62c4977cd8bacc9ab564129dfc7e2b5bcb92cf18f41a9cf39dca45)"
         ]
       },
       "source": {
@@ -21629,8 +21628,8 @@
       "evidence": {
         "status": "available",
         "references": [
-          "Rokurolize/ftml tests/fixtures/wikidot-parity/references-20260819-01.jsonl",
           "docs/ftml-boundary-deviations/wikidot-social-resource-resolution.md",
+          "docs/wikidot-specifications/Rokurolize/ftml tests/fixtures/wikidot-parity/references-20260819-01.jsonl",
           "docs/wikidot-specifications/specifications/wiki-syntax/syntax-social-bookmarking.md"
         ]
       },

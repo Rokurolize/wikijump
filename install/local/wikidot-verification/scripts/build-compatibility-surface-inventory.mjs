@@ -54,8 +54,14 @@ const SCHEMA = "wikijump.compatibility_surface_inventory.v3"
 const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_ROOT = path.resolve(SCRIPT_DIRECTORY, "../../../..")
 const DEFAULT_OUTPUT = "docs/development/compatibility-surface-inventory.json"
-const WIKIDOT_PY_GIT_DIR = path.join(process.env.WIKIDOT_PY_CHECKOUT ?? "/home/roku/src/Rokurolize/wikidot.py", ".git")
-const FTML_GIT_DIR = path.join(process.env.WIKIJUMP_FTML_CHECKOUT ?? "/home/roku/src/Rokurolize/ftml", ".git")
+const WIKIDOT_PY_GIT_DIR = path.join(
+  process.env.WIKIDOT_PY_CHECKOUT ?? path.resolve(DEFAULT_ROOT, "../wikidot.py"),
+  ".git"
+)
+const FTML_GIT_DIR = path.join(
+  process.env.WIKIJUMP_FTML_CHECKOUT ?? path.resolve(DEFAULT_ROOT, "../ftml"),
+  ".git"
+)
 const GIT_EXECUTABLE = "/usr/bin/git"
 const GIT_ENVIRONMENT = Object.freeze({
   GIT_CONFIG_GLOBAL: "/dev/null",
@@ -71,21 +77,23 @@ const GIT_ENVIRONMENT = Object.freeze({
 })
 const WIKIDOT_PY_AMC_MODULE_EXCLUSIONS = new Set(["edit/PageEditModule"])
 const SOURCE_INPUTS = new Map()
+const AUDITED_OWNERSHIP_ROOT =
+  "install/local/wikidot-verification/fixtures/compatibility-ownership"
 const AUDITED_OWNERSHIP_REPORTS = Object.freeze([
   {
-    path: "/home/roku/wjlab/ownership-mapping-20260815/catalog-feature-owners.json",
+    path: `${AUDITED_OWNERSHIP_ROOT}/catalog-feature-owners.json`,
     sha256: "63537ec48261f0bb956407e7fa2889a2f33548b596d441191632319907f0f855"
   },
   {
-    path: "/home/roku/wjlab/ownership-mapping-20260815/deepwell-jsonrpc.json",
+    path: `${AUDITED_OWNERSHIP_ROOT}/deepwell-jsonrpc.json`,
     sha256: "9a55d5a726dd6696639cb1686da11440bf75bc211fbb7b48bac5575e3df4074c"
   },
   {
-    path: "/home/roku/wjlab/ownership-mapping-20260815/framerail-actions.json",
+    path: `${AUDITED_OWNERSHIP_ROOT}/framerail-actions.json`,
     sha256: "d3b461c03d931c3397fcd345b0400fb07e8fbe8621f48cfd80dfd7f6b0ec126b"
   },
   {
-    path: "/home/roku/wjlab/ownership-mapping-20260815/wws-wikidot-py.json",
+    path: `${AUDITED_OWNERSHIP_ROOT}/wws-wikidot-py.json`,
     sha256: "ef87c37c9bd2ebf661d003c361f386c5d979b30aeebb18a6b44c307124f0636c"
   }
 ])
@@ -253,6 +261,15 @@ async function readText(root, relativePath) {
     return source
   } catch (error) {
     throw new Error(`cannot read ${relativePath}: ${error.message}`)
+  }
+}
+
+async function verifyAuditedOwnershipReports(root) {
+  for (const report of AUDITED_OWNERSHIP_REPORTS) {
+    const source = await readText(root, report.path)
+    if (sha256(source) !== report.sha256) {
+      throw new Error(`audited ownership fixture digest mismatch: ${report.path}`)
+    }
   }
 }
 
@@ -541,6 +558,7 @@ async function discoverOpen43AuditCases(root) {
 
 async function buildInventory(root, sourceRevision) {
   SOURCE_INPUTS.clear()
+  await verifyAuditedOwnershipReports(root)
   const wikidotPySource = await loadSupportedWikidotPySource(root)
   const [
     provenance,

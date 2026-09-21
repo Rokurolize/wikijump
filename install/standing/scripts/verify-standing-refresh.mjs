@@ -8,9 +8,14 @@ import {
 
 export const STANDING_REFRESH_KIND = "standing-promotion";
 const SERVICES = Object.freeze(["deepwell", "framerail", "wws"]);
-const PROTECTED_VOLUMES = Object.freeze([
+const LEGACY_PROTECTED_VOLUMES = Object.freeze([
   "runtime50x-postgres-data",
   "runtime50x-files-data",
+]);
+const PROTECTED_VOLUMES = Object.freeze([
+  "wikijump-standing-postgres-data",
+  "wikijump-standing-files-data",
+  "wikijump-standing-cache-data",
 ]);
 const GIT_OBJECT = /^[0-9a-f]{40}$/u;
 const IMAGE_ID = /^sha256:[0-9a-f]{64}$/u;
@@ -138,7 +143,7 @@ export function validateStandingRefreshReceipt(value) {
     ],
     "standing refresh receipt",
   );
-  if (value.schema_version !== 1 || value.kind !== STANDING_REFRESH_KIND || value.status !== "pass") {
+  if (![1, 2].includes(value.schema_version) || value.kind !== STANDING_REFRESH_KIND || value.status !== "pass") {
     throw new Error("standing refresh receipt is not a passing canonical receipt");
   }
   requireNonEmptyString(value.run_id, "standing refresh.run_id");
@@ -161,7 +166,10 @@ export function validateStandingRefreshReceipt(value) {
   requireNonEmptyString(value.project_name, "standing refresh.project_name");
   if (value.project_name !== "wikijump-standing") throw new Error("standing refresh project is not standing");
   requireNonEmptyString(value.network_name, "standing refresh.network_name");
-  if (JSON.stringify(value.protected_volumes) !== JSON.stringify(PROTECTED_VOLUMES)) {
+  const protectedVolumes = value.schema_version === 1
+    ? LEGACY_PROTECTED_VOLUMES
+    : PROTECTED_VOLUMES;
+  if (JSON.stringify(value.protected_volumes) !== JSON.stringify(protectedVolumes)) {
     throw new Error("standing refresh protected volumes are not canonical");
   }
 

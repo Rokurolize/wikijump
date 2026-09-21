@@ -3,12 +3,14 @@ from __future__ import annotations
 import importlib.util
 import hashlib
 import json
+import os
 from contextlib import contextmanager
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 SCRIPT = Path(__file__).parents[1] / "refresh.py"
@@ -41,6 +43,20 @@ def merged_candidate(identity: dict[str, str], candidate_commit: str = "9" * 40)
 
 
 class RefreshStandingTest(unittest.TestCase):
+    def test_default_runtime_home_is_user_state_not_wjlab(self) -> None:
+        with mock.patch.dict(
+            os.environ, {"XDG_STATE_HOME": "/tmp/wikijump-state"}, clear=False
+        ):
+            self.assertEqual(
+                REFRESH.default_runtime_home(),
+                Path("/tmp/wikijump-state/wikijump/standing"),
+            )
+        with mock.patch.dict(
+            os.environ, {"XDG_STATE_HOME": "relative-state"}, clear=False
+        ):
+            with self.assertRaisesRegex(ValueError, "must be absolute"):
+                REFRESH.default_runtime_home()
+
     def test_container_identity_rejects_mutable_identity(self) -> None:
         with self.assertRaisesRegex(ValueError, "immutable container ID"):
             REFRESH.normalize_container_identity(

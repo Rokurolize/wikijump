@@ -16,6 +16,7 @@ import time
 import tomllib
 
 from merge_identity import validate_candidate_merge
+from volume_contract import PROTECTED_VOLUMES
 
 
 SERVICES = ("deepwell", "framerail", "wws")
@@ -25,9 +26,21 @@ RUNTIME_SERVICES = (
     "wws",
     "caddy",
 )
-PROTECTED_VOLUMES = ("runtime50x-postgres-data", "runtime50x-files-data")
 PROMOTION_PRECONDITION_SCHEMA = "wikijump.standing_promotion_precondition.v1"
-DEFAULT_RUNTIME_HOME = Path("/home/roku/wjlab/runtime/wikijump-standing")
+
+
+def default_runtime_home() -> Path:
+    state_root = os.environ.get("XDG_STATE_HOME")
+    if state_root:
+        root = Path(state_root).expanduser()
+        if not root.is_absolute():
+            raise ValueError("XDG_STATE_HOME must be absolute")
+    else:
+        root = Path.home() / ".local" / "state"
+    return root / "wikijump" / "standing"
+
+
+DEFAULT_RUNTIME_HOME = default_runtime_home()
 RUNTIME_DIFFERENTIAL_IDENTITY = "runtime-differential-identity.json"
 CANARY_URL = "http://scp-wiki.wikijump.localhost/scp-9506"
 FTML_SOURCE = re.compile(
@@ -874,7 +887,7 @@ def main() -> int:
         atomic_json(differential_identity_path, differential_identity)
         differential_identity_published = True
         receipt: dict[str, object] = {
-            "schema_version": 1,
+            "schema_version": 2,
             "kind": "standing-promotion",
             "status": "pass",
             "run_id": prepared_receipt["run_id"],
@@ -1038,7 +1051,7 @@ def main() -> int:
             except Exception as rollback_exception:
                 restore_error = str(rollback_exception)
         failure = {
-            "schema_version": 1,
+            "schema_version": 2,
             "status": "fail",
             "run_id": prepared_receipt_sha256,
             "started_at": started_at.isoformat(),

@@ -1,7 +1,7 @@
 # Deepwell container hot reload
 
 `install/local/deepwell_hot_reload.py` is the short iteration path for a
-prebuilt local runtime such as the corpus `runtime50x` stack. It copies only
+prebuilt local runtime. It copies only
 Deepwell's Rust build inputs into the already-running container. The image's
 existing `cargo-watch` process recompiles and restarts Deepwell without a cold
 Docker image build.
@@ -10,12 +10,12 @@ This complements the normal `docker-compose.dev.yaml` workflow. The normal
 development stack bind-mounts sources and already reloads them automatically;
 the helper deliberately refuses to write across those mounts.
 
-## Typical runtime50x iteration
+## Typical local-runtime iteration
 
 Run the helper from the worktree whose candidate should be tested:
 
 ```bash
-./install/local/deepwell_hot_reload.py --project runtime50x
+./install/local/deepwell_hot_reload.py --project wikijump
 ```
 
 Container discovery uses the standard Compose project and service labels, so
@@ -25,7 +25,7 @@ needed:
 
 ```bash
 ./install/local/deepwell_hot_reload.py \
-  --container runtime50x-deepwell-1 \
+  --container wikijump-deepwell-1 \
   --source-root /home/user/src/wikijump
 ```
 
@@ -33,7 +33,7 @@ Use a dry run before targeting an unfamiliar stack:
 
 ```bash
 ./install/local/deepwell_hot_reload.py \
-  --project runtime50x \
+  --project wikijump \
   --dry-run \
   --json
 ```

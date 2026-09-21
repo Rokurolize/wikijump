@@ -31,7 +31,19 @@ SAVED_SITE = "scpaiueouiuiuiui"
 SAVED_DOMAIN = f"{SAVED_SITE}.wikidot.com"
 REPO_ROOT = Path(__file__).resolve().parents[4]
 REQUIREMENTS_PATH = REPO_ROOT / "install/local/wikidot-verification/requirements.txt"
-RETAINED_EVIDENCE_ROOT = Path("/home/roku/wjlab/evidence/issue1383-listpages-generated-html-20260815")
+COMPAT_ARCHIVE_ROOT = Path(
+    os.environ.get(
+        "WIKIJUMP_COMPAT_ARCHIVE_ROOT",
+        str(
+            Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
+            / "wikijump"
+            / "compatibility-archive"
+        ),
+    )
+).expanduser()
+RETAINED_EVIDENCE_ROOT = (
+    COMPAT_ARCHIVE_ROOT / "evidence" / "issue1383-listpages-generated-html-20260815"
+)
 EXPECTED_CASE_LABELS = [
     "section-zero",
     "section-out-of-range",
