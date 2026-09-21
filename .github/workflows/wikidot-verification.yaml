@@ -35,12 +35,40 @@ jobs:
           corepack prepare pnpm@11.10.0 --activate
           pnpm --dir install/local/wikidot-verification install --frozen-lockfile
 
+      - name: Materialize pinned wikidot.py source dependency
+        run: |
+          set -euo pipefail
+          commit="$(jq -r '.commit' docs/development/wikidot-py-supported-source.json)"
+          historical_commit="$(jq -r '.transport.historical_evidence_source.commit' docs/development/wikidot-py-supported-source.json)"
+          test "${commit}" != null
+          test "${historical_commit}" != null
+          test "${#commit}" -eq 40
+          test "${#historical_commit}" -eq 40
+          git init "${RUNNER_TEMP}/wikidot.py"
+          git -C "${RUNNER_TEMP}/wikidot.py" remote add origin https://github.com/Rokurolize/wikidot.py.git
+          git -C "${RUNNER_TEMP}/wikidot.py" -c protocol.version=2 fetch --depth=1 origin "${commit}" "${historical_commit}"
+          git -C "${RUNNER_TEMP}/wikidot.py" checkout --detach "${commit}"
+          test "$(git -C "${RUNNER_TEMP}/wikidot.py" rev-parse HEAD)" = "${commit}"
+          test "$(git -C "${RUNNER_TEMP}/wikidot.py" cat-file -t "${historical_commit}")" = commit
+
+      - name: Prepare locked Python test dependencies
+        run: |
+          set -euo pipefail
+          python3 -m venv "${RUNNER_TEMP}/wikidot-py-test-venv"
+          "${RUNNER_TEMP}/wikidot-py-test-venv/bin/python" -m pip install \
+            --disable-pip-version-check \
+            --require-hashes \
+            --requirement install/local/wikidot-verification/requirements.lock
+
       - name: Prepare pinned Rust dependencies
         run: |
           rustup toolchain install 1.95.0 --profile minimal
           cargo +1.95.0 fetch --locked --manifest-path deepwell/Cargo.toml
 
       - name: Run hermetic compatibility suite
+        env:
+          WIKIDOT_PY_CHECKOUT: ${{ runner.temp }}/wikidot.py
+          WIKIDOT_PY_TEST_PYTHON: ${{ runner.temp }}/wikidot-py-test-venv/bin/python
         run: pnpm --dir install/local/wikidot-verification run offline
 
       - name: Explain live-acquisition boundary

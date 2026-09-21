@@ -131,10 +131,10 @@ Options:
 `;
 }
 
-function requireNetworkGuard() {
-  if (process.env.WIKIJUMP_TEST_NETWORK_GUARD_ACTIVE !== "1") {
+function requireNetworkIsolation() {
+  if (process.env.WIKIJUMP_OFFLINE_BROWSER_NETNS_ACTIVE !== "1") {
     throw new Error(
-      "offline browser oracle must run through scripts/run-test-no-external-network.sh",
+      "offline browser oracle must run through scripts/run-offline-standing-browser-test.sh",
     );
   }
 }
@@ -228,7 +228,7 @@ async function outputDirectory(requested) {
 }
 
 export async function runOfflineBrowserOracle(args) {
-  requireNetworkGuard();
+  requireNetworkIsolation();
   const loaded = await loadOfflineBrowserOracle(args.oracle);
   const responseFixture = await loadOfflineBrowserResponseFixture(args.responseFixture);
   const outputDir = await outputDirectory(args.outputDir);
@@ -257,14 +257,14 @@ export async function runOfflineBrowserOracle(args) {
       "--disable-async-dns",
       "--disable-dns-probes",
       "--dns-prefetch-disable",
-      "--disable-features=DnsOverHttps,OptimizationHints,MediaRouter,DialMediaRouteProvider,Translate",
+      "--disable-quic",
+      "--disable-features=AsyncDns,DnsOverHttps,UseDnsHttpsSvcb,UseDnsHttpsSvcbAlpn,EncryptedClientHello,OptimizationHints,MediaRouter,DialMediaRouteProvider,Translate,NetworkTimeServiceQuerying",
       "--host-resolver-rules=MAP * 127.0.0.1",
-      "--proxy-server=http://127.0.0.1:9",
-      "--proxy-bypass-list=localhost;127.0.0.1;[::1];*.localhost",
     ],
   });
   const replayedRequests = [];
   const fixtureMisses = [];
+  const harnessNormalizations = [];
   let capture;
   let identity;
   try {
@@ -278,6 +278,26 @@ export async function runOfflineBrowserOracle(args) {
       const request = route.request();
       const url = request.url();
       if (requestIsOfflineSafe(url)) {
+        const parsed = new URL(url);
+        if (
+          request.method() === "GET" &&
+          parsed.hostname.endsWith(".wikijump.localhost") &&
+          parsed.pathname === "/local--favicon/favicon.gif"
+        ) {
+          harnessNormalizations.push({
+            kind: "browser_internal_favicon_redirect_suppression",
+            source_url: url,
+          });
+          await route.fulfill({
+            status: 200,
+            contentType: "image/gif",
+            body: Buffer.from(
+              "R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==",
+              "base64",
+            ),
+          });
+          return;
+        }
         await route.continue();
         return;
       }
@@ -347,7 +367,7 @@ export async function runOfflineBrowserOracle(args) {
       identity.executable_sha256 ===
       loaded.oracle.provenance.accepted_browser.executable_sha256,
     network: {
-      guard: "scripts/run-test-no-external-network.sh",
+      guard: "scripts/run-offline-standing-browser-test.sh",
       response_fixture: {
         identity: responseFixture.identity,
         entries: responseFixture.entryCount,
@@ -355,6 +375,7 @@ export async function runOfflineBrowserOracle(args) {
       },
       replayed_external_requests: replayedRequests,
       fixture_misses: fixtureMisses,
+      harness_normalizations: harnessNormalizations,
     },
     semantic,
     visual: {
