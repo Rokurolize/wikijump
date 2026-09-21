@@ -21,11 +21,11 @@
 mod batch;
 mod body;
 mod date_selectors;
-mod generated_values;
 mod query_helpers;
 mod rendered_fragments;
 mod runtime;
 mod selectors;
+mod template_values;
 
 pub(in crate::services::render) use self::batch::{
     CurrentPageAuthorSource, ExactNameListPagesBatchKey, ListPagesAuthorCacheKey,
@@ -43,20 +43,13 @@ pub(in crate::services::render) use self::body::{
     list_pages_body_uses_content_variable, list_pages_body_variables_supported,
 };
 pub(in crate::services::render) use self::date_selectors::parse_list_pages_date_selector;
-pub(in crate::services::render) use self::generated_values::{
-    list_pages_first_paragraph, list_pages_unknown_link_target_slugs,
-    substitute_list_pages_rating_only,
-};
-use self::generated_values::{
-    list_pages_variable_starts_triple_link_target, protect_list_pages_content_insertion,
-};
 pub(in crate::services::render) use self::query_helpers::{
-    count_pages_capture_is_literal, count_pages_exact_count_render_diagnostics,
-    count_pages_required_tag_batch_result, count_pages_required_tag_batch_selector,
-    count_pages_should_remain_literal, is_current_page_tag_selector, is_no_tags_selector,
-    parse_list_pages_comparison, parse_list_pages_order, parse_list_pages_page_type,
-    parse_list_pages_score_selector, split_list_pages_values,
-    wikidot_list_pages_name_slug,
+    advance_literal_cursor_and_check_count_pages_capture_containment,
+    count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
+    count_pages_required_tag_batch_selector, count_pages_should_remain_literal,
+    is_current_page_tag_selector, is_no_tags_selector, parse_list_pages_comparison,
+    parse_list_pages_order, parse_list_pages_page_type, parse_list_pages_score_selector,
+    split_list_pages_values, wikidot_list_pages_name_slug,
 };
 use self::query_helpers::{
     exact_raw_color_list_pages_name, list_pages_comparison_value,
@@ -83,6 +76,13 @@ pub(in crate::services::render) use self::selectors::{
     parse_list_pages_numeric_argument, preflight_static_list_pages_selector,
     resolve_url_selector, split_list_pages_tag_values,
     substitute_list_pages_current_data_form_variables,
+};
+pub(in crate::services::render) use self::template_values::{
+    list_pages_first_paragraph, list_pages_unknown_link_target_slugs,
+    substitute_list_pages_rating_only,
+};
+use self::template_values::{
+    list_pages_variable_starts_triple_link_target, protect_list_pages_content_insertion,
 };
 
 use super::template::{

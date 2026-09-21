@@ -1094,7 +1094,10 @@ fn dense_count_pages_literal_checks_advance_each_region_once() {
         let module = captures
             .get(0)
             .expect("CountPages capture has a full match");
-        if count_pages_capture_is_literal(&mut literal_regions, module.start()) {
+        if advance_literal_cursor_and_check_count_pages_capture_containment(
+            &mut literal_regions,
+            module.start(),
+        ) {
             literal_count += 1;
         } else {
             active_count += 1;

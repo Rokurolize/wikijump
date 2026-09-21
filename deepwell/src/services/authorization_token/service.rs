@@ -206,7 +206,7 @@ fn first_char(string: &str) -> char {
 }
 
 #[test]
-fn generate_token() {
+fn generated_tokens_match_authorized_object_format() {
     fn test(object_type: AuthorizedObject) {
         let token = AuthorizationTokenService::generate(object_type);
         assert_eq!(token.len(), AUTHORIZATION_TOKEN_LENGTH);

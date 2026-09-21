@@ -399,7 +399,7 @@ pub(in crate::services::render) fn right_bracket_token(
     }
 }
 
-pub(in crate::services::render) fn wikidot_right_bracket_token(
+pub(in crate::services::render) fn classify_wikidot_right_bracket_and_advance_text_tokens(
     bytes: &[u8],
     start: usize,
     end: usize,
@@ -512,7 +512,12 @@ pub(in crate::services::render) fn scan_wikidot_tag(
                 bare_image_link = false;
             } else if bytes[cursor] == b']' {
                 let (right_block, token_len) =
-                    wikidot_right_bracket_token(bytes, cursor, end, text_tokens);
+                    classify_wikidot_right_bracket_and_advance_text_tokens(
+                        bytes,
+                        cursor,
+                        end,
+                        text_tokens,
+                    );
                 if right_block {
                     return WikidotTagScan::Complete(cursor + token_len);
                 }
@@ -585,7 +590,12 @@ pub(in crate::services::render) fn scan_wikidot_tag(
             }
             (None, b']') => {
                 let (right_block, token_len) =
-                    wikidot_right_bracket_token(bytes, cursor, end, text_tokens);
+                    classify_wikidot_right_bracket_and_advance_text_tokens(
+                        bytes,
+                        cursor,
+                        end,
+                        text_tokens,
+                    );
                 if right_block {
                     return WikidotTagScan::Complete(cursor + token_len);
                 }
@@ -640,12 +650,13 @@ impl WikidotTagArgumentScan {
                     break;
                 }
                 if *byte == b']' {
-                    let (right_block, token_len) = wikidot_right_bracket_token(
-                        bytes,
-                        cursor,
-                        bytes.len(),
-                        &mut lookahead_tokens,
-                    );
+                    let (right_block, token_len) =
+                        classify_wikidot_right_bracket_and_advance_text_tokens(
+                            bytes,
+                            cursor,
+                            bytes.len(),
+                            &mut lookahead_tokens,
+                        );
                     if right_block {
                         break;
                     }
@@ -886,7 +897,12 @@ pub(in crate::services::render) fn scan_wikidot_whole_head_value(
             }
             b']' => {
                 let (right_block, token_len) =
-                    wikidot_right_bracket_token(bytes, cursor, end, text_tokens);
+                    classify_wikidot_right_bracket_and_advance_text_tokens(
+                        bytes,
+                        cursor,
+                        end,
+                        text_tokens,
+                    );
                 cursor += token_len;
                 if right_block {
                     return WikidotWholeHeadScan::Complete {
@@ -978,7 +994,7 @@ pub(in crate::services::render) fn double_quote_ends_wikidot_argument(
     let mut cursor = quote + 1;
     if cursor >= bytes.len()
         || (bytes[cursor] == b']'
-            && wikidot_right_bracket_token(
+            && classify_wikidot_right_bracket_and_advance_text_tokens(
                 bytes,
                 cursor,
                 bytes.len(),
@@ -1000,8 +1016,13 @@ pub(in crate::services::render) fn double_quote_ends_wikidot_argument(
         return true;
     }
     if bytes.get(cursor) == Some(&b']')
-        && wikidot_right_bracket_token(bytes, cursor, bytes.len(), &mut lookahead_tokens)
-            .0
+        && classify_wikidot_right_bracket_and_advance_text_tokens(
+            bytes,
+            cursor,
+            bytes.len(),
+            &mut lookahead_tokens,
+        )
+        .0
     {
         return true;
     }

@@ -41,9 +41,9 @@ use self::list_pages_protection::{
 use self::text_owners::collect_monospace_owner_ranges;
 pub(super) use self::token_boundaries::{
     TextTokenCursor, WikidotArgumentValueKind, WikidotTagArgumentScan, WikidotTagScan,
-    WikidotWholeHeadScan, left_block_start_in_run, right_bracket_token,
-    rollback_start_in_left_run, scan_wikidot_tag, scan_wikidot_whole_head_value,
-    wikidot_right_bracket_token, wikidot_trimmed_name,
+    WikidotWholeHeadScan, classify_wikidot_right_bracket_and_advance_text_tokens,
+    left_block_start_in_run, right_bracket_token, rollback_start_in_left_run,
+    scan_wikidot_tag, scan_wikidot_whole_head_value, wikidot_trimmed_name,
 };
 use self::wikidot::collect_wikidot_conditional_literal_ranges;
 pub(super) use self::wikidot::{double_quote_ends_wikidot_argument, quote_is_escaped};

@@ -21,10 +21,11 @@
 use super::super::literal_regions::{
     ListPagesScannerLiteralIndexes, ListPagesSourceProjection, LiteralRegionCursor,
     LiteralRegionIndex, TextTokenCursor, WikidotArgumentValueKind,
-    WikidotTagArgumentScan, WikidotWholeHeadScan, double_quote_ends_wikidot_argument,
-    left_block_start_in_run, project_list_pages_typography_in_place, quote_is_escaped,
-    rollback_start_in_left_run, scan_wikidot_whole_head_value,
-    wikidot_right_bracket_token, wikidot_trimmed_name,
+    WikidotTagArgumentScan, WikidotWholeHeadScan,
+    classify_wikidot_right_bracket_and_advance_text_tokens,
+    double_quote_ends_wikidot_argument, left_block_start_in_run,
+    project_list_pages_typography_in_place, quote_is_escaped, rollback_start_in_left_run,
+    scan_wikidot_whole_head_value, wikidot_trimmed_name,
 };
 use super::super::module_arguments::wikidot_list_pages_arguments;
 use super::super::render_budget::SharedRenderCostBudget;
@@ -746,12 +747,13 @@ impl<'a> ModuleEventScanner<'a> {
                 } else if matches!(bytes[cursor], b' ' | b'\t' | b'\n' | b'\r') {
                     bare_image_link = false;
                 } else if bytes[cursor] == b']' {
-                    let (right_block, token_len) = wikidot_right_bracket_token(
-                        bytes,
-                        cursor,
-                        bytes.len(),
-                        &mut tag_tokens,
-                    );
+                    let (right_block, token_len) =
+                        classify_wikidot_right_bracket_and_advance_text_tokens(
+                            bytes,
+                            cursor,
+                            bytes.len(),
+                            &mut tag_tokens,
+                        );
                     if right_block {
                         finish_generic_scan!(cursor + token_len, 0, {
                             self.text_tokens = tag_tokens;
@@ -870,12 +872,13 @@ impl<'a> ModuleEventScanner<'a> {
                     });
                 }
                 (None, b']') => {
-                    let (right_block, token_len) = wikidot_right_bracket_token(
-                        bytes,
-                        cursor,
-                        bytes.len(),
-                        &mut tag_tokens,
-                    );
+                    let (right_block, token_len) =
+                        classify_wikidot_right_bracket_and_advance_text_tokens(
+                            bytes,
+                            cursor,
+                            bytes.len(),
+                            &mut tag_tokens,
+                        );
                     if right_block {
                         let validation = first_rollback_marker.map(|_| {
                             validate_generic_head_arguments(
@@ -952,12 +955,13 @@ impl<'a> ModuleEventScanner<'a> {
         if bytes.get(cursor) != Some(&b']') {
             return None;
         }
-        let (right_block, token_len) = wikidot_right_bracket_token(
-            bytes,
-            cursor,
-            bytes.len(),
-            &mut self.text_tokens,
-        );
+        let (right_block, token_len) =
+            classify_wikidot_right_bracket_and_advance_text_tokens(
+                bytes,
+                cursor,
+                bytes.len(),
+                &mut self.text_tokens,
+            );
         right_block.then_some(cursor + token_len)
     }
 
@@ -1045,12 +1049,13 @@ impl<'a> ModuleEventScanner<'a> {
                 ))
             {
                 let mut closing_tokens = head_tokens.clone();
-                let (right_block, token_len) = wikidot_right_bracket_token(
-                    bytes,
-                    cursor,
-                    bytes.len(),
-                    &mut closing_tokens,
-                );
+                let (right_block, token_len) =
+                    classify_wikidot_right_bracket_and_advance_text_tokens(
+                        bytes,
+                        cursor,
+                        bytes.len(),
+                        &mut closing_tokens,
+                    );
                 if right_block
                     && right_boundary_ends_physical_line(bytes, cursor + token_len)
                 {
@@ -1266,12 +1271,13 @@ impl<'a> ModuleEventScanner<'a> {
                     }
                     let validation_head =
                         source[subname_end..cursor].trim_start_matches([' ', '\t']);
-                    let (right_block, token_len) = wikidot_right_bracket_token(
-                        bytes,
-                        cursor,
-                        bytes.len(),
-                        &mut head_tokens,
-                    );
+                    let (right_block, token_len) =
+                        classify_wikidot_right_bracket_and_advance_text_tokens(
+                            bytes,
+                            cursor,
+                            bytes.len(),
+                            &mut head_tokens,
+                        );
                     let surplus_list_pages_close_end = (list_pages_compatibility
                         && !right_block)
                         .then(|| {

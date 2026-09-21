@@ -185,6 +185,11 @@ pub(super) fn crossing_list_pages_quote_ends_before_close(
         return false;
     }
     let mut lookahead_tokens = text_tokens.clone();
-    wikidot_right_bracket_token(bytes, cursor, bytes.len(), &mut lookahead_tokens).0
-        || surplus_list_pages_close_after_spacing(bytes, cursor)
+    classify_wikidot_right_bracket_and_advance_text_tokens(
+        bytes,
+        cursor,
+        bytes.len(),
+        &mut lookahead_tokens,
+    )
+    .0 || surplus_list_pages_close_after_spacing(bytes, cursor)
 }

@@ -150,7 +150,13 @@ pub(super) fn pinned_double_quote_ends_generic_argument(
         return (true, 1);
     }
     if bytes[cursor] == b']'
-        && wikidot_right_bracket_token(bytes, cursor, bytes.len(), &mut text_tokens).0
+        && classify_wikidot_right_bracket_and_advance_text_tokens(
+            bytes,
+            cursor,
+            bytes.len(),
+            &mut text_tokens,
+        )
+        .0
     {
         return (true, 1);
     }
@@ -170,7 +176,13 @@ pub(super) fn pinned_double_quote_ends_generic_argument(
             return (false, cursor + 1 - start);
         }
         if bytes[cursor] == b']'
-            && wikidot_right_bracket_token(bytes, cursor, bytes.len(), &mut text_tokens).0
+            && classify_wikidot_right_bracket_and_advance_text_tokens(
+                bytes,
+                cursor,
+                bytes.len(),
+                &mut text_tokens,
+            )
+            .0
         {
             return (true, cursor + 1 - start);
         }
@@ -219,7 +231,12 @@ pub(super) fn module_subname_end(
     while cursor < bytes.len() && !is_wikidot_head_spacing(bytes[cursor]) {
         if bytes[cursor] == b']' {
             let (right_block, token_len) =
-                wikidot_right_bracket_token(bytes, cursor, bytes.len(), text_tokens);
+                classify_wikidot_right_bracket_and_advance_text_tokens(
+                    bytes,
+                    cursor,
+                    bytes.len(),
+                    text_tokens,
+                );
             if right_block {
                 break;
             }
@@ -682,7 +699,7 @@ pub(super) fn scanner_argument_boundary_at(
     if cursor >= bytes.len()
         || matches!(bytes[cursor], b'\n' | b'\r')
         || (bytes[cursor] == b']'
-            && wikidot_right_bracket_token(
+            && classify_wikidot_right_bracket_and_advance_text_tokens(
                 bytes,
                 cursor,
                 bytes.len(),
@@ -699,8 +716,13 @@ pub(super) fn scanner_argument_boundary_at(
         return true;
     }
     if bytes.get(cursor) == Some(&b']')
-        && wikidot_right_bracket_token(bytes, cursor, bytes.len(), &mut lookahead_tokens)
-            .0
+        && classify_wikidot_right_bracket_and_advance_text_tokens(
+            bytes,
+            cursor,
+            bytes.len(),
+            &mut lookahead_tokens,
+        )
+        .0
     {
         return true;
     }
