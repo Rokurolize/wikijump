@@ -396,7 +396,7 @@ export async function discoverOpen43AuditCases(root, { readJson, readText, readG
     for (const issue of audit.issues) {
       const issueNumber = issue.issue ?? issue.number
       if (!Number.isSafeInteger(issueNumber) || issueNumber <= 0) {
-        throw new Error(`${auditPath} contains an audit case with an invalid positive issue number`)
+        throw new Error(`${auditPath} contains an audit case without an issue owner`)
       }
       const authoritativeTests = await authoritativeAuditTests(
         root,
