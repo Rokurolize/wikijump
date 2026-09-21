@@ -91,6 +91,25 @@ async function writeText(root, relativePath, value) {
 }
 
 async function writeRepositoryFixture(root) {
+  for (const file of [
+    "catalog-feature-owners.json",
+    "deepwell-jsonrpc.json",
+    "framerail-actions.json",
+    "wws-wikidot-py.json"
+  ]) {
+    await writeText(
+      root,
+      `install/local/wikidot-verification/fixtures/compatibility-ownership/${file}`,
+      await fs.readFile(
+        path.join(
+          repositoryRoot,
+          "install/local/wikidot-verification/fixtures/compatibility-ownership",
+          file
+        ),
+        "utf8"
+      )
+    )
+  }
   const semantics = JSON.parse(
     await fs.readFile(
       path.join(repositoryRoot, "docs/development/compatibility-surface-semantics.json"),
