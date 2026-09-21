@@ -9,16 +9,19 @@ if [[ "${WIKIJUMP_TEST_NETWORK_GUARD_ACTIVE:-}" != "1" ]]; then
   # update check even when the toolchain itself is already present.
   export WIKIJUMP_OFFLINE_CARGO="$(rustup which --toolchain 1.95.0 cargo)"
   export WIKIJUMP_OFFLINE_RUSTC="$(rustup which --toolchain 1.95.0 rustc)"
+  export WIKIJUMP_OFFLINE_RUSTDOC="$(rustup which --toolchain 1.95.0 rustdoc)"
   exec "${ROOT}/scripts/run-test-no-external-network.sh" "$0" "$@"
 fi
 
 CARGO="${WIKIJUMP_OFFLINE_CARGO:-$(command -v cargo)}"
 RUSTC="${WIKIJUMP_OFFLINE_RUSTC:-$(command -v rustc)}"
-if [[ ! -x "${CARGO}" || ! -x "${RUSTC}" ]]; then
-  echo "offline syntax compatibility requires executable Cargo and rustc paths" >&2
+RUSTDOC="${WIKIJUMP_OFFLINE_RUSTDOC:-$(command -v rustdoc)}"
+if [[ ! -x "${CARGO}" || ! -x "${RUSTC}" || ! -x "${RUSTDOC}" ]]; then
+  echo "offline syntax compatibility requires executable Cargo, rustc, and rustdoc paths" >&2
   exit 2
 fi
 export RUSTC
+export RUSTDOC
 
 OUTPUT="${1:-}"
 TMP=""
