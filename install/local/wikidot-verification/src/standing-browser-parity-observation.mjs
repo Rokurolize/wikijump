@@ -445,6 +445,39 @@ export async function prewarmBrowserParityLazyImages(page) {
   });
 }
 
+export async function prewarmBrowserParityFullPageRaster(page, viewport) {
+  const step = Math.max(1, Math.floor(Number(viewport?.height ?? 0) * 0.75));
+  if (!Number.isSafeInteger(step) || step < 1) {
+    throw new Error("browser full-page raster prewarm requires a positive viewport height");
+  }
+  await page.evaluate(async (scrollStep) => {
+    const initialX = window.scrollX;
+    const initialY = window.scrollY;
+    const frame = () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      );
+    const maximumY = Math.max(
+      0,
+      Math.ceil(
+        Math.max(
+          document.documentElement.scrollHeight,
+          document.body?.scrollHeight ?? 0,
+        ) - window.innerHeight,
+      ),
+    );
+    const positions = [];
+    for (let y = 0; y < maximumY; y += scrollStep) positions.push(y);
+    if (positions.at(-1) !== maximumY) positions.push(maximumY);
+    for (const y of positions) {
+      window.scrollTo({left: 0, top: y, behavior: "instant"});
+      await frame();
+    }
+    window.scrollTo({left: initialX, top: initialY, behavior: "instant"});
+    await frame();
+  }, step);
+}
+
 export async function waitForBrowserParitySettledResources(page, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   const remaining = (label) => {
@@ -775,6 +808,13 @@ export async function captureBrowserParityObservation({
     document.resource_completion = resourceCompletion;
     document.layout_stability = layoutStability;
     await capturePng(page, viewportPath);
+    // Chromium's captureBeyondViewport path can otherwise race compositor
+    // rasterization for off-screen tiles even after DOM/layout stability. The
+    // visible viewport remains identical while a full-page screenshot may
+    // sporadically contain stale lower-page tiles. Paint every viewport-sized
+    // region first so the visual oracle measures page state, not compositor
+    // cache timing.
+    await prewarmBrowserParityFullPageRaster(page, viewport);
     await capturePng(page, fullPagePath, { fullPage: true });
     failures.sort((left, right) =>
       failureKey(left).localeCompare(failureKey(right)),

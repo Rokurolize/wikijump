@@ -1,19 +1,118 @@
-name: '[wikidot] Verification tests'
+name: '[wikidot] Offline compatibility'
 
 on:
+  pull_request:
+  push:
+    branches:
+      - develop
+      - prod
   workflow_dispatch:
 
-permissions: {}
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('wikidot-offline-pr-{0}', github.event.pull_request.number) || format('wikidot-offline-{0}-{1}', github.ref, github.run_id) }}
+  cancel-in-progress: true
 
 jobs:
-  disabled:
-    name: Local-only policy
+  offline:
+    name: Frozen oracle regression
     runs-on: ubuntu-latest
-    timeout-minutes: 1
+    timeout-minutes: 60
     steps:
-      - name: Compatibility verification is local-only
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.18.0
+
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends iproute2 libmagic-dev socat util-linux
+
+      - name: Install JavaScript dependencies
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.10.0 --activate
+          pnpm --dir install/local/wikidot-verification install --frozen-lockfile
+          pnpm --dir framerail install --frozen-lockfile
+
+      - name: Install pinned browser runtime
+        run: pnpm --dir framerail exec playwright install --with-deps chromium
+
+      - name: Materialize pinned wikidot.py source dependency
+        run: |
+          set -euo pipefail
+          commit="$(jq -r '.commit' docs/development/wikidot-py-supported-source.json)"
+          historical_commit="$(jq -r '.transport.historical_evidence_source.commit' docs/development/wikidot-py-supported-source.json)"
+          test "${commit}" != null
+          test "${historical_commit}" != null
+          test "${#commit}" -eq 40
+          test "${#historical_commit}" -eq 40
+          git init "${RUNNER_TEMP}/wikidot.py"
+          git -C "${RUNNER_TEMP}/wikidot.py" remote add origin https://github.com/Rokurolize/wikidot.py.git
+          git -C "${RUNNER_TEMP}/wikidot.py" -c protocol.version=2 fetch --depth=1 origin "${commit}" "${historical_commit}"
+          git -C "${RUNNER_TEMP}/wikidot.py" checkout --detach "${commit}"
+          test "$(git -C "${RUNNER_TEMP}/wikidot.py" rev-parse HEAD)" = "${commit}"
+          test "$(git -C "${RUNNER_TEMP}/wikidot.py" cat-file -t "${historical_commit}")" = commit
+
+      - name: Materialize pinned FTML source dependencies
+        run: |
+          set -euo pipefail
+          current_commit="$(sed -nE 's/.*ftml = \{ git = "https:\/\/github\.com\/Rokurolize\/ftml", rev = "([0-9a-f]{40})" \}.*/\1/p' deepwell/Cargo.toml)"
+          historical_commit="$(jq -r '.ftml_revision' install/local/wikidot-verification/fixtures/pr1334-ftml-embed-conditional-source-attribution.json)"
+          test "${#current_commit}" -eq 40
+          test "${#historical_commit}" -eq 40
+          git init "${RUNNER_TEMP}/ftml"
+          git -C "${RUNNER_TEMP}/ftml" remote add origin https://github.com/Rokurolize/ftml.git
+          git -C "${RUNNER_TEMP}/ftml" -c protocol.version=2 fetch --depth=1 origin "${current_commit}" "${historical_commit}"
+          git -C "${RUNNER_TEMP}/ftml" checkout --detach "${current_commit}"
+          test "$(git -C "${RUNNER_TEMP}/ftml" rev-parse HEAD)" = "${current_commit}"
+          test "$(git -C "${RUNNER_TEMP}/ftml" cat-file -t "${historical_commit}")" = commit
+
+      - name: Prepare locked Python test dependencies
+        run: |
+          set -euo pipefail
+          python3 -m venv "${RUNNER_TEMP}/wikidot-py-test-venv"
+          "${RUNNER_TEMP}/wikidot-py-test-venv/bin/python" -m pip install \
+            --disable-pip-version-check \
+            --require-hashes \
+            --requirement install/local/wikidot-verification/requirements.lock
+
+      - name: Prepare pinned Rust dependencies
+        run: |
+          # Install from outside the checkout so rust-toolchain.toml does not
+          # merge development-only clippy/rustfmt/rust-src components into the
+          # hermetic compatibility runner's minimal toolchain.
+          (cd "${RUNNER_TEMP}" && rustup toolchain install 1.95.0 --profile minimal)
+          cargo +1.95.0 fetch --locked --manifest-path deepwell/Cargo.toml
+          cargo +1.95.0 fetch --locked --manifest-path wws/Cargo.toml
+
+      - name: Install pinned SQL migration CLI
+        run: |
+          cargo +1.95.0 install sqlx-cli --version 0.8.6 --locked \
+            --no-default-features --features postgres
+
+      - name: Build task-owned integration service images
+        run: scripts/build-deepwell-integration-images.sh
+
+      - name: Run hermetic compatibility suite
+        env:
+          WIKIDOT_PY_CHECKOUT: ${{ runner.temp }}/wikidot.py
+          WIKIDOT_PY_TEST_PYTHON: ${{ runner.temp }}/wikidot-py-test-venv/bin/python
+          WIKIJUMP_FTML_CHECKOUT: ${{ runner.temp }}/ftml
+        run: pnpm --dir install/local/wikidot-verification run offline:portable
+
+      - name: Explain live-acquisition boundary
+        if: always()
         run: |
           printf '%s\n' \
-            'Wikidot verification is intentionally disabled in GitHub Actions.' \
-            'Run it in the maintained WSL workspace with the persistent identity-bound response cache.' \
-            'A retained cache hit must perform zero external requests.'
+            'This workflow never acquires Wikidot/WDFiles compatibility evidence.' \
+            'Live-reference, authenticated probes, and sandbox mutations remain explicit operator-only acquisition workflows.' \
+            'The SCP-9506 full-page browser oracle remains a local standing-runtime gate because it binds the retained Chromium executable and local TLS/runtime identity.'

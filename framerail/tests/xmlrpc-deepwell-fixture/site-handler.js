@@ -43,6 +43,10 @@ export const handleSiteRpc = ({ rpcRequest }) => {
       site_settings: {
         revision: 4,
         welcome_page: "main",
+        membership: {
+          application_enabled: false,
+          password_enabled: false
+        },
         google_analytics: { enabled: false, profile: null },
         toolbars: { top: false, bottom: false, promote: true }
       },
@@ -99,6 +103,12 @@ export const handleSiteRpc = ({ rpcRequest }) => {
     rpcRequest.params?.site === "scp-wiki"
   ) {
     result = [{ slug: "_default" }, { slug: "nav" }]
+  } else if (
+    rpcRequest.method === "membership_application_list" &&
+    hasExactKeys(rpcRequest.params, ["site_id"]) &&
+    rpcRequest.params.site_id === 6000005
+  ) {
+    result = []
   } else if (
     rpcRequest.method === "site_get" &&
     hasExactKeys(rpcRequest.params, ["site"]) &&

@@ -118,6 +118,7 @@ async function run() {
   const cargoTestArgs = process.argv.slice(2, separator === -1 ? undefined : separator);
   const harnessArgs = separator === -1 ? [] : process.argv.slice(separator + 1);
   const images = Object.fromEntries(Object.keys(DEFAULT_IMAGES).map((role) => [role, imageName(role)]));
+  const cargo = process.env.WIKIJUMP_OFFLINE_CARGO?.trim() || "cargo";
   await Promise.all(Object.entries(images).map(([role, image]) => requireLocalImage(image, role)));
 
   const suffix = `${process.pid}-${Date.now()}`;
@@ -185,15 +186,19 @@ async function run() {
     ]);
 
     await command("sqlx", ["migrate", "run", "--source", "deepwell/migrations"], {env});
-    await command("cargo", ["build", "--manifest-path", "deepwell/Cargo.toml", "--bin", "deepwell"], {env});
+    await command(cargo, [
+      "build", "--offline", "--locked",
+      "--manifest-path", "deepwell/Cargo.toml", "--bin", "deepwell",
+    ], {env});
     await command("target/debug/deepwell", [
       "--disable-log",
       "--localizations", "locales",
       "--seed", "deepwell/seeder",
       "install/local/deepwell/config.toml",
     ], {env: {...env, DEEPWELL_RUNTIME_ACTION: "seeder"}});
-    await command("cargo", [
-      "test", "--manifest-path", "deepwell/Cargo.toml", ...cargoTestArgs,
+    await command(cargo, [
+      "test", "--offline", "--locked",
+      "--manifest-path", "deepwell/Cargo.toml", ...cargoTestArgs,
       "--", "--test-threads", "1", ...harnessArgs,
     ], {env});
   } finally {
