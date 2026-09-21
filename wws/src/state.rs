@@ -99,7 +99,7 @@ impl ServerStateInner {
     // Contains implementations for the common pattern of "check the cache,
     // if not present, get it from DEEPWELL and populate it".
 
-    pub async fn get_site_domain(&self, site_id: i64) -> Result<String> {
+    pub async fn get_or_cache_site_domain(&self, site_id: i64) -> Result<String> {
         match self.cache.get_site_domain(site_id).await? {
             Some(preferred_domain) => Ok(preferred_domain),
             None => {
@@ -117,7 +117,7 @@ impl ServerStateInner {
         &self,
         site_id: i64,
     ) -> ResponseResult<String> {
-        match self.get_site_domain(site_id).await {
+        match self.get_or_cache_site_domain(site_id).await {
             Ok(domain) => Ok(domain),
             Err(error) => {
                 // XF-1003
@@ -246,7 +246,7 @@ impl ServerStateInner {
         }
     }
 
-    pub async fn get_avatar(&self, user_id: i64) -> Result<Option<String>> {
+    pub async fn get_or_cache_avatar(&self, user_id: i64) -> Result<Option<String>> {
         match self.cache.get_avatar(user_id).await? {
             Some(avatar_s3_hash) => Ok(Some(avatar_s3_hash)),
             None => match self.deepwell.get_user(user_id).await? {
@@ -268,7 +268,7 @@ impl ServerStateInner {
         headers: &HeaderMap,
         user_id: i64,
     ) -> ResponseResult<String> {
-        match self.get_avatar(user_id).await {
+        match self.get_or_cache_avatar(user_id).await {
             Ok(Some(avatar_s3_hash)) => Ok(avatar_s3_hash),
             Ok(None) => {
                 error!(

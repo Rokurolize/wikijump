@@ -181,10 +181,10 @@ mod tests {
         UTF8_BYTES_VALIDATED.with(|total| total.set(0));
 
         let projected = inert_projection(&source);
-        let validated = UTF8_BYTES_VALIDATED.with(Cell::get);
+        let validated_bytes = UTF8_BYTES_VALIDATED.with(Cell::get);
 
         assert_eq!(projected, "?x???? ".repeat(SEGMENTS));
-        assert_eq!(validated, source.len() * 4);
+        assert_eq!(validated_bytes, source.len() * 4);
     }
 
     #[test]

@@ -457,7 +457,7 @@ impl BasicErrorService {
         })
     }
 
-    pub async fn user_avatar(
+    pub async fn user_avatar_error(
         ctx: &ServiceContext<'_>,
         locales: &[LanguageIdentifier],
         user_id: i64,

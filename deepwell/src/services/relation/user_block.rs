@@ -66,7 +66,7 @@ impl RelationService {
             )
         };
 
-        // Unfollow, remove contacts, etc., both ways
+        // Unfollow both ways. Contact and contact-request cleanup remains TODO.
         let (result1, result2) = join!(
             Self::remove_user_follow(
                 ctx,

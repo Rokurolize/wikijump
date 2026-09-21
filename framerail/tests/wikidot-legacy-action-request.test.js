@@ -228,3 +228,18 @@ test("membership email invitation keeps the opaque route hash out of the action 
   })
   assert.equal(JSON.stringify(body).includes("browser-must-not-forward-this"), false)
 })
+
+
+test("membership requests surface server action failures", async () => {
+  const failure = { type: "failure", data: { message: "Membership denied." } }
+  const fingerprint = "0123456789abcdef0123456789abcdef"
+  const base = { pageId: 42, lastRevisionId: 90, actionIndex: 1, actionFingerprint: fingerprint }
+  for (const [request, input] of [
+    [requestMembershipJoin, base],
+    [requestMembershipPassword, { ...base, password: "secret" }],
+    [requestMembershipApplication, { ...base, comment: "hello" }],
+    [requestMembershipEmailInvitation, base]
+  ]) {
+    await assert.rejects(request(requestRecorder(failure), input), /Membership denied\./u)
+  }
+})

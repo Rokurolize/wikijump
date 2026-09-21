@@ -34,6 +34,7 @@ export const isSupportedPageReadShape = (moduleName, parameters) => {
  *   fields: Map<string, string>
  *   duplicateFields: Set<string>
  * }>}
+ * @throws {TypeError | RangeError} If the request is not a bounded, valid URL-encoded UTF-8 form body.
  */
 export const readUrlEncodedForm = async (request) => {
   const contentType = request.headers.get("content-type")?.split(";", 1)[0].trim()

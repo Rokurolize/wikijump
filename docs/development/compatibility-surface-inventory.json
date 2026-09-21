@@ -11385,7 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "5ae0320da6429006ec63ed873959aaf3be11c751ccaf5082e03ac2cd744ca5d7"
+      "source_input_set_sha256": "3e0cbbb392574205fc164f270ac1c79a0afcaf409a08734cb244b6afd013f0fc"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11402,7 +11402,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "aa8348ee4ea28f7a7135b77fd1bb779f9a46b0e3014dca941c6dda60011b0684"
+        "sha256": "391a60a3f9eaf669b35cfbda082d865f11e8b1a4a4ea37090c6e108f66f61b72"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11410,7 +11410,7 @@
       },
       {
         "path": "deepwell/src/endpoints/basic_error.rs",
-        "sha256": "3bff87d7258f1a758f29cc640e547b120ef2f3973af7c14269af2824adb90454"
+        "sha256": "8cd98f2d75a34c273e639a9826117c0ff5982d55a3e6ebdf2c895ac6cbe079e4"
       },
       {
         "path": "deepwell/src/endpoints/blob.rs",
@@ -11522,7 +11522,7 @@
       },
       {
         "path": "deepwell/src/endpoints/user_bot.rs",
-        "sha256": "77efc91811fbe286128c6c61c1fbf11bcdc15096293640511aa1a252d66fccd6"
+        "sha256": "07b0caebac592603ae777965cb29a3646c4f9b8eac89f6665fed6e5dfdab625d"
       },
       {
         "path": "deepwell/src/endpoints/user.rs",
@@ -11546,7 +11546,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "cc21ba71208447d9f4da2b9fc9e13e2a303fa4b2f4c74aec95a407fa420ce471"
+        "sha256": "b61e6bb2d1457808b52e0b2c82eb2a7c715cde504de788ce0c0feea8102dc7c2"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11610,7 +11610,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "bf41c639991f956a38df9e6f738cd9e22d8d4340f3d436e22c88697f6c4feef0"
+        "sha256": "ccea8936b6aee9c516bf64ab0fca3337f5cbbf61793d716d38086a9b32777e6d"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11618,7 +11618,7 @@
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "f5cc251cff52c981eda1fa084f87209d2f33329a7814a90f9571bd4b5cd0161c"
+        "sha256": "0897f082c2e616dcbbce886b9fd84a76136a81d1d694aa66b73fb1c9aaf4a8b6"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
@@ -11854,7 +11854,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "f5cc251cff52c981eda1fa084f87209d2f33329a7814a90f9571bd4b5cd0161c"
+        "sha256": "0897f082c2e616dcbbce886b9fd84a76136a81d1d694aa66b73fb1c9aaf4a8b6"
       },
       {
         "path": "wws/src/route.rs",

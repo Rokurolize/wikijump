@@ -4768,8 +4768,8 @@
           "artifact:install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json",
           "test:deepwell/tests/page.rs#listpages_generated_html_preview_saved_section_controls",
           "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-generated-preview-reconciliation.json",
-          "test:deepwell/tests/page.rs#listpages_reverse_boolean_coercion_matches_live_wikidot",
-          "test:deepwell/tests/page.rs#listpages_categories_alias_selects_only_default_category_rows"
+          "test:deepwell/tests/page/list_pages_runtime.rs#listpages_reverse_boolean_coercion_matches_live_wikidot",
+          "test:deepwell/tests/page/list_pages_runtime.rs#listpages_categories_alias_selects_only_default_category_rows"
         ],
         "observation_gaps": []
       },
@@ -4784,8 +4784,8 @@
           "artifact:install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json",
           "test:deepwell/tests/list_pages.rs#delayed_listpages_rows_keep_authored_html_blocks_literal_in_preview",
           "test:deepwell/tests/page.rs#listpages_generated_html_preview_saved_section_controls",
-          "test:deepwell/tests/page.rs#ajax_listpages_recursively_renders_balanced_nested_modules",
-          "test:deepwell/tests/page.rs#listpages_generated_pager_keeps_ascii_dots_after_authored_typography",
+          "test:deepwell/tests/page/page_modules.rs#ajax_listpages_recursively_renders_balanced_nested_modules",
+          "test:deepwell/tests/page/list_pages_runtime.rs#listpages_generated_pager_keeps_ascii_dots_after_authored_typography",
           "test:deepwell/tests/page.rs#countpages_inside_listpages_body_matches_live_empty_item_behavior"
         ],
         "observation_gaps": []
@@ -4799,8 +4799,8 @@
           "live:listpages-preview-and-saved-html-context-20260730",
           "test:deepwell/tests/page.rs#listpages_generated_html_preview_saved_section_controls",
           "artifact:install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json",
-          "test:deepwell/tests/page.rs#listpages_imported_creator_identity_uses_structured_corpus_provenance",
-          "test:deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "test:deepwell/tests/page/list_pages_runtime.rs#listpages_imported_creator_identity_uses_structured_corpus_provenance",
+          "test:deepwell/tests/page/list_pages_runtime.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot",
           "test:deepwell/tests/page.rs#page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision"
         ],
         "observation_gaps": []
@@ -4811,7 +4811,7 @@
           "live:listpages-rating-comment-and-data-form-variables",
           "live:listpages-imported-lifecycle-identity-provenance",
           "test:deepwell/tests/page.rs#random_countpages_capped_sample_does_not_reveal_private_matches",
-          "test:deepwell/tests/page.rs#listpages_imported_commenter_identity_uses_structured_corpus_provenance",
+          "test:deepwell/tests/page/list_pages_runtime.rs#listpages_imported_commenter_identity_uses_structured_corpus_provenance",
           "test:deepwell/tests/list_pages_random.rs#random_listpages_rechecks_actor_visibility_and_deleted_candidates"
         ],
         "observation_gaps": []
@@ -4823,7 +4823,7 @@
           "live:listpages-pagination-path-semantics",
           "live:dataforms-listpages-selection-sorting-live",
           "test:deepwell/tests/page.rs#listpages_limit_two_caps_ordered_results",
-          "test:deepwell/tests/page.rs#page_query_data_form_field_ordering_uses_static_form_values",
+          "test:deepwell/tests/page/page_query.rs#page_query_data_form_field_ordering_uses_static_form_values",
           "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history",
           "live:listpages-random-idle-cache-live-20260730",
           "test:deepwell/tests/list_pages.rs#random_listpages_reuses_the_same_idle_cached_order_for_one_invocation",
@@ -4839,7 +4839,7 @@
           "live:listpages-rss-link-and-rssonly",
           "live:listpages-live-feed-endpoint",
           "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-navigation-coverage.json",
-          "test:deepwell/tests/page.rs#listpages_rss_link_and_rss_only_match_live_wikidot_markup",
+          "test:deepwell/tests/page/page_modules.rs#listpages_rss_link_and_rss_only_match_live_wikidot_markup",
           "test:framerail/tests/list-pages-feed.test.ts#renders RSS metadata, items, escaped descriptions, and safe CDATA",
           "test:framerail/tests/feed-pages-route.test.js#empty selector feeds retain the Wikidot root separator",
           "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history",
@@ -4859,7 +4859,7 @@
           "artifact:install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json",
           "test:deepwell/tests/page.rs#listpages_generated_html_preview_saved_section_controls",
           "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-navigation-coverage.json",
-          "test:deepwell/tests/page.rs#listpages_combined_and_separate_templates_match_live_container_dom",
+          "test:deepwell/tests/page/list_pages_runtime.rs#listpages_combined_and_separate_templates_match_live_container_dom",
           "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history"
         ],
         "observation_gaps": []
@@ -5037,7 +5037,7 @@
         "status": "evidence_backed",
         "evidence": [
           "live:navigation-list-modules-live-dom-and-argument-quirks",
-          "test:deepwell/tests/page.rs#backlinks_module_ignores_arguments_like_live_wikidot"
+          "test:deepwell/tests/page/page_modules.rs#backlinks_module_ignores_arguments_like_live_wikidot"
         ],
         "observation_gaps": []
       },
@@ -5051,7 +5051,7 @@
       "P3": {
         "status": "unobserved",
         "evidence": [
-          "test:deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links"
+          "test:deepwell/tests/page/page_modules.rs#backlinks_module_renders_current_page_incoming_links"
         ],
         "observation_gaps": [
           "The public page_view seam proves local freshness after an independent incoming-link mutation, but saved-page persistence, reload, import, and round-trip behavior have not been established against live Wikidot."
@@ -5068,7 +5068,7 @@
         "status": "evidence_backed",
         "evidence": [
           "live:navigation-list-modules-live-dom-and-argument-quirks",
-          "test:deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links"
+          "test:deepwell/tests/page/page_modules.rs#backlinks_module_renders_current_page_incoming_links"
         ],
         "observation_gaps": []
       },
@@ -5082,7 +5082,7 @@
         "status": "unobserved",
         "evidence": [
           "live:navigation-list-modules-live-dom-and-argument-quirks",
-          "test:deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links"
+          "test:deepwell/tests/page/page_modules.rs#backlinks_module_renders_current_page_incoming_links"
         ],
         "observation_gaps": [
           "Exact full nonempty Backlinks DOM and the empty backlinks-module-box wrapper lack an in-repository public regression seam."

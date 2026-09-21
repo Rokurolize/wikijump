@@ -2142,8 +2142,8 @@ impl PageRevisionService {
         let revision_condition = {
             use page_revision::Column::RevisionNumber;
 
-            // Allow specifying "-1" to mean "the most recent revision",
-            // otherwise keep as-is.
+            // Treat any negative revision number as "the most recent revision";
+            // otherwise keep it as-is.
             let revision_number = if revision_number >= 0 {
                 revision_number
             } else {
@@ -2243,11 +2243,12 @@ mod revision_diff_tests {
         // is made for empty revisions beyond this local typed contract.
         use PageRevisionDiffLineKind::{Added, Removed, Unchanged};
 
-        let both_empty = build_revision_diff("", "").expect("empty diff should build");
+        let both_empty_diff =
+            build_revision_diff("", "").expect("empty diff should build");
         assert!(
-            both_empty.iter().all(|line| line.kind == Unchanged),
+            both_empty_diff.iter().all(|line| line.kind == Unchanged),
             "empty/empty must not fabricate changes: {:?}",
-            kinds(&both_empty),
+            kinds(&both_empty_diff),
         );
 
         assert_eq!(

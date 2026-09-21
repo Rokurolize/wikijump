@@ -10,6 +10,7 @@ const REDIS_CONNECT_TIMEOUT_MS = 1000
  * @returns {Promise<
  *   import("node:net").Socket | import("node:tls").TLSSocket
  * >}
+ * @throws {Error} The returned promise rejects for invalid connection input, timeout, or socket errors.
  */
 export const connectRedisSocket = (redisUrl, timeoutMessage) =>
   new Promise((resolve, reject) => {

@@ -25,9 +25,9 @@ except ImportError:
     _extract_page_source_text = None
 DEFAULT_SITE_SLUG = "scpaiueouiuiuiui"
 ALLOWED_SITE_SLUGS = frozenset({DEFAULT_SITE_SLUG, "sandbox-for-codex"})
-ORACLE_RUN_OWNED_SLUG = re.compile(r"^codex-oracle:[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])-[A-Za-z0-9][A-Za-z0-9._:-]*$")
-CURRENT_RUN_OWNED_SLUG = re.compile(r"^codex-l10n:[a-z0-9][a-z0-9-]+-(?:yossistyle|ashes-to-ashes|basalt)$")
-LEGACY_RUN_OWNED_SLUG = re.compile(r"^theme:codex-l10n-[a-z0-9][a-z0-9-]+-(?:yossistyle|ashes-to-ashes|basalt)$")
+ORACLE_RUN_OWNED_SLUG_PATTERN = re.compile(r"^codex-oracle:[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])-[A-Za-z0-9][A-Za-z0-9._:-]*$")
+CURRENT_RUN_OWNED_SLUG_PATTERN = re.compile(r"^codex-l10n:[a-z0-9][a-z0-9-]+-(?:yossistyle|ashes-to-ashes|basalt)$")
+LEGACY_RUN_OWNED_SLUG_PATTERN = re.compile(r"^theme:codex-l10n-[a-z0-9][a-z0-9-]+-(?:yossistyle|ashes-to-ashes|basalt)$")
 # Legacy names remain read/delete-only for cleanup of pages created before the current slug contract. Remove this compatibility path only after the run ledger proves no legacy page remains and the sandbox operator signs off.
 REFERENCE_PREREQUISITE_SLUGS = {"component:image-block-base", "component:image-block"}
 PAGE_ID = re.compile(r"WIKIREQUEST\.info\.pageId\s*=\s*([0-9]+)\s*;")
@@ -69,7 +69,7 @@ def site_origin(site_slug: object) -> str:
     return f"https://{slug}.wikidot.com"
 
 def validate_oracle_slug(value: object) -> str:
-    if not isinstance(value, str) or len(value) > WIKIDOT_PAGE_SLUG_MAX_LENGTH or not ORACLE_RUN_OWNED_SLUG.fullmatch(value):
+    if not isinstance(value, str) or len(value) > WIKIDOT_PAGE_SLUG_MAX_LENGTH or not ORACLE_RUN_OWNED_SLUG_PATTERN.fullmatch(value):
         raise PublicError("resource_not_allowed", "resource is not a run-owned oracle fixture")
     return value
 
@@ -88,8 +88,8 @@ def validate_slug(value: object, *, kind: str = "theme_page", allow_legacy: bool
         if value not in REFERENCE_PREREQUISITE_SLUGS:
             raise PublicError("resource_not_allowed", "reference prerequisite is outside the read-only contract")
         return str(value)
-    pattern = (CURRENT_RUN_OWNED_SLUG, LEGACY_RUN_OWNED_SLUG) if allow_legacy else (CURRENT_RUN_OWNED_SLUG,)
-    if isinstance(value, str) and len(value) <= WIKIDOT_PAGE_SLUG_MAX_LENGTH and ORACLE_RUN_OWNED_SLUG.fullmatch(value):
+    pattern = (CURRENT_RUN_OWNED_SLUG_PATTERN, LEGACY_RUN_OWNED_SLUG_PATTERN) if allow_legacy else (CURRENT_RUN_OWNED_SLUG_PATTERN,)
+    if isinstance(value, str) and len(value) <= WIKIDOT_PAGE_SLUG_MAX_LENGTH and ORACLE_RUN_OWNED_SLUG_PATTERN.fullmatch(value):
         return value
     if not isinstance(value, str) or len(value) > WIKIDOT_PAGE_SLUG_MAX_LENGTH or not any(candidate.fullmatch(value) for candidate in pattern):
         raise PublicError("resource_not_allowed", "resource is not a run-owned theme page")
@@ -101,7 +101,7 @@ def require_text(value: object, field: str, maximum: int) -> str:
     return value
 
 def validate_tags(value: object, slug: str) -> list[str]:
-    expected = ["codex-oracle"] if ORACLE_RUN_OWNED_SLUG.fullmatch(slug) else (["テーマ"] if slug.endswith("-yossistyle") else ["theme"])
+    expected = ["codex-oracle"] if ORACLE_RUN_OWNED_SLUG_PATTERN.fullmatch(slug) else (["テーマ"] if slug.endswith("-yossistyle") else ["theme"])
     if value != expected:
         raise PublicError("invalid_request", "run-owned page tags are invalid")
     return expected
@@ -122,7 +122,7 @@ def validate_page_snapshot(value: object, slug: str) -> PageSnapshot:
     # A create can fail after the page save but before the separate tag save.
     # Permit exact cleanup of that untagged page while retaining the namespace,
     # title, source, and identity fences.
-    if ORACLE_RUN_OWNED_SLUG.fullmatch(slug) and tags == []:
+    if ORACLE_RUN_OWNED_SLUG_PATTERN.fullmatch(slug) and tags == []:
         checked_tags = []
     else:
         checked_tags = validate_tags(tags, slug)
@@ -156,12 +156,12 @@ class WikidotBackend:
                 "site_identity_mismatch",
                 "authenticated site root was not found",
             )
-        site_id = SITE_ID.search(root_html)
-        site_name = SITE_UNIX_NAME.search(root_html)
-        domain = SITE_DOMAIN.search(root_html)
+        site_id_match = SITE_ID.search(root_html)
+        site_name_match = SITE_UNIX_NAME.search(root_html)
+        domain_match = SITE_DOMAIN.search(root_html)
         site_slug = getattr(self, "site_slug", DEFAULT_SITE_SLUG)
         expected_domain = f"{site_slug}.wikidot.com"
-        if not site_id or not site_name or not domain or site_name.group(1) != site_slug or domain.group(1) != expected_domain:
+        if not site_id_match or not site_name_match or not domain_match or site_name_match.group(1) != site_slug or domain_match.group(1) != expected_domain:
             raise PublicError(
                 "site_identity_mismatch",
                 "authenticated site identity is outside the hard allowlist",
@@ -313,7 +313,7 @@ class WikidotBackend:
         return lock_id, lock_secret
 
     def _save_tags(self, slug: str, kind: str, identity: Any, tags: list[str]) -> None:
-        tagged = self._request_ajax_module_connector(
+        tag_response = self._request_ajax_module_connector(
             {
                 "tags": " ".join(tags),
                 "action": "WikiPageAction",
@@ -322,7 +322,7 @@ class WikidotBackend:
                 "moduleName": "Empty",
             }
         )
-        if tagged.get("status") not in (None, "ok"):
+        if tag_response.get("status") not in (None, "ok"):
             raise PublicError("save_tags_failed", "Wikidot page tags were not saved")
         for _ in range(5):
             if self.page_tags(slug, kind) == tags:
@@ -407,7 +407,7 @@ class WikidotBackend:
                 "delete refused a page whose identity, title, or source changed",
             )
         # Wikidot exposes no revision-CAS delete operation. Keep the exact snapshot check immediately adjacent to deletion and confirm absence afterward; this is the narrowest available race window.
-        deleted = self._request_ajax_module_connector(
+        delete_response = self._request_ajax_module_connector(
             {
                 "action": "WikiPageAction",
                 "event": "deletePage",
@@ -415,7 +415,7 @@ class WikidotBackend:
                 "moduleName": "Empty",
             }
         )
-        if deleted.get("status") not in (None, "ok"):
+        if delete_response.get("status") not in (None, "ok"):
             raise PublicError("delete_failed", "Wikidot deletePage failed")
         for _ in range(5):
             if self.inspect(slug, kind) is None:

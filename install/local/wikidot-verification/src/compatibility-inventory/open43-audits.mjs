@@ -114,7 +114,7 @@ function classificationCounts(rows) {
 function assertSameCounts(actual, expected, context) {
   for (const key of AUDIT_CLASSIFICATIONS) {
     if (expected?.[key] !== actual[key]) {
-      throw new Error(`${context} ${key} count does not match: expected ${actual[key]}`)
+      throw new Error(`${context} ${key} count does not match: expected ${expected?.[key]}, got ${actual[key]}`)
     }
   }
 }

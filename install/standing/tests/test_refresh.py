@@ -165,7 +165,7 @@ class RefreshStandingTest(unittest.TestCase):
             }
         }
         original_command = REFRESH.command
-        original_identity = REFRESH.container_identity
+        original_container_identity = REFRESH.container_identity
 
         def fake_command(*args: str, cwd: Path, capture: bool = True) -> str:
             if args[:2] == ("docker", "rename"):
@@ -186,7 +186,7 @@ class RefreshStandingTest(unittest.TestCase):
             restored = REFRESH.restore_parked_containers(parked, Path("/runtime"))
         finally:
             REFRESH.command = original_command
-            REFRESH.container_identity = original_identity
+            REFRESH.container_identity = original_container_identity
         self.assertEqual(restored[service]["container_id"], "a" * 64)
         self.assertTrue(restored[service]["running"])
         self.assertEqual(restored[service]["name"], original_name)
@@ -205,7 +205,7 @@ class RefreshStandingTest(unittest.TestCase):
             }
             previous[service] = state[container_id]
         original_command = REFRESH.command
-        original_identity = REFRESH.container_identity
+        original_container_identity = REFRESH.container_identity
 
         def fake_command(*args: str, cwd: Path, capture: bool = True) -> str:
             if args[:2] == ("docker", "inspect"):
@@ -228,7 +228,7 @@ class RefreshStandingTest(unittest.TestCase):
             parked = REFRESH.park_containers(previous, Path("/runtime"), "run")
         finally:
             REFRESH.command = original_command
-            REFRESH.container_identity = original_identity
+            REFRESH.container_identity = original_container_identity
         self.assertEqual(
             {
                 service: entry["container"]["container_id"]
@@ -442,13 +442,13 @@ class RefreshStandingTest(unittest.TestCase):
         dockerfile = (SCRIPT.parents[1] / "prod/deepwell/Dockerfile").read_text(
             encoding="utf-8"
         )
-        renderer = (SCRIPT.parent / "render.py").read_text(encoding="utf-8")
+        renderer_source = (SCRIPT.parent / "render.py").read_text(encoding="utf-8")
         refresher = SCRIPT.read_text(encoding="utf-8")
 
         self.assertIn("COPY ./locales/fluent /opt/locales/fluent", dockerfile)
         self.assertNotIn("target: /opt/locales", compose)
         self.assertNotIn("STANDING_LOCALES_SOURCE", compose)
-        self.assertNotIn("STANDING_LOCALES_SOURCE", renderer)
+        self.assertNotIn("STANDING_LOCALES_SOURCE", renderer_source)
         self.assertNotIn("STANDING_LOCALES_SOURCE", refresher)
 
     def test_prepared_receipt_rejects_mutable_or_wrong_image_reference(self) -> None:

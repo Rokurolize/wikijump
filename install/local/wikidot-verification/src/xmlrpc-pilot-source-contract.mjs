@@ -99,7 +99,7 @@ function nonEmptyIdentifier(value, label) {
   return value;
 }
 
-function sha256(value, label) {
+function requireSha256(value, label) {
   if (typeof value !== "string" || !/^[a-f0-9]{64}$/u.test(value)) {
     throw new Error(`${label} must be a lowercase SHA-256`);
   }
@@ -125,7 +125,7 @@ function digestReference(value, label) {
   const object = validateExactDataRecord(value, ["bytes", "sha256"], label);
   return Object.freeze({
     bytes: safeInteger(object.bytes, `${label}.bytes`),
-    sha256: sha256(object.sha256, `${label}.sha256`),
+    sha256: requireSha256(object.sha256, `${label}.sha256`),
   });
 }
 
@@ -172,7 +172,7 @@ export function validateRunReceipt(value, rowCount) {
     implementation: reference(run.implementation, "XML-RPC run implementation"),
     inventory: Object.freeze({
       row_count: rowCount,
-      sha256: sha256(inventory.sha256, "XML-RPC run inventory.sha256"),
+      sha256: requireSha256(inventory.sha256, "XML-RPC run inventory.sha256"),
     }),
     throttle: reference(run.throttle, "XML-RPC run throttle"),
     verdict: digestReference(run.verdict, "XML-RPC run verdict"),
@@ -256,7 +256,7 @@ export function designatedXmlrpcPilotSource(value) {
         "designated XML-RPC pilot source input_receipts.verdict",
       ),
     }),
-    inventory_sha256: sha256(
+    inventory_sha256: requireSha256(
       source.inventory_sha256,
       "designated XML-RPC pilot source inventory_sha256",
     ),

@@ -104,10 +104,11 @@ export class Timeout<T = void> {
    *   fired. Set to `null` to have a "tick" timer.
    * @param cb - The callback that will be fired when the timeout expires.
    *   Provide `null` to get rid of the current callback.
+   * @throws If `cb` is provided but is not a function.
    */
   reset(delay?: number | null, cb?: (() => T) | null) {
     if (cb && typeof cb !== "function") {
-      console.error("Avoided potential string eval in timeout!")
+      console.error("Rejected non-function timeout callback")
       throw new Error("Timeout callback must be a function")
     }
 

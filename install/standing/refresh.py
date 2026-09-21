@@ -774,7 +774,7 @@ def main() -> int:
             )
 
     expiry = prepared_resource_expiry(prepared_receipt)
-    activation_verified = time.monotonic()
+    activation_verified_at = time.monotonic()
     differential_identity_path = runtime_home / RUNTIME_DIFFERENTIAL_IDENTITY
     previous_differential = None
     if differential_identity_path.exists():
@@ -881,7 +881,7 @@ def main() -> int:
             "started_at": started_at.isoformat(),
             "completed_at": datetime.now(UTC).isoformat(),
             "activation_duration_seconds": time.monotonic() - activation_started,
-            "image_verification_duration_seconds": activation_verified
+            "image_verification_duration_seconds": activation_verified_at
             - activation_started,
             "compose_activation_duration_seconds": health_started - compose_started,
             "health_duration_seconds": health_completed - health_started,

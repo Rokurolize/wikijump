@@ -145,12 +145,12 @@ impl PermissionCache {
         );
 
         let mut redis = ctx.redis();
-        let has_permission: Option<String> = redis.get(&key).await.or_raise(|| {
+        let cached_permission: Option<String> = redis.get(&key).await.or_raise(|| {
             warn!("Failed to read permission cache key '{}'", key);
             Error::new("permission cache read error", ErrorType::Permission)
         })?;
 
-        Ok(has_permission.map(|val| val == "1"))
+        Ok(cached_permission.map(|val| val == "1"))
     }
 
     pub async fn cache_fence(

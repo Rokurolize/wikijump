@@ -6,7 +6,7 @@ import os
 import sys
 
 from .importer import Importer
-from .wikicomma_config import parse_config
+from .wikicomma_config import load_config
 
 LOG_FORMAT = "[%(levelname)s] %(asctime)s %(name)s: %(message)s"
 LOG_DATE_FORMAT = "%Y/%m/%d %H:%M:%S"
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         log_stdout.setFormatter(log_fmtr)
         logger.addHandler(log_stdout)
 
-    wikicomma_config = parse_config(args.wikicomma_config)
+    wikicomma_config = load_config(args.wikicomma_config)
 
     importer = Importer(
         wikicomma_config=wikicomma_config,

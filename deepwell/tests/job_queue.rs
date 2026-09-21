@@ -835,7 +835,7 @@ async fn rpc_response(
         .expect("site navigation RPC should return JSON")
 }
 
-async fn receive_jobs(rsmq: &mut Rsmq) -> Vec<Job> {
+async fn drain_jobs(rsmq: &mut Rsmq) -> Vec<Job> {
     let mut jobs = Vec::new();
     while let Some(message) = rsmq
         .receive_message::<Vec<u8>>(JOB_QUEUE_NAME, None)
@@ -896,7 +896,7 @@ async fn run_site_navigation_rpc_contract(
         stale.get("error").is_some(),
         "stale update should fail: {stale}"
     );
-    assert!(receive_jobs(&mut fixture.queue).await.is_empty());
+    assert!(drain_jobs(&mut fixture.queue).await.is_empty());
 
     let unchanged = rpc_response(
         &client,
@@ -918,7 +918,7 @@ async fn run_site_navigation_rpc_contract(
         "unchanged update should succeed: {unchanged}",
     );
     revision += 1;
-    assert!(receive_jobs(&mut fixture.queue).await.is_empty());
+    assert!(drain_jobs(&mut fixture.queue).await.is_empty());
 
     let side_only = rpc_response(
         &client,
@@ -946,7 +946,7 @@ async fn run_site_navigation_rpc_contract(
         fixture.site.top_bar_page,
     );
     assert_navigation_jobs(
-        &receive_jobs(&mut fixture.queue).await,
+        &drain_jobs(&mut fixture.queue).await,
         &fixture.side_inheriting_page_ids,
     );
 
@@ -977,7 +977,7 @@ async fn run_site_navigation_rpc_contract(
         .union(&fixture.side_inheriting_page_ids)
         .copied()
         .collect();
-    assert_navigation_jobs(&receive_jobs(&mut fixture.queue).await, &expected_both);
+    assert_navigation_jobs(&drain_jobs(&mut fixture.queue).await, &expected_both);
 
     let fetched = rpc_response(
         &client,

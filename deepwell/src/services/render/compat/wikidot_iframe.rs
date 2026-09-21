@@ -132,17 +132,17 @@ fn render_wikidot_iframe(head: &str) -> Option<String> {
         return None;
     }
 
-    let value = |name: &str| attributes.get(name).map_or("", String::as_str);
+    let attribute_value = |name: &str| attributes.get(name).map_or("", String::as_str);
     Some(format!(
         r#"<iframe src="{}" align="{}" frameborder="{}" height="{}" scrolling="{}" width="{}" class="{}" style="{}"></iframe>"#,
         escape_list_pages_html_attr(url),
-        escape_list_pages_html_attr(value("align")),
-        escape_list_pages_html_attr(value("frameborder")),
-        escape_list_pages_html_attr(value("height")),
-        escape_list_pages_html_attr(value("scrolling")),
-        escape_list_pages_html_attr(value("width")),
-        escape_list_pages_html_attr(value("class")),
-        escape_list_pages_html_attr(value("style")),
+        escape_list_pages_html_attr(attribute_value("align")),
+        escape_list_pages_html_attr(attribute_value("frameborder")),
+        escape_list_pages_html_attr(attribute_value("height")),
+        escape_list_pages_html_attr(attribute_value("scrolling")),
+        escape_list_pages_html_attr(attribute_value("width")),
+        escape_list_pages_html_attr(attribute_value("class")),
+        escape_list_pages_html_attr(attribute_value("style")),
     ))
 }
 

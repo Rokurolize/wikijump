@@ -121,7 +121,7 @@ export async function syncOpen43AuditMetadata(root, { write = true } = {}) {
     for (const issue of audit.issues) {
       const issueNumber = issue.issue ?? issue.number;
       if (!Number.isSafeInteger(issueNumber) || issueNumber <= 0) {
-        throw new Error(`${auditPath} contains an invalid issue owner`);
+        throw new Error(`${auditPath} contains an invalid positive issue number`);
       }
       const issueRows = rowsForIssue(issue);
       for (const item of issueRows) {

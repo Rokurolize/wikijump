@@ -137,7 +137,7 @@ test("evidence-backed properties require known live evidence and a public regres
   const withoutLiveEvidence = structuredClone(canonicalLedger);
   withoutLiveEvidence.feature_property_matrix["module-listpages"].P1.evidence =
     [
-      "test:deepwell/tests/page.rs#listpages_reverse_boolean_coercion_matches_live_wikidot",
+      "test:deepwell/tests/page/list_pages_runtime.rs#listpages_reverse_boolean_coercion_matches_live_wikidot",
     ];
   assert.throws(
     () => validate(withoutLiveEvidence),
@@ -149,7 +149,7 @@ test("evidence-backed properties require known live evidence and a public regres
     "module-listpages"
   ].P1.evidence = [
     "live:not-a-real-observation",
-    "test:deepwell/tests/page.rs#listpages_reverse_boolean_coercion_matches_live_wikidot",
+    "test:deepwell/tests/page/list_pages_runtime.rs#listpages_reverse_boolean_coercion_matches_live_wikidot",
   ];
   assert.throws(
     () => validate(unknownLiveEvidence),

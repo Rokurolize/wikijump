@@ -2460,7 +2460,7 @@ async fn listpages_imported_creator_identity_uses_structured_corpus_provenance()
     .await;
     let target_id = listpages_test_page_id(&runner, site_id, TARGET_SLUG).await;
     create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 1).await;
-    set_imported_author(
+    mark_imported_page_with_author_snapshot(
         &runner,
         site_id,
         IMPORT_RUN_ID,
@@ -2550,7 +2550,7 @@ async fn listpages_imported_empty_title_uses_wikidot_page_name_label() {
     .await;
     let target_id = listpages_test_page_id(&runner, site_id, TARGET_SLUG).await;
     create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 1).await;
-    set_imported_author(
+    mark_imported_page_with_author_snapshot(
         &runner,
         site_id,
         IMPORT_RUN_ID,
@@ -2628,7 +2628,7 @@ async fn listpages_imported_editor_identity_uses_structured_corpus_provenance() 
     .await;
     let target_id = listpages_test_page_id(&runner, site_id, TARGET_SLUG).await;
     create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 1).await;
-    set_imported_author(
+    mark_imported_page_with_author_snapshot(
         &runner,
         site_id,
         IMPORT_RUN_ID,
@@ -2717,7 +2717,7 @@ async fn listpages_imported_commenter_identity_uses_structured_corpus_provenance
     .await;
     let target_id = listpages_test_page_id(&runner, site_id, TARGET_SLUG).await;
     create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 1).await;
-    set_imported_author(
+    mark_imported_page_with_author_snapshot(
         &runner,
         site_id,
         IMPORT_RUN_ID,
@@ -4065,7 +4065,8 @@ async fn imported_listpages_authors_use_snapshot_names_and_rerender_stably() {
         (bob_page_id, BOB_SLUG, 12, "Bob Example"),
         (index_page_id, INDEX_SLUG, 13, "Alice Example"),
     ] {
-        set_imported_author(&runner, site_id, IMPORT_RUN_ID, fixture).await;
+        mark_imported_page_with_author_snapshot(&runner, site_id, IMPORT_RUN_ID, fixture)
+            .await;
     }
 
     let alice_names = [Cow::Borrowed("ALICE_EXAMPLE")];

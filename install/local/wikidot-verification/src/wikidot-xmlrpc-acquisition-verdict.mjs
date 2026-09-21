@@ -148,7 +148,7 @@ function publicationOptions(value) {
   });
 }
 
-async function deriveFinalVerdict(value) {
+async function loadAndDeriveFinalVerdict(value) {
   const options = publicationOptions(value);
   const campaign = await openWikidotXmlrpcCampaign(
     options.store,
@@ -186,7 +186,7 @@ async function deriveFinalVerdict(value) {
 }
 
 export async function publishWikidotXmlrpcAcquisitionVerdict(output, options) {
-  const bytes = finalVerdictBytes(await deriveFinalVerdict(options));
+  const bytes = finalVerdictBytes(await loadAndDeriveFinalVerdict(options));
   let disposition;
   try {
     disposition = await publishBytesNoReplace(output, bytes, { mode: 0o400 });

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/unbound-method */
-export interface KeyHandler {
+export interface InputHandler {
   /**
    * The key to listen to. Must be in an exact format.
    *
@@ -23,9 +23,9 @@ export interface KeyHandler {
 
 export class KeyObserver {
   declare private target: HTMLElement
-  declare private handlers: KeyHandler[]
+  declare private handlers: InputHandler[]
 
-  constructor(target: HTMLElement, handlers: KeyHandler[]) {
+  constructor(target: HTMLElement, handlers: InputHandler[]) {
     this.target = target
 
     if (!Array.isArray(handlers)) handlers = [handlers]
@@ -74,7 +74,7 @@ export class KeyObserver {
     })
   }
 
-  update(handlers: KeyHandler[]) {
+  update(handlers: InputHandler[]) {
     if (!Array.isArray(handlers)) handlers = [handlers]
     this.handlers = handlers
   }

@@ -144,12 +144,12 @@ impl SessionService {
         let make_error =
             |error_type| Error::new("failed to look up session by token", error_type);
 
-        let user = Self::get_optional(ctx, session_token)
+        let session = Self::get_optional(ctx, session_token)
             .await
             .or_raise(|| make_error(ErrorType::Session))?
             .ok_or_else(|| make_error(ErrorType::InvalidSessionToken))?;
 
-        Ok(user)
+        Ok(session)
     }
 
     pub async fn get_optional(

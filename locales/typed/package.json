@@ -5,7 +5,7 @@
   "main": "index.ts",
   "private": true,
   "scripts": {
-    "dev":"tsx index.ts ../fluent ../../framerail/src/types"
+    "generate":"tsx index.ts ../fluent ../../framerail/src/types"
   },
   "keywords": [],
   "author": "",

@@ -3,7 +3,7 @@
   "source_identities": {
     "jsonrpc_registry": {
       "path": "deepwell/src/api.rs",
-      "sha256": "aa8348ee4ea28f7a7135b77fd1bb779f9a46b0e3014dca941c6dda60011b0684"
+      "sha256": "391a60a3f9eaf669b35cfbda082d865f11e8b1a4a4ea37090c6e108f66f61b72"
     },
     "request_context_middleware": {
       "path": "deepwell/src/middleware.rs",
@@ -278,7 +278,7 @@
         "component": "deepwell",
         "handler": "basic_error_blob_fetch",
         "source": "deepwell/src/endpoints/basic_error.rs#basic_error_blob_fetch",
-        "source_sha256": "3bff87d7258f1a758f29cc640e547b120ef2f3973af7c14269af2824adb90454",
+        "source_sha256": "8cd98f2d75a34c273e639a9826117c0ff5982d55a3e6ebdf2c895ac6cbe079e4",
         "function_sha256": "47fc9c4f89d9246a0bb779524b58a797e856fd939d4b2e86007ad05a1fabdf5b"
       },
       "params_schema": {
@@ -337,7 +337,7 @@
         "component": "deepwell",
         "handler": "basic_error_file_fetch",
         "source": "deepwell/src/endpoints/basic_error.rs#basic_error_file_fetch",
-        "source_sha256": "3bff87d7258f1a758f29cc640e547b120ef2f3973af7c14269af2824adb90454",
+        "source_sha256": "8cd98f2d75a34c273e639a9826117c0ff5982d55a3e6ebdf2c895ac6cbe079e4",
         "function_sha256": "ef597c19d99dadaeeccb5bbbbeaebde5db7f25d1f3b0eeea3bd82471139e010b"
       },
       "params_schema": {
@@ -390,7 +390,7 @@
         "component": "deepwell",
         "handler": "basic_error_file_root",
         "source": "deepwell/src/endpoints/basic_error.rs#basic_error_file_root",
-        "source_sha256": "3bff87d7258f1a758f29cc640e547b120ef2f3973af7c14269af2824adb90454",
+        "source_sha256": "8cd98f2d75a34c273e639a9826117c0ff5982d55a3e6ebdf2c895ac6cbe079e4",
         "function_sha256": "aeef934b110eadad7575c4a998bcfb85641e495d7adfae5deb8256fab9dcf293"
       },
       "params_schema": {
@@ -443,7 +443,7 @@
         "component": "deepwell",
         "handler": "basic_error_missing_custom_domain",
         "source": "deepwell/src/endpoints/basic_error.rs#basic_error_missing_custom_domain",
-        "source_sha256": "3bff87d7258f1a758f29cc640e547b120ef2f3973af7c14269af2824adb90454",
+        "source_sha256": "8cd98f2d75a34c273e639a9826117c0ff5982d55a3e6ebdf2c895ac6cbe079e4",
         "function_sha256": "504e970cb5366b6ac4cbb17e9905ab4e16058c1a15bc593599b8c7e28ad3fc5f"
       },
       "params_schema": {
@@ -496,7 +496,7 @@
         "component": "deepwell",
         "handler": "basic_error_missing_file_name",
         "source": "deepwell/src/endpoints/basic_error.rs#basic_error_missing_file_name",
-        "source_sha256": "3bff87d7258f1a758f29cc640e547b120ef2f3973af7c14269af2824adb90454",
+        "source_sha256": "8cd98f2d75a34c273e639a9826117c0ff5982d55a3e6ebdf2c895ac6cbe079e4",
         "function_sha256": "cf912ec747fd9d37925edb1a59300e0b17f92a8584fd79e6bdad6b90e5a35127"
       },
       "params_schema": {
@@ -549,7 +549,7 @@
         "component": "deepwell",
         "handler": "basic_error_missing_page_slug",
         "source": "deepwell/src/endpoints/basic_error.rs#basic_error_missing_page_slug",
-        "source_sha256": "3bff87d7258f1a758f29cc640e547b120ef2f3973af7c14269af2824adb90454",
+        "source_sha256": "8cd98f2d75a34c273e639a9826117c0ff5982d55a3e6ebdf2c895ac6cbe079e4",
         "function_sha256": "05a88fb5e686eae217600813a002e98d7e157363330b849aa3a680a0c49a0ed5"
       },
       "params_schema": {
@@ -602,7 +602,7 @@
         "component": "deepwell",
         "handler": "basic_error_missing_site_slug",
         "source": "deepwell/src/endpoints/basic_error.rs#basic_error_missing_site_slug",
-        "source_sha256": "3bff87d7258f1a758f29cc640e547b120ef2f3973af7c14269af2824adb90454",
+        "source_sha256": "8cd98f2d75a34c273e639a9826117c0ff5982d55a3e6ebdf2c895ac6cbe079e4",
         "function_sha256": "729c9408d1e57a4ab9fb5bff85adafaa18e80c6e325c233d9e17aa4e919f7a08"
       },
       "params_schema": {
@@ -655,7 +655,7 @@
         "component": "deepwell",
         "handler": "basic_error_page_fetch",
         "source": "deepwell/src/endpoints/basic_error.rs#basic_error_page_fetch",
-        "source_sha256": "3bff87d7258f1a758f29cc640e547b120ef2f3973af7c14269af2824adb90454",
+        "source_sha256": "8cd98f2d75a34c273e639a9826117c0ff5982d55a3e6ebdf2c895ac6cbe079e4",
         "function_sha256": "8d47adb6f6e10fad9e5f6707c0af1520e4428ca3b9de5e4d63b47ef2fc6d06a9"
       },
       "params_schema": {
@@ -708,7 +708,7 @@
         "component": "deepwell",
         "handler": "basic_error_text_block",
         "source": "deepwell/src/endpoints/basic_error.rs#basic_error_text_block",
-        "source_sha256": "3bff87d7258f1a758f29cc640e547b120ef2f3973af7c14269af2824adb90454",
+        "source_sha256": "8cd98f2d75a34c273e639a9826117c0ff5982d55a3e6ebdf2c895ac6cbe079e4",
         "function_sha256": "87bc7fc3d74326c0422db50dd7ace54371f2c5ec3024d25af2f2c8edbbc281f2"
       },
       "params_schema": {
@@ -761,8 +761,8 @@
         "component": "deepwell",
         "handler": "basic_error_user_avatar",
         "source": "deepwell/src/endpoints/basic_error.rs#basic_error_user_avatar",
-        "source_sha256": "3bff87d7258f1a758f29cc640e547b120ef2f3973af7c14269af2824adb90454",
-        "function_sha256": "8336a93426274154fa45c01759d5a45ea22179950a5a803fc94fe1a50412803c"
+        "source_sha256": "8cd98f2d75a34c273e639a9826117c0ff5982d55a3e6ebdf2c895ac6cbe079e4",
+        "function_sha256": "370c556489a6f72368506e138161899d53d0d6f6ae867565a182cba4736cf2a7"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -820,7 +820,7 @@
         "component": "deepwell",
         "handler": "basic_error_user_fetch",
         "source": "deepwell/src/endpoints/basic_error.rs#basic_error_user_fetch",
-        "source_sha256": "3bff87d7258f1a758f29cc640e547b120ef2f3973af7c14269af2824adb90454",
+        "source_sha256": "8cd98f2d75a34c273e639a9826117c0ff5982d55a3e6ebdf2c895ac6cbe079e4",
         "function_sha256": "8cd2b48f3ae8ecbecac27f9f8be8f7d26edc04cde1b1c116775195aeee7e999e"
       },
       "params_schema": {
@@ -1342,7 +1342,7 @@
         "component": "deepwell",
         "handler": "bot_user_create",
         "source": "deepwell/src/endpoints/user_bot.rs#bot_user_create",
-        "source_sha256": "77efc91811fbe286128c6c61c1fbf11bcdc15096293640511aa1a252d66fccd6",
+        "source_sha256": "07b0caebac592603ae777965cb29a3646c4f9b8eac89f6665fed6e5dfdab625d",
         "function_sha256": "437a36ba73b0a825cfd5705dcab034551c9d4aeadc5891c0216c1376b798a8be"
       },
       "params_schema": {
@@ -1407,8 +1407,8 @@
         "component": "deepwell",
         "handler": "bot_user_get_bots",
         "source": "deepwell/src/endpoints/user_bot.rs#bot_user_get_bots",
-        "source_sha256": "77efc91811fbe286128c6c61c1fbf11bcdc15096293640511aa1a252d66fccd6",
-        "function_sha256": "d5d895a1ccfe7575f7b2aafbf1b8018507dfd17e33b43efa2182e8597822c84c"
+        "source_sha256": "07b0caebac592603ae777965cb29a3646c4f9b8eac89f6665fed6e5dfdab625d",
+        "function_sha256": "4a37c99b4e4b5ea6ad8713cf02275b10bff5587d7f24db2fefb7b1692c354f55"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -1460,7 +1460,7 @@
         "component": "deepwell",
         "handler": "bot_user_get_owners",
         "source": "deepwell/src/endpoints/user_bot.rs#bot_user_get_owners",
-        "source_sha256": "77efc91811fbe286128c6c61c1fbf11bcdc15096293640511aa1a252d66fccd6",
+        "source_sha256": "07b0caebac592603ae777965cb29a3646c4f9b8eac89f6665fed6e5dfdab625d",
         "function_sha256": "e560e5ace348ea131c8cf0d4cc25228e145b6700ea3ae7bcb475e0478e6b84b0"
       },
       "params_schema": {
@@ -1513,7 +1513,7 @@
         "component": "deepwell",
         "handler": "bot_user_owner_remove",
         "source": "deepwell/src/endpoints/user_bot.rs#bot_user_owner_remove",
-        "source_sha256": "77efc91811fbe286128c6c61c1fbf11bcdc15096293640511aa1a252d66fccd6",
+        "source_sha256": "07b0caebac592603ae777965cb29a3646c4f9b8eac89f6665fed6e5dfdab625d",
         "function_sha256": "af0458279e6657440d1a18bf4406bbce293fbfcad76fd86dd75be9e9291eca36"
       },
       "params_schema": {
@@ -1571,7 +1571,7 @@
         "component": "deepwell",
         "handler": "bot_user_owner_set",
         "source": "deepwell/src/endpoints/user_bot.rs#bot_user_owner_set",
-        "source_sha256": "77efc91811fbe286128c6c61c1fbf11bcdc15096293640511aa1a252d66fccd6",
+        "source_sha256": "07b0caebac592603ae777965cb29a3646c4f9b8eac89f6665fed6e5dfdab625d",
         "function_sha256": "543bba901919c4cf8f359b872513363b932bafc3944c7992b31af8fb78dbc766"
       },
       "params_schema": {

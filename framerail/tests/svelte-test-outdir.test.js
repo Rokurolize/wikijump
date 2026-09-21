@@ -10,7 +10,7 @@ import { loadConfigFromFile } from "vite"
 
 const root = fileURLToPath(new URL("..", import.meta.url))
 
-test("unit test entrypoint generates the shared SvelteKit tsconfig before isolated workers start", () => {
+test("unit test entrypoint delegates to the shared Framerail test runner", () => {
   const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"))
   assert.equal(pkg.scripts["test:unit"], "../scripts/run-framerail-unit-tests.sh")
 })

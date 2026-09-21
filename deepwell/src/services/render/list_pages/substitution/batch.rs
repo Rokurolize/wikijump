@@ -164,10 +164,11 @@ impl ListPagesBatchDisplayRequirements {
         &mut self,
         template: &ListPagesTemplatePlan,
     ) {
-        let users = template.uses_created_by() || template.uses_updated_by();
-        self.users |= users;
+        let needs_user_displays =
+            template.uses_created_by() || template.uses_updated_by();
+        self.users |= needs_user_displays;
         self.snapshots |= template.uses_title()
-            || users
+            || needs_user_displays
             || template.uses_created_at()
             || template.uses_updated_at()
             || template.uses_parent_metadata();

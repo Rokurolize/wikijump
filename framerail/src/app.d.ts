@@ -10,7 +10,6 @@ import type { Locales } from "./types"
 
 declare global {
   declare namespace App {
-    // interface Locals {}
     interface PageData extends PreloadData {
       /** Data about the page itself. */
       page?: PageModel
@@ -45,8 +44,6 @@ declare global {
       /** Compiled HTML */
       compiled_body_html?: string
     }
-    // interface Platform {}
-
     interface Locals {
       requestContext: RequestContext
       siteLocale?: string

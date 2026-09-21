@@ -778,8 +778,8 @@ impl FileRevisionService {
         let revision_condition = {
             use file_revision::Column::RevisionNumber;
 
-            // Allow specifying "-1" to mean "the most recent revision",
-            // otherwise keep as-is.
+            // Treat any negative revision number as "the most recent revision";
+            // otherwise keep it as-is.
             let revision_number = if revision_number >= 0 {
                 revision_number
             } else {

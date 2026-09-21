@@ -452,9 +452,9 @@ pub(in crate::services::render) fn rollback_start_in_left_run(
     block_start: Option<usize>,
     run_end: usize,
 ) -> Option<usize> {
-    let parser_function = (candidate..run_end.saturating_sub(1))
+    let parser_function_start = (candidate..run_end.saturating_sub(1))
         .find(|start| bytes.get(*start..*start + 3) == Some(&b"[[#"[..]));
-    match (block_start, parser_function) {
+    match (block_start, parser_function_start) {
         (Some(block), Some(function)) => Some(block.min(function)),
         (Some(block), None) => Some(block),
         (None, Some(function)) => Some(function),

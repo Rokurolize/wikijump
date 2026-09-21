@@ -886,7 +886,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     for (const caseId of mediaCaseIds) {
       const evidenceId = MEDIA_BROWSER_EVIDENCE[caseId];
       const evidence = mediaAudit.evidence_registry?.[evidenceId];
-      if (typeof evidence?.path !== "string" || !/^[0-9a-f]{64}$/u.test(evidence.sha256 ?? "")) throw new Error(`${caseId} media browser evidence is absent from the audit registry`);
+      if (typeof evidence?.path !== "string" || !/^[0-9a-f]{64}$/u.test(evidence.sha256 ?? "")) throw new Error(`${caseId} media browser evidence is missing or malformed in the audit registry`);
       const evidenceBytes = await fs.readFile(evidence.path);
       if (sha256(evidenceBytes) !== evidence.sha256) throw new Error(`${caseId} retained media browser evidence SHA-256 does not match the audit registry`);
       mediaCases.push({ case_id: caseId, evidence: { evidence_id: evidenceId, path: evidence.path, sha256: evidence.sha256 } });

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -8,10 +9,15 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).parents[1] / "render.py"
 FTML_SHA = "f" * 40
+SPEC = importlib.util.spec_from_file_location("standing_render", SCRIPT)
+assert SPEC is not None and SPEC.loader is not None
+RENDER = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(RENDER)
 
 
 class RenderStandingConfigTest(unittest.TestCase):
@@ -62,6 +68,42 @@ class RenderStandingConfigTest(unittest.TestCase):
             "--wws-image", "example/wws@sha256:" + "1" * 64,
             "--caddy-image", "example/caddy@sha256:" + "2" * 64,
         ]
+
+    def test_required_text_rejects_empty_and_multiline_values(self) -> None:
+        self.assertEqual(RENDER.required_text("value", "fixture"), "value")
+        for value in ("", "two\nlines", "two\rlines"):
+            with self.subTest(value=value), self.assertRaisesRegex(
+                ValueError, "non-empty single-line value"
+            ):
+                RENDER.required_text(value, "fixture")
+
+    def test_required_rpc_token_rejects_missing_or_malformed_tokens(self) -> None:
+        for token in (None, "", "A" * 64, "0" * 63, "g" * 64):
+            environment = {} if token is None else {"DEEPWELL_RPC_TOKEN": token}
+            with self.subTest(token=token), patch.dict(
+                os.environ, environment, clear=True
+            ), self.assertRaisesRegex(ValueError, "64 lowercase hexadecimal"):
+                RENDER.required_rpc_token()
+
+    def test_source_state_rejects_relative_source_root(self) -> None:
+        with self.assertRaisesRegex(ValueError, "--source-root must be absolute"):
+            RENDER.source_state(Path("relative"), "0" * 40, FTML_SHA)
+
+    def test_replace_directory_refuses_existing_output_without_replace(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            root = Path(temporary_dir)
+            staging = root / "staging"
+            output = root / "output"
+            staging.mkdir()
+            output.mkdir()
+            with self.assertRaisesRegex(ValueError, "output directory already exists"):
+                RENDER.replace_directory(staging, output, False)
+            self.assertTrue(staging.is_dir())
+            self.assertTrue(output.is_dir())
+
+    def test_parse_args_rejects_missing_required_arguments(self) -> None:
+        with patch.object(sys, "argv", [str(SCRIPT)]), self.assertRaises(SystemExit):
+            RENDER.parse_args()
 
     def test_materializes_identity_bound_compose_home(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:

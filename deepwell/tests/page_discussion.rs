@@ -989,13 +989,13 @@ async fn page_discussions_reject_deleted_containers_and_skip_deleted_groups() {
             .await
             .expect("the first page discussion category should be restored");
     }
-    let restored_category = run_endpoint!(
+    let restored_discussion = run_endpoint!(
         runner,
         wikidot_page_discussion_create,
         json!({ "site_id": site_id, "page_id": first_page.page_id }),
     )
     .expect("the active category should make the existing discussion resolvable");
-    assert_eq!(restored_category.thread_id, first_discussion.thread_id);
+    assert_eq!(restored_discussion.thread_id, first_discussion.thread_id);
 
     {
         let transaction = runner.context().transaction();

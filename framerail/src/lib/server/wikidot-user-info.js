@@ -51,6 +51,7 @@ const PRIVATE_MESSAGE_CONTROL = Object.freeze({
  * @param {UserViewUser} user
  * @param {LoadAvatar | undefined} loadAvatar
  * @returns {Promise<PublicUser>}
+ * @throws {Error} If a found user has no public name or slug, or avatar loading fails.
  */
 const projectPublicUser = async (user, loadAvatar) => {
   if (user.name === null || user.slug === null) {
@@ -95,6 +96,7 @@ const projectPublicUser = async (user, loadAvatar) => {
  *   loadAvatar?: LoadAvatar
  * }} options
  * @returns {Promise<UserInfoFound | UserInfoMissing>}
+ * @throws {Error} If the user-view response type is unsupported or a found user cannot be projected.
  */
 export const loadWikidotUserInfo = async ({
   siteId,

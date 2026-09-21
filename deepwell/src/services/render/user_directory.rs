@@ -562,7 +562,7 @@ async fn load_directory_identities(
 
 fn sort_directory_rows(rows: &mut [DirectoryRow], order: MembersOrder) {
     rows.sort_by(|left, right| {
-        let ascending = match order {
+        let ordering = match order {
             MembersOrder::UserId | MembersOrder::UserIdDesc => {
                 left.identity.user_id().cmp(&right.identity.user_id())
             }
@@ -578,8 +578,8 @@ fn sort_directory_rows(rows: &mut [DirectoryRow], order: MembersOrder) {
         match order {
             MembersOrder::UserIdDesc
             | MembersOrder::JoinedDesc
-            | MembersOrder::NameDesc => ascending.reverse(),
-            _ => ascending,
+            | MembersOrder::NameDesc => ordering.reverse(),
+            _ => ordering,
         }
     });
 }

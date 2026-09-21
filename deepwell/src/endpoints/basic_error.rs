@@ -283,7 +283,7 @@ pub async fn basic_error_user_avatar(
     let make_error = make_make_error!(user_avatar);
     let locales = parse_locales(&locales).or_raise(make_error)?;
 
-    BasicErrorService::user_avatar(ctx, &locales, user_id)
+    BasicErrorService::user_avatar_error(ctx, &locales, user_id)
         .await
         .or_raise(make_error)
 }

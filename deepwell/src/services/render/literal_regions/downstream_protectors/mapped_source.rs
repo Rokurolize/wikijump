@@ -70,10 +70,10 @@ impl MappedSource {
     }
 
     pub(super) fn remove_original_ranges(&mut self, ranges: &[Range<usize>]) {
-        let mut virtual_ranges = self.virtual_cursor();
+        let mut virtual_range_cursor = self.virtual_cursor();
         let replacements = ranges
             .iter()
-            .map(|range| (virtual_ranges.map_range(range.clone()), None))
+            .map(|range| (virtual_range_cursor.map_range(range.clone()), None))
             .collect::<Vec<_>>();
         self.rewrite(&replacements, None);
     }
@@ -87,10 +87,15 @@ impl MappedSource {
             !replacement.is_empty(),
             "opaque replacements must be nonempty"
         );
-        let mut virtual_ranges = self.virtual_cursor();
+        let mut virtual_range_cursor = self.virtual_cursor();
         let replacements = ranges
             .iter()
-            .map(|range| (virtual_ranges.map_range(range.clone()), Some(range.clone())))
+            .map(|range| {
+                (
+                    virtual_range_cursor.map_range(range.clone()),
+                    Some(range.clone()),
+                )
+            })
             .collect::<Vec<_>>();
         self.rewrite(&replacements, Some(replacement));
     }
@@ -142,7 +147,9 @@ impl MappedSource {
             );
             record_collector_work(range.start - cursor);
             if let Some(marker_origin) = marker_origin {
-                // Issued registry markers contain no downstream syntax delimiter. Their length and nonce do not affect these regexes or guards, so one inert byte models them; non-registry replacements pass their exact text.
+                // Marker callers pass one inert byte because marker length and nonce
+                // do not affect downstream syntax guards; text-replacement callers
+                // pass the exact replacement text instead.
                 let replacement =
                     replacement.expect("replacement text accompanies an origin");
                 let marker_start = rewritten.len();

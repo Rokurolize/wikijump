@@ -57,9 +57,9 @@ class KomodoVariablePolicyTests(unittest.TestCase):
             ],
         )
         self.assertNotIn("variables.toml", resource_sync["resource_path"])
-        enable = documentation.index('set "Sync Variables" to true')
-        disable = documentation.index('Set "Sync Variables" back to false')
-        self.assertLess(enable, disable)
+        enable_index = documentation.index('set "Sync Variables" to true')
+        disable_index = documentation.index('Set "Sync Variables" back to false')
+        self.assertLess(enable_index, disable_index)
 
 
 if __name__ == "__main__":
