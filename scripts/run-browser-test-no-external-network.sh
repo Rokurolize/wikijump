@@ -13,10 +13,12 @@ if [[ "${WIKIJUMP_BROWSER_TEST_NETNS_ACTIVE:-}" == "1" ]]; then
   exec "$@"
 fi
 
-if ! command -v bwrap >/dev/null 2>&1; then
-  echo "browser test isolation requires bubblewrap (bwrap)" >&2
-  exit 2
-fi
+for command in unshare ip; do
+  if ! command -v "${command}" >/dev/null 2>&1; then
+    echo "browser test isolation requires ${command}" >&2
+    exit 2
+  fi
+done
 
 export CARGO_NET_OFFLINE=true
 export PIP_NO_INDEX=1
@@ -26,5 +28,13 @@ unset HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
 export NO_PROXY="localhost,127.0.0.1,::1,.localhost"
 export no_proxy="${NO_PROXY}"
 
-exec bwrap --unshare-net --bind / / --dev-bind /dev /dev --proc /proc \
-  --setenv WIKIJUMP_BROWSER_TEST_NETNS_ACTIVE 1 -- "$@"
+# Use a fresh user namespace together with the network namespace. Mapping the
+# invoking user to uid 0 only inside that namespace grants CAP_NET_ADMIN there,
+# which lets us bring loopback up even on CI hosts where bubblewrap can create a
+# network namespace but cannot configure its loopback device.
+printf -v COMMAND_Q '%q ' "$@"
+exec unshare -Urn sh -ceu "
+  ip link set lo up
+  export WIKIJUMP_BROWSER_TEST_NETNS_ACTIVE=1
+  exec ${COMMAND_Q}
+"
