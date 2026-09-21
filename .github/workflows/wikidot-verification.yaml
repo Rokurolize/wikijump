@@ -34,7 +34,7 @@ jobs:
       - name: Install native build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends bubblewrap libmagic-dev socat
+          sudo apt-get install --yes --no-install-recommends iproute2 libmagic-dev socat util-linux
 
       - name: Install JavaScript dependencies
         run: |
