@@ -7,12 +7,11 @@ The former parallel compatibility execution plan has moved to
 archaeology. Its dated counts, hashes, phase state, and ownership snapshot are
 not current execution authority.
 
-Current campaign authority is:
-
-- `/home/roku/wjlab/plan.md`;
-- `/home/roku/wjlab/execution-policy.md`;
-- `/home/roku/wjlab/devspace-execution-plan.md`; and
-- GitHub issue #1354 for mutable work ownership/blockers.
+There is no current compatibility campaign authority. The campaign is retired.
+Routine compatibility work starts from repository `AGENTS.md`,
+`docs/agents/compatibility/README.md`, the checked-in Wikidot specifications and
+offline fixtures, and current Git/GitHub state. Historical `/home/roku/wjlab`
+paths are provenance only and are not required by a fresh checkout.
 
 Do not resume from the archived plan or copy its numeric snapshot into current
-Objective documents.
+work.

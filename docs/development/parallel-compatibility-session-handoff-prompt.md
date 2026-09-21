@@ -7,13 +7,11 @@ The former single-file Codex bootstrap has moved to
 archaeology. It contains dated hashes, counts, phase state, and tool assumptions
 and must not be used as a current session bootstrap.
 
-A fresh implementation owner now reads:
+A fresh implementation owner reads repository `AGENTS.md`,
+`docs/agents/compatibility/README.md`, the checked-in Wikidot specifications and
+offline fixtures, and current Git/GitHub state. The compatibility campaign is
+retired; historical `/home/roku/wjlab` Objective files and issue-era handoffs
+are provenance only, not bootstrap inputs.
 
-1. repository `AGENTS.md`;
-2. `/home/roku/wjlab/plan.md`;
-3. `/home/roku/wjlab/execution-policy.md`;
-4. `/home/roku/wjlab/devspace-execution-plan.md`; and
-5. GitHub issue #1354 only when current ownership/blocker state is needed.
-
-Current work is selected from the canonical compatibility ledger, not from a
-snapshot embedded in a handoff prompt.
+Current work is selected from current repository/GitHub state, not from a
+snapshot embedded in a historical handoff prompt.
