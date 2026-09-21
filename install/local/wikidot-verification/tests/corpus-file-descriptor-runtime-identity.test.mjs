@@ -13,7 +13,7 @@ const hash = (character, length = 64) => character.repeat(length);
 function inspect(role, image, containerPort, hostPort) {
   const mount = role === "deepwell"
     ? {Type: "bind", RW: false, Destination: "/etc/deepwell.toml"}
-    : {Type: "volume", Name: role === "database" ? "runtime50x-postgres-data" : "runtime50x-files-data", RW: true, Destination: role === "database" ? "/var/lib/postgresql/data" : "/data"};
+    : {Type: "volume", Name: role === "database" ? "wikijump-standing-postgres-data" : "wikijump-standing-files-data", RW: true, Destination: role === "database" ? "/var/lib/postgresql/data" : "/data"};
   return {
     Id: hash(role[0]),
     Image: `sha256:${image}`,

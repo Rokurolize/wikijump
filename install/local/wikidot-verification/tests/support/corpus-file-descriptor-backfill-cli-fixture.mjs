@@ -79,7 +79,7 @@ export function runtimeInspections({
       hostPort: 15432,
       mounts: [{
         Type: 'volume',
-        Name: 'runtime50x-postgres-data',
+        Name: 'wikijump-standing-postgres-data',
         Destination: '/var/lib/postgresql/data',
         RW: true,
       }],
@@ -100,7 +100,7 @@ export function runtimeInspections({
       image: `sha256:${'7'.repeat(64)}`,
       port: '9000/tcp',
       hostPort: filesHostPort,
-      mounts: [{ Type: 'volume', Name: 'runtime50x-files-data', Destination: '/data', RW: true }],
+      mounts: [{ Type: 'volume', Name: 'wikijump-standing-files-data', Destination: '/data', RW: true }],
     }),
   };
 }

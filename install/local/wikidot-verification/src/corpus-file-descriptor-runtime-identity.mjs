@@ -215,7 +215,7 @@ export async function observeFileDescriptorRuntimeBinding({
         published_binding: exactPublishedBinding(databaseInspect, 'database', '5432/tcp'),
         volume: exactMount(databaseInspect, 'database', {
           type: 'volume',
-          name: 'runtime50x-postgres-data',
+          name: 'wikijump-standing-postgres-data',
           destination: '/var/lib/postgresql/data',
           rw: true,
         }),
@@ -236,7 +236,7 @@ export async function observeFileDescriptorRuntimeBinding({
         published_binding: exactPublishedBinding(filesInspect, 'files', '9000/tcp', objectEndpoint),
         volume: exactMount(filesInspect, 'files', {
           type: 'volume',
-          name: 'runtime50x-files-data',
+          name: 'wikijump-standing-files-data',
           destination: '/data',
           rw: true,
         }),

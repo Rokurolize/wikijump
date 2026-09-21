@@ -9,7 +9,7 @@
   "rules": [
     {
       "id": "protected-standing-volumes",
-      "selectors": {"docker_volume_names": ["runtime50x-postgres-data", "runtime50x-files-data"]},
+      "selectors": {"docker_volume_names": ["wikijump-standing-postgres-data", "wikijump-standing-files-data", "wikijump-standing-cache-data"]},
       "artifact_kind": "protected runtime data",
       "retention_blockers": ["repository policy requires explicit user authorization"],
       "release_conditions": [

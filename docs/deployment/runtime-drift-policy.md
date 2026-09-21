@@ -12,6 +12,24 @@ Standing image preparation and activation are separate operations. `install/stan
 
 The standing stack must remain available as a deliverable. Its normal canaries cover HTTP responses for representative pages and assets, WIKIREQUEST metadata, AJAX ListPages, DOM rendering, and an unmodified `wikidot.py` site and page lookup. A failed canary is a runtime incident and is repaired before unrelated candidate work proceeds.
 
+Standing state is not owned by a campaign workspace. The canonical runtime
+home is `${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/standing` unless an
+operator supplies another absolute state path. Persistent application data is
+attached through the durable external volumes
+`wikijump-standing-postgres-data`, `wikijump-standing-files-data`, and
+`wikijump-standing-cache-data`; the local Caddy state remains
+`local-caddy-data` and `local-caddy-config`. Historical `runtime50x-*` volumes
+are valid only as bounded migration rollback inputs and must not appear in a
+newly rendered active topology.
+
+Any persistent-volume migration is a separate quiesced data operation. Prove
+source-before, destination-after, and source-after tree identity before
+activating the new attachment, retain the old volume through cutover
+validation, and remove it only after the new standing runtime and browser/client
+canaries pass and no container references the legacy name. Use
+`install/standing/volume_transfer.py` for the maintained copy, archive, restore,
+and post-cutover checks.
+
 ## Candidate runtimes
 
 Candidate stacks are isolated from the standing stack and never publish port 443. Each candidate has an explicit owner, Wikijump SHA and tree, FTML SHA, profile, artifact key or image digest, creation time, expiry time, and evidence directory. Candidate names, Compose project names, container labels, and receipts must carry that identity.

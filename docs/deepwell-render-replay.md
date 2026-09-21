@@ -6,15 +6,15 @@ protection, and FTML preprocessing code as production, then tokenizes, parses,
 and core-renders it in a separate process. A worker that exceeds its deadline is
 force-killed and reaped; it cannot leave a runaway parser thread in Deepwell.
 
-Inside the `runtime50x` development container, after the hot-reload build has
-finished, run:
+Inside a local development Deepwell container, after the hot-reload build has
+finished, run (replace the container name when using a non-default project):
 
 ```sh
 docker exec \
   -e DEEPWELL_RUNTIME_ACTION=render-replay \
   -e DEEPWELL_REPLAY_IMPORT_RUN_ID=217 \
   -e DEEPWELL_REPLAY_ARTIFACT_DIR=/tmp/run217-render-replay \
-  runtime50x-deepwell-1 \
+  wikijump-deepwell-1 \
   /src/deepwell/target/debug/deepwell /etc/deepwell.toml
 ```
 
