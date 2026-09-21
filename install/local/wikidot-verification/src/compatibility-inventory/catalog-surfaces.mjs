@@ -86,6 +86,30 @@ export function testReferences(tests) {
   })
 }
 
+export function repositoryDocumentationEvidence(entries) {
+  if (!Array.isArray(entries)) return []
+  return entries.flatMap((entry) => {
+    if (typeof entry !== "string" || entry === "") return []
+    if (path.posix.isAbsolute(entry)) {
+      // Historical campaign ledgers retained some host-local WJLab receipts.
+      // They remain provenance in the ledger itself, but current executable
+      // inventory evidence must be repository-owned and portable.
+      return []
+    }
+    if (
+      entry.startsWith("docs/") ||
+      entry.startsWith("install/") ||
+      entry.startsWith("scripts/") ||
+      entry.startsWith("deepwell/") ||
+      entry.startsWith("framerail/") ||
+      entry.startsWith("wws/")
+    ) {
+      return [entry]
+    }
+    return [path.posix.join("docs/wikidot-specifications", entry)]
+  })
+}
+
 export async function validateCatalogOwnerRecords(root, featureId, ledgerEntry, ownerManifest, ledgerPath) {
   assertExactKeys(ownerManifest, ["issue_scope", "owners"], `${ledgerPath} ${featureId}`)
   assertExactKeys(ownerManifest.issue_scope, ["status", "references"], `${ledgerPath} ${featureId} issue_scope`)
@@ -219,10 +243,11 @@ export async function discoverCatalogFeatures(root, { readJson, sourceInputs }) 
       throw new Error(`unknown ledger status for ${feature.id}: ${ledgerEntry.status}`)
     }
     const specification = path.posix.join("docs/wikidot-specifications", feature.specification)
-    const documentationEvidence = (ledgerEntry.documentation_evidence ?? []).map((entry) =>
-      entry.startsWith("docs/")
-        ? entry
-        : path.posix.join("docs/wikidot-specifications", entry)
+    const documentationEvidence = repositoryDocumentationEvidence(
+      ledgerEntry.documentation_evidence
+    )
+    const liveOracleEvidence = repositoryDocumentationEvidence(
+      ledgerEntry.live_oracle_evidence
     )
     const ownerManifest = ownerFeaturePrefixes.some((prefix) => specification.startsWith(prefix))
       ? await validateCatalogOwnerRecords(
@@ -241,7 +266,7 @@ export async function discoverCatalogFeatures(root, { readJson, sourceInputs }) 
         publicReference: [specification],
         issues: ownerManifest?.issue_scope.references ?? [],
         tests: testReferences(ledgerEntry.tests),
-        evidence: phase("available", [specification, ...documentationEvidence, ...(ledgerEntry.live_oracle_evidence ?? [])]),
+        evidence: phase("available", [specification, ...documentationEvidence, ...liveOracleEvidence]),
         source: phase(ledgerEntry.status, ledgerEntry.implementation_files ?? []),
         implementationOwnerRecords: ownerManifest?.owners ?? []
       })
