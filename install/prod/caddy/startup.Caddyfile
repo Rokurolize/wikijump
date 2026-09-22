@@ -1,0 +1,11 @@
+{
+	local_certs
+	skip_install_trust
+}
+
+# A fresh local startup state on every boot; never resume saved application routes.
+https://*.wikijump.localhost, https://wikijump.localhost,
+https://*.wjfiles.localhost, https://wjfiles.localhost {
+	header Cache-Control no-store
+	respond "Wikijump is starting" 503
+}

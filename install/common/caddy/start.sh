@@ -13,6 +13,10 @@ chown daemon /run/wikijump/deepwell-authorization-header
 chmod 600 /run/wikijump/deepwell-authorization-header
 unset DEEPWELL_RPC_TOKEN
 
+if [ "${WIKIJUMP_STARTUP_READINESS:-false}" = true ]; then
+	exec /usr/local/bin/wikijump-startup-local
+fi
+
 # If deepwell isn't available yet, or is failing for an unknown reason,
 # then use the provisional Caddyfile so at least Komodo is reachable
 # and a web server is running.
