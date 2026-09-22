@@ -1,5 +1,6 @@
 import http from "node:http"
 import { pathToFileURL } from "node:url"
+import { createStartupReadiness, probeStartupDeepwell } from "./startup-readiness.js"
 
 import { createArticleResponseFastPathHandler } from "./article-response-fast-path.js"
 import { createMemoryArticleResponseFenceCache } from "./src/lib/server/cache/article-response/index.js"
@@ -9,9 +10,17 @@ import { createArticleResponseCacheStores } from "./src/lib/server/cache/article
 export const createFramerailHttpServer = ({
   fastPathHandler,
   fenceCache,
-  closeResources = () => {}
+  closeResources = () => {},
+  readiness
 }) => {
   const server = http.createServer((request, response) => {
+    if (readiness && (!readiness.isReady() || request.url === "/-/startup-ready")) {
+      response.statusCode = readiness.isReady() ? 200 : 503
+      response.setHeader("Cache-Control", "no-store")
+      response.setHeader("Content-Type", "text/plain; charset=utf-8")
+      response.end(readiness.isReady() ? "Ready\n" : "Wikijump is starting\n")
+      return
+    }
     void fastPathHandler(request, response).catch((error) => {
       response.statusCode = 500
       response.end(error instanceof Error ? error.message : "Internal Server Error")
@@ -19,6 +28,7 @@ export const createFramerailHttpServer = ({
   })
 
   const closeServer = () => {
+    readiness?.close()
     fenceCache.close()
     closeResources()
     server.close()
@@ -29,7 +39,8 @@ export const createFramerailHttpServer = ({
 
 export const createFramerailServerRuntime = ({
   handler,
-  cacheStores = createArticleResponseCacheStores()
+  cacheStores = createArticleResponseCacheStores(),
+  readiness
 }) => {
   const { responseStore, tokenStore } = cacheStores
   const resetRuntimeStores = configureArticleResponseCacheStores(cacheStores)
@@ -44,6 +55,7 @@ export const createFramerailServerRuntime = ({
     fenceCache
   })
   const lifecycle = createFramerailHttpServer({
+    readiness,
     fastPathHandler,
     fenceCache,
     closeResources: () => {
@@ -60,10 +72,14 @@ export const startFramerailServer = async () => {
   const path = process.env.SOCKET_PATH
   const host = process.env.HOST ?? "0.0.0.0"
   const port = process.env.PORT ?? "3000"
-  const lifecycle = createFramerailServerRuntime({ handler })
+  const readiness = process.env.WIKIJUMP_STARTUP_READINESS === "true"
+    ? createStartupReadiness({ probe: probeStartupDeepwell })
+    : undefined
+  const lifecycle = createFramerailServerRuntime({ handler, readiness })
 
   lifecycle.server.listen(path ? { path } : { host, port }, () => {
     console.log(`Listening on ${path || `http://${host}:${port}`}`)
+    void readiness?.start()
   })
   process.on("SIGTERM", lifecycle.closeServer)
   process.on("SIGINT", lifecycle.closeServer)

@@ -755,8 +755,12 @@ mod tests {
             "title:basic_error_file_root",
         );
 
-        let site_slug_requests = requests_by_method(&requests, "basic_error_missing_site_slug");
-        assert_eq!(site_slug_requests[0]["params"]["locales"], json!(["ja", "en"]));
+        let site_slug_requests =
+            requests_by_method(&requests, "basic_error_missing_site_slug");
+        assert_eq!(
+            site_slug_requests[0]["params"]["locales"],
+            json!(["ja", "en"])
+        );
         assert_eq!(site_slug_requests[0]["params"]["site_slug"], "scp-wiki");
 
         let custom_domain_requests =

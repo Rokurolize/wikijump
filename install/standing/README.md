@@ -9,6 +9,31 @@ the floor release. The hermetic compatibility suite checks both local/dev
 Dockerfiles against that policy so a future base-image cleanup cannot silently
 turn a standing activation into an unreadable-cache rollback incident.
 
+## Startup topology
+
+Warm startup latency was dominated by Docker bridge/NAT and published-port
+programming per container, not by application initialization. In this topology
+only Caddy is attached to the Docker bridge and publishes host ports
+(`80/tcp`, `443/tcp`, `443/udp`). Database, files, cache, Deepwell, Framerail,
+and WWS share Caddy's network namespace with `network_mode: "service:caddy"`, so
+the engine programs one network endpoint instead of seven.
+
+Inter-service traffic therefore uses `127.0.0.1`, not Compose service DNS, and
+Caddy resolves the application upstreams through `extra_hosts`. The application
+services no longer expose host ports; inspect them through the namespace (for
+example `docker compose exec caddy ...`). Recreating Caddy restarts the services
+that share its namespace, so a Tier 1 refresh recreates only Deepwell,
+Framerail, and WWS and never stops Caddy.
+
+Caddy, Framerail, and WWS run with `WIKIJUMP_STARTUP_READINESS=true`: they serve
+an explicit `Cache-Control: no-store` 503 until a real authenticated Deepwell
+`ping` RPC succeeds, then Caddy atomically loads the Deepwell-generated routes.
+Deepwell keeps its `depends_on` on the base services so migrations run exactly
+once against a healthy database, and it retries only transient Redis/Valkey
+startup unavailability (`BusyLoading`, connection refusal) in-process instead of
+exiting into a Docker restart loop. Startup 503s are acceptable; partial HTML,
+stale application routes, and false 200s are not.
+
 There are two operational tiers. Routine application refreshes use Tier 1. Tier 2 is reserved for operations that can change a named volume attachment, the Compose project name, the network name, or edge routing.
 
 ## Tier 1: routine merged-head refresh

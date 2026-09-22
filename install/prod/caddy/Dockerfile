@@ -13,6 +13,8 @@ RUN apk add --no-cache curl jq
 # Install files
 COPY ./install/prod/caddy/Caddyfile /etc/caddy/Caddyfile
 COPY ./install/prod/caddy/start.sh /usr/local/bin/wikijump-start-caddy
+COPY --chmod=755 ./install/prod/caddy/startup-local.sh /usr/local/bin/wikijump-startup-local
+COPY ./install/prod/caddy/startup.Caddyfile /etc/caddy/startup.Caddyfile
 COPY ./install/prod/caddy/health-check.sh /usr/local/bin/wikijump-health-check
 COPY ./install/prod/caddy/generate-caddyfile.sh /usr/local/bin/wikijump-generate-caddyfile
 COPY ./install/prod/caddy/update-caddyfile.sh /usr/local/bin/wikijump-update-caddyfile
