@@ -34,7 +34,7 @@
     "@types/prismjs": "1.26.6",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-svelte": "^3.22.0",
+    "eslint-plugin-svelte": "^3.23.0",
     "globals": "^17.9.0",
     "jiti": "^2.7.0",
     "postcss": "^8.5.25",
