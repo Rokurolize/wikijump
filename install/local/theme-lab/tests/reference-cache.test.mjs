@@ -147,7 +147,7 @@ test("acquire is once-then-local and replay serves rewritten content", async (t)
   const html = await (await fetch(replay.entryUrl)).text();
   assert.match(html, /\/o\/[0-9a-f]{64}/u);
   assert.doesNotMatch(html, /https:\/\/example\.com/u);
-  assert.doesNotMatch(html, new RegExp(fixture.origin.replace(/[.:/]/gu, "\\$&")));
+  assert.ok(!html.includes(fixture.origin), "rewritten HTML must not reference the fixture origin");
 
   const cssDigest = html.match(/\/o\/([0-9a-f]{64})/u)[1];
   const css = await (await fetch(`${replay.origin}/o/${cssDigest}`)).text();

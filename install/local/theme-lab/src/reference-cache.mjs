@@ -137,6 +137,18 @@ export function extractHtmlReferences(html, baseUrl) {
     seen.add(url);
     references.push(url);
   };
+  // Only http(s) references are ever fetched. Resolving first means data:,
+  // javascript:, vbscript:, file:, and other schemes are rejected uniformly.
+  const pushResolved = (raw) => {
+    if (!raw || raw.startsWith("#")) return;
+    let resolved;
+    try {
+      resolved = resolveUrl(baseUrl, raw);
+    } catch {
+      return;
+    }
+    if (resolved.startsWith("http:") || resolved.startsWith("https:")) push(resolved);
+  };
   for (const {pattern, srcset} of HTML_REFERENCE_ATTRIBUTES) {
     let match;
     pattern.lastIndex = 0;
@@ -144,11 +156,10 @@ export function extractHtmlReferences(html, baseUrl) {
       const value = match[1];
       if (srcset) {
         for (const candidate of value.split(",")) {
-          const url = candidate.trim().split(/\s+/u)[0];
-          if (url && !url.startsWith("data:")) push(resolveUrl(baseUrl, url));
+          pushResolved(candidate.trim().split(/\s+/u)[0]);
         }
-      } else if (!value.startsWith("data:") && !value.startsWith("#") && !value.startsWith("javascript:")) {
-        push(resolveUrl(baseUrl, value));
+      } else {
+        pushResolved(value);
       }
     }
   }

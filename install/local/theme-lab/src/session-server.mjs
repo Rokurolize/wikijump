@@ -462,22 +462,6 @@ export function createSession({
   return session;
 }
 
-const OPERATIONS = {
-  ping: () => ({ok: true}),
-  open: (session, request) => session.open(request),
-  set_css: (session, request) => session.setCss(request),
-  clear_css: (session) => session.clearCss(),
-  preview: (session, request) => session.preview(request),
-  torture: (session, request) => session.torture(request),
-  check: (session, request) => session.check(request),
-  reference_load: (session, request) => session.loadReference(request),
-  viewport: (session, request) => session.setViewport(request),
-  snapshot: (session, request) => session.snapshot(request),
-  diff: (session, request) => session.diff(request),
-  screenshot: (session, request) => session.screenshot(request),
-  status: (session) => session.status(),
-};
-
 export async function startSessionServer({
   socketPath,
   chromium,
@@ -544,10 +528,36 @@ async function handleLine(session, line) {
   } catch (error) {
     return {ok: false, error: {code: "invalid_json", message: `invalid JSON request: ${error.message}`}};
   }
-  const operation = OPERATIONS[request.op];
-  if (!operation) return {ok: false, error: {code: "unknown_operation", message: `unknown operation: ${String(request.op)}`}};
-  const result = await operation(session, request);
-  return {ok: true, result};
+  switch (request.op) {
+    case "ping":
+      return {ok: true, result: {ok: true}};
+    case "open":
+      return {ok: true, result: await session.open(request)};
+    case "set_css":
+      return {ok: true, result: await session.setCss(request)};
+    case "clear_css":
+      return {ok: true, result: await session.clearCss()};
+    case "preview":
+      return {ok: true, result: await session.preview(request)};
+    case "torture":
+      return {ok: true, result: await session.torture(request)};
+    case "check":
+      return {ok: true, result: await session.check(request)};
+    case "reference_load":
+      return {ok: true, result: await session.loadReference(request)};
+    case "viewport":
+      return {ok: true, result: await session.setViewport(request)};
+    case "snapshot":
+      return {ok: true, result: await session.snapshot(request)};
+    case "diff":
+      return {ok: true, result: await session.diff(request)};
+    case "screenshot":
+      return {ok: true, result: await session.screenshot(request)};
+    case "status":
+      return {ok: true, result: await session.status()};
+    default:
+      return {ok: false, error: {code: "unknown_operation", message: `unknown operation: ${String(request.op)}`}};
+  }
 }
 
 export {DEFAULT_PROPERTIES, DEFAULT_VIEWPORTS};
