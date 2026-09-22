@@ -40,6 +40,7 @@ import {
   selectorDiagnosis,
   summarizeComputedStyleDiffs,
 } from "./css-probe.mjs";
+import {startReferenceReplay} from "./reference-replay.mjs";
 import {runTortureCorpus} from "./torture-corpus.mjs";
 import {buildVerdict, expandVerdict} from "./verdict.mjs";
 
@@ -70,15 +71,23 @@ const DEFAULT_VIEWPORTS = [
   {id: "mobile", width: 390, height: 844},
 ];
 
-export function createSession({chromium, browser, previewClient = null, pages = {candidate: null, reference: null}}) {
+export function createSession({
+  chromium,
+  browser,
+  previewClient = null,
+  referenceAssets = null,
+  pages = {candidate: null, reference: null},
+}) {
   const session = {
     chromium,
     browser,
     previewClient,
+    referenceAssets,
+    replays: new Map(),
     pages,
     cssId: "theme-lab-live-css",
     pristine: null,
-    referenceCache: null,
+    referenceMeasurementCache: null,
     async open({target = "candidate", url, viewport = null}) {
       let page = pages[target];
       if (!page) {
@@ -96,6 +105,28 @@ export function createSession({chromium, browser, previewClient = null, pages = 
       if (!pages.candidate || !session.pristine) return {restored: false};
       const restored = await restorePristineContent(pages.candidate, session.pristine);
       return {restored};
+    },
+    // Acquire (cache-first) a foreign reference and point the reference tab at
+    // its loopback replay. `offline: true` forbids any network access.
+    async loadReference({url, offline = false}) {
+      if (!session.referenceAssets) fail("no_reference_cache", "reference cache is not configured");
+      const acquire = await session.referenceAssets.acquire(url, {offline});
+      let replay = session.replays.get(url);
+      if (!replay) {
+        replay = await startReferenceReplay({cache: session.referenceAssets, rootUrl: url});
+        session.replays.set(url, replay);
+      }
+      const navigated = await session.open({target: "reference", url: replay.entryUrl});
+      return {
+        root_url: url,
+        entry_url: replay.entryUrl,
+        entry: acquire.entry,
+        asset_count: acquire.asset_count,
+        external_requests: acquire.external_requests,
+        cache_hits: acquire.cache_hits,
+        offline,
+        url: navigated.url,
+      };
     },
     async setCss({css, tortureSiteId = null, tortureSyntaxOnly = false}) {
       if (!pages.candidate) fail("no_candidate_page", "no candidate page is open; run open --url <candidate>");
@@ -174,7 +205,7 @@ export function createSession({chromium, browser, previewClient = null, pages = 
       const currentReferenceUrl = pages.reference.url();
       const selectorsKey = selectors?.length ? JSON.stringify(selectors) : null;
       const propertiesKey = properties.join(",");
-      const cache = session.referenceCache;
+      const cache = session.referenceMeasurementCache;
       if (
         !cache ||
         cache.url !== currentReferenceUrl ||
@@ -184,7 +215,7 @@ export function createSession({chromium, browser, previewClient = null, pages = 
         const rules = await collectStyleSheetRules(pages.reference);
         const list = selectors?.length ? selectors : collectSelectorTexts(rules).slice(0, 400);
         const counts = (await collectSelectorMatches(pages.reference, list)).counts;
-        session.referenceCache = {
+        session.referenceMeasurementCache = {
           url: currentReferenceUrl,
           selectorsKey,
           propertiesKey,
@@ -194,7 +225,7 @@ export function createSession({chromium, browser, previewClient = null, pages = 
           elements: new Map(),
         };
       }
-      const referenceCache = session.referenceCache;
+      const referenceCache = session.referenceMeasurementCache;
       const list = referenceCache.list;
       const referenceMatches = referenceCache.counts;
       const candidateMatches = (await collectSelectorMatches(pages.candidate, list)).counts;
@@ -258,6 +289,7 @@ export function createSession({chromium, browser, previewClient = null, pages = 
       title = "Preview",
       syntaxOnly = false,
       referenceUrl = null,
+      referenceOffline = false,
       selectors = null,
       siteId = null,
       torture = false,
@@ -293,8 +325,11 @@ export function createSession({chromium, browser, previewClient = null, pages = 
       let reference = null;
       if (referenceUrl) {
         const step = performance.now();
-        reference = await session.diff({referenceUrl, selectors, properties, max});
+        const loaded = await session.loadReference({url: referenceUrl, offline: referenceOffline});
+        reference = await session.diff({referenceUrl: loaded.entry_url, selectors, properties, max});
         timing.reference_ms = Number((performance.now() - step).toFixed(1));
+        timing.reference_acquire_ms = Number((performance.now() - step).toFixed(1));
+        full.reference_load = loaded;
         full.selector_rows = reference.selectors;
         full.computed_style_rows = reference.computed_styles?.top ?? [];
       }
@@ -334,6 +369,10 @@ export function createSession({chromium, browser, previewClient = null, pages = 
       };
     },
     async close() {
+      for (const replay of session.replays.values()) {
+        await replay.close().catch(() => {});
+      }
+      session.replays.clear();
       for (const page of Object.values(pages)) {
         if (page) await closePage(page);
       }
@@ -351,6 +390,7 @@ const OPERATIONS = {
   preview: (session, request) => session.preview(request),
   torture: (session, request) => session.torture(request),
   check: (session, request) => session.check(request),
+  reference_load: (session, request) => session.loadReference(request),
   viewport: (session, request) => session.setViewport(request),
   snapshot: (session, request) => session.snapshot(request),
   diff: (session, request) => session.diff(request),
@@ -366,6 +406,7 @@ export async function startSessionServer({
   headless = true,
   candidateUrl = null,
   previewClient = null,
+  referenceAssets = null,
 }) {
   assertSocketPath(socketPath);
   await prepareSocketForStart(socketPath);
@@ -375,7 +416,7 @@ export async function startSessionServer({
   let server = null;
   try {
     browser = await launchBrowser({chromium, cdpEndpoint, executablePath, headless});
-    session = createSession({chromium, browser, previewClient});
+    session = createSession({chromium, browser, previewClient, referenceAssets});
     if (candidateUrl) await session.open({target: "candidate", url: candidateUrl});
     server = net.createServer((socket) => {
       let buffer = "";

@@ -22,6 +22,7 @@ import {loadChromium} from "../src/browser-lab.mjs";
 import {stopDaemon} from "../src/daemon.mjs";
 import {createDeepwellPreviewClient} from "../src/deepwell-preview.mjs";
 import {ThemeLabError} from "../src/errors.mjs";
+import {ReferenceCache, defaultCacheDir} from "../src/reference-cache.mjs";
 import {startSessionServer} from "../src/session-server.mjs";
 
 function parseArgs(argv) {
@@ -92,6 +93,10 @@ async function serve(args) {
       "warning: DEEPWELL_RPC_TOKEN is not set; preview/torture/check will report no_preview_client\n",
     );
   }
+  const referenceAssets = new ReferenceCache({
+    cacheDir: args["cache-dir"] ? path.resolve(args["cache-dir"]) : defaultCacheDir(),
+    allowPrivate: args["allow-private"] === true,
+  });
   const server = await startSessionServer({
     socketPath,
     chromium,
@@ -100,6 +105,7 @@ async function serve(args) {
     headless: args["headed"] !== true,
     candidateUrl: args["candidate-url"] ?? null,
     previewClient,
+    referenceAssets,
   });
   process.stdout.write(
     `${JSON.stringify({
@@ -132,7 +138,7 @@ async function main() {
   const args = parseArgs(rest);
   if (!command || command === "help" || args.help) {
     process.stdout.write(
-      "commands: serve | open | check | css | clear-css | preview | torture | viewport | snapshot | diff | screenshot | status | stop\n",
+      "commands: serve | open | check | css | clear-css | preview | torture | reference | viewport | snapshot | diff | screenshot | status | stop\n",
     );
     return 0;
   }
@@ -199,12 +205,16 @@ async function main() {
       title: args.title ?? "Preview",
       syntaxOnly: args["syntax-only"] === true,
       referenceUrl: args.reference ?? args["reference-url"] ?? null,
+      referenceOffline: args.offline === true,
       selectors: args.selectors ? readSelectors(args.selectors) : null,
       siteId,
       torture: args["no-torture"] !== true && siteId !== null,
       viewports: args["no-viewports"] !== true,
       verbose: args.verbose === true || args["json-full"] === true,
     };
+  } else if (command === "reference") {
+    if (!args.url) throw new ThemeLabError("invalid_reference_url", "reference requires --url");
+    request = {op: "reference_load", url: args.url, offline: args.offline === true};
   } else if (command === "viewport") {
     const viewport = parseViewport(args.size ?? args.viewport);
     request = {op: "viewport", target: args.target ?? "candidate", ...viewport};

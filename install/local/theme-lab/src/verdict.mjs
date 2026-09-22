@@ -116,7 +116,7 @@ export function buildVerdict({
     style_changes: styleChanges,
     reference: reference
       ? {
-          url: reference.url ?? null,
+          url: reference.reference_url ?? reference.url ?? null,
           reference_selector_count: reference.reference_selector_count ?? null,
           missing: reference.diagnosis?.missing_count ?? 0,
           collapsed: reference.diagnosis?.collapsed_count ?? 0,
