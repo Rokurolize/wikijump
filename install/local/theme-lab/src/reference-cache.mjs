@@ -249,6 +249,7 @@ export class ReferenceCache {
     this.manifest = null;
     this.externalRequests = 0;
     this.cacheHits = 0;
+    this.failedAssets = [];
   }
 
   get manifestPath() {
@@ -366,6 +367,7 @@ export class ReferenceCache {
     await this.load();
     this.externalRequests = 0;
     this.cacheHits = 0;
+    this.failedAssets = [];
     const urlToLocal = new Map();
     const root = await this.fetchRaw(rootUrl, {offline});
     const rootText = root.bytes.toString("utf8");
@@ -384,7 +386,12 @@ export class ReferenceCache {
         record = await this.fetchRaw(url, {offline});
       } catch (error) {
         if (error?.code === "reference_offline_miss") continue;
-        throw error;
+        // Optional subresources may 404 or time out; keep the snapshot local by
+        // pointing them at the replay server's missing path instead of the
+        // foreign origin.
+        this.failedAssets.push({url, code: error?.code ?? "reference_error"});
+        urlToLocal.set(url, "/missing");
+        continue;
       }
       assetCount += 1;
       if (contentTypeIsCss(record.content_type)) {
@@ -408,6 +415,7 @@ export class ReferenceCache {
       entry: `/o/${entry.digest}`,
       created_at: new Date().toISOString(),
       assets: urlToLocal.size,
+      failed_assets: this.failedAssets.length,
     };
     await this.save();
     return {
@@ -416,6 +424,8 @@ export class ReferenceCache {
       asset_count: urlToLocal.size,
       external_requests: this.externalRequests,
       cache_hits: this.cacheHits,
+      failed_assets: this.failedAssets.map((entry) => entry.url).slice(0, 20),
+      failed_asset_count: this.failedAssets.length,
     };
   }
 
@@ -431,7 +441,9 @@ export class ReferenceCache {
         record = await this.fetchRaw(entry.url, {offline});
       } catch (error) {
         if (error?.code === "reference_offline_miss") continue;
-        throw error;
+        this.failedAssets.push({url: entry.url, code: error?.code ?? "reference_error"});
+        map.set(entry.url, "/missing");
+        continue;
       }
       if (contentTypeIsCss(record.content_type)) {
         const nested = record.bytes.toString("utf8");

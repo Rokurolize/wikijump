@@ -135,6 +135,7 @@ export function createSession({
         asset_count: acquire.asset_count,
         external_requests: acquire.external_requests,
         cache_hits: acquire.cache_hits,
+        failed_asset_count: acquire.failed_asset_count ?? 0,
         offline,
         url: navigated.url,
       };
