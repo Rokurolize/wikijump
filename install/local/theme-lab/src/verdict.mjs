@@ -139,8 +139,11 @@ export function buildVerdict({
   const hasError = issues.some((issue) => issue.severity === "error");
   const hasWarn = issues.some((issue) => issue.severity === "warn");
   const styleChanges = styleChangesFromComputed(reference?.computed_styles, limits.styleChanges);
+  // Geometry/font changes are not errors, but they should still raise the
+  // verdict to "warn" so an agent notices them without a failure.
+  const hasTortureChanges = (torture?.changed_component_count ?? 0) > 0;
 
-  const verdict = hasError ? "fail" : hasWarn || styleChanges.length > 0 ? "warn" : "pass";
+  const verdict = hasError ? "fail" : hasWarn || styleChanges.length > 0 || hasTortureChanges ? "warn" : "pass";
 
   return {
     verdict,

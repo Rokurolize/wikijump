@@ -54,6 +54,9 @@ test("buildVerdict fails on error, warns on style-only change, passes clean", ()
 
   const pass = buildVerdict({reference: {diagnosis: {missing: [], collapsed: [], expanded: [], missing_count: 0}}});
   assert.equal(pass.verdict, "pass");
+
+  const tortureChange = buildVerdict({torture: {verdict: "pass", changed_component_count: 3, issues: []}});
+  assert.equal(tortureChange.verdict, "warn");
 });
 
 test("buildVerdict surfaces torture and reference summaries", () => {
