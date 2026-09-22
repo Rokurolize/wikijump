@@ -54,6 +54,7 @@ import {
 import {TORTURE_VIEWPORTS, runTortureCorpus} from "./torture-corpus.mjs";
 import {buildVerdict, expandVerdict} from "./verdict.mjs";
 import {captureVisualPair} from "./visual-diff.mjs";
+import {inspectCandidateAssets, materializeCandidateCssAssets} from "./local-assets.mjs";
 
 const DEFAULT_PROPERTIES = [
   "display",
@@ -78,6 +79,7 @@ const DEFAULT_PROPERTIES = [
 
 const DEFAULT_VIEWPORTS = [
   {id: "desktop", width: 1440, height: 1000},
+  {id: "laptop", width: 1024, height: 768},
   {id: "tablet", width: 768, height: 1024},
   {id: "mobile", width: 390, height: 844},
 ];
@@ -87,6 +89,8 @@ export function createSession({
   browser,
   previewClient = null,
   referenceAssets = null,
+  localAssets = null,
+  sidebarHtml = null,
   pages = {candidate: null, reference: null},
 }) {
   const session = {
@@ -94,20 +98,36 @@ export function createSession({
     browser,
     previewClient,
     referenceAssets,
+    localAssets,
+    sidebarHtml,
     replays: new Map(),
     pages,
     cssId: "theme-lab-live-css",
     pristine: null,
     referenceMeasurementCache: null,
+    async ensureSidebarFixture() {
+      if (sidebarHtml === null || !pages.candidate) return;
+      const applied = await pages.candidate.evaluate((html) => {
+        const sidebar = document.querySelector("#side-bar");
+        if (!sidebar) return false;
+        if (!sidebar.querySelector(".side-block")) sidebar.innerHTML = html;
+        return true;
+      }, sidebarHtml);
+      if (!applied) fail("missing_candidate_sidebar", "candidate page has no #side-bar for sidebar fixture");
+    },
     async open({target = "candidate", url, viewport = null}) {
       let page = pages[target];
       if (!page) {
-        page = await openPage(browser, {url, viewport});
+        page = await openPage(browser, {url, viewport, localOnly: true});
         pages[target] = page;
       } else if (url && page.url() !== url) {
         await navigate(page, url);
       }
       if (target === "candidate") {
+        if (sidebarHtml !== null) {
+          await page.waitForLoadState("load");
+          await session.ensureSidebarFixture();
+        }
         session.pristine = await capturePristineContent(page);
       }
       return {target, url: page.url()};
@@ -136,14 +156,19 @@ export function createSession({
         external_requests: acquire.external_requests,
         cache_hits: acquire.cache_hits,
         failed_asset_count: acquire.failed_asset_count ?? 0,
+        failed_assets: acquire.failed_assets ?? [],
+        browser_blocked_external_attempts: pages.reference?.__themeLabNetwork?.blocked_external_attempts ?? 0,
+        browser_blocked_urls: pages.reference?.__themeLabNetwork?.blocked_urls ?? [],
         offline,
         url: navigated.url,
       };
     },
     async setCss({css, tortureSiteId = null, tortureSyntaxOnly = false}) {
       if (!pages.candidate) fail("no_candidate_page", "no candidate page is open; run open --url <candidate>");
-      await applyStylesheet(pages.candidate, css, session.cssId);
-      const result = {bytes: Buffer.byteLength(css, "utf8")};
+      const assets = localAssets ? await inspectCandidateAssets(css, localAssets.root) : null;
+      const effectiveCss = localAssets ? await materializeCandidateCssAssets(css, localAssets.root) : css;
+      await applyStylesheet(pages.candidate, effectiveCss, session.cssId);
+      const result = {bytes: Buffer.byteLength(css, "utf8"), assets};
       if (Number.isInteger(tortureSiteId)) {
         result.torture = await session.torture({
           siteId: tortureSiteId,
@@ -165,6 +190,7 @@ export function createSession({
       const applied = await applyPreview(pages.candidate, {
         body: rendered.body,
         styles: rendered.styles,
+        title,
         containerSelector,
       });
       return {
@@ -204,6 +230,33 @@ export function createSession({
       }
       return {target, url: page.url(), rules, selectors: list, selector_counts: counts, selector_errors: errors, elements};
     },
+    async probe({target = "candidate", selector, property, viewport = null}) {
+      const page = pages[target];
+      if (!page) fail(`no_${target}_page`, `no ${target} page is open`);
+      if (!selector || !property) fail("invalid_probe", "probe requires selector and property");
+      if (viewport) await setViewport(page, viewport);
+      const selected = await collectElements(page, {selector, properties: [property], max: 1});
+      const element = selected.elements?.[0] ?? null;
+      if (!element) return {selector, property, matched: 0, viewport, error: selected.error ?? null};
+      const declarations = await collectCascadeDeclarations(page, {selector, property});
+      return {
+        selector,
+        property,
+        matched: 1,
+        viewport,
+        computed: element.style?.[property] ?? null,
+        rect: element.rect,
+        cascade: cascadeDiagnosis({
+          selector,
+          property,
+          candidateValue: element.style?.[property] ?? null,
+          declarations: declarations.declarations,
+          mediaInactive: declarations.media_inactive,
+          inline: declarations.inline,
+          variables: declarations.variables,
+        }),
+      };
+    },
     async diff({referenceUrl = null, selectors = null, properties = DEFAULT_PROPERTIES, max = 60}) {
       if (!pages.candidate) fail("no_candidate_page", "no candidate page is open; run open --url <candidate>");
       if (referenceUrl) {
@@ -242,7 +295,9 @@ export function createSession({
       const referenceMatches = referenceCache.counts;
       const candidateMatches = (await collectSelectorMatches(pages.candidate, list)).counts;
       const selectorRows = rankSelectorDiffs({
-        referenceRules: referenceCache.rules,
+        referenceRules: selectors?.length
+          ? list.map((selector) => referenceCache.rules.find((rule) => rule.selector === selector) ?? {selector, atContext: []})
+          : referenceCache.rules,
         referenceCounts: referenceMatches,
         candidateCounts: candidateMatches,
       });
@@ -365,9 +420,11 @@ export function createSession({
       const timing = {};
       const started = performance.now();
       const full = {};
+      let candidateAssets = null;
 
       // Undo any destructive operation (torture fixture, previous preview)
       // before measuring, so the reference comparison sees the real page.
+      await session.ensureSidebarFixture();
       await session.restoreCandidate();
 
       if (wikitext !== null && wikitext !== undefined) {
@@ -377,14 +434,18 @@ export function createSession({
       }
       if (typeof css === "string") {
         const step = performance.now();
-        await applyStylesheet(candidate, css, session.cssId);
+        candidateAssets = localAssets ? await inspectCandidateAssets(css, localAssets.root) : null;
+        const effectiveCss = localAssets ? await materializeCandidateCssAssets(css, localAssets.root) : css;
+        await applyStylesheet(candidate, effectiveCss, session.cssId);
         timing.css_ms = Number((performance.now() - step).toFixed(1));
       }
 
       let reference = null;
+      let loadedReference = null;
       if (referenceUrl) {
         const step = performance.now();
         const loaded = await session.loadReference({url: referenceUrl, offline: referenceOffline});
+        loadedReference = loaded;
         reference = await session.diff({referenceUrl: loaded.entry_url, selectors, properties, max});
         timing.reference_ms = Number((performance.now() - step).toFixed(1));
         timing.reference_acquire_ms = Number((performance.now() - step).toFixed(1));
@@ -431,6 +492,27 @@ export function createSession({
         viewports: viewportOverflow,
         visual: visualResult,
         timing,
+        assets: loadedReference
+          ? {
+              external_requests: loadedReference.external_requests,
+              cache_hits: loadedReference.cache_hits,
+              failed: loadedReference.failed_assets.map(({url, code}) => ({url, code})),
+              browser_blocked_external_attempts: pages.reference?.__themeLabNetwork?.blocked_external_attempts ?? 0,
+              browser_blocked_urls: pages.reference?.__themeLabNetwork?.blocked_urls ?? [],
+              candidate: candidateAssets,
+              candidate_request_failures: candidate?.__themeLabNetwork?.failed_requests.filter((row) =>
+                row.url.startsWith("data:") || row.url.includes("/assets/"),
+              ) ?? [],
+            }
+          : candidateAssets
+            ? {
+                candidate: candidateAssets,
+                candidate_request_failures: candidate?.__themeLabNetwork?.failed_requests.filter((row) =>
+                  row.url.startsWith("data:") || row.url.includes("/assets/"),
+                ) ?? [],
+              }
+            : null,
+        extraIssues: candidateAssets?.missing.map((name) => ({severity: "error", kind: "candidate_asset_missing", asset: name})) ?? [],
       });
       return verbose ? expandVerdict(verdict, full) : verdict;
     },
@@ -441,10 +523,16 @@ export function createSession({
     },
     async status() {
       return {
+        asset_dir: localAssets?.root ?? null,
         pages: Object.fromEntries(
           Object.entries(pages)
             .filter(([, page]) => Boolean(page))
             .map(([name, page]) => [name, page.url()]),
+        ),
+        failed_requests: Object.fromEntries(
+          Object.entries(pages)
+            .filter(([, page]) => Boolean(page))
+            .map(([name, page]) => [name, page.__themeLabNetwork?.failed_requests ?? []]),
         ),
       };
     },
@@ -471,6 +559,8 @@ export async function startSessionServer({
   candidateUrl = null,
   previewClient = null,
   referenceAssets = null,
+  assetDir = null,
+  sidebarHtml = null,
 }) {
   assertSocketPath(socketPath);
   await prepareSocketForStart(socketPath);
@@ -478,9 +568,11 @@ export async function startSessionServer({
   let browser = null;
   let session = null;
   let server = null;
+  let localAssets = null;
   try {
     browser = await launchBrowser({chromium, cdpEndpoint, executablePath, headless});
-    session = createSession({chromium, browser, previewClient, referenceAssets});
+    if (assetDir) localAssets = {root: await fs.realpath(assetDir)};
+    session = createSession({chromium, browser, previewClient, referenceAssets, localAssets, sidebarHtml});
     if (candidateUrl) await session.open({target: "candidate", url: candidateUrl});
     server = net.createServer((socket) => {
       let buffer = "";
@@ -549,6 +641,8 @@ async function handleLine(session, line) {
       return {ok: true, result: await session.setViewport(request)};
     case "snapshot":
       return {ok: true, result: await session.snapshot(request)};
+    case "probe":
+      return {ok: true, result: await session.probe(request)};
     case "diff":
       return {ok: true, result: await session.diff(request)};
     case "screenshot":

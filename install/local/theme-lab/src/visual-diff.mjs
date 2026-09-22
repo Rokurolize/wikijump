@@ -69,23 +69,28 @@ export async function captureVisualPair({
 }) {
   await fs.mkdir(outputDir, {recursive: true});
   const results = {};
+  const comparisons = [];
   for (const viewport of viewports) {
-    await setViewport(candidatePage, viewport);
     const candidatePath = path.join(outputDir, `candidate-${viewport.id}.png`);
-    await screenshot(candidatePage, {path: candidatePath, fullPage});
     let referencePath = null;
-    let comparison = null;
     if (referencePage) {
-      await setViewport(referencePage, viewport);
       referencePath = path.join(outputDir, `reference-${viewport.id}.png`);
-      await screenshot(referencePage, {path: referencePath, fullPage});
-      try {
-        comparison = await comparePngRmse(referencePath, candidatePath, {threshold});
-      } catch (error) {
-        comparison = {status: "unavailable", error: String(error.message)};
-      }
+      await Promise.all([setViewport(candidatePage, viewport), setViewport(referencePage, viewport)]);
+      await Promise.all([
+        screenshot(candidatePage, {path: candidatePath, fullPage}),
+        screenshot(referencePage, {path: referencePath, fullPage}),
+      ]);
+      const comparison = comparePngRmse(referencePath, candidatePath, {threshold}).catch((error) => ({
+        status: "unavailable",
+        error: String(error.message),
+      }));
+      comparisons.push(comparison.then((value) => { results[viewport.id].comparison = value; }));
+    } else {
+      await setViewport(candidatePage, viewport);
+      await screenshot(candidatePage, {path: candidatePath, fullPage});
     }
-    results[viewport.id] = {candidate_path: candidatePath, reference_path: referencePath, comparison};
+    results[viewport.id] = {candidate_path: candidatePath, reference_path: referencePath, comparison: null};
   }
+  await Promise.all(comparisons);
   return results;
 }

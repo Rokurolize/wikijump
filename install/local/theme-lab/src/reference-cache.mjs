@@ -170,6 +170,11 @@ export function extractHtmlReferences(html, baseUrl) {
     const {assets} = extractCssReferences(value, baseUrl);
     for (const asset of assets) push(asset.url);
   }
+  const styleElement = /<style\b[^>]*>([\s\S]*?)<\/style\s*>/giu;
+  while ((match = styleElement.exec(html)) !== null) {
+    const {imports, assets} = extractCssReferences(match[1], baseUrl);
+    for (const entry of [...imports, ...assets]) push(entry.url);
+  }
   return references;
 }
 
@@ -230,6 +235,9 @@ export function rewriteHtmlReferences(html, baseUrl, urlToLocal) {
     });
     return `${prefix}${quote}${rewritten}${quote}`;
   });
+  output = output.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style\s*>)/giu, (whole, open, css, close) =>
+    `${open}${rewriteCssReferences(css, baseUrl, urlToLocal)}${close}`,
+  );
   return output;
 }
 
@@ -281,6 +289,7 @@ export class ReferenceCache {
     this.manifest.objects ??= {};
     this.manifest.urls ??= {};
     this.manifest.snapshots ??= {};
+    this.manifest.failures ??= {};
     return this.manifest;
   }
 
@@ -331,7 +340,6 @@ export class ReferenceCache {
       content_type: fetched.content_type,
       fetched_at: new Date().toISOString(),
     };
-    this.externalRequests += 1;
     return {...stored, bytes: fetched.bytes, from_cache: false};
   }
 
@@ -344,6 +352,7 @@ export class ReferenceCache {
       const timer = setTimeout(() => controller.abort(), this.limits.timeoutMs);
       let response;
       try {
+        this.externalRequests += 1;
         response = await this.#fetchImpl(current, {redirect: "manual", signal: controller.signal});
       } catch (error) {
         fail("reference_fetch_failed", `reference fetch failed for ${current}: ${error.message}`, {url: current});
@@ -379,6 +388,26 @@ export class ReferenceCache {
     this.externalRequests = 0;
     this.cacheHits = 0;
     this.failedAssets = [];
+    const retained = this.manifest.snapshots[rootUrl];
+    if (retained?.replay_complete === true && Array.isArray(retained.object_digests)) {
+      for (const digest of retained.object_digests) {
+        try {
+          await fs.access(path.join(this.cacheDir, objectPath(digest)));
+        } catch {
+          fail("reference_cache_corrupt", `cached reference object is missing: ${digest}`, {digest});
+        }
+      }
+      this.cacheHits = 1;
+      return {
+        root_url: rootUrl,
+        entry: retained.entry,
+        asset_count: retained.assets,
+        external_requests: 0,
+        cache_hits: 1,
+        failed_assets: retained.failed_asset_details ?? [],
+        failed_asset_count: retained.failed_assets,
+      };
+    }
     const urlToLocal = new Map();
     const root = await this.fetchRaw(rootUrl, {offline});
     const rootText = root.bytes.toString("utf8");
@@ -390,17 +419,28 @@ export class ReferenceCache {
       const {url, depth} = pending.shift();
       if (visited.has(url)) continue;
       visited.add(url);
-      if (assetCount >= this.limits.maxAssets) break;
-      if (depth > this.limits.maxImportDepth) continue;
+      if (assetCount >= this.limits.maxAssets || depth > this.limits.maxImportDepth) {
+        const code = assetCount >= this.limits.maxAssets ? "reference_asset_limit" : "reference_import_depth";
+        this.failedAssets.push({url, code, message: `reference asset omitted by ${code}`});
+        urlToLocal.set(url, "/missing");
+        continue;
+      }
+      if (this.manifest.failures[url]) {
+        this.failedAssets.push({url, ...this.manifest.failures[url]});
+        urlToLocal.set(url, "/missing");
+        continue;
+      }
       let record;
       try {
         record = await this.fetchRaw(url, {offline});
       } catch (error) {
-        if (error?.code === "reference_offline_miss") continue;
+        if (error?.code === "reference_offline_miss") throw error;
         // Optional subresources may 404 or time out; keep the snapshot local by
         // pointing them at the replay server's missing path instead of the
         // foreign origin.
-        this.failedAssets.push({url, code: error?.code ?? "reference_error"});
+        const failure = {code: error?.code ?? "reference_error", message: error?.message ?? String(error)};
+        this.manifest.failures[url] = failure;
+        this.failedAssets.push({url, ...failure});
         urlToLocal.set(url, "/missing");
         continue;
       }
@@ -422,11 +462,17 @@ export class ReferenceCache {
     }
     const renderedHtml = rewriteHtmlReferences(rootText, rootUrl, urlToLocal);
     const entry = await this.storeObject(Buffer.from(renderedHtml), "text/html; charset=utf-8", {originalUrl: rootUrl});
+    const objectDigests = [...new Set([entry.digest, ...[...urlToLocal.values()]
+      .filter((value) => value.startsWith("/o/"))
+      .map((value) => value.slice(3))])];
     this.manifest.snapshots[rootUrl] = {
       entry: `/o/${entry.digest}`,
       created_at: new Date().toISOString(),
       assets: urlToLocal.size,
       failed_assets: this.failedAssets.length,
+      failed_asset_details: this.failedAssets.slice(0, 20),
+      replay_complete: true,
+      object_digests: objectDigests,
     };
     await this.save();
     return {
@@ -435,7 +481,7 @@ export class ReferenceCache {
       asset_count: urlToLocal.size,
       external_requests: this.externalRequests,
       cache_hits: this.cacheHits,
-      failed_assets: this.failedAssets.map((entry) => entry.url).slice(0, 20),
+      failed_assets: this.failedAssets.slice(0, 20),
       failed_asset_count: this.failedAssets.length,
     };
   }
@@ -446,13 +492,24 @@ export class ReferenceCache {
     for (const entry of [...imports, ...assets]) {
       if (visited.has(entry.url)) continue;
       visited.add(entry.url);
-      if (depth + 1 > this.limits.maxImportDepth) continue;
+      if (depth + 1 > this.limits.maxImportDepth) {
+        map.set(entry.url, "/missing");
+        this.failedAssets.push({url: entry.url, code: "reference_import_depth", message: "reference CSS import depth exceeded"});
+        continue;
+      }
+      if (this.manifest.failures[entry.url]) {
+        this.failedAssets.push({url: entry.url, ...this.manifest.failures[entry.url]});
+        map.set(entry.url, "/missing");
+        continue;
+      }
       let record;
       try {
         record = await this.fetchRaw(entry.url, {offline});
       } catch (error) {
-        if (error?.code === "reference_offline_miss") continue;
-        this.failedAssets.push({url: entry.url, code: error?.code ?? "reference_error"});
+        if (error?.code === "reference_offline_miss") throw error;
+        const failure = {code: error?.code ?? "reference_error", message: error?.message ?? String(error)};
+        this.manifest.failures[entry.url] = failure;
+        this.failedAssets.push({url: entry.url, ...failure});
         map.set(entry.url, "/missing");
         continue;
       }

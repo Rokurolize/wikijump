@@ -35,13 +35,40 @@ export async function launchBrowser({chromium, cdpEndpoint = null, executablePat
   return chromium.launch({executablePath: executablePath ?? undefined, headless, args});
 }
 
-export async function openPage(browser, {url = "about:blank", viewport = null, ignoreHttpsErrors = true} = {}) {
+export async function openPage(browser, {url = "about:blank", viewport = null, ignoreHttpsErrors = true, localOnly = false} = {}) {
   const context = await browser.newContext({
     ignoreHTTPSErrors: ignoreHttpsErrors,
     ...(viewport ? {viewport} : {}),
   });
+  const network = {blocked_external_attempts: 0, blocked_urls: [], failed_requests: []};
+  if (localOnly) {
+    await context.route("**/*", (route) => {
+      const requestUrl = route.request().url();
+      const parsed = new URL(requestUrl);
+      const host = parsed.hostname.toLowerCase();
+      if (parsed.protocol === "data:" || parsed.protocol === "blob:" || host === "localhost" || host.endsWith(".localhost") || host === "127.0.0.1" || host === "::1") {
+        return route.continue();
+      }
+      network.blocked_external_attempts += 1;
+      if (network.blocked_urls.length < 10 && !network.blocked_urls.includes(requestUrl)) network.blocked_urls.push(requestUrl);
+      return route.abort("blockedbyclient");
+    });
+  }
   const page = await context.newPage();
   page.__themeLabContext = context;
+  page.__themeLabNetwork = network;
+  page.on("requestfailed", (request) => {
+    if (network.failed_requests.length < 30) {
+      const requestUrl = request.url();
+      network.failed_requests.push({url: requestUrl.startsWith("data:") ? requestUrl.slice(0, requestUrl.indexOf(",") + 1) : requestUrl, reason: request.failure()?.errorText ?? "request failed"});
+    }
+  });
+  page.on("response", (response) => {
+    if (response.status() >= 400 && network.failed_requests.length < 30) {
+      const responseUrl = response.url();
+      network.failed_requests.push({url: responseUrl.startsWith("data:") ? responseUrl.slice(0, responseUrl.indexOf(",") + 1) : responseUrl, reason: `HTTP ${response.status()}`});
+    }
+  });
   if (url && url !== "about:blank") {
     await page.goto(url, {waitUntil: "domcontentloaded", timeout: 30_000});
   }
@@ -85,13 +112,17 @@ export async function clearStylesheet(page, id = "theme-lab-live-css") {
 // equivalent of live CSS injection: no navigation, no save, no cache work.
 export async function applyPreview(
   page,
-  {body, styles = [], containerSelector = "#page-content", styleId = "theme-lab-preview-styles"},
+  {body, styles = [], title = null, containerSelector = "#page-content", styleId = "theme-lab-preview-styles"},
 ) {
   return page.evaluate(
-    ({body: html, styles: styleList, containerSelector: selector, styleId: id}) => {
+    ({body: html, styles: styleList, title: previewTitle, containerSelector: selector, styleId: id}) => {
       const container = document.querySelector(selector);
       if (!container) throw new Error(`preview container not found: ${selector}`);
       container.innerHTML = html;
+      if (previewTitle !== null) {
+        const titleElement = document.querySelector("#page-title");
+        if (titleElement) titleElement.textContent = previewTitle;
+      }
       let element = document.getElementById(id);
       if (!element) {
         element = document.createElement("style");
@@ -101,7 +132,7 @@ export async function applyPreview(
       element.textContent = styleList.join("\n");
       return {container: selector, body_bytes: html.length, styles: styleList.length};
     },
-    {body, styles, containerSelector, styleId},
+    {body, styles, title, containerSelector, styleId},
   );
 }
 
@@ -389,6 +420,7 @@ export async function capturePristineContent(
       return {
         container: selector,
         html: container ? container.innerHTML : null,
+        title_html: document.querySelector("#page-title")?.innerHTML ?? null,
         preview_styles: document.getElementById(id)?.textContent ?? null,
       };
     },
@@ -403,9 +435,11 @@ export async function restorePristineContent(
 ) {
   if (!pristine || pristine.html === null) return false;
   await page.evaluate(
-    ({html, previewStyles, containerSelector: selector, styleId: id}) => {
+    ({html, titleHtml, previewStyles, containerSelector: selector, styleId: id}) => {
       const container = document.querySelector(selector);
       if (container) container.innerHTML = html;
+      const title = document.querySelector("#page-title");
+      if (title && titleHtml !== null) title.innerHTML = titleHtml;
       let element = document.getElementById(id);
       if (previewStyles === null) {
         element?.remove();
@@ -418,7 +452,7 @@ export async function restorePristineContent(
       }
       element.textContent = previewStyles;
     },
-    {html: pristine.html, previewStyles: pristine.preview_styles, containerSelector, styleId},
+    {html: pristine.html, titleHtml: pristine.title_html, previewStyles: pristine.preview_styles, containerSelector, styleId},
   );
   return true;
 }

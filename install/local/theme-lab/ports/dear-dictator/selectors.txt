@@ -1,0 +1,19 @@
+#header h1 a
+#header-extra-div-1
+#extra-div-1
+#side-bar
+#side-bar .side-block
+#page-title
+.page-rate-widget-box
+#page-content .page-rate-widget-box
+.chapter
+.kim
+.blockquote
+.yui-navset
+.collapsible-block
+#page-content table
+#content-wrap
+#main-content
+#page-content
+#footer
+#license-area
