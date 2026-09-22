@@ -5,8 +5,8 @@
 // asks for raw detail explicitly.
 
 export const DEFAULT_LIMITS = Object.freeze({
-  topIssues: 20,
-  styleChanges: 20,
+  topIssues: 12,
+  styleChanges: 10,
   selectorRows: 30,
 });
 
@@ -33,7 +33,7 @@ export function issuesFromSelectorDiagnosis(diagnosis) {
   }
   for (const row of diagnosis?.collapsed ?? []) {
     issues.push({
-      severity: "error",
+      severity: "warn",
       kind: "collapsed_selector",
       selector: row.selector,
       reference: row.reference,
@@ -79,7 +79,12 @@ export function issuesFromViewports(viewports) {
 }
 
 export function styleChangesFromComputed(computedStyles, limit = DEFAULT_LIMITS.styleChanges) {
-  return (computedStyles?.top ?? []).slice(0, limit).map((row) => ({
+  const priority = (property) => {
+    if (/^(font-|color$|background-|border-|width$|margin-|padding-)/u.test(property)) return 0;
+    if (property.startsWith("rect.") && property !== "rect.y" && property !== "rect.height") return 1;
+    return 2;
+  };
+  return [...(computedStyles?.top ?? [])].sort((a, b) => priority(a.property) - priority(b.property)).slice(0, limit).map((row) => ({
     anchor: row.anchor,
     property: row.property,
     reference: row.reference,
@@ -97,6 +102,50 @@ export function styleChangesFromComputed(computedStyles, limit = DEFAULT_LIMITS.
         }
       : {}),
   }));
+}
+
+export function nextActions(issues, styleChanges, limit = 5) {
+  const actions = [];
+  for (const issue of issues) {
+    if (issue.kind === "missing_selector") {
+      actions.push({
+        kind: issue.suggested_candidate ? "rewrite_selector" : "supply_candidate_structure",
+        selector: issue.selector,
+        ...(issue.suggested_candidate ? {suggested_candidate: issue.suggested_candidate} : {}),
+        evidence: {reference_count: issue.reference, candidate_count: issue.candidate},
+      });
+    } else if (issue.kind === "candidate_asset_missing") {
+      actions.push({kind: "provide_asset", asset: issue.asset, evidence: {missing_from_asset_dir: true}});
+    } else if (issue.kind?.includes("overflow")) {
+      actions.push({
+        kind: "reduce_overflow",
+        component: issue.component,
+        viewport: issue.viewport,
+        ...(issue.selector ? {selector: issue.selector} : {}),
+        evidence: {before_px: issue.before_px ?? 0, after_px: issue.after_px ?? issue.overflow_px ?? 0},
+      });
+    }
+    if (actions.length >= limit) return actions;
+  }
+  for (const change of styleChanges) {
+    // A different computed value is not, by itself, a repair action: theme
+    // ports deliberately change fonts and colors. Surface only a concrete
+    // cascade clue that could explain an unresolved difference.
+    if (!change.cascade?.winner || !change.cascade.media_inactive?.length) continue;
+    actions.push({
+      kind: "inspect_inactive_media",
+      selector: change.anchor,
+      property: change.property,
+      evidence: {
+        reference: change.reference,
+        candidate: change.candidate,
+        winner: change.cascade.winner,
+        media_inactive: change.cascade.media_inactive,
+      },
+    });
+    if (actions.length >= limit) break;
+  }
+  return actions;
 }
 
 export function summarizeVisual(visual) {
@@ -125,6 +174,7 @@ export function buildVerdict({
   visual = null,
   timing = {},
   artifacts = {},
+  assets = null,
   extraIssues = [],
   limits = DEFAULT_LIMITS,
 } = {}) {
@@ -151,6 +201,7 @@ export function buildVerdict({
     issue_count: issues.length,
     top_issues: issues.slice(0, limits.topIssues),
     style_changes: styleChanges,
+    next_actions: nextActions(issues, styleChanges),
     reference: reference
       ? {
           url: reference.reference_url ?? reference.url ?? null,
@@ -168,6 +219,7 @@ export function buildVerdict({
         }
       : null,
     visual: summarizeVisual(visual),
+    assets,
     artifacts,
   };
 }

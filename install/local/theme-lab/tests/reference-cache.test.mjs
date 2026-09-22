@@ -54,7 +54,7 @@ test("extractCssReferences finds imports and assets but skips data", () => {
 });
 
 test("extractHtmlReferences finds link, script, img, srcset, and inline style urls", () => {
-  const html = `<link rel="stylesheet" href="/s.css"><script src="a.js"></script><img src="/i.png" srcset="/i2.png 2x"><div style="background:url('/b.png')"></div>`;
+  const html = `<link rel="stylesheet" href="/s.css"><script src="a.js"></script><img src="/i.png" srcset="/i2.png 2x"><div style="background:url('/b.png')"></div><style>@import url('/theme.css'); .x{background:url('/inline.png')}</style>`;
   const refs = extractHtmlReferences(html, "https://example.com/page");
   assert.deepEqual(refs, [
     "https://example.com/s.css",
@@ -62,6 +62,8 @@ test("extractHtmlReferences finds link, script, img, srcset, and inline style ur
     "https://example.com/i.png",
     "https://example.com/i2.png",
     "https://example.com/b.png",
+    "https://example.com/theme.css",
+    "https://example.com/inline.png",
   ]);
 });
 
@@ -82,18 +84,25 @@ test("rewriteCssReferences and rewriteHtmlReferences localize relative and absol
     rewriteHtmlReferences('<img src="/bg.png">', "https://example.com/page", map),
     '<img src="/o/deadbeef">',
   );
+  assert.equal(
+    rewriteHtmlReferences('<style>@import url("/css/nested.css"); .x{background:url("/bg.png")}</style>', "https://example.com/page", map),
+    '<style>@import url("/o/cafe"); .x{background:url("/o/deadbeef")}</style>',
+  );
 });
 
 async function fixtureServer() {
   const routes = {
     "/index.html": {
       type: "text/html",
-      body: `<html><head><link rel="stylesheet" href="/style.css"></head><body><img src="/img.png"></body></html>`,
+      body: `<html><head><link rel="stylesheet" href="/style.css"><style>@import url('/inline.css'); .x{background:url('/inline-bg.png')}</style></head><body><img src="/img.png"></body></html>`,
     },
+    "/with-missing.html": {type: "text/html", body: `<html><head><link rel="icon" href="/missing.png"></head></html>`},
     "/style.css": {type: "text/css", body: `@import "nested.css"; body { background: url("/bg.png"); }`},
+    "/inline.css": {type: "text/css", body: `h1 { color: red; }`},
     "/nested.css": {type: "text/css", body: `p { color: red; }`},
     "/img.png": {type: "image/png", body: Buffer.from([0x89, 0x50, 0x4e, 0x47])},
     "/bg.png": {type: "image/png", body: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x01])},
+    "/inline-bg.png": {type: "image/png", body: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x02])},
   };
   const hits = [];
   const server = http.createServer((request, response) => {
@@ -148,10 +157,32 @@ test("acquire is once-then-local and replay serves rewritten content", async (t)
   assert.match(html, /\/o\/[0-9a-f]{64}/u);
   assert.doesNotMatch(html, /https:\/\/example\.com/u);
   assert.ok(!html.includes(fixture.origin), "rewritten HTML must not reference the fixture origin");
+  assert.match(html, /<style>@import url\("\/o\/[0-9a-f]{64}"\)/u);
 
   const cssDigest = html.match(/\/o\/([0-9a-f]{64})/u)[1];
   const css = await (await fetch(`${replay.origin}/o/${cssDigest}`)).text();
   assert.match(css, /url\("\/o\/[0-9a-f]{64}"\)/u);
+});
+
+test("failed optional assets retain their cause and are not fetched again", async (t) => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "theme-lab-ref-missing-"));
+  const fixture = await fixtureServer();
+  t.after(async () => {
+    await fixture.close();
+    await fs.rm(dir, {recursive: true, force: true});
+  });
+  const cache = new ReferenceCache({cacheDir: dir, allowPrivate: true});
+  const url = `${fixture.origin}/with-missing.html`;
+  const first = await cache.acquire(url);
+  assert.equal(first.failed_asset_count, 1);
+  assert.equal(first.external_requests, 2, "root and failed asset both count as external requests");
+  assert.equal(first.failed_assets[0].url, `${fixture.origin}/missing.png`);
+  assert.equal(first.failed_assets[0].code, "reference_http_error");
+  const hits = fixture.hits.length;
+  const second = await cache.acquire(url, {offline: true});
+  assert.equal(second.external_requests, 0);
+  assert.deepEqual(second.failed_assets, first.failed_assets);
+  assert.equal(fixture.hits.length, hits);
 });
 
 test("offline acquire fails closed on an empty cache", async (t) => {

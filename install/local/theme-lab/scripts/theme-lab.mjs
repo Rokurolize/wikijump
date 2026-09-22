@@ -106,6 +106,8 @@ async function serve(args) {
     candidateUrl: args["candidate-url"] ?? null,
     previewClient,
     referenceAssets,
+    assetDir: args["asset-dir"] ? path.resolve(args["asset-dir"]) : null,
+    sidebarHtml: args["sidebar-html"] ? fs.readFileSync(path.resolve(args["sidebar-html"]), "utf8") : null,
   });
   process.stdout.write(
     `${JSON.stringify({
@@ -138,7 +140,7 @@ async function main() {
   const args = parseArgs(rest);
   if (!command || command === "help" || args.help) {
     process.stdout.write(
-      "commands: serve | open | check | css | clear-css | preview | torture | reference | viewport | snapshot | diff | screenshot | status | stop\n",
+      "commands: serve | open | check | css | clear-css | preview | torture | reference | viewport | snapshot | probe | diff | screenshot | status | stop\n",
     );
     return 0;
   }
@@ -225,6 +227,14 @@ async function main() {
       op: "snapshot",
       target: args.target ?? "candidate",
       selectors: args.selectors ? readSelectors(args.selectors) : null,
+    };
+  } else if (command === "probe") {
+    request = {
+      op: "probe",
+      target: args.target ?? "candidate",
+      selector: args.selector,
+      property: args.property,
+      viewport: parseViewport(args.viewport),
     };
   } else if (command === "diff") {
     request = {

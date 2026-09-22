@@ -1,0 +1,40 @@
+{
+  "reference_url": "https://scpko.wikidot.com/theme:dear-dictator",
+  "reference_html_sha256": "c362743242cf6d99f615113180332d310bb884e0945f87a2191884a3da2356d4",
+  "theme_css_url": "https://scpko.wdfiles.com/local--code/theme:dear-dictator/1",
+  "theme_css_sha256": "7e0c7e90b481a27442a9c6a98820b0355d0b8042dfca59c639ba69b7efe22bd2",
+  "assets": {
+    "GapyeongHanseokbong-Bold.woff2": {
+      "url": "https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2312-1@1.1/GapyeongHanseokbong-Bold.woff2",
+      "sha256": "f5289722d4f824f20f334962b1dba368dd048f614558ad337d70277f2214a08c"
+    },
+    "ONE-Mobile-Title.woff": {
+      "url": "https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/ONE-Mobile-Title.woff",
+      "sha256": "df086c980145abce7aafab919bbd65fef5b01b66b9182c2b58b6de17327c1a77"
+    },
+    "JeonjuCraftGoR.woff2": {
+      "url": "https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2310@1.0/JeonjuCraftGoR.woff2",
+      "sha256": "e4c637dd9a7ed12b755652a0718c0997e0c1f224288ba244452d3a935b55caf2"
+    },
+    "AEB-bg.png": {
+      "url": "https://scpko.wdfiles.com/local--files/theme:dear-dictator/AEB-bg.png",
+      "sha256": "c24f4b9e103ba82de82d98e7bf4a736d7c8480fce2bea0414cdc829d1c6814d5"
+    },
+    "AEB-header.png": {
+      "url": "https://scpko.wdfiles.com/local--files/theme:dear-dictator/AEB-header.png",
+      "sha256": "74e77b8bcf6ed45a4a0afb6534af82d651fe204753be14d13be6b5eacf8de7ff"
+    },
+    "AEB-headerbg.png": {
+      "url": "https://scpko.wdfiles.com/local--files/theme:dear-dictator/AEB-headerbg.png",
+      "sha256": "e7a04f617cd8fd3175896bca1e9282a8257cc46b4dfd3386d3d44c6dcef4cf07"
+    },
+    "AEB-tower.png": {
+      "url": "https://scpko.wdfiles.com/local--files/theme:dear-dictator/AEB-tower.png",
+      "sha256": "21e7749ff9f0bf2ec3e8d6169470bd6a2a5b93d86768772cb9d66281690a6db4"
+    },
+    "AEB.png": {
+      "url": "https://scpko.wdfiles.com/local--files/npes-hub/AEB.png",
+      "sha256": "ff97cee308f210d56586c42dc05fa177985a6255f8342575bc3633ba15442935"
+    }
+  }
+}

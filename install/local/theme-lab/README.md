@@ -30,6 +30,8 @@ export DEEPWELL_RPC_TOKEN=...   # from the local dev stack
 node scripts/theme-lab.mjs serve \
   --socket /tmp/theme-lab.sock \
   --candidate-url https://scpaiueouiuiuiui.wikijump.localhost:18443/<page> \
+  --asset-dir /absolute/path/to/port/assets \
+  --sidebar-html /absolute/path/to/sidebar-preview.html \
   --allow-private               # only for localhost references/fixtures
 ```
 
@@ -58,6 +60,7 @@ theme-lab torture --site-id 6000003
 theme-lab reference --url https://<branch>/<page> [--offline]    # acquire + replay
 theme-lab diff --reference-url <replay-url> [--selectors selectors.txt]
 theme-lab snapshot | viewport --size 390x844 | screenshot --path shot.png
+theme-lab probe --selector '#main-content' --property margin-left --viewport 390x844
 theme-lab status | stop
 ```
 
@@ -93,6 +96,8 @@ All commands print one JSON document. Failures carry a stable `error.code`
 The verdict never dumps raw browser data by default. Geometry/font changes that
 are not inherently wrong are reported as `style_changes`, not as errors.
 
+`next_actions` contains only steps grounded in a missing selector, overflow measurement, missing candidate asset, or inactive media query with a measured cascade winner. An intentional font or color change alone does not create a repair action. A provided selector list is measured directly even when its entries do not appear as exact CSS rule selectors. Count changes where both pages still contain the element are warnings because two real theme articles can repeat the same component a different number of times.
+
 ## Reference acquisition (once) and local replay
 
 Foreign reference resources are fetched **once**, stored by SHA-256 under
@@ -111,6 +116,13 @@ reference tab loads the replay, so iteration is fully local.
 - `--offline` forbids all network and fails closed on a cache miss.
 - Reference selector counts/elements are cached in-session, so only the
   candidate is remeasured until the reference URL changes.
+- Inline `<style>` imports and assets are captured and rewritten too. A complete snapshot is reused without another acquisition pass; optional asset failures retain their URL and cause. Browser tabs deny external requests and report blocked attempts separately from successful acquisitions.
+
+## Local candidate assets
+
+Pass `--asset-dir` to `serve` when CSS uses `url("./assets/name.png")` or a font file in the same form. Theme Lab validates regular files and replaces those URLs with `data:` bytes only in the injected copy. This preserves readable candidate CSS and works with the local Wikijump page's CSP. Missing names appear as `candidate_asset_missing` in the verdict. `--sidebar-html` fills an empty local authoring-site `#side-bar` with a task-owned DOM fixture so foreign sidebar selectors can be assessed without saving global site navigation.
+
+The completed SCP-KO Dear Dictator → SCP-JP run is in `ports/dear-dictator/`. Its `PORT.md` records the reference, decisions, exact offline command, and self-contained Wikidot source builder.
 
 ## Measured performance (local dev `scpaiueouiuiuiui`, site 6000003)
 

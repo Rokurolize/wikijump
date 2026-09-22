@@ -7,6 +7,7 @@ import {
   issuesFromSelectorDiagnosis,
   issuesFromTorture,
   issuesFromViewports,
+  nextActions,
   styleChangesFromComputed,
 } from "../src/verdict.mjs";
 
@@ -37,6 +38,25 @@ test("torture and viewport issues map", () => {
 test("style changes are truncated", () => {
   const rows = Array.from({length: 5}, (_, index) => ({anchor: `a${index}`, property: "width"}));
   assert.equal(styleChangesFromComputed({top: rows}, 2).length, 2);
+});
+
+test("next actions carry selector, overflow, asset, and inactive media evidence", () => {
+  const actions = nextActions(
+    [
+      {kind: "missing_selector", selector: ".foreign-rate", reference: 1, candidate: 0, suggested_candidate: {selector: ".page-rate-widget-box", confidence: 0.9}},
+      {kind: "new_component_overflow", component: "tabview", viewport: "mobile", before_px: 0, after_px: 43},
+      {kind: "candidate_asset_missing", asset: "logo.png"},
+    ],
+    [
+      {anchor: "#header h1 a", property: "font-family", reference: "serif", candidate: "sans-serif", cascade: {winner: {selector: "#header h1 a", value: "sans-serif"}}},
+      {anchor: "#main-content", property: "width", reference: "900px", candidate: "600px", cascade: {winner: {selector: "#main-content", value: "600px"}, media_inactive: [{media: "(min-width: 900px)", selector: "#main-content"}]}},
+    ],
+  );
+  assert.deepEqual(actions.map((action) => action.kind), ["rewrite_selector", "reduce_overflow", "provide_asset", "inspect_inactive_media"]);
+  assert.equal(actions[0].evidence.reference_count, 1);
+  assert.equal(actions[1].evidence.after_px, 43);
+  assert.equal(actions[3].evidence.winner.selector, "#main-content");
+  assert.equal(actions[3].evidence.media_inactive[0].media, "(min-width: 900px)");
 });
 
 test("buildVerdict fails on error, warns on style-only change, passes clean", () => {
