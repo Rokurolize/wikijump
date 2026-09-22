@@ -20,9 +20,11 @@ import {
   capturePristineContent,
   clearStylesheet,
   closePage,
+  collectCascadeDeclarations,
   collectElements,
   collectElementsBatch,
   collectSelectorMatches,
+  collectSemanticAnchorElements,
   collectSnapshot,
   collectStyleSheetRules,
   collectViewportOverflow,
@@ -33,6 +35,7 @@ import {
   screenshot,
   setViewport,
 } from "./browser-lab.mjs";
+import {cascadeDiagnosis} from "./cascade.mjs";
 import {
   collectSelectorTexts,
   diffComputedStyles,
@@ -41,6 +44,11 @@ import {
   summarizeComputedStyleDiffs,
 } from "./css-probe.mjs";
 import {startReferenceReplay} from "./reference-replay.mjs";
+import {
+  SEMANTIC_ANCHORS,
+  classifyElement,
+  suggestCandidateAnchors,
+} from "./semantic-anchors.mjs";
 import {runTortureCorpus} from "./torture-corpus.mjs";
 import {buildVerdict, expandVerdict} from "./verdict.mjs";
 
@@ -274,6 +282,51 @@ export function createSession({
         ),
         properties,
       });
+
+      // Explain the top computed-style deltas: which candidate declaration wins.
+      const cascadeRows = computedRows.filter((row) => !row.property.startsWith("rect.")).slice(0, 8);
+      for (const row of cascadeRows) {
+        try {
+          const raw = await collectCascadeDeclarations(pages.candidate, {
+            selector: row.anchor,
+            property: row.property,
+          });
+          if (raw.matched > 0) {
+            row.cascade = cascadeDiagnosis({
+              selector: row.anchor,
+              property: row.property,
+              referenceValue: row.reference,
+              candidateValue: row.candidate,
+              declarations: raw.declarations,
+              mediaInactive: raw.media_inactive,
+              inline: raw.inline,
+              variables: raw.variables,
+            });
+          }
+        } catch {
+          // cascade diagnosis is best-effort; never fail the diff for it
+        }
+      }
+
+      // For each foreign selector that matched nothing, say what the reference
+      // element was and which SCP-JP element plays that role now.
+      const missingRows = selectorRows.filter((row) => row.status === "missing");
+      if (missingRows.length > 0) {
+        const candidateAnchors = await collectSemanticAnchorElements(pages.candidate, {
+          anchors: SEMANTIC_ANCHORS,
+        });
+        for (const row of missingRows) {
+          const element = referenceCache.elements.get(row.selector)?.elements?.[0];
+          if (!element) continue;
+          const referenceInfo = {...element, role: classifyElement(element)};
+          row.semantic_mapping = {
+            reference_role: referenceInfo.role,
+            reference_element: {tag: element.tag, id: element.id, class: element.class, text: element.text},
+            candidate_candidates: suggestCandidateAnchors(referenceInfo, candidateAnchors),
+          };
+        }
+      }
+
       return {
         reference_url: pages.reference.url(),
         candidate_url: pages.candidate.url(),

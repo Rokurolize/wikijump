@@ -195,6 +195,122 @@ export async function collectElementsBatch(page, {selectors, properties, pseudo 
   );
 }
 
+// Return every candidate stylesheet declaration that matches the first element
+// of `selector` for `property`, plus media queries that would apply at another
+// viewport and any CSS variable the computed value depends on.
+export async function collectCascadeDeclarations(page, {selector, property}) {
+  return page.evaluate(
+    ({selector: query, property: targetProperty}) => {
+      let elements;
+      try {
+        elements = [...document.querySelectorAll(query)];
+      } catch (error) {
+        return {matched: 0, error: String(error)};
+      }
+      if (elements.length === 0) return {matched: 0};
+      const element = elements[0];
+      const declarations = [];
+      const mediaInactive = [];
+      let order = 0;
+      const matches = (rule) => {
+        try {
+          return element.matches(rule.selectorText);
+        } catch {
+          return false;
+        }
+      };
+      const visit = (rules, media) => {
+        for (const rule of rules) {
+          if (rule.type === CSSRule.MEDIA_RULE) {
+            if (window.matchMedia(rule.conditionText).matches) {
+              visit(rule.cssRules, rule.conditionText);
+            } else {
+              for (const inner of rule.cssRules) {
+                if (inner.type === CSSRule.STYLE_RULE && inner.selectorText && matches(inner)) {
+                  const value = inner.style.getPropertyValue(targetProperty);
+                  if (value) {
+                    mediaInactive.push({
+                      condition: rule.conditionText,
+                      selector: inner.selectorText,
+                      value,
+                      important: inner.style.getPropertyPriority(targetProperty) === "important",
+                    });
+                  }
+                }
+              }
+            }
+            continue;
+          }
+          if (rule.type === CSSRule.SUPPORTS_RULE) {
+            visit(rule.cssRules, media);
+            continue;
+          }
+          if (rule.type !== CSSRule.STYLE_RULE || !rule.selectorText) continue;
+          if (!matches(rule)) continue;
+          const value = rule.style.getPropertyValue(targetProperty);
+          if (!value) continue;
+          declarations.push({
+            selector: rule.selectorText,
+            value,
+            important: rule.style.getPropertyPriority(targetProperty) === "important",
+            media,
+            order: order++,
+          });
+        }
+      };
+      for (const sheet of document.styleSheets) {
+        try {
+          visit(sheet.cssRules, null);
+        } catch {
+          // cross-origin stylesheet; skip
+        }
+      }
+      const computed = getComputedStyle(element);
+      const computedValue = computed.getPropertyValue(targetProperty);
+      let variables = null;
+      const variableMatch = computedValue.match(/var\(\s*(--[\w-]+)/u);
+      if (variableMatch) {
+        const name = variableMatch[1];
+        const value = computed.getPropertyValue(name);
+        variables = {name, value, defined: value.trim().length > 0};
+      }
+      return {
+        matched: elements.length,
+        inline: element.style.getPropertyValue(targetProperty) || null,
+        computed_value: computedValue,
+        declarations,
+        media_inactive: mediaInactive,
+        variables,
+      };
+    },
+    {selector, property},
+  );
+}
+
+// Collect one representative element per semantic anchor selector, grouped by
+// role, in a single round trip.
+export async function collectSemanticAnchorElements(page, {anchors, max = 1}) {
+  const selectors = anchors.flatMap((anchor) => anchor.selectors);
+  const batch = await collectElementsBatch(page, {
+    selectors,
+    properties: ["display", "visibility", "width", "height"],
+    max,
+  });
+  const byRole = {};
+  for (const anchor of anchors) {
+    const elements = [];
+    for (const selector of anchor.selectors) {
+      const result = batch[selector];
+      if (!result?.elements?.length) continue;
+      for (const element of result.elements.slice(0, max)) {
+        elements.push({...element, selector});
+      }
+    }
+    if (elements.length > 0) byRole[anchor.role] = elements;
+  }
+  return byRole;
+}
+
 // Enumerate every stylesheet. Same-origin sheets expose `cssRules`; cross-origin
 // sheets are returned with their href so the caller can fetch and parse them.
 export async function collectStyleSheetRules(page) {

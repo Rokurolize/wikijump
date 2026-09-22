@@ -17,6 +17,7 @@ function severityRank(severity) {
 export function issuesFromSelectorDiagnosis(diagnosis) {
   const issues = [];
   for (const row of diagnosis?.missing ?? []) {
+    const mapping = row.semantic_mapping;
     issues.push({
       severity: "error",
       kind: "missing_selector",
@@ -24,6 +25,10 @@ export function issuesFromSelectorDiagnosis(diagnosis) {
       reference: row.reference,
       candidate: row.candidate,
       at_context: row.at_context ?? [],
+      ...(mapping?.reference_role ? {reference_role: mapping.reference_role} : {}),
+      ...(mapping?.candidate_candidates?.length
+        ? {suggested_candidate: mapping.candidate_candidates[0]}
+        : {}),
     });
   }
   for (const row of diagnosis?.collapsed ?? []) {
@@ -81,6 +86,16 @@ export function styleChangesFromComputed(computedStyles, limit = DEFAULT_LIMITS.
     candidate: row.candidate,
     delta: row.delta,
     status: row.status,
+    ...(row.cascade
+      ? {
+          cascade: {
+            status: row.cascade.status,
+            winner: row.cascade.winner,
+            media_inactive: row.cascade.media_inactive,
+            variables: row.cascade.variables,
+          },
+        }
+      : {}),
   }));
 }
 
