@@ -6,6 +6,8 @@
 
 import fs from "node:fs/promises";
 import net from "node:net";
+import os from "node:os";
+import path from "node:path";
 
 import {
   assertSocketPath,
@@ -49,8 +51,9 @@ import {
   classifyElement,
   suggestCandidateAnchors,
 } from "./semantic-anchors.mjs";
-import {runTortureCorpus} from "./torture-corpus.mjs";
+import {TORTURE_VIEWPORTS, runTortureCorpus} from "./torture-corpus.mjs";
 import {buildVerdict, expandVerdict} from "./verdict.mjs";
+import {captureVisualPair} from "./visual-diff.mjs";
 
 const DEFAULT_PROPERTIES = [
   "display",
@@ -347,6 +350,8 @@ export function createSession({
       siteId = null,
       torture = false,
       viewports = true,
+      visual = false,
+      artifactDir = null,
       properties = DEFAULT_PROPERTIES,
       max = 60,
       verbose = false,
@@ -395,6 +400,21 @@ export function createSession({
         full.viewports = viewportOverflow;
       }
 
+      let visualResult = null;
+      if (visual) {
+        const step = performance.now();
+        const outputDir = artifactDir ?? path.join(os.tmpdir(), `theme-lab-visual-${Date.now()}`);
+        visualResult = await captureVisualPair({
+          candidatePage: candidate,
+          referencePage: pages.reference ?? null,
+          viewports: TORTURE_VIEWPORTS,
+          outputDir,
+        });
+        timing.visual_ms = Number((performance.now() - step).toFixed(1));
+        full.visual = visualResult;
+      }
+
+      // Torture mutates the article content, so it runs last.
       let tortureResult = null;
       if (torture) {
         const step = performance.now();
@@ -404,7 +424,13 @@ export function createSession({
       }
 
       timing.total = Number((performance.now() - started).toFixed(1));
-      const verdict = buildVerdict({reference, torture: tortureResult, viewports: viewportOverflow, timing});
+      const verdict = buildVerdict({
+        reference,
+        torture: tortureResult,
+        viewports: viewportOverflow,
+        visual: visualResult,
+        timing,
+      });
       return verbose ? expandVerdict(verdict, full) : verdict;
     },
     async screenshot({target = "candidate", path: outputPath, fullPage = true, viewport = null}) {

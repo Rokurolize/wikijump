@@ -210,6 +210,8 @@ async function main() {
       siteId,
       torture: args["no-torture"] !== true && siteId !== null,
       viewports: args["no-viewports"] !== true,
+      visual: args.visual === true,
+      artifactDir: args["artifact-dir"] ? path.resolve(args["artifact-dir"]) : null,
       verbose: args.verbose === true || args["json-full"] === true,
     };
   } else if (command === "reference") {

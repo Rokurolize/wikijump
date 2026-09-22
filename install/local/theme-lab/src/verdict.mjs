@@ -99,6 +99,25 @@ export function styleChangesFromComputed(computedStyles, limit = DEFAULT_LIMITS.
   }));
 }
 
+export function summarizeVisual(visual) {
+  if (!visual) return null;
+  const viewports = {};
+  let worst = "pass";
+  for (const [id, entry] of Object.entries(visual)) {
+    if (!entry.comparison) {
+      viewports[id] = {status: "captured"};
+      continue;
+    }
+    viewports[id] = {
+      status: entry.comparison.status,
+      normalized_rmse: entry.comparison.normalized_rmse ?? null,
+    };
+    if (entry.comparison.status === "fail") worst = "fail";
+    else if (entry.comparison.status === "unavailable" && worst === "pass") worst = "unavailable";
+  }
+  return {status: worst, viewports};
+}
+
 export function buildVerdict({
   reference = null,
   torture = null,
@@ -145,7 +164,7 @@ export function buildVerdict({
           changed_component_count: torture.changed_component_count ?? 0,
         }
       : null,
-    visual: visual ?? null,
+    visual: summarizeVisual(visual),
     artifacts,
   };
 }
