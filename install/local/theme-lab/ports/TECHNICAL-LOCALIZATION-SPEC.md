@@ -20,7 +20,7 @@ This specification governs all 34 SCP-EN sources listed in `en-theme-campaign.js
 | `MUST_ADAPT_FOR_JP` | Adapt selectors coupled to EN-only header, sidebar, interwiki, mobile-navigation, rating, file, or component DOM when the current JP runtime differs. Render Japanese content and verify glyph coverage, actual fallback, line-height, and resulting wrapping. Keep a JP-appropriate page width and readable mobile layout. |
 | `MAY_DIFFER` | Reader-facing prose, page-specific demo contents, and structural wrappers may differ where localization or the current JP runtime requires it. Record each material difference and its evidence. A count-only difference between unrelated demo articles is not an automatic defect. |
 | `FORBIDDEN_STALE_DEPENDENCY` | Do not leave an obsolete, accidental SCP-EN page, component, or asset URL in the delivered candidate. Do not use an EN-only DOM include when a verified JP runtime component is required. Any retained shared upstream CDN must be intentional, reachable, and recorded with URL, owner, reason, and acquisition status. |
-| `MUST_VERIFY` | No horizontal overflow or obscured content at desktop 1366×768, laptop 1280×800, tablet 768×1024, and mobile 390×844. Run the component torture corpus; exercise menu, tabs, collapsibles, hover/focus/active states, and fixed/sticky/scroll behavior when the theme uses them. |
+| `MUST_VERIFY` | No horizontal overflow or obscured content at desktop 1440×1000, laptop 1024×900, tablet 768×1024, and mobile 390×844. Run the component torture corpus; exercise menu, tabs, collapsibles, hover/focus/active states, and fixed/sticky/scroll behavior when the theme uses them. |
 
 ## Surface requirements
 
