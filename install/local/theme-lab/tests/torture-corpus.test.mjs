@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {diffTortureStates} from "../src/torture-corpus.mjs";
+import {TORTURE_VIEWPORTS, diffTortureStates} from "../src/torture-corpus.mjs";
+
+test("torture viewports match the real-port acceptance contract", () => {
+  assert.deepEqual(TORTURE_VIEWPORTS, [
+    {id: "desktop", width: 1440, height: 1000},
+    {id: "laptop", width: 1024, height: 900},
+    {id: "tablet", width: 768, height: 1024},
+    {id: "mobile", width: 390, height: 844},
+  ]);
+});
 
 function component(overrides = {}) {
   return {
