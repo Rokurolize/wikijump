@@ -1,0 +1,73 @@
+# SCP-JP interactive theme surface specification
+
+Version: 1.0-draft (2026-09-24)
+
+This is the acceptance inventory for applying a localized theme to actual SCP-JP/Wikijump pages. A selector's presence is not visual acceptance: each state requires a settled screenshot, an interaction assertion, and human image review. The current runtime must be the SCP-JP mirror or a run-owned page in `scpaiueouiuiuiui`; an SCP-EN page is useful implementation evidence but cannot close an SCP-JP row.
+
+## Authority and current evidence
+
+- SCP-JP custom theme policy: `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/custom-theme-policy/source.wikidot.txt`. It requires an installed Rate module, practical readability, and visibility of `#footer`, `#license-area`, `#login-status`, `.scpnet-interwiki-frame`; `#side-bar` and `#top-bar` may be redesigned only while retaining usable navigation. It recommends the credited Rate module.
+- Current credit source contracts: `corpus/jp/pages/credit:start/source.wikidot.txt`, `credit:otherwise`, `credit:end`, and `credit:style`. `credit:start` defaults to the rated credit variant; `mode=no-rate` is a real variant. The end component includes its own Rate, CC link, and heritage branch. `credit:otherwise` is a second hash-target modal. Verify source freshness before relying on these as the current public revision.
+- Wikijump browser implementation and existing verification anchors: `framerail/tests/page-workflows.spec.ts`, `framerail/tests/generated-page-styles-navigation.spec.ts`, `install/local/wikidot-verification/src/theme-localization-e2e.mjs`, `theme-browser-capture.mjs`, `open43-issue775-edit-browser-adapter.mjs`, `open43-issue1041-lifecycle-browser-adapter.mjs`, `open43-a1030-rate-browser-adapter.mjs`, `open43-page-tags-browser-candidate-case-set.mjs`, and `src/standing-browser-canaries.mjs`.
+- Live visual probes actually inspected on 2026-09-24: Chromium local SCP-Wiki Wikijump `/scp-9506` (1440×1000) and local JP-language authoring site `/boundary-check` (1440×1000, 1024×900, 390×844). The SCP-Wiki screenshot showed a readable article, visible rating, sidebar, action row, footer, and license; its long tag list collapsed into a narrow vertical strip. The local authoring screenshot showed the Japanese login status, page title/body, opened action row, footer, and license. These are runtime probes only, not per-theme results.
+- Environment boundary: `scp-jp.wikijump.localhost/scp-9506` redirects to `scp-jp.localhost/scp-9506`, which returns 404. The local authoring site does have `/boundary-check`, but that page has no Rate, credit modal, interwiki, history revisions, tags, or files fixture. Its real “+ Options” action opened the additional action controls in Chromium. The established run-owned theme E2E requires a reachable Deepwell RPC endpoint and local admin actor credential; this process has no `WIKIJUMP_THEME_RPC_URL`/admin actor variables and nothing listens on `127.0.0.1:12747`. No public site was mutated.
+
+## Classification vocabulary
+
+- `PASS_NATURAL`: screenshot and interaction both meet the criteria without a material theme-specific exception.
+- `PASS_INTENTIONAL_DIVERGENCE`: both pass, but a documented SCP-JP adaptation changes the upstream presentation; receipt names the source evidence and affected rule.
+- `NEEDS_FIX`: a reproducible visual or interaction defect exists. Capture before/after and review the regenerated after-image.
+- `UNCONFIRMED`: there is no valid runtime/state evidence. The receipt must state what is missing, why, and which source/runtime was checked. Never count this as pass.
+
+## Viewport and engine contract
+
+| ID | Size | Contract |
+|---|---:|---|
+| desktop | 1440×1000 | Full header, sidebar, page, controls and lower-page navigation |
+| laptop | 1024×900 | Narrow desktop shell and action row |
+| tablet | 768×1024 | Responsive breakpoint and table/modal fit |
+| mobile | 390×844 | Mobile top bar and sidebar open/closed states |
+| narrow-mobile | 320×800 | SCP-JP policy boundary; header, modal, history, source, options and dialog |
+
+Run Chromium full interaction coverage. Run Firefox and Playwright WebKit core states (normal desktop/mobile, credit view, mobile sidebar open, History and Source). WebKit is a Safari compatibility proxy, not Safari evidence. Keep browser contexts and theme styles isolated; record executable versions and viewport for each screenshot.
+
+## Surface inventory and state contract
+
+| Surface ID | Purpose / selectors | Entry and required states | Desktop/mobile | Auth / mutation | Visual acceptance | Interaction acceptance / evidence |
+|---|---|---|---|---|---|---|
+| shell.header | Site identity, logo, subtitle: `#header`, `#header h1`, `#header h2`, logo pseudo-elements | Initial settled page; scroll; resize | both | anonymous / none | Identity remains recognizable; title/subtitle do not collide; Japanese glyphs render and wrap naturally | Logo/home link works; source theme header selectors checked against current JP DOM. `theme-localization-e2e.mjs`, current page screenshot |
+| shell.search | Search: `#search-top-box`, input/button | Empty, placeholder, typed, focus, hover, submit-ready | both | anonymous / no submit required | Typed text and placeholder contrast; focus indicator visible; no clipping | Input accepts text; do not submit external search. Runtime shell + theme styles |
+| shell.login | Login/account status: `#login-status` | logged-out; logged-in/dropdown only if session fixture permits | both | login state required for logged-in / none | Must remain visible and legible; dropdown layers above theme panels | Links/menu open when available; policy + runtime shell |
+| nav.top | Desktop top navigation: `#top-bar`, submenu selectors | normal, hover submenu, keyboard focus, nested submenu when present | desktop/tablet | anonymous / none | Hover/focus never erases labels; submenu contrast and stacking | Navigate by pointer and keyboard; `generated-page-styles-navigation.spec.ts` |
+| nav.mobile-top | Compact navigation: `.mobile-top-bar` and open-menu controls | collapsed, expanded, submenu/section expanded | mobile/320 | anonymous / none | Expanded menu fits viewport and preserves touch targets | Tap open/close and section toggle; mobile runtime implementation |
+| nav.sidebar | Site navigation: `#side-bar`, `.side-block`, mobile toggle | desktop; mobile closed/open; inner collapsible expanded; scrolled | both (open state mobile) | anonymous / none | Useful hierarchy, text contrast, Japanese labels wrap; no obscured close control | Toggle by actual button, close and scroll; policy + runtime shell |
+| content.article | Reader content: `#main-content`, `#page-title`, `#page-content` | headings, text, links normal/hover/focus/visited, lists, quote, table, code, image, footnote, TOC, tabs and collapsible | both | anonymous / none | Reader prose readable, Japanese font fallback/glyphs, no hidden component or overflow | Tab/collapsible controls change state; content fixtures and Theme Lab torture corpus |
+| content.rating | Mandatory evaluation: `.page-rate-widget-box`, `.rate-points`, `.rateup`, `.ratedown`, `.cancel` | ordinary Rate; credit-associated Rate; normal/hover/focus/selected; no-rate credit variant | both | anonymous / rating mutation prohibited in visual run | +/- and score visible; source palette retained; control states discernible | Assert installed widget and operable hit targets without changing score; SCP-JP policy, `open43-a1030-rate-browser-adapter.mjs` |
+| content.credit.default | Credit module: `.creditRate`, `.rate-box-with-credit-button`, `.creditButton`, `#u-credit-view` | normal, hover/focus, rated, no-rate, heritage if actual fixture tag activates it | both | anonymous / none | Credit button aligned with Rate and theme palette; no default hidden-state leak | Click/tap info entry; verify hash and visible target. Current `credit:start`/`credit:end` corpus source |
+| content.credit.view | Attribution modal: `#u-credit-view`, `.fader`, `.modalcontainer`, `.modalbox`, `.modalbox-title`, `.credit` | closed → open settled → scroll → close/back; nested otherwise entry | both + 320 | anonymous / none | Overlay, z-order, title/body/link/Japanese text/Rate/license all readable; fit or scroll within viewport | Hash `#u-credit-view`; background interaction blocked; close/back restores page. Current credit source and CSS |
+| content.credit.otherwise | Other-license modal: `#u-credit-otherwise` and same modal selectors | closed → open → vertical scroll → back/close | both + 320 | anonymous / none | Distinct content readable; no clipping or hidden page leak | Hash `#u-credit-otherwise`, back returns to view/default. `credit:otherwise` source |
+| page.actions | Bottom controls: `#page-options-container`, `#page-options-bottom`, `#page-options-bottom-2`, `#more-options-button` | collapsed, hover/focus/disabled; expanded more options | both + 320 | anonymous; destructive actions never invoked | Edit/Tags/History/Files/Print/Options text, borders, focus and selected states discernible | Click More; assert expanded pane; `framerail/tests/page-workflows.spec.ts` |
+| page.tags | Tags pane and inputs | open, populated, focus, close | both + 320 | permission varies; no save | Labels/input/buttons readable, no horizontal escape | Open/close only unless fixture is explicitly run-owned; `open43-page-tags-browser-candidate-case-set.mjs` |
+| page.history | Revisions: `.page-history`, `#revision-list`, history table/forms | list, selected revision, hover/focus, pager; desktop/mobile | both | anonymous / read only | Authors, Japanese comments/dates, table columns and selected row readable; mobile has usable scroll/wrap | Open History and navigate/select only run-owned revisions; existing history browser flows |
+| page.diff | Revision comparison and historical version/source | added/removed/unchanged, long line, Japanese, blank line, link-like text | both | anonymous / read only | Diff colors remain distinct under theme; no syntax blended into background | Select two fixture revisions and open compare; existing History/Version adapters |
+| page.source | View Source: `.page-source`, `#view-source-button` | open, scroll, close/back; desktop/mobile | both + 320 | anonymous / read only | Monospace source, Japanese and Wikidot punctuation contrast; long lines scroll without hiding actions | Open actual source action and return; `PageSourceModule`, `ViewSourceModule` |
+| page.files | Attachment listing/upload controls | listing, long filename, metadata/download, upload panel if available | both | upload auth/permission; no upload in acceptance | Filename, dates, controls readable and mobile layout usable | Open Files; download only non-mutating fixture attachment. Existing files browser flows and `page-file-name-theme-isolation` |
+| page.backlinks | Backlinks action/pane | populated, empty/loading if reproducible, close/back | both | anonymous / none | Empty/loading labels and linked titles readable | Open from More; verify route/close |
+| page.parent | Parent action/pane | no parent and assigned parent if fixture supports; input/selection | both | no save | Relationship, labels and buttons readable | Open/close only; no persistent mutation |
+| page.edit | Edit action/editor | open editor, toolbar, source text, summary, checkboxes, preview/diff controls | desktop/mobile | edit permission; no save | Textarea/code color and controls readable; Japanese source preserved | Open then cancel; use only isolated run-owned fixture. Existing edit browser adapters |
+| page.rename | Rename/move pane | pane/dialog open, focus, cancel | both | protected action; do not confirm | Warning, input and buttons clear; dialog stacking correct | Stop before confirmation; run-owned fixture only |
+| page.delete | Delete confirmation | confirmation open, cancel | both | destructive; delete is forbidden | Warning and cancel/confirm distinction clear | Open confirmation only, cancel; run-owned fixture only |
+| dialog.generic | Generic Wikidot dialog: `#odialog-container`, `.odialog-shader`, `.owindow` | opening, settled, focus, cancel/close; error dialog when safe | both + 320 | anonymous; no destructive confirm | Overlay opacity, layering, content/buttons readable, no clipping | Trigger existing safe dialog and dismiss; `open43-issue1041-lifecycle-browser-adapter.mjs`, `open43-issue775-edit-browser-adapter.mjs` |
+| shell.footer | Site footer: `#footer` | actual bottom scroll, link hover/focus | both | anonymous / none | Must remain visible in normal page flow and readable | Scroll to bottom; SCP-JP policy |
+| shell.license | License: `#license-area` | actual bottom, hover/focus | both | anonymous / none | Must not be hidden; theme background and link maintain contrast | Scroll and follow focus; SCP-JP policy |
+| shell.interwiki | Interwiki: `.scpnet-interwiki-frame` | loaded/settled, links and clipping | both | anonymous / none | Frame visible, unclipped and visually integrated; hiding is forbidden | Verify frame load and internal link reachability where safe; SCP-JP policy |
+
+## Matrix reduction rules
+
+Chromium covers every theme across all five viewports for normal content. Interaction rows are captured at both desktop and mobile when the table says both; modal, navigation-open, action-pane and table states also run at 320px where specified. Firefox and WebKit run the defined core states per theme. Any omitted interaction must have an explicit audit row naming the omission and a non-time-based reason (for example, the selector is absent from the actual runtime fixture). A missing selector is `UNCONFIRMED` until the correct SCP-JP fixture/runtime establishes whether it should exist.
+
+Each audit record binds theme, engine/version, viewport, surface/state, exact action sequence, screenshot path and SHA-256, candidate CSS/source hash, classification, visual findings, intentional divergence, missing evidence, and whether it was image-reviewed after the final source change. Theme CSS must be reset between themes. Screenshots are never edited after capture.
+
+## Current gate status
+
+The inventory and criteria above are established. No theme-specific interactive acceptance is claimed by this draft. The current checkout has no reachable SCP-JP page or run-owned fixture, and this process lacks the RPC endpoint and local admin actor required by the repository's established run-owned theme fixture lifecycle. Until a valid SCP-JP fixture runtime is available, theme × state rows are `UNCONFIRMED`; SCP-Wiki `/scp-9506` evidence must not be promoted to SCP-JP PASS.
