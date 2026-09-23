@@ -30,6 +30,9 @@ import {
   collectSnapshot,
   collectStyleSheetRules,
   collectViewportOverflow,
+  exercisePreviewInteractions,
+  inspectPlatformFonts,
+  inspectBrokenImages,
   launchBrowser,
   navigate,
   openPage,
@@ -54,7 +57,7 @@ import {
 import {TORTURE_VIEWPORTS, runTortureCorpus} from "./torture-corpus.mjs";
 import {buildVerdict, expandVerdict} from "./verdict.mjs";
 import {captureVisualPair} from "./visual-diff.mjs";
-import {inspectCandidateAssets, materializeCandidateCssAssets} from "./local-assets.mjs";
+import {inspectCandidateAssets, materializeCandidateCssAssets, materializeCandidatePageImages} from "./local-assets.mjs";
 
 const DEFAULT_PROPERTIES = [
   "display",
@@ -193,12 +196,22 @@ export function createSession({
         title,
         containerSelector,
       });
+      const unresolvedIncludes = await pages.candidate.locator(`${containerSelector} .error-block`).evaluateAll((nodes) => {
+        const rows = [];
+        for (const node of nodes) {
+          const text = (node.textContent ?? "").trim();
+          const match = /^Included page "(?<page>[^"]+)" does not exist \(/u.exec(text);
+          if (match?.groups?.page) rows.push({page: match.groups.page, message: text});
+        }
+        return rows;
+      });
       return {
         rpc_ms: Number(rpcMs.toFixed(1)),
         total_ms: Number((performance.now() - started).toFixed(1)),
         body_bytes: applied.body_bytes,
         styles: applied.styles,
         legacy_actions: rendered.legacy_actions.length,
+        unresolved_includes: unresolvedIncludes,
       };
     },
     async torture({siteId, title = "Theme Lab Torture", syntaxOnly = false}) {
@@ -400,6 +413,7 @@ export function createSession({
       wikitext = null,
       title = "Preview",
       syntaxOnly = false,
+      pageAssets = [],
       referenceUrl = null,
       referenceOffline = false,
       selectors = null,
@@ -407,6 +421,7 @@ export function createSession({
       torture = false,
       viewports = true,
       visual = false,
+      iteration = false,
       artifactDir = null,
       properties = DEFAULT_PROPERTIES,
       max = 60,
@@ -421,15 +436,30 @@ export function createSession({
       const started = performance.now();
       const full = {};
       let candidateAssets = null;
+      let preview = null;
+      let fontDiagnostics = null;
+      let imageDiagnostics = null;
+      let pageImageAssets = null;
+      let interactionDiagnostics = null;
 
       // Undo any destructive operation (torture fixture, previous preview)
       // before measuring, so the reference comparison sees the real page.
       await session.ensureSidebarFixture();
-      await session.restoreCandidate();
+      // CSS-only fast iterations intentionally reuse the last preview DOM so
+      // style edits do not pay Deepwell preview cost or lose theme components.
+      if (!(iteration && (wikitext === null || wikitext === undefined))) {
+        await session.restoreCandidate();
+      }
 
       if (wikitext !== null && wikitext !== undefined) {
         const step = performance.now();
-        full.preview = await session.preview({siteId, title, wikitext, syntaxOnly});
+        preview = await session.preview({siteId, title, wikitext, syntaxOnly});
+        full.preview = preview;
+        pageImageAssets = {
+          substituted: localAssets ? await materializeCandidatePageImages(candidate, pageAssets, localAssets.root) : 0,
+          provided: pageAssets.length,
+        };
+        full.page_image_assets = pageImageAssets;
         timing.preview_ms = Number((performance.now() - step).toFixed(1));
       }
       if (typeof css === "string") {
@@ -438,6 +468,15 @@ export function createSession({
         const effectiveCss = localAssets ? await materializeCandidateCssAssets(css, localAssets.root) : css;
         await applyStylesheet(candidate, effectiveCss, session.cssId);
         timing.css_ms = Number((performance.now() - step).toFixed(1));
+      }
+      if (wikitext !== null && wikitext !== undefined) {
+        const specimenSelector = "#page-content .theme-lab-jp-font-probe";
+        const specimenCount = await candidate.locator(specimenSelector).count();
+        fontDiagnostics = await inspectPlatformFonts(candidate, specimenCount ? specimenSelector : "#page-content");
+        fontDiagnostics.evidence = specimenCount ? "japanese-glyph-specimen" : "candidate-japanese-article-content";
+        full.font_diagnostics = fontDiagnostics;
+        imageDiagnostics = await inspectBrokenImages(candidate);
+        full.image_diagnostics = imageDiagnostics;
       }
 
       let reference = null;
@@ -455,7 +494,7 @@ export function createSession({
       }
 
       let viewportOverflow = null;
-      if (viewports) {
+      if (viewports && !iteration) {
         const step = performance.now();
         viewportOverflow = await collectViewportOverflow(candidate, DEFAULT_VIEWPORTS);
         timing.viewports_ms = Number((performance.now() - step).toFixed(1));
@@ -463,7 +502,7 @@ export function createSession({
       }
 
       let visualResult = null;
-      if (visual) {
+      if (visual && !iteration) {
         const step = performance.now();
         const outputDir = artifactDir ?? path.join(os.tmpdir(), `theme-lab-visual-${Date.now()}`);
         visualResult = await captureVisualPair({
@@ -476,9 +515,14 @@ export function createSession({
         full.visual = visualResult;
       }
 
+      if (wikitext !== null && wikitext !== undefined && !iteration) {
+        interactionDiagnostics = await exercisePreviewInteractions(candidate);
+        full.interaction_diagnostics = interactionDiagnostics;
+      }
+
       // Torture mutates the article content, so it runs last.
       let tortureResult = null;
-      if (torture) {
+      if (torture && !iteration) {
         const step = performance.now();
         tortureResult = await session.torture({siteId, syntaxOnly});
         timing.torture_ms = Number((performance.now() - step).toFixed(1));
@@ -490,8 +534,13 @@ export function createSession({
         reference,
         torture: tortureResult,
         viewports: viewportOverflow,
+        fontDiagnostics,
+        interactionDiagnostics,
+        imageDiagnostics,
+        pageImageAssets,
         visual: visualResult,
         timing,
+        preview,
         assets: loadedReference
           ? {
               external_requests: loadedReference.external_requests,
@@ -514,6 +563,9 @@ export function createSession({
             : null,
         extraIssues: candidateAssets?.missing.map((name) => ({severity: "error", kind: "candidate_asset_missing", asset: name})) ?? [],
       });
+      verdict.verification_scope = iteration
+        ? {mode: "iteration", completed: ["reference comparison", "candidate stylesheet", "preview", "assets", "Japanese fonts", "page images"], deferred: ["all viewports", "torture", "widget interactions", "visual screenshots"]}
+        : {mode: "full", completed: ["reference comparison", "candidate stylesheet", "preview", "assets", "Japanese fonts", "page images", "all viewports", "torture", "widget interactions", ...(visual ? ["visual screenshots"] : [])], deferred: []};
       return verbose ? expandVerdict(verdict, full) : verdict;
     },
     async screenshot({target = "candidate", path: outputPath, fullPage = true, viewport = null}) {

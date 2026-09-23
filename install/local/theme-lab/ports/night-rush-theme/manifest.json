@@ -1,0 +1,88 @@
+{
+  "slug": "theme:night-rush-theme",
+  "en_source_sha256": "2d1fe57ae48528ada48c2f177e2b9db9d3b83b825233e3bd105cc38931cd69ef",
+  "en_updated_at": "2022-12-20T21:40:07+00:00",
+  "en_entity_uuid": "c5b815e1-97fc-40c4-b411-a9448612a00d",
+  "jp_previous_status": "present",
+  "jp_previous_source_sha256": "05a20d5b6e1534554099e014972271405efabf5a119d6c84b8a3b2b021922453",
+  "jp_previous_updated_at": "2023-01-05T16:09:54+00:00",
+  "jp_previous_entity_uuid": "11b60ef5-308f-470c-9850-f42fcb81fa1e",
+  "technical_spec_version": "1.4",
+  "reference_url": "https://scp-wiki.wikidot.com/theme:night-rush-theme",
+  "candidate_source": "candidate.wikidot.txt",
+  "candidate_css": "candidate.css",
+  "source_file": "upstream-en.wikidot.txt",
+  "existing_jp_source": "existing-jp.wikidot.txt",
+  "source_identity": {
+    "slug": "theme:night-rush-theme",
+    "title": "Night Rush Theme",
+    "en": {
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:night-rush-theme/source.wikidot.txt",
+      "sha256": "2d1fe57ae48528ada48c2f177e2b9db9d3b83b825233e3bd105cc38931cd69ef",
+      "updated_at": "2022-12-20T21:40:07+00:00",
+      "entity_uuid": "c5b815e1-97fc-40c4-b411-a9448612a00d",
+      "tags": [
+        "_cc",
+        "theme"
+      ],
+      "attached_files": [],
+      "revisions": 31
+    },
+    "jp": {
+      "status": "present",
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:night-rush-theme/source.wikidot.txt",
+      "sha256": "05a20d5b6e1534554099e014972271405efabf5a119d6c84b8a3b2b021922453",
+      "updated_at": "2023-01-05T16:09:54+00:00",
+      "entity_uuid": "11b60ef5-308f-470c-9850-f42fcb81fa1e",
+      "tags": [
+        "en",
+        "テーマ"
+      ],
+      "absence_run": null
+    },
+    "existing_jp_audit": "existing-jp-current-and-valid",
+    "technical_spec_version": "1.4",
+    "final_verdict": "warn"
+  },
+  "dependencies": {
+    "slug": "theme:night-rush-theme",
+    "en_includes": [
+      ":scp-wiki:component:interwiki-style",
+      ":scp-wiki:info:start",
+      ":scp-wiki:info:more",
+      ":scp-wiki:info:end",
+      ":scp-wiki:theme:night-rush-theme",
+      "component:image-block name=https://scp-wiki.wdfiles.com/local--files/scp-4755/containment"
+    ],
+    "en_external_dependencies": [
+      "https://scp-wiki.wdfiles.com/local--code/theme%3Anight-rush-theme/1",
+      "https://scp-wiki.wdfiles.com/local--files/scp-4755/containment|caption=This",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Anight-rush-theme/night-rush-header.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Anight-rush-theme/night-rush-icon.png"
+    ],
+    "jp_includes": [
+      ":scp-wiki:info:start",
+      ":scp-wiki:info:more",
+      ":scp-wiki:info:end",
+      "theme:night-rush-theme",
+      "component:image-block name=http://scp-jp.wikidot.com/local--files/scp-4755/containment"
+    ],
+    "jp_external_dependencies": [
+      "http://scp-jp-storage.wikidot.com/local--files/file:7974444-50-9wqt/night-rush-header.png",
+      "http://scp-jp-storage.wikidot.com/local--files/file:7974444-51-jv2x/night-rush-icon.png",
+      "http://scp-jp.wikidot.com/local--files/scp-4755/containment|caption=これはテストイメージです。|width=200px|alt=黒背景に輝く財団ロゴ",
+      "https://scp-jp.github.io/files/theme/night-rush-theme/style0.css"
+    ],
+    "base_family": "independent"
+  },
+  "human_port_candidate": "human-port-candidate.wikidot.txt",
+  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_night-rush-theme/theme_night-rush-theme_Japanese.wikidot.txt",
+  "acceptance_selectors": "../shared-acceptance-selectors.txt",
+  "candidate_input": "existing-jp.wikidot.txt",
+  "candidate_css_source": "candidate-source.css",
+  "candidate_origin": "current official SCP-JP page source",
+  "final_verdict": "warn",
+  "existing_jp_audit": "existing-jp-current-and-valid",
+  "asset_dependency_decisions_path": "install/local/theme-lab/ports/night-rush-theme/assets.json",
+  "asset_dependency_decision_count": 3
+}

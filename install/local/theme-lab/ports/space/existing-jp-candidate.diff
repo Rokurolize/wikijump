@@ -1,0 +1,22 @@
+--- existing-jp.wikidot.txt
++++ candidate.wikidot.source.txt
+@@ -12,16 +12,16 @@
+ [[iftags +テーマ]]
+ [[include :scp-jp:credit:start-preview]]
+ **タイトル:** 普遍的宇宙テーマ
+-**翻訳責任者:** [[*user nebula2700]]
++**翻訳責任者:** nebula2700
+ **翻訳年:** 2024
+ **原題:** Generic Space Theme
+-**著作権者:** [[*user EstrellaYoshte]]
++**著作権者:** EstrellaYoshte
+ **作成年:** 2023
+ **初訳時参照リビジョン:** 28
+ **元記事リンク:** [https://scp-wiki.wikidot.com/theme:space ソース]
+ [[include :scp-jp:credit:end-preview]]
+ 
+-これは[[*user EstrellaYoshte]]によって作られた美しさを追求したテーマです。
++これはEstrellaYoshteによって作られた美しさを追求したテーマです。
+ 
+ このテーマを使用するには、以下を挿入してください:
+ 

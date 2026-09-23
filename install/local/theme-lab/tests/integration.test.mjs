@@ -63,7 +63,7 @@ async function fixtureServer() {
   };
 }
 
-async function withSession(t, run) {
+async function withSession(t, run, {previewClient = null} = {}) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "theme-lab-integration-"));
   const fixture = await fixtureServer();
   const chromium = loadChromium();
@@ -73,6 +73,7 @@ async function withSession(t, run) {
     headless: true,
     candidateUrl: `${fixture.origin}/candidate`,
     referenceAssets: new ReferenceCache({cacheDir: path.join(dir, "cache"), allowPrivate: true}),
+    previewClient,
   });
   t.after(async () => {
     await server.close().catch(() => {});
@@ -81,6 +82,36 @@ async function withSession(t, run) {
   });
   await run({session: server.session, fixture});
 }
+
+test("theme-port check fails on a missing included component in the rendered preview", async (t) => {
+  const previewClient = {
+    preview: async () => ({
+      body: '<span class="theme-lab-jp-font-probe">日本語の字形</span><div class="error-block">Included page "component:theme-squares" does not exist (create it now)</div>',
+      styles: [],
+      legacy_actions: [],
+      membership_actions: [],
+    }),
+  };
+  await withSession(t, async ({session}) => {
+    const verdict = await session.check({
+      siteId: 6000003,
+      title: "Theme preview include diagnostic",
+      wikitext: '[[include :scp-jp:component:theme-squares]]',
+      viewports: false,
+      torture: false,
+    });
+    assert.equal(verdict.verdict, "fail");
+    assert.equal(verdict.font_diagnostics.status, "measured");
+    assert.equal(verdict.font_diagnostics.evidence, "japanese-glyph-specimen");
+    assert.ok(verdict.font_diagnostics.fonts.some((font) => font.glyph_count > 0));
+    assert.ok(verdict.top_issues.some((issue) => issue.kind === "unresolved_include" && issue.include === "component:theme-squares"));
+    assert.deepEqual(verdict.next_actions, [{
+      kind: "resolve_candidate_include",
+      include: "component:theme-squares",
+      evidence: {preview_error: 'Included page "component:theme-squares" does not exist (create it now)'},
+    }]);
+  }, {previewClient});
+});
 
 test("theme-port check maps a missing foreign selector to the SCP-JP anchor", async (t) => {
   await withSession(t, async ({session, fixture}) => {
@@ -118,6 +149,41 @@ test("theme-port check explains a computed-style delta via the cascade", async (
     assert.equal(headerColor.cascade.winner.important, true);
     assert.equal(headerColor.cascade.winner.value, "rgb(0, 0, 0)");
   });
+});
+
+test("iteration-mode check keeps actionable comparison and explicitly defers full acceptance", async (t) => {
+  const previewClient = {preview: async () => ({body: '<span class="theme-lab-jp-font-probe">日本語の字形</span><div id="iteration-content">theme DOM</div>', styles: [], legacy_actions: [], membership_actions: []})};
+  await withSession(t, async ({session, fixture}) => {
+    const verdict = await session.check({
+      siteId: 6000003,
+      title: "Fast theme CSS iteration",
+      wikitext: "日本語の反復プレビュー",
+      css: "#page-content { color: rgb(1, 2, 3); }",
+      referenceUrl: `${fixture.origin}/reference`,
+      selectors: SELECTORS,
+      iteration: true,
+      viewports: true,
+      torture: true,
+      visual: true,
+    });
+    assert.equal(verdict.verification_scope.mode, "iteration");
+    assert.ok(verdict.style_changes.some((change) => change.property === "color"));
+    assert.equal(verdict.viewport_status, null);
+    assert.equal(verdict.torture, null);
+    assert.equal(verdict.interaction_diagnostics, null);
+    assert.equal(verdict.visual, null);
+    assert.deepEqual(verdict.verification_scope.deferred, ["all viewports", "torture", "widget interactions", "visual screenshots"]);
+    const cssOnly = await session.check({
+      css: "#iteration-content { color: rgb(4, 5, 6); }",
+      referenceUrl: `${fixture.origin}/reference`,
+      selectors: SELECTORS,
+      referenceOffline: true,
+      iteration: true,
+    });
+    assert.equal(cssOnly.timing_ms.preview_ms, undefined);
+    assert.equal((await session.probe({selector: "#iteration-content", property: "display"})).matched, 1,
+      "CSS-only iterations keep the current preview DOM live");
+  }, {previewClient});
 });
 
 test("broken CSS canary fails closed with a viewport overflow", async (t) => {

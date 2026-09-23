@@ -1,0 +1,27 @@
+これはSCP Wikiのテーマ、Sigma-10用ディレクトリです。
+
+ソースコードは[https://github.com/scpwiki/sigma GitHub]でホストされ、配信されています。
+
+サイトテーマの前バージョン（SCP Sigma-9）のコードは[[[component:theme|こちら]]]で確認できます。
+
+[[div class="blockquote"]]
++ 英語サンドボックス向け手順
+
+# 自分のサイトに{{theme:site}}という名前のページを作成してください。このページはロックするべきです。
+# 自分のサイトのサイトマネージャーで**外観と動作**、**テーマ**へ移動し、**外部**タブを選択して、"{{@@https://@@}}**your-site-name**{{@@.wdfiles.com/local--code/theme:site/1@@}}"を入力してください。
+# 必要なら、その形式を使うために[[[nav:side|サイドバー]]]および/または[[[nav:top|トップバー]]]をコピーしてください。
+# 添付ファイルを含め、[[[main|フロントページ]]]テンプレートをコピーしてください。
+# モバイル表示を有効化するには、あなたのWiki上の任意のページへ移動し、下部の[# + Options]をクリックしてください。
+# [# Edit Meta]をクリックしてください。
+# "Add a new meta tag"をクリックしてください。nameには"{{viewport}}"（引用符なし）を使い、contentには"{{width=device-width, initial-scale=1.0}}"（こちらも引用符なし）を使ってください。
+
+{{theme:site}}ページの内容:
+
+[[div class="code"]]
+@<[[code type="css"]]>@
+@<@import url("https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css");>@
+@<[[/code]]>@
+[[/div]]
+
+コードブロック内には、異なるヘッダー画像など、サンドボックス向けのカスタムスタイルを含めても構いません。
+[[/div]]

@@ -1,0 +1,20 @@
+--- existing-jp.wikidot.txt
++++ candidate.wikidot.source.txt
+@@ -12,7 +12,7 @@
+ 
+ [[include :scp-jp:credit:end-preview]]
+ 
+-これは、[[[theme:paperstack|Paperstackテーマ]]]をベースに[[*user EstrellaYoshte]]によって作成されたテーマです。
++これは、[[[theme:paperstack|Paperstackテーマ]]]をベースにEstrellaYoshteによって作成されたテーマです。
+ 
+ このテーマを使用するには、次のテキストをページ最上部にコピーしてください:
+ 
+@@ -213,7 +213,7 @@
+ @@ @@
+ {{limit}}ブロックがないと、{{anchor}}ブロックが指定した場所を離れてしまった時にページ全体に波及してしまいます。
+ 
+-**{{sidebox}}は幅1290px以下のウィンドウ/スクリーンでは最小化されます。**([[*user woedenaz]]が作ってくれました！)
++**{{sidebox}}は幅1290px以下のウィンドウ/スクリーンでは最小化されます。**(woedenazが作ってくれました！)
+ 
+ ------
+ 

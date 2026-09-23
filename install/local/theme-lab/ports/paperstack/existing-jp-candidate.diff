@@ -1,0 +1,36 @@
+--- existing-jp.wikidot.txt
++++ candidate.wikidot.source.txt
+@@ -1,7 +1,7 @@
+ [[iftags +テーマ]]
+ 
+ [[div class="logo"]]
+-[[image https://scp-jp.wdfiles.com/local--files/theme%3Apaperstack/lgtrans.png]]
++[[image lgtrans.png]]
+ [[/div]]
+ 
+ [[>]]
+@@ -40,13 +40,13 @@
+ 
+ ----
+ 
+-このテーマは、Containment Breachのインターフェースに着想を得て、[[*user EstrellaYoshte]]によって作成されました。このテーマを使用するには、次のテキストをページの最初に入力してください:
++このテーマは、Containment Breachのインターフェースに着想を得て、EstrellaYoshteによって作成されました。このテーマを使用するには、次のテキストをページの最初に入力してください:
+ 
+ 
+ > @@[[include :scp-jp:theme:paperstack]]@@
+ > @@ @@
+ > @@[[div class="logo"]]@@
+-> @@[[image https://scp-jp.wdfiles.com/local--files/theme%3Apaperstack/lgtrans.png]]@@
++> @@[[image lgtrans.png]]@@
+ > @@[[/div]]@@
+ > @@ @@
+ > @@[[>]]@@
+@@ -80,7 +80,7 @@
+ > @@[[include :scp-jp:theme:paperstack]]@@
+ > @@ @@
+ > @@[[div class="logo"]]@@
+-> @@[[image https://scp-jp.wdfiles.com/local--files/theme%3Apaperstack/lgtrans.png]]@@
++> @@[[image lgtrans.png]]@@
+ > @@[[/div]]@@
+ > @@ @@
+ > @@[[>]]@@

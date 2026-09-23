@@ -1,0 +1,1453 @@
+[[iftags +theme]]
+
+[[>]]
+**Rating:**
+[[module Rate]]
+
+**Rating w/ Credit Module:**
+[[/>]]
+[[include :scp-wiki:info:start]]
+Info about your page.
+[[include :scp-wiki:info:more]]
+More information about your page.
+[[include :scp-wiki:info:end]]
+
+
+This is an aesthetic theme by [[*user EstrellaYoshte]] forked from [[[theme:paperstack|Paperstack Theme]]].
+
+To import this theme to your page, put the following text anywhere inside it:
+
+> @@[[include :scp-wiki:theme:penumbra]]@@
+
+You can also change the title, subtitle, header logo, and accent color with the following CSS module after the {{[[include]]}}:
+
+[[div class="darkbox" style="font-family: var(--mono-font);"]]
+:root {
+@@  --header-title: "BIG HEADER TITLE";@@
+@@  --header-subtitle: "small header subtitle";@@
+@@  --lgurl: url("your url here");@@
+@@  --accentColor: COLOR HERE;@@
+} 
+[[/div]]
+
+By default, the accent color is ##1EB5E8|#1EB5E8##.
+
+------
+
+[[include component:image-block name= tb.png|caption=Image.|width=200px]]
+
+A horizontal rule can be created with 5 hyphens "- - - - -" and extends across the whole page if it's not placed inside anything (eg a blockquote). The lines separating sections of this document are horizontal rules.
+
+
+Titles can be created by putting between one and six plus "+" at the start of the line.
+
+~~~~
+
+[[collapsible show="Collapsible - Click me" hide="Collapsible - Click me"]]
++ First Title
+
+++ Second Title
+
++++ Third Title
+
+++++ Fourth Title
+
++++++ Fifth Title
+
+++++++ Sixth Title
+[[/collapsible]]
+
+@@ @@
+
+[[tabview]]
+[[tab Tabulator]]
+This is a tab view.
+[[/tab]]
+[[tab Tabulation]]
+Hey look, more text here.
+
+How quaint.
+[[/tab]]
+[[tab Long Tab]]
+This is a long tab. It contains a lot of text.[[footnote]] This is a footnote. [[/footnote]]
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+[[/tab]]
+
+[[tab Longer Tab]]
+This is also a long tab. It contains a lot of text.
+
+This is also a long tab. It contains a lot of text.
+
+This is also a long tab. It contains a lot of text.
+
+This is also a long tab. It contains a lot of text.
+
+This is also a long tab. It contains a lot of text.
+
+This is also a long tab. It contains a lot of text.
+
+This is also a long tab. It contains a lot of text.
+
+This is also a long tab. It contains a lot of text.
+
+This is also a long tab. It contains a lot of text.
+
+This is also a long tab. It contains a lot of text.
+
+This is also a long tab. It contains a lot of text.
+
+This is also a long tab. It contains a lot of text.
+
+This is also a long tab. It contains a lot of text.
+
+This is also a long tab. It contains a lot of text.
+[[/tab]]
+
+[[tab Empty Tab]]
+[[/tab]]
+[[/tabview]]
+
+@@ @@
+
+> This is a blockquote, created by putting "> " at the start of each line.
+>
+> More text
+> -----
+> That's a horizontal rule
+>
+>> Nested blockquotes
+
+@@ @@
+
+||~ This is a ||~ table ||
+||You should know || how to make these ||
+||||already ||
+
+@@ @@
+
+[[div class="darkbox"]]
+{{@@[[div class="darkbox"]]@@}}
+[[/div]]
+
+[[div class="lightbox"]]
+{{@@[[div class="lightbox"]]@@}}
+[[/div]]
+
+------
+
+The {{sidebox}} div is set up as follow:
+[[div class="darkbox"]]
+@@[[div class="limit"]]@@ {{<-- Set the start limit of the anchor}}
+@@[[div class="anchor"]]@@ {{<-- Set sidebox's sticky position}}
+@@[[div class="sidebox"]]@@
+Some sidebox text here.
+@@[[/div]]@@
+@@[[/div]]@@
+
+Text where sidebox scroll past.
+
+@@[[/div]]@@ {{<-- Set the end limit of the anchor}}
+[[/div]]
+
+
+[[collapsible show="Example" hide="Example"]]
+
+[[div class="limit"]]
+[[div class="anchor"]]
+[[div class="sidebox"]]
+With some finesse, it is possible
+[[/div]]
+[[/div]]
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean non molestie nulla. Morbi vitae massa auctor, porta arcu eget, dictum tellus. Etiam scelerisque aliquam ipsum, ac convallis lorem scelerisque eget.
+
+Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; In finibus purus non commodo porttitor. Integer sed felis dui. Nulla nec tincidunt velit. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.
+
+@@ @@
+[[/div]]
+
+[[div class="limit"]]
+[[div class="anchor"]]
+[[div class="sidebox"]]
+to have multiple sideboxes
+[[/div]]
+[[/div]]
+
+Vivamus sapien sem, gravida non vulputate eu, vestibulum vel lacus. Nulla massa erat, sodales dignissim vehicula non, fringilla id ante. Morbi eleifend lacus non nisl finibus aliquam. Proin tristique, lacus eu varius porttitor, lorem justo ullamcorper massa, sed ultricies elit dolor vitae nisi. Fusce varius nec sapien malesuada luctus. Pellentesque efficitur porttitor turpis sit amet rhoncus.
+
+Sed non sollicitudin nisl. Suspendisse finibus, est et venenatis placerat, diam lorem porttitor elit, ac sollicitudin arcu erat et orci. Curabitur erat mi, congue quis imperdiet ut, fringilla vitae sapien. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Duis nec ante pretium est commodo convallis id a sapien. Morbi sit amet ultricies urna.
+
+@@ @@
+[[/div]]
+
+[[div class="limit"]]
+[[div class="anchor"]]
+[[div class="sidebox"]]
+act like this.
+[[/div]]
+[[/div]]
+
+Ut semper, tellus vel tristique convallis, nulla mi laoreet nisi, eu malesuada ipsum magna sed dolor. Pellentesque nec lorem eu ante tristique efficitur. Sed auctor tortor ipsum. Morbi laoreet interdum scelerisque. Vivamus id enim nisl. Donec vitae leo suscipit, venenatis tortor eget, laoreet diam.
+
+Sed sollicitudin, arcu ut condimentum vulputate, dui diam convallis velit, vitae ultricies leo libero non metus. Vestibulum at aliquam nisi. Aenean molestie tortor orci, ac volutpat magna eleifend vitae. Morbi tristique risus tortor, feugiat efficitur augue imperdiet ut. Aliquam nec urna lacinia, pretium ligula ut, gravida ex.
+[[/div]]
+
+[[/collapsible]]
+
+@@ @@
+Without the {{limit}} div, the {{anchor}} will be stickied across the entire page content once past its sticky position.
+
+**Note that the {{sidebox}} div minimizes on screenwidth of 1290px and below.** (Thanks to [[*user Woedenaz]] for the code!)
+
+------
+
+@@ @@
+
+[[=]]
++++ The header font is Josefin Sans.
+
+{{The monospace font is Fira Code.}}
+[[/=]]
+
+@@ @@
+
+[[footnoteblock]]
+
+------
+
+
+
+@@ @@
+++ Source Code:
+
+[[code type="CSS"]]
+/*
+    Penumbra Theme
+    [2020 Wikidot Theme]
+    By EstrellaYoshte
+    Based on:
+       Paperstack Theme by EstrellaYoshte
+       Ad Astra Theme by NatVoltaic and stormbreath
+       Inkblot Theme by Croquembouche
+       Anderson Robotics Theme by Croquembouche
+       BHL Style Collapsible by Monkatraz
+*/
+
+@import url('https://fonts.bunny.net/css2?family=Fira+Code:wght@300..700&display=swap');
+
+@font-face {
+    font-family: 'Josefin Sans';
+    src: url(https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans.woff2) format("woff2");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Josefin Sans';
+    src: url(https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Italic.woff2) format("woff2");
+    font-weight: normal;
+    font-style: italic;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Josefin Sans';
+    src: url(https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold.woff2) format("woff2");
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Josefin Sans';
+    src: url(https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold-Italic.woff2) format("woff2");
+    font-weight: bold;
+    font-style: italic;
+    font-display: swap;
+}
+
+:root {
+  --body-font: InterVariable, BlinkMacSystemFont,'Segoe UI',Oxygen,Ubuntu,Cantarell,'Fira Sans','Droid Sans','Helvetica Neue',sans-serif;
+  --header-font: 'Josefin Sans', Verdana, Arial, Helvetica, sans-serif;
+  --mono-font: 'Fira Code', 'Andale Mono', 'Courier New', Courier, monospace;
+
+  --accentColor: #1EB5E8;
+  --darkColor: #2F333C; 
+  --darkerColor: #21252E;
+  --lightColor: #EDEDED;
+  --lgurl: url("https://scp-wiki.wdfiles.com/local--files/theme%3Apenumbra/logo.png");
+}
+
+body {
+    font-family: var(--body-font);
+    font-size: .975em;
+    line-height: 1.375;
+    color: var(--lightColor);
+    background-color: var(--darkColor);
+    background-image: linear-gradient(
+        to bottom,
+        var(--darkerColor), var(--darkerColor) 90px,
+        var(--darkerColor) 90px, var(--darkColor) 200px,
+        var(--darkColor) 200px, var(--darkColor) 100%);
+    background-repeat: no-repeat;
+    accent-color: var(--accentColor);
+}
+
+#content-wrap {
+    margin-top: 1.25rem;
+}
+
+input { color-scheme: dark; }
+
+
+/* ---- SCROLLBAR ---- */
+
+::-webkit-scrollbar {
+  width: .625rem;
+  height: .625rem;
+  background: transparent;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--darkerColor);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accentColor);
+  border: none;
+}
+
+:root {
+    scrollbar-color: var(--accentColor) var(--darkerColor);
+    scrollbar-width: thin;
+}
+
+/* ---- HEADER ---- */
+
+div#container-wrap {
+     background-image: none;
+}
+#header {
+    background-image: none;
+    height: 8.75rem;
+}
+
+div#extra-div-1 {
+    height: 164px;
+    width: 100%;
+    top: 0;
+    position: absolute;
+    background: var(--lgurl);
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+    z-index: -1;
+}
+
+#header h1, #header h2 { margin-left: 0; float: none; text-align: center; }
+/* Move the subtitle down a smidge */
+#header h2 { margin-top: 0.45rem; }
+#header h1 a {
+    margin: auto;
+    width: max-content;
+}
+/* Hide the existing text */
+#header h1 span, #header h2 span { font-size: 0; display: none; }
+/* Style the new text */
+#header h1 a::before, #header h2::before {
+  color: var(--accentColor);
+  font-family: var(--header-font);
+  text-shadow: none;
+}
+/* Set the new text's content from variable */
+#header h1 a::before {
+  content: var(--header-title, "SCP FOUNDATION");
+  font-weight: 700;
+  font-size: min(calc(1.125rem + 2.75vw), 2.875rem);
+}
+#header h2::before {
+  content: var(--header-subtitle, "SECURE - CONTAIN - PROTECT");
+  font-weight: 700;
+  font-size: min(calc(.5rem + 1.75vw), 1.25rem);
+}
+
+#login-status {
+    color: var(--lightColor);
+    width: 100%;
+    text-align: right;
+}
+#login-status a {
+    color: var(--accentColor);
+}
+
+#account-topbutton {
+    border: none;
+    margin-left: 0.35em;
+    padding: 0 0.45em;
+    font-size: 1em;
+    position: relative;
+}
+#account-topbutton::before {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-color: var(--accentColor);
+    opacity: 0.125;
+}
+
+#account-options {
+    width: 6.25rem;
+    background: var(--darkerColor);
+    border: none;
+    border-right: solid 3px var(--accentColor);
+}
+#account-options::before,
+#account-options::after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+#account-options::before {
+    background: rgba(0,0,0, .4);
+}
+#account-options::after {
+    background-color: var(--accentColor);
+    mix-blend-mode: overlay;
+}
+#account-options > ul {
+    position: relative;
+    z-index: 1;
+}
+#account-options ul a {
+    color: var(--accentColor);
+    background-color: transparent;
+    font-weight: bold;
+    letter-spacing: 0.01em;
+    padding: 0.25em 0.5em;
+    text-align: right;
+}
+#account-options ul a:hover {
+    color: var(--darkerColor);
+    background: var(--accentColor);
+}
+
+#footer {
+    background: transparent;
+    color: var(--lightColor);
+    font-size: 0.625rem;
+    margin-top: 0.25em;
+    padding: 0.25em 0.35em;
+    display: flex!important;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+#footer > a[href*="www.wikidot.com"] {
+    color: var(--lightColor);
+    padding: 0 0.85ch 0 0.5ch;
+    border-right: 1px solid currentColor;
+}
+#footer .options {
+    float: none;
+    order: 2;
+    width: max-content;
+    font-size: 0;
+}
+#footer .options a {
+    color: var(--lightColor);
+    font-size: 0.625rem;
+    padding: 0 0.85ch;
+    border-right: 1px solid currentColor;
+}
+#footer .options a:last-child {
+    border-right: none;
+    padding-right: 0;
+}
+
+#license-area {
+    color: var(--lightColor);
+    background-color: var(--darkerColor);
+    border-top: solid 0.1rem var(--accentColor);
+}
+
+#footer-bar {
+    border: none;
+    padding: 0 0 1em;
+    margin: 0;
+    max-width: 100%;
+    background-color: var(--darkerColor);
+}
+#footer-bar .units {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+#search-top-box {
+    top: 2.2rem!important;
+    right: 8px;
+    z-index: 8;
+}
+#search-top-box-form > input[type=submit] {
+    border: solid 1px var(--lightColor);
+    background: var(--darkerColor)!important;
+    box-shadow: none;
+    border-radius: 0;
+    color: var(--lightColor);
+    transition: color 0.15s linear;
+}
+#search-top-box-form input[type=submit]:hover {
+    border: solid 1px var(--accentColor);
+    box-shadow: none;
+    color: var(--accentColor);
+    appearance: none;
+}
+#search-top-box-form > input[type=text] { display: none; }
+
+
+/* ---- TOP BAR ---- */
+ 
+#top-bar {
+     top: 8.4rem;
+     display: flex;
+     justify-content: center;
+     right: 0;
+}
+@media (max-width: 768px) {
+    .mobile-top-bar {
+         display: flex;
+         justify-content: center;
+         max-width: 100%;
+         width: 100%;
+         left: 0;
+    }
+}
+#top-bar, #top-bar a {
+     color: var(--lightColor);
+     transition: color 0s;
+}
+#top-bar :is(.top-bar,.mobile-top-bar)>ul>li>a {
+    letter-spacing: .075ch;
+}
+
+#top-bar ul li ul,
+#top-bar ul li ul li ul {
+    border-color: var(--accentColor);
+    box-shadow: none;
+}
+#top-bar ul li.sfhover ul li a,
+#top-bar ul li:hover ul li a {
+   border-top-color: var(--darkColor);
+}
+#top-bar ul li.sfhover a,
+#top-bar ul li:hover a {
+    background: var(--darkerColor);
+    color: var(--lightColor);
+}
+#top-bar ul li.sfhover a:hover,
+#top-bar ul li:hover a:hover {
+    background: var(--darkerColor); /* top bar hover background color */
+    color: var(--accentColor);
+    transition: color 0.1s linear;
+}
+
+
+/* ---- SIDE BAR ---- */
+
+div#side-bar {
+    background: var(--darkerColor);
+    clear: both;
+    width: 17rem;
+    padding:0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow-x: hidden;
+    direction: rtl;
+}
+
+#side-bar .side-block,
+#interwiki .side-block {
+    border: transparent;
+    border-radius: 0;
+    padding: 5px 15px;
+    box-shadow: none;
+    background-color: transparent;
+    direction: ltr;
+}
+
+#side-bar .side-block.media {
+    position: relative;
+    background-color: var(--darkerColor);
+    margin: 0.75em 0;
+}
+#side-bar .side-block.media::before,
+#side-bar .side-block.media::after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+#side-bar .side-block.media::before {
+    background: rgba(0,0,0, .4);
+}
+#side-bar .side-block.media::after {
+    background-color: var(--accentColor);
+    mix-blend-mode: overlay;
+}
+#side-bar .side-block.media > * {
+    display: flex;
+    justify-content: space-evenly;
+    position: relative;
+    z-index: 1;
+}
+
+#side-bar .side-block.resources {
+    background-color: transparent;
+    position: relative;
+    margin-bottom: 0.25em;
+    padding: 0.75em 15px 0.5em;
+}
+#side-bar .side-block.resources::before {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: -1;
+    background-color: var(--accentColor);
+    opacity: 0.125;
+}
+#side-bar .collapsible-block-unfolded-link {
+    border-bottom: solid 1px var(--accentColor);
+}
+#side-bar .collapsible-block-unfolded-link .collapsible-block-link {
+    color: var(--accentColor);
+}
+#side-bar .collapsible-block-folded .collapsible-block-link,
+#side-bar .collapsible-block-unfolded-link .collapsible-block-link {
+    font-family: var(--header-font);
+}
+#side-bar .collapsible-block-unfolded-link .collapsible-block-link:hover {
+    color: #ffffff;
+}
+
+#side-bar .menu-item img, #interwiki .menu-item img {display: none; }
+
+#side-bar .heading,
+#interwiki .heading {
+    color: var(--lightColor);
+    font-family: var(--header-font);
+    font-size: 0.94rem;
+    border-bottom: solid 1px var(--lightColor);
+    margin-top: 1.25em;
+}
+
+#top-bar div.open-menu a {
+    border-radius: 0;
+    box-shadow: none;
+    color: var(--accentColor);
+    background-color: var(--darkerColor);
+    border: solid 1px var(--darkerColor);
+}
+
+/* ---- Interwiki ---- */
+iframe.scpnet-interwiki-frame, div.scpnet-interwiki-wrapper {
+    position: relative;
+    width: auto;
+}
+div.scpnet-interwiki-wrapper {
+    margin: 0 -5px 0.75em;
+    background-color: var(--darkerColor);
+}
+.scpnet-interwiki-wrapper::before,
+.scpnet-interwiki-wrapper::after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+.scpnet-interwiki-wrapper::before {
+    background: rgba(0,0,0, .4);
+}
+.scpnet-interwiki-wrapper::after {
+    background-color: var(--accentColor);
+    mix-blend-mode: overlay;
+}
+
+#interwiki {
+    --accentColor: #888888;
+    background: transparent;
+}
+#interwiki body {
+    background: transparent;
+}
+
+#interwiki .side-block {
+    margin-top: 0;
+    padding: 0 15px;
+}
+#interwiki .side-block a,
+#interwiki .side-block a:visited {
+    color: var(--accentColor);
+}
+#interwiki .side-block a:hover,
+#interwiki .side-block a:visited:hover {
+    color: #ffffff;
+}
+#interwiki .heading {
+    color: var(--accentColor);
+    border-bottom-color: currentColor;
+}
+#interwiki .menu-item img {
+    display: none;
+}
+/* ------------------- */
+
+@media (max-width: 767px) {
+    #main-content {
+        padding: 0;
+        margin: 0 5%;
+        border-left: none;
+    }
+    #page-title {
+        margin-top: 0.7em;
+    }
+    #side-bar {
+        background-color: var(--darkerColor);
+    }
+    #side-bar:target {
+        border: none;
+        box-shadow: none;
+    }
+    #side-bar .close-menu {
+        transition: width 0.5s ease-in-out 0.1s,
+                    opacity 1s ease-in-out 0s;
+        display: block;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        right: 0; left: auto;
+        background: rgb(0,0,0,0.3);
+        z-index: -1;
+        opacity: 0;
+        pointer-events: none;
+    }
+    #side-bar:target .close-menu {
+        width: calc(100% - 17rem);
+        right: 0;
+        left: auto;
+        opacity: 1;
+        pointer-events: auto;
+    }
+    #side-bar {
+        top: 0;
+    }
+    #search-top-box {
+        top: 107px;
+    }
+}
+
+/* ---- TABS ---- */
+
+/* ---- YUI TAB BASE ---- */
+.yui-navset .yui-nav a,.yui-navset .yui-navset-top .yui-nav a{background-color:inherit;background-image:inherit}.yui-navset .yui-nav a:hover,.yui-navset .yui-nav a:focus{background:inherit;text-decoration:inherit}.yui-navset .yui-nav .selected a,.yui-navset .yui-nav .selected a:focus,.yui-navset .yui-nav .selected a:hover{color:inherit;background:inherit}.yui-navset .yui-nav,.yui-navset .yui-navset-top .yui-nav{border-color:inherit}.yui-navset li{line-height:inherit}
+ 
+/* ---- YUI TAB CUSTOMIZATION ----*/
+ 
+ .yui-navset .yui-nav,
+ .yui-navset .yui-navset-top .yui-nav{
+     display: flex;
+     flex-wrap: wrap;
+     width: calc(100% - .125rem);
+     margin: 0 auto;
+     border-color: var(--accentColor);
+     box-shadow: none;
+}
+ .yui-navset .yui-nav a, /* ---- Link Modifier ---- */
+ .yui-navset .yui-navset-top .yui-nav a{
+     color: var(--lightColor);
+     font-weight: bold;
+    /* ---- Tab Background Colour | [UNSELECTED] ---- */
+     background-color: var(--darkerColor);
+     border: unset;
+     box-shadow: none;
+     box-shadow: none;
+     transition: background-color 0.15s linear;
+}
+ .yui-navset .yui-nav a:hover,
+ .yui-navset .yui-nav a:focus{
+     color: var(--lightColor);
+    /* ---- Tab Background Colour | [HOVER] ---- */
+     background-color: var(--accentColor);
+}
+ .yui-navset .yui-nav li, /* ---- Listitem Modifier ---- */
+ .yui-navset .yui-navset-top .yui-nav li{
+     position: relative;
+     display: flex;
+     flex-grow: 2;
+     max-width: 100%;
+     margin: 0;
+     padding: 0;
+     color: var(--lightColor);
+     background-color: var(--darkerColor);
+     border-color: transparent;
+     box-shadow: none;
+}
+ .yui-navset .yui-nav li a,
+ .yui-navset-top .yui-nav li a,
+ .yui-navset-bottom .yui-nav li a{
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     width: 100%;
+}
+ .yui-navset .yui-nav li em{
+     border: unset;
+}
+ .yui-navset .yui-nav a em,
+ .yui-navset .yui-navset-top .yui-nav a em{
+     padding: .35em .75em;
+ 
+     text-overflow: ellipsis;
+     overflow: hidden;
+     white-space: nowrap;
+}
+ .yui-navset .yui-nav .selected, /* ---- Selection Modifier ---- */
+ .yui-navset .yui-navset-top .yui-nav .selected{
+     flex-grow: 2;
+     margin: 0;
+     padding: 0;
+    /* ---- Tab Background Colour | [SELECTED] ---- */
+     background-color: var(--accentColor);
+}
+ .yui-navset .yui-nav .selected a,
+ .yui-navset .yui-nav .selected a em{
+     border: none;
+}
+ .yui-navset .yui-nav .selected a{
+     width: 100%;
+     color: var(--darkerColor);
+     font-weight: bold;
+}
+ .yui-navset .yui-nav .selected a:focus,
+ .yui-navset .yui-nav .selected a:active{
+     color: var(--darkerColor);
+     background-color: var(--accentColor);
+}
+ .yui-navset .yui-content {
+    background-color: var(--darkerColor);
+    box-shadow: none;
+}
+ .yui-navset .yui-content,
+ .yui-navset .yui-navset-top .yui-content{
+     padding: .5em;
+     border: none;
+}
+
+/*---- TAB ANIMATION by Croquembouche ---- */
+
+.yui-navset .yui-content > div {
+    display: block;
+    top: 0;
+    overflow: hidden;
+    transform-origin: 0 0;
+}
+
+#page-content .yui-navset .yui-content > div[style*="none"] {
+    display: block !important;
+    flex: 0;
+    max-height: 0;
+    padding: 0 0.5em;
+    border-width: 0;
+    /* The following transition affects the one that DISAPPEARS */
+    transition: padding 0s linear 0.5s,
+          border-width 0s linear 0.5s,
+          flex 0.5s cubic-bezier(.18,.51,.54,.9) 0s;
+    animation: tab-disappear 0.5s ease-in-out 0s 1 both;
+}
+#page-content .yui-navset .yui-content > div[style*="block"] {
+    display: block !important;
+    flex: 1;
+    max-height: 9999rem;
+    /* The following transition affects the one that APPEARS */
+    transition: padding 0s linear 0.5s,
+          border-width 0s linear 0.5s,
+          flex 0.5s cubic-bezier(.18,.51,.54,.9) 0.5s;
+    animation: tab-appear 0.5s ease-in-out 0.5s 1 both;
+}
+
+@keyframes tab-disappear {
+    0% { max-height: 9999rem; }
+    1% { max-height: 100vh; }
+    100% { max-height: 0; }
+}
+@keyframes tab-appear {
+    0% { max-height: 0; }
+    99% { max-height: 100vh; }
+    100% { max-height: 9999rem; }
+}
+
+
+/* ---- INFO BAR ---- */
+ body{
+     --barColour: var(--darkerColor);
+     --linkColour: var(--lightColor);
+}
+
+ .info-container .collapsible-block-content {
+    padding: 0 .5em 30px;
+}
+#page-content .info-container > .collapsible-block .collapsible-block-link {
+    padding: 0;
+}
+ .info-container .collapsible-block-content .wiki-content-table {
+    width: 100%;
+}
+
+
+/* Ayer's info-bar patch by Monkatraz */
+#page-content .info-container .collapsible-block-folded, #page-content .info-container .collapsible-block-unfolded-link  {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0;
+    box-shadow: none;
+}
+#page-content .info-container .collapsible-block-link::before, #page-content .info-container .collapsible-block-unfolded-link::before  {
+    content: " ";
+    display: none;
+}
+#page-content .info-container .collapsible-block-content::after {
+    display: none;
+}
+
+/* ---- INFO PANE ---- */
+
+#page-content .creditRate{
+     margin: unset;
+     margin-top: 4px;
+     margin-bottom: 4px;
+     margin-right: 3px;
+}
+#page-content .rate-box-with-credit-button {
+    background-color: var(--darkerColor);
+    border: solid 2px var(--darkerColor);
+    border-radius: 0;
+    box-shadow: 3px 0px 0px 0px var(--accentColor);
+}
+#page-content .rate-box-with-credit-button .creditButton p a {
+    color: #ffffff;
+    border-left-color: transparent;
+}
+ 
+#page-content .rate-box-with-credit-button .page-rate-widget-box .cancel {
+    border-radius: 0;
+}
+#page-content .rate-box-with-credit-button .page-rate-widget-box .rate-points {
+    border-left: 0;
+}
+ 
+.rate-box-with-credit-button .page-rate-widget-box .cancel a:hover {
+    border-radius: 0;
+}
+ 
+#page-content .rate-box-with-credit-button .fa-info {
+     color: var(--lightColor);
+}
+#page-content .rate-box-with-credit-button .fa-info:hover {
+     color: var(--accentColor);
+}
+
+#page-content .creditButtonStandalone p a {
+    background-color: var(--darkerColor);
+    border: solid 2px var(--darkerColor);
+    border-radius: 0;
+    box-shadow: 3px 0px 0px 0px var(--accentColor);
+    color: var(--lightColor);
+}
+#page-content .creditButtonStandalone p a:hover {
+    color: var(--accentColor);
+}
+
+#page-content .modalbox {
+    background: var(--darkColor) !important;
+    color: var(--lightColor);
+    box-shadow: none;
+    border-radius: 0;
+}
+
+/* ---- PAGE RATING ---- */
+ 
+.page-rate-widget-box {
+     margin: unset;
+     border-radius: 0;
+     border: solid 2px var(--darkerColor);
+     box-shadow: 3px 0px 0px 0px var(--accentColor);
+     background-color: var(--darkerColor);
+     margin-top: 4px;
+     margin-bottom:4px;
+     margin-right: 3px;
+}
+ 
+div.page-rate-widget-box .rate-points {
+    background-color: var(--darkerColor);
+    border: none;
+    color: var(--lightColor) !important;
+    text-transform: capitalize;
+}
+.page-rate-widget-box .rateup,
+.page-rate-widget-box .ratedown {
+    background-color: var(--darkerColor);
+    border-top: none;
+    border-bottom: none;
+}
+.page-rate-widget-box .rateup a,
+.page-rate-widget-box .ratedown a {
+    background: transparent;
+    color: var(--lightColor);
+}
+.page-rate-widget-box .rateup a:hover,
+.page-rate-widget-box .ratedown a:hover {
+    background: var(--darkerColor);
+    color: var(--accentColor);
+}
+.page-rate-widget-box .cancel {
+    background: transparent;
+    background-color: var(--darkerColor);
+    border: none;
+}
+.page-rate-widget-box .cancel a {
+    color: var(--lightColor);
+}
+.page-rate-widget-box .cancel a:hover {
+    background: var(--darkerColor);
+    color: var(--accentColor);
+}
+ 
+
+/* ---- PAGE ELEMENTS ---- */
+
+.page-source, tt {
+    font-family: var(--mono-font);
+    font-size: 0.87rem;
+}
+ .code pre, .code p, .code {
+    font-family: var(--mono-font);
+    font-size: 0.87rem;
+    color: var(--darkerColor);
+}
+
+h1 {
+    color: var(--accentColor);
+    font-family: var(--header-font);
+    font-weight: bold;
+}
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: inherit;
+    font-family: var(--header-font);
+    font-weight: bold;
+}
+
+#page-title, .meta-title {
+    color: var(--lightColor);
+    font-family: var(--header-font);
+    font-weight: bold;
+    font-size: 1.75em;
+    text-align: center;
+    border-color: currentColor;
+}
+
+/* Clicky links */
+a,
+a.newpage,
+a:visited,
+#side-bar a,
+#side-bar a:visited {
+    color: var(--accentColor);
+    transition: color 0.15s linear;
+}
+a:hover, a.newpage:hover, a:visited:hover, #side-bar a:not(.close-menu):hover {
+    color: #ffffff;
+    text-decoration: none;
+    background-color: var(--accentColor);
+}
+a.newpage { filter: hue-rotate(180deg); }
+
+/* patch for sidebar media, collapsibles, ACS, info button and ayers module so link doesn't override */
+#page-content .collapsible-block-folded a:hover, #page-content .collapsible-block-unfolded-link a:hover, #page-content .rate-box-with-credit-button .fa-info:hover, #side-bar .side-block.media a:hover, .danger-diamond a:hover, .printuser.avatarhover > a:first-child:hover {
+    background: transparent;
+}
+.info-container .collapsible-block-folded .collapsible-block-link, .info-container .collapsible-block-link {
+    background: var(--linkColour) !important;
+}
+
+/*---------------------------*/
+
+hr {
+    background-color: var(--accentColor);
+    margin: 1.5rem 0;
+}
+
+blockquote,
+div.blockquote,
+#toc {
+    background-color: var(--darkerColor);
+    border: solid 2px var(--darkColor);
+    box-shadow: -3px 0px 0px -0.1px var(--accentColor);
+}
+
+.code {
+    background-color: #F8F8F8;
+    border: solid 3px var(--darkColor);
+    box-shadow: none;
+}
+.scp-image-block {
+    border: solid 8px var(--darkerColor);
+    border-bottom: solid 0px var(--darkerColor);
+    box-shadow: 0px 0.26rem 0px 0px var(--accentColor);
+    box-sizing: border-box;
+}
+.scp-image-block .scp-image-caption {
+    background-color: var(--darkerColor);
+    border: solid 4px var(--darkerColor);
+    color: var(--lightColor);
+    font-size: 0.84rem;
+}
+.scp-image-block.block-left { margin-left: 0; }
+.scp-image-block.block-right { margin-right: 0; }
+@media (max-width: 540px) {
+  .scp-image-block.block-left, .scp-image-block.block-right {
+    float: none; clear: both; margin-left: auto; margin-right: auto;
+  }
+}
+
+#page-content .wiki-content-table tr th {
+    border: solid 1px var(--accentColor);
+    color: var(--accentColor);
+    background-color: var(--darkerColor);
+    /* set border for table title */
+}
+#page-content .wiki-content-table tr td {
+    border: solid 1px var(--accentColor);
+    /* set border for table content */
+}
+
+/* fancy collapsible */
+#page-content .collapsible-block-folded, #page-content .collapsible-block-unfolded-link {
+    background: var(--darkerColor);
+    transition: background 0.25s linear;
+    width: -moz-fit-content;
+    width: fit-content;
+    overflow: hidden;
+    margin: auto;
+    box-sizing: border-box;
+}
+#page-content .collapsible-block-folded .collapsible-block-link::before {
+    content: "▷ ";
+}
+#page-content .collapsible-block-unfolded .collapsible-block-link::before {
+    content: "▽ ";
+}
+#page-content .collapsible-block-link {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+
+    text-decoration: none;
+    color: var(--lightColor);
+    font-weight: bold;
+    text-align: center;
+}
+#page-content .collapsible-block-folded:hover, #page-content .collapsible-block-unfolded-link:hover {
+    background: var(--accentColor);
+}
+#page-content .collapsible-block-unfolded-link {
+    box-shadow: 0px -0.26rem 0px 0px var(--accentColor);
+}
+#page-content .collapsible-block-folded, #page-content .collapsible-block-unfolded-link {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+/* Selection */
+::selection {
+    background: var(--accentColor);
+    color: #ffffff;
+}
+ 
+/* Footnotes */
+.hovertip {
+    font-size: .9rem;
+    background-color: var(--darkerColor) !important;
+    border: solid 1px var(--accentColor) !important;
+}
+.footnotes-footer {
+    background-color: var(--darkerColor);
+    padding-left: 1.4rem;
+    padding-right: 1.4rem;
+    padding-bottom: 1.5rem;
+    box-shadow: -0.24rem 0px 0px 0px var(--accentColor);
+}
+.footnotes-footer .title {
+    color: var(--lightColor);;
+}
+.footnote .f-footer, .equation .e-footer, .reference .r-footer {
+    display: none;
+}
+
+/* Tags */
+#main-content .page-tags a {
+    margin-top: .18rem;
+}
+.page-tags span {
+    border-top: 1px solid var(--lightColor);
+}
+
+/* Pop-Up Windows */
+.owindow {
+    background-color: var(--darkerColor);
+    border-color: var(--accentColor);
+}
+ 
+.owindow .modal-header {
+    background-color: var(--darkerColor);
+}
+ 
+.owindow .modal-body img {
+    background-color: transparent !important;
+}
+ 
+.owindow .title {
+    background-color: var(--darkerColor);
+    color: #var(--accentColor);
+    border-bottom: 1px solid var(--darkColor);
+}
+ 
+.owindow .button-bar a {
+    background-color: var(--darkerColor);
+    border-color: var(--accentColor);
+    color: var(--lightColor);
+}
+.owindow .button-bar a:hover {
+    background-color: var(--accentColor);
+}
+ 
+.owindow.owait .content {
+    background-image: none;
+    padding: 0.25rem 1.5rem 1.5rem;
+}
+.owindow.owait .content::after {
+  content: " ";
+  display: block;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin: -1rem auto;
+  margin-top: 0.85rem;
+  border-radius: 50%;
+  border: 0.375rem solid black;
+  border-color: var(--accentColor) var(--darkColor) var(--darkColor);
+  animation: loading 0.75s linear infinite;
+}
+@keyframes loading {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Edit Buttons */
+.buttons .btn {
+    background-color: var(--darkerColor);
+    border-color: var(--accentColor);
+    color: var(--accentColor);
+    padding: 0.45em 0.625em;
+    font-weight: bold;
+    transition: color 0.15s linear;
+    cursor: pointer;
+}
+.buttons .btn:hover {
+    background-color: var(--accentColor);
+    color: var(--darkerColor);
+}
+ 
+/* Edit Lock Info*/
+#lock-info {
+    background-color: var(--darkerColor);
+    border-color: var(--lightColor);
+}
+ 
+/* Close Button for Page Source, Rating, Etc */
+a.action-area-close:hover {
+    background-color: var(--accentColor);
+}
+ 
+/* History */
+.pager .current {
+    background-color: var(--accentColor);
+    border-color: var(--lightColor);
+}
+.pager a,
+table.page-history td.optionstd a {
+    border-color: currentColor;
+}
+
+/* History Compare */
+.inline-diff ins, .inline-diff del {
+    color: var(--darkerColor);
+}
+
+/* Page Source */
+.page-source {
+    border: none;
+    padding: 1.5em 1.75em;
+    background-color: var(--darkerColor);
+}
+
+
+/* ---- CUSTOM SYNTAX ---- */
+
+.darkbox {
+    background-color: var(--darkerColor);
+    border-left: solid 0.26rem var(--accentColor);
+    border-right: solid 0.26rem var(--accentColor);
+    padding: .4rem;
+    margin-top: 12px;
+    margin-bottom:12px;
+}
+
+.lightbox {
+    background-color: var(--lightColor);
+    color: var(--darkerColor);
+    border-left: solid 0.26rem var(--accentColor);
+    border-right: solid 0.26rem var(--accentColor);
+    padding: .4rem;
+    margin-top: 12px;
+    margin-bottom:12px;
+}
+.lightbox h2, .lightbox h3, .lightbox h4, .lightbox h5, .lightbox h6 {
+    color: var(--darkerColor);
+}
+
+/* author label compatibility */
+#page-content .authorlink-wrapper {
+    margin-top: -0.1rem;
+    --author-right-adjust: 0;
+    --swatch-background: 33, 37, 46;
+    --swatch-text-general: 237, 237, 237;
+}
+
+/*------------------------------------*/
+
+.limit {
+    margin-bottom: -1rem;
+    z-index: 5;
+
+}
+.anchor {
+    position: sticky;
+    height:0;
+    top: 0;
+    z-index: 5;
+}
+.sidebox {
+    background-color: var(--darkerColor);
+    border-top: solid 2px var(--accentColor);
+    padding: .14rem;
+    margin-top: 0;
+    margin-bottom: 8px;
+    width: calc((100vw - 870px)/2);
+    max-height: calc(100vh - 18rem);
+    position: absolute;
+    top: 0;
+    left: 103.5%;
+    z-index: 5;
+    overflow: auto;
+    box-sizing: border-box;
+}
+/* Sidebox mobile optimization, courtesy of Woed */
+@media (max-width: 1290px) {
+   .sidebox {
+        --arrow-size: 1.25rem;
+        width: auto;
+        max-width: 65vw!important;
+        border: none;
+        padding-left: 0.4rem; padding-right: 0.4rem;
+        top: 0.75rem;
+        right: calc(((100vw - 45.8rem)/2) * -1);
+        left: initial;
+        clip-path: inset(-0.125rem -0.25rem 0 calc(100% - 0.85rem));
+        transition: color 0.2s ease-in-out 0.1s, box-shadow 0.5s ease-in-out 0.1s, clip-path 0.5s ease-in-out 0.1s, background-position-x .25s ease-out;
+        background-image: conic-gradient(from 44.9deg, var(--accentColor) 45deg 90deg, transparent 90.1deg);
+        background-repeat: no-repeat;
+        background-size: var(--arrow-size);
+        background-position-x: 100%;
+        scrollbar-width: none;
+    }
+    .sidebox::-webkit-scrollbar { width: 0px; }
+
+    .sidebox > * {
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out 0.2s;
+    }
+
+    .sidebox:is(:hover,:focus-within) {
+        clip-path: inset(-0.125rem -0.25rem 0 0);
+        background-position-x: calc(100% + var(--arrow-size));
+    }
+
+    .sidebox:is(:hover,:focus-within) > * {
+        opacity: 1;
+    }
+}
+
+@media (max-width:768px) {
+    .sidebox, .sidebox:is(:hover,:focus-within) {
+        right: calc(((100vw - (100% - 3rem))/2) * -1 + 1.9rem);
+    }
+}
+[[/code]]
+[[/iftags]]
+
+[[div style="display: none"]]
+[[include :scp-wiki:component:toggle-sidebar]]
+[[/div]]
+
+[[module CSS]]
+@import url('https://scp-wiki.wdfiles.com/local--code/theme%3Apenumbra/1');
+[[/module]]
+
+[[include :scp-wiki:component:interwiki-style
+| priority=1
+| theme=https://scp-wiki.wdfiles.com/local--code/theme%3Apenumbra/1
+]]

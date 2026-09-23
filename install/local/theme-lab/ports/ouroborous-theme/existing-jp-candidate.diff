@@ -1,0 +1,29 @@
+--- existing-jp.wikidot.txt
++++ candidate.wikidot.source.txt
+@@ -33,7 +33,7 @@
+ ]]
+ [[include :scp-jp:credit:start-preview]]
+ **タイトル:** ウロボロステーマ
+-**作者:** [[*user Woedenaz]]
++**作者:** Woedenaz
+ **原題:** Ouroborous Theme
+ **作成年:** 2020
+ [[include :scp-jp:credit:end-preview]]
+@@ -72,7 +72,7 @@
+ ]]
+ 
+ [[div class="scp-image-block block-right" style="max-width:300px;"]]
+-[[image https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-46-l81f/ouroborous_logo.png width="300px"]]
++[[image ouroborous_logo.png width="300px"]]
+ [[div class="scp-image-caption" style="max-width:300px;"]]
+ ウロボロスのロゴ
+ [[/div]]
+@@ -81,7 +81,7 @@
+ + 使い方
+ 
+ [[div_ style="filter: invert(1) brightness(110%);display:flex;"]]
+-[[image https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg]]
++[[image black-highlighter-logo.svg]]
+ [[/div]]
+ 
+ ++ 注: これはBlack Highlighterベースのテーマです。このテーマを使用するにはBlack Highlighterテーマもインポートする必要があります。[[[theme:black-highlighter-theme|詳細については、ここを参照してください]]]。

@@ -1,0 +1,25 @@
+{
+  "source_sha256": "6b681b7655250551b3c1677252c5499c230db126fd5e9b3df842a931dfaef3c4",
+  "squares_source_sha256": "85c7b8294847156d8e2ccc1dd79591d4c83db1f2cf767747d4fb59fc80ec42c0",
+  "expanded_theme_squares": 0,
+  "omitted_unseeded_includes": [
+    "component:image-block",
+    "component:sigma-plus",
+    "credit:end-preview",
+    "credit:start-preview",
+    "theme:space"
+  ],
+  "standard_runtime_fixture": [
+    "Rate",
+    "Japanese glyph specimen",
+    "TOC",
+    "tabs",
+    "collapsible",
+    "table",
+    "blockquote",
+    "image block",
+    "footnote",
+    "code"
+  ],
+  "expanded_theme_squares_css_modules": 0
+}

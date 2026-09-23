@@ -1,0 +1,27 @@
+This is the directory for the SCP Wiki's theme, Sigma-10.
+
+The source code is hosted and served on [https://github.com/scpwiki/sigma GitHub].
+
+The code for the last version of the site theme (SCP Sigma-9) can be seen [[[component:theme|here]]].
+
+[[div class="blockquote"]]
++ Instructions for English Language Sandboxes
+
+# Create a page named {{theme:site}} on your site. You should lock this page.
+# In the Site Manager for your site, go to **Appearances & Behavior**, **Themes**, then select the **External** tab, and enter "{{@@https://@@}}**your-site-name**{{@@.wdfiles.com/local--code/theme:site/1@@}}".
+# Copy the [[[nav:side|Side Bar]]] and/or [[[nav:top|Top Bar]]] if you wish to use the format for those.
+# Copy the [[[main|Front Page]]] template, including attached files.
+# To activate the mobile view, go to any page on your wiki and click [# + Options] at the bottom.
+# Click [# Edit Meta]
+# Click "Add a new meta tag". For name, use "{{viewport}}" (without quotes) and for content use "{{width=device-width, initial-scale=1.0}}" (again, without quotes).
+
+Contents for your {{theme:site}} page:
+
+[[div class="code"]]
+@<[[code type="css"]]>@
+@<@import url("https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css");>@
+@<[[/code]]>@
+[[/div]]
+
+Within the code block, you may include custom styling meant for your sandbox, such as a different header image.
+[[/div]]

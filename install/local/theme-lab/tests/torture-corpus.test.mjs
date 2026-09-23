@@ -62,10 +62,11 @@ test("torture diff catches newly hidden content", () => {
 test("torture diff catches new horizontal overflow", () => {
   const diff = diffTortureStates(
     state(),
-    state(component(), {document_overflow_px: 38}),
+    state(component(), {document_overflow_px: 38, overflow_sources: [{selector: ".wide-title", overflow_px: 38}]}),
   );
   assert.equal(diff.verdict, "fail");
   assert.equal(diff.issues[0].kind, "new_horizontal_overflow");
+  assert.equal(diff.issues[0].overflow_sources[0].selector, ".wide-title");
 });
 
 test("torture diff catches new component overflow", () => {
@@ -75,6 +76,22 @@ test("torture diff catches new component overflow", () => {
   );
   assert.equal(diff.verdict, "fail");
   assert.equal(diff.issues[0].kind, "new_component_overflow");
+});
+
+test("torture tolerates small glyph or shadow overhang but rejects meaningful component overflow", () => {
+  const small = diffTortureStates(state(), state(component({own_overflow_px: 4})));
+  assert.equal(small.verdict, "pass");
+  const large = diffTortureStates(state(), state(component({own_overflow_px: 6})));
+  assert.equal(large.verdict, "fail");
+});
+
+test("torture accepts component overflow contained by an intentional horizontal scroller", () => {
+  const diff = diffTortureStates(
+    state(),
+    state(component({own_overflow_px: 158, own_overflow_scrollable: true})),
+  );
+  assert.equal(diff.verdict, "pass");
+  assert.equal(diff.issues.length, 0);
 });
 
 test("torture diff reports large geometry changes without calling them invalid", () => {

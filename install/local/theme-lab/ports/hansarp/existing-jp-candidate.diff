@@ -1,0 +1,29 @@
+--- existing-jp.wikidot.txt
++++ candidate.wikidot.source.txt
+@@ -20,12 +20,12 @@
+ 
+ [[include :scp-jp:credit:start-preview]]
+ **タイトル:** HANSARP Theme
+-**作者:** [[*user EstrellaYoshte]]
++**作者:** EstrellaYoshte
+ **原題:** HANSARP Theme
+ **作成年:** 2022
+ [[include :scp-jp:credit:end-preview]]
+ 
+-[[*user Woedenaz]]はHANSARPテーマで何か使えそうなものを作れないかと俺に挑戦を申し込んできた。俺は受けたさ。
++WoedenazはHANSARPテーマで何か使えそうなものを作れないかと俺に挑戦を申し込んできた。俺は受けたさ。
+ 
+ [[include :scp-jp:component:theme-squares -=-
+ | color1-name=Maybe Green?
+@@ -49,9 +49,9 @@
+ ]]
+ 
+ [[div class="scp-image-block block-right" style="max-width:300px;"]]
+-[[image https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-42-9f6d/hansarplogo.png width="250px"]]
++[[image hansarplogo.png width="250px"]]
+ [[div class="scp-image-caption" style="max-width: 300px;"]]
+-HANSARPロゴ by [[*user Woedenaz]]
++HANSARPロゴ by Woedenaz
+ [[/div]]
+ [[/div]]
+ 

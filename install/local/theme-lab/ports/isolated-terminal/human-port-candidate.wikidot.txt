@@ -1,0 +1,716 @@
+[[iftags +テーマ]]
+
+[[module css]]
+@import url("https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css");
+@import url("https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css");
+[[/module]]
+
+[[include :scp-jp:component:interwiki-style
+| priority=1
+| theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css
+]]
+
+[[include :scp-jp:component:interwiki-style
+| priority=2
+| theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css
+]]
+
+[[>]]
+**評価:**
+[[module Rate]]
+**クレジット付き評価:**
+[[/>]]
+[[include :scp-jp:info:start]]
+あなたのページに関する情報。
+[[include :scp-jp:info:more]]
+あなたのページに関する追加情報。
+[[include :scp-jp:info:end]]
+
+[[div style="filter: invert(1) saturate(60) hue-rotate(-20deg);"]]
+[[image https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg]]
+[[/div]]
+
+[[=]]
++ テーマカラー
+[[/=]]
+
+[[include :scp-jp:component:theme-squares -=-
+| color1-name=Ray Yellow
+| color1-variable=--accentColor
+| color1-info=(246, 196, 3)
+| color2-name=Vacuum Dark
+| color2-variable=--darkColor
+| color2-info=(40, 26, 8)
+| color2-has-light-text=1
+]]
+[[module css]]
+.colors-container .colors .color:first-child { color: rgb(var(--darkColor)); }
+[[/module]]
+
+------
+
+このテーマは[[[http://scp-jp.wikidot.com/scp-5999|SCP-5999]]]のヴィジュアルに由来して、[[*user EstrellaYoshte]]が作成したBlack Highlighterベースのテーマです。
+
+このテーマを使うためには、Black Highlighterテーマもあわせて導入する必要があります。詳しくは[[[theme:black-highlighter-theme|こちら]]]を参照してください。
+
+**このテーマを導入するには、以下をあなたのページに追加してください。**
+
+> @@[[include :scp-jp:theme:black-highlighter-theme]]@@
+> @@[[include :scp-jp:theme:isolated-terminal]]@@
+
+~~~~
+
+[[include component:image-block name=https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-10-4g1r/pxlogo.png|caption=画像。|width=200px]]
+
+水平線は5つのハイフン「- - - - -」で作成できます。何かの中、たとえばblockquoteの中に置かれていなければ、ページ全体に伸びます。この文書内で節を区切っている線が水平線です。
+
+
+見出しは行の先頭に1個から6個のプラス「+」を置くことで作成できます。
+
+@@ @@
+
+[[collapsible show="+ 折り畳み - ここをクリック" hide="- 折り畳み - ここをクリック"]]
++ 1番目の見出し
+
+++ 2番目の見出し
+
++++ 3番目の見出し
+
+++++ 4番目の見出し
+
++++++ 5番目の見出し
+
+++++++ 6番目の見出し
+[[/collapsible]]
+
+@@ @@
+
+[[tabview]]
+[[tab タブ表示]]
+これはタブビューです。
+[[/tab]]
+[[tab タブ化]]
+ほら、ここにも文章があります。
+
+なんとも奇妙な。
+[[/tab]]
+[[tab 長いタブ]]
+長いタブです。たくさん文章が詰まっています。[[footnote]]これは脚注です。[[/footnote]]
+
+長いタブです。たくさん文章が詰まっています。
+
+長いタブです。たくさん文章が詰まっています。
+
+長いタブです。たくさん文章が詰まっています。
+
+長いタブです。たくさん文章が詰まっています。
+
+長いタブです。たくさん文章が詰まっています。
+
+長いタブです。たくさん文章が詰まっています。
+
+長いタブです。たくさん文章が詰まっています。
+[[/tab]]
+
+[[tab もっと長いタブ]]
+もっと長いタブです。たくさん文章が詰まっています。
+
+もっと長いタブです。たくさん文章が詰まっています。
+
+もっと長いタブです。たくさん文章が詰まっています。
+
+もっと長いタブです。たくさん文章が詰まっています。
+
+もっと長いタブです。たくさん文章が詰まっています。
+
+もっと長いタブです。たくさん文章が詰まっています。
+
+もっと長いタブです。たくさん文章が詰まっています。
+
+もっと長いタブです。たくさん文章が詰まっています。
+
+もっと長いタブです。たくさん文章が詰まっています。
+
+もっと長いタブです。たくさん文章が詰まっています。
+
+もっと長いタブです。たくさん文章が詰まっています。
+
+もっと長いタブです。たくさん文章が詰まっています。
+
+もっと長いタブです。たくさん文章が詰まっています。
+
+もっと長いタブです。たくさん文章が詰まっています。
+[[/tab]]
+
+[[tab 空のタブ]]
+[[/tab]]
+[[/tabview]]
+
+@@ @@
+
+> 引用ブロックは、各行の先頭に「> 」を置くことで作成できます。
+>
+> さらなるテキスト
+> -----
+> これが水平線です
+>
+>> 入れ子の引用ブロック
+
+@@ @@
+
+||~ これは ||~ 表です ||
+|| もう || 作り方は ||
+|||| 分かっていますね ||
+
+@@ @@
+
+[[div class="expoblock"]]
+{{@@[[div class="expoblock"]]@@}}
+----
+{{expoblock}} divの中にある水平線。
+
+[[span class="hilighter"]]@@[[span class="hilighter"]]@@[[/span]]
+[[span class="hilighter"]]スーパーカリフラジリス……まあ、そういう感じです。[[/span]]
+[[/div]]
+
+----
+
+[[div class="expoblock"]]
+[[=]]
++ [[span class="hilighter"]]さらなる設定[[/span]]
+[[/=]]
+----
+
+走査線フィルタを無効化するには、以下のパッチを追加します。
+[[div class="blockquote" style="font-family: 'profontwindowsregular', monospace;"]]
+@@[[module CSS]]@@
+div#extrac-div-1, div#extrac-div-2 {
+    display: none;
+}
+@@[[/module]]@@
+[[/div]]
+----
+このテーマはそのまま使用することを想定していますが、{{[[include]]}}の後に以下を置くことで色を変えることもできます。
+[[div class="blockquote" style="font-family: 'profontwindowsregular', monospace;"]]
+:root {
+@@  --accentColor: 246,196,3;@@
+@@  --darkColor: 40,26,8;@@
+}
+[[/div]]
+
+{{@@--accentColor@@}}は主要なアクセントを制御します（既定では黄色）。
+{{@@--darkColor@@}}はテーマの背景と暗い陰影を制御します。
+RGB形式で希望の色に変更してください。
+
+{{背景に純粋な黒を使わないことをお勧めします。}}
+
+
+[[/div]]
+
+----
+
+[[=]]
++++ ヘッダーフォントはJFドット東雲明朝16です。
+
+本文フォントはTerminusとNoto Sans JPです。
+
+{{半角等幅フォントはProFontWindowsです。}}
+[[/=]]
+
+[[footnoteblock]]
+
+@@ @@
+
++* ソースコード
+
+[[collapsible show="+ 表示" hide="- 隠す"]]
+[[code type="css"]]
+@import url('https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-5-t5lr/terminus.css');
+@import url('https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-3-ci8u/profontwindows.css');
+@import url('https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-2-mfzo/JFDotShinonomeMing16.css');
+
+
+:root {
+	/* S-CSS-P統合 */
+	/* 新しいCSSテーマを作るなら、最低限、以下の3変数を含めてください。 */
+	--theme-base: "black-highlighter";
+	/* "black-highlighter"または"sigma9"のどちらかでなければなりません */
+	--theme-id: "isolated-terminal";
+	/* テーマページのURLにします。例: "component:ar-theme"なら"ar-theme"に設定 */
+	--theme-name: "Isolated Terminalテーマ";
+	/* テーマの正式名称にします */
+
+	/* ヘッダー寸法 */
+	--header-height-on-desktop: 12.4rem;
+	--header-height-on-mobile: 12rem;
+	--header-h1-font-size: calc(var(--base-font-size) * 3);
+
+	/* 書体 */
+	--body-font: 'Terminus', 'Noto Sans JP', sans-serif;
+	--header-font: 'JSDot Shinonome Ming 16', sans-serif;
+	--title-font: 'JSDot Shinonome Ming 16', sans-serif;
+	--mono-font: 'profontwindowsregular', monospace;
+	--UI-font: 'profontwindowsregular', monospace;
+	--base-font-size: 1.1rem;
+
+	/* ロゴなし */
+	--logo-image: none;
+
+	/* タイトル変更 */
+	--header-title: "SCP FOUNDATION";
+
+	/* ヘッダーグラデーション */
+	--diagonal-stripes: initial;
+
+
+	/*----*/
+
+	--accentColor: 246, 196, 3;
+	--darkColor: 40, 26, 8;
+
+
+	--bright-accent: var(--accentColor);
+	--dark-accent: var(--accentColor);
+	--pale-accent: var(--accentColor);
+	--medium-accent: var(--accentColor);
+
+	--black-monochrome: var(--accentColor);
+	--dark-gray-monochrome: var(--darkColor);
+	--gray-monochrome: var(--darkColor);
+	--light-pale-gray-monochrome: var(--darkColor);
+	--pale-gray-monochrome: var(--accentColor);
+	--very-light-gray-monochrome: var(--darkColor);
+	--white-monochrome: var(--darkColor);
+
+	--rating-module-bg-color: var(--pale-gray-monochrome);
+	--rating-module-button-color: var(--white-monochrome);
+	--rating-module-button-credit-color: var(--white-monochrome);
+	--rating-module-text-color: var(--white-monochrome);
+	--rating-module-button-cancel-color: var(--gray-monochrome);
+	--rating-module-text-hover-color: var(--pale-gray-monochrome);
+
+	--swatch-headerh1-color: var(--black-monochrome);
+
+	--swatch-menubg-medium-color: var(--bright-accent);
+	--swatch-menubg-light-color: var(--gray-monochrome);
+	--swatch-menutxt-light-color: var(--black-monochrome);
+	--swatch-menubg-medium-dark-color: var(--black-monochrome);
+
+	--swatch-primary-darker: var(--bright-accent);
+	--swatch-primary-darkest: var(--pale-gray-monochrome);
+	--swatch-text-secondary-color: var(--white-monochrome);
+	--swatch-text-light: var(--bright-accent);
+	--swatch-topmenu-bg-color: var(--bright-accent);
+
+	--gradient-header: none;
+	--gradient-background: rgb(var(--gray-monochrome));
+
+	/* デスクトップ版サイドバーボタン */
+	--toggle-button-bg: rgb(var(--swatch-menubg-light-color));
+	--toggle-border-width: 0;
+	--toggle-icon-color: rgb(var(--swatch-primary-darkest));
+	--toggle-roundness: 0;
+}
+
+
+/* ------------------------------- */
+
+/* ヘッダータイトル調整 */
+#header::before {
+	opacity: 1;
+}
+
+/* ロゴの不透明度変更 */
+#header {
+	-webkit-filter: none;
+	filter: none;
+}
+
+#header h1 { align-items: flex-end; }
+#header h1,
+#header h1 a,
+#header h1 a::before {
+	text-shadow: none;
+	letter-spacing: 0.1rem;
+}
+
+#header h1 a::before {
+	height: 0.5em;
+	-webkit-text-stroke: 0;
+}
+
+#header h1 a::after,
+#header h1 a span,
+#header h2 {
+	display: none;
+}
+
+/* SVGロゴマスク */
+#header::before {
+	background-color: rgb(var(--black-monochrome));
+	-webkit-mask-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' version='1.0' width='1040' height='1040'%3E%3Cpath d='M437 969v-10h-73v-18h-36v-18h-36v-18h-36v-18h-56v18h-72v-36h-18v-36H92v-37H74v-36H55v-36H37v-36H19v-56h18v-18h18v-18h19V451h18v-72h18v-38h18v-36h18v-36h18v-18h18v-18h18v-19h20v-18h18v-18h18v-18h36v-18h36v-18h18v-18h18V50h19V32h272v18h19v56h18v18h18v18h36v18h36v18h18v18h20v18h18v19h18v18h18v18h18v36h18v36h18v38h18v72h18v145h19v18h18v18h18v56h-18v36h-18v36h-19v36h-18v37h-18v36h-18v36h-72v-18h-56v18h-36v18h-36v18h-36v18h-73v20H437v-10zm146-37v-9h72v-18h37v-18h36v-18h18v-18h92v18h54v-36h18v-37h18v-36h18v-36h18v-36h19v-38h-19v-18h-18v-18h-18V469h-18v-72h-18v-38h-18v-36h-18v-18h-18v-36h-18v-18h-20v-18h-18v-19h-36v-18h-18v-18h-36v-18h-18v-18h-19v-36h-18V70H401v36h-18v36h-19v18h-18v18h-36v18h-18v18h-36v19h-18v18h-18v18h-20v36h-18v18h-18v36h-18v38h-18v72h-18v145H92v18H74v18H55v38h19v36h18v36h18v36h18v37h18v36h54v-18h92v18h18v18h36v18h37v18h72v18h128v-9z'/%3E%3Cpath d='M437 805v-9h-54v-18h-37v-18h-18v-18h-18v-18h-18v-18h-36v18h-36v18h-20v-18h-18v-36h38v-18h18v-20h18v-18h-18v-72h-18v-73h18v-72h18v-36h18v-38h18v-18h18v-18h18v-18h18v-18h37v-18h36v-18h72v-55h56v55h72v18h36v18h37v18h18v18h18v18h18v18h18v38h18v36h18v72h20v73h-20v72h-18v18h18v20h20v18h36v36h-18v18h-18v-18h-38v-18h-36v18h-18v18h-18v18h-18v18h-37v18h-54v18H437v-9zm164-54v-9h36v-18h37v-18h18v-18h18v-18h-18v-20h-37v-18h-18v38h-18v-20h-18v-36h-18v-18h-18v-18h-18v-36h90v18h55v18h-18v18h18v18h36v18h18v-54h18V469h-18v-54h-18v-36h-18v-20h-18v-18h-18v-18h-37v-18h-36v-18h-54v92h36v36h-18v36h-18v36h-18v18h-20v-18h-18v-36h-18v-36h-18v-36h36v-92h-54v18h-36v18h-37v18h-18v18h-18v20h-18v36h-18v54h-18v109h18v54h18v-18h36v-18h18v-18h-18v-18h55v-18h90v36h-18v18h-18v18h-18v36h-18v20h-18v-38h-18v18h-37v20h-18v18h18v18h18v18h37v18h36v18h164v-9z'/%3E%3C/svg%3E");
+	mask-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' version='1.0' width='1040' height='1040'%3E%3Cpath d='M437 969v-10h-73v-18h-36v-18h-36v-18h-36v-18h-56v18h-72v-36h-18v-36H92v-37H74v-36H55v-36H37v-36H19v-56h18v-18h18v-18h19V451h18v-72h18v-38h18v-36h18v-36h18v-18h18v-18h18v-19h20v-18h18v-18h18v-18h36v-18h36v-18h18v-18h18V50h19V32h272v18h19v56h18v18h18v18h36v18h36v18h18v18h20v18h18v19h18v18h18v18h18v36h18v36h18v38h18v72h18v145h19v18h18v18h18v56h-18v36h-18v36h-19v36h-18v37h-18v36h-18v36h-72v-18h-56v18h-36v18h-36v18h-36v18h-73v20H437v-10zm146-37v-9h72v-18h37v-18h36v-18h18v-18h92v18h54v-36h18v-37h18v-36h18v-36h18v-36h19v-38h-19v-18h-18v-18h-18V469h-18v-72h-18v-38h-18v-36h-18v-18h-18v-36h-18v-18h-20v-18h-18v-19h-36v-18h-18v-18h-36v-18h-18v-18h-19v-36h-18V70H401v36h-18v36h-19v18h-18v18h-36v18h-18v18h-36v19h-18v18h-18v18h-20v36h-18v18h-18v36h-18v38h-18v72h-18v145H92v18H74v18H55v38h19v36h18v36h18v36h18v37h18v36h54v-18h92v18h18v18h36v18h37v18h72v18h128v-9z'/%3E%3Cpath d='M437 805v-9h-54v-18h-37v-18h-18v-18h-18v-18h-18v-18h-36v18h-36v18h-20v-18h-18v-36h38v-18h18v-20h18v-18h-18v-72h-18v-73h18v-72h18v-36h18v-38h18v-18h18v-18h18v-18h18v-18h37v-18h36v-18h72v-55h56v55h72v18h36v18h37v18h18v18h18v18h18v18h18v38h18v36h18v72h20v73h-20v72h-18v18h18v20h20v18h36v36h-18v18h-18v-18h-38v-18h-36v18h-18v18h-18v18h-18v18h-37v18h-54v18H437v-9zm164-54v-9h36v-18h37v-18h18v-18h18v-18h-18v-20h-37v-18h-18v38h-18v-20h-18v-36h-18v-18h-18v-18h-18v-36h90v18h55v18h-18v18h18v18h36v18h18v-54h18V469h-18v-54h-18v-36h-18v-20h-18v-18h-18v-18h-37v-18h-36v-18h-54v92h36v36h-18v36h-18v36h-18v18h-20v-18h-18v-36h-18v-36h-18v-36h36v-92h-54v18h-36v18h-37v18h-18v18h-18v20h-18v36h-18v54h-18v109h18v54h18v-18h36v-18h18v-18h-18v-18h55v-18h90v36h-18v18h-18v18h-18v36h-18v20h-18v-38h-18v18h-37v20h-18v18h18v18h18v18h37v18h36v18h164v-9z'/%3E%3C/svg%3E");
+	-webkit-mask-size: calc(var(--header-height-on-desktop) - var(--header-h1-font-size) - 1rem);
+	mask-size: calc(var(--header-height-on-desktop) - var(--header-h1-font-size) - 1rem);
+	-webkit-mask-position: center 0;
+	mask-position: center 0;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+}
+
+
+#header {
+	--swatch-text-secondary-color: var(--black-monochrome);
+
+	--login-dropdown-text-hover-color: var(--white-monochrome);
+}
+
+#my-account:hover,
+#my-account:active,
+#my-account:focus {
+	--login-myaccount-color: var(--white-monochrome);
+}
+
+#search-top-box:focus-within {
+	--search-icon-hover-color: var(--swatch-menubg-light-color);
+}
+
+#search-top-box form[id="search-top-box-form"] input[type="text"] {
+	--search-focus-textbox-bg-color: var(--black-monochrome);
+	background-color: rgb(var(--search-focus-textbox-bg-color), 0.06) !important;
+}
+
+#search-top-box form[id="search-top-box-form"]:not(:focus-within) input[type="text"] {
+	--search-textbox-text-color: var(--black-monochrome);
+}
+
+#top-bar {
+	--dropdown-links-hover-color: var(--white-monochrome);
+}
+
+#top-bar .mobile-top-bar>ul>li>a {
+	--topmenu-category-color: var(--white-monochrome);
+}
+
+#top-bar .mobile-top-bar>ul>li:hover>a,
+#top-bar .mobile-top-bar>ul>li:active>a,
+#top-bar .mobile-top-bar>ul>li:focus-within>a {
+	--topmenu-category-hover-bg: var(--white-monochrome);
+}
+
+#header div[class*="top-bar"]>div.open-menu>p>a {
+	--mobile-topmenu-sidebar-button-color: var(--white-monochrome);
+}
+
+/* ------------------------------- */
+
+/* 編集ボックス */
+#wd-editor-toolbar-panel {
+	--editor-icon-color: var(--white-monochrome);
+}
+
+form#edit-page-form .edit-page-bottomtable div.sub {
+	color: var(--swatch-primary-darkest);
+}
+
+/* ------------------------------- */
+
+/* 画像ブロック */
+.scp-image-block {
+	box-sizing: border-box;
+	border-width: 0;
+	box-shadow: none;
+}
+
+:is(div.image-block,div.scp-image-block) :is(.image-caption,.scp-image-caption) {
+	color: rgb(var(--swatch-text-secondary-color));
+	background-color: rgb(var(--swatch-primary-darker));
+	border-color: rgb(var(--swatch-primary-darker));
+	padding: 0.15rem;
+	margin-top: 6px;
+}
+
+/* 引用ブロック */
+#main-content {
+	--blockquote-bg-color: var(--swatch-tertiary-color), 0.06;
+}
+
+/* コード */
+div.code {
+	background-color: #f4f4f4;
+	text-shadow: none;
+}
+
+/* 水平線 */
+hr {
+	background-color: rgb(var(--swatch-menubg-medium-color));
+	height: 0;
+	margin-top: 1.5em;
+	margin-bottom: 1.5em;
+}
+
+:is(blockquote, .blockquote, div.blockquote, [class*="blockquote"])>hr {
+	margin-left: -2ch;
+	margin-right: -2ch;
+}
+
+/* 脚注 */
+a.footnoteref {
+	display: inline;
+}
+
+.footnotes-footer a[href*="javascript"]:-webkit-any-link {
+	margin-right: -0.45rem;
+}
+
+.footnotes-footer a[href*="javascript"]:-moz-any-link {
+	margin-right: -0.45rem;
+}
+
+.footnotes-footer a[href*="javascript"]:any-link {
+	margin-right: -0.45rem;
+}
+
+.footnotes-footer a[href*="javascript"]::before {
+	padding-left: 0.35em;
+}
+
+.footnotes-footer a[href*="javascript"]::before,
+.footnotes-footer a[href*="javascript"]:hover::before {
+	color: rgb(var(--swatch-secondary-color));
+	background-color: rgb(var(--swatch-primary));
+}
+
+.footnotes-footer,
+.bibitems {
+	background-color: rgba(var(--footnotes-footer-colorbar-color), 0.06);
+}
+
+
+/* リンク */
+#main-content a:not(#breadcrumbs a, .pseudocrumbs a, .page-rate-widget-box a, .rate-box-with-credit-button a, ul.yui-nav a, .printuser.avatarhover a:first-child, .footnote-footer > a[href*="javascript"], div[id*="page-options-bottom"] a, .danger-diamond a) {
+	font-weight: bold;
+	color: rgb(var(--gray-monochrome));
+	padding: 0.115em;
+	background-color: rgb(var(--black-monochrome));
+}
+
+#main-content a:not(#breadcrumbs a, .pseudocrumbs a, .page-rate-widget-box a, .rate-box-with-credit-button a, ul.yui-nav a, .printuser.avatarhover a:first-child, .footnote-footer > a[href*="javascript"], div[id*="page-options-bottom"] a, .danger-diamond a):hover {
+	box-shadow: 0 0 0.7em 0.1em rgba(var(--black-monochrome), 0.3);
+}
+
+
+/* カスタムブロック */
+
+.expoblock {
+	box-sizing: border-box;
+	border: solid 0.7rem rgb(var(--black-monochrome));
+	padding: 1rem;
+}
+
+.expoblock hr {
+	height: 0.6rem;
+	margin: 1.5em 0;
+}
+
+span.hilighter {
+	background-color: rgb(var(--black-monochrome));
+	color: rgb(var(--gray-monochrome));
+	font-weight: bold;
+	padding: 0.2em;
+	font-size: 108%;
+	line-height: 1.2;
+}
+
+/* 作者ラベル互換 */
+#page-content .authorlink-wrapper>a::before {
+	color: rgb(var(--gray-monochrome));
+}
+
+#page-content .authorlink-wrapper .authorbox {
+	-webkit-filter: drop-shadow(0 0 3px rgba(var(--black-monochrome), 0.75));
+	filter: drop-shadow(0 0 3px rgba(var(--black-monochrome), 0.75));
+}
+
+/* Ayers情報モジュール互換 */
+.info-container {
+	--barColour: rgb(var(--accentColor));
+	--linkColour: rgb(var(--darkColor));
+}
+
+#main-content #page-content .info-container>.collapsible-block a.collapsible-block-link {
+	background-color: var(--linkColour);
+}
+
+.info-container .collapsible-block-unfolded {
+	border-color: rgb(var(--accentColor));
+}
+
+/*---- ページタグ ----*/
+#main-content .page-tags {
+	margin-bottom: 1rem;
+}
+
+#main-content .page-tags span {
+	display: block;
+}
+
+#content-wrap #main-content .page-tags span a:-webkit-any-link:not([href^="/system:page-tags/tag/_"]) {
+	margin: 0.2rem;
+	padding: 0.2em 0.25em;
+}
+
+#content-wrap #main-content .page-tags span a:-moz-any-link:not([href^="/system:page-tags/tag/_"]) {
+	margin: 0.2rem;
+	padding: 0.2em 0.25em;
+}
+
+#content-wrap #main-content .page-tags span a:any-link:not([href^="/system:page-tags/tag/_"]) {
+	margin: 0.2rem;
+	padding: 0.2em 0.25em;
+}
+
+
+/*---- 下部オプション ----*/
+div[id*="page-options-bottom"]:not(.page-rate-widget-box):not(#search-top-box-form)>a.btn {
+	--button-padding: calc(var(--icon-size) / 6);
+	flex-basis: 8.3rem;
+	flex-grow: 1;
+}
+
+div[id*="page-options-bottom"]>a#more-options-button {
+	flex-grow: 4;
+}
+
+
+/*---- ライセンスエリア ----*/
+#license-area {
+	--swatch-text-secondary-color: var(--black-monochrome);
+	--license-link-hover-bg-color: var(--black-monochrome);
+	--license-link-hover-color: var(--white-monochrome);
+}
+
+/*---- 走査線モニター効果 ----*/
+#extrac-div-1 {
+	position: fixed;
+	width: 100vw;
+	height: 100vh;
+	pointer-events: none;
+	background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, .15) 50%, rgba(0, 0, 0, 0));
+	background-size: auto 8px;
+	opacity: 0.7;
+}
+
+#extrac-div-2 {
+	position: fixed;
+	width: 100vw;
+	height: 1rem;
+	top: 0;
+	pointer-events: none;
+	background: linear-gradient(to bottom, rgba(255, 0, 0, 0) 0%, rgba(255, 250, 250, 1) 50%, rgba(255, 255, 255, 0.98) 51%, rgba(255, 0, 0, 0) 100%);
+	opacity: .1;
+	-webkit-animation: scanm 6s linear infinite;
+	animation: scanm 6s linear infinite;
+}
+
+@-webkit-keyframes scanm {
+	0% {
+		top: -1rem;
+		opacity: .05;
+	}
+
+	25% {
+		top: 50%;
+		opacity: .03;
+	}
+
+	37.5% {
+		top: 75%;
+		opacity: 0.06;
+	}
+
+	50% {
+		top: 100%;
+		opacity: .03;
+	}
+
+	100% {
+		top: 100%;
+	}
+}
+
+@keyframes scanm {
+	0% {
+		top: -1rem;
+		opacity: .05;
+	}
+
+	25% {
+		top: 50%;
+		opacity: .03;
+	}
+
+	37.5% {
+		top: 75%;
+		opacity: 0.06;
+	}
+
+	50% {
+		top: 100%;
+		opacity: .03;
+	}
+
+	100% {
+		top: 100%;
+	}
+}
+
+#extrac-div-3 {
+	position: fixed;
+	width: 100vw;
+	height: 100vh;
+	pointer-events: none;
+	background-image: radial-gradient(circle, rgb(230, 210, 200) 0%, rgb(177, 158, 152) 60%, rgb(55, 28, 30) 100%);
+	opacity: 0.25;
+	mix-blend-mode: color-dodge;
+	background-repeat: no-repeat;
+	background-size: cover;
+	z-index: 30;
+}
+
+/* Chromeのバグを修正 */
+html {
+	background: rgb(var(--swatch-background));
+}
+/* バグを避けるためSafariでは画面効果を無効化 */
+@supports (-webkit-hyphens:none) {
+#extrac-div-3 {
+    display: none;
+}
+}
+
+/*---- モバイル用クエリ ----*/
+@media only screen and (max-width: 56.25rem) {
+	:root {
+		--header-h1-font-size: calc(var(--base-font-size) * 2.4);
+	}
+
+	#login-status:hover {
+		background-color: rgba(var(--swatch-menubg-light-color), 0.65);
+		-webkit-backdrop-filter: blur(0.1rem);
+		backdrop-filter: blur(0.1rem);
+	}
+}
+
+[[/code]]
+[[/collapsible]]
+[[/iftags]]
+[[include :scp-jp:component:toggle-sidebar-bhl]]
+[[include :scp-jp:component:centered-header-bhl]]
+[[module css]]
+@import url("https://scp-jp.wdfiles.com/local--code/theme%3Aisolated-terminal/1")
+[[/module]]
+[[include :scp-jp:component:interwiki-style
+| priority=3
+| theme=https://scp-jp.wdfiles.com/local--code/theme%3Aisolated-terminal/1
+]]

@@ -1,0 +1,30 @@
+--- existing-jp.wikidot.txt
++++ candidate.wikidot.source.txt
+@@ -25,15 +25,15 @@
+ [[include :scp-jp:credit:start-preview]]
+ [[<]]
+ **クラシックSCP財団テーマ**
+-**著者:** [[*user Lt Flops]]
++**著者:** Lt Flops
+ **2020/07/21に公開**
+ 
+-これを見てくれた[[*user stormbreath]]と[[*user Croquembouche]]に感謝します。
++これを見てくれたstormbreathとCroquemboucheに感謝します。
+ [[/<]]
+ [[include :scp-jp:credit:end-preview]]
+ [[/>]]
+ 
+-[[=image https://scp-jp-storage.wdfiles.com/local--files/file:7657035-49-8um1/scp_foundation_logo.png style="width: 8em;"]]
++[[=image scp_foundation_logo.png style="width: 8em;"]]
+ 
+ [[div class="templateInfo"]]
+ [[=]]
+@@ -78,7 +78,7 @@
+ [[/div]]
+ 
+ [[div class="classic-image-block"]]
+-||||[[image https://scp-jp-storage.wdfiles.com/local--files/file:7657035-48-7ahr/base_image_frame.png]]||
++||||[[image base_image_frame.png]]||
+ ||||~ クラシック画像ブロック(ソースコードを見て下さい)||
+ [[/div]]
+ 

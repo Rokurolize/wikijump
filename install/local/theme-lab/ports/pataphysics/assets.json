@@ -1,0 +1,80 @@
+{
+  "assets": [
+    {
+      "sha256": "ae17feb6f10d68546a191a8d9419d5bef76ad13785c9b5d7aa1492c8428e648b",
+      "bytes": 39204,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD.ttf",
+      "final_url": "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at ae17feb6f10d68546a191a8d9419d5bef76ad13785c9b5d7aa1492c8428e648b.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a62a15a6b56287171cc9127041ea8225655529851e49501a069f1fa852037d35",
+      "bytes": 27411,
+      "content_type": "image/png",
+      "original_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a62a15a6b56287171cc9127041ea8225655529851e49501a069f1fa852037d35.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "f3f2789e588b964cd6a3e453b70a10d33a06d7deaf73440b3a64c4fef8032bb1",
+      "bytes": 8763,
+      "content_type": "image/svg+xml",
+      "original_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at f3f2789e588b964cd6a3e453b70a10d33a06d7deaf73440b3a64c4fef8032bb1.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    }
+  ],
+  "missing": [],
+  "imports": [
+    "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap",
+    "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1"
+  ],
+  "pruned_fonts": [],
+  "template_placeholders": [],
+  "asset_replacements": {},
+  "omitted_assets": [],
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD.ttf",
+      "final_url": "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD.ttf",
+      "sha256": "ae17feb6f10d68546a191a8d9419d5bef76ad13785c9b5d7aa1492c8428e648b",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at ae17feb6f10d68546a191a8d9419d5bef76ad13785c9b5d7aa1492c8428e648b.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png",
+      "sha256": "a62a15a6b56287171cc9127041ea8225655529851e49501a069f1fa852037d35",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a62a15a6b56287171cc9127041ea8225655529851e49501a069f1fa852037d35.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg",
+      "sha256": "f3f2789e588b964cd6a3e453b70a10d33a06d7deaf73440b3a64c4fef8032bb1",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at f3f2789e588b964cd6a3e453b70a10d33a06d7deaf73440b3a64c4fef8032bb1.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "7551e8d9b3f9a3ffa0471517092b58106137606d9b229f13c96e97f1254717f6",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "7551e8d9b3f9a3ffa0471517092b58106137606d9b229f13c96e97f1254717f6",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    }
+  ]
+}

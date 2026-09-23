@@ -1,0 +1,26 @@
+--- existing-jp.wikidot.txt
++++ candidate.wikidot.source.txt
+@@ -94,12 +94,12 @@
+ 
+ [[include :scp-jp:credit:start-preview]]
+ **タイトル:** Black Highlighterテーマ
+-**著者:** ©︎[[*user Woedenaz]] & [[*user Croquembouche]]
++**著者:** ©︎Woedenaz & Croquembouche
+ **原題:** Black Highlighter Theme
+ **作成年:** 2019
+ [[include :scp-jp:credit:end-preview]]
+ 
+-[[image https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg]]
++[[image black-highlighter-logo.svg]]
+ 
+ [[=]]
+ [[div_ class="status"]]
+@@ -154,7 +154,7 @@
+ 
+ Githubアカウントを持っているなら、 [https://github.com/Nu-SCPTheme/Black-Highlighter/issues ここで]Issueを作成し、その(美的・技術的あるいはなんでも)問題を詳述してください。
+ 
+-Githubアカウントを持っていないなら、もしくは誰かと直接議論したいならば、[[*user Woedenaz]]にPMを送り、もし彼が返答しない場合は[[*user Croquembouche]]にPMを送ってください。
++Githubアカウントを持っていないなら、もしくは誰かと直接議論したいならば、WoedenazにPMを送り、もし彼が返答しない場合はCroquemboucheにPMを送ってください。
+ 
+ -----
+ 

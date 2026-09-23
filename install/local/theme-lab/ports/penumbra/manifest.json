@@ -1,0 +1,94 @@
+{
+  "slug": "theme:penumbra",
+  "en_source_sha256": "befb285563d3f8d956f49726d2272a051bdab6ac4b9a84dd0ba856490c0890b5",
+  "en_updated_at": "2026-04-12T05:16:38+00:00",
+  "en_entity_uuid": "94f238b1-d448-4ba2-81f6-3da09e32ab94",
+  "jp_previous_status": "present",
+  "jp_previous_source_sha256": "f164a9b83100be37a9695d067604cc3563032bcd1cfd6016e7e5200ad21a72b7",
+  "jp_previous_updated_at": "2025-08-03T13:23:04+00:00",
+  "jp_previous_entity_uuid": "bc01c0f2-dead-43d0-832c-c7a071205b12",
+  "technical_spec_version": "1.4",
+  "reference_url": "https://scp-wiki.wikidot.com/theme:penumbra",
+  "candidate_source": "candidate.wikidot.txt",
+  "candidate_css": "candidate.css",
+  "source_file": "upstream-en.wikidot.txt",
+  "existing_jp_source": "existing-jp.wikidot.txt",
+  "source_identity": {
+    "slug": "theme:penumbra",
+    "title": "Penumbra Theme",
+    "en": {
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:penumbra/source.wikidot.txt",
+      "sha256": "befb285563d3f8d956f49726d2272a051bdab6ac4b9a84dd0ba856490c0890b5",
+      "updated_at": "2026-04-12T05:16:38+00:00",
+      "entity_uuid": "94f238b1-d448-4ba2-81f6-3da09e32ab94",
+      "tags": [
+        "_cc",
+        "theme"
+      ],
+      "attached_files": [],
+      "revisions": 155
+    },
+    "jp": {
+      "status": "present",
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:penumbra/source.wikidot.txt",
+      "sha256": "f164a9b83100be37a9695d067604cc3563032bcd1cfd6016e7e5200ad21a72b7",
+      "updated_at": "2025-08-03T13:23:04+00:00",
+      "entity_uuid": "bc01c0f2-dead-43d0-832c-c7a071205b12",
+      "tags": [
+        "en",
+        "テーマ",
+        "要翻訳"
+      ],
+      "absence_run": null
+    },
+    "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
+    "technical_spec_version": "1.4",
+    "final_verdict": "warn"
+  },
+  "dependencies": {
+    "slug": "theme:penumbra",
+    "en_includes": [
+      ":scp-wiki:info:start",
+      ":scp-wiki:info:more",
+      ":scp-wiki:info:end",
+      ":scp-wiki:theme:penumbra",
+      "component:image-block name= tb.png",
+      ":scp-wiki:component:toggle-sidebar",
+      ":scp-wiki:component:interwiki-style"
+    ],
+    "en_external_dependencies": [
+      "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold-Italic.woff2",
+      "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold.woff2",
+      "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Italic.woff2",
+      "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans.woff2",
+      "https://fonts.bunny.net/css2?family=Fira+Code:wght@300..700&display=swap",
+      "https://scp-wiki.wdfiles.com/local--code/theme%3Apenumbra/1",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Apenumbra/logo.png"
+    ],
+    "jp_includes": [
+      ":scp-jp:credit:start-preview",
+      ":scp-jp:credit:end-preview",
+      ":scp-jp:theme:penumbra",
+      "component:image-block name=http://scp-jp-storage.wdfiles.com/local--files/file%3A3396310-44-yz1t/tb.png",
+      ":scp-jp:component:toggle-sidebar"
+    ],
+    "jp_external_dependencies": [
+      "http://scp-jp-storage.wdfiles.com/local--files/file%3A3396310-43-tbvr/logo.png",
+      "http://scp-jp-storage.wdfiles.com/local--files/file%3A3396310-44-yz1t/tb.png|caption=画像|width=200px",
+      "https://fonts.googleapis.com/css2?family=Fira+Code&display=swap",
+      "https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@700&display=swap",
+      "https://fonts.googleapis.com/css2?family=Roboto&display=swap"
+    ],
+    "base_family": "independent"
+  },
+  "human_port_candidate": "human-port-candidate.wikidot.txt",
+  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_penumbra/theme_penumbra_Japanese.wikidot.txt",
+  "acceptance_selectors": "../shared-acceptance-selectors.txt",
+  "candidate_input": "existing-jp.wikidot.txt",
+  "candidate_css_source": "candidate-source.css",
+  "candidate_origin": "current official SCP-JP page source",
+  "final_verdict": "warn",
+  "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
+  "asset_dependency_decisions_path": "install/local/theme-lab/ports/penumbra/assets.json",
+  "asset_dependency_decision_count": 0
+}

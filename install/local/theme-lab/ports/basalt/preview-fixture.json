@@ -1,0 +1,26 @@
+{
+  "source_sha256": "4fdd1c916dae81cca12193f549744e2ab7494e58709ebf29464fcdbb40c8d75e",
+  "squares_source_sha256": "85c7b8294847156d8e2ccc1dd79591d4c83db1f2cf767747d4fb59fc80ec42c0",
+  "expanded_theme_squares": 0,
+  "omitted_unseeded_includes": [
+    "@@[[span",
+    "component:acs-animation",
+    "component:betterfootnotes",
+    "component:image-block",
+    "component:interwiki-style"
+  ],
+  "standard_runtime_fixture": [
+    "Rate",
+    "Japanese glyph specimen",
+    "TOC",
+    "tabs",
+    "collapsible",
+    "table",
+    "blockquote",
+    "image block",
+    "footnote",
+    "code"
+  ],
+  "page_assets": 1,
+  "expanded_theme_squares_css_modules": 0
+}

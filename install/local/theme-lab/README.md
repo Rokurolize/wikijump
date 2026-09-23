@@ -51,6 +51,13 @@ node scripts/theme-lab.mjs check --socket /tmp/theme-lab.sock \
 `check` returns the compact verdict; `--verbose` adds raw selector rows,
 computed-style rows, and the full torture result.
 
+For repeated edits after opening/capturing the reference, use `check --iteration`
+to get the selector, cascade, candidate-asset, and preview verdict without
+rerunning viewport, torture, interaction, or screenshot acceptance. The JSON
+marks those checks as deferred in `verification_scope`; use the default full
+check before accepting a port. A CSS-only iteration can omit `--wikitext` when
+the current candidate DOM is already the intended preview.
+
 Lower-level commands, for targeted work:
 
 ```sh
@@ -96,6 +103,8 @@ All commands print one JSON document. Failures carry a stable `error.code`
 The verdict never dumps raw browser data by default. Geometry/font changes that
 are not inherently wrong are reported as `style_changes`, not as errors.
 
+Compact check results include per-viewport overflow status, the Chromium platform font(s) used to draw the Japanese glyph specimen, and interaction observations for tabs, collapsibles, hover/focus, and fixed/sticky header scrolling. The interaction probe restores the original tab, collapsible, and scroll state before torture runs. `--verbose` includes source geometry for any viewport failure.
+
 `next_actions` contains only steps grounded in a missing selector, overflow measurement, missing candidate asset, or inactive media query with a measured cascade winner. An intentional font or color change alone does not create a repair action. A provided selector list is measured directly even when its entries do not appear as exact CSS rule selectors. Count changes where both pages still contain the element are warnings because two real theme articles can repeat the same component a different number of times.
 
 ## Reference acquisition (once) and local replay
@@ -124,6 +133,8 @@ Pass `--asset-dir` to `serve` when CSS uses `url("./assets/name.png")` or a font
 
 The completed SCP-KO Dear Dictator → SCP-JP run is in `ports/dear-dictator/`. Its `PORT.md` records the reference, decisions, exact offline command, and self-contained Wikidot source builder.
 
+The current SCP-EN 34-theme campaign uses `ports/en-theme-campaign.json`, individual port receipts, a committed deduplicated `ports/shared-replay-assets/` pool, and the sequential 35-port runner `node scripts/real-port-regression.mjs`. The runner verifies frozen EN/JP source hashes and pooled asset digests before checking each candidate. Its candidate daemon uses the shared pool; the Dear Dictator daemon uses its packaged assets/sidebar fixture. Set `THEME_LAB_SOCKET`, `THEME_LAB_DEAR_SOCKET`, and `THEME_LAB_ASSET_DIR` to their sockets/pool. It performs offline visual checks and records warning-only cases separately from errors and actionable failures. Use `--iteration` only for the normal edit loop; it is not a final acceptance run. See `ports/README.md` for replay setup.
+
 ## Measured performance (local dev `scpaiueouiuiuiui`, site 6000003)
 
 | metric | observed |
@@ -136,6 +147,14 @@ The completed SCP-KO Dear Dictator → SCP-JP run is in `ports/dear-dictator/`. 
 | desktop screenshot | **~51 ms** median |
 | `check` (reference + torture + 4 viewports) | **~170 ms** median warm |
 | `check --visual` (+ 8 screenshots + RMSE) | **~660–810 ms** |
+
+The EN34 campaign's heavy full acceptance check is profiled separately from
+the edit loop; its showcase previews, reference DOM reads, four viewports,
+and torture run are not repeated for every CSS change. After one warm preview,
+`check --iteration` updates the persistent candidate stylesheet and returns a
+local reference/cascade verdict. The campaign measured 102 changed-CSS checks
+across 34 themes; see `ports/warm-edit-verdict-benchmark.json` for the exact
+median, maximum, and per-theme timings.
 
 ## Reuse
 

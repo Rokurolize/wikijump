@@ -1,0 +1,24 @@
+{
+  "source_sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507",
+  "squares_source_sha256": "85c7b8294847156d8e2ccc1dd79591d4c83db1f2cf767747d4fb59fc80ec42c0",
+  "expanded_theme_squares": 0,
+  "omitted_unseeded_includes": [
+    "component:image-block",
+    "theme:bedrock",
+    "theme:skipos",
+    "unterminated:[[include :scp-jp:component:interwiki-style\n| theme=https://scp-jp.wdfiles.com/local--code/theme%3Askipos/1"
+  ],
+  "standard_runtime_fixture": [
+    "Rate",
+    "Japanese glyph specimen",
+    "TOC",
+    "tabs",
+    "collapsible",
+    "table",
+    "blockquote",
+    "image block",
+    "footnote",
+    "code"
+  ],
+  "expanded_theme_squares_css_modules": 0
+}

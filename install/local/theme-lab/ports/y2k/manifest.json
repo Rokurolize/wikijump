@@ -1,0 +1,87 @@
+{
+  "slug": "theme:y2k",
+  "en_source_sha256": "c2c102c15afbf03460f7045110a8d70c0615020e459c647a4ad82651ab649c8a",
+  "en_updated_at": "2025-12-20T09:19:59+00:00",
+  "en_entity_uuid": "9358f5bb-6820-4760-b978-88e271dfbe78",
+  "jp_previous_status": "present",
+  "jp_previous_source_sha256": "da489a08caa3f51ed73125e40b823a1e5e647a711769d6962721ef4a958191d5",
+  "jp_previous_updated_at": "2024-02-06T12:45:00+00:00",
+  "jp_previous_entity_uuid": "cf6a12ae-6c88-4f41-8d9d-8e7a3acf4895",
+  "technical_spec_version": "1.4",
+  "reference_url": "https://scp-wiki.wikidot.com/theme:y2k",
+  "candidate_source": "candidate.wikidot.txt",
+  "candidate_css": "candidate.css",
+  "source_file": "upstream-en.wikidot.txt",
+  "existing_jp_source": "existing-jp.wikidot.txt",
+  "source_identity": {
+    "slug": "theme:y2k",
+    "title": "Y2K Theme",
+    "en": {
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:y2k/source.wikidot.txt",
+      "sha256": "c2c102c15afbf03460f7045110a8d70c0615020e459c647a4ad82651ab649c8a",
+      "updated_at": "2025-12-20T09:19:59+00:00",
+      "entity_uuid": "9358f5bb-6820-4760-b978-88e271dfbe78",
+      "tags": [
+        "theme"
+      ],
+      "attached_files": [],
+      "revisions": 16
+    },
+    "jp": {
+      "status": "present",
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:y2k/source.wikidot.txt",
+      "sha256": "da489a08caa3f51ed73125e40b823a1e5e647a711769d6962721ef4a958191d5",
+      "updated_at": "2024-02-06T12:45:00+00:00",
+      "entity_uuid": "cf6a12ae-6c88-4f41-8d9d-8e7a3acf4895",
+      "tags": [
+        "en",
+        "テーマ"
+      ],
+      "absence_run": null
+    },
+    "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
+    "technical_spec_version": "1.4",
+    "final_verdict": "warn"
+  },
+  "dependencies": {
+    "slug": "theme:y2k",
+    "en_includes": [
+      ":scp-wiki:component:interwiki-style",
+      ":scp-wiki:info:start",
+      ":scp-wiki:info:more",
+      ":scp-wiki:info:end",
+      ":scp-wiki:theme:y2k",
+      "component:image-block name= https://scp-wiki.wdfiles.com/local--files/theme%3Ay2k/logo.png"
+    ],
+    "en_external_dependencies": [
+      "https://scp-wiki.wdfiles.com/local--code/theme%3Ay2k/1",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ay2k/bg.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ay2k/logo.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ay2k/logo.png|caption=Y2K|width=200px"
+    ],
+    "jp_includes": [
+      ":scp-jp:component:interwiki-style",
+      ":scp-jp:credit:start-preview",
+      ":scp-jp:credit:end-preview",
+      ":scp-jp:theme:y2k",
+      "component:image-block name= http://scp-jp-storage.wikidot.com/local--files/file:4094174-4-k55r/logo.png"
+    ],
+    "jp_external_dependencies": [
+      "http://scp-jp-storage.wikidot.com/local--files/file:4094174-4-k55r/logo.png|caption=Y2K|width=200px",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-4-k55r/logo.png",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-5-12sw/bg.png",
+      "https://scp-jp.wdfiles.com/local--code/theme:y2k/1"
+    ],
+    "base_family": "sigma"
+  },
+  "human_port_candidate": "human-port-candidate.wikidot.txt",
+  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_y2k/theme_y2k_Japanese.wikidot.txt",
+  "acceptance_selectors": "../shared-acceptance-selectors.txt",
+  "candidate_input": "existing-jp.wikidot.txt",
+  "candidate_css_source": "candidate-source.css",
+  "candidate_origin": "current official SCP-JP page source",
+  "final_verdict": "warn",
+  "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
+  "asset_dependency_decisions_path": "install/local/theme-lab/ports/y2k/assets.json",
+  "asset_dependency_decision_count": 3
+}

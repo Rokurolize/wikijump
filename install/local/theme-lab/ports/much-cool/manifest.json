@@ -1,0 +1,97 @@
+{
+  "slug": "theme:much-cool",
+  "en_source_sha256": "e2e876a82210ed12ecbe3f0fa37f4ae084ebafa21b3fd50366ab154de244c88a",
+  "en_updated_at": "2026-04-12T05:13:12+00:00",
+  "en_entity_uuid": "6020a376-6735-4d65-8010-217e35135a87",
+  "jp_previous_status": "present",
+  "jp_previous_source_sha256": "0305019f63ac920a0451b2fe9c17aa8c84992d86ae8b2243692e3d29c7354833",
+  "jp_previous_updated_at": "2024-07-04T11:44:02+00:00",
+  "jp_previous_entity_uuid": "4e8ae45c-5b2f-4a66-b87d-915964dfe094",
+  "technical_spec_version": "1.4",
+  "reference_url": "https://scp-wiki.wikidot.com/theme:much-cool",
+  "candidate_source": "candidate.wikidot.txt",
+  "candidate_css": "candidate.css",
+  "source_file": "upstream-en.wikidot.txt",
+  "existing_jp_source": "existing-jp.wikidot.txt",
+  "source_identity": {
+    "slug": "theme:much-cool",
+    "title": "Much Cool CSS Theme",
+    "en": {
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:much-cool/source.wikidot.txt",
+      "sha256": "e2e876a82210ed12ecbe3f0fa37f4ae084ebafa21b3fd50366ab154de244c88a",
+      "updated_at": "2026-04-12T05:13:12+00:00",
+      "entity_uuid": "6020a376-6735-4d65-8010-217e35135a87",
+      "tags": [
+        "_cc",
+        "are-we-cool-yet",
+        "theme"
+      ],
+      "attached_files": [],
+      "revisions": 22
+    },
+    "jp": {
+      "status": "present",
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:much-cool/source.wikidot.txt",
+      "sha256": "0305019f63ac920a0451b2fe9c17aa8c84992d86ae8b2243692e3d29c7354833",
+      "updated_at": "2024-07-04T11:44:02+00:00",
+      "entity_uuid": "4e8ae45c-5b2f-4a66-b87d-915964dfe094",
+      "tags": [
+        "en",
+        "テーマ"
+      ],
+      "absence_run": null
+    },
+    "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
+    "technical_spec_version": "1.4",
+    "final_verdict": "warn"
+  },
+  "dependencies": {
+    "slug": "theme:much-cool",
+    "en_includes": [
+      "info:start",
+      "info:end",
+      ":scp-wiki:theme:much-cool",
+      "component:image-block name=https://scp-wiki.wikidot.com/local--files/theme:much-cool/logo.png"
+    ],
+    "en_external_dependencies": [
+      "https://fonts.bunny.net/css2?family=Vollkorn+SC&display=swap",
+      "https://pixabay.com/illustrations/abstract-background-art-colour-4923424/",
+      "https://pixabay.com/vectors/ink-paint-drips-liquid-painting-5727056/",
+      "https://scp-wiki.wikidot.com//local--code/theme:much-cool/1",
+      "https://scp-wiki.wikidot.com//local--files/theme:much-cool/background.png",
+      "https://scp-wiki.wikidot.com//local--files/theme:much-cool/logo.png",
+      "https://scp-wiki.wikidot.com/are-we-cool-yet-hub|Are",
+      "https://scp-wiki.wikidot.com/kens-artistic-side",
+      "https://scp-wiki.wikidot.com/local--files/theme:much-cool/logo.png|caption=asdf|width=200px"
+    ],
+    "jp_includes": [
+      ":scp-jp:component:interwiki-style",
+      ":scp-jp:credit:start-preview",
+      ":scp-jp:credit:end-preview",
+      ":scp-jp:theme:much-cool",
+      ":scp-jp:component:image-block name=https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-45-w138/logo.png"
+    ],
+    "jp_external_dependencies": [
+      "http://scp-jp.wikidot.com/are-we-cool-yet-hub|Are",
+      "https://fonts.googleapis.com/css2?family=Vollkorn+SC&display=swap",
+      "https://pixabay.com/illustrations/abstract-background-art-colour-4923424/",
+      "https://pixabay.com/vectors/ink-paint-drips-liquid-painting-5727056/",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-45-fiuq/background.png",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-45-w138/logo.png",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-45-w138/logo.png|caption=asdf|width=200px",
+      "https://scp-jp.wdfiles.com/local--code/theme%3Amuch-cool/1",
+      "https://scp-wiki.wikidot.com/kens-artistic-side"
+    ],
+    "base_family": "independent"
+  },
+  "human_port_candidate": "human-port-candidate.wikidot.txt",
+  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_much-cool/theme_much-cool_Japanese.wikidot.txt",
+  "acceptance_selectors": "../shared-acceptance-selectors.txt",
+  "candidate_input": "existing-jp.wikidot.txt",
+  "candidate_css_source": "candidate-source.css",
+  "candidate_origin": "current official SCP-JP page source",
+  "final_verdict": "warn",
+  "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
+  "asset_dependency_decisions_path": "install/local/theme-lab/ports/much-cool/assets.json",
+  "asset_dependency_decision_count": 5
+}

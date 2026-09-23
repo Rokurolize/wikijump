@@ -64,6 +64,9 @@ export function issuesFromTorture(torture) {
     ...(issue.selector ? {selector: issue.selector} : {}),
     ...(issue.before_px !== undefined ? {before_px: issue.before_px} : {}),
     ...(issue.after_px !== undefined ? {after_px: issue.after_px} : {}),
+    ...(issue.overflow_sources ? {overflow_sources: issue.overflow_sources} : {}),
+    ...(issue.element_rect ? {element_rect: issue.element_rect} : {}),
+    ...(issue.computed ? {computed: issue.computed} : {}),
   }));
 }
 
@@ -71,11 +74,29 @@ export function issuesFromViewports(viewports) {
   const issues = [];
   for (const [id, viewport] of Object.entries(viewports ?? {})) {
     const overflow = viewport?.document_overflow_px ?? 0;
-    if (overflow > 2) {
-      issues.push({severity: "error", kind: "viewport_overflow", viewport: id, overflow_px: overflow});
+    // viewportStatus fails for any positive document overflow; use the same
+    // boundary here so a failed viewport always has an actionable issue.
+    if (overflow > 0) {
+      issues.push({severity: "error", kind: "viewport_overflow", viewport: id, overflow_px: overflow, overflow_sources: viewport?.overflow_sources ?? []});
     }
   }
   return issues;
+}
+
+export function issuesFromPreview(preview) {
+  return (preview?.unresolved_includes ?? []).map(({page, message}) => ({
+    severity: "error",
+    kind: "unresolved_include",
+    include: page,
+    evidence: message,
+  }));
+}
+
+function issuesFromInteractions(interactions) {
+  if (!interactions) return [];
+  return Object.entries(interactions)
+    .filter(([, result]) => result?.status === "fail")
+    .map(([interaction, result]) => ({severity: "error", kind: "interaction_failure", interaction, evidence: result}));
 }
 
 export function styleChangesFromComputed(computedStyles, limit = DEFAULT_LIMITS.styleChanges) {
@@ -104,7 +125,7 @@ export function styleChangesFromComputed(computedStyles, limit = DEFAULT_LIMITS.
   }));
 }
 
-export function nextActions(issues, styleChanges, limit = 5) {
+export function nextActions(issues, styleChanges = [], limit = 5) {
   const actions = [];
   for (const issue of issues) {
     if (issue.kind === "missing_selector") {
@@ -116,6 +137,16 @@ export function nextActions(issues, styleChanges, limit = 5) {
       });
     } else if (issue.kind === "candidate_asset_missing") {
       actions.push({kind: "provide_asset", asset: issue.asset, evidence: {missing_from_asset_dir: true}});
+    } else if (issue.kind === "candidate_image_missing") {
+      actions.push({kind: "localize_image", asset: issue.asset, selector: issue.selector, evidence: issue.evidence});
+    } else if (issue.kind === "unresolved_include") {
+      actions.push({
+        kind: "resolve_candidate_include",
+        include: issue.include,
+        evidence: {preview_error: issue.evidence},
+      });
+    } else if (issue.kind === "interaction_failure") {
+      actions.push({kind: "repair_interaction", interaction: issue.interaction, evidence: issue.evidence});
     } else if (issue.kind?.includes("overflow")) {
       actions.push({
         kind: "reduce_overflow",
@@ -123,6 +154,7 @@ export function nextActions(issues, styleChanges, limit = 5) {
         viewport: issue.viewport,
         ...(issue.selector ? {selector: issue.selector} : {}),
         evidence: {before_px: issue.before_px ?? 0, after_px: issue.after_px ?? issue.overflow_px ?? 0},
+        ...(issue.overflow_sources?.length ? {overflow_sources: issue.overflow_sources} : {}),
       });
     }
     if (actions.length >= limit) return actions;
@@ -171,10 +203,15 @@ export function buildVerdict({
   reference = null,
   torture = null,
   viewports = null,
+  fontDiagnostics = null,
+  interactionDiagnostics = null,
+  imageDiagnostics = null,
+  pageImageAssets = null,
   visual = null,
   timing = {},
   artifacts = {},
   assets = null,
+  preview = null,
   extraIssues = [],
   limits = DEFAULT_LIMITS,
 } = {}) {
@@ -182,6 +219,15 @@ export function buildVerdict({
     ...issuesFromSelectorDiagnosis(reference?.diagnosis),
     ...issuesFromTorture(torture),
     ...issuesFromViewports(viewports),
+    ...issuesFromPreview(preview),
+    ...issuesFromInteractions(interactionDiagnostics),
+    ...(imageDiagnostics?.broken ?? []).map((image) => ({
+      severity: "error",
+      kind: "candidate_image_missing",
+      asset: image.src,
+      selector: image.selector,
+      evidence: {alt: image.alt, natural_width: image.natural_width, natural_height: image.natural_height},
+    })),
     ...extraIssues,
   ];
   issues.sort((left, right) => severityRank(left.severity) - severityRank(right.severity));
@@ -194,6 +240,12 @@ export function buildVerdict({
   const hasTortureChanges = (torture?.changed_component_count ?? 0) > 0;
 
   const verdict = hasError ? "fail" : hasWarn || styleChanges.length > 0 || hasTortureChanges ? "warn" : "pass";
+  const viewportStatus = viewports
+    ? Object.fromEntries(Object.entries(viewports).map(([name, result]) => [name, {
+        status: (result.document_overflow_px ?? 0) > 0 ? "fail" : "pass",
+        document_overflow_px: result.document_overflow_px ?? 0,
+      }]))
+    : null;
 
   return {
     verdict,
@@ -218,6 +270,11 @@ export function buildVerdict({
           changed_component_count: torture.changed_component_count ?? 0,
         }
       : null,
+    viewport_status: viewportStatus,
+    font_diagnostics: fontDiagnostics,
+    interaction_diagnostics: interactionDiagnostics,
+    image_diagnostics: imageDiagnostics,
+    page_image_assets: pageImageAssets,
     visual: summarizeVisual(visual),
     assets,
     artifacts,
@@ -230,6 +287,7 @@ export function expandVerdict(verdict, full) {
     top_issues: full?.issues ?? verdict.top_issues,
     selector_rows: full?.selector_rows ?? undefined,
     computed_style_rows: full?.computed_style_rows ?? undefined,
+    viewport_diagnostics: full?.viewports ?? undefined,
     torture_full: full?.torture ?? undefined,
   };
 }

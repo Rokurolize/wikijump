@@ -1,0 +1,759 @@
+{
+  "assets": [
+    {
+      "sha256": "efb7e5f4376a557314f5bb9f5197ef837d86c0ab38e1a50a0ff5c60c3400c629",
+      "bytes": 21564,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at efb7e5f4376a557314f5bb9f5197ef837d86c0ab38e1a50a0ff5c60c3400c629.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "67431ee9cf055c785b9c155c6d867ac8a23078a41e654612503d7dd354a0b8c5",
+      "bytes": 26384,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-italic.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 67431ee9cf055c785b9c155c6d867ac8a23078a41e654612503d7dd354a0b8c5.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "3874c62309273fb7aea1b2cd50345557940b621b93af608538a3e6a7c6dcc31b",
+      "bytes": 23036,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 3874c62309273fb7aea1b2cd50345557940b621b93af608538a3e6a7c6dcc31b.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "c5be2b9dc19cffed9d3083122b8592c59f5d2bc92ff15cedd613d2b12fcdfd1c",
+      "bytes": 31580,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-italic.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at c5be2b9dc19cffed9d3083122b8592c59f5d2bc92ff15cedd613d2b12fcdfd1c.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "3eb80fbca70498126925ce16ff5c20b2fa35e67ae7123ddb46302d2778dfbf0e",
+      "bytes": 20108,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 3eb80fbca70498126925ce16ff5c20b2fa35e67ae7123ddb46302d2778dfbf0e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "b8d4d041270ccde9d545fbd465f49a1226abfd17ed1dcdaa9748bcb0ec13cac0",
+      "bytes": 24300,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at b8d4d041270ccde9d545fbd465f49a1226abfd17ed1dcdaa9748bcb0ec13cac0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "3fc071cd0f715bfcf79df9aa61fe6112278ac62f859b486d3956fe19b64a02fb",
+      "bytes": 21272,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 3fc071cd0f715bfcf79df9aa61fe6112278ac62f859b486d3956fe19b64a02fb.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "96f816262fc291b53e2b0bf3fdf6cdb55fc9ba1e4b5af2aab68ca0a47c556a90",
+      "bytes": 29228,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 96f816262fc291b53e2b0bf3fdf6cdb55fc9ba1e4b5af2aab68ca0a47c556a90.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "96fa63376eed93029fa2514a02f5cb80276b016e239426858787de6e794d8619",
+      "bytes": 20436,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-700-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 96fa63376eed93029fa2514a02f5cb80276b016e239426858787de6e794d8619.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "46ef30a54b56f9ef9f6a649a92eedeb6a9c4c6ba32b8fe5a346e9bf502e05140",
+      "bytes": 24948,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-700-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 46ef30a54b56f9ef9f6a649a92eedeb6a9c4c6ba32b8fe5a346e9bf502e05140.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "676ac40c0c9ed3a60897731cf2879f6006a17b294e423043d5a5505ae05cb9af",
+      "bytes": 21708,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-700-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 676ac40c0c9ed3a60897731cf2879f6006a17b294e423043d5a5505ae05cb9af.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "1f0aa5ac15b5aad1c09b33ce2cbf0e252f00e8c647eda3ce9cc8822b7216ee00",
+      "bytes": 29548,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-700-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 1f0aa5ac15b5aad1c09b33ce2cbf0e252f00e8c647eda3ce9cc8822b7216ee00.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "1b85a8c794709747c9f689b791984c430a2d9716a5cf9440d955bd7d20dad9d0",
+      "bytes": 19224,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/prata/files/prata-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-latin-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 1b85a8c794709747c9f689b791984c430a2d9716a5cf9440d955bd7d20dad9d0.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "0322a2e0f31cbd23714f5f4d2f23144e2a8833f3e812aa96ea0e3e3a761a607b",
+      "bytes": 15036,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/prata/files/prata-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-latin-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 0322a2e0f31cbd23714f5f4d2f23144e2a8833f3e812aa96ea0e3e3a761a607b.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "3392de5a383deac60effcad2beb8b847f40eb0eb200ffd4888c3e13d6e40845f",
+      "bytes": 13132,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 3392de5a383deac60effcad2beb8b847f40eb0eb200ffd4888c3e13d6e40845f.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "c635aae42f7d3bf49044dc8edcc7eb86dea7a6e91034a5b6de6b1592a533d36b",
+      "bytes": 9500,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at c635aae42f7d3bf49044dc8edcc7eb86dea7a6e91034a5b6de6b1592a533d36b.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "60aab7caa7ea16a76672583f1db7f2e7ea17ee205e00e1c1027a06cc548a6a9b",
+      "bytes": 7396,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/prata/files/prata-vietnamese-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-vietnamese-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 60aab7caa7ea16a76672583f1db7f2e7ea17ee205e00e1c1027a06cc548a6a9b.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "7dd88bea7c898d9a0d54d942210404355376d98d5d744fc195813ce2b140c5c7",
+      "bytes": 5820,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/prata/files/prata-vietnamese-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-vietnamese-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 7dd88bea7c898d9a0d54d942210404355376d98d5d744fc195813ce2b140c5c7.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "1a71ca94e943aac8154d195f9ea21959d374ebf3a3a9420651d0dbb46253f897",
+      "bytes": 12868,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-ext-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 1a71ca94e943aac8154d195f9ea21959d374ebf3a3a9420651d0dbb46253f897.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "cb62274cfb89dc846c8e785d0310efefced8e55b535f27a53a2eb75c3d986760",
+      "bytes": 8888,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-ext-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at cb62274cfb89dc846c8e785d0310efefced8e55b535f27a53a2eb75c3d986760.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a04fdaaec9f3cd46b0cb3adc3d3e35a15264664330d22c7ba688ef6ea7d02010",
+      "bytes": 18708,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-300-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a04fdaaec9f3cd46b0cb3adc3d3e35a15264664330d22c7ba688ef6ea7d02010.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "30a9d5f5c0d546988132dc599aa115934bdab34a9fa76fa958200da5a7e4f4fd",
+      "bytes": 20704,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-300-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 30a9d5f5c0d546988132dc599aa115934bdab34a9fa76fa958200da5a7e4f4fd.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "40aab8ec6732416aaa7c4d7797d5bf49355530b6423a6e420505c743697be89d",
+      "bytes": 11020,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-300-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 40aab8ec6732416aaa7c4d7797d5bf49355530b6423a6e420505c743697be89d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d3df5f286d2afa858ced9e0fe71529d7ad7ca4d16bc684ea8048fd14b09afa71",
+      "bytes": 10864,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-300-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d3df5f286d2afa858ced9e0fe71529d7ad7ca4d16bc684ea8048fd14b09afa71.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "6fe66d1e115c07fdde1b5169c9ef2fd93653bddbf30ace6cd489c1af654b92bd",
+      "bytes": 31912,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-300-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 6fe66d1e115c07fdde1b5169c9ef2fd93653bddbf30ace6cd489c1af654b92bd.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5aa384a6259d5b2b61d3f153531d2a2a7141aacb675b00870593e98851bc757a",
+      "bytes": 40212,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-300-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5aa384a6259d5b2b61d3f153531d2a2a7141aacb675b00870593e98851bc757a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "503367079264dafdda88f8bd93631965a5b1b6a3a2628db5e595280181a9b3ae",
+      "bytes": 7800,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-300-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 503367079264dafdda88f8bd93631965a5b1b6a3a2628db5e595280181a9b3ae.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "cbb2bef71e1b9c5ffbf287f516aa1f596089096b40b7c3d922a4fdd62366f733",
+      "bytes": 7248,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-300-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at cbb2bef71e1b9c5ffbf287f516aa1f596089096b40b7c3d922a4fdd62366f733.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "9e360bb4ddffe1290bcbe2544467e11e8def35a6dfced5a9bda79c4631f066f3",
+      "bytes": 11840,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-300-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 9e360bb4ddffe1290bcbe2544467e11e8def35a6dfced5a9bda79c4631f066f3.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "f2130abe9dceaf906fcf3ebf77b04e46e76341fe5cab2d63b93388c12623e683",
+      "bytes": 12052,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-300-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at f2130abe9dceaf906fcf3ebf77b04e46e76341fe5cab2d63b93388c12623e683.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d857325c360f7128b347ca924c1974967aaa886ba47dad22e4042d6c38b26a83",
+      "bytes": 18688,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d857325c360f7128b347ca924c1974967aaa886ba47dad22e4042d6c38b26a83.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "97ec588256114183969b5f3d3a53ce26d9beb1f04c8373c866f318afc85638c0",
+      "bytes": 20548,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 97ec588256114183969b5f3d3a53ce26d9beb1f04c8373c866f318afc85638c0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "12fe2b174f70b732553c46dae097be6a70b3f4a3d3cf305dbbbf236ac3b182b7",
+      "bytes": 11120,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 12fe2b174f70b732553c46dae097be6a70b3f4a3d3cf305dbbbf236ac3b182b7.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e43f70482ed5f31349432c33e73a9fbf3f73491b98b2c881fa0351dbe71b4217",
+      "bytes": 10976,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e43f70482ed5f31349432c33e73a9fbf3f73491b98b2c881fa0351dbe71b4217.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "1d8a4af6a50cc4f7561e8484d5bff39acda90016b8e8cbb5cee69c253bb02750",
+      "bytes": 33192,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 1d8a4af6a50cc4f7561e8484d5bff39acda90016b8e8cbb5cee69c253bb02750.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "519a67a81579600b703ed5fc636a2c48b21085d948c3c7c667136b91c831b7f5",
+      "bytes": 41036,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 519a67a81579600b703ed5fc636a2c48b21085d948c3c7c667136b91c831b7f5.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "c4875c3754e594f283a2dbec1086da519d784f559cb7062b6d4d9721b667acd8",
+      "bytes": 7904,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at c4875c3754e594f283a2dbec1086da519d784f559cb7062b6d4d9721b667acd8.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "b2038f48f2a9968cca1728140bd16fbed6170973909ba91d391e6c3e5e1449a4",
+      "bytes": 7304,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at b2038f48f2a9968cca1728140bd16fbed6170973909ba91d391e6c3e5e1449a4.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5cdc3c54c076ef8ce55a8e21e306c9a57720c48b5f77853e28a6abd62aa23c15",
+      "bytes": 12060,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5cdc3c54c076ef8ce55a8e21e306c9a57720c48b5f77853e28a6abd62aa23c15.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "9e00d8fdf9541ec2e41da6444499631de33fa2f976136adea0af76c85dc01792",
+      "bytes": 12084,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 9e00d8fdf9541ec2e41da6444499631de33fa2f976136adea0af76c85dc01792.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "4e7bfe524849f06dcd108d91d96d4cce886e610d4c8730a14f95461cd80ef0a5",
+      "bytes": 244,
+      "content_type": "image/svg+xml",
+      "original_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ainkblot/review-header.svg",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ainkblot/review-header.svg",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 4e7bfe524849f06dcd108d91d96d4cce886e610d4c8730a14f95461cd80ef0a5.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "c8017263e4ba079524385d1cb6f9dbd06c382977d9e66d7bb441a4a469cc8e7d",
+      "bytes": 623,
+      "content_type": "image/svg+xml",
+      "original_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ainkblot/search-solid.svg",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ainkblot/search-solid.svg",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at c8017263e4ba079524385d1cb6f9dbd06c382977d9e66d7bb441a4a469cc8e7d.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    }
+  ],
+  "missing": [],
+  "imports": [
+    "https://fonts.bunny.net/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap",
+    "https://fonts.bunny.net/css2?family=Montserrat:wght@300;600&display=swap",
+    "https://fonts.bunny.net/css2?family=Prata&display=swap",
+    "https://scp-wiki.wdfiles.com/local--code/theme%3Ainkblot/1"
+  ],
+  "pruned_fonts": [],
+  "template_placeholders": [],
+  "asset_replacements": {},
+  "omitted_assets": [],
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-italic.woff2",
+      "sha256": "efb7e5f4376a557314f5bb9f5197ef837d86c0ab38e1a50a0ff5c60c3400c629",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at efb7e5f4376a557314f5bb9f5197ef837d86c0ab38e1a50a0ff5c60c3400c629.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-italic.woff",
+      "sha256": "67431ee9cf055c785b9c155c6d867ac8a23078a41e654612503d7dd354a0b8c5",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 67431ee9cf055c785b9c155c6d867ac8a23078a41e654612503d7dd354a0b8c5.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-italic.woff2",
+      "sha256": "3874c62309273fb7aea1b2cd50345557940b621b93af608538a3e6a7c6dcc31b",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 3874c62309273fb7aea1b2cd50345557940b621b93af608538a3e6a7c6dcc31b.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-italic.woff",
+      "sha256": "c5be2b9dc19cffed9d3083122b8592c59f5d2bc92ff15cedd613d2b12fcdfd1c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at c5be2b9dc19cffed9d3083122b8592c59f5d2bc92ff15cedd613d2b12fcdfd1c.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-normal.woff2",
+      "sha256": "3eb80fbca70498126925ce16ff5c20b2fa35e67ae7123ddb46302d2778dfbf0e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 3eb80fbca70498126925ce16ff5c20b2fa35e67ae7123ddb46302d2778dfbf0e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-400-normal.woff",
+      "sha256": "b8d4d041270ccde9d545fbd465f49a1226abfd17ed1dcdaa9748bcb0ec13cac0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at b8d4d041270ccde9d545fbd465f49a1226abfd17ed1dcdaa9748bcb0ec13cac0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-normal.woff2",
+      "sha256": "3fc071cd0f715bfcf79df9aa61fe6112278ac62f859b486d3956fe19b64a02fb",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 3fc071cd0f715bfcf79df9aa61fe6112278ac62f859b486d3956fe19b64a02fb.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-400-normal.woff",
+      "sha256": "96f816262fc291b53e2b0bf3fdf6cdb55fc9ba1e4b5af2aab68ca0a47c556a90",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 96f816262fc291b53e2b0bf3fdf6cdb55fc9ba1e4b5af2aab68ca0a47c556a90.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-700-normal.woff2",
+      "sha256": "96fa63376eed93029fa2514a02f5cb80276b016e239426858787de6e794d8619",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 96fa63376eed93029fa2514a02f5cb80276b016e239426858787de6e794d8619.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-700-normal.woff",
+      "sha256": "46ef30a54b56f9ef9f6a649a92eedeb6a9c4c6ba32b8fe5a346e9bf502e05140",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 46ef30a54b56f9ef9f6a649a92eedeb6a9c4c6ba32b8fe5a346e9bf502e05140.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-700-normal.woff2",
+      "sha256": "676ac40c0c9ed3a60897731cf2879f6006a17b294e423043d5a5505ae05cb9af",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 676ac40c0c9ed3a60897731cf2879f6006a17b294e423043d5a5505ae05cb9af.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/libre-baskerville/files/libre-baskerville-latin-ext-700-normal.woff",
+      "sha256": "1f0aa5ac15b5aad1c09b33ce2cbf0e252f00e8c647eda3ce9cc8822b7216ee00",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 1f0aa5ac15b5aad1c09b33ce2cbf0e252f00e8c647eda3ce9cc8822b7216ee00.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/prata/files/prata-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-latin-400-normal.woff2",
+      "sha256": "1b85a8c794709747c9f689b791984c430a2d9716a5cf9440d955bd7d20dad9d0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 1b85a8c794709747c9f689b791984c430a2d9716a5cf9440d955bd7d20dad9d0.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/prata/files/prata-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-latin-400-normal.woff",
+      "sha256": "0322a2e0f31cbd23714f5f4d2f23144e2a8833f3e812aa96ea0e3e3a761a607b",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 0322a2e0f31cbd23714f5f4d2f23144e2a8833f3e812aa96ea0e3e3a761a607b.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-400-normal.woff2",
+      "sha256": "3392de5a383deac60effcad2beb8b847f40eb0eb200ffd4888c3e13d6e40845f",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 3392de5a383deac60effcad2beb8b847f40eb0eb200ffd4888c3e13d6e40845f.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-400-normal.woff",
+      "sha256": "c635aae42f7d3bf49044dc8edcc7eb86dea7a6e91034a5b6de6b1592a533d36b",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at c635aae42f7d3bf49044dc8edcc7eb86dea7a6e91034a5b6de6b1592a533d36b.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/prata/files/prata-vietnamese-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-vietnamese-400-normal.woff2",
+      "sha256": "60aab7caa7ea16a76672583f1db7f2e7ea17ee205e00e1c1027a06cc548a6a9b",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 60aab7caa7ea16a76672583f1db7f2e7ea17ee205e00e1c1027a06cc548a6a9b.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/prata/files/prata-vietnamese-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-vietnamese-400-normal.woff",
+      "sha256": "7dd88bea7c898d9a0d54d942210404355376d98d5d744fc195813ce2b140c5c7",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 7dd88bea7c898d9a0d54d942210404355376d98d5d744fc195813ce2b140c5c7.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-ext-400-normal.woff2",
+      "sha256": "1a71ca94e943aac8154d195f9ea21959d374ebf3a3a9420651d0dbb46253f897",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 1a71ca94e943aac8154d195f9ea21959d374ebf3a3a9420651d0dbb46253f897.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/prata/files/prata-cyrillic-ext-400-normal.woff",
+      "sha256": "cb62274cfb89dc846c8e785d0310efefced8e55b535f27a53a2eb75c3d986760",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at cb62274cfb89dc846c8e785d0310efefced8e55b535f27a53a2eb75c3d986760.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-300-normal.woff2",
+      "sha256": "a04fdaaec9f3cd46b0cb3adc3d3e35a15264664330d22c7ba688ef6ea7d02010",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a04fdaaec9f3cd46b0cb3adc3d3e35a15264664330d22c7ba688ef6ea7d02010.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-300-normal.woff",
+      "sha256": "30a9d5f5c0d546988132dc599aa115934bdab34a9fa76fa958200da5a7e4f4fd",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 30a9d5f5c0d546988132dc599aa115934bdab34a9fa76fa958200da5a7e4f4fd.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-300-normal.woff2",
+      "sha256": "40aab8ec6732416aaa7c4d7797d5bf49355530b6423a6e420505c743697be89d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 40aab8ec6732416aaa7c4d7797d5bf49355530b6423a6e420505c743697be89d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-300-normal.woff",
+      "sha256": "d3df5f286d2afa858ced9e0fe71529d7ad7ca4d16bc684ea8048fd14b09afa71",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d3df5f286d2afa858ced9e0fe71529d7ad7ca4d16bc684ea8048fd14b09afa71.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-300-normal.woff2",
+      "sha256": "6fe66d1e115c07fdde1b5169c9ef2fd93653bddbf30ace6cd489c1af654b92bd",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 6fe66d1e115c07fdde1b5169c9ef2fd93653bddbf30ace6cd489c1af654b92bd.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-300-normal.woff",
+      "sha256": "5aa384a6259d5b2b61d3f153531d2a2a7141aacb675b00870593e98851bc757a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5aa384a6259d5b2b61d3f153531d2a2a7141aacb675b00870593e98851bc757a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-300-normal.woff2",
+      "sha256": "503367079264dafdda88f8bd93631965a5b1b6a3a2628db5e595280181a9b3ae",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 503367079264dafdda88f8bd93631965a5b1b6a3a2628db5e595280181a9b3ae.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-300-normal.woff",
+      "sha256": "cbb2bef71e1b9c5ffbf287f516aa1f596089096b40b7c3d922a4fdd62366f733",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at cbb2bef71e1b9c5ffbf287f516aa1f596089096b40b7c3d922a4fdd62366f733.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-300-normal.woff2",
+      "sha256": "9e360bb4ddffe1290bcbe2544467e11e8def35a6dfced5a9bda79c4631f066f3",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 9e360bb4ddffe1290bcbe2544467e11e8def35a6dfced5a9bda79c4631f066f3.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-300-normal.woff",
+      "sha256": "f2130abe9dceaf906fcf3ebf77b04e46e76341fe5cab2d63b93388c12623e683",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at f2130abe9dceaf906fcf3ebf77b04e46e76341fe5cab2d63b93388c12623e683.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-600-normal.woff2",
+      "sha256": "d857325c360f7128b347ca924c1974967aaa886ba47dad22e4042d6c38b26a83",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d857325c360f7128b347ca924c1974967aaa886ba47dad22e4042d6c38b26a83.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-600-normal.woff",
+      "sha256": "97ec588256114183969b5f3d3a53ce26d9beb1f04c8373c866f318afc85638c0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 97ec588256114183969b5f3d3a53ce26d9beb1f04c8373c866f318afc85638c0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-600-normal.woff2",
+      "sha256": "12fe2b174f70b732553c46dae097be6a70b3f4a3d3cf305dbbbf236ac3b182b7",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 12fe2b174f70b732553c46dae097be6a70b3f4a3d3cf305dbbbf236ac3b182b7.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-600-normal.woff",
+      "sha256": "e43f70482ed5f31349432c33e73a9fbf3f73491b98b2c881fa0351dbe71b4217",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e43f70482ed5f31349432c33e73a9fbf3f73491b98b2c881fa0351dbe71b4217.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-600-normal.woff2",
+      "sha256": "1d8a4af6a50cc4f7561e8484d5bff39acda90016b8e8cbb5cee69c253bb02750",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 1d8a4af6a50cc4f7561e8484d5bff39acda90016b8e8cbb5cee69c253bb02750.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-600-normal.woff",
+      "sha256": "519a67a81579600b703ed5fc636a2c48b21085d948c3c7c667136b91c831b7f5",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 519a67a81579600b703ed5fc636a2c48b21085d948c3c7c667136b91c831b7f5.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-600-normal.woff2",
+      "sha256": "c4875c3754e594f283a2dbec1086da519d784f559cb7062b6d4d9721b667acd8",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at c4875c3754e594f283a2dbec1086da519d784f559cb7062b6d4d9721b667acd8.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-600-normal.woff",
+      "sha256": "b2038f48f2a9968cca1728140bd16fbed6170973909ba91d391e6c3e5e1449a4",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at b2038f48f2a9968cca1728140bd16fbed6170973909ba91d391e6c3e5e1449a4.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-600-normal.woff2",
+      "sha256": "5cdc3c54c076ef8ce55a8e21e306c9a57720c48b5f77853e28a6abd62aa23c15",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5cdc3c54c076ef8ce55a8e21e306c9a57720c48b5f77853e28a6abd62aa23c15.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-600-normal.woff",
+      "sha256": "9e00d8fdf9541ec2e41da6444499631de33fa2f976136adea0af76c85dc01792",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 9e00d8fdf9541ec2e41da6444499631de33fa2f976136adea0af76c85dc01792.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ainkblot/review-header.svg",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ainkblot/review-header.svg",
+      "sha256": "4e7bfe524849f06dcd108d91d96d4cce886e610d4c8730a14f95461cd80ef0a5",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 4e7bfe524849f06dcd108d91d96d4cce886e610d4c8730a14f95461cd80ef0a5.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ainkblot/search-solid.svg",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ainkblot/search-solid.svg",
+      "sha256": "c8017263e4ba079524385d1cb6f9dbd06c382977d9e66d7bb441a4a469cc8e7d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at c8017263e4ba079524385d1cb6f9dbd06c382977d9e66d7bb441a4a469cc8e7d.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.bunny.net/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "149dcf3333cbe91a3c09155a142a31c9464dbf2ba50f6e74930bfa02e2a6802f",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.bunny.net/css2?family=Montserrat:wght@300;600&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "149dcf3333cbe91a3c09155a142a31c9464dbf2ba50f6e74930bfa02e2a6802f",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.bunny.net/css2?family=Prata&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "149dcf3333cbe91a3c09155a142a31c9464dbf2ba50f6e74930bfa02e2a6802f",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Ainkblot/1",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "149dcf3333cbe91a3c09155a142a31c9464dbf2ba50f6e74930bfa02e2a6802f",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    }
+  ]
+}

@@ -1,0 +1,401 @@
+{
+  "assets": [
+    {
+      "sha256": "e82172c17b04e8c2ea679348c3448539e00d505062f7d93014dbf189017892d3",
+      "bytes": 135856,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSflVFhw.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSflVFhw.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e82172c17b04e8c2ea679348c3448539e00d505062f7d93014dbf189017892d3.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "b8282cd74fb0321912a5f74aae7c0a50ef94af598fae65e6e8c4ad941d9a1fa9",
+      "bytes": 136412,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6pfjptAgt5VM-kVkqdyU8n1ioq0g.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6pfjptAgt5VM-kVkqdyU8n1ioq0g.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at b8282cd74fb0321912a5f74aae7c0a50ef94af598fae65e6e8c4ad941d9a1fa9.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a6b45023fc18f1f78b06be5fabcffaf9cb3da39500f7912eeacc98c61cd19782",
+      "bytes": 136488,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSJlRFhw.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSJlRFhw.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a6b45023fc18f1f78b06be5fabcffaf9cb3da39500f7912eeacc98c61cd19782.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5ee03606ccfda9d14d69b809590706053c954b9afc6caf38996b07c4fb05aa2f",
+      "bytes": 139788,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSClNFhw.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSClNFhw.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5ee03606ccfda9d14d69b809590706053c954b9afc6caf38996b07c4fb05aa2f.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "2eb90cf4f718e6e0f1e1e0c54ae35d6f479279cafcc941185109582f8ff23772",
+      "bytes": 137020,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSblJFhw.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSblJFhw.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 2eb90cf4f718e6e0f1e1e0c54ae35d6f479279cafcc941185109582f8ff23772.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "1d1488e07efe5c4619f40bb260d3e286e67c8c369c800fcd33f4eb83a6a63fdd",
+      "bytes": 128456,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3oQI8lc.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3oQI8lc.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 1d1488e07efe5c4619f40bb260d3e286e67c8c369c800fcd33f4eb83a6a63fdd.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a7fdc993f9f0387caedba4e42521136fa97e4c0837ae6239bf0413ccf8af00c2",
+      "bytes": 128812,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n5ig.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n5ig.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a7fdc993f9f0387caedba4e42521136fa97e4c0837ae6239bf0413ccf8af00c2.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "4fc14a73ca53ba9d32fd759ae1ca1a3133326035d0dd337862b3ee1633cc156e",
+      "bytes": 129916,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJ8lc.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJ8lc.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 4fc14a73ca53ba9d32fd759ae1ca1a3133326035d0dd337862b3ee1633cc156e.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "754dfc9d50cf7aabfb6b108d2c2f7d20a3f1f2cc6f6c01640c6728091272cec0",
+      "bytes": 133444,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAO8lc.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAO8lc.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 754dfc9d50cf7aabfb6b108d2c2f7d20a3f1f2cc6f6c01640c6728091272cec0.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5b2232ff598dd39860f606526399f64be06f0c286a638bad8a83e98c44c41ff6",
+      "bytes": 131040,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3pQP8lc.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3pQP8lc.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5b2232ff598dd39860f606526399f64be06f0c286a638bad8a83e98c44c41ff6.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "93348b743cbdb45c0f9cb3a37fc6ea3c5d281903fdcab876594908ef207951d3",
+      "bytes": 2188920,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7IbQrNo.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7IbQrNo.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 93348b743cbdb45c0f9cb3a37fc6ea3c5d281903fdcab876594908ef207951d3.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a50a53b14f7e2109c2a55ea54606b958a170152c7c5317f8b11484ec5b97ee04",
+      "bytes": 2180244,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XNDn9KbTDf6_f7dISNqYf_tvPT1Co.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XNDn9KbTDf6_f7dISNqYf_tvPT1Co.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a50a53b14f7e2109c2a55ea54606b958a170152c7c5317f8b11484ec5b97ee04.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5dd416210eb0143f82ab062dcf75490438ad3b44e72e9ce77e71c8e5403076c3",
+      "bytes": 2173744,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7N7RrNo.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7N7RrNo.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5dd416210eb0143f82ab062dcf75490438ad3b44e72e9ce77e71c8e5403076c3.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "679516ac1a9589fb175ce611591399c0efea49fd5b05205117f7b207069bf77c",
+      "bytes": 2173324,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7PLWrNo.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7PLWrNo.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 679516ac1a9589fb175ce611591399c0efea49fd5b05205117f7b207069bf77c.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "899f4034e7a8c8b1c313f62cb8eb781131176a857f4711116adeedf3bd60e062",
+      "bytes": 2175316,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7JbXrNo.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7JbXrNo.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 899f4034e7a8c8b1c313f62cb8eb781131176a857f4711116adeedf3bd60e062.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "8e27c1f5656b2482f06486e620ec17d8533e7ceef79c4d9fb819a08a67009b61",
+      "bytes": 5327688,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFE8j75s.ttf",
+      "final_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFE8j75s.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 8e27c1f5656b2482f06486e620ec17d8533e7ceef79c4d9fb819a08a67009b61.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "4593dfcdc70ee68852606c90d75dfc6e022feda12780a55615239c53c54ef086",
+      "bytes": 5324144,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEj75s.ttf",
+      "final_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEj75s.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 4593dfcdc70ee68852606c90d75dfc6e022feda12780a55615239c53c54ef086.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "55ebddc0f968968851a4fd781512592c10f5ea248b77b1497f7b4de9a33fc469",
+      "bytes": 5320828,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFCMj75s.ttf",
+      "final_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFCMj75s.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 55ebddc0f968968851a4fd781512592c10f5ea248b77b1497f7b4de9a33fc469.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "2c7c3e9c133e288e4c46573f139ac49eb93de013c3bfa70bd44873c69ec22685",
+      "bytes": 5318344,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFM8k75s.ttf",
+      "final_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFM8k75s.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 2c7c3e9c133e288e4c46573f139ac49eb93de013c3bfa70bd44873c69ec22685.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a3910e15eea0451ffbea62e894e951ea9f7c812c8b4b5e947593b6ecc2d4b057",
+      "bytes": 5319680,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFPYk75s.ttf",
+      "final_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFPYk75s.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a3910e15eea0451ffbea62e894e951ea9f7c812c8b4b5e947593b6ecc2d4b057.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    }
+  ],
+  "missing": [],
+  "imports": [
+    "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap",
+    "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@300;400;500;600;700&display=swap",
+    "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300..700&display=swap",
+    "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-13-vzwf/jfdot-mp12.css",
+    "https://scp-jp.wdfiles.com/local--code/theme%3Aturbo-vision/1",
+    "https://scp-jp.wdfiles.com/local--code/theme%3Aturbo-vision/2"
+  ],
+  "pruned_fonts": [],
+  "template_placeholders": [],
+  "asset_replacements": {},
+  "omitted_assets": [],
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSflVFhw.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSflVFhw.ttf",
+      "sha256": "e82172c17b04e8c2ea679348c3448539e00d505062f7d93014dbf189017892d3",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e82172c17b04e8c2ea679348c3448539e00d505062f7d93014dbf189017892d3.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6pfjptAgt5VM-kVkqdyU8n1ioq0g.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6pfjptAgt5VM-kVkqdyU8n1ioq0g.ttf",
+      "sha256": "b8282cd74fb0321912a5f74aae7c0a50ef94af598fae65e6e8c4ad941d9a1fa9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at b8282cd74fb0321912a5f74aae7c0a50ef94af598fae65e6e8c4ad941d9a1fa9.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSJlRFhw.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSJlRFhw.ttf",
+      "sha256": "a6b45023fc18f1f78b06be5fabcffaf9cb3da39500f7912eeacc98c61cd19782",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a6b45023fc18f1f78b06be5fabcffaf9cb3da39500f7912eeacc98c61cd19782.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSClNFhw.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSClNFhw.ttf",
+      "sha256": "5ee03606ccfda9d14d69b809590706053c954b9afc6caf38996b07c4fb05aa2f",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5ee03606ccfda9d14d69b809590706053c954b9afc6caf38996b07c4fb05aa2f.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSblJFhw.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSblJFhw.ttf",
+      "sha256": "2eb90cf4f718e6e0f1e1e0c54ae35d6f479279cafcc941185109582f8ff23772",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 2eb90cf4f718e6e0f1e1e0c54ae35d6f479279cafcc941185109582f8ff23772.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3oQI8lc.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3oQI8lc.ttf",
+      "sha256": "1d1488e07efe5c4619f40bb260d3e286e67c8c369c800fcd33f4eb83a6a63fdd",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 1d1488e07efe5c4619f40bb260d3e286e67c8c369c800fcd33f4eb83a6a63fdd.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n5ig.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n5ig.ttf",
+      "sha256": "a7fdc993f9f0387caedba4e42521136fa97e4c0837ae6239bf0413ccf8af00c2",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a7fdc993f9f0387caedba4e42521136fa97e4c0837ae6239bf0413ccf8af00c2.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJ8lc.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJ8lc.ttf",
+      "sha256": "4fc14a73ca53ba9d32fd759ae1ca1a3133326035d0dd337862b3ee1633cc156e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 4fc14a73ca53ba9d32fd759ae1ca1a3133326035d0dd337862b3ee1633cc156e.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAO8lc.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAO8lc.ttf",
+      "sha256": "754dfc9d50cf7aabfb6b108d2c2f7d20a3f1f2cc6f6c01640c6728091272cec0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 754dfc9d50cf7aabfb6b108d2c2f7d20a3f1f2cc6f6c01640c6728091272cec0.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3pQP8lc.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3pQP8lc.ttf",
+      "sha256": "5b2232ff598dd39860f606526399f64be06f0c286a638bad8a83e98c44c41ff6",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5b2232ff598dd39860f606526399f64be06f0c286a638bad8a83e98c44c41ff6.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7IbQrNo.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7IbQrNo.ttf",
+      "sha256": "93348b743cbdb45c0f9cb3a37fc6ea3c5d281903fdcab876594908ef207951d3",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 93348b743cbdb45c0f9cb3a37fc6ea3c5d281903fdcab876594908ef207951d3.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XNDn9KbTDf6_f7dISNqYf_tvPT1Co.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XNDn9KbTDf6_f7dISNqYf_tvPT1Co.ttf",
+      "sha256": "a50a53b14f7e2109c2a55ea54606b958a170152c7c5317f8b11484ec5b97ee04",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a50a53b14f7e2109c2a55ea54606b958a170152c7c5317f8b11484ec5b97ee04.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7N7RrNo.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7N7RrNo.ttf",
+      "sha256": "5dd416210eb0143f82ab062dcf75490438ad3b44e72e9ce77e71c8e5403076c3",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5dd416210eb0143f82ab062dcf75490438ad3b44e72e9ce77e71c8e5403076c3.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7PLWrNo.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7PLWrNo.ttf",
+      "sha256": "679516ac1a9589fb175ce611591399c0efea49fd5b05205117f7b207069bf77c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 679516ac1a9589fb175ce611591399c0efea49fd5b05205117f7b207069bf77c.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7JbXrNo.ttf",
+      "final_url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XKDn9KbTDf6_f7dISNqYf_tvPT7JbXrNo.ttf",
+      "sha256": "899f4034e7a8c8b1c313f62cb8eb781131176a857f4711116adeedf3bd60e062",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 899f4034e7a8c8b1c313f62cb8eb781131176a857f4711116adeedf3bd60e062.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFE8j75s.ttf",
+      "final_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFE8j75s.ttf",
+      "sha256": "8e27c1f5656b2482f06486e620ec17d8533e7ceef79c4d9fb819a08a67009b61",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 8e27c1f5656b2482f06486e620ec17d8533e7ceef79c4d9fb819a08a67009b61.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEj75s.ttf",
+      "final_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEj75s.ttf",
+      "sha256": "4593dfcdc70ee68852606c90d75dfc6e022feda12780a55615239c53c54ef086",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 4593dfcdc70ee68852606c90d75dfc6e022feda12780a55615239c53c54ef086.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFCMj75s.ttf",
+      "final_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFCMj75s.ttf",
+      "sha256": "55ebddc0f968968851a4fd781512592c10f5ea248b77b1497f7b4de9a33fc469",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 55ebddc0f968968851a4fd781512592c10f5ea248b77b1497f7b4de9a33fc469.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFM8k75s.ttf",
+      "final_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFM8k75s.ttf",
+      "sha256": "2c7c3e9c133e288e4c46573f139ac49eb93de013c3bfa70bd44873c69ec22685",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 2c7c3e9c133e288e4c46573f139ac49eb93de013c3bfa70bd44873c69ec22685.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFPYk75s.ttf",
+      "final_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFPYk75s.ttf",
+      "sha256": "a3910e15eea0451ffbea62e894e951ea9f7c812c8b4b5e947593b6ecc2d4b057",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a3910e15eea0451ffbea62e894e951ea9f7c812c8b4b5e947593b6ecc2d4b057.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "494266c68fe7b9baf4c66e8529d67c17113fc4c11c9db6a994ea7b90073d1449",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@300;400;500;600;700&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "494266c68fe7b9baf4c66e8529d67c17113fc4c11c9db6a994ea7b90073d1449",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300..700&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "494266c68fe7b9baf4c66e8529d67c17113fc4c11c9db6a994ea7b90073d1449",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-13-vzwf/jfdot-mp12.css",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "494266c68fe7b9baf4c66e8529d67c17113fc4c11c9db6a994ea7b90073d1449",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Aturbo-vision/1",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "494266c68fe7b9baf4c66e8529d67c17113fc4c11c9db6a994ea7b90073d1449",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Aturbo-vision/2",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "494266c68fe7b9baf4c66e8529d67c17113fc4c11c9db6a994ea7b90073d1449",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    }
+  ]
+}

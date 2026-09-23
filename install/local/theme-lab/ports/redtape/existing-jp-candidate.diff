@@ -1,0 +1,42 @@
+--- existing-jp.wikidot.txt
++++ candidate.wikidot.source.txt
+@@ -33,10 +33,10 @@
+ 
+ [[include :scp-jp:credit:start-preview]]
+ **タイトル:**  REDTAPE THEME
+-**翻訳責任者:** [[*user nebula2700]]
++**翻訳責任者:** nebula2700
+ **翻訳年:** 2024
+ **原題:**  REDTAPE THEME
+-**著作権者:** [[*user Rounderhouse]]
++**著作権者:** Rounderhouse
+ **作成年:**  2022
+ **初訳時参照リビジョン:** 147
+ **元記事リンク:** [https://scp-wiki.wikidot.com/theme:redtape ソース]
+@@ -49,7 +49,7 @@
+ [[/=]]
+ 
+ [[div_ style="filter: none;"]]
+-[[image https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg style="mix-blend-mode: difference;"]]
++[[image black-highlighter-logo.svg style="mix-blend-mode: difference;"]]
+ [[/div]]
+ ----
+ [[=]]
+@@ -57,7 +57,7 @@
+ [[/=]]
+ ----
+ [[div class="scp-image-block block-center" style="width:100%;"]]
+-[[image https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-86-isur/redtapeexample.png style="width:100%;" link=#]]
++[[image redtapeexample.png style="width:100%;" link=#]]
+ [[div class="scp-image-caption" style="width:100%;"]]
+ REDTAPE
+ [[/div]]
+@@ -236,7 +236,7 @@
+ ----
+ + >> 角度付きのヘッダー
+ [[span class="label"]]@@[[image 画像のURL class="angled"]]@@[[/span]]
+-[[=image https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-98-hfa3/newtempest.png class="angled"]]
++[[=image newtempest.png class="angled"]]
+ ----
+ + >> Foundation Divs
+ 

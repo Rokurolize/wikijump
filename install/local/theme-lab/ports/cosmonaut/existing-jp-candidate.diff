@@ -1,0 +1,31 @@
+--- existing-jp.wikidot.txt
++++ candidate.wikidot.source.txt
+@@ -3,16 +3,16 @@
+ 
+ [[include :scp-jp:credit:start-preview]]
+ **タイトル:** Cosmonautテーマ
+-**翻訳責任者:** [[*user nebula2700]]
++**翻訳責任者:** nebula2700
+ **翻訳年:** 2025
+ **原題:** Cosmonaut Theme
+-**著作権者:** [[*user EstrellaYoshte]]
++**著作権者:** EstrellaYoshte
+ **作成年:** 2022
+ **初訳時参照リビジョン:** 23
+ **元記事リンク:** [*https://scp-wiki.wikidot.com/theme:cosmonaut ソース]
+ [[include :scp-jp:credit:end-preview]]
+ 
+-このオネイロイ・コレクティブGoIテーマは [[*user Luxaiko]]のために[[*user EstrellaYoshte]]によって作成されました。このテーマは[[[theme:newspaper|Newspaperテーマ]]]からフォークされました。
++このオネイロイ・コレクティブGoIテーマは LuxaikoのためにEstrellaYoshteによって作成されました。このテーマは[[[theme:newspaper|Newspaperテーマ]]]からフォークされました。
+ 
+ テーマを使用するには、以下のコードを挿入してください:
+ 
+@@ -238,7 +238,7 @@
+ [https://commons.wikimedia.org/wiki/File:Fine_Ornament_Black_L.svg?uselang=ja ウィキメディア・コモンズ2]
+ [https://commons.wikimedia.org/wiki/File:Ornamental_corner_by_S._H._Redmond_02.svg?uselang=ja ウィキメディア・コモンズ3]
+ 
+-ヘッダーロゴはAethrisによるもので、背景の雲は[[*user Luxaiko]]によるものです。
++ヘッダーロゴはAethrisによるもので、背景の雲はLuxaikoによるものです。
+ 
+ ++ ソースコード
+ [[collapsible]]

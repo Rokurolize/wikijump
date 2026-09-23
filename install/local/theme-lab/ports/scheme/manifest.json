@@ -1,0 +1,88 @@
+{
+  "slug": "theme:scheme",
+  "en_source_sha256": "639e67baca7add0448d8170f065e1672b7393416f5753792ab81832429676471",
+  "en_updated_at": "2026-04-12T05:21:40+00:00",
+  "en_entity_uuid": "04a6463e-e5d5-4219-9dfa-417fe40e4ece",
+  "jp_previous_status": "confirmed-absent-by-targeted-xmlrpc",
+  "jp_previous_source_sha256": null,
+  "jp_previous_updated_at": null,
+  "jp_previous_entity_uuid": null,
+  "technical_spec_version": "1.4",
+  "reference_url": "https://scp-wiki.wikidot.com/theme:scheme",
+  "candidate_source": "candidate.wikidot.txt",
+  "candidate_css": "candidate.css",
+  "source_file": "upstream-en.wikidot.txt",
+  "existing_jp_source": null,
+  "source_identity": {
+    "slug": "theme:scheme",
+    "title": "Scheme Theme",
+    "en": {
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:scheme/source.wikidot.txt",
+      "sha256": "639e67baca7add0448d8170f065e1672b7393416f5753792ab81832429676471",
+      "updated_at": "2026-04-12T05:21:40+00:00",
+      "entity_uuid": "04a6463e-e5d5-4219-9dfa-417fe40e4ece",
+      "tags": [
+        "co-authored",
+        "cogwork-orthodoxy",
+        "theme"
+      ],
+      "attached_files": [],
+      "revisions": 32
+    },
+    "jp": {
+      "status": "confirmed-absent-by-targeted-xmlrpc",
+      "source_path": null,
+      "sha256": null,
+      "updated_at": null,
+      "entity_uuid": null,
+      "tags": [],
+      "absence_run": "theme-jp-absence-check-20260923"
+    },
+    "existing_jp_audit": "new-jp-candidate-verified",
+    "technical_spec_version": "1.4",
+    "final_verdict": "warn"
+  },
+  "dependencies": {
+    "slug": "theme:scheme",
+    "en_includes": [
+      ":scp-wiki:component:interwiki-style",
+      ":scp-wiki:info:start",
+      ":scp-wiki:info:end",
+      ":scp-wiki:theme:scheme"
+    ],
+    "en_external_dependencies": [
+      "https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts-20-12@1.0/ELAND_Nice_M.woff",
+      "https://fonts.bunny.net/css2?family=Song+Myung&display=swap",
+      "https://pixabay.com/images/id-1711946/",
+      "https://pixabay.com/images/id-201499/",
+      "https://pixabay.com/images/id-282404/",
+      "https://pixabay.com/images/id-70893/",
+      "https://scp-wiki.wdfiles.com/local--code/theme:scheme/2",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ascheme/base.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ascheme/cogL.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ascheme/cogM.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ascheme/cogS.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ascheme/header_cogs.jpg",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ascheme/lever.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ascheme/line.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ascheme/rack.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ascheme/steam1.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ascheme/steam2.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ascheme/steam3.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ascheme/stick.png"
+    ],
+    "jp_includes": [],
+    "jp_external_dependencies": [],
+    "base_family": "independent"
+  },
+  "human_port_candidate": "human-port-candidate.wikidot.txt",
+  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_scheme/theme_scheme_Japanese.wikidot.txt",
+  "acceptance_selectors": "../shared-acceptance-selectors.txt",
+  "candidate_input": "human-port-candidate.wikidot.txt",
+  "candidate_css_source": "candidate-source.css",
+  "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
+  "final_verdict": "warn",
+  "existing_jp_audit": "new-jp-candidate-verified",
+  "asset_dependency_decisions_path": "install/local/theme-lab/ports/scheme/assets.json",
+  "asset_dependency_decision_count": 194
+}

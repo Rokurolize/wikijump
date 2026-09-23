@@ -1,0 +1,38 @@
+{
+  "assets": [
+    {
+      "sha256": "c425480298710ba15e7bf77ad9c8db4488ec3fd6d08de78746b19a39d41d5af8",
+      "bytes": 158,
+      "content_type": "image/png",
+      "original_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A7657035-47-h01l/body_bg.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A7657035-47-h01l/body_bg.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at c425480298710ba15e7bf77ad9c8db4488ec3fd6d08de78746b19a39d41d5af8.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    }
+  ],
+  "missing": [],
+  "imports": [
+    "https://scp-jp.github.io/files/theme/classic/style0.css"
+  ],
+  "pruned_fonts": [],
+  "template_placeholders": [],
+  "asset_replacements": {},
+  "omitted_assets": [],
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A7657035-47-h01l/body_bg.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A7657035-47-h01l/body_bg.png",
+      "sha256": "c425480298710ba15e7bf77ad9c8db4488ec3fd6d08de78746b19a39d41d5af8",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at c425480298710ba15e7bf77ad9c8db4488ec3fd6d08de78746b19a39d41d5af8.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp.github.io/files/theme/classic/style0.css",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "dbd7125c4163be7ef2bc1908adfe5f75b30d1e55f719484637c45350a2d81604",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    }
+  ]
+}

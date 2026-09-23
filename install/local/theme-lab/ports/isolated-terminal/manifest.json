@@ -1,0 +1,147 @@
+{
+  "slug": "theme:isolated-terminal",
+  "en_source_sha256": "120ce0a71fa1ca235d3ed1955957ebe037bdb8e4a160b7099fe810d61f17a257",
+  "en_updated_at": "2026-02-01T03:34:54+00:00",
+  "en_entity_uuid": "84535295-6775-4362-92bd-cc9a1d180064",
+  "jp_previous_status": "present",
+  "jp_previous_source_sha256": "4cffaa491e5f88926e9793f732bdb80616f0c8a91282b2544478e1b9caa41e30",
+  "jp_previous_updated_at": "2026-07-30T02:50:04+00:00",
+  "jp_previous_entity_uuid": "1725b727-8cc8-44ca-9980-cae2f35eee66",
+  "technical_spec_version": "1.4",
+  "reference_url": "https://scp-wiki.wikidot.com/theme:isolated-terminal",
+  "candidate_source": "candidate.wikidot.txt",
+  "candidate_css": "candidate.css",
+  "source_file": "upstream-en.wikidot.txt",
+  "existing_jp_source": "existing-jp.wikidot.txt",
+  "source_identity": {
+    "slug": "theme:isolated-terminal",
+    "title": "Isolated Terminal Theme",
+    "en": {
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:isolated-terminal/source.wikidot.txt",
+      "sha256": "120ce0a71fa1ca235d3ed1955957ebe037bdb8e4a160b7099fe810d61f17a257",
+      "updated_at": "2026-02-01T03:34:54+00:00",
+      "entity_uuid": "84535295-6775-4362-92bd-cc9a1d180064",
+      "tags": [
+        "theme"
+      ],
+      "attached_files": [],
+      "revisions": 122
+    },
+    "jp": {
+      "status": "present",
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:isolated-terminal/source.wikidot.txt",
+      "sha256": "4cffaa491e5f88926e9793f732bdb80616f0c8a91282b2544478e1b9caa41e30",
+      "updated_at": "2026-07-30T02:50:04+00:00",
+      "entity_uuid": "1725b727-8cc8-44ca-9980-cae2f35eee66",
+      "tags": [
+        "en",
+        "テーマ"
+      ],
+      "absence_run": null
+    },
+    "existing_jp_audit": "existing-jp-current-and-valid",
+    "technical_spec_version": "1.4",
+    "final_verdict": "warn"
+  },
+  "dependencies": {
+    "slug": "theme:isolated-terminal",
+    "en_includes": [
+      ":scp-wiki:component:interwiki-style",
+      ":scp-wiki:component:interwiki-style",
+      ":scp-wiki:info:start",
+      ":scp-wiki:info:more",
+      ":scp-wiki:info:end",
+      ":scp-wiki:component:theme-squares -=-",
+      ":scp-wiki:theme:black-highlighter-theme",
+      ":scp-wiki:theme:isolated-terminal",
+      "component:image-block name=https://scp-wiki.wikidot.com/local--files/theme:isolated-terminal/pxlogo.png",
+      ":scp-wiki:component:toggle-sidebar-bhl",
+      ":scp-wiki:component:centered-header-bhl",
+      ":scp-wiki:component:interwiki-style"
+    ],
+    "en_external_dependencies": [
+      "http://www.w3.org/2000/svg",
+      "https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "https://scp-wiki.wdfiles.com/local--code/theme%3Aisolated-terminal/1",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg",
+      "https://scp-wiki.wdfiles.com/local--files/theme:isolated-terminal/profontwindows.css",
+      "https://scp-wiki.wdfiles.com/local--files/theme:isolated-terminal/terminus.css",
+      "https://scp-wiki.wdfiles.com/local--files/theme:isolated-terminal/vga8.css",
+      "https://scp-wiki.wikidot.com/local--files/theme:isolated-terminal/pxlogo.png|caption=Image.|width=200px"
+    ],
+    "jp_includes": [
+      ":scp-jp:theme:black-highlighter-theme",
+      ":scp-jp:component:interwiki-style",
+      ":scp-jp:component:interwiki-style",
+      ":scp-jp:credit:start-preview",
+      ":scp-jp:credit:end-preview",
+      ":scp-jp:component:theme-squares -=-",
+      ":scp-jp:theme:black-highlighter-theme",
+      ":scp-jp:theme:isolated-terminal",
+      "component:image-block name=https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-10-4g1r/pxlogo.png",
+      ":scp-jp:theme:black-highlighter-theme",
+      ":scp-jp:theme:isolated-terminal",
+      ":scp-jp:component:ayu18",
+      ":scp-jp:component:toggle-sidebar-bhl",
+      ":scp-jp:component:centered-header-bhl",
+      ":scp-jp:component:interwiki-style"
+    ],
+    "jp_external_dependencies": [
+      "http://jikasei.me/font/jf-dotfont/",
+      "http://jikasei.me/font/jf-dotfont/|JFドットjiskan24h",
+      "http://jikasei.me/font/jf-dotfont/|JFドット東雲明朝16",
+      "http://jikasei.me/font/kh-dotfont/|日比谷24",
+      "http://scp-jp.wikidot.com/scp-5999|SCP-5999",
+      "http://scp-jp.wikidot.com/theme:black-highlighter-theme",
+      "http://www.w3.org/2000/svg",
+      "https://fonts.google.com/noto/specimen/Noto+Sans+JP|Google",
+      "https://fonts.google.com/noto/specimen/Noto+Sans+JP|Noto",
+      "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap",
+      "https://openfontlicense.org/open-font-license-official-text/|SIL",
+      "https://openfontlicense.org/|SIL",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-10-4g1r/pxlogo.png|caption=画像|width=200px",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-2-mfzo/JFDotShinonomeMing16.css",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-3-ci8u/profontwindows.css",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-5-t5lr/terminus.css",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-6-aeo3/jiskan24.css",
+      "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "https://scp-jp.wdfiles.com/local--code/theme%3Aisolated-terminal/1",
+      "https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg",
+      "https://scp-wiki.wikidot.com/theme:isolated-terminal",
+      "https://terminus-font.sourceforge.net/",
+      "https://terminus-font.sourceforge.net/|Terminus",
+      "https://www.fontsquirrel.com",
+      "https://www.fontsquirrel.com/fonts/ProFontWindows",
+      "https://www.fontsquirrel.com/fonts/profontwindows|ProFontWindows",
+      "https://www.fontsquirrel.com/license/ProFontWindows|ProFont"
+    ],
+    "base_family": "black-highlighter"
+  },
+  "human_port_candidate": "human-port-candidate.wikidot.txt",
+  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_isolated-terminal/theme_isolated-terminal_Japanese.wikidot.txt",
+  "acceptance_selectors": "../shared-acceptance-selectors.txt",
+  "candidate_input": "existing-jp.wikidot.txt",
+  "candidate_css_source": "candidate-source.css",
+  "candidate_origin": "current official SCP-JP page source",
+  "candidate_source_hash": "6b94bca87217df526f33816d4abc26239fa1136725fa9901e531cb57526a16fe",
+  "page_assets": [
+    {
+      "filename": "black-highlighter-logo.svg",
+      "sha256": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593",
+      "bytes": 6615,
+      "asset_file": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593.svg",
+      "source_urls": [
+        "https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg"
+      ],
+      "acquired_from": "https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg",
+      "classification": "localize-into-candidate-package",
+      "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; "
+    }
+  ],
+  "final_verdict": "warn",
+  "existing_jp_audit": "existing-jp-current-and-valid",
+  "asset_dependency_decisions_path": "install/local/theme-lab/ports/isolated-terminal/assets.json",
+  "asset_dependency_decision_count": 53
+}

@@ -1,0 +1,935 @@
+{
+  "assets": [
+    {
+      "sha256": "693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3",
+      "bytes": 352240,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterVariable.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterVariable.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e564f652916db6c139570fefb9524a77c4d48f30c92928de9db19b6b5c7a262a",
+      "bytes": 387976,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterVariable-Italic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterVariable-Italic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e564f652916db6c139570fefb9524a77c4d48f30c92928de9db19b6b5c7a262a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "70ca998635d9fc627dede8108f04d0989e6e03346183f0ad0917723e790f6973",
+      "bytes": 109548,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-Thin.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Thin.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 70ca998635d9fc627dede8108f04d0989e6e03346183f0ad0917723e790f6973.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "930d666b74e0dc0c26c2821f5643b701f8a41beaf3bb95ce146298104f29169c",
+      "bytes": 116880,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-ThinItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-ThinItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 930d666b74e0dc0c26c2821f5643b701f8a41beaf3bb95ce146298104f29169c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "ba4fc81dbb25871f1bcabc664b1e37703fca0a05f7248a923e7db497c6d211cc",
+      "bytes": 112728,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-ExtraLight.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-ExtraLight.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at ba4fc81dbb25871f1bcabc664b1e37703fca0a05f7248a923e7db497c6d211cc.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "38bad3a6a9ad1a7fcd8082e6423ba5e0baea16598f2cf304e527844f697e32b2",
+      "bytes": 119320,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-ExtraLightItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-ExtraLightItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 38bad3a6a9ad1a7fcd8082e6423ba5e0baea16598f2cf304e527844f697e32b2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e111a1e2ad914ccda9179b95e83fb10234dd52a1932e0b93c480476227983fd9",
+      "bytes": 112592,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-Light.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Light.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e111a1e2ad914ccda9179b95e83fb10234dd52a1932e0b93c480476227983fd9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "050265b27d11860a26c66c054210852661abb5d229c4e0bb3525757a830f3790",
+      "bytes": 119608,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-LightItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-LightItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 050265b27d11860a26c66c054210852661abb5d229c4e0bb3525757a830f3790.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e06f6b1bc553aaea4e4668023ed0ab0a147129c3107f511bc7d03d361b0ae085",
+      "bytes": 111268,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-Regular.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Regular.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e06f6b1bc553aaea4e4668023ed0ab0a147129c3107f511bc7d03d361b0ae085.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "2d078cb3bc8f934740d53b39dd23b0678f2f97477e49ec785dd9d8acd8b96bfc",
+      "bytes": 117700,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-Italic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Italic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 2d078cb3bc8f934740d53b39dd23b0678f2f97477e49ec785dd9d8acd8b96bfc.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "0ff3e94614e1493eb556314fd247ae6c4a85a7783b4cc86be539940cf83f2a48",
+      "bytes": 114348,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-Medium.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Medium.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 0ff3e94614e1493eb556314fd247ae6c4a85a7783b4cc86be539940cf83f2a48.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "1b0df503de488a92082a8c5d72ddc4c0229183ceb645ae1c25c2d0d63778517c",
+      "bytes": 120784,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-MediumItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-MediumItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 1b0df503de488a92082a8c5d72ddc4c0229183ceb645ae1c25c2d0d63778517c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5cb7103e4e605989afebc03d989c79201e54b21b5183db33981f70db9178a301",
+      "bytes": 114812,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-SemiBold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-SemiBold.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5cb7103e4e605989afebc03d989c79201e54b21b5183db33981f70db9178a301.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5e2a2bc3b5b9af0644f005693b10499dab18065d6aedbf46c8b74ccede27daeb",
+      "bytes": 121416,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-SemiBoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-SemiBoldItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5e2a2bc3b5b9af0644f005693b10499dab18065d6aedbf46c8b74ccede27daeb.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "fa888127b6da015b65569f0351f3b5c391ad928904951f1c20e9f8462a8d95ea",
+      "bytes": 114840,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-Bold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Bold.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at fa888127b6da015b65569f0351f3b5c391ad928904951f1c20e9f8462a8d95ea.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "4a10532d76c90c4597c0ad4bfc9284600e597d3012dd1ec16c1d44e0ad0058ab",
+      "bytes": 121500,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-BoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-BoldItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 4a10532d76c90c4597c0ad4bfc9284600e597d3012dd1ec16c1d44e0ad0058ab.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "6f75025856f8db1b2186e9cb89be9de9894932c8b7b20f4df5e65916ff714e34",
+      "bytes": 114856,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-ExtraBold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-ExtraBold.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 6f75025856f8db1b2186e9cb89be9de9894932c8b7b20f4df5e65916ff714e34.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "53bb20ba292e2ac28a0777bf0f56f31b98be432a3cc04359e2eb608c758349c7",
+      "bytes": 121516,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-ExtraBoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-ExtraBoldItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 53bb20ba292e2ac28a0777bf0f56f31b98be432a3cc04359e2eb608c758349c7.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "12ed0eed6749099b46c7b2e8198dc30c2d7e0f2a4e5fb1d12f0b6ae2c4f33cc4",
+      "bytes": 111668,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-Black.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Black.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 12ed0eed6749099b46c7b2e8198dc30c2d7e0f2a4e5fb1d12f0b6ae2c4f33cc4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "308e101141e9dee3b6b121614da03969eb8179886975a9eeb5348021b04368fe",
+      "bytes": 118420,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-BlackItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-BlackItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 308e101141e9dee3b6b121614da03969eb8179886975a9eeb5348021b04368fe.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "21cfe42e7f1031b410e247ed199f43fc362415af81b3a8e442a97f63b4dbe327",
+      "bytes": 108820,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-Thin.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Thin.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 21cfe42e7f1031b410e247ed199f43fc362415af81b3a8e442a97f63b4dbe327.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "eff21589eacf1f6a596191038d7b47b4dd2455a096b175bb3572ecb6d026a611",
+      "bytes": 116040,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-ThinItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-ThinItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at eff21589eacf1f6a596191038d7b47b4dd2455a096b175bb3572ecb6d026a611.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "9031b6d2a1a559753d50b311ecb463ddf7acaaae1d992a7e9b009620d8ce6def",
+      "bytes": 113108,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraLight.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraLight.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 9031b6d2a1a559753d50b311ecb463ddf7acaaae1d992a7e9b009620d8ce6def.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e8d7078160ef92b82c2123857c1b3aefaa4a795a44b56df5fe3edade60d81576",
+      "bytes": 120124,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraLightItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraLightItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e8d7078160ef92b82c2123857c1b3aefaa4a795a44b56df5fe3edade60d81576.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "01dd2d491ed863177e61f6e9458813baa85453ad97b32c5c1216927d4eebfe65",
+      "bytes": 112976,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-Light.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Light.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 01dd2d491ed863177e61f6e9458813baa85453ad97b32c5c1216927d4eebfe65.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "59b5be56306fd353d067aa6995c2c92bc3feb3ace73684d94e3c6e73fe2beaac",
+      "bytes": 119692,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-LightItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-LightItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 59b5be56306fd353d067aa6995c2c92bc3feb3ace73684d94e3c6e73fe2beaac.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "3a9463a58c3e7ba1e3cd65b5dbff91a35c508ff78a104cd1121feff83efeb787",
+      "bytes": 108948,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-Regular.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Regular.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 3a9463a58c3e7ba1e3cd65b5dbff91a35c508ff78a104cd1121feff83efeb787.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "dfd398d7372b61278e1505bfbdfc5ab0f6511ef887a47a2c90c13475eae585da",
+      "bytes": 116988,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-Italic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Italic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at dfd398d7372b61278e1505bfbdfc5ab0f6511ef887a47a2c90c13475eae585da.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "f1227907684853882ad00d7f97ce9f64bc17b89a2a291a7d4ec84fccfa442934",
+      "bytes": 113476,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-Medium.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Medium.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at f1227907684853882ad00d7f97ce9f64bc17b89a2a291a7d4ec84fccfa442934.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "6bf254c1a65c806c019f52818add66747da83595a314112917911bcf5fa2f5c5",
+      "bytes": 120560,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-MediumItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-MediumItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 6bf254c1a65c806c019f52818add66747da83595a314112917911bcf5fa2f5c5.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d9f63a82b826fb0117c92715c3a52a2d2247bc321bc39341420bf52d91e8277a",
+      "bytes": 113772,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-SemiBold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-SemiBold.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d9f63a82b826fb0117c92715c3a52a2d2247bc321bc39341420bf52d91e8277a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "dd9d78314bdd5062302a73c7e2954008bab8158304fa7ac4f0ea8977b841dccb",
+      "bytes": 120468,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-SemiBoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-SemiBoldItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at dd9d78314bdd5062302a73c7e2954008bab8158304fa7ac4f0ea8977b841dccb.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "23bc37619593377e128f24660fedb2869d18277b4026cb46e5637be7643faf91",
+      "bytes": 113556,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-Bold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Bold.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 23bc37619593377e128f24660fedb2869d18277b4026cb46e5637be7643faf91.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5a0fe1f01b8777fab4a5f73c757743fa52579c7723b0291777625cb53c0a792a",
+      "bytes": 120432,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-BoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-BoldItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5a0fe1f01b8777fab4a5f73c757743fa52579c7723b0291777625cb53c0a792a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "97eeee5a6f4f22fef1f607cf8836104d65968f03e59bc068a7586bf18364a8a7",
+      "bytes": 113636,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraBold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraBold.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 97eeee5a6f4f22fef1f607cf8836104d65968f03e59bc068a7586bf18364a8a7.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "159b72ba47887032915420aa1445ae6768197e7ea732230182998f14d1cdb932",
+      "bytes": 120712,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraBoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraBoldItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 159b72ba47887032915420aa1445ae6768197e7ea732230182998f14d1cdb932.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "05650cb83c70fda2a465eade0c0a1a6c25d37ec49df3cd74b7e564683f9729f1",
+      "bytes": 110308,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-Black.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Black.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 05650cb83c70fda2a465eade0c0a1a6c25d37ec49df3cd74b7e564683f9729f1.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "9746bf2bd43fe158144b83ede747088e80396daad55b9e6ea7232e0e22ee6fce",
+      "bytes": 116820,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-BlackItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-BlackItalic.woff2?v=4.1",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 9746bf2bd43fe158144b83ede747088e80396daad55b9e6ea7232e0e22ee6fce.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a9cb1cd82332b23a47e3a1239d25d13c86d16c4220695e34b243effa999f45f2",
+      "bytes": 92164,
+      "content_type": "font/woff2",
+      "original_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-Regular.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-Regular.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a9cb1cd82332b23a47e3a1239d25d13c86d16c4220695e34b243effa999f45f2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "cb6a1b246318ed3885d7dffa14a2609297fe80e9b8e500bea33b52fa312a36a4",
+      "bytes": 95864,
+      "content_type": "font/woff2",
+      "original_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-Italic.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-Italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at cb6a1b246318ed3885d7dffa14a2609297fe80e9b8e500bea33b52fa312a36a4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "c503cc5ec5f8b2c7666b7ecda1adf44bd45f2e6579b2eba0fc292150416588a2",
+      "bytes": 94588,
+      "content_type": "font/woff2",
+      "original_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-Bold.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-Bold.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at c503cc5ec5f8b2c7666b7ecda1adf44bd45f2e6579b2eba0fc292150416588a2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "3a013466c0eee979fb9d42c2d7a8887cd3645dc8b897cfc5b71781cf982efc5a",
+      "bytes": 98152,
+      "content_type": "font/woff2",
+      "original_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-BoldItalic.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-BoldItalic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 3a013466c0eee979fb9d42c2d7a8887cd3645dc8b897cfc5b71781cf982efc5a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "879908ea341a69357e11c6d9d1ca9f286a81fd38c2c29d2f78739f0cbd2fc8a0",
+      "bytes": 19728,
+      "content_type": "font/woff2",
+      "original_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Jost-Book.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Jost-Book.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 879908ea341a69357e11c6d9d1ca9f286a81fd38c2c29d2f78739f0cbd2fc8a0.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "67494d7086d4b4f5938632222954f568c0948e5b9715496b7b29073530d2743c",
+      "bytes": 21928,
+      "content_type": "font/woff2",
+      "original_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Jost-Bold.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Jost-Bold.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 67494d7086d4b4f5938632222954f568c0948e5b9715496b7b29073530d2743c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "c6ca4115c3be6476ef9e096a356d0b4aa3477ecdd48517d44e9d05c1ac2ac7eb",
+      "bytes": 31664,
+      "content_type": "font/woff2",
+      "original_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Lexend-Regular.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Lexend-Regular.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at c6ca4115c3be6476ef9e096a356d0b4aa3477ecdd48517d44e9d05c1ac2ac7eb.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "94965242d0722daa8d124fd562302ca078a049136a1133daf792be9a6d9e7bcb",
+      "bytes": 32768,
+      "content_type": "font/woff2",
+      "original_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Lexend-Bold.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Lexend-Bold.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 94965242d0722daa8d124fd562302ca078a049136a1133daf792be9a6d9e7bcb.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "2f4b1925b1f575a3300e8b4e0a91888a9678056e69123c84be616f1438461bf2",
+      "bytes": 1648300,
+      "content_type": "font/woff2",
+      "original_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NotoSansJP-Regular.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NotoSansJP-Regular.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 2f4b1925b1f575a3300e8b4e0a91888a9678056e69123c84be616f1438461bf2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "92c7dcd9f3383c0b913e4d8a94359a8889ca7db6bb0a515d1e4bc63e063bdd44",
+      "bytes": 1719984,
+      "content_type": "font/woff2",
+      "original_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NotoSansJP-Bold.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NotoSansJP-Bold.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 92c7dcd9f3383c0b913e4d8a94359a8889ca7db6bb0a515d1e4bc63e063bdd44.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "390d3d9a70157d53667a27669741c3eb7924fa9e8b5d5afac59749c9e591fbad",
+      "bytes": 1457,
+      "content_type": "image/svg+xml",
+      "original_url": "https://cdn.scpwiki.com/theme/en/basalt/basaltlogo.svg",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/basaltlogo.svg",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 390d3d9a70157d53667a27669741c3eb7924fa9e8b5d5afac59749c9e591fbad.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    }
+  ],
+  "missing": [],
+  "imports": [
+    "https://cdn.scpwiki.com/theme/en/basalt/basalt-bedrock-min.css",
+    "https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css",
+    "https://rsms.me/inter/inter.css"
+  ],
+  "pruned_fonts": [
+    {
+      "font_family": "'Noto Sans SC'",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    },
+    {
+      "font_family": "'Noto Sans SC'",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    },
+    {
+      "font_family": "'Noto Serif SC'",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    },
+    {
+      "font_family": "'Noto Serif SC'",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    },
+    {
+      "font_family": "'Noto Sans TC'",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    },
+    {
+      "font_family": "'Noto Sans TC'",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    },
+    {
+      "font_family": "'Noto Sans KR'",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    },
+    {
+      "font_family": "'Noto Sans KR'",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    },
+    {
+      "font_family": "'Noto Sans Thai'",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    },
+    {
+      "font_family": "'Noto Sans Thai'",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    },
+    {
+      "font_family": "Kanit",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    },
+    {
+      "font_family": "Kanit",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    },
+    {
+      "font_family": "Kanit",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    },
+    {
+      "font_family": "Kanit",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    },
+    {
+      "font_family": "'Nanum Gothic'",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    },
+    {
+      "font_family": "'Nanum Gothic'",
+      "reason": "font targets a non-JP locale; Japanese runtime uses a verified JP stack"
+    }
+  ],
+  "template_placeholders": [],
+  "asset_replacements": {},
+  "omitted_assets": [],
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterVariable.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterVariable.woff2?v=4.1",
+      "sha256": "693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterVariable-Italic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterVariable-Italic.woff2?v=4.1",
+      "sha256": "e564f652916db6c139570fefb9524a77c4d48f30c92928de9db19b6b5c7a262a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e564f652916db6c139570fefb9524a77c4d48f30c92928de9db19b6b5c7a262a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-Thin.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Thin.woff2?v=4.1",
+      "sha256": "70ca998635d9fc627dede8108f04d0989e6e03346183f0ad0917723e790f6973",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 70ca998635d9fc627dede8108f04d0989e6e03346183f0ad0917723e790f6973.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-ThinItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-ThinItalic.woff2?v=4.1",
+      "sha256": "930d666b74e0dc0c26c2821f5643b701f8a41beaf3bb95ce146298104f29169c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 930d666b74e0dc0c26c2821f5643b701f8a41beaf3bb95ce146298104f29169c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-ExtraLight.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-ExtraLight.woff2?v=4.1",
+      "sha256": "ba4fc81dbb25871f1bcabc664b1e37703fca0a05f7248a923e7db497c6d211cc",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at ba4fc81dbb25871f1bcabc664b1e37703fca0a05f7248a923e7db497c6d211cc.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-ExtraLightItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-ExtraLightItalic.woff2?v=4.1",
+      "sha256": "38bad3a6a9ad1a7fcd8082e6423ba5e0baea16598f2cf304e527844f697e32b2",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 38bad3a6a9ad1a7fcd8082e6423ba5e0baea16598f2cf304e527844f697e32b2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-Light.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Light.woff2?v=4.1",
+      "sha256": "e111a1e2ad914ccda9179b95e83fb10234dd52a1932e0b93c480476227983fd9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e111a1e2ad914ccda9179b95e83fb10234dd52a1932e0b93c480476227983fd9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-LightItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-LightItalic.woff2?v=4.1",
+      "sha256": "050265b27d11860a26c66c054210852661abb5d229c4e0bb3525757a830f3790",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 050265b27d11860a26c66c054210852661abb5d229c4e0bb3525757a830f3790.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-Regular.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Regular.woff2?v=4.1",
+      "sha256": "e06f6b1bc553aaea4e4668023ed0ab0a147129c3107f511bc7d03d361b0ae085",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e06f6b1bc553aaea4e4668023ed0ab0a147129c3107f511bc7d03d361b0ae085.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-Italic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Italic.woff2?v=4.1",
+      "sha256": "2d078cb3bc8f934740d53b39dd23b0678f2f97477e49ec785dd9d8acd8b96bfc",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 2d078cb3bc8f934740d53b39dd23b0678f2f97477e49ec785dd9d8acd8b96bfc.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-Medium.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Medium.woff2?v=4.1",
+      "sha256": "0ff3e94614e1493eb556314fd247ae6c4a85a7783b4cc86be539940cf83f2a48",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 0ff3e94614e1493eb556314fd247ae6c4a85a7783b4cc86be539940cf83f2a48.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-MediumItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-MediumItalic.woff2?v=4.1",
+      "sha256": "1b0df503de488a92082a8c5d72ddc4c0229183ceb645ae1c25c2d0d63778517c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 1b0df503de488a92082a8c5d72ddc4c0229183ceb645ae1c25c2d0d63778517c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-SemiBold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-SemiBold.woff2?v=4.1",
+      "sha256": "5cb7103e4e605989afebc03d989c79201e54b21b5183db33981f70db9178a301",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5cb7103e4e605989afebc03d989c79201e54b21b5183db33981f70db9178a301.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-SemiBoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-SemiBoldItalic.woff2?v=4.1",
+      "sha256": "5e2a2bc3b5b9af0644f005693b10499dab18065d6aedbf46c8b74ccede27daeb",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5e2a2bc3b5b9af0644f005693b10499dab18065d6aedbf46c8b74ccede27daeb.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-Bold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Bold.woff2?v=4.1",
+      "sha256": "fa888127b6da015b65569f0351f3b5c391ad928904951f1c20e9f8462a8d95ea",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at fa888127b6da015b65569f0351f3b5c391ad928904951f1c20e9f8462a8d95ea.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-BoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-BoldItalic.woff2?v=4.1",
+      "sha256": "4a10532d76c90c4597c0ad4bfc9284600e597d3012dd1ec16c1d44e0ad0058ab",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 4a10532d76c90c4597c0ad4bfc9284600e597d3012dd1ec16c1d44e0ad0058ab.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-ExtraBold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-ExtraBold.woff2?v=4.1",
+      "sha256": "6f75025856f8db1b2186e9cb89be9de9894932c8b7b20f4df5e65916ff714e34",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 6f75025856f8db1b2186e9cb89be9de9894932c8b7b20f4df5e65916ff714e34.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-ExtraBoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-ExtraBoldItalic.woff2?v=4.1",
+      "sha256": "53bb20ba292e2ac28a0777bf0f56f31b98be432a3cc04359e2eb608c758349c7",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 53bb20ba292e2ac28a0777bf0f56f31b98be432a3cc04359e2eb608c758349c7.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-Black.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Black.woff2?v=4.1",
+      "sha256": "12ed0eed6749099b46c7b2e8198dc30c2d7e0f2a4e5fb1d12f0b6ae2c4f33cc4",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 12ed0eed6749099b46c7b2e8198dc30c2d7e0f2a4e5fb1d12f0b6ae2c4f33cc4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/Inter-BlackItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-BlackItalic.woff2?v=4.1",
+      "sha256": "308e101141e9dee3b6b121614da03969eb8179886975a9eeb5348021b04368fe",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 308e101141e9dee3b6b121614da03969eb8179886975a9eeb5348021b04368fe.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-Thin.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Thin.woff2?v=4.1",
+      "sha256": "21cfe42e7f1031b410e247ed199f43fc362415af81b3a8e442a97f63b4dbe327",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 21cfe42e7f1031b410e247ed199f43fc362415af81b3a8e442a97f63b4dbe327.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-ThinItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-ThinItalic.woff2?v=4.1",
+      "sha256": "eff21589eacf1f6a596191038d7b47b4dd2455a096b175bb3572ecb6d026a611",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at eff21589eacf1f6a596191038d7b47b4dd2455a096b175bb3572ecb6d026a611.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraLight.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraLight.woff2?v=4.1",
+      "sha256": "9031b6d2a1a559753d50b311ecb463ddf7acaaae1d992a7e9b009620d8ce6def",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 9031b6d2a1a559753d50b311ecb463ddf7acaaae1d992a7e9b009620d8ce6def.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraLightItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraLightItalic.woff2?v=4.1",
+      "sha256": "e8d7078160ef92b82c2123857c1b3aefaa4a795a44b56df5fe3edade60d81576",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e8d7078160ef92b82c2123857c1b3aefaa4a795a44b56df5fe3edade60d81576.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-Light.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Light.woff2?v=4.1",
+      "sha256": "01dd2d491ed863177e61f6e9458813baa85453ad97b32c5c1216927d4eebfe65",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 01dd2d491ed863177e61f6e9458813baa85453ad97b32c5c1216927d4eebfe65.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-LightItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-LightItalic.woff2?v=4.1",
+      "sha256": "59b5be56306fd353d067aa6995c2c92bc3feb3ace73684d94e3c6e73fe2beaac",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 59b5be56306fd353d067aa6995c2c92bc3feb3ace73684d94e3c6e73fe2beaac.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-Regular.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Regular.woff2?v=4.1",
+      "sha256": "3a9463a58c3e7ba1e3cd65b5dbff91a35c508ff78a104cd1121feff83efeb787",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 3a9463a58c3e7ba1e3cd65b5dbff91a35c508ff78a104cd1121feff83efeb787.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-Italic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Italic.woff2?v=4.1",
+      "sha256": "dfd398d7372b61278e1505bfbdfc5ab0f6511ef887a47a2c90c13475eae585da",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at dfd398d7372b61278e1505bfbdfc5ab0f6511ef887a47a2c90c13475eae585da.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-Medium.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Medium.woff2?v=4.1",
+      "sha256": "f1227907684853882ad00d7f97ce9f64bc17b89a2a291a7d4ec84fccfa442934",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at f1227907684853882ad00d7f97ce9f64bc17b89a2a291a7d4ec84fccfa442934.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-MediumItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-MediumItalic.woff2?v=4.1",
+      "sha256": "6bf254c1a65c806c019f52818add66747da83595a314112917911bcf5fa2f5c5",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 6bf254c1a65c806c019f52818add66747da83595a314112917911bcf5fa2f5c5.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-SemiBold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-SemiBold.woff2?v=4.1",
+      "sha256": "d9f63a82b826fb0117c92715c3a52a2d2247bc321bc39341420bf52d91e8277a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d9f63a82b826fb0117c92715c3a52a2d2247bc321bc39341420bf52d91e8277a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-SemiBoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-SemiBoldItalic.woff2?v=4.1",
+      "sha256": "dd9d78314bdd5062302a73c7e2954008bab8158304fa7ac4f0ea8977b841dccb",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at dd9d78314bdd5062302a73c7e2954008bab8158304fa7ac4f0ea8977b841dccb.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-Bold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Bold.woff2?v=4.1",
+      "sha256": "23bc37619593377e128f24660fedb2869d18277b4026cb46e5637be7643faf91",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 23bc37619593377e128f24660fedb2869d18277b4026cb46e5637be7643faf91.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-BoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-BoldItalic.woff2?v=4.1",
+      "sha256": "5a0fe1f01b8777fab4a5f73c757743fa52579c7723b0291777625cb53c0a792a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5a0fe1f01b8777fab4a5f73c757743fa52579c7723b0291777625cb53c0a792a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraBold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraBold.woff2?v=4.1",
+      "sha256": "97eeee5a6f4f22fef1f607cf8836104d65968f03e59bc068a7586bf18364a8a7",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 97eeee5a6f4f22fef1f607cf8836104d65968f03e59bc068a7586bf18364a8a7.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraBoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraBoldItalic.woff2?v=4.1",
+      "sha256": "159b72ba47887032915420aa1445ae6768197e7ea732230182998f14d1cdb932",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 159b72ba47887032915420aa1445ae6768197e7ea732230182998f14d1cdb932.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-Black.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Black.woff2?v=4.1",
+      "sha256": "05650cb83c70fda2a465eade0c0a1a6c25d37ec49df3cd74b7e564683f9729f1",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 05650cb83c70fda2a465eade0c0a1a6c25d37ec49df3cd74b7e564683f9729f1.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://rsms.me/inter/font-files/InterDisplay-BlackItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-BlackItalic.woff2?v=4.1",
+      "sha256": "9746bf2bd43fe158144b83ede747088e80396daad55b9e6ea7232e0e22ee6fce",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 9746bf2bd43fe158144b83ede747088e80396daad55b9e6ea7232e0e22ee6fce.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-Regular.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-Regular.woff2",
+      "sha256": "a9cb1cd82332b23a47e3a1239d25d13c86d16c4220695e34b243effa999f45f2",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a9cb1cd82332b23a47e3a1239d25d13c86d16c4220695e34b243effa999f45f2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-Italic.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-Italic.woff2",
+      "sha256": "cb6a1b246318ed3885d7dffa14a2609297fe80e9b8e500bea33b52fa312a36a4",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at cb6a1b246318ed3885d7dffa14a2609297fe80e9b8e500bea33b52fa312a36a4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-Bold.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-Bold.woff2",
+      "sha256": "c503cc5ec5f8b2c7666b7ecda1adf44bd45f2e6579b2eba0fc292150416588a2",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at c503cc5ec5f8b2c7666b7ecda1adf44bd45f2e6579b2eba0fc292150416588a2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-BoldItalic.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/JetBrainsMono-BoldItalic.woff2",
+      "sha256": "3a013466c0eee979fb9d42c2d7a8887cd3645dc8b897cfc5b71781cf982efc5a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 3a013466c0eee979fb9d42c2d7a8887cd3645dc8b897cfc5b71781cf982efc5a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Jost-Book.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Jost-Book.woff2",
+      "sha256": "879908ea341a69357e11c6d9d1ca9f286a81fd38c2c29d2f78739f0cbd2fc8a0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 879908ea341a69357e11c6d9d1ca9f286a81fd38c2c29d2f78739f0cbd2fc8a0.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Jost-Bold.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Jost-Bold.woff2",
+      "sha256": "67494d7086d4b4f5938632222954f568c0948e5b9715496b7b29073530d2743c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 67494d7086d4b4f5938632222954f568c0948e5b9715496b7b29073530d2743c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Lexend-Regular.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Lexend-Regular.woff2",
+      "sha256": "c6ca4115c3be6476ef9e096a356d0b4aa3477ecdd48517d44e9d05c1ac2ac7eb",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at c6ca4115c3be6476ef9e096a356d0b4aa3477ecdd48517d44e9d05c1ac2ac7eb.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Lexend-Bold.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/Lexend-Bold.woff2",
+      "sha256": "94965242d0722daa8d124fd562302ca078a049136a1133daf792be9a6d9e7bcb",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 94965242d0722daa8d124fd562302ca078a049136a1133daf792be9a6d9e7bcb.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NotoSansJP-Regular.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NotoSansJP-Regular.woff2",
+      "sha256": "2f4b1925b1f575a3300e8b4e0a91888a9678056e69123c84be616f1438461bf2",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 2f4b1925b1f575a3300e8b4e0a91888a9678056e69123c84be616f1438461bf2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NotoSansJP-Bold.woff2",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NotoSansJP-Bold.woff2",
+      "sha256": "92c7dcd9f3383c0b913e4d8a94359a8889ca7db6bb0a515d1e4bc63e063bdd44",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 92c7dcd9f3383c0b913e4d8a94359a8889ca7db6bb0a515d1e4bc63e063bdd44.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.scpwiki.com/theme/en/basalt/basaltlogo.svg",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/basaltlogo.svg",
+      "sha256": "390d3d9a70157d53667a27669741c3eb7924fa9e8b5d5afac59749c9e591fbad",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 390d3d9a70157d53667a27669741c3eb7924fa9e8b5d5afac59749c9e591fbad.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://cdn.scpwiki.com/theme/en/basalt/basalt-bedrock-min.css",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "cd443cdff93d75bafad590ba34c2c617748599fa8482fe76ff1fa472e70784a4",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "cd443cdff93d75bafad590ba34c2c617748599fa8482fe76ff1fa472e70784a4",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://rsms.me/inter/inter.css",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "cd443cdff93d75bafad590ba34c2c617748599fa8482fe76ff1fa472e70784a4",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "slug": "theme:jakstyle",
+  "en_source_sha256": "001da31e6e309460792f950ba5bcb78eba3c8a7305efb7a3e21e05365615d270",
+  "en_updated_at": "2026-04-21T01:35:48+00:00",
+  "en_entity_uuid": "3f6bd0c2-2736-43bc-98d7-5ef44874650c",
+  "jp_previous_status": "present",
+  "jp_previous_source_sha256": "043a9ecd102a053c1d7daa538e293a147117f722cfe6e232c694f6107c48dae2",
+  "jp_previous_updated_at": "2023-02-20T06:32:47+00:00",
+  "jp_previous_entity_uuid": "62da1961-d87e-40a7-b433-b8782035cd19",
+  "technical_spec_version": "1.4",
+  "reference_url": "https://scp-wiki.wikidot.com/theme:jakstyle",
+  "candidate_source": "candidate.wikidot.txt",
+  "candidate_css": "candidate.css",
+  "source_file": "upstream-en.wikidot.txt",
+  "existing_jp_source": "existing-jp.wikidot.txt",
+  "source_identity": {
+    "slug": "theme:jakstyle",
+    "title": "JAKSTYLE",
+    "en": {
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:jakstyle/source.wikidot.txt",
+      "sha256": "001da31e6e309460792f950ba5bcb78eba3c8a7305efb7a3e21e05365615d270",
+      "updated_at": "2026-04-21T01:35:48+00:00",
+      "entity_uuid": "3f6bd0c2-2736-43bc-98d7-5ef44874650c",
+      "tags": [
+        "_cc",
+        "theme"
+      ],
+      "attached_files": [],
+      "revisions": 317
+    },
+    "jp": {
+      "status": "present",
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:jakstyle/source.wikidot.txt",
+      "sha256": "043a9ecd102a053c1d7daa538e293a147117f722cfe6e232c694f6107c48dae2",
+      "updated_at": "2023-02-20T06:32:47+00:00",
+      "entity_uuid": "62da1961-d87e-40a7-b433-b8782035cd19",
+      "tags": [
+        "en",
+        "テーマ"
+      ],
+      "absence_run": null
+    },
+    "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
+    "technical_spec_version": "1.4",
+    "final_verdict": "warn"
+  },
+  "dependencies": {
+    "slug": "theme:jakstyle",
+    "en_includes": [
+      ":scp-wiki:component:interwiki-style",
+      ":scp-wiki:component:interwiki-style",
+      ":scp-wiki:theme:black-highlighter-theme",
+      ":scp-wiki:theme:jakstyle",
+      "component:image-block name=https://nu-scptheme.github.io/Black-Highlighter/img/logo.svg",
+      ":scp-wiki:component:centered-header-bhl",
+      ":scp-wiki:component:toggle-sidebar-bhl",
+      ":scp-wiki:component:interwiki-style"
+    ],
+    "en_external_dependencies": [
+      "http://scp-wiki.wikidot.com/anomaly-classification-system-guide",
+      "http://www.google.com",
+      "http://www.scp-wiki.net/classification-committee-memo",
+      "https://fonts.google.com/specimen/Inter",
+      "https://fonts.google.com/specimen/Recursive",
+      "https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "https://nu-scptheme.github.io/Black-Highlighter/img/logo.svg",
+      "https://nu-scptheme.github.io/Black-Highlighter/img/logo.svg|caption=SCP",
+      "https://scp-wiki.wdfiles.com/local--code/theme%3Ajakstyle/1"
+    ],
+    "jp_includes": [
+      ":scp-jp:theme:black-highlighter-theme",
+      ":scp-jp:component:interwiki-style",
+      ":scp-jp:component:interwiki-style",
+      ":scp-jp:credit:start-preview",
+      ":scp-jp:credit:end-preview",
+      ":scp-jp:theme:black-highlighter-theme",
+      ":scp-jp:theme:jakstyle",
+      ":scp-jp:component:image-block name=https://scp-jp.github.io/Black-Highlighter/img/logo.svg",
+      ":scp-jp:component:centered-header-bhl",
+      ":scp-jp:component:toggle-sidebar-bhl",
+      ":scp-jp:component:interwiki-style"
+    ],
+    "jp_external_dependencies": [
+      "http://www.google.com",
+      "https://fonts.google.com/specimen/Inter",
+      "https://fonts.google.com/specimen/Recursive",
+      "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "https://scp-jp.github.io/Black-Highlighter/img/logo.svg",
+      "https://scp-jp.github.io/Black-Highlighter/img/logo.svg|caption=SCP財団ロゴ|width=200px",
+      "https://scp-jp.wdfiles.com/local--code/theme%3Ajakstyle/1"
+    ],
+    "base_family": "black-highlighter"
+  },
+  "human_port_candidate": "human-port-candidate.wikidot.txt",
+  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_jakstyle/theme_jakstyle_Japanese.wikidot.txt",
+  "acceptance_selectors": "../shared-acceptance-selectors.txt",
+  "candidate_input": "existing-jp.wikidot.txt",
+  "candidate_css_source": "candidate-source.css",
+  "candidate_origin": "current official SCP-JP page source",
+  "final_verdict": "warn",
+  "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
+  "asset_dependency_decisions_path": "install/local/theme-lab/ports/jakstyle/assets.json",
+  "asset_dependency_decision_count": 38
+}
