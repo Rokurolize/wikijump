@@ -1,0 +1,143 @@
+--- existing-jp.wikidot.txt
++++ candidate.wikidot.source.txt
+@@ -17,7 +17,7 @@
+ [[include :scp-jp:credit:start-preview]]
+ [[<]]
+ **タイトル:** Foxtrotテーマ
+-**著者:** [[*user Liryn]]
++**著者:** Liryn
+ **原題:** [https://scp-wiki.wikidot.com/theme:foxtrot Foxtrot Theme]
+ **作成年:** 2022
+ [[/<]]
+@@ -113,8 +113,8 @@
+ [[/div]]
+ @@@@
+ [[div style="display: flex; flex-direction: row; justify-content: space-evenly; flex-wrap: wrap;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-84-cvcw/canada_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-85-6k0m/canada_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image canada_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image canada_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+ [[/div]]
+ [[/=]]
+ 
+@@ -128,8 +128,8 @@
+ [[/div]]
+ @@@@
+ [[div style="display: flex; flex-direction: row; justify-content: space-evenly; flex-wrap: wrap;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-86-9vrb/slothspit_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-87-iriu/slothspit_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image slothspit_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image slothspit_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+ [[/div]]
+ [[/=]]
+ 
+@@ -143,8 +143,8 @@
+ [[/div]]
+ @@@@
+ [[div style="display: flex; flex-direction: row; justify-content: space-evenly; flex-wrap: wrap;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-88-5988/poland_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-89-40fu/poland_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image poland_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image poland_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+ [[/div]]
+ [[/=]]
+ 
+@@ -158,8 +158,8 @@
+ [[/div]]
+ @@@@
+ [[div style="display: flex; flex-direction: row; justify-content: space-evenly; flex-wrap: wrap;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-90-h0l3/vanguard_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-91-ps8h/vanguard_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image vanguard_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image vanguard_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+ [[/div]]
+ [[/=]]
+ 
+@@ -177,8 +177,8 @@
+ [[/div]]
+ @@@@
+ [[div style="display: flex; flex-direction: row; justify-content: space-evenly; flex-wrap: wrap;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file%3A5722815-92-n9nj/threshold_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-93-mf91/threshold_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image threshold_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image threshold_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+ [[/div]]
+ [[/=]]
+ 
+@@ -192,8 +192,8 @@
+ [[/div]]
+ @@@@
+ [[div style="display: flex; flex-direction: row; justify-content: space-evenly; flex-wrap: wrap;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-94-9j68/overwatch_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-95-mgaw/overwatch_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image overwatch_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image overwatch_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+ [[/div]]
+ [[/=]]
+ 
+@@ -207,8 +207,8 @@
+ [[/div]]
+ @@@@
+ [[div style="display: flex; flex-direction: row; justify-content: space-evenly; flex-wrap: wrap;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-96-88ic/spc_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-97-wj4h/spc_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image spc_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image spc_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+ [[/div]]
+ [[/=]]
+ 
+@@ -222,8 +222,8 @@
+ [[/div]]
+ @@@@
+ [[div style="display: flex; flex-direction: row; justify-content: space-evenly; flex-wrap: wrap;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-98-f31h/fishing_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-99-ct6y/fishing_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image fishing_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image fishing_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+ [[/div]]
+ [[/=]]
+ 
+@@ -237,8 +237,8 @@
+ [[/div]]
+ @@@@
+ [[div style="display: flex; flex-direction: row; justify-content: space-evenly; flex-wrap: wrap;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-100-vd38/nightfall_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-101-t3p2/nightfall_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image nightfall_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image nightfall_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+ [[/div]]
+ [[/=]]
+ 
+@@ -252,8 +252,8 @@
+ [[/div]]
+ @@@@
+ [[div style="display: flex; flex-direction: row; justify-content: space-evenly; flex-wrap: wrap;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-102-yhl7/hybrasil_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-103-f7xn/hybrasil_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image hybrasil_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image hybrasil_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+ [[/div]]
+ [[/=]]
+ 
+@@ -267,8 +267,8 @@
+ [[/div]]
+ @@@@
+ [[div style="display: flex; flex-direction: row; justify-content: space-evenly; flex-wrap: wrap;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-104-s61v/goc_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-105-hrgt/goc_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image goc_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image goc_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+ [[/div]]
+ [[/=]]
+ 
+@@ -282,8 +282,8 @@
+ [[/div]]
+ @@@@
+ [[div style="display: flex; flex-direction: row; justify-content: space-evenly; flex-wrap: wrap;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-106-g20u/spooky_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+-[[=image http://scp-jp-storage.wikidot.com/local--files/file:5722815-107-fk3e/spooky_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image spooky_light-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
++[[=image spooky_dark-JP.png style="width: 380px; border-radius: 15px; border: solid 2px grey;"]]
+ [[/div]]
+ [[/=]]
+ 

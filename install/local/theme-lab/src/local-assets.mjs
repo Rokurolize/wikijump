@@ -3,6 +3,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import crypto from "node:crypto";
 
 import {fail} from "./errors.mjs";
 
@@ -57,4 +58,43 @@ export async function materializeCandidateCssAssets(css, rootDir) {
   return css.replace(/url\(\s*["']?\.\/assets\/([^)'"\s]+)["']?\s*\)/gu, (whole, name) =>
     replacements.has(name) ? `url("${replacements.get(name)}")` : whole,
   );
+}
+
+export async function materializeCandidatePageImages(page, attachments, rootDir) {
+  const rows = Array.isArray(attachments) ? attachments : [];
+  const replacements = new Map();
+  for (const row of rows) {
+    if (!/^[a-f0-9]{64}\.[a-z0-9]+$/u.test(row.asset_file ?? "")) {
+      fail("invalid_candidate_page_asset", `invalid content-addressed page asset: ${row.asset_file}`);
+    }
+    const file = path.join(rootDir, row.asset_file);
+    const stat = await fs.lstat(file).catch(() => null);
+    if (!stat?.isFile()) continue;
+    const bytes = await fs.readFile(file);
+    const digest = crypto.createHash("sha256").update(bytes).digest("hex");
+    if (digest !== row.sha256) fail("candidate_page_asset_digest_mismatch", `page asset digest mismatch: ${row.filename}`);
+    const type = TYPES[path.extname(row.asset_file).toLowerCase()] ?? "application/octet-stream";
+    const dataUrl = `data:${type};base64,${bytes.toString("base64")}`;
+    for (const url of row.source_urls ?? []) replacements.set(url, dataUrl);
+    if (row.filename) replacements.set(row.filename, dataUrl);
+  }
+  return page.evaluate((mapping) => {
+    let substituted = 0;
+    for (const image of document.images) {
+      const source = image.currentSrc || image.src || "";
+      const filename = (() => {
+        try {
+          const parts = decodeURIComponent(new URL(source).pathname).split("/").filter(Boolean);
+          const resized = parts.indexOf("local--resized-images");
+          return resized >= 0 ? parts[resized + 1] : parts.at(-1);
+        } catch { return source.split("/").at(-1); }
+      })();
+      const replacement = mapping[source] ?? mapping[filename];
+      if (replacement) {
+        image.src = replacement;
+        substituted += 1;
+      }
+    }
+    return substituted;
+  }, Object.fromEntries(replacements));
 }

@@ -1,0 +1,366 @@
+{
+  "assets": [
+    {
+      "sha256": "6fb289fea179641579de5b208600d490ee52177b347f83e92cf673afc419704e",
+      "bytes": 20088,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-math-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-math-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 6fb289fea179641579de5b208600d490ee52177b347f83e92cf673afc419704e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a7232b8539b1050fcaa3ba8495b7d8af7d4a4e8ce66d44606b7de8c50618844a",
+      "bytes": 18764,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-math-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-math-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a7232b8539b1050fcaa3ba8495b7d8af7d4a4e8ce66d44606b7de8c50618844a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "1567c22e954336d26ec306a0dd756d19bb5e62c67e597ce0b778fc312dc68176",
+      "bytes": 9556,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-greek-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-greek-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 1567c22e954336d26ec306a0dd756d19bb5e62c67e597ce0b778fc312dc68176.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e0b4a9370bb928018ef63412974b32e32c3392bc2a33bd02961a10307ea59b67",
+      "bytes": 7424,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-greek-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-greek-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e0b4a9370bb928018ef63412974b32e32c3392bc2a33bd02961a10307ea59b67.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "425c0713a8176f92273d378599c7eac57de7fafabd4bd0ed457b70eb8f80d371",
+      "bytes": 21884,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-latin-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 425c0713a8176f92273d378599c7eac57de7fafabd4bd0ed457b70eb8f80d371.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "6cff12116b83321230347db75d0721e70c27c6ec69eccca93ca4b1556eaaf67f",
+      "bytes": 21060,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-latin-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 6cff12116b83321230347db75d0721e70c27c6ec69eccca93ca4b1556eaaf67f.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a50e7f2d64f85c2d81fe7be1da5c943fde45c4ac47d3147f9b5a56b705b97824",
+      "bytes": 10736,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-symbols-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-symbols-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a50e7f2d64f85c2d81fe7be1da5c943fde45c4ac47d3147f9b5a56b705b97824.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "6c12462f33b711c773d282902ac26246f18c86dab70bca508372e9ca49efef03",
+      "bytes": 8752,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-symbols-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-symbols-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 6c12462f33b711c773d282902ac26246f18c86dab70bca508372e9ca49efef03.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "fe349e5377e88095a1b04b615bf5e745f1899556545383c348a007aab628815e",
+      "bytes": 12108,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at fe349e5377e88095a1b04b615bf5e745f1899556545383c348a007aab628815e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "383c105bb30e149e8f2603918cbbf3e2f1051bb170a16ad3e329f695c136128c",
+      "bytes": 10208,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 383c105bb30e149e8f2603918cbbf3e2f1051bb170a16ad3e329f695c136128c.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "34e65dc4e3deafe3d668d398a26c6a292730fe356a6a1f4303d5af3919a0e941",
+      "bytes": 3680,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-greek-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-greek-ext-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 34e65dc4e3deafe3d668d398a26c6a292730fe356a6a1f4303d5af3919a0e941.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "02b4d89306066a2698c1e9f44463917fdbf17426c06789a52819d9f5f467cd64",
+      "bytes": 1472,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-greek-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-greek-ext-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 02b4d89306066a2698c1e9f44463917fdbf17426c06789a52819d9f5f467cd64.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5725eacca97303d8bce26f76cfcaee4393295bbf93c1eb6c3e5e4f260b2da189",
+      "bytes": 15040,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-latin-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-latin-ext-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5725eacca97303d8bce26f76cfcaee4393295bbf93c1eb6c3e5e4f260b2da189.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "7468d3e77a4cbffab32ba29ef0201f6b6b6865ac5465964a7fbb973dbb7ff580",
+      "bytes": 13836,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-latin-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-latin-ext-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 7468d3e77a4cbffab32ba29ef0201f6b6b6865ac5465964a7fbb973dbb7ff580.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "76afb0e482ab569c50a1ca35dfd052daa3d0f6d54d1b30865f6fea4c35c2b350",
+      "bytes": 8368,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-vietnamese-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-vietnamese-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 76afb0e482ab569c50a1ca35dfd052daa3d0f6d54d1b30865f6fea4c35c2b350.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "8881cd907e8f10a4fe6b5ad9bbb37088dc421bc58285d3f7c6e789611f0f6c81",
+      "bytes": 6080,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-vietnamese-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-vietnamese-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 8881cd907e8f10a4fe6b5ad9bbb37088dc421bc58285d3f7c6e789611f0f6c81.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "6d6be3a7d40feb9b785e62c4b629a0e5949e50cbbbad06eea4800a4c311e9898",
+      "bytes": 17372,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-ext-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 6d6be3a7d40feb9b785e62c4b629a0e5949e50cbbbad06eea4800a4c311e9898.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "8a8ac89e32a6f299be8fe353e7303f3b281ebe127ce6aa7ee2670e9c11e1e251",
+      "bytes": 15956,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-ext-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 8a8ac89e32a6f299be8fe353e7303f3b281ebe127ce6aa7ee2670e9c11e1e251.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "b592442846ac2dfb4b5327ccca491c21b423ab333edacc417aef32859118c7fb",
+      "bytes": 101822,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ascpedia/raisa.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ascpedia/raisa.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at b592442846ac2dfb4b5327ccca491c21b423ab333edacc417aef32859118c7fb.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    }
+  ],
+  "missing": [],
+  "imports": [
+    "https://fonts.bunny.net/css2?family=Roboto&display=swap",
+    "https://scp-wiki.wdfiles.com/local--code/theme%3Ascpedia/1",
+    "https://scp-wiki.wdfiles.com/local--files/theme%3Ascpedia/linuxlibertine.css"
+  ],
+  "pruned_fonts": [],
+  "template_placeholders": [],
+  "asset_replacements": {},
+  "omitted_assets": [
+    {
+      "original_url": "https://scp-wiki.wdfiles.com/local--files/estrellayoshte/u.png",
+      "action": "remove-obsolete",
+      "reason": "HTML file-not-found response; optional author-credit illustration. Text attribution retained."
+    }
+  ],
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-math-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-math-400-normal.woff2",
+      "sha256": "6fb289fea179641579de5b208600d490ee52177b347f83e92cf673afc419704e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 6fb289fea179641579de5b208600d490ee52177b347f83e92cf673afc419704e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-math-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-math-400-normal.woff",
+      "sha256": "a7232b8539b1050fcaa3ba8495b7d8af7d4a4e8ce66d44606b7de8c50618844a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a7232b8539b1050fcaa3ba8495b7d8af7d4a4e8ce66d44606b7de8c50618844a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-greek-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-greek-400-normal.woff2",
+      "sha256": "1567c22e954336d26ec306a0dd756d19bb5e62c67e597ce0b778fc312dc68176",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 1567c22e954336d26ec306a0dd756d19bb5e62c67e597ce0b778fc312dc68176.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-greek-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-greek-400-normal.woff",
+      "sha256": "e0b4a9370bb928018ef63412974b32e32c3392bc2a33bd02961a10307ea59b67",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e0b4a9370bb928018ef63412974b32e32c3392bc2a33bd02961a10307ea59b67.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-latin-400-normal.woff2",
+      "sha256": "425c0713a8176f92273d378599c7eac57de7fafabd4bd0ed457b70eb8f80d371",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 425c0713a8176f92273d378599c7eac57de7fafabd4bd0ed457b70eb8f80d371.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-latin-400-normal.woff",
+      "sha256": "6cff12116b83321230347db75d0721e70c27c6ec69eccca93ca4b1556eaaf67f",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 6cff12116b83321230347db75d0721e70c27c6ec69eccca93ca4b1556eaaf67f.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-symbols-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-symbols-400-normal.woff2",
+      "sha256": "a50e7f2d64f85c2d81fe7be1da5c943fde45c4ac47d3147f9b5a56b705b97824",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a50e7f2d64f85c2d81fe7be1da5c943fde45c4ac47d3147f9b5a56b705b97824.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-symbols-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-symbols-400-normal.woff",
+      "sha256": "6c12462f33b711c773d282902ac26246f18c86dab70bca508372e9ca49efef03",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 6c12462f33b711c773d282902ac26246f18c86dab70bca508372e9ca49efef03.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-400-normal.woff2",
+      "sha256": "fe349e5377e88095a1b04b615bf5e745f1899556545383c348a007aab628815e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at fe349e5377e88095a1b04b615bf5e745f1899556545383c348a007aab628815e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-400-normal.woff",
+      "sha256": "383c105bb30e149e8f2603918cbbf3e2f1051bb170a16ad3e329f695c136128c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 383c105bb30e149e8f2603918cbbf3e2f1051bb170a16ad3e329f695c136128c.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-greek-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-greek-ext-400-normal.woff2",
+      "sha256": "34e65dc4e3deafe3d668d398a26c6a292730fe356a6a1f4303d5af3919a0e941",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 34e65dc4e3deafe3d668d398a26c6a292730fe356a6a1f4303d5af3919a0e941.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-greek-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-greek-ext-400-normal.woff",
+      "sha256": "02b4d89306066a2698c1e9f44463917fdbf17426c06789a52819d9f5f467cd64",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 02b4d89306066a2698c1e9f44463917fdbf17426c06789a52819d9f5f467cd64.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-latin-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-latin-ext-400-normal.woff2",
+      "sha256": "5725eacca97303d8bce26f76cfcaee4393295bbf93c1eb6c3e5e4f260b2da189",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5725eacca97303d8bce26f76cfcaee4393295bbf93c1eb6c3e5e4f260b2da189.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-latin-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-latin-ext-400-normal.woff",
+      "sha256": "7468d3e77a4cbffab32ba29ef0201f6b6b6865ac5465964a7fbb973dbb7ff580",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 7468d3e77a4cbffab32ba29ef0201f6b6b6865ac5465964a7fbb973dbb7ff580.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-vietnamese-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-vietnamese-400-normal.woff2",
+      "sha256": "76afb0e482ab569c50a1ca35dfd052daa3d0f6d54d1b30865f6fea4c35c2b350",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 76afb0e482ab569c50a1ca35dfd052daa3d0f6d54d1b30865f6fea4c35c2b350.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-vietnamese-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-vietnamese-400-normal.woff",
+      "sha256": "8881cd907e8f10a4fe6b5ad9bbb37088dc421bc58285d3f7c6e789611f0f6c81",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 8881cd907e8f10a4fe6b5ad9bbb37088dc421bc58285d3f7c6e789611f0f6c81.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-ext-400-normal.woff2",
+      "sha256": "6d6be3a7d40feb9b785e62c4b629a0e5949e50cbbbad06eea4800a4c311e9898",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 6d6be3a7d40feb9b785e62c4b629a0e5949e50cbbbad06eea4800a4c311e9898.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/roboto/files/roboto-cyrillic-ext-400-normal.woff",
+      "sha256": "8a8ac89e32a6f299be8fe353e7303f3b281ebe127ce6aa7ee2670e9c11e1e251",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 8a8ac89e32a6f299be8fe353e7303f3b281ebe127ce6aa7ee2670e9c11e1e251.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ascpedia/raisa.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ascpedia/raisa.png",
+      "sha256": "b592442846ac2dfb4b5327ccca491c21b423ab333edacc417aef32859118c7fb",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at b592442846ac2dfb4b5327ccca491c21b423ab333edacc417aef32859118c7fb.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.bunny.net/css2?family=Roboto&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "f9c78aaa97a3efe706bbaddc4e03b7ec32f522529d58e4fd7d18899dce4f8d25",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Ascpedia/1",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "f9c78aaa97a3efe706bbaddc4e03b7ec32f522529d58e4fd7d18899dce4f8d25",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ascpedia/linuxlibertine.css",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "f9c78aaa97a3efe706bbaddc4e03b7ec32f522529d58e4fd7d18899dce4f8d25",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    }
+  ]
+}

@@ -1,0 +1,597 @@
+{
+  "assets": [
+    {
+      "sha256": "e42cfca0be58218a22f8b91a88d996164cc8162d9f5bdc0dc10a8891c828ad91",
+      "bytes": 8384,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/urbanist/normal/300-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/normal/300-latin-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e42cfca0be58218a22f8b91a88d996164cc8162d9f5bdc0dc10a8891c828ad91.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "8ed2ed0d3b496bdf88a267158d5e7d4bcb7c6b33946edf877ba673d46dfcec54",
+      "bytes": 11996,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/urbanist/normal/300-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/normal/300-latin.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 8ed2ed0d3b496bdf88a267158d5e7d4bcb7c6b33946edf877ba673d46dfcec54.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "09ac3481e5f781b45c55aecf63d9fb9532ca40789a7b4525e18e5b0fb17904e5",
+      "bytes": 8340,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/urbanist/normal/400-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/normal/400-latin-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 09ac3481e5f781b45c55aecf63d9fb9532ca40789a7b4525e18e5b0fb17904e5.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "526bab743f8aeba2df182767150d7a354bf57b885f6ff2eab184cd27264b90aa",
+      "bytes": 11984,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/urbanist/normal/400-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/normal/400-latin.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 526bab743f8aeba2df182767150d7a354bf57b885f6ff2eab184cd27264b90aa.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "02ee8432d6cdc93c03b298c1ac50071f94f48687c65bc9d2a431fba86df5a216",
+      "bytes": 8468,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/urbanist/normal/700-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/normal/700-latin-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 02ee8432d6cdc93c03b298c1ac50071f94f48687c65bc9d2a431fba86df5a216.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "ede48e359fb3f70d13b558e4bf8aea2697e3c86c267cfb4b360fe2d7a621df18",
+      "bytes": 12032,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/urbanist/normal/700-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/normal/700-latin.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at ede48e359fb3f70d13b558e4bf8aea2697e3c86c267cfb4b360fe2d7a621df18.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "2c8d4c0eaa925beab1451ca15e6419c05a55efbf191c11e89f5dff4190bb3640",
+      "bytes": 8612,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/urbanist/italic/300-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/italic/300-latin-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 2c8d4c0eaa925beab1451ca15e6419c05a55efbf191c11e89f5dff4190bb3640.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "760e5b6804096c75ff006cb4e6f0ce1369015b1f2593f5ddbf939833ca715663",
+      "bytes": 12788,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/urbanist/italic/300-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/italic/300-latin.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 760e5b6804096c75ff006cb4e6f0ce1369015b1f2593f5ddbf939833ca715663.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "bb3cfc12b62d341f6b6634eda82b260f921c75cb14072dfb29912e08411c9458",
+      "bytes": 8540,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/urbanist/italic/400-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/italic/400-latin-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at bb3cfc12b62d341f6b6634eda82b260f921c75cb14072dfb29912e08411c9458.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "45c02697b91d86ee08783566738804eb78cde214569b7c2d077fa5d1b2cc8d98",
+      "bytes": 12688,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/urbanist/italic/400-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/italic/400-latin.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 45c02697b91d86ee08783566738804eb78cde214569b7c2d077fa5d1b2cc8d98.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "714ff7636d589b6af2288fcc4ba38630a0a30743b3a4667db8fd64419f95e8dc",
+      "bytes": 8672,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/urbanist/italic/700-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/italic/700-latin-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 714ff7636d589b6af2288fcc4ba38630a0a30743b3a4667db8fd64419f95e8dc.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "25dceef6d3b91d88e95287ea912f3f31ea7d948f97d993b84db77c5e24b7d733",
+      "bytes": 12772,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/urbanist/italic/700-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/italic/700-latin.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 25dceef6d3b91d88e95287ea912f3f31ea7d948f97d993b84db77c5e24b7d733.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a9d09ab6d1c4b1b02e06a5449c7ff2632d52c87215df9727648a3201efd5951b",
+      "bytes": 24472,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-cyrillic-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-cyrillic-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a9d09ab6d1c4b1b02e06a5449c7ff2632d52c87215df9727648a3201efd5951b.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "c86112704544f597d4814625795347beffe516e15c679d52b14302ec5e149ba7",
+      "bytes": 20852,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-cyrillic.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-cyrillic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at c86112704544f597d4814625795347beffe516e15c679d52b14302ec5e149ba7.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "3141288b0697416cbd4a3198f70f41483efde6d3f033aba96bd47c369649bad8",
+      "bytes": 14664,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-greek-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-greek-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 3141288b0697416cbd4a3198f70f41483efde6d3f033aba96bd47c369649bad8.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "57e110b6d4ff875cf8f9aedc7b818bee5143433b4c9032e0e373e40c9604a460",
+      "bytes": 15068,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-greek.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-greek.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 57e110b6d4ff875cf8f9aedc7b818bee5143433b4c9032e0e373e40c9604a460.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "7db064fa5c5d305d684608744d621aa724ec4f1c6b00bb647697f4d8d3e78df1",
+      "bytes": 46980,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-latin-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 7db064fa5c5d305d684608744d621aa724ec4f1c6b00bb647697f4d8d3e78df1.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "dabae363ac0ae6c3b2a137a32f7132b42520a8af252f87aa6c2198f2a79cf91c",
+      "bytes": 34924,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-latin.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at dabae363ac0ae6c3b2a137a32f7132b42520a8af252f87aa6c2198f2a79cf91c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "628351d0159a99af54aa170292b3ab3aa8b5141dfa31033df38b9f2269133b5d",
+      "bytes": 11960,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-cyrillic-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-cyrillic-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 628351d0159a99af54aa170292b3ab3aa8b5141dfa31033df38b9f2269133b5d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "2a8f07c041f0b99a91d2cc07e68666538c65c5413c1e2d6a703e4f6d9024e74d",
+      "bytes": 6676,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-cyrillic.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-cyrillic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 2a8f07c041f0b99a91d2cc07e68666538c65c5413c1e2d6a703e4f6d9024e74d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "2128f7ef85c2e577691bc2f23ef2004e00be9dabd4858e6e5b61790804883ddd",
+      "bytes": 5364,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-greek-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-greek-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 2128f7ef85c2e577691bc2f23ef2004e00be9dabd4858e6e5b61790804883ddd.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "8b9d7f0d058fe4dba5c3bc8cb0d107c98753a658608de5bace67103db921fb0d",
+      "bytes": 7832,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-greek.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-greek.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 8b9d7f0d058fe4dba5c3bc8cb0d107c98753a658608de5bace67103db921fb0d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e4a28f799aebc24f7f8aa22ce42a512ff4a7ce15edcb46f2a6aef073b46169b9",
+      "bytes": 3512,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-symbols2.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-symbols2.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e4a28f799aebc24f7f8aa22ce42a512ff4a7ce15edcb46f2a6aef073b46169b9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "587dcb11badf47fb0abd0415c12ca57da9ff365f665cede22d6523f1cfd6cc61",
+      "bytes": 7860,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-latin-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 587dcb11badf47fb0abd0415c12ca57da9ff365f665cede22d6523f1cfd6cc61.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "6dc9da171ccea71d525379ee1cbf51d143e31acac330a251bb71b3d6060e687c",
+      "bytes": 23312,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-latin.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 6dc9da171ccea71d525379ee1cbf51d143e31acac330a251bb71b3d6060e687c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d351333c2ffd6af6aa0f1e66c42cacce5796e8adf65ba17a4d63370092e1d967",
+      "bytes": 11760,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-cyrillic-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-cyrillic-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d351333c2ffd6af6aa0f1e66c42cacce5796e8adf65ba17a4d63370092e1d967.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "f2cfd516545cff424741b1ba4bf5fc3b6b35611284336f66ce9ee66875512fe4",
+      "bytes": 6644,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-cyrillic.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-cyrillic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at f2cfd516545cff424741b1ba4bf5fc3b6b35611284336f66ce9ee66875512fe4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "fb812d293d5aa5904dff4b593ccbb0f0702936cb41631c43f0d2de34496c0ac4",
+      "bytes": 5236,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-greek-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-greek-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at fb812d293d5aa5904dff4b593ccbb0f0702936cb41631c43f0d2de34496c0ac4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "deec93b60e18226cbbf2f620b3016f9c2fc07b1e21d6b3663e3bc34fefa0fc32",
+      "bytes": 7880,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-greek.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-greek.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at deec93b60e18226cbbf2f620b3016f9c2fc07b1e21d6b3663e3bc34fefa0fc32.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "3c76ce4aceb40e84a1dd7ad0f297d84bf2a76e3db231fd2739cce00f9c387ce2",
+      "bytes": 3520,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-symbols2.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-symbols2.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 3c76ce4aceb40e84a1dd7ad0f297d84bf2a76e3db231fd2739cce00f9c387ce2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "f7a3c0d506bcae50f35e8a517158992158a182af047ae4398c8c9367dfa1d5ea",
+      "bytes": 7736,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-latin-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at f7a3c0d506bcae50f35e8a517158992158a182af047ae4398c8c9367dfa1d5ea.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "987306692df7c81d1ffa1efc98414dfaae10de5e178cfba8e22e92ad9c872e43",
+      "bytes": 23040,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-latin.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 987306692df7c81d1ffa1efc98414dfaae10de5e178cfba8e22e92ad9c872e43.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    }
+  ],
+  "missing": [],
+  "imports": [
+    "https://api.fonts.coollabs.io/css2?family=Fira+Code:wght@400;700&display=swap",
+    "https://api.fonts.coollabs.io/css2?family=Ubuntu&display=swap",
+    "https://api.fonts.coollabs.io/css2?family=Urbanist:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap",
+    "https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css",
+    "https://scp-jp.wdfiles.com/local--code/theme%3Amonotypical/5"
+  ],
+  "pruned_fonts": [],
+  "template_placeholders": [],
+  "asset_replacements": {},
+  "omitted_assets": [],
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/urbanist/normal/300-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/normal/300-latin-ext.woff2",
+      "sha256": "e42cfca0be58218a22f8b91a88d996164cc8162d9f5bdc0dc10a8891c828ad91",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e42cfca0be58218a22f8b91a88d996164cc8162d9f5bdc0dc10a8891c828ad91.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/urbanist/normal/300-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/normal/300-latin.woff2",
+      "sha256": "8ed2ed0d3b496bdf88a267158d5e7d4bcb7c6b33946edf877ba673d46dfcec54",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 8ed2ed0d3b496bdf88a267158d5e7d4bcb7c6b33946edf877ba673d46dfcec54.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/urbanist/normal/400-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/normal/400-latin-ext.woff2",
+      "sha256": "09ac3481e5f781b45c55aecf63d9fb9532ca40789a7b4525e18e5b0fb17904e5",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 09ac3481e5f781b45c55aecf63d9fb9532ca40789a7b4525e18e5b0fb17904e5.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/urbanist/normal/400-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/normal/400-latin.woff2",
+      "sha256": "526bab743f8aeba2df182767150d7a354bf57b885f6ff2eab184cd27264b90aa",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 526bab743f8aeba2df182767150d7a354bf57b885f6ff2eab184cd27264b90aa.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/urbanist/normal/700-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/normal/700-latin-ext.woff2",
+      "sha256": "02ee8432d6cdc93c03b298c1ac50071f94f48687c65bc9d2a431fba86df5a216",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 02ee8432d6cdc93c03b298c1ac50071f94f48687c65bc9d2a431fba86df5a216.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/urbanist/normal/700-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/normal/700-latin.woff2",
+      "sha256": "ede48e359fb3f70d13b558e4bf8aea2697e3c86c267cfb4b360fe2d7a621df18",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at ede48e359fb3f70d13b558e4bf8aea2697e3c86c267cfb4b360fe2d7a621df18.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/urbanist/italic/300-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/italic/300-latin-ext.woff2",
+      "sha256": "2c8d4c0eaa925beab1451ca15e6419c05a55efbf191c11e89f5dff4190bb3640",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 2c8d4c0eaa925beab1451ca15e6419c05a55efbf191c11e89f5dff4190bb3640.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/urbanist/italic/300-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/italic/300-latin.woff2",
+      "sha256": "760e5b6804096c75ff006cb4e6f0ce1369015b1f2593f5ddbf939833ca715663",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 760e5b6804096c75ff006cb4e6f0ce1369015b1f2593f5ddbf939833ca715663.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/urbanist/italic/400-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/italic/400-latin-ext.woff2",
+      "sha256": "bb3cfc12b62d341f6b6634eda82b260f921c75cb14072dfb29912e08411c9458",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at bb3cfc12b62d341f6b6634eda82b260f921c75cb14072dfb29912e08411c9458.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/urbanist/italic/400-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/italic/400-latin.woff2",
+      "sha256": "45c02697b91d86ee08783566738804eb78cde214569b7c2d077fa5d1b2cc8d98",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 45c02697b91d86ee08783566738804eb78cde214569b7c2d077fa5d1b2cc8d98.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/urbanist/italic/700-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/italic/700-latin-ext.woff2",
+      "sha256": "714ff7636d589b6af2288fcc4ba38630a0a30743b3a4667db8fd64419f95e8dc",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 714ff7636d589b6af2288fcc4ba38630a0a30743b3a4667db8fd64419f95e8dc.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/urbanist/italic/700-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/urbanist/italic/700-latin.woff2",
+      "sha256": "25dceef6d3b91d88e95287ea912f3f31ea7d948f97d993b84db77c5e24b7d733",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 25dceef6d3b91d88e95287ea912f3f31ea7d948f97d993b84db77c5e24b7d733.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-cyrillic-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-cyrillic-ext.woff2",
+      "sha256": "a9d09ab6d1c4b1b02e06a5449c7ff2632d52c87215df9727648a3201efd5951b",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a9d09ab6d1c4b1b02e06a5449c7ff2632d52c87215df9727648a3201efd5951b.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-cyrillic.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-cyrillic.woff2",
+      "sha256": "c86112704544f597d4814625795347beffe516e15c679d52b14302ec5e149ba7",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at c86112704544f597d4814625795347beffe516e15c679d52b14302ec5e149ba7.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-greek-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-greek-ext.woff2",
+      "sha256": "3141288b0697416cbd4a3198f70f41483efde6d3f033aba96bd47c369649bad8",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 3141288b0697416cbd4a3198f70f41483efde6d3f033aba96bd47c369649bad8.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-greek.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-greek.woff2",
+      "sha256": "57e110b6d4ff875cf8f9aedc7b818bee5143433b4c9032e0e373e40c9604a460",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 57e110b6d4ff875cf8f9aedc7b818bee5143433b4c9032e0e373e40c9604a460.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-latin-ext.woff2",
+      "sha256": "7db064fa5c5d305d684608744d621aa724ec4f1c6b00bb647697f4d8d3e78df1",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 7db064fa5c5d305d684608744d621aa724ec4f1c6b00bb647697f4d8d3e78df1.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/ubuntu/normal/400-latin.woff2",
+      "sha256": "dabae363ac0ae6c3b2a137a32f7132b42520a8af252f87aa6c2198f2a79cf91c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at dabae363ac0ae6c3b2a137a32f7132b42520a8af252f87aa6c2198f2a79cf91c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-cyrillic-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-cyrillic-ext.woff2",
+      "sha256": "628351d0159a99af54aa170292b3ab3aa8b5141dfa31033df38b9f2269133b5d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 628351d0159a99af54aa170292b3ab3aa8b5141dfa31033df38b9f2269133b5d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-cyrillic.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-cyrillic.woff2",
+      "sha256": "2a8f07c041f0b99a91d2cc07e68666538c65c5413c1e2d6a703e4f6d9024e74d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 2a8f07c041f0b99a91d2cc07e68666538c65c5413c1e2d6a703e4f6d9024e74d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-greek-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-greek-ext.woff2",
+      "sha256": "2128f7ef85c2e577691bc2f23ef2004e00be9dabd4858e6e5b61790804883ddd",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 2128f7ef85c2e577691bc2f23ef2004e00be9dabd4858e6e5b61790804883ddd.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-greek.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-greek.woff2",
+      "sha256": "8b9d7f0d058fe4dba5c3bc8cb0d107c98753a658608de5bace67103db921fb0d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 8b9d7f0d058fe4dba5c3bc8cb0d107c98753a658608de5bace67103db921fb0d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-symbols2.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-symbols2.woff2",
+      "sha256": "e4a28f799aebc24f7f8aa22ce42a512ff4a7ce15edcb46f2a6aef073b46169b9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e4a28f799aebc24f7f8aa22ce42a512ff4a7ce15edcb46f2a6aef073b46169b9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-latin-ext.woff2",
+      "sha256": "587dcb11badf47fb0abd0415c12ca57da9ff365f665cede22d6523f1cfd6cc61",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 587dcb11badf47fb0abd0415c12ca57da9ff365f665cede22d6523f1cfd6cc61.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/400-latin.woff2",
+      "sha256": "6dc9da171ccea71d525379ee1cbf51d143e31acac330a251bb71b3d6060e687c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 6dc9da171ccea71d525379ee1cbf51d143e31acac330a251bb71b3d6060e687c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-cyrillic-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-cyrillic-ext.woff2",
+      "sha256": "d351333c2ffd6af6aa0f1e66c42cacce5796e8adf65ba17a4d63370092e1d967",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d351333c2ffd6af6aa0f1e66c42cacce5796e8adf65ba17a4d63370092e1d967.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-cyrillic.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-cyrillic.woff2",
+      "sha256": "f2cfd516545cff424741b1ba4bf5fc3b6b35611284336f66ce9ee66875512fe4",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at f2cfd516545cff424741b1ba4bf5fc3b6b35611284336f66ce9ee66875512fe4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-greek-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-greek-ext.woff2",
+      "sha256": "fb812d293d5aa5904dff4b593ccbb0f0702936cb41631c43f0d2de34496c0ac4",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at fb812d293d5aa5904dff4b593ccbb0f0702936cb41631c43f0d2de34496c0ac4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-greek.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-greek.woff2",
+      "sha256": "deec93b60e18226cbbf2f620b3016f9c2fc07b1e21d6b3663e3bc34fefa0fc32",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at deec93b60e18226cbbf2f620b3016f9c2fc07b1e21d6b3663e3bc34fefa0fc32.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-symbols2.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-symbols2.woff2",
+      "sha256": "3c76ce4aceb40e84a1dd7ad0f297d84bf2a76e3db231fd2739cce00f9c387ce2",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 3c76ce4aceb40e84a1dd7ad0f297d84bf2a76e3db231fd2739cce00f9c387ce2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-latin-ext.woff2",
+      "sha256": "f7a3c0d506bcae50f35e8a517158992158a182af047ae4398c8c9367dfa1d5ea",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at f7a3c0d506bcae50f35e8a517158992158a182af047ae4398c8c9367dfa1d5ea.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/fira-code/normal/700-latin.woff2",
+      "sha256": "987306692df7c81d1ffa1efc98414dfaae10de5e178cfba8e22e92ad9c872e43",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 987306692df7c81d1ffa1efc98414dfaae10de5e178cfba8e22e92ad9c872e43.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://api.fonts.coollabs.io/css2?family=Fira+Code:wght@400;700&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "a3fd398b9f948e6ecd326ec59334d9be192333f8a242cf80f05d8de8dbeebc98",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://api.fonts.coollabs.io/css2?family=Ubuntu&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "a3fd398b9f948e6ecd326ec59334d9be192333f8a242cf80f05d8de8dbeebc98",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://api.fonts.coollabs.io/css2?family=Urbanist:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "a3fd398b9f948e6ecd326ec59334d9be192333f8a242cf80f05d8de8dbeebc98",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "a3fd398b9f948e6ecd326ec59334d9be192333f8a242cf80f05d8de8dbeebc98",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Amonotypical/5",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "a3fd398b9f948e6ecd326ec59334d9be192333f8a242cf80f05d8de8dbeebc98",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    }
+  ]
+}

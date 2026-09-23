@@ -1,0 +1,49 @@
+--- existing-jp.wikidot.txt
++++ candidate.wikidot.source.txt
+@@ -20,10 +20,10 @@
+ [[iftags +テーマ]]
+ 
+ [[include :scp-jp:credit:start-preview]]
+-**翻訳責任:** [[*user oplax-counterpoint]]
++**翻訳責任:** oplax-counterpoint
+ **翻訳年:** 2024
+ **タイトル:** ターボ・ビジョン テーマ
+-**原著者:** [[*user JakdragonX]], [[*user Croquembouche]]
++**原著者:** JakdragonX, Croquembouche
+ **作成年:** 2021
+ **参照版:** 53
+ **原語版URL:** [[[*https://scp-wiki.wikidot.com/theme:turbo-vision]]]
+@@ -31,7 +31,7 @@
+ 
+ [[div class="offset-left left-1"]]
+ [[div class="turbo-block bg-cyan border-white"]]
+-これは[[*user JakdragonX]]と[[*user Croquembouche]]によるターボ・ビジョン テーマです。見た目に痛々しいレトロな感覚を引き起こしますが、このテーマは財団世界における何の前提にも関連していない、単なる美学的なものです。
++これはJakdragonXとCroquemboucheによるターボ・ビジョン テーマです。見た目に痛々しいレトロな感覚を引き起こしますが、このテーマは財団世界における何の前提にも関連していない、単なる美学的なものです。
+ [[/div]]
+ [[/div]]
+ 
+@@ -590,7 +590,7 @@
+ **ソース:** [[[https://scp-wiki.wdfiles.com/local--files/theme:turbo-vision/logo%20(1).png]]]
+ 
+ 以上全てのライセンス表示
+-**著作者:** [[*user Croquembouche]]
++**著作者:** Croquembouche
+ **ライセンス:** CC BY SA 3.0
+ **公開年:** 2021
+ **補足:** oplax-counterpointによって、全てCSS内に埋め込む形式に変更されている。
+@@ -599,13 +599,13 @@
+ > **ファイル名:** scpimage.png
+ > **ファイルページ:** [[[http://scp-jp-storage.wikidot.com/file:9042763-26-mn41]]]
+ > **ソース:** [[[https://scp-wiki.wdfiles.com/local--files/theme%3Aturbo-vision/scpimage.png]]]
+-> **著作者:** [[*user Placeholder McD]]
++> **著作者:** Placeholder McD
+ > **ライセンス:** CC BY SA 3.0
+ > **補足:** サイズ縮小とwebpへの変換はoplax-counterpointが行った。
+ 
+ > **ファイル名:** small (1).png
+ > **ソース:** [[[https://scp-wiki.wdfiles.com/local--files/theme%3Aturbo-vision/small%20%281%29.png]]]
+-> **著作者:** [[*user JakdragonX]]
++> **著作者:** JakdragonX
+ > **ライセンス:** CC BY SA 3.0
+ > **補足:** oplax-counterpointによって、CSS内に埋め込む形式に変更されている。
+ [[/collapsible]]

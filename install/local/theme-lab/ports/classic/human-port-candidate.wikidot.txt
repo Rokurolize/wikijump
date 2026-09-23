@@ -1,0 +1,672 @@
+[[module CSS]]
+@import url(https://scp-jp.wdfiles.com/local--code/theme%3Aclassic/1);
+[[/module]]
+
+[[include :scp-jp:component:interwiki-style
+|priority=1
+|theme=https://scp-jp.wdfiles.com/local--code/theme%3Aclassic/1
+]]
+
+[[iftags +テーマ]]
+[[module CSS]]
+/* ==== 表示用 ==== */
+ .templateInfo {
+	margin: 1em 0;
+	padding: 0 1em;
+
+	background: var(--fill-bg);
+	border: 1px solid var(--area-border);
+}
+[[/module]]
+
+[[=image https://scp-jp-storage.wdfiles.com/local--files/file%3A7657035-49-8um1/scp_foundation_logo.png style="width: 160px"]]
+
+[[>]]
+**評価:**
+[[module Rate]]
+
+**評価+Infoモジュール:**
+[[include :scp-jp:info:start]]
+[[<]]
+**クラシックSCP財団テーマ**
+**著者:** [[*user Lt Flops]]
+**2020年7月21日公開**
+
+確認してくださった[[*user stormbreath]]と[[*user Croquembouche]]に感謝します。
+[[/<]]
+----
+[[=]]
++++* [https://scp-wiki.wikidot.com/floppyphoenix 気に入った方は著者ページもご覧ください！]
+[[/=]]
+[[include :scp-jp:info:end]]
+
+**単独Infoモジュール:**
+[[include :scp-jp:info:start-standalone]]
+[[include :scp-jp:info:end-standalone]]
+[[/>]]
+
+@@ @@
+
+[[div class="templateInfo"]]
+[[=]]
++* これは何？
+[[/=]]
+----
+これはクラシックSCP財団テーマの現代版です。
+
+これは、SCP Wikiが2008年から2014年までメインテーマとして使用していたWikidotの「Shiny Theme」を改造したものです。
+[[/div]]
+
+@@ @@
+
+[[div class="templateInfo"]]
+[[=]]
++* 使い方
+[[/=]]
+----
+このテーマを使うには、ページの先頭に次の構文をコピーしてください。
+
+[[div class="code"]]
+@@[[include :scp-jp:theme:classic]]@@
+[[/div]]
+
+他のテーマと異なり、このテーマにはロゴがありません。
+
+**何に使うテーマ？**
+
+このテーマは、古いSCPデータベースの美学を模倣するために存在します。1990年代後半から2000年代半ばのレガシーソフトウェアを動かすSCiPNETアクセスターミナルを思い浮かべてください。
+
+このテーマはSCP、Tale、その他のページでの使用に適しています。
+[[/div]]
+
+@@ @@
+
+[[div class="templateInfo"]]
+[[=]]
++* フォーマット例
+[[/=]]
+[[/div]]
+
+[[div class="classic-image-block"]]
+|||| [[image https://scp-jp-storage.wdfiles.com/local--files/file%3A7657035-48-7ahr/base_image_frame.png]] ||
+||||~ クラシック画像ブロック _
+(ソースコード参照) ||
+[[/div]]
+
+||~ ヘッダー ||~ ヘッダー ||~ ヘッダー ||
+|| セル内容 || セル内容 || セル内容 ||
+
++ L1見出し
+++ L2見出し
++++ L3見出し
+++++ L4見出し
++++++ L5見出し
+++++++ L6見出し
+
+= **太字** | //斜体// | __下線__ | --打ち消し線-- | {{等幅}} | ^^上付き^^,,下付き,,
+
+= ハイフンを4つ{{@@----@@}}入力すると、水平線を作成できます。
+----
+[[toc]]
+
+[[div class="code"]]
+@@ 偽コードセレクタ {@@
+@@	偽コードプロパティ: 偽コード値;@@
+@@}@@
+[[/div]]
+
+[# リンク] ([https://google.com たぶん訪問済みのリンク])
+
+# 番号付きリスト
+# リスト項目
+# リスト項目
+
+* 箇条書きリスト
+* リスト項目
+* リスト項目
+
+[[tabview]]
+[[tab タブ1]]
+これはタブビューです。
+[[/tab]]
+[[tab タブ2]]
+ほら、ここにもテキストがあります。
+
+なんとも古風ですね。
+[[/tab]]
+[[tab 長いタブ]]
+これは長いタブです。大量のテキストを含んでいます。
+
+これは長いタブです。大量のテキストを含んでいます。
+
+これは長いタブです。大量のテキストを含んでいます。
+
+これは長いタブです。大量のテキストを含んでいます。
+
+これは長いタブです。大量のテキストを含んでいます。
+
+これは長いタブです。大量のテキストを含んでいます。
+
+これは長いタブです。大量のテキストを含んでいます。
+
+これは長いタブです。大量のテキストを含んでいます。
+
+これは長いタブです。大量のテキストを含んでいます。
+
+これは長いタブです。大量のテキストを含んでいます。
+
+これは長いタブです。大量のテキストを含んでいます。
+
+これは長いタブです。大量のテキストを含んでいます。
+[[/tab]]
+[[tab この空タブにはなぜかとても長い名前が付いています。どうしてでしょう？]]
+[[/tab]]
+[[tab 空タブ]]
+[[/tab]]
+[[tab 空タブ]]
+[[/tab]]
+[[tab 空タブ]]
+[[/tab]]
+[[tab 空タブ]]
+[[/tab]]
+[[tab 空タブ]]
+[[/tab]]
+[[/tabview]]
+
+[[div class="blockquote"]]
+これは引用ブロックです。
+
+追加のテキスト
+-----
+これは水平線です。
+
+> 入れ子の引用ブロック
+[[/div]]
+
+@@ @@
+
+[[div class="templateInfo"]]
+[[=]]
++* ソースコード
+[[/=]]
+[[/div]]
+
+@@ @@
+
+[[=]]
+[[collapsible show="▷ コードを表示 ◁" hide="△ コードを非表示 △"]]
+[[/=]]
+
+[[<]]
+[[code type="CSS"]]
+/* Classic SCP Foundation Theme
+ * [2020年版 Wikidotテーマ]
+ * 作成者: Lt Flops
+ * Gabrys作「Shiny Theme」からの派生
+**/
+
+/* ======== ヘッダー領域 ======== */
+/* ==== 選択範囲 ==== */
+ ::selection {
+	color: var(--key-color);
+	background: var(--highlight-color);
+}
+
+/* ==== 共通 ==== */
+ :root {
+	/* == 配色スキーム == */
+	--green-light-1:	hsl(127, 50%, 94%);
+	--green-light-2:	hsl(120, 100%, 77%);
+	--red-light:	hsl(0, 49%, 91%);
+	--red-strong:	hsl(355, 100%, 37%);
+	--red-dark-1:	hsl(0, 70%, 35%);
+	--red-dark-2:	hsl(353, 100%, 30%);
+
+	--off-white:	hsl(0, 0%, 99%);
+	--gray-light-1:	hsl(0, 0%, 93%);
+	--gray-light-2:	hsl(0, 0%, 87%);
+	--gray-light-3:	hsl(0, 0%, 83%);
+	--gray-medium:	hsl(0, 0%, 67%);
+	--gray-dark-1:	hsl(0, 0%, 40%);
+	--gray-dark-2:	hsl(0, 0%, 27%);
+	--off-black:	hsla(0, 0%, 0%, .95);
+}
+
+ :root {
+	/* == 色定義 == */
+	--accent-color: var(--red-dark-2);
+	--fill-bg: var(--off-white);
+	--key-color: var(--off-black);
+
+	--area-border: var(--gray-light-2);
+	--banner-primary-color: var(--gray-light-1);
+	--banner-secondary-color: var(--red-dark-2);
+	--highlight-color: var(--gray-light-3);
+	--interwiki-bg: var(--green-light-1);
+	--nav-bar-border: var(--gray-dark-2);
+
+	--credit-btn-color: var(--gray-light-1);
+	--credit-btn-hover-color: var(--green-light-2);
+	--info-bar-color: var(--gray-dark-2);
+	--link-color: var(--red-strong);
+	--rate-bar-bg: var(--gray-dark-1);
+	--tab-bg: var(--red-dark-1);
+	--tab-hover-bg: var(--red-light);
+
+	--special-border: var(--gray-medium);
+	--special-btn-color: var(--gray-light-1);
+	--special-text-color: var(--gray-light-1);
+}
+
+ :root {
+	/* == フォント == */
+	--header-font: "Trebuchet MS", "Trebuchet", var(--body-font);
+	--body-font: "Verdana", "Arial", "Helvetica", sans-serif;
+}
+
+ body {
+	accent-color: var(--accent-color);
+	color: var(--key-color);
+
+	font-family: var(--body-font);
+	overflow-wrap: break-word;
+}
+
+/* ==== サイトバナー ==== */
+ div#container-wrap {
+	background-image: url(https://scp-jp-storage.wdfiles.com/local--files/file%3A7657035-47-h01l/body_bg.png);
+	background-repeat: repeat-x;
+	background-size: auto;
+}
+
+ #header {
+	background: 0;
+}
+
+ #header h1,
+ #header h2 {
+	margin: 0 0 0 -4px;
+}
+
+ #header h1 {
+	max-height: 105px;
+}
+
+ #header h1 a,
+ #header h2 span {
+	color: transparent;
+	text-shadow: none;
+}
+
+ #header h1 a {
+	font-family: var(--header-font);
+	letter-spacing: 0;
+}
+
+ #header h1 a::before,
+ #header h2 span::before {
+	text-shadow: none;
+}
+
+ #header h1 a::before {
+	content: "SCP財団";
+	color: var(--banner-primary-color);
+}
+
+ #header h2 span::before {
+	content: "確保、収容、保護";
+	color: var(--banner-secondary-color);
+}
+
+/* ==== 検索 ==== */
+ #search-top-box-form input[type="submit"] {
+	color: var(--key-color);
+	background: var(--special-btn-color);
+	border: 1px solid var(--special-border);
+	border-radius: 0;
+	box-shadow: none;
+	font-size: 100%;
+	font-weight: normal;
+}
+
+ #search-top-box-form input[type="submit"]:hover,
+ #search-top-box-form input[type="submit"]:focus {
+	color: var(--key-color);
+	background: var(--highlight-color);
+	border: 1px solid var(--special-border);
+	box-shadow: none;
+}
+
+/* ==== トップメニュー ==== */
+ #top-bar ul li,
+ #top-bar ul li ul {
+	box-shadow: none;
+}
+
+ #top-bar ul li ul {
+	border-color: var(--nav-bar-border);
+	border-style: solid;
+	border-width: 0 1px 1px;
+}
+
+ #top-bar ul li a {
+	border-color: var(--nav-bar-border);
+	border-style: solid;
+	border-width: 0 0 0 1px;
+}
+
+ #top-bar ul li a::before {
+	content: "[";
+}
+
+ #top-bar ul li a::after {
+	content: "]";
+	position: relative;
+
+ /* トップメニューでは各箇条書きの後に空白が入るため、この指定で補正する。 */
+	left: -.3em;
+}
+
+ #top-bar ul li ul li a::before {
+	content: unset;
+}
+
+ #top-bar ul li ul li a::after {
+	content: unset;
+}
+
+ #top-bar ul li:nth-child(5) a::after {
+	left: unset;
+}
+
+ #top-bar .top-bar > ul > li > a,
+ #top-bar .mobile-top-bar > ul > li > a {
+	font-weight: normal;
+}
+
+ #top-bar .top-bar > ul > li:hover > ul {
+	margin-top: 1px;
+}
+
+ .mobile-top-bar {
+	bottom: -.5px;
+}
+
+/* ==== ログイン ==== */
+ #login-status ul a {
+	background: var(--special-text-color);
+}
+
+/* ==== サイドメニュー ==== */
+ #side-bar {
+	clear: both;
+	padding: .78em;
+	padding-bottom: 0;
+	border: 1px solid var(--area-border);
+	border-radius: 0;
+	box-shadow: none;
+}
+
+ #side-bar .side-block {
+	margin-bottom: .78em;
+	background: var(--fill-bg);
+	border: none;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+ #side-bar .heading {
+	padding-left: 0;
+	color: var(--key-color);
+	border-bottom: 1px solid var(--special-border);
+}
+
+/* ==== インターウィキ ==== */
+ #interwiki body {
+	overflow: hidden;
+}
+
+ #interwiki .side-block {
+	background: var(--interwiki-bg);
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+ #interwiki .heading {
+	margin: 0;
+	padding-left: 0;
+
+	color: var(--key-color);
+	border-color: var(--special-border);
+}
+
+ #side-bar a:visited,
+ #interwiki a:visited {
+	color: var(--link-color);
+}
+
+/* ======== 本文領域 ======== */
+/* ==== Infoバー ==== */
+ .info-container {
+	--barColour: var(--info-bar-color);
+	--linkColour: var(--credit-btn-color);
+}
+
+ .info-container:hover {
+	--linkColour: var(--credit-btn-hover-color);
+}
+
+/* ==== ページ評価 ==== */
+ .page-rate-widget-box {
+	margin-right: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+ div.page-rate-widget-box .rate-points {
+	background-color: var(--rate-bar-bg);
+	border: none;
+	border-radius: 0;
+}
+
+ .page-rate-widget-box .rateup,
+ .page-rate-widget-box .ratedown {
+	background-color: var(--area-border);
+	border: none;
+	font-weight: normal;
+}
+
+ .page-rate-widget-box .cancel {
+	background-color: var(--area-border);
+	border: none;
+	border-radius: 0;
+}
+
+ .page-rate-widget-box .rateup a,
+ .page-rate-widget-box .ratedown a {
+	color: var(--key-color);
+}
+
+ .page-rate-widget-box .cancel a {
+	color: var(--key-color);
+	text-transform: lowercase;
+}
+
+ .page-rate-widget-box .rateup a:hover,
+ .page-rate-widget-box .ratedown a:hover {
+	color: var(--key-color);
+	background: var(--special-text-color);
+	text-decoration: underline;
+}
+
+ .page-rate-widget-box .cancel a:hover {
+	color: var(--key-color);
+	background: var(--special-text-color);
+	text-decoration: underline;
+}
+
+/* ==== Infoモジュール ==== */
+ #page-content .creditRate {
+	margin-right: 0;
+}
+
+ #page-content .rate-box-with-credit-button {
+	background: var(--rate-bar-bg);
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+ #page-content .creditButton p a,
+ #page-content .creditButtonStandalone p a {
+	color: var(--special-btn-color);
+	text-decoration: none;
+}
+
+ #page-content .creditButton p a {
+	border-left: 0;
+}
+
+ #page-content .creditButtonStandalone p a {
+	background: var(--rate-bar-bg);
+	border-radius: 0;
+	box-shadow: none;
+}
+
+ #page-content .rate-box-with-credit-button .fa-info:hover,
+ #page-content .creditButtonStandalone p a:hover {
+	color: var(--credit-btn-hover-color);
+}
+
+ #page-content .modalbox {
+	border-radius: 0;
+	box-shadow: none;
+}
+
+/* ==== 書式 | [全般] ==== */
+ h1, h2, h3, h4, h5, h6 {
+	font-family: var(--header-font);
+}
+
+ h1 {
+	color: var(--accent-color);
+}
+
+ hr {
+	height: 0;
+	margin: 1em 0;
+	background: 0;
+	border-top: 1px solid var(--special-border);
+}
+
+ *, a, span {
+ /* 単語途中で改行しない */
+	word-break: normal;
+}
+
+ li, p {
+	text-underline-offset: 30%;
+}
+
+ a {
+	color: var(--link-color);
+}
+
+/* ==== 画像ブロック ==== */
+/* == 標準 == */
+ .scp-image-block.block-right {
+	margin: 0 0 1em 2em;
+	box-shadow: none;
+}
+
+/* == クラシック == */
+ .classic-image-block {
+	float: right;
+	width: 300px;
+	margin: 0 0 1em 2em;
+	text-align: center;
+}
+
+/* ==== 表スタイル ==== */
+ table.wiki-content-table td {
+	background-color: var(--fill-bg);
+}
+
+/* ==== YUIタブ ==== */
+ .yui-navset .yui-nav a,
+ .yui-navset .yui-navset-top .yui-nav a {
+	/* ==== タブ背景色 | [未選択] ==== */
+	background-color: var(--fill-bg);
+	/* ==== */
+	background-image: none;
+}
+
+ .yui-navset .yui-nav a:hover,
+ .yui-navset .yui-nav a:focus {
+	/* ==== タブ背景色 | [ホバー] ==== */
+	background-color: var(--tab-hover-bg);
+	/* ==== */
+	background-image: none;
+}
+
+ .yui-navset .yui-nav .selected a,
+ .yui-navset .yui-nav .selected a:focus,
+ .yui-navset .yui-nav .selected a:hover {
+	/* ==== タブ背景色 | [選択中] ==== */
+	background-color: var(--tab-bg);
+	/* ==== */
+	background-image: none;
+}
+
+/* ======== モバイル幅 ======== */
+ @media (max-width: 767px) {
+	 #side-bar .side-block {
+		background-color: var(--fill-bg);
+	}
+
+	 #header,
+	 .mobile-top-bar {
+		max-width: 95%;
+	}
+
+	 .mobile-top-bar {
+		left: 0;
+	}
+}
+[[/code]]
+[[/<]]
+
+[[/collapsible]]
+
+@@ @@
+----
+[[=]]
+[[include :scp-jp:component:license-box-theme]]
+=====
+[[<]]
+[[div class="blockquote"]]
+**ファイル名:** classic_body_bg.png
+**作者:** [[*user Gabrys]]
+**ライセンス:** [*https://creativecommons.org/licenses/by-sa/3.0/ Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)]
+**ソースリンク:** [*https://static.wikidot.com/v--c827dff18394/common--theme/shiny/images/body_bg.png Wikidot]
+[[/div]]
+
+[[div class="blockquote"]]
+**ファイル名:** base_image_frame.png
+**作者:** [[*user Lt Flops]]
+**ライセンス:** [*https://creativecommons.org/licenses/by-sa/3.0/ Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)]
+**ソースリンク:** このページ
+[[/div]]
+
+[[div class="blockquote"]]
+**ファイル名:** scp_foundation_logo.png
+**作者:** [[*user far2]]
+**ライセンス:** [*https://creativecommons.org/licenses/by-sa/3.0/ Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)]
+**ソースリンク:** [*https://scp-wiki.wikidot.com/main SCP Foundation Wiki]
+[[/div]]
+[[/<]]
+=====
+[[include :scp-jp:component:license-box-end]]
+[[/=]]
+[[/iftags]]

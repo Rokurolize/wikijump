@@ -1,0 +1,11 @@
+--- existing-jp.wikidot.txt
++++ candidate.wikidot.source.txt
+@@ -60,7 +60,7 @@
+ [[div_ style="border: 0.0625rem solid rgb(var(--swatch-secondary-color));padding: 1em;text-align:center;"]]
+ + 使い方
+ [[div_ style="filter: invert(1) brightness(110%);display:flex;"]]
+-[[image https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg]]
++[[image black-highlighter-logo.svg]]
+ [[/div]]
+ 
+ 任意のwikiで:

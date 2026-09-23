@@ -1,0 +1,292 @@
+[[module themepreviewer noUi="true"theme_url=" "]]
+[[include :scp-int:component:interwiki-style priority=1|css=body{font-family:verdana,arial,helvetica,sans-serif;font-size:.82em}a:hover{background:%23eee}img{display:none}%23interwiki p{line-height:unset;margin-bottom:1em}%23interwiki .heading,%23interwiki .menu-item,%23interwiki .side-block{background:none;border:none;border-radius:unset;box-shadow:none;color:%23000;font-size:1em;font-weight:400;margin:unset;padding:unset}%23interwiki .menu-item a{color:%2300a;font-weight:400;text-decoration:underline]]
+[[module css]]
+/{$side}
+.close-menu{
+	display:none;
+	height:100%;
+	left:0;
+	position:fixed;
+	top:0;
+	width:100%;
+	z-index:-1
+}
+.close-menu:hover{
+	background:none
+}
+.mobile-top-bar{
+	display:none
+}
+.open-menu a{
+	left:0;
+	position:fixed;
+	top:0
+}
+/**/
+
+/{$misc}
+#page-content{
+	min-height:100vh
+}
+#search-top-box-input{
+	display:none
+}
+#side-bar{
+	background:#fff;
+	position:absolute
+}
+.blockquote{
+	background:#f4f4f4;
+	border:1px dashed#999;
+	margin:1em 40px;
+	padding-inline:1em
+}
+.open-menu a{
+	background:#fff;
+	font-size:2em;
+	left:1rem;
+	top:1rem
+}
+.page-tags a[href*='_']{
+	display:none
+}
+.scp-image-block.block-center{
+	margin-inline:auto
+}
+.scp-image-block.block-left{
+	float:left
+}
+.scp-image-block.block-right{
+	float:right
+}
+/**/
+
+/{$comp}
+#u-credit-view{
+	transition:none
+}
+.creditRate{
+	margin:unset
+}
+.creditButton p a{
+	border:none;
+	margin-left:-4.5px;
+	line-height:normal
+}
+.modalbox{
+	background:#fff;
+	border:none;
+	border-radius:unset;
+	box-shadow:none
+}
+.page-rate-widget-box{
+	display:inline-block
+}
+.rate-box-with-credit-button{
+	background:#666;
+	border:none;
+	border-radius:unset;
+	box-shadow:none
+}
+.rate-box-with-credit-button .cancel{
+	-moz-border-radius:unset
+}
+/**/
+
+/{$rate}
+div.page-rate-widget-box a{
+	text-decoration:underline;
+	color:#00a;
+	background:unset;
+	padding:unset;
+}
+div.page-rate-widget-box .cancel,
+div.page-rate-widget-box .cancel a{
+	-moz-border-radius:unset
+}
+div.page-rate-widget-box .rate-points{
+	background:unset;
+	color:inherit;
+	font-weight:unset;
+	padding:unset;
+	-moz-border-radius:unset
+}
+.creditButton p{
+	font-size:1em
+}
+.creditButton p a{
+	color:#00a;
+	font-size:1em;
+	margin:unset;
+	text-decoration:underline;
+	width:unset
+}
+.rate-box-with-credit-button{
+	background:none;
+	-moz-border-radius:0 4px 4px 0
+}
+/**/
+
+/{$trans}
+@media (max-width:767px){
+/**//*{$trans}/
+@media (max-width:{$width}){
+/**/
+
+	/{$side}
+	#main-content{
+		margin-left:unset
+	}
+	#side-bar{
+		left:-16em;
+		position:fixed;
+		top:0;
+		z-index:99
+	}
+	#side-bar:target{
+		left:0;
+		overflow:auto;
+		height:calc(100% - 2em)
+	}
+	#side-bar:target .close-menu,.mobile-top-bar{
+		display:block
+	}
+	.top-bar{
+		display:none
+	}
+	/**/
+}
+[[/module]][[iftags +theme]][[>]]
+[[module rate]]
++ @@ @@
+> = **Wikifot** — Catch-all joke term used by the community to refer to the general technical issues our platform, Wikidot, occasionally runs into.
+> ,,— //[[[Glossary of Terms]]]//,,[[/>]]
++ @@ @@
++ What on Earth am I looking at?
+Fuck if I know.
++ No seriously what on //Earth// am I looking at?
+Are you sick and tired of your perfectly readable page being intruded upon by pesky little things like "color" and "imagination" and "readability"? Perhaps you really like the color scheme of white, more white, even more white, yet more white, did I mention whi— oh yeah also blue. Or perhaps you're a masochistic?
+
+In any case, Wikifot Theme is the theme for you!
++ @@ @@
++ Usage
+To use Wikifot Theme, on any wiki, copy this string to any part of your page:
+[[code]][[include :scp-wiki:theme:wikifot]][[/code]]
+
+It should be noted that removing the ":scp-wiki:" will cause the theme to break when used on other wikis. As such it is recommend you save yourself the eyesore and yuck it to the abyssal pit from whence it came.
+[[code]][[include theme:wikifot]][[/code]]
++ @@ @@
++ Examples
+[[include component:image-block caption=An image I forgot to upload|name=logo.jpg]]
+A horizontal rule (seen below) can be created with 4 hyphens "- - - -" and extends across the whole page. There are certain people who will tell you that you are supposed to remove the spaces between each hyphen when actually using it. Do not listen to them, they are gaslighting you.
+----
++ @@ @@
+Titles can be created by putting 1 to 6 +'s (depending on the size you want) at the start of a line:
+[[collapsible]]
++ You
+++ Have
++++ Just
+++++ Lost
++++++ The
+++++++ Game
+[[/collapsible]]
++ @@ @@
+[[tabview]][[tab Tabulator]]This is a tab view.[[/tab]][[tab Tabulation]]This is also a tab view.[[/tab]][[tab Tabulating]]Now what do we have here? A secret easter egg? Some helpful life advice maybe? Maybe a complement on you hair today?
+
+No dumbass it's just another tabview.[[/tab]][[tab Long Tab]]she
+
+wi
+
+on
+
+my
+
+ki
+
+til
+
+i
+
+fot[[/tab]][[tab Taboo]][[/tab]][[tab Tabpole Challenge: Will You Eat the Forbidden Fruit?]][[/tab]][[tab Dude My Game Alt-tabbed]][[/tab]][[tab I once ran over and killed an entire family of five. No one knows, I managed to drive away before the cops arrived. I considered going to the funeral, in secret, but I just couldn't bring myself to do it. I think about them every night, in my sleep. It eats me up inside. Every time I drive by that road, I— wait, what do you mean "where's the tab pun?"]][[/tab]][[tab Tab You Heard About Our Lord and Savior Jesus Christ?]][[/tab]][[tab I'll Put it on Your Tab]][[/tab]][[tab We Live in a Tabiety]][[/tab]][[tab Tabifornia Girls]]It's so sad that a family can be torn apart by something as simple as a pack of feral hogs.[[/tab]][[/tabview]]
++ @@ @@
+= This is a table.[[=image table.png]]
+= You should know how to make these already.
++ @@ @@
++ Custom DIVs
+Wikifot Theme provides a variety of colorful, flashy, seizure inducing DIV boxes for you to plaster all over your page with reckless abandon! Here's a few examples:
+> {{@@[[div class="blockquote"]]@@}}
+> Classic 'Ol Blockquote!
+> {{[[/div]]}}
+{{@@[[div class="black-box"]]@@}}
+Black box!
+{{[[/div]]}}
+
+{{@@[[div class="white-box"]]@@}}
+White box!
+{{[[/div]]}}
+
+{{@@[[div class="rainbow-box"]]@@}}
+Rainbow box!
+{{[[/div]]}}
+
+{{@@[[div class="sparkly-box"]]@@}}
+Sparkly box!
+{{[[/div]]}}
+
+{{@@[[div class="fancy-box"]]@@}}
+Fancy box!
+{{[[/div]]}}
+
+{{@@[[div class="shiny-box"]]@@}}
+🦀
+{{[[/div]]}}
+
+{{@@[[div class="normal-box"]]@@}}
+Normal box.
+{{[[/div]]}}
+
+{{@@[[div class="box-box"]]@@}}
+Box box!
+{{[[/div]]}}
+
+{{@@[[div class="what"]]@@}}
+what
+{{[[/div]]}}
+
+{{@@[[div class="sexy-box"]]@@}}
+UWU
+{{[[/div]]}}
+> {{@@[[div class="blockquote-2"]]@@}}
+> Blockquote 2: Blolectric Quoogaloo!
+> {{[[/div]]}}
+(Note: Custom divs //may// completely fail to render 100% of the time)
++ @@ @@
++ Darkmode
+That's right, Wikifot Theme is pushing the boundaries of encouraging poor sleep schedules by introducing an in-page darkmode toggle, a feature never before seen in any other theme ever! Give it a try:
++ @@ @@
+[[div id="darkmode"]]
+= [[span class="toggle"style="font-size:2em"]]**[#u-darkmode TOGGLE DARKMODE]**[[/span]][[# u-darkmode]][[div class="wikifot"]]
+[[div_ style="float:right;padding-top:15px;width:250px"]]
+##222|,,More [https://flickr.com/tags/bsod photos or videos tagged with bsod] on Flickr,,##[[/div]][[div style="margin-right:300px"]]
+[[size 2em]]**Please try again**[[/size]]
+
+Please try again - there was a problem fetching the page you requested. Most probably you can just click [[a]]Reload[[/a]] or Ctrl-R and the page will show as you expected.
+
+If you are seeing a lot of these errors, Wikidot may be under stress.
+
+Thanks for visiting this site, and if you're one of our
+1 000 000 users, for using wikidot.com for your social web project.
+
+[[span style="font-family:monospace"]]##666|,,ERROR CODE: FU200,,##[[/span]][[/div]][[/div]][[/div]]
++ @@ @@
+= The body font is Verdana. _
+The header font is Verdana. _
+The subheader font is Verdana. _
+The monospace font is Verdana.
++ @@ @@
++ Source code:
+[[collapsible]]
+[[code]]My source is that I made it the fuck up.[[/code]]
+[[module css]]
+body{cursor:wait}#u-darkmode:target .toggle{display:none}#u-darkmode:target .wikifot{display:block}.page-tags a[href*='_']{display:unset}.wikifot{border-spacing:0;display:none;left:min(-8.5em,calc(50% - 350px - 8.5em));height:100vh;margin:auto;position:relative;width:700px}.wikifot a{color:-webkit-link}.wikifot a:active{color:-webkit-activelink}.wikifot a:hover{background:none}@media (max-width:767px){.wikifot{left:0;overflow:hidden
+[[/module]][[/collapsible]][[/iftags]]

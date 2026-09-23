@@ -1,0 +1,1445 @@
+>[!-{$blocks}
+
+[[include :scp-wiki:component:toggle-sidebar]]
+
+[[module CSS]]
+@import url("https://scp-wiki.wdfiles.com/local--code/theme%3Aturbo-vision/2");
+[[/module]]
+
+[[include :scp-wiki:component:interwiki-style
+| priority=1
+| theme=https://scp-wiki.wdfiles.com/local--code/theme%3Aturbo-vision/2
+]]
+
+[!-- --]
+
+[[module CSS]]
+@import url("https://scp-wiki.wikidot.com/theme:turbo-vision/code/1");
+[[/module]]
+
+[[iftags +theme]]
+
+[[>]]
+[[module Rate]]
+[[/>]]
+
+[[div class="offset-left left-1"]]
+[[div class="turbo-block bg-cyan border-white"]]
+This is the Turbo Vision theme by [[*user jakdragonx]] and [[*user Croquembouche]], an aesthetic theme not associated with any in-universe premise, although it will invoke a physically painful retro vibe.
+[[/div]]
+[[/div]]
+
+[[div class="offset-right right-1"]]
+[[div class="turbo-block bg-orange border-white"]]
+To use this theme on your page, include the following code:
+
+[[div class="turbo-block bg-grey border-black text-black"]]
+@@[[include :scp-wiki:theme:turbo-vision]]@@
+[[/div]]
+
+This puts the Turbo Vision theme into 'theme mode'.
+
+-----
+
+If you just want to be able to use Turbo Blocks but you don't want the rest of the theme, add "blocks=-":
+
+[[div class="turbo-block bg-grey border-black text-black"]]
+@@[[include :scp-wiki:theme:turbo-vision blocks=-]]@@
+[[/div]]
+
+This puts the Turbo Vision theme into 'component mode'. This is compatible with the [[[theme:black-highlighter-theme|]]].
+
+-----
+
+'Theme mode' and 'component mode' will come up later, so make sure you know which one your page uses.
+[[/div]]
+[[/div]]
+
+~~~~
+
+The Turbo Vision theme is designed to appear similarly to a [https://en.wikipedia.org/wiki/Turbo_Vision DOS terminal from the 90s] -- it's intended to look like it's made up of lots of ASCII characters. This is why the borders and drop shadows look clunky and asymmetric -- they've been made to look like [https://en.wikipedia.org/wiki/Box-drawing_character box-drawing characters], with the colors created by the font color and background color of individual tiles.
+
+That being said, we're not fervently sticking to this guideline, and we've taken some creative liberties to make the experience //slightly// less painful.
+
+The theme comes with [[[component:toggle-sidebar | Toggle Sidebar]]] by default to facilitate having loads of horizontal vertical space to fill with offset blocks filled with whatever you like. On smaller screens, where there's very little horizontal space, these offset blocks will automatically be brought inwards to the middle of the page -- mobile readers won't miss anything.
+
+This theme is blocky, clunky, and colorful. Pages that use it may look cluttered like a bunch of stacked windows in a crowded interface, and that's part of the charm; but it doesn't have to be -- it's up to you. This page has instructions for how to set it up any way you want.
+
+-----
+
+The tabview below contains some examples of base Wikidot formatting in this theme.
+
+Please note that while blockquote and table styling are available in 'component mode', tabview styling is only available in 'theme mode'.
+
+[[tabview]]
+[[tab Basic formatting]]
+A horizontal rule can be created with 5 hyphens @@"-----"@@ and extends across the whole page if it's not placed inside anything (eg a blockquote). The lines separating sections of this document are horizontal rules.
+
+**This is bolded text.**
+
+//This is italicized text.//
+
+{{This is monospaced text.}}
+[[/tab]]
+[[tab Headers]]
+Titles can be created by putting between one and six plus "+" at the start of the line.
+
++ First Title
+
+++ Second Title
+
++++ Third Title
+
+++++ Fourth Title
+
++++++ Fifth Title
+
+++++++ Sixth Title
+[[/tab]]
+[[tab Blockquotes]]
+[[div class="blockquote"]]
+This is a blockquote, created by wrapping the text in a div with class "blockquote".
+
+[[div class="blockquote"]]
+More text
+-----
+That's a horizontal rule
+
+[[div class="blockquote"]]
+Nested blockquote
+
+You like?
+----
+Whoa...
+[[/div]]
+[[/div]]
+[[/div]]
+[[/tab]]
+[[tab Tables]]
+||~ Table ||~ Header cell ||
+|| Normal cell || Another normal cell ||
+|||| A merged cell ||
+[[/tab]]
+[[/tabview]]
+
+------
+
+Now, a quick demonstration for how the Turbo Blocks work...
+
+------
+
+[[div class="turbo-block bg-red border-white text-white" data-title="WARNING!"]]
+The following section of this page may look and seem terrifying. However, you shouldn't feel alarmed or threatened -- every part can be broken down into easy chunks.
+[[/div]]
+
+-----
+
+[[div class="turbo-block bg-grey border-black text-black" data-title="BASIC EXAMPLE"]]
+
+[[div class="offset-right right-4"]]
+[[div class="turbo-block bg-orange border-white text-white" data-title="IMAGE"]]
+[[include component:image-block
+| name=https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/scpimage.png
+| caption=Hello yes this is text
+]]
+[[/div]]
+[[/div]]
+
+[[div class="heading"]]
+**ITEM NUMBER**
+[[/div]]
+
+SCP-NUMBER
+
+[[div class="heading"]]
+**OBJECT CLASS**
+[[/div]]
+
+[[[/scp-0110-j|LIGMA]]]
+
+[[div class="heading"]]
+**SPECIAL CONTAINMENT PROCEDURES**
+[[/div]]
+
+[[div class="offset-left left-3"]]
+[[div class="turbo-block bg-black border-white text-white" data-title="CHATROOM" style="max-width: 250px"]]
+
+**johnsmith12:** uh, do you even know what you're doing?
+
+**me:** lmao, no. I just need to draft something for this stupid-ass theme.
+
+[[/div]]
+[[/div]]
+
+SCP-NUMBER is currently uncontained. Whether this can be attributed to its unidentified writing or if it's just too fucking annoying to hassle with remains unknown.
+
+In the event that one observes SCP-NUMBER for any reason -- which, doesn't really make much sense when you think about it -- affected subjects must refer back to their on-site therapist for **Treatment #104321**. Such treatment may last upwards of several hours and may be excruciatingly painful to the affected subject. Because no one wants to go to the nurse's office, for some fuck-all reason.
+
+[[div class="offset-left left-4"]]
+[[div class="turbo-block bg-white border-black text-black" data-title="NOTEPAD" style="max-width: 150px"]]
+wtf was I going to have for lunch again?
+[[/div]]
+[[/div]]
+
+[[div class="heading"]]
+**DESCRIPTION**
+[[/div]]
+
+SCP-NUMBER is nothing. Absolutely nothing at all. In fact, it is a lie. Just like you. You too are indeed a lie. Do not feel hurt or upset, as this applies to everyone universally. We condemn discrimination here at the Foundation.
+[[div class="offset-right right-2"]]
+[[div class="turbo-block bg-cyan border-black text-white"]]
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. 
+
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+[[/div]]
+[[/div]]
+In fact, what can we describe as truth? Perhaps perception is a lie. A lie perpetrated amongst men upon other men, perhaps? Indeed, reality cannot be the same for you and me. We all have different truths and lies. We are, of course, three-dimensional creatures. We crave understanding. We desire knowledge and will seek it out despite some of our best intentions. 
+
+Perhaps you believe that I'm only typing nonsense because I just want to lengthen this more for an extra colored box? Perhaps, but regardless of such meager wishes, I only want to allow you the moment of self-reflection. Are you, in fact, real? No. As I've already said prior, you are just a false image. A false image of the world you're currently living on. That is all.
+
+
+[[/div]]
+
+------
+
+[[=]]
++ HOW TO USE 
+[[/=]]
+
+[[div class="turbo-block bg-cyan border-white text-white" data-title="TURBO BLOCKS"]]
+
+To create a chunky shadowed Turbo Block like the one this text is in, create a div with the following classes:
+
+* "turbo-block"
+* a class that sets the background color
+* a class that sets the border color
+* a class that sets the text color
+
+This theme provides all of these classes.
+
+[[div class="heading"]]
+BLOCK
+[[/div]]
+
+The "turbo-block" class creates the Turbo Block itself. You can use it by itself without any of the other classes, but it'll probably look weird (it won't have a background, for example).
+
+[[div class="blockquote"]]
+@@[[div class="turbo-block"]]@@
+Your text here
+@@[[/div]]@@
+[[/div]]
+
+[[div class="heading"]]
+BACKGROUND COLOR
+[[/div]]
+
+This theme provides a bunch of background color utility classes, of the form "bg-[color]". Here are all of them:
+
+[[div class="text-white" style="text-align: center;"]]
+[[div class="turbo-block bg-red border-white"]]
+@@[[div class="turbo-block bg-red"]]@@
+[[/div]]
+[[div class="turbo-block bg-grey border-white"]]
+@@[[div class="turbo-block bg-grey"]]@@
+[[/div]]
+[[div class="turbo-block bg-green border-white"]]
+@@[[div class="turbo-block bg-green"]]@@
+[[/div]]
+[[div class="turbo-block bg-cyan border-white"]]
+@@[[div class="turbo-block bg-cyan"]]@@
+[[/div]]
+[[div class="turbo-block bg-orange border-white"]]
+@@[[div class="turbo-block bg-orange"]]@@
+[[/div]]
+[[div class="turbo-block bg-yellow border-white"]]
+@@[[div class="turbo-block bg-yellow"]]@@
+[[/div]]
+[[div class="turbo-block bg-purple border-white"]]
+@@[[div class="turbo-block bg-purple"]]@@
+[[/div]]
+[[div class="turbo-block bg-black border-white"]]
+@@[[div class="turbo-block bg-black"]]@@
+[[/div]]
+[[div class="turbo-block bg-white border-black text-black"]]
+@@[[div class="turbo-block bg-white"]]@@
+[[/div]]
+[[/div]]
+
+[[div class="heading"]]
+BORDER COLOR
+[[/div]]
+
+There are two border color classes: "border-black" and "border-white". Turbo Blocks doesn't come with a border by default, so you'll have to pick one for each turbo-block.
+
+Note that all divs created with the "turbo-block" class have a double-lined border. Blockquotes, tables and tabviews have a single-lined border.
+
+[[div class="heading"]]
+TEXT COLOR
+[[/div]]
+
+There are two text color classes: "text-black" and "text-white". They make the default text color in the turbo-block black and white respectively.
+
+[[/div]]
+
+@@ @@
+
+[[div class="turbo-block bg-green border-white text-white" data-title="HEADINGS"]]
+
+Each Turbo Block can have a title and a bunch of headings. The title is the text that appears right at the top -- the title of this one is "HEADINGS". Do that by adding a "data-title" attribute to the block div:
+
+[[div class="blockquote"]]
+@@[[div class="turbo-block ..." data-title="TITLE GOES HERE"]]@@
+[[/div]]
+
+To match the original Turbo Vision program, block titles should be in capitals, but this isn't enforced -- you can put any text there you like.
+
+However, do try to keep them short, because they look weird if they overflow:
+
+[[div class="turbo-block bg-grey border-black text-black" data-title="Whoops, Look at Me! I'm a Title That's Too Long!"]]
+See what I mean?
+[[/div]]
+
+The source code for that:
+
+[[div class="blockquote"]]
+@@[[div class="turbo-block bg-grey border-black text-black" data-title="Whoops, Look at Me! I'm a Title That's Too Long!"]]@@
+See what I mean?
+@@[[/div]]@@
+[[/div]]
+
+Think of the poor mobile readers -- keep your titles short.
+
+[[div class="heading"]]
+HEADINGS
+[[/div]]
+
+Within a Turbo Block, you can create a subsection heading with the "heading" class -- here's the code for the above one:
+
+[[div class="blockquote"]]
+@@[[div class="heading"]]@@
+HEADINGS
+@@[[/div]]@@
+[[/div]]
+
+If you want to add a line like a heading but without any text in it, just add a horizontal rule with 4 or 5 hyphens:
+
+-----
+
+↑ Just like that.
+
+[[/div]]
+
+@@ @@
+
+[[div class="turbo-block bg-yellow border-black text-black" data-title="IMAGES"]]
+
+You can put anything you like inside a Turbo Block, including images. To add an image, the best way is to make a Turbo Block div and put the standard image block component inside it.
+
+Here's the one for the image turbo-block used in the example earlier in this page:
+
+[[div class="blockquote"]]
+@@[[div class="turbo-block bg-orange border-white text-white" data-title="IMAGE"]]@@
+@@[[include :scp-wiki:component:image-block@@
+| name=scpimage.png
+| caption=Hello yes this is text
+]]
+@@[[/div]]@@
+[[/div]]
+[[/div]]
+
+@@ @@
+
+[[div class="turbo-block bg-purple border-white text-white" data-title="OFFSETS"]]
+So far, these instructions have covered how to create Turbo Blocks. You can put a Turbo Block inside another Turbo Block, but just doing that won't create a cluttered feel, like a messy pile of notes on a disorganized researcher's desk -- to do that, some of them need to be moved to the left and right.
+
+That can be done using offset classes. The Turbo Vision theme provides classes for moving something to the left:
+
+* "offset-left"
+* "left-1"
+* "left-2"
+* "left-3"
+* "left-4"
+* "left-5"
+
+...and to the right:
+
+* "offset-right"
+* "right-1"
+* "right-2"
+* "right-3"
+* "right-4"
+* "right-5"
+
+To move something to the left, wrap it in a div with two classes: "offset-left", and then one of "left-1" through "left-5", depending on how far to the left you want it moved. "left-1" will only move it a little bit, but "left-5" will move it a lot -- all the way to the left-hand side of the screen.
+
+To move something to the right, it's exactly the same, but swap out "left" for "right".
+
+[[div class="heading"]]
+OFFSETS ON MOBILE
+[[/div]]
+
+If you've worked with CSS before, you're probably thinking that using up too much horizontal screen space is a very dangerous game -- these offset divs are going to look terrible on mobile.
+
+Have no fear! On small screen sizes, offset divs will be placed closer to the middle of the page, and on //very// small screen sizes, the offset will be turned off altogether.
+
+For authors, this means that while mobile users will always see all of the content you put into offset divs, it might not look as cluttered as you intended it. Always test your design on mobile before you publish it to check that the reading experience is solid for everyone.
+
+[[div class="heading"]]
+CREATING OFFSET BLOCKS
+[[/div]]
+
+To create an offset block, combine two of the above classes, to determine the offset direction and intensity:
+
+[[div class="blockquote"]]
+@@[[div class="offset-left left-3"]]@@
+
+@@[[/div]]@@
+[[/div]]
+
+If you want to offset a Turbo Block, put it //inside// the offset block (don't add the offset classes to the Turbo Block directly):
+
+[[div class="blockquote"]]
+@@[[div class="offset-left left-3"]]@@
+@@[[div class="turbo-block bg-white border-black text-black"]]@@
+hello!
+@@[[/div]]@@
+@@[[/div]]@@
+[[/div]]
+
+[[div class="offset-left left-3"]]
+[[div class="turbo-block bg-white border-black text-black"]]
+hello!
+[[/div]]
+[[/div]]
+
+If you're on a wide browser (e.g. desktop), the above example is on the left. If you're on a thin browser (e.g. mobile), the above example is above this text.
+
+Because the offset block is a different element to the Turbo Block, this means that you can actually offset anything you like, just by putting it inside a div with offset classes. Try offsetting an image turbo-block!
+
+[[div class="heading"]]
+CLEARING THE FLOAT
+[[/div]]
+
+Offset blocks work using the CSS [https://developer.mozilla.org/en-US/docs/Web/CSS/float "float"] property. When a HTML element is floating, stuff underneath it is pulled upwards to fill the space that it leaves behind.
+
+This isn't always desirable. Maybe you want a floating offset block, but you want the text underneath it to appear where it would be if the offset block //wasn't// floating. This would leave a big gap for you to put something else there, if you like.
+
+You can do this using the CSS [https://developer.mozilla.org/en-US/docs/Web/CSS/clear "clear"] property -- a practice that's commonly referred to as a "clearfix". Wikidot lets you do this with [https://www.wikidot.com/doc-wiki-syntax:block-formatting-elements 4 tilde characters] (@@~~~~@@):
+
+[[div class="blockquote"]]
+@@[[div class="offset-left left-3"]]@@
+@@[[div class="turbo-block bg-white border-black text-black"]]@@
+hello!
+@@[[/div]]@@
+@@[[/div]]@@
+
+@@~~~~@@
+[[/div]]
+
+[[div class="offset-left left-3"]]
+[[div class="turbo-block bg-white border-black text-black"]]
+hello!
+[[/div]]
+[[/div]]
+
+~~~~
+
+This text isn't pulled upwards to fill the space, resulting in a big gap on desktop. On mobile, of course, there is no change.
+
+[[div class="heading"]]
+EXAMPLES
+[[/div]]
+
+Here are examples for all the different offset combinations.
+
+[[module CSS]]
+.mobile-only {
+  display: none;
+}
+@media (max-width: 600px) {
+  .mobile-only { display: block }
+  .desktop-only { display: none }
+}
+[[/module]]
+
+[[div class="desktop-only"]]
+Your browser has a wide screen (or at least CSS says so), so take a look at the examples below and adjust your window size to see how the offset divs react.
+[[/div]]
+
+[[div class="mobile-only"]]
+Your browser has a thin screen (or at least CSS says so), which means you're likely on a mobile device. The offset examples below will appear as a bunch of boring, center-aligned divs. Try looking at this page in a wider browser later to see the offsets.
+[[/div]]
+
+[[/div]]
+
+[[div class="offset-left left-5"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-left left-5"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-left left-4"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-left left-4"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-left left-3"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-left left-3"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-left left-2"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-left left-2]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-left left-1"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-left left-1"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-right right-1"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-right right-1"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-right right-2"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-right right-2"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-right right-3"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-right right-3"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-right right-4"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-right right-4"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-right right-5"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-right right-5"]]@@
+[[/div]]
+[[/div]]
+
+~~~~~
+
+[[div class="turbo-block bg-purple border-white text-white" data-title="OFFSET RESTRICTIONS"]]
+
+There are certain circumstances in which you shouldn't use some of the offset classes. You still can, of course, but it will have an adverse effect on your page.
+
+Which classes are available to you depends on the position of the sidebar and whether or not the page content is center-aligned with respect to the browser viewport. It also depends on whether you are using this theme in 'theme mode' or 'component mode' -- please review the usage instructions at the very top of the page for a reminder of which is which.
+
+[[div class="heading"]]
+THEME MODE
+[[/div]]
+
+If you are using the Turbo Vision theme in 'theme mode', it comes with [[[component:toggle-sidebar|]]], which center-aligns the page content and frees up as much horizontal space as possible. You may freely use all of the offset classes.
+
+[[div class="heading"]]
+COMPONENT MODE
+[[/div]]
+
+If you are using the Turbo Vision theme in 'component mode', it does not come with [[[component:toggle-sidebar|]]] by default. This limits the horizontal space.
+
+If you are using Toggle Sidebar anyway, your page body is center-aligned. You may freely use all of the offset classes.
+
+If you are not using Toggle Sidebar, the page body is on the right-hand side of the page. You should avoid using any of the right-hand offset classes, as they may go off the edge of the screen. You should also avoid using any left-hand offset classes near the start of the page, as they may overlap with the sidebar.
+
+If you are using [[[theme:black-highlighter-theme|]]], the page body is centered, so you may freely use the right-hand offset classes. However, the sidebar is present throughout the entire document, so you should avoid using any of the left-hand offset classes.
+
+If you are using BHL and [[[component:toggle-sidebar-bhl|]]], this frees up the space on the left, so you may freely use the left-hand offset classes as well.
+
+[[div class="heading"]]
+TL;DR
+[[/div]]
+
+In short: avoid offsetting to the left if there is a sidebar, and avoid offsetting to the right if the page content is not centered.
+
+[[/div]]
+
+@@ @@
+
+And that's the whole theme.
+
+@@ @@
+
++ Source code
+
+[[collapsible show="+ show source code for turbo blocks"]]
+[[code type="css"]]
+@import url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/Mx437_IBM_VGA_8x16.css");
+@import url('https://fonts.bunny.net/css2?family=IBM+Plex+Mono&display=swap');
+
+/*
+    Turbo Vision Theme
+    [2021 Wikidot Theme]
+    By JakdragonX
+    Based on SCP Sigma 9-Theme created by Aelanna and Dr Devan
+    Based on the original Turbo Vision Theme created by Croquembouche
+
+    The Turbo Vision theme is split into two CSS fragments.
+
+    This fragment styles user-created Turbo Blocks, and does not require
+    the other fragment in order to function correctly.
+*/
+
+/* BEFORE WE BEGIN, A QUICK FIX FOR UNDOING SIGMA-9 WEIRD THINGS */
+
+@media (min-width: 768px) and (max-width: 979px) {
+  div,
+  div table {
+    clear: initial;
+  }
+}
+
+.avatar-hover {
+  z-index: 1;
+}
+
+/* AND NOW... */
+/* ------------------------------------- */
+/* NOW FOR THE MAIN COURSE */
+
+/* VARIABLES */
+
+:root {
+  --turbo-block-shadow: 0.5em 1em 0 0 #3e3f47;
+  --turbo-block-border-width: 22px;
+}
+
+/* BLOCKQUOTES */
+
+.turbo-block blockquote,
+.turbo-block div.blockquote {
+  background-color: #aaaaaa;
+  color: #000;
+  padding: 0;
+  margin-bottom: 2em;
+  border-width: var(--turbo-block-border-width);
+  border-style: solid;
+  border-image: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/border_white.svg") 16 round;
+  box-shadow: var(--turbo-block-shadow);
+}
+
+/* SIMPLE TABLES */
+
+.turbo-block table.wiki-content-table {
+  box-shadow: var(--turbo-block-shadow);
+  margin-bottom: 2em;
+}
+
+.turbo-block table.wiki-content-table td {
+  border: 1px solid #fff;
+  background-color: #aaaaaa;
+}
+
+.turbo-block table.wiki-content-table th {
+  border: 1px solid #011657;
+  color: #fff;
+  background-color: #011657;
+}
+
+/* "BLOCK" DIV'S, DEFAULT CONFIG */
+
+.turbo-block {
+  position: relative;
+  border-radius: 0;
+  border-width: var(--turbo-block-border-width);
+  border-style: solid;
+  box-shadow: var(--turbo-block-shadow);
+  color: white;
+  margin: 0.75rem 1.5rem 1.5rem 0.75rem;
+  z-index: 1;
+
+  /* Properties that apply to whole document in the general fragment */
+  font-family: "IBM Plex Mono", sans-serif;
+  font-size: 16px;
+  line-height: 22px;
+  letter-spacing: 0.5px;
+  image-rendering: pixelated;
+}
+
+.turbo-block .heading {
+  position: relative;
+  border: none;
+  margin-top: 1.5em;
+}
+
+.turbo-block .heading::before {
+  content: "";
+  border-top: 3px double white;
+  position: absolute;
+  width: calc(100% + 22px);
+  top: calc(50% - 1.5px);
+  left: 0;
+  margin: 0 -11px;
+}
+
+.turbo-block .heading p {
+  display: table;
+  position: relative;
+  padding: 0 8px;
+  background: inherit;
+  margin: 0 0 0 2em;
+  color: white;
+}
+
+.turbo-block hr {
+  padding: 0;
+  margin: 1em 0 0 -11px;
+  width: calc(100% + 22px);
+  max-width: none;
+  height: 3px;
+  border-top: 3px double white;
+  background: none;
+}
+.turbo-block.border-white hr {
+  border-color: white;
+}
+.turbo-block.border-black hr {
+  border-color: black;
+}
+
+.turbo-block::after {
+  content: attr(data-title);
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translate(-50%, 0);
+  color: white;
+  padding: 0 8px;
+}
+
+/* IMAGE BLOCKS */
+/* Image blocks are supposed to have a turbo block all of their own */
+
+.turbo-block .scp-image-block {
+  margin: 4px 0 0 0;
+  float: none;
+  border: none;
+  box-shadow: none;
+}
+
+.turbo-block .scp-image-caption {
+  background-color: transparent;
+  font-weight: normal;
+  border: none;
+}
+
+/* COLORIZED DIV BLOCKS */
+
+.turbo-block.bg-cyan,
+.turbo-block.bg-cyan::after,
+.turbo-block.bg-cyan .heading p {
+  background: #1f8785;
+}
+
+.turbo-block.bg-grey,
+.turbo-block.bg-grey::after,
+.turbo-block.bg-grey .heading p {
+  background: #bdbdbd;
+}
+
+.turbo-block.bg-red,
+.turbo-block.bg-red::after,
+.turbo-block.bg-red .heading p {
+  background: #840603;
+}
+
+.turbo-block.bg-orange,
+.turbo-block.bg-orange::after,
+.turbo-block.bg-orange .heading p {
+  background: #e39814;
+}
+
+.turbo-block.bg-green,
+.turbo-block.bg-green::after,
+.turbo-block.bg-green .heading p {
+  background: #13781f;
+}
+
+.turbo-block.bg-purple,
+.turbo-block.bg-purple::after,
+.turbo-block.bg-purple .heading p {
+  background: #7f0e9c;
+}
+
+.turbo-block.bg-yellow,
+.turbo-block.bg-yellow::after,
+.turbo-block.bg-yellow .heading p {
+  background: #bfcc2b;
+}
+
+.turbo-block.bg-black,
+.turbo-block.bg-black::after,
+.turbo-block.bg-black .heading p {
+  background: #000;
+}
+
+.turbo-block.bg-white,
+.turbo-block.bg-white::after,
+.turbo-block.bg-white .heading p {
+  background: #fff;
+}
+
+/* DIV "BLACK" AND "WHITE" AND WHAT THAT MEANS */
+
+.turbo-block.border-black {
+  border-image: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/border_black2.svg")
+    16 round;
+}
+
+.turbo-block.border-black .heading::before {
+  border-color: black;
+}
+
+.turbo-block.border-white {
+  border-image: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/border_white2.svg")
+    16 round;
+}
+
+.turbo-block.border-white .heading {
+  background-image: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/border_white2.svg")
+    16 round;
+}
+
+.turbo-block.text-black,
+.turbo-block.text-black .heading p,
+.turbo-block.text-black::after {
+  color: black;
+}
+
+.turbo-block.text-white,
+.turbo-block.text-white .heading p,
+.turbo-block.text-white::after {
+  color: white;
+}
+
+/* LINKS IN COLORIZED BLOCKS */
+
+/* For big contrast and maximum readability, links in colorized blocks have
+ * their background set to the block's text color, and their text color set to
+ * the block's background color. This avoids any concerns about the default
+ * link color only being suitable for certain background colors.
+ */
+
+.turbo-block a {
+  padding: 0 2px;
+  background-color: white; /* default */
+}
+.turbo-block.text-white a {
+  background-color: white;
+}
+.turbo-block.text-black a {
+  background-color: black;
+}
+.turbo-block.bg-cyan a {
+  color: #1f8785;
+}
+.turbo-block.bg-grey a {
+  color: #bdbdbd;
+}
+.turbo-block.bg-red a {
+  color: #840603;
+}
+.turbo-block.bg-orange a {
+  color: #e39814;
+}
+.turbo-block.bg-green a {
+  color: #13781f;
+}
+.turbo-block.bg-purple a {
+  color: #7f0e9c;
+}
+.turbo-block.bg-yellow a {
+  color: #bfcc2b;
+}
+.turbo-block.bg-black a {
+  color: #000;
+}
+.turbo-block.bg-white a {
+  color: #fff;
+}
+.turbo-block a:hover {
+  text-decoration: none;
+  background-color: #11ff00;
+  color: black;
+}
+
+/* "OFFSET-LEFT|RIGHT" DIVS */
+
+.offset-right {
+  float: right;
+}
+.offset-right > * {
+  float: none;
+}
+
+.offset-left {
+  float: left;
+}
+.offset-left > * {
+  float: none;
+}
+
+.offset-right.right-5 {
+  margin-right: calc(((50vw - 50%) * -1) + 1rem);
+}
+
+.offset-right.right-4 {
+  margin-right: calc(((50vw - 50%) * -0.8) + 1rem);
+}
+
+.offset-right.right-3 {
+  margin-right: calc(((50vw - 50%) * -0.6) + 1rem);
+}
+
+.offset-right.right-2 {
+  margin-right: calc(((50vw - 50%) * -0.4) + 1rem);
+}
+
+.offset-right.right-1 {
+  margin-right: calc(((50vw - 50%) * -0.2) + 1rem);
+}
+
+.offset-left.left-5 {
+  margin-left: calc(((50vw - 50%) * -1) + 1rem);
+}
+
+.offset-left.left-4 {
+  margin-left: calc(((50vw - 50%) * -0.8) + 1rem);
+}
+
+.offset-left.left-3 {
+  margin-left: calc(((50vw - 50%) * -0.6) + 1rem);
+}
+
+.offset-left.left-2 {
+  margin-left: calc(((50vw - 50%) * -0.4) + 1rem);
+}
+
+.offset-left.left-1 {
+  margin-left: calc(((50vw - 50%) * -0.2) + 1rem);
+}
+
+/* FIXING MOBILE SHIT */
+
+@media (max-width: 600px) {
+  /* Stop all floats and offsets on really thin devices */
+  .offset-right,
+  .offset-left,
+  .turbo-block,
+  .turbo-block .scp-image-block {
+    float: none;
+    clear: both;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
+[[/code]]
+[[/collapsible]]
+
+[[collapsible show="+ show source code for general theme"]]
+[[code type="css"]]
+/*
+    Turbo Vision Theme
+    [2021 Wikidot Theme]
+    By JakdragonX
+    Based on SCP Sigma 9-Theme created by Aelanna and Dr Devan
+    Based on the original Turbo Vision Theme created by Croquembouche
+
+    The Turbo Vision theme is split into two CSS fragments.
+
+    This fragment styles general parts of the page, and requires the other
+    fragment in order to function correctly.
+*/
+
+/* TODO Split these selectors across this one and the other one */
+
+body {
+  font-family: "IBM Plex Mono", sans-serif;
+  font-size: 16px;
+  line-height: 22px;
+  color: black;
+  letter-spacing: 0.5px;
+  background-color: #bfcae3;
+  image-rendering: pixelated;
+}
+
+a {
+  color: #840603;
+}
+
+a:hover {
+  text-decoration: none;
+  background-color: #11ff00;
+  color: black;
+}
+
+a:visited {
+  color: #690ba0;
+}
+
+a.newpage {
+  color: #f55;
+  text-decoration: none;
+  background: transparent;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Mx437 IBM VGA 8x16", monospace;
+}
+
+h1,
+#page-title {
+  font-family: "Mx437 IBM VGA 8x16", monospace;
+  color: #940000;
+  font-weight: normal;
+  line-height: 0.85em;
+}
+
+#page-title {
+  border-color: #fff;
+}
+
+hr {
+  background-color: #fff;
+  margin: 3.5em 1em 3.5em 1em;
+}
+
+blockquote,
+div.blockquote {
+  background-color: #aaaaaa;
+  color: #000;
+  padding: 0;
+  margin-bottom: 2em;
+  border-width: var(--turbo-block-border-width);
+  border-style: solid;
+  border-image: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/border_white.svg") 16 round;
+  box-shadow: var(--turbo-block-shadow);
+}
+
+/* ACCOUNT STUFF (OPTIONS, SEARCH BAR, ETC.) */
+
+#account-options {
+  background-color: #fff;
+}
+
+#login-status {
+  color: #000;
+  background: #aaa;
+  border: 2px solid #fff;
+  font-size: 90%;
+  z-index: 30;
+}
+
+#login-status a {
+  background: transparent;
+  color: #840603;
+}
+
+#login-status a:hover {
+  background: #11ff00 !important;
+}
+
+#search-top-box-input,
+#search-top-box-input:hover,
+#search-top-box-input:focus,
+#search-top-box-form input[type="submit"],
+#search-top-box-form input[type="submit"]:hover,
+#search-top-box-form input[type="submit"]:focus {
+  border: #fff solid 2px;
+  background: #aaaaaa;
+  box-shadow: none;
+  border-radius: 0;
+  color: #fff;
+}
+
+#side-bar .side-block.media {
+  background: #aaaaaa;
+}
+
+/* HEADER */
+
+div#container-wrap {
+  background: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/small%20%281%29.png")
+    top left repeat-x;
+}
+
+div#header {
+  position: relative;
+  height: 142px;
+  background: url("https://scp-wiki.wdfiles.com/local--files/theme%3Aturbo-vision/logo%20%281%29.png")
+    3.675em 1.25em no-repeat;
+  background-size: auto 100px;
+}
+
+div#header {
+  max-width: initial;
+}
+
+div#header,
+#top-bar {
+  width: 100%;
+}
+
+div#header h1 {
+  opacity: 0;
+  width: 310px;
+  min-height: 135px;
+}
+
+div#header h2 {
+  display: none;
+}
+
+#header h1,
+#header h2 {
+  margin-left: 55px;
+}
+
+/* TOP BAR */
+
+#top-bar {
+  font-size: 100%;
+  top: 142px;
+  max-width: none;
+  height: 20px;
+}
+
+#top-bar ul li {
+  margin: 0 4px;
+}
+
+#top-bar ul li a {
+  font-family: "Mx437 IBM VGA 8x16", monospace;
+  color: #000;
+  background-color: transparent;
+  padding: 0;
+  border: none;
+  line-height: 19px;
+  max-height: 36px;
+}
+
+#top-bar ul li a:hover,
+#top-bar ul li:hover a {
+  text-decoration: none;
+  border: none;
+  background-color: #11ff00 !important;
+  color: #000;
+}
+
+#top-bar ul li a:hover::before,
+#top-bar ul li a:hover::after {
+  background-color: #11ff00;
+}
+
+#top-bar ul li a:visited {
+  color: #000 !important;
+}
+
+#top-bar ul li a::first-letter {
+  color: #840603;
+}
+
+#top-bar .open-menu a {
+  border: 2px solid #3f3f47;
+  border-radius: 0;
+  background-color: #aaaaaa;
+  color: #840603 !important;
+}
+
+/* SIDE BAR */
+
+#side-bar .side-block,
+#interwiki .side-block {
+  position: relative;
+  border-radius: 0;
+  border-width: 22px;
+  border-style: solid;
+  padding: 0;
+  border-image: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/border_white2.svg")
+    16 round;
+  box-shadow: 0.5em 1em 0 0 #3e3f47;
+  margin-bottom: 2em;
+}
+
+/* REMOVE
+.turbo-block .heading {
+  position: relative;
+  border: none;
+  margin: 2em 0 0 -11px;
+  width: calc(100% + 22px);
+  max-width: none;
+}
+
+.turbo-block .heading::before {
+  content: "";
+  border-top: 3px double white;
+  position: absolute;
+  width: 100%;
+  top: calc(50% - 1.5px);
+  left: 0;
+}
+
+.turbo-block .heading p {
+  display: table;
+  position: relative;
+  padding: 0 8px;
+  background: inherit;
+  margin: 0 0 0 2em;
+  color: white;
+}
+REMOVE */
+
+
+#side-bar .heading,
+#interwiki .heading {
+  position: relative;
+  font-size: 100%;
+  border: none;
+  padding: 0;
+  margin: 1em 0 0 -11px;
+  width: calc(100% + 22px);
+}
+
+#side-bar .heading::before,
+#interwiki .heading::before {
+  content: "";
+  border-top: 1px solid white;
+  position: absolute;
+  width: 100%;
+  top: calc(50% - 1.5px);
+  left: 0;
+}
+
+#side-bar .heading p,
+#interwiki .heading p {
+  position: relative;
+  display: inline-block;
+  padding: 0 8px;
+  margin-left: 1.5em;
+  color: white;
+  font-weight: normal;
+}
+
+#side-bar .side-block,
+#side-bar .side-block .heading p,
+#interwiki .side-block,
+#interwiki .side-block .heading p {
+  background-color: #64bec4;
+  font-size: 90%;
+}
+
+#side-bar .side-block.resources,
+#side-bar .side-block.resources .heading p {
+  background-color: #aaaaaa;
+  font-size: 90%;
+}
+
+#side-bar div.menu-item a,
+#side-bar .collapsible-block-link,
+#interwiki div.menu-item a,
+#interwiki .collapsible-block-link {
+  font-weight: normal;
+}
+
+#side-bar {
+  background-color: #a4a6ba;
+}
+
+/* TABS */
+
+div.yui-navset div.yui-content {
+  color: #000000;
+  background: #aaaaaa;
+  border-radius: 0;
+  border-width: 22px;
+  border-style: solid;
+  padding: 0;
+  border-image: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/border_white.svg")
+    16 round;
+  box-shadow: 0.5em 1em 0 0 #3e3f47;
+  margin-bottom: 2em;
+}
+
+.yui-navset .yui-nav a,
+div.yui-navset div.yui-navset-top .yui-nav a {
+  /* protect nested tabviews from other orientations */
+  border: #dfdfdf outset 2px;
+}
+
+.yui-navset .yui-nav,
+.yui-navset .yui-navset-top .yui-nav {
+  font-family: "Mx437 IBM VGA 8x16", monospace;
+}
+
+.yui-navset .yui-nav .selected a,
+.yui-navset .yui-nav .selected a em,
+.yui-navset .yui-nav a em,
+.yui-navset .yui-navset-top .yui-nav a em {
+  border-color: transparent;
+}
+
+.yui-navset .yui-nav,
+.yui-navset .yui-navset-top .yui-nav {
+  border-color: #aaaaa;
+}
+
+div.yui-navset ul.yui-nav a,
+div.yui-navset div.yui-navset-top ul.yui-nav a {
+  background: #aaaaaa;
+  border: #dfdfdf solid 2px;
+  border-bottom: transparent 0;
+}
+
+div.yui-navset ul.yui-nav a:hover,
+div.yui-navset ul.yui-nav a:focus {
+  background: #11ff00;
+  border: #fff solid 2px;
+  border-bottom: transparent 0;
+}
+
+div.yui-navset ul.yui-nav .selected a,
+div.yui-navset ul.yui-nav .selected a:focus,
+div.yui-navset ul.yui-nav .selected a:hover {
+  background: #011657;
+  border: #fff solid 2px;
+  border-bottom: transparent 0;
+}
+
+/* FIXED ISSUE WITH BOLDING ON TAB NAVIGATION */
+.yui-nav {
+  font-weight: bold;
+}
+
+/* SIMPLE TABLES */
+
+table.wiki-content-table {
+  box-shadow: var(--turbo-block-shadow);
+  margin-bottom: 2em;
+}
+
+table.wiki-content-table td {
+  border: 1px solid #fff;
+  background-color: #aaaaaa;
+}
+
+table.wiki-content-table th {
+  border: 1px solid #011657;
+  color: #fff;
+  background-color: #011657;
+}
+
+/* RATING MODULE */
+
+#page-content .page-rate-widget-box {
+  box-shadow: none;
+  font-family: "Mx437 IBM VGA 8x16", monospace;
+  font-weight: normal;
+}
+
+div.page-rate-widget-box .rate-points {
+  background-color: #011657;
+  border: 2px solid #011657;
+  border-radius: 0;
+  color: #fff;
+}
+.page-rate-widget-box .rateup,
+.page-rate-widget-box .ratedown {
+  background-color: #fff;
+  border-radius: 0;
+  border: 2px solid #011657;
+}
+.page-rate-widget-box .rateup a,
+.page-rate-widget-box .ratedown a {
+  background: transparent;
+  color: #011657;
+}
+.page-rate-widget-box .rateup a:hover,
+.page-rate-widget-box .ratedown a:hover {
+  background: transparent;
+  color: #840603;
+}
+.page-rate-widget-box .cancel {
+  background: transparent;
+  border: 2px dashed #011657;
+  background-color: #011657;
+  border-radius: 0;
+}
+.page-rate-widget-box .cancel a {
+  color: #fff;
+}
+.page-rate-widget-box .cancel a:hover {
+  background-color: transparent;
+  color: #840603;
+}
+
+/* CREDIT MODULE */
+
+#page-content .rate-box-with-credit-button {
+  background-color: #011657 !important;
+  border: 1px solid #011657;
+  line-height: 14px;
+  border-radius: 0;
+  color: #fff;
+  box-shadow: none;
+}
+#page-content .rate-box-with-credit-button .creditButton p a {
+  border-left-color: #011657;
+  border: 3px solid #011657;
+}
+#page-content .rate-box-with-credit-button .creditButton a {
+  color: #fff !important;
+}
+#page-content .rate-box-with-credit-button .creditButton a:hover {
+  color: #840603;
+}
+
+#page-content .modalbox {
+  background: #ced2eb !important;
+  color: #000;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+/* LOCK INFO /*
+
+#lock-info {
+   background-color: #011657;
+}
+
+/* FIXING MOBILE SHIT */
+
+@media (max-width: 770px) {
+  #top-bar ul li {
+    height: 1.25em;
+  }
+}
+
+@media (max-width: 650px) {
+  div#header {
+    background-position: 3.675em 2.95em;
+    background-size: auto 75px;
+  }
+}
+[[/code]]
+[[/collapsible]]
+
+[[/iftags]]

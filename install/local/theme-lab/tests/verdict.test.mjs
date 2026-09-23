@@ -5,6 +5,7 @@ import {
   buildVerdict,
   expandVerdict,
   issuesFromSelectorDiagnosis,
+  issuesFromPreview,
   issuesFromTorture,
   issuesFromViewports,
   nextActions,
@@ -26,13 +27,42 @@ test("selector diagnosis maps to ranked issues", () => {
 });
 
 test("torture and viewport issues map", () => {
+  const rating = issuesFromTorture({issues: [{severity: "error", kind: "new_viewport_overflow", component: "rating", viewport: "mobile", before_px: 0, after_px: 4.3, element_rect: {right: 394.3}, computed: {overflowX: "visible"}}]})[0];
+  assert.equal(rating.element_rect.right, 394.3);
+  assert.equal(rating.computed.overflowX, "visible");
   assert.equal(
     issuesFromTorture({issues: [{severity: "error", kind: "became_invisible", component: "table", viewport: "mobile"}]})[0]
       .kind,
     "became_invisible",
   );
   assert.equal(issuesFromViewports({mobile: {document_overflow_px: 83}})[0].kind, "viewport_overflow");
+  assert.equal(issuesFromViewports({mobile: {document_overflow_px: 2}})[0].severity, "error");
   assert.equal(issuesFromViewports({mobile: {document_overflow_px: 0}}).length, 0);
+  const overflow = issuesFromViewports({mobile: {document_overflow_px: 83, overflow_sources: [{selector: ".hero", overflow_px: 83}]}})[0];
+  assert.equal(overflow.overflow_sources[0].selector, ".hero");
+  assert.equal(nextActions([overflow])[0].overflow_sources[0].selector, ".hero");
+});
+
+test("unresolved Wikidot includes become actionable preview errors", () => {
+  const preview = {
+    unresolved_includes: [
+      {page: "component:theme-squares", message: 'Included page "component:theme-squares" does not exist (create it now)'},
+    ],
+  };
+  const issues = issuesFromPreview(preview);
+  assert.deepEqual(issues, [{
+    severity: "error",
+    kind: "unresolved_include",
+    include: "component:theme-squares",
+    evidence: 'Included page "component:theme-squares" does not exist (create it now)',
+  }]);
+  const verdict = buildVerdict({preview});
+  assert.equal(verdict.verdict, "fail");
+  assert.deepEqual(verdict.next_actions, [{
+    kind: "resolve_candidate_include",
+    include: "component:theme-squares",
+    evidence: {preview_error: issues[0].evidence},
+  }]);
 });
 
 test("style changes are truncated", () => {
@@ -88,9 +118,54 @@ test("buildVerdict surfaces torture and reference summaries", () => {
   assert.equal(verdict.torture.verdict, "fail");
 });
 
+test("compact verdict retains each viewport's overflow status", () => {
+  const verdict = buildVerdict({viewports: {
+    desktop: {document_overflow_px: 0},
+    laptop: {document_overflow_px: 0},
+    tablet: {document_overflow_px: 1},
+    mobile: {document_overflow_px: 0},
+  }});
+  assert.deepEqual(verdict.viewport_status, {
+    desktop: {status: "pass", document_overflow_px: 0},
+    laptop: {status: "pass", document_overflow_px: 0},
+    tablet: {status: "fail", document_overflow_px: 1},
+    mobile: {status: "pass", document_overflow_px: 0},
+  });
+});
+
+test("interaction failures produce an evidence-backed repair action", () => {
+  const verdict = buildVerdict({interactionDiagnostics: {
+    tabs: {status: "pass", activated_index: 1, restored_index: 0},
+    collapsible: {status: "fail", initial: "folded", after_click: "folded"},
+  }});
+  assert.equal(verdict.verdict, "fail");
+  assert.deepEqual(verdict.next_actions, [{
+    kind: "repair_interaction",
+    interaction: "collapsible",
+    evidence: {status: "fail", initial: "folded", after_click: "folded"},
+  }]);
+});
+
+test("broken candidate page images fail with an asset-backed repair action", () => {
+  const verdict = buildVerdict({imageDiagnostics: {
+    status: "fail",
+    image_count: 2,
+    broken: [{src: "https://local.test/logo.png", alt: "SCP logo", selector: "img.logo", natural_width: 0, natural_height: 0}],
+  }});
+  assert.equal(verdict.verdict, "fail");
+  assert.deepEqual(verdict.next_actions, [{
+    kind: "localize_image",
+    asset: "https://local.test/logo.png",
+    selector: "img.logo",
+    evidence: {alt: "SCP logo", natural_width: 0, natural_height: 0},
+  }]);
+  assert.equal(verdict.image_diagnostics.broken.length, 1);
+});
+
 test("expandVerdict restores full detail", () => {
   const compact = buildVerdict({});
-  const expanded = expandVerdict(compact, {issues: [{kind: "x"}], selector_rows: [{selector: "a"}]});
+  const expanded = expandVerdict(compact, {issues: [{kind: "x"}], selector_rows: [{selector: "a"}], viewports: {mobile: {overflow_sources: [{selector: ".x"}]}}});
   assert.equal(expanded.top_issues.length, 1);
   assert.deepEqual(expanded.selector_rows, [{selector: "a"}]);
+  assert.equal(expanded.viewport_diagnostics.mobile.overflow_sources[0].selector, ".x");
 });

@@ -1,0 +1,1445 @@
+>[!-{$blocks}
+
+[[include :scp-jp:component:toggle-sidebar]]
+
+[[module CSS]]
+@import url("https://scp-jp.wdfiles.com/local--code/theme%3Aturbo-vision/2");
+[[/module]]
+
+[[include :scp-jp:component:interwiki-style
+| priority=1
+| theme=https://scp-jp.wdfiles.com/local--code/theme%3Aturbo-vision/2
+]]
+
+[!-- --]
+
+[[module CSS]]
+@import url("https://scp-jp.wdfiles.com/local--code/theme%3Aturbo-vision/1");
+[[/module]]
+
+[[iftags +テーマ]]
+
+[[>]]
+[[module Rate]]
+[[/>]]
+
+[[div class="offset-left left-1"]]
+[[div class="turbo-block bg-cyan border-white"]]
+これは[[*user JakdragonX]]と[[*user Croquembouche]]によるターボ・ビジョン テーマです。見た目に痛々しいレトロ感を引き起こしますが、財団世界内の設定とは関係しない、純粋に美学的なテーマです。
+[[/div]]
+[[/div]]
+
+[[div class="offset-right right-1"]]
+[[div class="turbo-block bg-orange border-white"]]
+このテーマをあなたのページに適用する際には、以下のコードを挿入してください。
+
+[[div class="turbo-block bg-grey border-black text-black"]]
+@@[[include :scp-jp:theme:turbo-vision]]@@
+[[/div]]
+
+このコードはターボ・ビジョン テーマを「テーマ・モード」で適用します。
+
+-----
+
+ターボ・ブロックだけを使いたくて、それ以外のテーマ部分は使いたくない場合は、"blocks=-"を追加してください。
+
+[[div class="turbo-block bg-grey border-black text-black"]]
+@@[[include :scp-jp:theme:turbo-vision blocks=-]]@@
+[[/div]]
+
+このコードはターボ・ビジョン テーマを「コンポーネント・モード」で適用します。これは[[[theme:black-highlighter-theme|]]]と互換性があります。
+
+-----
+
+「テーマ・モード」と「コンポーネント・モード」については後で説明します。あなたのページがどちらのモードで使用されるかを確認しておいてください。
+[[/div]]
+[[/div]]
+
+~~~~
+
+ターボ・ビジョン テーマは[https://en.wikipedia.org/wiki/Turbo_Vision 90年代のDOS端末]に似た外観になるようデザインされており、多数のASCII文字で構成されているように見えることを意図しています。境界線とドロップシャドウが不格好で非対称に見えるのはこのためです。これらは、個々のタイルの文字色と背景色で色が付いた[https://en.wikipedia.org/wiki/Box-drawing_character 罫線素片]のように見えるよう作られています。
+
+とはいえ、私たちはこの指針へ厳密に張り付いているわけではありません。読書体験を//少しだけ//苦痛の少ないものにするため、創造的な自由もいくらか取っています。
+
+このテーマには、好きな内容を詰めたオフセットブロックで埋めるための水平スペースを大量に確保しやすいよう、デフォルトで[[[component:toggle-sidebar | トグル式サイドバー]]]が付属しています。水平方向の余地がほとんどない小さい画面では、これらのオフセットブロックは自動的にページ中央へ寄せられるため、モバイルの読者も何かを見落とすことはありません。
+
+このテーマはブロック状で、不格好で、そしてカラフルです。このテーマを使うページは、混み合ったインターフェースでウィンドウがいくつも積み重なったように雑然として見えるかもしれません。それも魅力の一部ですが、必ずそうしなければならないわけではありません。どう使うかはあなた次第です。このページには、好きな形に設定するための手順が書かれています。
+
+-----
+
+以下のタブには、このテーマでの基本的なWikidot構文の例がいくつか含まれています。
+
+blockquoteとtableのスタイルは「コンポーネント・モード」でも使用できますが、tabviewのスタイルは「テーマ・モード」でしか使用できない点に注意してください。
+
+[[tabview]]
+[[tab 基本のフォーマット]]
+水平線はハイフン5つ@@"-----"@@で作ることができ、blockquoteなどの内部に置かれていなければページ全体へ広がります。この文書内の節を区切っている線が水平線です。
+
+**これは太字の文章です。**
+
+//これは斜体の文章です。//
+
+{{これは等幅の文章です。}}
+[[/tab]]
+[[tab 見出し]]
+見出しは行頭に1個から6個のプラス記号「+」を置くことで作成できます。
+
++ 1番目の見出し
+
+++ 2番目の見出し
+
++++ 3番目の見出し
+
+++++ 4番目の見出し
+
++++++ 5番目の見出し
+
+++++++ 6番目の見出し
+[[/tab]]
+[[tab 引用ブロック]]
+[[div class="blockquote"]]
+これは引用ブロックです。文章を"blockquote"クラスのdivで囲むことで作成できます。
+
+[[div class="blockquote"]]
+さらなるテキスト
+-----
+これは水平線です
+
+[[div class="blockquote"]]
+入れ子の引用ブロック
+
+いいでしょう？
+----
+わお……
+[[/div]]
+[[/div]]
+[[/div]]
+[[/tab]]
+[[tab テーブル]]
+||~ 表 ||~ ヘッダセル ||
+|| 普通のセル || もう1つ普通のセル ||
+|||| 結合したセル ||
+[[/tab]]
+[[/tabview]]
+
+------
+
+それでは、ターボ・ブロックがどのように動作するかを簡単に実演します……
+
+------
+
+[[div class="turbo-block bg-red border-white text-white" data-title="警告!"]]
+このページの次のセクションは、見た目にも恐ろしく思えるかもしれません。しかし、不安になったり脅威を感じたりする必要はありません。すべての部分は簡単なまとまりに分解できます。
+[[/div]]
+
+-----
+
+[[div class="turbo-block bg-grey border-black text-black" data-title="基本的な例"]]
+
+[[div class="offset-right right-4"]]
+[[div class="turbo-block bg-orange border-white text-white" data-title="画像"]]
+[[include component:image-block
+| name=https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-26-mn41/scpimage-small.webp
+| caption=こんにちは。ええ、ここは文章です。
+]]
+[[/div]]
+[[/div]]
+
+[[div class="heading"]]
+**アイテム番号**
+[[/div]]
+
+SCP-NUMBER
+
+[[div class="heading"]]
+**オブジェクトクラス**
+[[/div]]
+
+[[[http://scp-jp.wikidot.com/scp-0110-j|LIGMA]]]
+
+[[div class="heading"]]
+**特別収容プロトコル**
+[[/div]]
+
+[[div class="offset-left left-3"]]
+[[div class="turbo-block bg-black border-white text-white" data-title="チャット" style="max-width: 250px"]]
+
+**johnsmith12:** あの、自分が今何やってるか分かってる？
+
+**俺:** いや草。このバカげたテーマのために何か下書きを用意したいだけだから
+
+[[/div]]
+[[/div]]
+
+SCP-NUMBERは現在未収容です。これが未確認の記述に起因するのか、それとも単に面倒すぎて対処できていないだけなのかは不明です。
+
+何かの理由でSCP-NUMBERを観察した場合、よく考えるとあまり意味がないのですが、影響を受けた対象者は**治療法#104321**のためにサイト内に在籍しているセラピストに相談しなければなりません。そのような治療法は数時間以上継続する可能性があり、対象者にとって耐えがたいほどの痛みを伴う可能性があります。なぜなら、どんな理由であれ、誰も保健室に行きたくないからです。
+
+[[div class="offset-left left-4"]]
+[[div class="turbo-block bg-white border-black text-black" data-title="メモ帳" style="max-width: 150px"]]
+ランチに何を食べるつもりだったっけ
+[[/div]]
+[[/div]]
+
+[[div class="heading"]]
+**説明**
+[[/div]]
+
+SCP-NUMBERは何でもありません。全くもって、何でもありません。実際、これは嘘です。あなたと同じです。あなたもまた嘘です。これは全ての人に当てはまることなので、傷ついたとか気分を害したとかは思わないでください。財団では差別を非難しています。
+[[div class="offset-right right-2"]]
+[[div class="turbo-block bg-cyan border-black text-white"]]
+あのイーハトーヴォのすきとおった風、夏でも底に冷たさをもつ青いそら、うつくしい森で飾られたモリーオ市、郊外のぎらぎらひかる草の波。 
+
+またそのなかでいっしょになったたくさんのひとたち、ファゼーロとロザーロ、羊飼のミーロや、顔の赤いこどもたち、地主のテーモ、山猫博士のボーガント・デストゥパーゴなど、いまこの暗い巨きな石の建物のなかで考えていると、みんなむかし風のなつかしい青い幻燈のように思われます。では、わたくしはいつかの小さなみだしをつけながら、しずかにあの年のイーハトーヴォの五月から十月までを書きつけましょう。
+[[/div]]
+[[/div]]
+実際、真実とは何を指すのでしょう？認識はおそらく嘘です。人間どうしが作り出した嘘でしょうか。たしかにあなたと私とにとって現実は同じではありません。私たちは皆異なる真実と嘘を持っているのです。私たちは、もちろん、三次元の生きものです。私たちは理解に飢えています。知識を欲し、どんなに善意をもっていてもそれを探し求めるのです。 
+
+ひょっとして、私がナンセンスな文章をずっと書いているのは、単に色付きのボックスを追加するためにこの文章を長くしたいだけだと思っていませんか？それも思っていますけど、そんなささやかな願いとは関係なく、私はあなたに自己反省の機会を与えたいだけなのです。あなたは、本当のところ、実在していますか？いいえ。既に述べたように、あなたは単なる偽の像です。あなたが今生きている世界の間違った像です。それだけです。
+
+
+[[/div]]
+
+------
+
+[[=]]
++ 使い方
+[[/=]]
+
+[[div class="turbo-block bg-cyan border-white text-white" data-title="ターボ・ブロック"]]
+
+この文章を囲んでいるような、影付きのぼってりしたターボ・ブロックを作るには、divブロックを次のクラスと共に使用します。
+
+* "turbo-block"
+* 背景色を設定するクラス
+* 境界色を設定するクラス
+* 文字色を設定するクラス
+
+このテーマはそれらすべてのクラスを提供しています。
+
+[[div class="heading"]]
+ブロック
+[[/div]]
+
+"turbo-block"クラスはターボ・ブロック自体を作ります。他のクラスが一切無くても使えますが、おそらく少し変に見えるでしょう。例えば、背景色が付きません。
+
+[[div class="blockquote"]]
+@@[[div class="turbo-block"]]@@
+ここに文章を入れる
+@@[[/div]]@@
+[[/div]]
+
+[[div class="heading"]]
+背景色
+[[/div]]
+
+このテーマは多数の背景色ユーティリティクラスを、"bg-[color]"という形式の名前で提供しています。以下がその全リストです。
+
+[[div class="text-white" style="text-align: center;"]]
+[[div class="turbo-block bg-red border-white"]]
+@@[[div class="turbo-block bg-red"]]@@
+[[/div]]
+[[div class="turbo-block bg-grey border-white"]]
+@@[[div class="turbo-block bg-grey"]]@@
+[[/div]]
+[[div class="turbo-block bg-green border-white"]]
+@@[[div class="turbo-block bg-green"]]@@
+[[/div]]
+[[div class="turbo-block bg-cyan border-white"]]
+@@[[div class="turbo-block bg-cyan"]]@@
+[[/div]]
+[[div class="turbo-block bg-orange border-white"]]
+@@[[div class="turbo-block bg-orange"]]@@
+[[/div]]
+[[div class="turbo-block bg-yellow border-white"]]
+@@[[div class="turbo-block bg-yellow"]]@@
+[[/div]]
+[[div class="turbo-block bg-purple border-white"]]
+@@[[div class="turbo-block bg-purple"]]@@
+[[/div]]
+[[div class="turbo-block bg-black border-white"]]
+@@[[div class="turbo-block bg-black"]]@@
+[[/div]]
+[[div class="turbo-block bg-white border-black text-black"]]
+@@[[div class="turbo-block bg-white"]]@@
+[[/div]]
+[[/div]]
+
+[[div class="heading"]]
+境界色
+[[/div]]
+
+境界色のクラスには"border-black"と"border-white"の2種類があります。ターボ・ブロックはデフォルトでは境界線が付いていないため、各ターボ・ブロックごとにどちらかを選ぶ必要があります。
+
+"turbo-block"クラスで作成されたすべてのdivには二重線の境界線があります。引用ブロック、テーブル、タブ表示には一重線の境界線があります。
+
+[[div class="heading"]]
+文字色
+[[/div]]
+
+文字色のクラスには"text-black"と"text-white"の2種類があります。これらはターボ・ブロック内のデフォルトの文字色を、それぞれ黒と白にします。
+
+[[/div]]
+
+@@ @@
+
+[[div class="turbo-block bg-green border-white text-white" data-title="見出し"]]
+
+各ターボ・ブロックにはタイトルと複数の見出しを付けることができます。タイトルとは一番上に表示されるテキストで、このブロックで言えば「見出し」の部分です。ブロックdivに"data-title"属性を追加すると設定できます。
+
+[[div class="blockquote"]]
+@@[[div class="turbo-block ..." data-title="ここにタイトルを書く"]]@@
+[[/div]]
+
+元のTurbo Visionプログラムに合わせるなら、ブロックタイトルは英大文字にするべきですが、これは強制ではありません。好きなテキストを置けます。
+
+ただし、幅を取りすぎると見た目がおかしくなるので、タイトルは短くしてください。
+
+[[div class="turbo-block bg-grey border-black text-black" data-title="おっと、ここを見て！長すぎるタイトルがあるよ！"]]
+言いたいことが分かりますか？
+[[/div]]
+
+上記の例のソースコードは以下のようになります。
+
+[[div class="blockquote"]]
+@@[[div class="turbo-block bg-grey border-black text-black" data-title="おっと、ここを見て！長すぎるタイトルがあるよ！"]]@@
+言いたいことが分かりますか？
+@@[[/div]]@@
+[[/div]]
+
+モバイルで読む人のことを考えて、タイトルは短くしておきましょう。
+
+[[div class="heading"]]
+見出し
+[[/div]]
+
+ターボ・ブロック内では、"heading"クラスでサブセクション見出しを作成できます。以下が上の見出しのソースコードです。
+
+[[div class="blockquote"]]
+@@[[div class="heading"]]@@
+見出し
+@@[[/div]]@@
+[[/div]]
+
+見出しのような線を追加したいが、見出しの文章はいらない場合は、ハイフン4つか5つで水平線を追加してください。
+
+-----
+
+↑ このように。
+
+[[/div]]
+
+@@ @@
+
+[[div class="turbo-block bg-yellow border-black text-black" data-title="画像"]]
+
+ターボ・ブロック内には、画像を含めて、何でも好きなものを配置できます。画像を追加する最善の方法は、ターボ・ブロックを作成して、その中に標準的な画像ブロックコンポーネントを配置することです。
+
+このページの前の方で使われた画像ターボ・ブロックの例を載せます。
+
+[[div class="blockquote"]]
+@@[[div class="turbo-block bg-orange border-white text-white" data-title="画像"]]@@
+@@[[include :scp-jp:component:image-block@@
+| name=https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-26-mn41/scpimage-small.webp
+| caption=こんにちは。ええ、ここは文章です。
+]]
+@@[[/div]]@@
+[[/div]]
+[[/div]]
+
+@@ @@
+
+[[div class="turbo-block bg-purple border-white text-white" data-title="オフセット"]]
+ここまでの説明では、ターボ・ブロックの作成方法を扱いました。ターボ・ブロックを別のターボ・ブロックの中に置くことはできますが、それだけでは整理されていない研究者の机に散らかったメモの山があるような雑然とした感じにはなりません。そのためには、一部を左右に移動させる必要があります。
+
+これはオフセットクラスを使って実現できます。ターボ・ビジョン テーマは、ものを左へ移動するために以下のクラスを提供しています。
+
+* "offset-left"
+* "left-1"
+* "left-2"
+* "left-3"
+* "left-4"
+* "left-5"
+
+……そして右方向にも。
+
+* "offset-right"
+* "right-1"
+* "right-2"
+* "right-3"
+* "right-4"
+* "right-5"
+
+左方向に移動するには、移動させたいものを2つのクラスを持つdivで囲みます。"offset-left"と、左へどれだけ移動させたいかに応じた"left-1"から"left-5"のいずれかです。"left-1"は少ししか移動しませんが、"left-5"は大きく、画面の左端まで移動します。
+
+右に移動させる場合も全く同じですが、"left"を"right"に置き換えます。
+
+[[div class="heading"]]
+モバイルでのオフセット
+[[/div]]
+
+これまでにCSSを扱ったことがある人は、水平方向の空間を使いすぎるのはかなり危ない遊びだと考えているでしょう。こうしたオフセットdivは、モバイルではひどい見た目になりそうです。
+
+心配はいりません！ 画面サイズが小さい場合、オフセットdivはページ中央近くに配置され、画面が//非常に//小さい場合はオフセット自体が完全に無効になります。
+
+著者にとっては、モバイル利用者がオフセットdivに入れたコンテンツを常にすべて見られる一方、意図したほど雑然とした見た目にならない可能性がある、という意味です。公開する前には必ずモバイルでデザインをテストし、誰にとっても読みやすいことを確認してください。
+
+[[div class="heading"]]
+オフセットブロックの作り方
+[[/div]]
+
+オフセットブロックを作るには、上記のクラスから2つを組み合わせ、オフセットの方向と強さを決めます。
+
+[[div class="blockquote"]]
+@@[[div class="offset-left left-3"]]@@
+
+@@[[/div]]@@
+[[/div]]
+
+ターボ・ブロックをオフセットしたい場合は、オフセットブロック//の中に//ターボ・ブロックを置いてください。ターボ・ブロックへ直接オフセットクラスを付けないでください。
+
+[[div class="blockquote"]]
+@@[[div class="offset-left left-3"]]@@
+@@[[div class="turbo-block bg-white border-black text-black"]]@@
+ハロー！
+@@[[/div]]@@
+@@[[/div]]@@
+[[/div]]
+
+[[div class="offset-left left-3"]]
+[[div class="turbo-block bg-white border-black text-black"]]
+ハロー！
+[[/div]]
+[[/div]]
+
+幅広のブラウザ、たとえばデスクトップ環境なら、上記の例は左に表示されているはずです。狭いブラウザ、たとえばモバイル環境なら、上記の例はこの文章の上に表示されています。
+
+オフセットブロックはターボ・ブロックとは別の要素なので、オフセットクラスを持つdivの中に入れるだけで、実際には何でも好きなものをオフセットできます。画像付きのターボ・ブロックをオフセットしてみてください！
+
+[[div class="heading"]]
+フロートをクリアする
+[[/div]]
+
+オフセットブロックはCSSの[https://developer.mozilla.org/ja/docs/Web/CSS/float "float"]プロパティを使って動作します。HTML要素がフロートしているとき、その下にある内容は、空いたスペースを埋めるために上へ引き上げられます。
+
+これは常に望ましい挙動とは限りません。フロートしたオフセットブロックを使いたい一方で、その下の文章はオフセットブロックがフロート//していなかった//場合と同じ位置に表示したい、ということもあるでしょう。その場合、必要なら他のものを置ける大きな隙間が残ります。
+
+これはCSSの[https://developer.mozilla.org/ja/docs/Web/CSS/clear "clear"]プロパティで実現できます。一般に"clearfix"と呼ばれる方法です。Wikidotでは[https://www.wikidot.com/doc-wiki-syntax:block-formatting-elements 4つのチルダ記号]（@@~~~~@@）でこれを実行できます。
+
+[[div class="blockquote"]]
+@@[[div class="offset-left left-3"]]@@
+@@[[div class="turbo-block bg-white border-black text-black"]]@@
+ハロー！
+@@[[/div]]@@
+@@[[/div]]@@
+
+@@~~~~@@
+[[/div]]
+
+[[div class="offset-left left-3"]]
+[[div class="turbo-block bg-white border-black text-black"]]
+ハロー！
+[[/div]]
+[[/div]]
+
+~~~~
+
+この文章は余白を埋めるために上へ引き上げられません。その結果、デスクトップでは大きな隙間ができます。もちろん、モバイルでは変化しません。
+
+[[div class="heading"]]
+例
+[[/div]]
+
+さまざまなオフセットの組み合わせの例を以下に示します。
+
+[[module CSS]]
+.mobile-only {
+  display: none;
+}
+@media (max-width: 600px) {
+  .mobile-only { display: block }
+  .desktop-only { display: none }
+}
+[[/module]]
+
+[[div class="desktop-only"]]
+あなたのブラウザは幅広の画面を使っています。少なくともCSSはそう判断しています。以下の例を見て、ウィンドウサイズを調整し、オフセットdivがどう反応するかを確認してください。
+[[/div]]
+
+[[div class="mobile-only"]]
+あなたのブラウザは狭い画面を使っています。少なくともCSSはそう判断しています。つまり、モバイル端末を使っている可能性があります。以下のオフセット例は、退屈な中央揃えdivの集まりとして表示されます。後でこのページを幅広のブラウザで表示して、オフセットを確認してみてください。
+[[/div]]
+
+[[/div]]
+
+[[div class="offset-left left-5"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-left left-5"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-left left-4"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-left left-4"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-left left-3"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-left left-3"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-left left-2"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-left left-2]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-left left-1"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-left left-1"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-right right-1"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-right right-1"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-right right-2"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-right right-2"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-right right-3"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-right right-3"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-right right-4"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-right right-4"]]@@
+[[/div]]
+[[/div]]
+~~~~~
+[[div class="offset-right right-5"]]
+[[div class="turbo-block bg-grey border-white text-white"]]
+@@[[div class="offset-right right-5"]]@@
+[[/div]]
+[[/div]]
+
+~~~~~
+
+[[div class="turbo-block bg-purple border-white text-white" data-title="オフセット機能の制限"]]
+
+一部のオフセットクラスを使うべきでない状況があります。もちろん使うこと自体はできますが、ページに悪影響を及ぼします。
+
+使えるクラスは、サイドバーの位置と、ページコンテンツがブラウザのビューポートに対して中央揃えになっているかどうかによって変わります。また、このテーマを「テーマ・モード」と「コンポーネント・モード」のどちらで使っているかにも左右されます。どちらがどちらかを思い出したい場合は、ページ最上部の使用方法を見直してください。
+
+[[div class="heading"]]
+テーマ・モード
+[[/div]]
+
+ターボ・ビジョン テーマを「テーマ・モード」で使用している場合は、[[[component:toggle-sidebar|]]]が付属しており、ページコンテンツを中央揃えにして、水平方向のスペースを可能な限り広く確保します。すべてのオフセットクラスを自由に使用できます。
+
+[[div class="heading"]]
+コンポーネント・モード
+[[/div]]
+
+ターボ・ビジョン テーマを「コンポーネント・モード」で使用している場合、デフォルトでは[[[component:toggle-sidebar|]]]は付属していません。これにより、水平方向のスペースが制限されます。
+
+それでもトグル式サイドバーを使用している場合は、ページ本体が中央揃えになります。すべてのオフセットクラスを自由に使用できます。
+
+トグル式サイドバーを使用していない場合、ページ本体はページの右側にあります。右側のオフセットクラスは画面端からはみ出す可能性があるため、使用しないでください。また、左側のオフセットクラスはサイドバーと重なる可能性があるため、ページの先頭付近での使用は避けてください。
+
+[[[theme:black-highlighter-theme|]]]を使用している場合、ページ本体は中央に配置されるため、右側のオフセットクラスを自由に使用できます。ただし、サイドバーは文書全体に表示されるため、左側のオフセットクラスは避けてください。
+
+BHLと[[[component:toggle-sidebar-bhl|]]]を使用している場合は、左側のスペースが解放されるため、左側のオフセットクラスも自由に使用できます。
+
+[[div class="heading"]]
+TL;DR
+[[/div]]
+
+要するに、サイドバーがある場合は左へのオフセットを避け、ページコンテンツが中央に配置されていない場合は右へのオフセットを避けてください。
+
+[[/div]]
+
+@@ @@
+
+これでテーマ全体の説明は終わりです。
+
+@@ @@
+
++ ソースコード
+
+[[collapsible show="+ ターボ・ブロック用コードを見る" hide="- 閉じる"]]
+[[code type="css"]]
+@import url("https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-13-vzwf/jfdot-mp12.css");
+@import url('https://fonts.bunny.net/css2?family=IBM+Plex+Mono&display=swap');
+
+/*
+    ターボ・ビジョン テーマ
+    [2021 Wikidotテーマ]
+    JakdragonX作
+    AelannaとDr Devan作のSCP Sigma 9テーマがベース
+    Croquembouche作の元祖Turbo Visionテーマがベース
+
+    ターボ・ビジョン テーマは2つのCSSフラグメントに分割されています。
+
+    このフラグメントは利用者作成のターボ・ブロック用です。
+    正常に機能するために、もう一方のフラグメントは必要ありません。
+*/
+
+/* 始める前に、Sigma-9由来の妙な挙動を手早く戻す */
+
+@media (min-width: 768px) and (max-width: 979px) {
+  div,
+  div table {
+    clear: initial;
+  }
+}
+
+.avatar-hover {
+  z-index: 1;
+}
+
+/* それでは…… */
+/* ------------------------------------- */
+/* ここからが本題 */
+
+/* 変数 */
+
+:root {
+  --turbo-block-shadow: 0.5em 1em 0 0 #3e3f47;
+  --turbo-block-border-width: 22px;
+}
+
+/* 引用ブロック */
+
+.turbo-block blockquote,
+.turbo-block div.blockquote {
+  background-color: #aaaaaa;
+  color: #000;
+  padding: 0;
+  margin-bottom: 2em;
+  border-width: var(--turbo-block-border-width);
+  border-style: solid;
+  border-image: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/border_white.svg") 16 round;
+  box-shadow: var(--turbo-block-shadow);
+}
+
+/* シンプルな表 */
+
+.turbo-block table.wiki-content-table {
+  box-shadow: var(--turbo-block-shadow);
+  margin-bottom: 2em;
+}
+
+.turbo-block table.wiki-content-table td {
+  border: 1px solid #fff;
+  background-color: #aaaaaa;
+}
+
+.turbo-block table.wiki-content-table th {
+  border: 1px solid #011657;
+  color: #fff;
+  background-color: #011657;
+}
+
+/* 「ブロック」divの既定設定 */
+
+.turbo-block {
+  position: relative;
+  border-radius: 0;
+  border-width: var(--turbo-block-border-width);
+  border-style: solid;
+  box-shadow: var(--turbo-block-shadow);
+  color: white;
+  margin: 0.75rem 1.5rem 1.5rem 0.75rem;
+  z-index: 1;
+
+  /* 一般フラグメントで文書全体に適用するプロパティ */
+  font-family: "IBM Plex Mono", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 22px;
+  letter-spacing: 0.5px;
+  image-rendering: pixelated;
+}
+
+.turbo-block .heading {
+  position: relative;
+  border: none;
+  margin-top: 1.5em;
+}
+
+.turbo-block .heading::before {
+  content: "";
+  border-top: 3px double white;
+  position: absolute;
+  width: calc(100% + 22px);
+  top: calc(50% - 1.5px);
+  left: 0;
+  margin: 0 -11px;
+}
+
+.turbo-block .heading p {
+  display: table;
+  position: relative;
+  padding: 0 8px;
+  background: inherit;
+  margin: 0 0 0 2em;
+  color: white;
+}
+
+.turbo-block hr {
+  padding: 0;
+  margin: 1em 0 0 -11px;
+  width: calc(100% + 22px);
+  max-width: none;
+  height: 3px;
+  border-top: 3px double white;
+  background: none;
+}
+.turbo-block.border-white hr {
+  border-color: white;
+}
+.turbo-block.border-black hr {
+  border-color: black;
+}
+
+.turbo-block::after {
+  content: attr(data-title);
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translate(-50%, 0);
+  color: white;
+  padding: 0 8px;
+}
+
+/* 画像ブロック */
+/* 画像ブロックは専用のターボ・ブロックを持つ想定 */
+
+.turbo-block .scp-image-block {
+  margin: 4px 0 0 0;
+  float: none;
+  border: none;
+  box-shadow: none;
+}
+
+.turbo-block .scp-image-caption {
+  background-color: transparent;
+  font-weight: normal;
+  border: none;
+}
+
+/* 色付きdivブロック */
+
+.turbo-block.bg-cyan,
+.turbo-block.bg-cyan::after,
+.turbo-block.bg-cyan .heading p {
+  background: #1f8785;
+}
+
+.turbo-block.bg-grey,
+.turbo-block.bg-grey::after,
+.turbo-block.bg-grey .heading p {
+  background: #bdbdbd;
+}
+
+.turbo-block.bg-red,
+.turbo-block.bg-red::after,
+.turbo-block.bg-red .heading p {
+  background: #840603;
+}
+
+.turbo-block.bg-orange,
+.turbo-block.bg-orange::after,
+.turbo-block.bg-orange .heading p {
+  background: #e39814;
+}
+
+.turbo-block.bg-green,
+.turbo-block.bg-green::after,
+.turbo-block.bg-green .heading p {
+  background: #13781f;
+}
+
+.turbo-block.bg-purple,
+.turbo-block.bg-purple::after,
+.turbo-block.bg-purple .heading p {
+  background: #7f0e9c;
+}
+
+.turbo-block.bg-yellow,
+.turbo-block.bg-yellow::after,
+.turbo-block.bg-yellow .heading p {
+  background: #bfcc2b;
+}
+
+.turbo-block.bg-black,
+.turbo-block.bg-black::after,
+.turbo-block.bg-black .heading p {
+  background: #000;
+}
+
+.turbo-block.bg-white,
+.turbo-block.bg-white::after,
+.turbo-block.bg-white .heading p {
+  background: #fff;
+}
+
+/* divの「黒」と「白」、およびその意味 */
+
+.turbo-block.border-black {
+  border-image: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/border_black2.svg")
+    16 round;
+}
+
+.turbo-block.border-black .heading::before {
+  border-color: black;
+}
+
+.turbo-block.border-white {
+  border-image: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/border_white2.svg")
+    16 round;
+}
+
+.turbo-block.border-white .heading {
+  background-image: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/border_white2.svg")
+    16 round;
+}
+
+.turbo-block.text-black,
+.turbo-block.text-black .heading p,
+.turbo-block.text-black::after {
+  color: black;
+}
+
+.turbo-block.text-white,
+.turbo-block.text-white .heading p,
+.turbo-block.text-white::after {
+  color: white;
+}
+
+/* 色付きブロック内のリンク */
+
+/* 高いコントラストと最大限の読みやすさのため、色付きブロック内のリンクは
+ * 背景をブロックの文字色に、文字色をブロックの背景色にします。
+ * これにより、既定のリンク色が特定の背景色でしか読めないという
+ * 問題を避けます。
+ */
+
+.turbo-block a {
+  padding: 0 2px;
+  background-color: white; /* 既定 */
+}
+.turbo-block.text-white a {
+  background-color: white;
+}
+.turbo-block.text-black a {
+  background-color: black;
+}
+.turbo-block.bg-cyan a {
+  color: #1f8785;
+}
+.turbo-block.bg-grey a {
+  color: #bdbdbd;
+}
+.turbo-block.bg-red a {
+  color: #840603;
+}
+.turbo-block.bg-orange a {
+  color: #e39814;
+}
+.turbo-block.bg-green a {
+  color: #13781f;
+}
+.turbo-block.bg-purple a {
+  color: #7f0e9c;
+}
+.turbo-block.bg-yellow a {
+  color: #bfcc2b;
+}
+.turbo-block.bg-black a {
+  color: #000;
+}
+.turbo-block.bg-white a {
+  color: #fff;
+}
+.turbo-block a:hover {
+  text-decoration: none;
+  background-color: #11ff00;
+  color: black;
+}
+
+/* "OFFSET-LEFT|RIGHT" div */
+
+.offset-right {
+  float: right;
+}
+.offset-right > * {
+  float: none;
+}
+
+.offset-left {
+  float: left;
+}
+.offset-left > * {
+  float: none;
+}
+
+.offset-right.right-5 {
+  margin-right: calc(((50vw - 50%) * -1) + 1rem);
+}
+
+.offset-right.right-4 {
+  margin-right: calc(((50vw - 50%) * -0.8) + 1rem);
+}
+
+.offset-right.right-3 {
+  margin-right: calc(((50vw - 50%) * -0.6) + 1rem);
+}
+
+.offset-right.right-2 {
+  margin-right: calc(((50vw - 50%) * -0.4) + 1rem);
+}
+
+.offset-right.right-1 {
+  margin-right: calc(((50vw - 50%) * -0.2) + 1rem);
+}
+
+.offset-left.left-5 {
+  margin-left: calc(((50vw - 50%) * -1) + 1rem);
+}
+
+.offset-left.left-4 {
+  margin-left: calc(((50vw - 50%) * -0.8) + 1rem);
+}
+
+.offset-left.left-3 {
+  margin-left: calc(((50vw - 50%) * -0.6) + 1rem);
+}
+
+.offset-left.left-2 {
+  margin-left: calc(((50vw - 50%) * -0.4) + 1rem);
+}
+
+.offset-left.left-1 {
+  margin-left: calc(((50vw - 50%) * -0.2) + 1rem);
+}
+
+/* モバイル表示の修正 */
+
+@media (max-width: 600px) {
+  /* かなり細い端末ではfloatとoffsetをすべて止める */
+  .offset-right,
+  .offset-left,
+  .turbo-block,
+  .turbo-block .scp-image-block {
+    float: none;
+    clear: both;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
+[[/code]]
+[[/collapsible]]
+
+[[collapsible show="+ テーマ部分のソースコードを見る" hide="- 閉じる"]]
+[[code type="css"]]
+/*
+    ターボ・ビジョン テーマ
+    [2021 Wikidotテーマ]
+    JakdragonX作
+    AelannaとDr Devan作のSCP Sigma 9テーマがベース
+    Croquembouche作の元祖Turbo Visionテーマがベース
+
+    ターボ・ビジョン テーマは2つのCSSフラグメントに分割されています。
+
+    このフラグメントはページの一般部分用です。
+    正常に機能するためには、もう一方のフラグメントが必要です。
+*/
+
+/* TODO これらのセレクタをこちらともう一方へ分割する */
+
+body {
+  font-family: "IBM Plex Mono", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 22px;
+  color: black;
+  letter-spacing: 0.5px;
+  background-color: #bfcae3;
+  image-rendering: pixelated;
+}
+
+a {
+  color: #840603;
+}
+
+a:hover {
+  text-decoration: none;
+  background-color: #11ff00;
+  color: black;
+}
+
+a:visited {
+  color: #690ba0;
+}
+
+a.newpage {
+  color: #f55;
+  text-decoration: none;
+  background: transparent;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "JFDot MPlus 12", "Noto Sans JP", monospace;
+}
+
+h1,
+#page-title {
+  font-family: "JFDot MPlus 12", "Noto Sans JP", monospace;
+  color: #940000;
+  font-weight: normal;
+  line-height: 0.85em;
+}
+
+#page-title {
+  border-color: #fff;
+}
+
+hr {
+  background-color: #fff;
+  margin: 3.5em 1em 3.5em 1em;
+}
+
+blockquote,
+div.blockquote {
+  background-color: #aaaaaa;
+  color: #000;
+  padding: 0;
+  margin-bottom: 2em;
+  border-width: var(--turbo-block-border-width);
+  border-style: solid;
+  border-image: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/border_white.svg") 16 round;
+  box-shadow: var(--turbo-block-shadow);
+}
+
+/* アカウント周辺（設定、検索バーなど） */
+
+#account-options {
+  background-color: #fff;
+}
+
+#login-status {
+  color: #000;
+  background: #aaa;
+  border: 2px solid #fff;
+  font-size: 90%;
+  z-index: 30;
+}
+
+#login-status a {
+  background: transparent;
+  color: #840603;
+}
+
+#login-status a:hover {
+  background: #11ff00 !important;
+}
+
+#search-top-box-input,
+#search-top-box-input:hover,
+#search-top-box-input:focus,
+#search-top-box-form input[type="submit"],
+#search-top-box-form input[type="submit"]:hover,
+#search-top-box-form input[type="submit"]:focus {
+  border: #fff solid 2px;
+  background: #aaaaaa;
+  box-shadow: none;
+  border-radius: 0;
+  color: #fff;
+}
+
+#side-bar .side-block.media {
+  background: #aaaaaa;
+}
+
+/* ヘッダー */
+
+div#container-wrap {
+  background: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/small%20%281%29.png")
+    top left repeat-x;
+}
+
+div#header {
+  position: relative;
+  height: 142px;
+  background: url("https://scp-wiki.wdfiles.com/local--files/theme%3Aturbo-vision/logo%20%281%29.png")
+    3.675em 1.25em no-repeat;
+  background-size: auto 100px;
+}
+
+div#header {
+  max-width: initial;
+}
+
+div#header,
+#top-bar {
+  width: 100%;
+}
+
+div#header h1 {
+  opacity: 0;
+  width: 310px;
+  min-height: 135px;
+}
+
+div#header h2 {
+  display: none;
+}
+
+#header h1,
+#header h2 {
+  margin-left: 55px;
+}
+
+/* トップバー */
+
+#top-bar {
+  font-size: 100%;
+  top: 142px;
+  max-width: none;
+  height: 20px;
+}
+
+#top-bar ul li {
+  margin: 0 4px;
+}
+
+#top-bar ul li a {
+  font-family: "JFDot MPlus 12", "Noto Sans JP", monospace;
+  color: #000;
+  background-color: transparent;
+  padding: 0;
+  border: none;
+  line-height: 19px;
+  max-height: 36px;
+}
+
+#top-bar ul li a:hover,
+#top-bar ul li:hover a {
+  text-decoration: none;
+  border: none;
+  background-color: #11ff00 !important;
+  color: #000;
+}
+
+#top-bar ul li a:hover::before,
+#top-bar ul li a:hover::after {
+  background-color: #11ff00;
+}
+
+#top-bar ul li a:visited {
+  color: #000 !important;
+}
+
+#top-bar ul li a::first-letter {
+  color: #840603;
+}
+
+#top-bar .open-menu a {
+  border: 2px solid #3f3f47;
+  border-radius: 0;
+  background-color: #aaaaaa;
+  color: #840603 !important;
+}
+
+/* サイドバー */
+
+#side-bar .side-block,
+#interwiki .side-block {
+  position: relative;
+  border-radius: 0;
+  border-width: 22px;
+  border-style: solid;
+  padding: 0;
+  border-image: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/border_white2.svg")
+    16 round;
+  box-shadow: 0.5em 1em 0 0 #3e3f47;
+  margin-bottom: 2em;
+}
+
+/* 削除
+.turbo-block .heading {
+  position: relative;
+  border: none;
+  margin: 2em 0 0 -11px;
+  width: calc(100% + 22px);
+  max-width: none;
+}
+
+.turbo-block .heading::before {
+  content: "";
+  border-top: 3px double white;
+  position: absolute;
+  width: 100%;
+  top: calc(50% - 1.5px);
+  left: 0;
+}
+
+.turbo-block .heading p {
+  display: table;
+  position: relative;
+  padding: 0 8px;
+  background: inherit;
+  margin: 0 0 0 2em;
+  color: white;
+}
+削除 */
+
+
+#side-bar .heading,
+#interwiki .heading {
+  position: relative;
+  font-size: 100%;
+  border: none;
+  padding: 0;
+  margin: 1em 0 0 -11px;
+  width: calc(100% + 22px);
+}
+
+#side-bar .heading::before,
+#interwiki .heading::before {
+  content: "";
+  border-top: 1px solid white;
+  position: absolute;
+  width: 100%;
+  top: calc(50% - 1.5px);
+  left: 0;
+}
+
+#side-bar .heading p,
+#interwiki .heading p {
+  position: relative;
+  display: inline-block;
+  padding: 0 8px;
+  margin-left: 1.5em;
+  color: white;
+  font-weight: normal;
+}
+
+#side-bar .side-block,
+#side-bar .side-block .heading p,
+#interwiki .side-block,
+#interwiki .side-block .heading p {
+  background-color: #64bec4;
+  font-size: 90%;
+}
+
+#side-bar .side-block.resources,
+#side-bar .side-block.resources .heading p {
+  background-color: #aaaaaa;
+  font-size: 90%;
+}
+
+#side-bar div.menu-item a,
+#side-bar .collapsible-block-link,
+#interwiki div.menu-item a,
+#interwiki .collapsible-block-link {
+  font-weight: normal;
+}
+
+#side-bar {
+  background-color: #a4a6ba;
+}
+
+/* タブ */
+
+div.yui-navset div.yui-content {
+  color: #000000;
+  background: #aaaaaa;
+  border-radius: 0;
+  border-width: 22px;
+  border-style: solid;
+  padding: 0;
+  border-image: url("https://scp-wiki.wikidot.com/local--files/theme:turbo-vision/border_white.svg")
+    16 round;
+  box-shadow: 0.5em 1em 0 0 #3e3f47;
+  margin-bottom: 2em;
+}
+
+.yui-navset .yui-nav a,
+div.yui-navset div.yui-navset-top .yui-nav a {
+  /* 入れ子のタブビューを他方向の指定から守る */
+  border: #dfdfdf outset 2px;
+}
+
+.yui-navset .yui-nav,
+.yui-navset .yui-navset-top .yui-nav {
+  font-family: "JFDot MPlus 12", "Noto Sans JP", monospace;
+}
+
+.yui-navset .yui-nav .selected a,
+.yui-navset .yui-nav .selected a em,
+.yui-navset .yui-nav a em,
+.yui-navset .yui-navset-top .yui-nav a em {
+  border-color: transparent;
+}
+
+.yui-navset .yui-nav,
+.yui-navset .yui-navset-top .yui-nav {
+  border-color: #aaaaa;
+}
+
+div.yui-navset ul.yui-nav a,
+div.yui-navset div.yui-navset-top ul.yui-nav a {
+  background: #aaaaaa;
+  border: #dfdfdf solid 2px;
+  border-bottom: transparent 0;
+}
+
+div.yui-navset ul.yui-nav a:hover,
+div.yui-navset ul.yui-nav a:focus {
+  background: #11ff00;
+  border: #fff solid 2px;
+  border-bottom: transparent 0;
+}
+
+div.yui-navset ul.yui-nav .selected a,
+div.yui-navset ul.yui-nav .selected a:focus,
+div.yui-navset ul.yui-nav .selected a:hover {
+  background: #011657;
+  border: #fff solid 2px;
+  border-bottom: transparent 0;
+}
+
+/* タブナビゲーションで太字化する問題を修正 */
+.yui-nav {
+  font-weight: bold;
+}
+
+/* シンプルな表 */
+
+table.wiki-content-table {
+  box-shadow: var(--turbo-block-shadow);
+  margin-bottom: 2em;
+}
+
+table.wiki-content-table td {
+  border: 1px solid #fff;
+  background-color: #aaaaaa;
+}
+
+table.wiki-content-table th {
+  border: 1px solid #011657;
+  color: #fff;
+  background-color: #011657;
+}
+
+/* 評価モジュール */
+
+#page-content .page-rate-widget-box {
+  box-shadow: none;
+  font-family: "JFDot MPlus 12", "Noto Sans JP", monospace;
+  font-weight: normal;
+}
+
+div.page-rate-widget-box .rate-points {
+  background-color: #011657;
+  border: 2px solid #011657;
+  border-radius: 0;
+  color: #fff;
+}
+.page-rate-widget-box .rateup,
+.page-rate-widget-box .ratedown {
+  background-color: #fff;
+  border-radius: 0;
+  border: 2px solid #011657;
+}
+.page-rate-widget-box .rateup a,
+.page-rate-widget-box .ratedown a {
+  background: transparent;
+  color: #011657;
+}
+.page-rate-widget-box .rateup a:hover,
+.page-rate-widget-box .ratedown a:hover {
+  background: transparent;
+  color: #840603;
+}
+.page-rate-widget-box .cancel {
+  background: transparent;
+  border: 2px dashed #011657;
+  background-color: #011657;
+  border-radius: 0;
+}
+.page-rate-widget-box .cancel a {
+  color: #fff;
+}
+.page-rate-widget-box .cancel a:hover {
+  background-color: transparent;
+  color: #840603;
+}
+
+/* クレジットモジュール */
+
+#page-content .rate-box-with-credit-button {
+  background-color: #011657 !important;
+  border: 1px solid #011657;
+  line-height: 14px;
+  border-radius: 0;
+  color: #fff;
+  box-shadow: none;
+}
+#page-content .rate-box-with-credit-button .creditButton p a {
+  border-left-color: #011657;
+  border: 3px solid #011657;
+}
+#page-content .rate-box-with-credit-button .creditButton a {
+  color: #fff !important;
+}
+#page-content .rate-box-with-credit-button .creditButton a:hover {
+  color: #840603;
+}
+
+#page-content .modalbox {
+  background: #ced2eb !important;
+  color: #000;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+/* ロック情報 /*
+
+#lock-info {
+   background-color: #011657;
+}
+
+/* モバイル表示の修正 */
+
+@media (max-width: 770px) {
+  #top-bar ul li {
+    height: 1.25em;
+  }
+}
+
+@media (max-width: 650px) {
+  div#header {
+    background-position: 3.675em 2.95em;
+    background-size: auto 75px;
+  }
+}
+[[/code]]
+[[/collapsible]]
+
+[[/iftags]]

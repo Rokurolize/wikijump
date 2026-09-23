@@ -1,0 +1,33 @@
+--- existing-jp.wikidot.txt
++++ candidate.wikidot.source.txt
+@@ -37,10 +37,10 @@
+ ]]
+ [[include :scp-jp:credit:start-preview]]
+ **タイトル:** A E S T H E T I C T H E M E
+-**翻訳責任者:** [[*user nebula2700]]
++**翻訳責任者:** nebula2700
+ **翻訳年:** 2024
+ **原題:** A E S T H E T I C T H E M E
+-**著作権者:** [[*user Woedenaz]]
++**著作権者:** Woedenaz
+ **作成年:** 2019
+ **初訳時参照リビジョン:** 68
+ **元記事リンク:** [https://scp-wiki.wikidot.com/theme:aesthetic-theme ソース]
+@@ -85,7 +85,7 @@
+ ]]
+ 
+ [[div class="scp-image-block block-right" style="max-width:300px;"]]
+-[[image https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-57-rycj/AESTHETIC_logo.svg]]
++[[image AESTHETIC_logo.svg]]
+ [[div class="scp-image-caption" style="max-width:300px;"]]
+ Ａ Ｅ Ｓ Ｔ Ｈ Ｅ Ｔ Ｉ Ｃ
+ [[/div]]
+@@ -94,7 +94,7 @@
+ + 使い方
+ 
+ [[div_ style="filter: invert(1) brightness(110%);display:flex;"]]
+-[[image https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg]]
++[[image black-highlighter-logo.svg]]
+ [[/div]]
+ 
+ ++ 注: これはBlack Highlighterベースのテーマだ。このテーマ使うならBlack Highlighterテーマもインポートする必要がある。[[[theme:black-highlighter-theme|詳しく知りたかったらここを参照するんだな]]]。

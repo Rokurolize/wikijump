@@ -1,0 +1,32 @@
+--- existing-jp.wikidot.txt
++++ candidate.wikidot.source.txt
+@@ -22,17 +22,17 @@
+ **クレジット付き評価モジュール**
+ [[/>]]
+ [[include :scp-jp:credit:start-preview]]
+-**翻訳責任者:** [[*user oplax-counterpoint]]
++**翻訳責任者:** oplax-counterpoint
+ **翻訳年:** 2024
+ **原題:** Isolated Terminal Theme
+ **ソース:** *https://scp-wiki.wikidot.com/theme:isolated-terminal
+-**著作権者:** [[*user EstrellaYoshte]], [[*user Woedenaz]]
++**著作権者:** EstrellaYoshte, Woedenaz
+ **作成年:** 2021
+ **初版時参照リビジョン:** 121
+ [[include :scp-jp:credit:end-preview]]
+ 
+ [[div style="filter: invert(1) saturate(60) hue-rotate(-20deg);"]]
+-[[image https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg]]
++[[image black-highlighter-logo.svg]]
+ [[/div]]
+ 
+ [[=]]
+@@ -54,7 +54,7 @@
+ 
+ ------
+ 
+-このテーマは[[[http://scp-jp.wikidot.com/scp-5999|SCP-5999]]]のヴィジュアルに由来して、[[*user EstrellaYoshte]]が作成したBlack Highlighterベースのテーマです。
++このテーマは[[[http://scp-jp.wikidot.com/scp-5999|SCP-5999]]]のヴィジュアルに由来して、EstrellaYoshteが作成したBlack Highlighterベースのテーマです。
+ 
+ このテーマを使うためにはBlack Highlihghterテーマも導入する必要があります。Black Highlighterテーマについては[[[*http://scp-jp.wikidot.com/theme:black-highlighter-theme | こちら]]]。
+ 

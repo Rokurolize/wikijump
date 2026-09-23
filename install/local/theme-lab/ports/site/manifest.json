@@ -1,0 +1,65 @@
+{
+  "slug": "theme:site",
+  "en_source_sha256": "17f5d83fc92f3f171fcdb790f78fe207db86203eeca1e34f508631fb36daca34",
+  "en_updated_at": "2026-05-22T09:04:20+00:00",
+  "en_entity_uuid": "46a81a48-3784-48df-8ebc-fd74756454b1",
+  "jp_previous_status": "confirmed-absent-by-targeted-xmlrpc",
+  "jp_previous_source_sha256": null,
+  "jp_previous_updated_at": null,
+  "jp_previous_entity_uuid": null,
+  "technical_spec_version": "1.4",
+  "reference_url": "https://scp-wiki.wikidot.com/theme:site",
+  "candidate_source": "candidate.wikidot.txt",
+  "candidate_css": "candidate.css",
+  "source_file": "upstream-en.wikidot.txt",
+  "existing_jp_source": null,
+  "source_identity": {
+    "slug": "theme:site",
+    "title": "Sigma-10 Theme",
+    "en": {
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:site/source.wikidot.txt",
+      "sha256": "17f5d83fc92f3f171fcdb790f78fe207db86203eeca1e34f508631fb36daca34",
+      "updated_at": "2026-05-22T09:04:20+00:00",
+      "entity_uuid": "46a81a48-3784-48df-8ebc-fd74756454b1",
+      "tags": [
+        "admin"
+      ],
+      "attached_files": [],
+      "revisions": 10
+    },
+    "jp": {
+      "status": "confirmed-absent-by-targeted-xmlrpc",
+      "source_path": null,
+      "sha256": null,
+      "updated_at": null,
+      "entity_uuid": null,
+      "tags": [],
+      "absence_run": "theme-jp-absence-check-20260923"
+    },
+    "existing_jp_audit": "new-jp-candidate-verified",
+    "technical_spec_version": "1.4",
+    "final_verdict": "warn"
+  },
+  "dependencies": {
+    "slug": "theme:site",
+    "en_includes": [],
+    "en_external_dependencies": [
+      "https://@@",
+      "https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css",
+      "https://github.com/scpwiki/sigma"
+    ],
+    "jp_includes": [],
+    "jp_external_dependencies": [],
+    "base_family": "sigma"
+  },
+  "human_port_candidate": "human-port-candidate.wikidot.txt",
+  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_site/theme_site_Japanese.wikidot.txt",
+  "acceptance_selectors": "../shared-acceptance-selectors.txt",
+  "candidate_input": "human-port-candidate.wikidot.txt",
+  "candidate_css_source": "candidate-source.css",
+  "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
+  "final_verdict": "warn",
+  "existing_jp_audit": "new-jp-candidate-verified",
+  "asset_dependency_decisions_path": "install/local/theme-lab/ports/site/assets.json",
+  "asset_dependency_decision_count": 0
+}

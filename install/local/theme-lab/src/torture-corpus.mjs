@@ -73,6 +73,10 @@ export async function captureTortureState(
     await setViewport(page, viewport);
     result[viewport.id] = await page.evaluate(
       ({components: componentList, styleProperties, viewport: viewportSpec}) => {
+        const stabilityStyle = document.createElement("style");
+        stabilityStyle.textContent = "*, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }";
+        document.head.appendChild(stabilityStyle);
+        void getComputedStyle(document.body).width;
         const px = (value) => {
           const parsed = Number.parseFloat(value);
           return Number.isFinite(parsed) ? parsed : null;
@@ -124,22 +128,51 @@ export async function captureTortureState(
             style: values,
             viewport_overflow_px: Math.max(leftOverflow, rightOverflow),
             own_overflow_px: Math.max(0, element.scrollWidth - element.clientWidth),
+            own_overflow_scrollable: ["auto", "scroll"].includes(style.overflowX),
             font_size_px: px(values["font-size"]),
             line_height_px: px(values["line-height"]),
           };
         };
         const root = document.documentElement;
         const content = document.querySelector("#page-content");
-        return {
+        const overflowSources = [...document.body.querySelectorAll("*")]
+          .map((element) => {
+            const rect = element.getBoundingClientRect();
+            if (rect.right <= viewportSpec.width + 2) return null;
+            let ancestor = element.parentElement;
+            while (ancestor && ancestor !== document.body) {
+              const ancestorStyle = getComputedStyle(ancestor);
+              const ancestorRect = ancestor.getBoundingClientRect();
+              if (
+                ["auto", "scroll", "hidden", "clip"].includes(ancestorStyle.overflowX) &&
+                ancestorRect.right <= viewportSpec.width + 2 &&
+                rect.right > ancestorRect.right + 2
+              ) return null;
+              ancestor = ancestor.parentElement;
+            }
+            return {
+              selector: element.id ? `#${CSS.escape(element.id)}` :
+                `${element.tagName.toLowerCase()}${[...element.classList].slice(0, 3).map((part) => `.${CSS.escape(part)}`).join("")}`,
+              right: Math.round(rect.right * 10) / 10,
+              overflow_px: Math.round((rect.right - viewportSpec.width) * 10) / 10,
+            };
+          })
+          .filter(Boolean)
+          .sort((a, b) => b.overflow_px - a.overflow_px)
+          .slice(0, 5);
+        const measurement = {
           viewport: viewportSpec,
           page: {
             document_overflow_px: Math.max(0, root.scrollWidth - root.clientWidth),
             content_overflow_px: content
               ? Math.max(0, content.scrollWidth - content.clientWidth)
               : null,
+            overflow_sources: overflowSources,
           },
           components: Object.fromEntries(componentList.map((entry) => [entry.id, collect(entry)])),
         };
+        stabilityStyle.remove();
+        return measurement;
       },
       {components, styleProperties: STYLE_PROPERTIES, viewport},
     );
@@ -157,7 +190,7 @@ function numericChange(reference, candidate) {
 export function diffTortureStates(
   baseline,
   candidate,
-  {overflowTolerancePx = 2, geometryChangeThreshold = 0.15} = {},
+  {overflowTolerancePx = 2, componentOverflowTolerancePx = 5, geometryChangeThreshold = 0.15} = {},
 ) {
   const issues = [];
   const changes = [];
@@ -179,6 +212,7 @@ export function diffTortureStates(
         kind: "new_horizontal_overflow",
         before_px: beforeDocumentOverflow,
         after_px: afterDocumentOverflow,
+        overflow_sources: candidateViewport.page.overflow_sources ?? [],
       });
     }
 
@@ -225,11 +259,14 @@ export function diffTortureStates(
           kind: "new_viewport_overflow",
           before_px: before.viewport_overflow_px ?? 0,
           after_px: after.viewport_overflow_px ?? 0,
+          element_rect: after.rect,
+          computed: after.style,
         });
       }
       if (
-        (after.own_overflow_px ?? 0) > overflowTolerancePx &&
-        (after.own_overflow_px ?? 0) > (before.own_overflow_px ?? 0) + overflowTolerancePx
+        !after.own_overflow_scrollable &&
+        (after.own_overflow_px ?? 0) > componentOverflowTolerancePx &&
+        (after.own_overflow_px ?? 0) > (before.own_overflow_px ?? 0) + componentOverflowTolerancePx
       ) {
         issues.push({
           severity: "error",

@@ -1,0 +1,58 @@
+--- existing-jp.wikidot.txt
++++ candidate.wikidot.source.txt
+@@ -30,16 +30,16 @@
+ [[/>]]
+ [[include :scp-jp:credit:start-preview]]
+ **タイトル:**  モノタイプテーマ
+-**翻訳責任者:** [[*user nebula2700]]
++**翻訳責任者:** nebula2700
+ **翻訳年:** 2024
+ **原題:**  Monotypical Theme
+-**著作権者:** [[*user EstrellaYoshte]]
++**著作権者:** EstrellaYoshte
+ **作成年:**  2021
+ **初訳時参照リビジョン:** 135
+ **元記事リンク:** [https://scp-wiki.wikidot.com/theme:monotypical ソース]
+ [[include :scp-jp:credit:end-preview]]
+ 
+-これは[[*user EstrellaYoshte]] による美しさを追求したテーマで、[[*user Woedenaz]]氏に多大なご協力をいただいています。使用するには、以下をあなたの記事にコピーペーストしてください:
++これはEstrellaYoshte による美しさを追求したテーマで、Woedenaz氏に多大なご協力をいただいています。使用するには、以下をあなたの記事にコピーペーストしてください:
+ 
+ > {{@@[[include :scp-jp:theme:monotypical]]@@}}
+ 
+@@ -47,7 +47,7 @@
+ 
+ [[include :scp-jp:component:image-block name= https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-77-5jif/mono.png|caption=画像。|width=240px]]
+ 
+-罫線は、4つのハイフン「@@----@@」を使用して作成でき[[footnote]] これは[[*user Placeholder McD]]をなだめるためです。 [[/footnote]]、何かの内側（例: ブロック引用）に配置されていなければページ全体に適用されます。このドキュメントのセクションを区切る線は罫線です。
++罫線は、4つのハイフン「@@----@@」を使用して作成でき[[footnote]] これはPlaceholder McDをなだめるためです。 [[/footnote]]、何かの内側（例: ブロック引用）に配置されていなければページ全体に適用されます。このドキュメントのセクションを区切る線は罫線です。
+ 
+ 
+ 見出しは、行の先頭に1～6文字の「+」を置くことで作成できます。
+@@ -235,7 +235,7 @@
+ 
+ これらは全てモノタイプのデフォルトの外観を変更するために書き換えることができます。以下は{{[[include]]}}の後に置くことで使用できるプリセットです:
+ ----
+-[[=image https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-78-mugj/mono-nord.png]]
++[[=image mono-nord.png]]
+ [[div style="font-size: 85%;"]]
+ [[code type="css"]]
+ :root {
+@@ -260,7 +260,7 @@
+ [[/code]]
+ [[/div]]
+ ----
+-[[=image https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-79-daqr/mono-solarized.png]]
++[[=image mono-solarized.png]]
+ [[div style="font-size: 85%;"]]
+ [[code type="css"]]
+ :root {
+@@ -283,7 +283,7 @@
+ [[/code]]
+ [[/div]]
+ ----
+-[[=image https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-80-rcg6/mono-dracula.png]]
++[[=image mono-dracula.png]]
+ [[div style="font-size: 85%;"]]
+ [[code type="css"]]
+ :root {

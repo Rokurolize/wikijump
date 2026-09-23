@@ -1,0 +1,88 @@
+{
+  "slug": "theme:scpedia",
+  "en_source_sha256": "195a9d70bbfed2cf6cb177aec6b7f8f236c7ca161af19b040d1a653f8da16284",
+  "en_updated_at": "2026-04-12T05:22:44+00:00",
+  "en_entity_uuid": "21c70fb8-b04e-46ad-82e2-e19887bb15ad",
+  "jp_previous_status": "confirmed-absent-by-targeted-xmlrpc",
+  "jp_previous_source_sha256": null,
+  "jp_previous_updated_at": null,
+  "jp_previous_entity_uuid": null,
+  "technical_spec_version": "1.4",
+  "reference_url": "https://scp-wiki.wikidot.com/theme:scpedia",
+  "candidate_source": "candidate.wikidot.txt",
+  "candidate_css": "candidate.css",
+  "source_file": "upstream-en.wikidot.txt",
+  "existing_jp_source": null,
+  "source_identity": {
+    "slug": "theme:scpedia",
+    "title": "SCPedia Theme",
+    "en": {
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:scpedia/source.wikidot.txt",
+      "sha256": "195a9d70bbfed2cf6cb177aec6b7f8f236c7ca161af19b040d1a653f8da16284",
+      "updated_at": "2026-04-12T05:22:44+00:00",
+      "entity_uuid": "21c70fb8-b04e-46ad-82e2-e19887bb15ad",
+      "tags": [
+        "_cc",
+        "theme"
+      ],
+      "attached_files": [],
+      "revisions": 58
+    },
+    "jp": {
+      "status": "confirmed-absent-by-targeted-xmlrpc",
+      "source_path": null,
+      "sha256": null,
+      "updated_at": null,
+      "entity_uuid": null,
+      "tags": [],
+      "absence_run": "theme-jp-absence-check-20260923"
+    },
+    "existing_jp_audit": "new-jp-candidate-verified",
+    "technical_spec_version": "1.4",
+    "final_verdict": "warn"
+  },
+  "dependencies": {
+    "slug": "theme:scpedia",
+    "en_includes": [
+      ":scp-wiki:info:start",
+      ":scp-wiki:info:end",
+      ":scp-wiki:theme:scpedia",
+      "component:image-block name=raisa.png"
+    ],
+    "en_external_dependencies": [
+      "https://fonts.bunny.net/css2?family=Roboto&display=swap",
+      "https://scp-wiki.wdfiles.com/local--code/theme%3Ascpedia/1",
+      "https://scp-wiki.wdfiles.com/local--files/estrellayoshte/u.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ascpedia/linuxlibertine.css",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Ascpedia/raisa.png"
+    ],
+    "jp_includes": [],
+    "jp_external_dependencies": [],
+    "base_family": "independent"
+  },
+  "human_port_candidate": "human-port-candidate.wikidot.txt",
+  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_scpedia/theme_scpedia_Japanese.wikidot.txt",
+  "acceptance_selectors": "../shared-acceptance-selectors.txt",
+  "candidate_input": "human-port-candidate.wikidot.txt",
+  "candidate_css_source": "candidate-source.css",
+  "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
+  "candidate_source_hash": "efddd82f28c61308fea9012e22d41a90d9fa5ce91f095fde8d31f17757e3ab53",
+  "page_assets": [
+    {
+      "filename": "u.png",
+      "sha256": "eabe424dd70c56173c2cfcfe8ca6b328ef2077d6ce9b3243540148a2d76f20ab",
+      "bytes": 404,
+      "asset_file": "eabe424dd70c56173c2cfcfe8ca6b328ef2077d6ce9b3243540148a2d76f20ab.png",
+      "source_urls": [
+        "https://scp-wiki.wdfiles.com/local--files/estrellayoshte/u.png"
+      ],
+      "acquired_from": "https://scp-wiki.wdfiles.com/local--files/estrellayoshte/u.png",
+      "classification": "localize-into-candidate-package",
+      "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; "
+    }
+  ],
+  "final_verdict": "warn",
+  "existing_jp_audit": "new-jp-candidate-verified",
+  "asset_dependency_decisions_path": "install/local/theme-lab/ports/scpedia/assets.json",
+  "asset_dependency_decision_count": 22
+}

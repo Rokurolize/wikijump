@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "rule": "Only retain *user links when the identity is confirmed in current SCP-JP; otherwise preserve visible credit text, not a broken local link.",
+  "themes": [
+    {
+      "theme": "aesthetic-theme",
+      "replaced_site_local_user_links": 2,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "al-slop",
+      "replaced_site_local_user_links": 57,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "basalt",
+      "replaced_site_local_user_links": 6,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "bedrock",
+      "replaced_site_local_user_links": 6,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "black-highlighter-theme",
+      "replaced_site_local_user_links": 4,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "classic",
+      "replaced_site_local_user_links": 3,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "cosmonaut",
+      "replaced_site_local_user_links": 5,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "flopstyle-dark",
+      "replaced_site_local_user_links": 11,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "foxtrot",
+      "replaced_site_local_user_links": 1,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "hansarp",
+      "replaced_site_local_user_links": 3,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "inkblot",
+      "replaced_site_local_user_links": 1,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "isolated-terminal",
+      "replaced_site_local_user_links": 4,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "jakstyle",
+      "replaced_site_local_user_links": 3,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "minimalist-bhl",
+      "replaced_site_local_user_links": 4,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "monotypical",
+      "replaced_site_local_user_links": 5,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "ouroborous-theme",
+      "replaced_site_local_user_links": 1,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "paperstack",
+      "replaced_site_local_user_links": 1,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "pataphysics",
+      "replaced_site_local_user_links": 3,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "penumbra",
+      "replaced_site_local_user_links": 2,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "redtape",
+      "replaced_site_local_user_links": 2,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "scheme",
+      "replaced_site_local_user_links": 4,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "scp-offices-theme",
+      "replaced_site_local_user_links": 1,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "scpedia",
+      "replaced_site_local_user_links": 1,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "sigma",
+      "replaced_site_local_user_links": 6,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "skipos",
+      "replaced_site_local_user_links": 1,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "space",
+      "replaced_site_local_user_links": 3,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "turbo-vision",
+      "replaced_site_local_user_links": 8,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "y2k",
+      "replaced_site_local_user_links": 1,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    },
+    {
+      "theme": "yossistyle",
+      "replaced_site_local_user_links": 7,
+      "action": "retain visible credited name as text; original EN and human-port source remain frozen"
+    }
+  ],
+  "total_replaced": 156
+}

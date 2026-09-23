@@ -1,0 +1,111 @@
+{
+  "slug": "theme:space",
+  "en_source_sha256": "b761e86b65c8f5ac8df0e04435290c272dd928ef4bd6150f11444aa8dcabfb0f",
+  "en_updated_at": "2026-04-12T05:02:40+00:00",
+  "en_entity_uuid": "08c2e940-a61b-4fcb-b285-bcafcb11d48e",
+  "jp_previous_status": "present",
+  "jp_previous_source_sha256": "63bee9d3876ac78335c8a587c63b719efea9d3a9ab1bf945bdd807ce1f554c5d",
+  "jp_previous_updated_at": "2024-07-04T11:38:26+00:00",
+  "jp_previous_entity_uuid": "d83f3ed7-4796-4fe1-95c0-fd99c3c0d0c8",
+  "technical_spec_version": "1.4",
+  "reference_url": "https://scp-wiki.wikidot.com/theme:space",
+  "candidate_source": "candidate.wikidot.txt",
+  "candidate_css": "candidate.css",
+  "source_file": "upstream-en.wikidot.txt",
+  "existing_jp_source": "existing-jp.wikidot.txt",
+  "source_identity": {
+    "slug": "theme:space",
+    "title": "Generic Space Theme",
+    "en": {
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:space/source.wikidot.txt",
+      "sha256": "b761e86b65c8f5ac8df0e04435290c272dd928ef4bd6150f11444aa8dcabfb0f",
+      "updated_at": "2026-04-12T05:02:40+00:00",
+      "entity_uuid": "08c2e940-a61b-4fcb-b285-bcafcb11d48e",
+      "tags": [
+        "_cc",
+        "_licensebox",
+        "theme"
+      ],
+      "attached_files": [],
+      "revisions": 32
+    },
+    "jp": {
+      "status": "present",
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:space/source.wikidot.txt",
+      "sha256": "63bee9d3876ac78335c8a587c63b719efea9d3a9ab1bf945bdd807ce1f554c5d",
+      "updated_at": "2024-07-04T11:38:26+00:00",
+      "entity_uuid": "d83f3ed7-4796-4fe1-95c0-fd99c3c0d0c8",
+      "tags": [
+        "en",
+        "テーマ"
+      ],
+      "absence_run": null
+    },
+    "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
+    "technical_spec_version": "1.4",
+    "final_verdict": "warn"
+  },
+  "dependencies": {
+    "slug": "theme:space",
+    "en_includes": [
+      ":scp-wiki:component:sigma-plus",
+      ":scp-wiki:component:interwiki-style",
+      ":scp-wiki:theme:space",
+      "component:image-block name= https://scp-wiki.wikidot.com/local--files/theme:space/spacelogo.webp",
+      ":scp-wiki:component:license-box-theme",
+      ":scp-wiki:component:license-box-end"
+    ],
+    "en_external_dependencies": [
+      "http://www.w3.org/2000/svg",
+      "https://commons.wikimedia.org/wiki/File:Eid_Gah_Milky_way.jpg",
+      "https://fonts.bunny.net/css?family=dm-sans:400,400i,700,700i",
+      "https://fonts.bunny.net/css?family=martian-mono:400,700",
+      "https://fonts.bunny.net/css?family=urbanist:400,400i,700,700i",
+      "https://scp-wiki.wdfiles.com/local--code/theme%3Aspace/1",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Aspace/Milky_way.jpg",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Aspace/spacebg.jpg",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Aspace/spacefooter.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Aspace/spacehead-layer1.png",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Aspace/spacelogo.png",
+      "https://scp-wiki.wikidot.com/local--files/theme:space/spacelogo.webp",
+      "https://thenounproject.com/icon/astronomy-2359563/",
+      "https://thenounproject.com/icon/constellation-1217197/",
+      "https://www.pexels.com/photo/astronomy-blue-blue-sky-dark-358528/",
+      "https://www.pexels.com/photo/plants-under-starry-sky-355887/",
+      "https://www.pexels.com/photo/starry-night-574116/"
+    ],
+    "jp_includes": [
+      ":scp-wiki:component:sigma-plus",
+      ":scp-jp:component:interwiki-style",
+      ":scp-jp:credit:start-preview",
+      ":scp-jp:credit:end-preview",
+      ":scp-jp:theme:space",
+      ":scp-jp:component:image-block name= https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-48-3e2m/spacelogo.png"
+    ],
+    "jp_external_dependencies": [
+      "http://www.w3.org/2000/svg",
+      "https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+      "https://fonts.googleapis.com/css2?family=M+PLUS+1p&display=swap",
+      "https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;700&display=swap",
+      "https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-48-3e2m/spacelogo.png",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-48-3o7f/Milky_way.jpg",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-48-7h49/spacefooter.png",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-48-iq50/spacehead-layer1.png",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-48-qcsr/spacebg.jpg",
+      "https://scp-jp.wdfiles.com/local--code/theme%3Aspace/1",
+      "https://scp-wiki.wikidot.com/theme:space"
+    ],
+    "base_family": "sigma"
+  },
+  "human_port_candidate": "human-port-candidate.wikidot.txt",
+  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_space/theme_space_Japanese.wikidot.txt",
+  "acceptance_selectors": "../shared-acceptance-selectors.txt",
+  "candidate_input": "existing-jp.wikidot.txt",
+  "candidate_css_source": "candidate-source.css",
+  "candidate_origin": "current official SCP-JP page source",
+  "final_verdict": "warn",
+  "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
+  "asset_dependency_decisions_path": "install/local/theme-lab/ports/space/assets.json",
+  "asset_dependency_decision_count": 21
+}

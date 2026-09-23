@@ -1,0 +1,324 @@
+{
+  "assets": [
+    {
+      "sha256": "28813221a9ef89d233de7917fb80fc670078d342c63032bf1e0c9f15fdd6b708",
+      "bytes": 11020,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/berkshire-swash/normal/400-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/berkshire-swash/normal/400-latin-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 28813221a9ef89d233de7917fb80fc670078d342c63032bf1e0c9f15fdd6b708.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "51831d748cc8e6dccff84ea6cdbcf6018224f017dd336a9e71627abc78717c0a",
+      "bytes": 17348,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/berkshire-swash/normal/400-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/berkshire-swash/normal/400-latin.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 51831d748cc8e6dccff84ea6cdbcf6018224f017dd336a9e71627abc78717c0a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "9086a986baf0c0bf41c3c946d225e5c52f5809592c35cdf0848a30ac1300fec0",
+      "bytes": 3955604,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/kaiseiopti/v11/QldXNThJphYb8_g6c2nlIGHiw41u.ttf",
+      "final_url": "https://fonts.gstatic.com/s/kaiseiopti/v11/QldXNThJphYb8_g6c2nlIGHiw41u.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 9086a986baf0c0bf41c3c946d225e5c52f5809592c35cdf0848a30ac1300fec0.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "61eeb0eb8b881a84d069e67be1723f5b353b0b9b866ad8e7ad9dba66cdc4dabd",
+      "bytes": 9384,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/400-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/400-latin-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 61eeb0eb8b881a84d069e67be1723f5b353b0b9b866ad8e7ad9dba66cdc4dabd.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d64ba838ef5472bba248620ec4fd8b5aa7cf0db2908e0bb230600caf279ba7bc",
+      "bytes": 17208,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/400-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/400-latin.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d64ba838ef5472bba248620ec4fd8b5aa7cf0db2908e0bb230600caf279ba7bc.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "840ced16f975d8abc2594b436d0206649e0c2a7327e36750ff849d3d37c3c02e",
+      "bytes": 9372,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/700-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/700-latin-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 840ced16f975d8abc2594b436d0206649e0c2a7327e36750ff849d3d37c3c02e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "140e2bd25a7315c8a062508391426b0d8c3297400c947b8d847be28f73a199f0",
+      "bytes": 17524,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/700-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/700-latin.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 140e2bd25a7315c8a062508391426b0d8c3297400c947b8d847be28f73a199f0.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "756ada10f94d8eaa28aae086f621972fb694d3e8573c1a54bbccb50e4c7654d4",
+      "bytes": 9788,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-cyrillic.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-cyrillic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 756ada10f94d8eaa28aae086f621972fb694d3e8573c1a54bbccb50e4c7654d4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e9b9025f3eacbd93a66a9afe702bbaae843c2873fe8ab755a1ef8dc81979fc2d",
+      "bytes": 7908,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-greek.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-greek.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e9b9025f3eacbd93a66a9afe702bbaae843c2873fe8ab755a1ef8dc81979fc2d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "91ae985651b5d2d6d940f40815d94ec99f0eab4b383b8c98ecf10ccf7f9777b6",
+      "bytes": 11712,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-latin-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 91ae985651b5d2d6d940f40815d94ec99f0eab4b383b8c98ecf10ccf7f9777b6.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "148b358d5c6a32ff44aa901fdd583519210675846edb6ccf8913a402054196a0",
+      "bytes": 17528,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-latin.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 148b358d5c6a32ff44aa901fdd583519210675846edb6ccf8913a402054196a0.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a168311a7a04b6624c7452ec9657d87bbca333b174ac49a36f3c9e559a3b8a42",
+      "bytes": 9180,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-cyrillic.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-cyrillic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a168311a7a04b6624c7452ec9657d87bbca333b174ac49a36f3c9e559a3b8a42.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "260f2b3fabf86718dcc46e6dcbdec0a1f80bf8728d1d3656d9ffd7e1a98b9795",
+      "bytes": 7304,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-greek.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-greek.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 260f2b3fabf86718dcc46e6dcbdec0a1f80bf8728d1d3656d9ffd7e1a98b9795.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "b40402c5b2062c37f84d240d6f888b2dd31dc5522ca62e997359bbd5cfbd7dfc",
+      "bytes": 11028,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-latin-ext.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at b40402c5b2062c37f84d240d6f888b2dd31dc5522ca62e997359bbd5cfbd7dfc.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "375e14fc0e64a2339788b0e6cf9a7b2ac9eef20314cfab80373eded4708f7dfc",
+      "bytes": 16180,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-latin.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 375e14fc0e64a2339788b0e6cf9a7b2ac9eef20314cfab80373eded4708f7dfc.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    }
+  ],
+  "missing": [],
+  "imports": [
+    "https://api.fonts.coollabs.io/css2?family=Anonymous+Pro:wght@400;700&display=swap",
+    "https://api.fonts.coollabs.io/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap",
+    "https://api.fonts.coollabs.io/css2?family=Berkshire+Swash&display=swap",
+    "https://fonts.googleapis.com/css2?family=Kaisei+Opti:wght@700&display=swap",
+    "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-75-r6x7/particles.css",
+    "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/1",
+    "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/2"
+  ],
+  "pruned_fonts": [],
+  "template_placeholders": [],
+  "asset_replacements": {},
+  "omitted_assets": [],
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/berkshire-swash/normal/400-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/berkshire-swash/normal/400-latin-ext.woff2",
+      "sha256": "28813221a9ef89d233de7917fb80fc670078d342c63032bf1e0c9f15fdd6b708",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 28813221a9ef89d233de7917fb80fc670078d342c63032bf1e0c9f15fdd6b708.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/berkshire-swash/normal/400-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/berkshire-swash/normal/400-latin.woff2",
+      "sha256": "51831d748cc8e6dccff84ea6cdbcf6018224f017dd336a9e71627abc78717c0a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 51831d748cc8e6dccff84ea6cdbcf6018224f017dd336a9e71627abc78717c0a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/kaiseiopti/v11/QldXNThJphYb8_g6c2nlIGHiw41u.ttf",
+      "final_url": "https://fonts.gstatic.com/s/kaiseiopti/v11/QldXNThJphYb8_g6c2nlIGHiw41u.ttf",
+      "sha256": "9086a986baf0c0bf41c3c946d225e5c52f5809592c35cdf0848a30ac1300fec0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 9086a986baf0c0bf41c3c946d225e5c52f5809592c35cdf0848a30ac1300fec0.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/400-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/400-latin-ext.woff2",
+      "sha256": "61eeb0eb8b881a84d069e67be1723f5b353b0b9b866ad8e7ad9dba66cdc4dabd",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 61eeb0eb8b881a84d069e67be1723f5b353b0b9b866ad8e7ad9dba66cdc4dabd.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/400-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/400-latin.woff2",
+      "sha256": "d64ba838ef5472bba248620ec4fd8b5aa7cf0db2908e0bb230600caf279ba7bc",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d64ba838ef5472bba248620ec4fd8b5aa7cf0db2908e0bb230600caf279ba7bc.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/700-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/700-latin-ext.woff2",
+      "sha256": "840ced16f975d8abc2594b436d0206649e0c2a7327e36750ff849d3d37c3c02e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 840ced16f975d8abc2594b436d0206649e0c2a7327e36750ff849d3d37c3c02e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/700-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/700-latin.woff2",
+      "sha256": "140e2bd25a7315c8a062508391426b0d8c3297400c947b8d847be28f73a199f0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 140e2bd25a7315c8a062508391426b0d8c3297400c947b8d847be28f73a199f0.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-cyrillic.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-cyrillic.woff2",
+      "sha256": "756ada10f94d8eaa28aae086f621972fb694d3e8573c1a54bbccb50e4c7654d4",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 756ada10f94d8eaa28aae086f621972fb694d3e8573c1a54bbccb50e4c7654d4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-greek.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-greek.woff2",
+      "sha256": "e9b9025f3eacbd93a66a9afe702bbaae843c2873fe8ab755a1ef8dc81979fc2d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e9b9025f3eacbd93a66a9afe702bbaae843c2873fe8ab755a1ef8dc81979fc2d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-latin-ext.woff2",
+      "sha256": "91ae985651b5d2d6d940f40815d94ec99f0eab4b383b8c98ecf10ccf7f9777b6",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 91ae985651b5d2d6d940f40815d94ec99f0eab4b383b8c98ecf10ccf7f9777b6.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-latin.woff2",
+      "sha256": "148b358d5c6a32ff44aa901fdd583519210675846edb6ccf8913a402054196a0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 148b358d5c6a32ff44aa901fdd583519210675846edb6ccf8913a402054196a0.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-cyrillic.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-cyrillic.woff2",
+      "sha256": "a168311a7a04b6624c7452ec9657d87bbca333b174ac49a36f3c9e559a3b8a42",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a168311a7a04b6624c7452ec9657d87bbca333b174ac49a36f3c9e559a3b8a42.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-greek.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-greek.woff2",
+      "sha256": "260f2b3fabf86718dcc46e6dcbdec0a1f80bf8728d1d3656d9ffd7e1a98b9795",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 260f2b3fabf86718dcc46e6dcbdec0a1f80bf8728d1d3656d9ffd7e1a98b9795.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-latin-ext.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-latin-ext.woff2",
+      "sha256": "b40402c5b2062c37f84d240d6f888b2dd31dc5522ca62e997359bbd5cfbd7dfc",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at b40402c5b2062c37f84d240d6f888b2dd31dc5522ca62e997359bbd5cfbd7dfc.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-latin.woff2",
+      "final_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-latin.woff2",
+      "sha256": "375e14fc0e64a2339788b0e6cf9a7b2ac9eef20314cfab80373eded4708f7dfc",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 375e14fc0e64a2339788b0e6cf9a7b2ac9eef20314cfab80373eded4708f7dfc.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://api.fonts.coollabs.io/css2?family=Anonymous+Pro:wght@400;700&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "09477c2bc348af6f3a47007206abced04054ba4edd9147444e871cbecba9c587",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://api.fonts.coollabs.io/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "09477c2bc348af6f3a47007206abced04054ba4edd9147444e871cbecba9c587",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://api.fonts.coollabs.io/css2?family=Berkshire+Swash&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "09477c2bc348af6f3a47007206abced04054ba4edd9147444e871cbecba9c587",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=Kaisei+Opti:wght@700&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "09477c2bc348af6f3a47007206abced04054ba4edd9147444e871cbecba9c587",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-75-r6x7/particles.css",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "09477c2bc348af6f3a47007206abced04054ba4edd9147444e871cbecba9c587",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/1",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "09477c2bc348af6f3a47007206abced04054ba4edd9147444e871cbecba9c587",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/2",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "09477c2bc348af6f3a47007206abced04054ba4edd9147444e871cbecba9c587",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    }
+  ]
+}

@@ -1,0 +1,597 @@
+{
+  "assets": [
+    {
+      "sha256": "52e8cabbbebec2f124d98ae59b1ce0cad8d3729e7a96dee53bd767c081e4079c",
+      "bytes": 129632,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadDck018.ttf",
+      "final_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadDck018.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 52e8cabbbebec2f124d98ae59b1ce0cad8d3729e7a96dee53bd767c081e4079c.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "53c90f9dab2c198c41ee1b689415aa6db035da587d257bf124bc6ee336980b60",
+      "bytes": 129756,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadCCk018.ttf",
+      "final_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadCCk018.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 53c90f9dab2c198c41ee1b689415aa6db035da587d257bf124bc6ee336980b60.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5842abd6704fd2f1a9e0bb2e45efdfad3ec795833c24f31d0ad48b67fe89538f",
+      "bytes": 129752,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadCwk018.ttf",
+      "final_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadCwk018.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5842abd6704fd2f1a9e0bb2e45efdfad3ec795833c24f31d0ad48b67fe89538f.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "9bd60595d9d0b2a8ae8ddb2d2222693fbc30dec59bb4a9fdf9bedac985f75049",
+      "bytes": 129760,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadBclE18.ttf",
+      "final_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadBclE18.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 9bd60595d9d0b2a8ae8ddb2d2222693fbc30dec59bb4a9fdf9bedac985f75049.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "11bc9d8b5a38d046ad769588698d8e255bdcef431528de732a00bd9fdd118722",
+      "bytes": 129612,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadBllE18.ttf",
+      "final_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadBllE18.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 11bc9d8b5a38d046ad769588698d8e255bdcef431528de732a00bd9fdd118722.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "568fb7de534adc8c2dbdff806496a7ccf0cdac9c5a47457f68ba73a7df0e3458",
+      "bytes": 129564,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadAClE18.ttf",
+      "final_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadAClE18.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 568fb7de534adc8c2dbdff806496a7ccf0cdac9c5a47457f68ba73a7df0e3458.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "12e2d9d7dd591d9d03471b14774eb349583bb3e69a8ba2e35fd22acc03f7896a",
+      "bytes": 129684,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadArlE18.ttf",
+      "final_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadArlE18.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 12e2d9d7dd591d9d03471b14774eb349583bb3e69a8ba2e35fd22acc03f7896a.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5dcea0643d98c3b9aa1cb1269da7bda17007eef92f47e2c9a001ca8d75b2f1f0",
+      "bytes": 329124,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc2dphjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc2dphjQ.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5dcea0643d98c3b9aa1cb1269da7bda17007eef92f47e2c9a001ca8d75b2f1f0.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "bfaead52c6371b644ff234459211097e2f90441dc3ffd50987516d5acab0c9ea",
+      "bytes": 329392,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcWdthjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcWdthjQ.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at bfaead52c6371b644ff234459211097e2f90441dc3ffd50987516d5acab0c9ea.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e59f6349bc74d1f9f46d50d47d6c12a57a51eb56d632c03642d678b2e7b054eb",
+      "bytes": 329212,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTch9thjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTch9thjQ.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e59f6349bc74d1f9f46d50d47d6c12a57a51eb56d632c03642d678b2e7b054eb.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "ef8f755d933b9310804cc9152f1f18cb2ac460d6b05054ec913d889c9f11f79e",
+      "bytes": 328252,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc2dthjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc2dthjQ.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at ef8f755d933b9310804cc9152f1f18cb2ac460d6b05054ec913d889c9f11f79e.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "f0f1d28363e3a64ef7ed59937b268494ad5e55e76b2c77eaab2f94c80cce17c9",
+      "bytes": 328764,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc69thjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc69thjQ.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at f0f1d28363e3a64ef7ed59937b268494ad5e55e76b2c77eaab2f94c80cce17c9.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5b6f0c6f26e5c554a64cdcc3a9b5d802b7f9aec6206f1dbcfcdcad7b5860a2a9",
+      "bytes": 329620,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcB9xhjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcB9xhjQ.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5b6f0c6f26e5c554a64cdcc3a9b5d802b7f9aec6206f1dbcfcdcad7b5860a2a9.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "c1811d32ac0f6eed1bbf57529f2ecdfc6c717d48a969dd864942436315a1b198",
+      "bytes": 330132,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcPtxhjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcPtxhjQ.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at c1811d32ac0f6eed1bbf57529f2ecdfc6c717d48a969dd864942436315a1b198.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "43650eb9c3a23ddc6fc1f499d1e74892fa573119ae1ae3d83975918b10fa22a7",
+      "bytes": 331020,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcWdxhjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcWdxhjQ.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 43650eb9c3a23ddc6fc1f499d1e74892fa573119ae1ae3d83975918b10fa22a7.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "7c1999c303b4d292f039630440d717f58edb8139f9f1e3b25074e4e07f95b441",
+      "bytes": 331044,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTccNxhjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTccNxhjQ.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 7c1999c303b4d292f039630440d717f58edb8139f9f1e3b25074e4e07f95b441.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "3428fd01a45310781cfc06d8957c5485de2432132b405ebe6e53efec0719c229",
+      "bytes": 325028,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyeMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyeMZg.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 3428fd01a45310781cfc06d8957c5485de2432132b405ebe6e53efec0719c229.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "1be2b11bc5c1e0f78deeeb4e8049b2f5cca9c476b77bb1912aac748ba4a37312",
+      "bytes": 325604,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuDyfMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuDyfMZg.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 1be2b11bc5c1e0f78deeeb4e8049b2f5cca9c476b77bb1912aac748ba4a37312.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d0f4bc7faca468376e3db9b5e57afcdc2192134c9ac82a9511f32767b56853a4",
+      "bytes": 325748,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d0f4bc7faca468376e3db9b5e57afcdc2192134c9ac82a9511f32767b56853a4.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "1b08e7fc267a5c7e1d614100f604b83e7e8a0be241f0f288faa2b3ac93a683ba",
+      "bytes": 324820,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 1b08e7fc267a5c7e1d614100f604b83e7e8a0be241f0f288faa2b3ac93a683ba.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "8c883f63b2c4157d997319f2c8bc6995ed4357ef371940d31ca159004a4aae63",
+      "bytes": 325304,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fMZg.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 8c883f63b2c4157d997319f2c8bc6995ed4357ef371940d31ca159004a4aae63.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e7a1aaf7eda9f2fad4131725fa556265ec75ca7b2d756260173a040363e8d4f7",
+      "bytes": 326048,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e7a1aaf7eda9f2fad4131725fa556265ec75ca7b2d756260173a040363e8d4f7.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "b37284b5701b6b168dfc770aa1a4ac492106422fd3ba76bc7641e37434e8019c",
+      "bytes": 326468,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZg.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at b37284b5701b6b168dfc770aa1a4ac492106422fd3ba76bc7641e37434e8019c.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "eec66af7f2337bd34fe6e801cf92ededcb57a20c0d7bc40a61d4eefcbe3dd40c",
+      "bytes": 327324,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuDyYMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuDyYMZg.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at eec66af7f2337bd34fe6e801cf92ededcb57a20c0d7bc40a61d4eefcbe3dd40c.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5b717029a2c4cfca2167e97be1157edb24151591e5ec96eb484745c392817a7a",
+      "bytes": 327260,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuBWYMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuBWYMZg.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5b717029a2c4cfca2167e97be1157edb24151591e5ec96eb484745c392817a7a.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e0a6455bb9446e25223583e1b63f8933bb48336716ef6ad82e47691d59298a7c",
+      "bytes": 1713884,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tjeuShHdiFyPFzBRro-A.ttf",
+      "final_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tjeuShHdiFyPFzBRro-A.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e0a6455bb9446e25223583e1b63f8933bb48336716ef6ad82e47691d59298a7c.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "ab7dd8ef611036ea6b71d9e4d22597f458b07adc81827b7742af6b70d2aeedb6",
+      "bytes": 1713896,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQDBcgew.ttf",
+      "final_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQDBcgew.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at ab7dd8ef611036ea6b71d9e4d22597f458b07adc81827b7742af6b70d2aeedb6.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "01d139bb9ad93e947049cfbfb15a6bdbc45251b043d974e8d17196946a353422",
+      "bytes": 1721396,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQRBEgew.ttf",
+      "final_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQRBEgew.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 01d139bb9ad93e947049cfbfb15a6bdbc45251b043d974e8d17196946a353422.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "ba29d86a938c75ff7e0819c1a75b937b349f2741dfbbb58dddd246838606b8fa",
+      "bytes": 1728288,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQWBIgew.ttf",
+      "final_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQWBIgew.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at ba29d86a938c75ff7e0819c1a75b937b349f2741dfbbb58dddd246838606b8fa.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e7411414ac338a77dfe1634e9a2999d6e49f926d3b43d5a1332c8ad07b646356",
+      "bytes": 93756,
+      "content_type": "font/woff2",
+      "original_url": "https://scp-jp.github.io/Black-Highlighter/fonts/PT-Root-UI_VF.woff2",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/fonts/PT-Root-UI_VF.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e7411414ac338a77dfe1634e9a2999d6e49f926d3b43d5a1332c8ad07b646356.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "4ecffd7382ba4222907097ec864755be63faeaa389819d90a2d3cf5b8a5ecc78",
+      "bytes": 127200,
+      "content_type": "font/woff",
+      "original_url": "https://scp-jp.github.io/Black-Highlighter/fonts/PT-Root-UI_VF.woff",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/fonts/PT-Root-UI_VF.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 4ecffd7382ba4222907097ec864755be63faeaa389819d90a2d3cf5b8a5ecc78.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "4fd56d634f1b30b24e2c695a0577eefccf6fee56efb67feaac6fa00e96fc1c94",
+      "bytes": 1334,
+      "content_type": "image/svg+xml",
+      "original_url": "https://scp-jp.github.io/Black-Highlighter/img/logo.svg",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/img/logo.svg",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 4fd56d634f1b30b24e2c695a0577eefccf6fee56efb67feaac6fa00e96fc1c94.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    }
+  ],
+  "missing": [],
+  "imports": [
+    "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+    "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+    "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
+    "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+    "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css"
+  ],
+  "pruned_fonts": [],
+  "template_placeholders": [],
+  "asset_replacements": {},
+  "omitted_assets": [],
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadDck018.ttf",
+      "final_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadDck018.ttf",
+      "sha256": "52e8cabbbebec2f124d98ae59b1ce0cad8d3729e7a96dee53bd767c081e4079c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 52e8cabbbebec2f124d98ae59b1ce0cad8d3729e7a96dee53bd767c081e4079c.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadCCk018.ttf",
+      "final_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadCCk018.ttf",
+      "sha256": "53c90f9dab2c198c41ee1b689415aa6db035da587d257bf124bc6ee336980b60",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 53c90f9dab2c198c41ee1b689415aa6db035da587d257bf124bc6ee336980b60.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadCwk018.ttf",
+      "final_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadCwk018.ttf",
+      "sha256": "5842abd6704fd2f1a9e0bb2e45efdfad3ec795833c24f31d0ad48b67fe89538f",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5842abd6704fd2f1a9e0bb2e45efdfad3ec795833c24f31d0ad48b67fe89538f.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadBclE18.ttf",
+      "final_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadBclE18.ttf",
+      "sha256": "9bd60595d9d0b2a8ae8ddb2d2222693fbc30dec59bb4a9fdf9bedac985f75049",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 9bd60595d9d0b2a8ae8ddb2d2222693fbc30dec59bb4a9fdf9bedac985f75049.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadBllE18.ttf",
+      "final_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadBllE18.ttf",
+      "sha256": "11bc9d8b5a38d046ad769588698d8e255bdcef431528de732a00bd9fdd118722",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 11bc9d8b5a38d046ad769588698d8e255bdcef431528de732a00bd9fdd118722.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadAClE18.ttf",
+      "final_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadAClE18.ttf",
+      "sha256": "568fb7de534adc8c2dbdff806496a7ccf0cdac9c5a47457f68ba73a7df0e3458",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 568fb7de534adc8c2dbdff806496a7ccf0cdac9c5a47457f68ba73a7df0e3458.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadArlE18.ttf",
+      "final_url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadArlE18.ttf",
+      "sha256": "12e2d9d7dd591d9d03471b14774eb349583bb3e69a8ba2e35fd22acc03f7896a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 12e2d9d7dd591d9d03471b14774eb349583bb3e69a8ba2e35fd22acc03f7896a.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc2dphjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc2dphjQ.ttf",
+      "sha256": "5dcea0643d98c3b9aa1cb1269da7bda17007eef92f47e2c9a001ca8d75b2f1f0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5dcea0643d98c3b9aa1cb1269da7bda17007eef92f47e2c9a001ca8d75b2f1f0.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcWdthjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcWdthjQ.ttf",
+      "sha256": "bfaead52c6371b644ff234459211097e2f90441dc3ffd50987516d5acab0c9ea",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at bfaead52c6371b644ff234459211097e2f90441dc3ffd50987516d5acab0c9ea.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTch9thjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTch9thjQ.ttf",
+      "sha256": "e59f6349bc74d1f9f46d50d47d6c12a57a51eb56d632c03642d678b2e7b054eb",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e59f6349bc74d1f9f46d50d47d6c12a57a51eb56d632c03642d678b2e7b054eb.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc2dthjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc2dthjQ.ttf",
+      "sha256": "ef8f755d933b9310804cc9152f1f18cb2ac460d6b05054ec913d889c9f11f79e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at ef8f755d933b9310804cc9152f1f18cb2ac460d6b05054ec913d889c9f11f79e.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc69thjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc69thjQ.ttf",
+      "sha256": "f0f1d28363e3a64ef7ed59937b268494ad5e55e76b2c77eaab2f94c80cce17c9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at f0f1d28363e3a64ef7ed59937b268494ad5e55e76b2c77eaab2f94c80cce17c9.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcB9xhjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcB9xhjQ.ttf",
+      "sha256": "5b6f0c6f26e5c554a64cdcc3a9b5d802b7f9aec6206f1dbcfcdcad7b5860a2a9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5b6f0c6f26e5c554a64cdcc3a9b5d802b7f9aec6206f1dbcfcdcad7b5860a2a9.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcPtxhjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcPtxhjQ.ttf",
+      "sha256": "c1811d32ac0f6eed1bbf57529f2ecdfc6c717d48a969dd864942436315a1b198",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at c1811d32ac0f6eed1bbf57529f2ecdfc6c717d48a969dd864942436315a1b198.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcWdxhjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTcWdxhjQ.ttf",
+      "sha256": "43650eb9c3a23ddc6fc1f499d1e74892fa573119ae1ae3d83975918b10fa22a7",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 43650eb9c3a23ddc6fc1f499d1e74892fa573119ae1ae3d83975918b10fa22a7.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTccNxhjQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTccNxhjQ.ttf",
+      "sha256": "7c1999c303b4d292f039630440d717f58edb8139f9f1e3b25074e4e07f95b441",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 7c1999c303b4d292f039630440d717f58edb8139f9f1e3b25074e4e07f95b441.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyeMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyeMZg.ttf",
+      "sha256": "3428fd01a45310781cfc06d8957c5485de2432132b405ebe6e53efec0719c229",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 3428fd01a45310781cfc06d8957c5485de2432132b405ebe6e53efec0719c229.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuDyfMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuDyfMZg.ttf",
+      "sha256": "1be2b11bc5c1e0f78deeeb4e8049b2f5cca9c476b77bb1912aac748ba4a37312",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 1be2b11bc5c1e0f78deeeb4e8049b2f5cca9c476b77bb1912aac748ba4a37312.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf",
+      "sha256": "d0f4bc7faca468376e3db9b5e57afcdc2192134c9ac82a9511f32767b56853a4",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d0f4bc7faca468376e3db9b5e57afcdc2192134c9ac82a9511f32767b56853a4.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf",
+      "sha256": "1b08e7fc267a5c7e1d614100f604b83e7e8a0be241f0f288faa2b3ac93a683ba",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 1b08e7fc267a5c7e1d614100f604b83e7e8a0be241f0f288faa2b3ac93a683ba.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fMZg.ttf",
+      "sha256": "8c883f63b2c4157d997319f2c8bc6995ed4357ef371940d31ca159004a4aae63",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 8c883f63b2c4157d997319f2c8bc6995ed4357ef371940d31ca159004a4aae63.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf",
+      "sha256": "e7a1aaf7eda9f2fad4131725fa556265ec75ca7b2d756260173a040363e8d4f7",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e7a1aaf7eda9f2fad4131725fa556265ec75ca7b2d756260173a040363e8d4f7.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZg.ttf",
+      "sha256": "b37284b5701b6b168dfc770aa1a4ac492106422fd3ba76bc7641e37434e8019c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at b37284b5701b6b168dfc770aa1a4ac492106422fd3ba76bc7641e37434e8019c.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuDyYMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuDyYMZg.ttf",
+      "sha256": "eec66af7f2337bd34fe6e801cf92ededcb57a20c0d7bc40a61d4eefcbe3dd40c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at eec66af7f2337bd34fe6e801cf92ededcb57a20c0d7bc40a61d4eefcbe3dd40c.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuBWYMZg.ttf",
+      "final_url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuBWYMZg.ttf",
+      "sha256": "5b717029a2c4cfca2167e97be1157edb24151591e5ec96eb484745c392817a7a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5b717029a2c4cfca2167e97be1157edb24151591e5ec96eb484745c392817a7a.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tjeuShHdiFyPFzBRro-A.ttf",
+      "final_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tjeuShHdiFyPFzBRro-A.ttf",
+      "sha256": "e0a6455bb9446e25223583e1b63f8933bb48336716ef6ad82e47691d59298a7c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e0a6455bb9446e25223583e1b63f8933bb48336716ef6ad82e47691d59298a7c.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQDBcgew.ttf",
+      "final_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQDBcgew.ttf",
+      "sha256": "ab7dd8ef611036ea6b71d9e4d22597f458b07adc81827b7742af6b70d2aeedb6",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at ab7dd8ef611036ea6b71d9e4d22597f458b07adc81827b7742af6b70d2aeedb6.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQRBEgew.ttf",
+      "final_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQRBEgew.ttf",
+      "sha256": "01d139bb9ad93e947049cfbfb15a6bdbc45251b043d974e8d17196946a353422",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 01d139bb9ad93e947049cfbfb15a6bdbc45251b043d974e8d17196946a353422.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQWBIgew.ttf",
+      "final_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQWBIgew.ttf",
+      "sha256": "ba29d86a938c75ff7e0819c1a75b937b349f2741dfbbb58dddd246838606b8fa",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at ba29d86a938c75ff7e0819c1a75b937b349f2741dfbbb58dddd246838606b8fa.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-jp.github.io/Black-Highlighter/fonts/PT-Root-UI_VF.woff2",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/fonts/PT-Root-UI_VF.woff2",
+      "sha256": "e7411414ac338a77dfe1634e9a2999d6e49f926d3b43d5a1332c8ad07b646356",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e7411414ac338a77dfe1634e9a2999d6e49f926d3b43d5a1332c8ad07b646356.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-jp.github.io/Black-Highlighter/fonts/PT-Root-UI_VF.woff",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/fonts/PT-Root-UI_VF.woff",
+      "sha256": "4ecffd7382ba4222907097ec864755be63faeaa389819d90a2d3cf5b8a5ecc78",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 4ecffd7382ba4222907097ec864755be63faeaa389819d90a2d3cf5b8a5ecc78.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-jp.github.io/Black-Highlighter/img/logo.svg",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/img/logo.svg",
+      "sha256": "4fd56d634f1b30b24e2c695a0577eefccf6fee56efb67feaac6fa00e96fc1c94",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 4fd56d634f1b30b24e2c695a0577eefccf6fee56efb67feaac6fa00e96fc1c94.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "c40240b31c7fc8d756114cdb67f0d6489379d706c125969bdb013d6f925fd6b6",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "c40240b31c7fc8d756114cdb67f0d6489379d706c125969bdb013d6f925fd6b6",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "c40240b31c7fc8d756114cdb67f0d6489379d706c125969bdb013d6f925fd6b6",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "c40240b31c7fc8d756114cdb67f0d6489379d706c125969bdb013d6f925fd6b6",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "c40240b31c7fc8d756114cdb67f0d6489379d706c125969bdb013d6f925fd6b6",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    }
+  ]
+}

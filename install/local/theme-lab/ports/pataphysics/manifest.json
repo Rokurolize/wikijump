@@ -1,0 +1,93 @@
+{
+  "slug": "theme:pataphysics",
+  "en_source_sha256": "b4961dbb0f02d987d5084bc0803f7c4a000cc03843c623f454b213ca69d852a8",
+  "en_updated_at": "2026-04-12T05:16:06+00:00",
+  "en_entity_uuid": "6bad84b5-57d2-4951-8613-01e988f258e6",
+  "jp_previous_status": "present",
+  "jp_previous_source_sha256": "c2de53df254304f9cc88cb9955003855ecaafb336b24a11355dbd51ae832796b",
+  "jp_previous_updated_at": "2024-03-06T17:53:58+00:00",
+  "jp_previous_entity_uuid": "8112e551-59c5-459c-9bbd-f324f880b922",
+  "technical_spec_version": "1.4",
+  "reference_url": "https://scp-wiki.wikidot.com/theme:pataphysics",
+  "candidate_source": "candidate.wikidot.txt",
+  "candidate_css": "candidate.css",
+  "source_file": "upstream-en.wikidot.txt",
+  "existing_jp_source": "existing-jp.wikidot.txt",
+  "source_identity": {
+    "slug": "theme:pataphysics",
+    "title": "'Pataphysics Department Theme",
+    "en": {
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:pataphysics/source.wikidot.txt",
+      "sha256": "b4961dbb0f02d987d5084bc0803f7c4a000cc03843c623f454b213ca69d852a8",
+      "updated_at": "2026-04-12T05:16:06+00:00",
+      "entity_uuid": "6bad84b5-57d2-4951-8613-01e988f258e6",
+      "tags": [
+        "_cc",
+        "pataphysics-dept",
+        "theme"
+      ],
+      "attached_files": [],
+      "revisions": 253
+    },
+    "jp": {
+      "status": "present",
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:pataphysics/source.wikidot.txt",
+      "sha256": "c2de53df254304f9cc88cb9955003855ecaafb336b24a11355dbd51ae832796b",
+      "updated_at": "2024-03-06T17:53:58+00:00",
+      "entity_uuid": "8112e551-59c5-459c-9bbd-f324f880b922",
+      "tags": [
+        "en",
+        "テーマ"
+      ],
+      "absence_run": null
+    },
+    "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
+    "technical_spec_version": "1.4",
+    "final_verdict": "warn"
+  },
+  "dependencies": {
+    "slug": "theme:pataphysics",
+    "en_includes": [
+      ":scp-wiki:component:interwiki-style",
+      ":scp-wiki:info:start",
+      ":scp-wiki:info:end",
+      ":scp-wiki:theme:pataphysics",
+      "component:image-block"
+    ],
+    "en_external_dependencies": [
+      "https://en.wikipedia.org/wiki/%27Pataphysics",
+      "https://fonts.bunny.net/css2?family=Carrois+Gothic&display=swap",
+      "https://google.com",
+      "https://scp-wiki.wdfiles.com/local--code/theme%3Apataphysics/1",
+      "https://scp-wiki.wdfiles.com/local--files/theme%3Apataphysics/pataphysics-header-updated.png",
+      "https://scp-wiki.wikidot.com/#|A",
+      "https://scp-wiki.wikidot.com/local--files/theme:pataphysics/pataphysicslogo-ani.svg"
+    ],
+    "jp_includes": [
+      ":scp-jp:component:interwiki-style",
+      ":scp-jp:credit:start",
+      ":scp-jp:credit:end",
+      ":scp-jp:theme:pataphysics",
+      "component:image-block"
+    ],
+    "jp_external_dependencies": [
+      "http://ja.scp-wiki.net/",
+      "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap",
+      "https://google.com",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg",
+      "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png",
+      "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1"
+    ],
+    "base_family": "independent"
+  },
+  "human_port_candidate": "human-port-candidate.wikidot.txt",
+  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_pataphysics/theme_pataphysics_Japanese.wikidot.txt",
+  "acceptance_selectors": "../shared-acceptance-selectors.txt",
+  "candidate_input": "existing-jp.wikidot.txt",
+  "candidate_css_source": "candidate-source.css",
+  "candidate_origin": "current official SCP-JP page source",
+  "final_verdict": "warn",
+  "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
+  "asset_dependency_decisions_path": "install/local/theme-lab/ports/pataphysics/assets.json",
+  "asset_dependency_decision_count": 5
+}

@@ -1,0 +1,112 @@
+{
+  "slug": "theme:minimalist-bhl",
+  "en_source_sha256": "d076f29e54167c0adc56808ccce19a17511162997bd4816470cb34812a7e282a",
+  "en_updated_at": "2026-04-12T05:12:17+00:00",
+  "en_entity_uuid": "47a8ad2e-f1ec-4031-ae3c-852b87dd1cfa",
+  "jp_previous_status": "present",
+  "jp_previous_source_sha256": "6e5daba96afeb10ce3e4f49bc436920f6c0ba2ac4937c072030c59e43e80f3a0",
+  "jp_previous_updated_at": "2023-10-23T11:53:19+00:00",
+  "jp_previous_entity_uuid": "398bad62-9c4b-460b-90ca-1bd483ed636a",
+  "technical_spec_version": "1.4",
+  "reference_url": "https://scp-wiki.wikidot.com/theme:minimalist-bhl",
+  "candidate_source": "candidate.wikidot.txt",
+  "candidate_css": "candidate.css",
+  "source_file": "upstream-en.wikidot.txt",
+  "existing_jp_source": "existing-jp.wikidot.txt",
+  "source_identity": {
+    "slug": "theme:minimalist-bhl",
+    "title": "Minimalist BHL Theme",
+    "en": {
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:minimalist-bhl/source.wikidot.txt",
+      "sha256": "d076f29e54167c0adc56808ccce19a17511162997bd4816470cb34812a7e282a",
+      "updated_at": "2026-04-12T05:12:17+00:00",
+      "entity_uuid": "47a8ad2e-f1ec-4031-ae3c-852b87dd1cfa",
+      "tags": [
+        "co-authored",
+        "theme"
+      ],
+      "attached_files": [],
+      "revisions": 107
+    },
+    "jp": {
+      "status": "present",
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:minimalist-bhl/source.wikidot.txt",
+      "sha256": "6e5daba96afeb10ce3e4f49bc436920f6c0ba2ac4937c072030c59e43e80f3a0",
+      "updated_at": "2023-10-23T11:53:19+00:00",
+      "entity_uuid": "398bad62-9c4b-460b-90ca-1bd483ed636a",
+      "tags": [
+        "en",
+        "テーマ"
+      ],
+      "absence_run": null
+    },
+    "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
+    "technical_spec_version": "1.4",
+    "final_verdict": "warn"
+  },
+  "dependencies": {
+    "slug": "theme:minimalist-bhl",
+    "en_includes": [
+      ":scp-wiki:component:interwiki-style",
+      ":scp-wiki:component:interwiki-style",
+      ":scp-wiki:info:start",
+      ":scp-wiki:info:end",
+      ":scp-wiki:theme:black-highlighter-theme",
+      ":scp-wiki:theme:minimalist-bhl",
+      "component:image-block name=https://scp-wiki.wikidot.com/local--files/theme:minimalist-bhl/Ar6AfDt.webp",
+      ":scp-wiki:component:centered-header-bhl",
+      ":scp-wiki:component:toggle-sidebar-bhl",
+      ":scp-wiki:component:interwiki-style"
+    ],
+    "en_external_dependencies": [
+      "http://scp-wiki.wikidot.com/anomaly-classification-system-guide",
+      "http://www.google.com",
+      "http://www.scp-wiki.net/classification-committee-memo",
+      "https://fonts.google.com/specimen/Poppins",
+      "https://fonts.google.com/specimen/Raleway",
+      "https://fonts.google.com/specimen/Recursive",
+      "https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "https://nu-scptheme.github.io/Black-Highlighter/stable/styles/black-highlighter.min.css",
+      "https://nu-scptheme.github.io/Black-Highlighter/stable/styles/normalize.min.css",
+      "https://scp-wiki.wdfiles.com/local--code/theme%3Aminimalist-bhl/1",
+      "https://scp-wiki.wdfiles.com/local--files/component:pride-highlighter/gp_logo.svg",
+      "https://scp-wiki.wikidot.com/local--files/theme:minimalist-bhl/Ar6AfDt.webp|caption=Department"
+    ],
+    "jp_includes": [
+      ":scp-jp:theme:black-highlighter-theme",
+      ":scp-jp:component:interwiki-style",
+      ":scp-jp:component:interwiki-style",
+      ":scp-jp:credit:start-preview",
+      ":scp-jp:credit:end-preview",
+      ":scp-jp:theme:black-highlighter-theme",
+      ":scp-jp:theme:minimalist-bhl",
+      "component:image-block name=http://scp-jp-storage.wikidot.com/local--files/file:3324351-140-5rt8/Ar6AfDt.png",
+      ":scp-jp:component:centered-header-bhl",
+      ":scp-jp:component:toggle-sidebar-bhl",
+      ":scp-jp:component:interwiki-style"
+    ],
+    "jp_external_dependencies": [
+      "http://scp-jp-storage.wikidot.com/local--files/file:3324351-140-5rt8/Ar6AfDt.png|caption=科学部門ロゴ|width=200px",
+      "http://scp-jp-storage.wikidot.com/local--files/file:3324351-96-cwep/lgbtqp_logo.svg",
+      "http://www.google.com",
+      "https://fonts.google.com/specimen/Poppins",
+      "https://fonts.google.com/specimen/Raleway",
+      "https://fonts.google.com/specimen/Recursive",
+      "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "https://scp-jp.wdfiles.com/local--code/theme%3Aminimalist-bhl/1"
+    ],
+    "base_family": "black-highlighter"
+  },
+  "human_port_candidate": "human-port-candidate.wikidot.txt",
+  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_minimalist-bhl/theme_minimalist-bhl_Japanese.wikidot.txt",
+  "acceptance_selectors": "../shared-acceptance-selectors.txt",
+  "candidate_input": "existing-jp.wikidot.txt",
+  "candidate_css_source": "candidate-source.css",
+  "candidate_origin": "current official SCP-JP page source",
+  "final_verdict": "warn",
+  "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
+  "asset_dependency_decisions_path": "install/local/theme-lab/ports/minimalist-bhl/assets.json",
+  "asset_dependency_decision_count": 39
+}

@@ -1,0 +1,301 @@
+{
+  "assets": [
+    {
+      "sha256": "61ff476ab12ef621ba34a8631e0db1bb9fb5f6d953cbf7081f12df8971e25778",
+      "bytes": 10276,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/boogaloo/files/boogaloo-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/boogaloo/files/boogaloo-latin-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 61ff476ab12ef621ba34a8631e0db1bb9fb5f6d953cbf7081f12df8971e25778.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "45d300613a9fbfd22c31f85f102de4817787d06546d57e6550a2edef7ce82225",
+      "bytes": 13600,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/boogaloo/files/boogaloo-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/boogaloo/files/boogaloo-latin-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 45d300613a9fbfd22c31f85f102de4817787d06546d57e6550a2edef7ce82225.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "1a08b7b6bbd1e449704e980cdba005b37ae9ae26decee8183c6b7fdf72c29cd0",
+      "bytes": 52672,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/margarine/files/margarine-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/margarine/files/margarine-latin-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 1a08b7b6bbd1e449704e980cdba005b37ae9ae26decee8183c6b7fdf72c29cd0.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "04c588bb5653e3ea46188e0697287b90b391122df213e26850f8904b91be5fa8",
+      "bytes": 62184,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/margarine/files/margarine-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/margarine/files/margarine-latin-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 04c588bb5653e3ea46188e0697287b90b391122df213e26850f8904b91be5fa8.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d24d2ae94d53d7278c05a82e9d9caec23cee4198eec7ad799fcea9cf04d923b4",
+      "bytes": 25456,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/margarine/files/margarine-latin-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/margarine/files/margarine-latin-ext-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d24d2ae94d53d7278c05a82e9d9caec23cee4198eec7ad799fcea9cf04d923b4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "6d645853f4594b2f5860efa615b4b72fa06cafc279c8efa602db70fd679df94e",
+      "bytes": 30992,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/margarine/files/margarine-latin-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/margarine/files/margarine-latin-ext-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 6d645853f4594b2f5860efa615b4b72fa06cafc279c8efa602db70fd679df94e.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "81747e19b4014ee6f7167e4916989d2f240ce3c1fd1f50c2937532d9ccea8c32",
+      "bytes": 29326,
+      "content_type": "application/octet-stream",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alLogo.webp",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/alLogo.webp",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 81747e19b4014ee6f7167e4916989d2f240ce3c1fd1f50c2937532d9ccea8c32.webp; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "2e1879853e4bdc633d3c72898f5781de8e2443f6f99cbf79caf42b8e3c24035a",
+      "bytes": 684452,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alBanner.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/alBanner.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 2e1879853e4bdc633d3c72898f5781de8e2443f6f99cbf79caf42b8e3c24035a.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "7a0ac450db02100cad752059cca5630b03261d33305bd883abcf3d85d3425f51",
+      "bytes": 2938761,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/ALCANYON.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/ALCANYON.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 7a0ac450db02100cad752059cca5630b03261d33305bd883abcf3d85d3425f51.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "b00050ee6ac176566d740481634cb53d2d9413d2c774bd8eb69d044b5351ac3e",
+      "bytes": 151228,
+      "content_type": "application/octet-stream",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/Fallen.webp",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/Fallen.webp",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at b00050ee6ac176566d740481634cb53d2d9413d2c774bd8eb69d044b5351ac3e.webp; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "fea1fe7051f5f1c1774d4eef5c5f76333a0e05f92b880fb19e4a1bcd1751628f",
+      "bytes": 147084,
+      "content_type": "application/octet-stream",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/Like_one_of_your_french_girls.webp",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/Like_one_of_your_french_girls.webp",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at fea1fe7051f5f1c1774d4eef5c5f76333a0e05f92b880fb19e4a1bcd1751628f.webp; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "98bb332d2ebfc48232626e15ed0686228c6c80ccfce191810ff302a3d1bde1f1",
+      "bytes": 66498,
+      "content_type": "application/octet-stream",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alBunker.webp",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/alBunker.webp",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 98bb332d2ebfc48232626e15ed0686228c6c80ccfce191810ff302a3d1bde1f1.webp; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "ec8db191a5fceb088ed11219a6d08f1559e5fe568e53a0dedf7bfc60d58b99c9",
+      "bytes": 368919,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alJoy.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/alJoy.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at ec8db191a5fceb088ed11219a6d08f1559e5fe568e53a0dedf7bfc60d58b99c9.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "cb5f8dd1803bdd881f5f8ca53f7a85a8c5283d631b026c8ae2a0b48dca12f2d8",
+      "bytes": 394943,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alPiracy.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/alPiracy.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at cb5f8dd1803bdd881f5f8ca53f7a85a8c5283d631b026c8ae2a0b48dca12f2d8.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "0d42fb052c3b516b6085a089b9f87520df13679db00f7f3cddd5810d5b0e1cf8",
+      "bytes": 43538,
+      "content_type": "application/octet-stream",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/M_lady.webp",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/M_lady.webp",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 0d42fb052c3b516b6085a089b9f87520df13679db00f7f3cddd5810d5b0e1cf8.webp; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    }
+  ],
+  "missing": [],
+  "imports": [
+    "https://fonts.bunny.net/css2?family=Boogaloo&display=swap",
+    "https://fonts.bunny.net/css2?family=Margarine&display=swap",
+    "https://scp-wiki.wikidot.com/theme:al-slop/code/1"
+  ],
+  "pruned_fonts": [],
+  "template_placeholders": [],
+  "asset_replacements": {},
+  "omitted_assets": [
+    {
+      "url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alSCP.webp",
+      "reason": "upstream HTTP 500; SCP header mark unavailable"
+    },
+    {
+      "url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alDespair.png",
+      "reason": "upstream HTTP 500; optional downvote artwork unavailable"
+    }
+  ],
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/boogaloo/files/boogaloo-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/boogaloo/files/boogaloo-latin-400-normal.woff2",
+      "sha256": "61ff476ab12ef621ba34a8631e0db1bb9fb5f6d953cbf7081f12df8971e25778",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 61ff476ab12ef621ba34a8631e0db1bb9fb5f6d953cbf7081f12df8971e25778.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/boogaloo/files/boogaloo-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/boogaloo/files/boogaloo-latin-400-normal.woff",
+      "sha256": "45d300613a9fbfd22c31f85f102de4817787d06546d57e6550a2edef7ce82225",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 45d300613a9fbfd22c31f85f102de4817787d06546d57e6550a2edef7ce82225.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/margarine/files/margarine-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/margarine/files/margarine-latin-400-normal.woff2",
+      "sha256": "1a08b7b6bbd1e449704e980cdba005b37ae9ae26decee8183c6b7fdf72c29cd0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 1a08b7b6bbd1e449704e980cdba005b37ae9ae26decee8183c6b7fdf72c29cd0.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/margarine/files/margarine-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/margarine/files/margarine-latin-400-normal.woff",
+      "sha256": "04c588bb5653e3ea46188e0697287b90b391122df213e26850f8904b91be5fa8",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 04c588bb5653e3ea46188e0697287b90b391122df213e26850f8904b91be5fa8.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/margarine/files/margarine-latin-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/margarine/files/margarine-latin-ext-400-normal.woff2",
+      "sha256": "d24d2ae94d53d7278c05a82e9d9caec23cee4198eec7ad799fcea9cf04d923b4",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d24d2ae94d53d7278c05a82e9d9caec23cee4198eec7ad799fcea9cf04d923b4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/margarine/files/margarine-latin-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/margarine/files/margarine-latin-ext-400-normal.woff",
+      "sha256": "6d645853f4594b2f5860efa615b4b72fa06cafc279c8efa602db70fd679df94e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 6d645853f4594b2f5860efa615b4b72fa06cafc279c8efa602db70fd679df94e.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alLogo.webp",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/alLogo.webp",
+      "sha256": "81747e19b4014ee6f7167e4916989d2f240ce3c1fd1f50c2937532d9ccea8c32",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 81747e19b4014ee6f7167e4916989d2f240ce3c1fd1f50c2937532d9ccea8c32.webp; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alBanner.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/alBanner.png",
+      "sha256": "2e1879853e4bdc633d3c72898f5781de8e2443f6f99cbf79caf42b8e3c24035a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 2e1879853e4bdc633d3c72898f5781de8e2443f6f99cbf79caf42b8e3c24035a.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/ALCANYON.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/ALCANYON.png",
+      "sha256": "7a0ac450db02100cad752059cca5630b03261d33305bd883abcf3d85d3425f51",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 7a0ac450db02100cad752059cca5630b03261d33305bd883abcf3d85d3425f51.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/Fallen.webp",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/Fallen.webp",
+      "sha256": "b00050ee6ac176566d740481634cb53d2d9413d2c774bd8eb69d044b5351ac3e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at b00050ee6ac176566d740481634cb53d2d9413d2c774bd8eb69d044b5351ac3e.webp; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/Like_one_of_your_french_girls.webp",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/Like_one_of_your_french_girls.webp",
+      "sha256": "fea1fe7051f5f1c1774d4eef5c5f76333a0e05f92b880fb19e4a1bcd1751628f",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at fea1fe7051f5f1c1774d4eef5c5f76333a0e05f92b880fb19e4a1bcd1751628f.webp; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alBunker.webp",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/alBunker.webp",
+      "sha256": "98bb332d2ebfc48232626e15ed0686228c6c80ccfce191810ff302a3d1bde1f1",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 98bb332d2ebfc48232626e15ed0686228c6c80ccfce191810ff302a3d1bde1f1.webp; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alJoy.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/alJoy.png",
+      "sha256": "ec8db191a5fceb088ed11219a6d08f1559e5fe568e53a0dedf7bfc60d58b99c9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at ec8db191a5fceb088ed11219a6d08f1559e5fe568e53a0dedf7bfc60d58b99c9.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alPiracy.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/alPiracy.png",
+      "sha256": "cb5f8dd1803bdd881f5f8ca53f7a85a8c5283d631b026c8ae2a0b48dca12f2d8",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at cb5f8dd1803bdd881f5f8ca53f7a85a8c5283d631b026c8ae2a0b48dca12f2d8.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/M_lady.webp",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aal-slop/M_lady.webp",
+      "sha256": "0d42fb052c3b516b6085a089b9f87520df13679db00f7f3cddd5810d5b0e1cf8",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 0d42fb052c3b516b6085a089b9f87520df13679db00f7f3cddd5810d5b0e1cf8.webp; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.bunny.net/css2?family=Boogaloo&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "846b2f93f2882bb8565fd63bc5ab0cae6bd9ee98ea23f8fb45096aa337313f04",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.bunny.net/css2?family=Margarine&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "846b2f93f2882bb8565fd63bc5ab0cae6bd9ee98ea23f8fb45096aa337313f04",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-wiki.wikidot.com/theme:al-slop/code/1",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "846b2f93f2882bb8565fd63bc5ab0cae6bd9ee98ea23f8fb45096aa337313f04",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    }
+  ]
+}

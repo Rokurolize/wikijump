@@ -107,6 +107,198 @@ export async function clearStylesheet(page, id = "theme-lab-live-css") {
   }, id);
 }
 
+// Report actual platform fonts used to paint a DOM node, rather than only the
+// CSS font-family stack. This makes Japanese fallback/glyph coverage auditable.
+export async function inspectPlatformFonts(page, selector) {
+  const requested = await page.evaluate(async (sourceSelector) => {
+    const source = document.querySelector(sourceSelector) ?? document.querySelector("#page-content") ?? document.body;
+    const computed = getComputedStyle(source);
+    const probe = document.createElement("span");
+    probe.id = "theme-lab-font-diagnostic-probe";
+    probe.textContent = "日本語の字形を確認する検体です。漢字、ひらがな、カタカナ。";
+    Object.assign(probe.style, {
+      position: "fixed", left: "0", top: "0", zIndex: "-2147483647", opacity: "0",
+      display: "inline-block", visibility: "visible", whiteSpace: "nowrap",
+      fontFamily: computed.fontFamily, fontSize: computed.fontSize,
+      fontWeight: computed.fontWeight, fontStyle: computed.fontStyle,
+      lineHeight: computed.lineHeight, letterSpacing: computed.letterSpacing,
+    });
+    document.body.append(probe);
+    await document.fonts.ready;
+    return {selector: sourceSelector, requested_font_family: computed.fontFamily};
+  }, selector);
+  const client = await page.context().newCDPSession(page);
+  try {
+    await Promise.all([client.send("DOM.enable"), client.send("CSS.enable")]);
+    const {root} = await client.send("DOM.getDocument", {depth: -1, pierce: true});
+    const {nodeId} = await client.send("DOM.querySelector", {nodeId: root.nodeId, selector: "#theme-lab-font-diagnostic-probe"});
+    if (!nodeId) return {status: "selector_missing", ...requested, fonts: []};
+    const {fonts} = await client.send("CSS.getPlatformFontsForNode", {nodeId});
+    return {
+      status: "measured",
+      ...requested,
+      fonts: fonts.map(({familyName, postScriptName, isCustomFont, glyphCount}) => ({family_name: familyName, postscript_name: postScriptName, custom: isCustomFont, glyph_count: glyphCount})),
+    };
+  } finally {
+    await client.detach().catch(() => {});
+    await page.evaluate(() => document.getElementById("theme-lab-font-diagnostic-probe")?.remove()).catch(() => {});
+  }
+}
+
+export async function inspectBrokenImages(page) {
+  await page.evaluate(async () => {
+    const images = [...document.images];
+    await Promise.all(images.map((image) => {
+      if (image.complete) return Promise.resolve();
+      return Promise.race([
+        image.decode().catch(() => {}),
+        new Promise((resolve) => setTimeout(resolve, 1200)),
+      ]);
+    }));
+  });
+  return page.evaluate(() => {
+    const images = [...document.images];
+    const broken = images.filter((image) => !image.naturalWidth || !image.naturalHeight).map((image) => ({
+      src: image.currentSrc || image.src || image.getAttribute("src"),
+      alt: image.alt || "",
+      selector: image.id ? `img#${CSS.escape(image.id)}` : image.className && typeof image.className === "string"
+        ? `img.${image.className.trim().split(/\s+/u).filter(Boolean).slice(0, 3).map((token) => CSS.escape(token)).join(".")}`
+        : "img",
+      complete: image.complete,
+      natural_width: image.naturalWidth,
+      natural_height: image.naturalHeight,
+    }));
+    return {status: broken.length ? "fail" : "pass", image_count: images.length, broken};
+  });
+}
+
+// Exercise the Wikidot widgets present in the preview and restore their
+// original state so the probe cannot leak into viewport screenshots/torture.
+export async function exercisePreviewInteractions(page) {
+  const widgets = await page.evaluate(async () => {
+    const settle = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const tabsets = [...document.querySelectorAll("#page-content .yui-navset")];
+    const tabset = tabsets.at(-1);
+    const tabs = tabset ? [...tabset.querySelectorAll(".yui-nav li a")] : [];
+    let tabResult = {status: "not-applicable", tab_count: tabs.length};
+    if (tabs.length > 1) {
+      const nav = tabset.querySelector(".yui-nav");
+      const originalIndex = [...nav.querySelectorAll("li")].findIndex((item) => item.classList.contains("selected"));
+      const targetIndex = originalIndex === 1 ? 0 : 1;
+      tabs[targetIndex].click();
+      await settle();
+      const activeIndex = [...nav.querySelectorAll("li")].findIndex((item) => item.classList.contains("selected"));
+      const changed = activeIndex === targetIndex;
+      if (originalIndex >= 0 && tabs[originalIndex]) tabs[originalIndex].click();
+      await settle();
+      const restoredIndex = [...nav.querySelectorAll("li")].findIndex((item) => item.classList.contains("selected"));
+      tabResult = {
+        status: changed && restoredIndex === originalIndex ? "pass" : "fail",
+        tab_count: tabs.length,
+        original_index: originalIndex,
+        activated_index: activeIndex,
+        restored_index: restoredIndex,
+      };
+    }
+
+    const collapsibles = [...document.querySelectorAll("#page-content .collapsible-block")];
+    const collapsible = collapsibles.at(-1);
+    let collapsibleResult = {status: collapsible ? "not-tested" : "not-applicable"};
+    if (collapsible) {
+      const folded = [...collapsible.children].find((child) => child.classList.contains("collapsible-block-folded"));
+      const unfolded = [...collapsible.children].find((child) => child.classList.contains("collapsible-block-unfolded"));
+      const isFolded = () => Boolean(folded && getComputedStyle(folded).display !== "none");
+      const visibleControl = () => [...collapsible.querySelectorAll(".collapsible-block-link")]
+        .find((control) => getComputedStyle(control.closest(".collapsible-block-folded, .collapsible-block-unfolded")).display !== "none");
+      const link = visibleControl();
+      const initiallyFolded = isFolded();
+      if (link) {
+        link.click();
+        await settle();
+        const afterClickFolded = isFolded();
+        collapsibleResult = {
+          status: afterClickFolded !== initiallyFolded ? "pass" : "fail",
+          initial: initiallyFolded ? "folded" : "open",
+          after_click: afterClickFolded ? "folded" : "open",
+        };
+        if (afterClickFolded !== initiallyFolded) visibleControl()?.click();
+        await settle();
+        const restoredFolded = isFolded();
+        collapsibleResult.restored = restoredFolded === initiallyFolded;
+        if (!collapsibleResult.restored) collapsibleResult.status = "fail";
+      }
+    }
+    const header = document.querySelector("#header");
+    const headerPosition = header ? getComputedStyle(header).position : "missing";
+    let scrollResult = {status: "not-applicable", position: headerPosition};
+    if (header && (headerPosition === "fixed" || headerPosition === "sticky")) {
+      const initialTop = header.getBoundingClientRect().top;
+      const stickyTop = getComputedStyle(header).top;
+      const root = document.documentElement;
+      const oldBehavior = root.style.scrollBehavior;
+      const body = document.body;
+      const oldBodyBehavior = body.style.scrollBehavior;
+      const stability = document.createElement("style");
+      stability.textContent = "*, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }";
+      document.head.append(stability);
+      root.style.scrollBehavior = "auto";
+      body.style.scrollBehavior = "auto";
+      window.scrollTo(0, 400);
+      await settle();
+      const scrolledTop = header.getBoundingClientRect().top;
+      window.scrollTo(0, 0);
+      await settle();
+      stability.remove();
+      root.style.scrollBehavior = oldBehavior;
+      body.style.scrollBehavior = oldBodyBehavior;
+      const expectedStickyTop = Number.parseFloat(stickyTop);
+      const positionMatches = headerPosition === "fixed"
+        ? Math.abs(scrolledTop - initialTop) <= 4
+        : Math.abs(scrolledTop - expectedStickyTop) <= 4 || Math.abs(scrolledTop - initialTop) <= 4;
+      scrollResult = {status: positionMatches ? "pass" : "fail", position: headerPosition, sticky_top: stickyTop, initial_top: Math.round(initialTop), scrolled_top: Math.round(scrolledTop)};
+    }
+    return {tabs: tabResult, collapsible: collapsibleResult, scroll: scrollResult};
+  });
+  const count = await page.locator("#page-content a[href], #page-content button, #page-content input").count();
+  const controls = page.locator("#page-content a[href]:visible, #page-content button:visible, #page-content input:visible");
+  const visibleCount = await controls.count();
+  let pointerResult = {status: "not-applicable", control_count: count};
+  if (visibleCount) {
+    let lastError = null;
+    for (let index = 0; index < Math.min(visibleCount, 5); index += 1) {
+      const control = controls.nth(index);
+      try {
+        const focusEvidence = await control.evaluate((element) => {
+          element.focus({preventScroll: true});
+          return {
+            focused: document.activeElement === element,
+            tag: element.tagName.toLowerCase(),
+            href: element.getAttribute("href"),
+            tab_index: element.tabIndex,
+            active_tag: document.activeElement?.tagName?.toLowerCase() ?? null,
+          };
+        });
+        await control.hover({timeout: 600});
+        const hovered = await control.evaluate((element) => element.matches(":hover"));
+        if (focusEvidence.focused && hovered) {
+          pointerResult = {status: "pass", ...focusEvidence, hovered, control_count: count, visible_control_count: visibleCount, skipped_controls: index};
+          break;
+        }
+        lastError = `control ${index} did not focus and hover`;
+      } catch (error) {
+        lastError = error.message.slice(0, 180);
+      }
+    }
+    if (pointerResult.status !== "pass") {
+      pointerResult = {status: "fail", evidence: lastError, control_count: count, visible_control_count: visibleCount};
+    }
+    // Restore the probe's transient interaction state after measurement.
+    await page.evaluate(() => document.activeElement?.blur?.()).catch(() => {});
+    await page.mouse.move(0, 0).catch(() => {});
+  }
+  return {...widgets, pointer_focus: pointerResult};
+}
+
 // Replace only the article content and its inline styles, leaving the page
 // chrome (header, side bar, title) untouched. This is the wikitext preview
 // equivalent of live CSS injection: no navigation, no save, no cache work.
@@ -463,12 +655,66 @@ export async function collectViewportOverflow(page, viewports) {
   for (const viewport of viewports) {
     await setViewport(page, viewport);
     result[viewport.id] = await page.evaluate(() => {
+      const stabilityStyle = document.createElement("style");
+      stabilityStyle.textContent = "*, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }";
+      document.head.appendChild(stabilityStyle);
+      void getComputedStyle(document.body).width;
       const root = document.documentElement;
       const content = document.querySelector("#page-content");
-      return {
+      const offenders = [...document.querySelectorAll("body *")]
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          const right = Math.max(0, rect.right - root.clientWidth);
+          let ancestor = element.parentElement;
+          let clipped = false;
+          while (ancestor && ancestor !== document.body) {
+            const ancestorStyle = getComputedStyle(ancestor);
+            const ancestorRect = ancestor.getBoundingClientRect();
+            if (
+              ["auto", "scroll", "hidden", "clip"].includes(ancestorStyle.overflowX) &&
+              ancestorRect.right <= root.clientWidth + 2 &&
+              rect.right > ancestorRect.right + 2
+            ) {
+              clipped = true;
+              break;
+            }
+            ancestor = ancestor.parentElement;
+          }
+          return {element, rect, overflow_px: right, clipped};
+        })
+        .filter((row) => row.overflow_px > 0.5 && !row.clipped)
+        .sort((a, b) => b.overflow_px - a.overflow_px)
+        .slice(0, 5)
+        .map(({element, rect, overflow_px}) => {
+          const style = getComputedStyle(element);
+          const selector = element.id ? `#${CSS.escape(element.id)}` :
+            `${element.tagName.toLowerCase()}${[...element.classList].slice(0, 3).map((name) => `.${CSS.escape(name)}`).join("")}`;
+          const ancestors = [];
+          let parent = element.parentElement;
+          while (parent && ancestors.length < 5) {
+            const name = parent.id ? `#${CSS.escape(parent.id)}` :
+              `${parent.tagName.toLowerCase()}${[...parent.classList].slice(0, 2).map((part) => `.${CSS.escape(part)}`).join("")}`;
+            ancestors.push(name);
+            parent = parent.parentElement;
+          }
+          return {
+            selector,
+            tag: element.tagName.toLowerCase(),
+            class_name: typeof element.className === "string" ? element.className.slice(0, 120) : "",
+            inside_page_content: Boolean(content?.contains(element)),
+            ancestors,
+            rect: {left: Math.round(rect.left * 10) / 10, right: Math.round(rect.right * 10) / 10, width: Math.round(rect.width * 10) / 10},
+            overflow_px: Math.round(overflow_px * 10) / 10,
+            computed: {width: style.width, min_width: style.minWidth, max_width: style.maxWidth, position: style.position, overflow_x: style.overflowX},
+          };
+        });
+      const measurement = {
         document_overflow_px: Math.max(0, root.scrollWidth - root.clientWidth),
         content_overflow_px: content ? Math.max(0, content.scrollWidth - content.clientWidth) : null,
+        overflow_sources: offenders,
       };
+      stabilityStyle.remove();
+      return measurement;
     });
   }
   return result;
@@ -476,10 +722,47 @@ export async function collectViewportOverflow(page, viewports) {
 
 export async function screenshot(page, {path: outputPath, fullPage = true, viewport = null}) {
   if (viewport) await page.setViewportSize(viewport);
-  await page.screenshot({path: outputPath, fullPage});
+  await resetScrollPosition(page);
+  await page.evaluate(() => {
+    const style = document.createElement("style");
+    style.id = "theme-lab-screenshot-stability";
+    style.textContent = "*, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }";
+    document.head.appendChild(style);
+    void getComputedStyle(document.body).width;
+  });
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  try {
+    await page.screenshot({path: outputPath, fullPage});
+  } finally {
+    await page.evaluate(() => document.getElementById("theme-lab-screenshot-stability")?.remove());
+  }
   return outputPath;
+}
+
+async function resetScrollPosition(page) {
+  await page.evaluate(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const rootBehavior = root.style.scrollBehavior;
+    const bodyBehavior = body.style.scrollBehavior;
+    root.style.scrollBehavior = "auto";
+    body.style.scrollBehavior = "auto";
+    root.scrollLeft = 0;
+    root.scrollTop = 0;
+    body.scrollLeft = 0;
+    body.scrollTop = 0;
+    for (const element of document.querySelectorAll("*")) {
+      if (element.scrollLeft) element.scrollLeft = 0;
+      if (element.scrollTop) element.scrollTop = 0;
+    }
+    window.scrollTo(0, 0);
+    void root.offsetWidth;
+    root.style.scrollBehavior = rootBehavior;
+    body.style.scrollBehavior = bodyBehavior;
+  });
 }
 
 export async function setViewport(page, viewport) {
   await page.setViewportSize(viewport);
+  await resetScrollPosition(page);
 }

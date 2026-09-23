@@ -1,0 +1,59 @@
+{
+  "assets": [
+    {
+      "sha256": "ba187e02986e39f618d471f85d3e7f4ab45902124a67c7e330d186e113b952ed",
+      "bytes": 2053,
+      "content_type": "image/png",
+      "original_url": "http://scp-jp-storage.wikidot.com/local--files/file:7974444-50-9wqt/night-rush-header.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A7974444-50-9wqt/night-rush-header.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at ba187e02986e39f618d471f85d3e7f4ab45902124a67c7e330d186e113b952ed.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "b6d283fad22b250af1e8041ffcca895cc2fa5bea8586b9dbaac3389591dfd213",
+      "bytes": 20934,
+      "content_type": "image/png",
+      "original_url": "http://scp-jp-storage.wikidot.com/local--files/file:7974444-51-jv2x/night-rush-icon.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Anight-rush-theme/night-rush-icon.png",
+      "replaced_from": "http://scp-jp-storage.wikidot.com/local--files/file:7974444-51-jv2x/night-rush-icon.png",
+      "replacement_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Anight-rush-theme/night-rush-icon.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at b6d283fad22b250af1e8041ffcca895cc2fa5bea8586b9dbaac3389591dfd213.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    }
+  ],
+  "missing": [],
+  "imports": [
+    "https://scp-jp.github.io/files/theme/night-rush-theme/style0.css"
+  ],
+  "pruned_fonts": [],
+  "template_placeholders": [],
+  "asset_replacements": {
+    "http://scp-jp-storage.wikidot.com/local--files/file:7974444-51-jv2x/night-rush-icon.png": "https://scp-wiki.wdfiles.com/local--files/theme%3Anight-rush-theme/night-rush-icon.png"
+  },
+  "omitted_assets": [],
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wikidot.com/local--files/file:7974444-50-9wqt/night-rush-header.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A7974444-50-9wqt/night-rush-header.png",
+      "sha256": "ba187e02986e39f618d471f85d3e7f4ab45902124a67c7e330d186e113b952ed",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at ba187e02986e39f618d471f85d3e7f4ab45902124a67c7e330d186e113b952ed.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wikidot.com/local--files/file:7974444-51-jv2x/night-rush-icon.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Anight-rush-theme/night-rush-icon.png",
+      "sha256": "b6d283fad22b250af1e8041ffcca895cc2fa5bea8586b9dbaac3389591dfd213",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at b6d283fad22b250af1e8041ffcca895cc2fa5bea8586b9dbaac3389591dfd213.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp.github.io/files/theme/night-rush-theme/style0.css",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "2a89b06bce29eec82df41b40b9f42433bf7149e6e736abfc9c12b8be5e3f89cf",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    }
+  ]
+}

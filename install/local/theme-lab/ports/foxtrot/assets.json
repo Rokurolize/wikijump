@@ -1,0 +1,377 @@
+{
+  "assets": [
+    {
+      "sha256": "936bab32a6df130e60836eb8c6db216a01f36217b91ae186b5fe176f21bc0c5d",
+      "bytes": 45820,
+      "content_type": "image/svg+xml",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-60-vjf1/fxtrt-canada.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-60-vjf1/fxtrt-canada.svg",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 936bab32a6df130e60836eb8c6db216a01f36217b91ae186b5fe176f21bc0c5d.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "9346dc72f3fdad810acffde4519fe08c2f56a71125823dcded660e40d6725df0",
+      "bytes": 13437,
+      "content_type": "image/png",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-61-9brj/fxtrt-canada_darkmode.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-61-9brj/fxtrt-canada_darkmode.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 9346dc72f3fdad810acffde4519fe08c2f56a71125823dcded660e40d6725df0.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "0af0cdff64ef9bf144ee5b06ec9c80a82767c3210673702c97cebaac39987a33",
+      "bytes": 95671,
+      "content_type": "image/png",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-77-o0tg/ontologonew2.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-77-o0tg/ontologonew2.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 0af0cdff64ef9bf144ee5b06ec9c80a82767c3210673702c97cebaac39987a33.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "f299e7fb233c4edc8b1f813f4e5a09be5ca2bf3c974acea6bd5fb9de39265f7e",
+      "bytes": 228053,
+      "content_type": "image/png",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A3995762-105-gvkd/120.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A3995762-105-gvkd/120.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at f299e7fb233c4edc8b1f813f4e5a09be5ca2bf3c974acea6bd5fb9de39265f7e.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "da8119c8c0f1cbc7bc07df9e62cd72ced9d117dc1ac1d6098e982283cc86cbff",
+      "bytes": 26057,
+      "content_type": "image/png",
+      "original_url": "http://scp-jp-storage.wikidot.com/local--files/file%3A5722815-48-k39z/Big87.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-48-k39z/Big87.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at da8119c8c0f1cbc7bc07df9e62cd72ced9d117dc1ac1d6098e982283cc86cbff.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "11150b36a2bced98564b2645e31f1676acf064cc661539da1caf43d23df00c59",
+      "bytes": 357206,
+      "content_type": "application/octet-stream",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-62-tcqn/fxtrt-vanguard_logo.webp",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-62-tcqn/fxtrt-vanguard_logo.webp",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 11150b36a2bced98564b2645e31f1676acf064cc661539da1caf43d23df00c59.webp; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "aa3fe960509bbf92da95b92b082b310647f160b550be15270cd68a991aa3f0ac",
+      "bytes": 27379,
+      "content_type": "image/svg+xml",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A2963469-55-celk/overwatchheaderthreshold.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A2963469-55-celk/overwatchheaderthreshold.svg",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at aa3fe960509bbf92da95b92b082b310647f160b550be15270cd68a991aa3f0ac.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "08a976c52d286f2b7b97102530fb91860674308bb15f666bb2982a7e0c5bbd5b",
+      "bytes": 27142,
+      "content_type": "image/svg+xml",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A2963469-4-z8c6/overwatchheader.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A2963469-4-z8c6/overwatchheader.svg",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 08a976c52d286f2b7b97102530fb91860674308bb15f666bb2982a7e0c5bbd5b.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "f3a993f7645fcabb6e5475a1e017febb8e9224ecb395d279c3886ead671b3b8c",
+      "bytes": 31776,
+      "content_type": "image/svg+xml",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-78-0n3j/ATOM.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-78-0n3j/ATOM.svg",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at f3a993f7645fcabb6e5475a1e017febb8e9224ecb395d279c3886ead671b3b8c.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "43fa8c58d04a8a626e714e4c7813dd459420ee118de224cc012ec9d9ed9bea15",
+      "bytes": 215593,
+      "content_type": "image/png",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-471a/fxtrt-spc_lightmode.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-471a/fxtrt-spc_lightmode.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 43fa8c58d04a8a626e714e4c7813dd459420ee118de224cc012ec9d9ed9bea15.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e88d014915562194b9fad4fd954a046ef8103a62bb7b70c5f93f8cf7f25045ce",
+      "bytes": 79462,
+      "content_type": "image/png",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-79-by5e/spc-header.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-79-by5e/spc-header.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e88d014915562194b9fad4fd954a046ef8103a62bb7b70c5f93f8cf7f25045ce.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "7ccd1bd8e6962347d10b0f217a9255bf58ecfd76e0a0b1f1431e6bedf839173d",
+      "bytes": 9873,
+      "content_type": "image/svg+xml",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-80-85w5/Site-184.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-80-85w5/Site-184.svg",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 7ccd1bd8e6962347d10b0f217a9255bf58ecfd76e0a0b1f1431e6bedf839173d.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5a6fde6c7acf7ad08a351aa90721121ccb117fab0fba5d00b8fd9c8146cbf2d0",
+      "bytes": 11354,
+      "content_type": "image/png",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-tlne/fxtrt-nightfall_lightmode.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-tlne/fxtrt-nightfall_lightmode.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5a6fde6c7acf7ad08a351aa90721121ccb117fab0fba5d00b8fd9c8146cbf2d0.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "11c86148cec1c9a1fcc2e566bf92076cfcc98f8d60faf6bc5782fd98c093f072",
+      "bytes": 10269,
+      "content_type": "image/png",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-81-p6yq/moon1.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-81-p6yq/moon1.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 11c86148cec1c9a1fcc2e566bf92076cfcc98f8d60faf6bc5782fd98c093f072.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "b608cde3c3fce3defba40d2f38677b682f7a8c915f5a11f3fc9b3e27d19010e5",
+      "bytes": 48432,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/sairastencilone/v19/SLXSc03I6HkvZGJ1GvvipLoYSTEL9DsLYQw.ttf",
+      "final_url": "https://fonts.gstatic.com/s/sairastencilone/v19/SLXSc03I6HkvZGJ1GvvipLoYSTEL9DsLYQw.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at b608cde3c3fce3defba40d2f38677b682f7a8c915f5a11f3fc9b3e27d19010e5.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "ca79e6bfe0da02f170e1077f856ae1634141f5f162bad497142b1ddbd699f1dd",
+      "bytes": 228001,
+      "content_type": "image/png",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-qfcj/fxtrt-hybrasil_lightmode.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-qfcj/fxtrt-hybrasil_lightmode.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at ca79e6bfe0da02f170e1077f856ae1634141f5f162bad497142b1ddbd699f1dd.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "44f0fd6b9ce0984dac6d928b79a167c7b06b78501d34f4e46b9743caa2b8d642",
+      "bytes": 137042,
+      "content_type": "image/png",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-82-8r1s/mksjr3.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-82-8r1s/mksjr3.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 44f0fd6b9ce0984dac6d928b79a167c7b06b78501d34f4e46b9743caa2b8d642.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "7a022de179a466ad9711d5f2848123c5cba6eedf22e51a8dc04ed6e5d64b205d",
+      "bytes": 36816,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/russoone/v18/Z9XUDmZRWg6M1LvRYsH-yA.ttf",
+      "final_url": "https://fonts.gstatic.com/s/russoone/v18/Z9XUDmZRWg6M1LvRYsH-yA.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 7a022de179a466ad9711d5f2848123c5cba6eedf22e51a8dc04ed6e5d64b205d.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "f7ab5cc03cc3fb46c78414739b8469c1e344a46afe41f33f5d6649456d9d2a1f",
+      "bytes": 60644,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/creepster/v13/AlZy_zVUqJz4yMrniH4hdQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/creepster/v13/AlZy_zVUqJz4yMrniH4hdQ.ttf",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at f7ab5cc03cc3fb46c78414739b8469c1e344a46afe41f33f5d6649456d9d2a1f.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "787c5ced3221a4276da1a43eb988070f7e483407080bae563569feba0cc8a29c",
+      "bytes": 3016,
+      "content_type": "image/svg+xml",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-83-zz31/fxtrt-spooky_logo.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-83-zz31/fxtrt-spooky_logo.svg",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 787c5ced3221a4276da1a43eb988070f7e483407080bae563569feba0cc8a29c.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    }
+  ],
+  "missing": [],
+  "imports": [
+    "https://fonts.googleapis.com/css2?family=Creepster&display=swap",
+    "https://fonts.googleapis.com/css2?family=Russo+One&display=swap",
+    "https://fonts.googleapis.com/css?family=Saira+Stencil+One&display=swap"
+  ],
+  "pruned_fonts": [],
+  "template_placeholders": [],
+  "asset_replacements": {},
+  "omitted_assets": [],
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-60-vjf1/fxtrt-canada.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-60-vjf1/fxtrt-canada.svg",
+      "sha256": "936bab32a6df130e60836eb8c6db216a01f36217b91ae186b5fe176f21bc0c5d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 936bab32a6df130e60836eb8c6db216a01f36217b91ae186b5fe176f21bc0c5d.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-61-9brj/fxtrt-canada_darkmode.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-61-9brj/fxtrt-canada_darkmode.png",
+      "sha256": "9346dc72f3fdad810acffde4519fe08c2f56a71125823dcded660e40d6725df0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 9346dc72f3fdad810acffde4519fe08c2f56a71125823dcded660e40d6725df0.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-77-o0tg/ontologonew2.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-77-o0tg/ontologonew2.png",
+      "sha256": "0af0cdff64ef9bf144ee5b06ec9c80a82767c3210673702c97cebaac39987a33",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 0af0cdff64ef9bf144ee5b06ec9c80a82767c3210673702c97cebaac39987a33.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A3995762-105-gvkd/120.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A3995762-105-gvkd/120.png",
+      "sha256": "f299e7fb233c4edc8b1f813f4e5a09be5ca2bf3c974acea6bd5fb9de39265f7e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at f299e7fb233c4edc8b1f813f4e5a09be5ca2bf3c974acea6bd5fb9de39265f7e.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wikidot.com/local--files/file%3A5722815-48-k39z/Big87.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-48-k39z/Big87.png",
+      "sha256": "da8119c8c0f1cbc7bc07df9e62cd72ced9d117dc1ac1d6098e982283cc86cbff",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at da8119c8c0f1cbc7bc07df9e62cd72ced9d117dc1ac1d6098e982283cc86cbff.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-62-tcqn/fxtrt-vanguard_logo.webp",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-62-tcqn/fxtrt-vanguard_logo.webp",
+      "sha256": "11150b36a2bced98564b2645e31f1676acf064cc661539da1caf43d23df00c59",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 11150b36a2bced98564b2645e31f1676acf064cc661539da1caf43d23df00c59.webp; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A2963469-55-celk/overwatchheaderthreshold.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A2963469-55-celk/overwatchheaderthreshold.svg",
+      "sha256": "aa3fe960509bbf92da95b92b082b310647f160b550be15270cd68a991aa3f0ac",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at aa3fe960509bbf92da95b92b082b310647f160b550be15270cd68a991aa3f0ac.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A2963469-4-z8c6/overwatchheader.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A2963469-4-z8c6/overwatchheader.svg",
+      "sha256": "08a976c52d286f2b7b97102530fb91860674308bb15f666bb2982a7e0c5bbd5b",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 08a976c52d286f2b7b97102530fb91860674308bb15f666bb2982a7e0c5bbd5b.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-78-0n3j/ATOM.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-78-0n3j/ATOM.svg",
+      "sha256": "f3a993f7645fcabb6e5475a1e017febb8e9224ecb395d279c3886ead671b3b8c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at f3a993f7645fcabb6e5475a1e017febb8e9224ecb395d279c3886ead671b3b8c.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-471a/fxtrt-spc_lightmode.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-471a/fxtrt-spc_lightmode.png",
+      "sha256": "43fa8c58d04a8a626e714e4c7813dd459420ee118de224cc012ec9d9ed9bea15",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 43fa8c58d04a8a626e714e4c7813dd459420ee118de224cc012ec9d9ed9bea15.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-79-by5e/spc-header.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-79-by5e/spc-header.png",
+      "sha256": "e88d014915562194b9fad4fd954a046ef8103a62bb7b70c5f93f8cf7f25045ce",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e88d014915562194b9fad4fd954a046ef8103a62bb7b70c5f93f8cf7f25045ce.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-80-85w5/Site-184.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-80-85w5/Site-184.svg",
+      "sha256": "7ccd1bd8e6962347d10b0f217a9255bf58ecfd76e0a0b1f1431e6bedf839173d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 7ccd1bd8e6962347d10b0f217a9255bf58ecfd76e0a0b1f1431e6bedf839173d.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-tlne/fxtrt-nightfall_lightmode.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-tlne/fxtrt-nightfall_lightmode.png",
+      "sha256": "5a6fde6c7acf7ad08a351aa90721121ccb117fab0fba5d00b8fd9c8146cbf2d0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5a6fde6c7acf7ad08a351aa90721121ccb117fab0fba5d00b8fd9c8146cbf2d0.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-81-p6yq/moon1.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-81-p6yq/moon1.png",
+      "sha256": "11c86148cec1c9a1fcc2e566bf92076cfcc98f8d60faf6bc5782fd98c093f072",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 11c86148cec1c9a1fcc2e566bf92076cfcc98f8d60faf6bc5782fd98c093f072.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/sairastencilone/v19/SLXSc03I6HkvZGJ1GvvipLoYSTEL9DsLYQw.ttf",
+      "final_url": "https://fonts.gstatic.com/s/sairastencilone/v19/SLXSc03I6HkvZGJ1GvvipLoYSTEL9DsLYQw.ttf",
+      "sha256": "b608cde3c3fce3defba40d2f38677b682f7a8c915f5a11f3fc9b3e27d19010e5",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at b608cde3c3fce3defba40d2f38677b682f7a8c915f5a11f3fc9b3e27d19010e5.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-qfcj/fxtrt-hybrasil_lightmode.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-qfcj/fxtrt-hybrasil_lightmode.png",
+      "sha256": "ca79e6bfe0da02f170e1077f856ae1634141f5f162bad497142b1ddbd699f1dd",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at ca79e6bfe0da02f170e1077f856ae1634141f5f162bad497142b1ddbd699f1dd.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-82-8r1s/mksjr3.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-82-8r1s/mksjr3.png",
+      "sha256": "44f0fd6b9ce0984dac6d928b79a167c7b06b78501d34f4e46b9743caa2b8d642",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 44f0fd6b9ce0984dac6d928b79a167c7b06b78501d34f4e46b9743caa2b8d642.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/russoone/v18/Z9XUDmZRWg6M1LvRYsH-yA.ttf",
+      "final_url": "https://fonts.gstatic.com/s/russoone/v18/Z9XUDmZRWg6M1LvRYsH-yA.ttf",
+      "sha256": "7a022de179a466ad9711d5f2848123c5cba6eedf22e51a8dc04ed6e5d64b205d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 7a022de179a466ad9711d5f2848123c5cba6eedf22e51a8dc04ed6e5d64b205d.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.gstatic.com/s/creepster/v13/AlZy_zVUqJz4yMrniH4hdQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/creepster/v13/AlZy_zVUqJz4yMrniH4hdQ.ttf",
+      "sha256": "f7ab5cc03cc3fb46c78414739b8469c1e344a46afe41f33f5d6649456d9d2a1f",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at f7ab5cc03cc3fb46c78414739b8469c1e344a46afe41f33f5d6649456d9d2a1f.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-83-zz31/fxtrt-spooky_logo.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-83-zz31/fxtrt-spooky_logo.svg",
+      "sha256": "787c5ced3221a4276da1a43eb988070f7e483407080bae563569feba0cc8a29c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 787c5ced3221a4276da1a43eb988070f7e483407080bae563569feba0cc8a29c.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=Creepster&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "94b9a50fe643166b147a7ab8d84b58302422755b1a22c7b2ae7f17b1c5d71a28",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=Russo+One&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "94b9a50fe643166b147a7ab8d84b58302422755b1a22c7b2ae7f17b1c5d71a28",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css?family=Saira+Stencil+One&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "94b9a50fe643166b147a7ab8d84b58302422755b1a22c7b2ae7f17b1c5d71a28",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    }
+  ]
+}

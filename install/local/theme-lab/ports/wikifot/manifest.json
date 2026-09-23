@@ -1,0 +1,85 @@
+{
+  "slug": "theme:wikifot",
+  "en_source_sha256": "406f9fdca96043830e4656383a55643885cf1bd55a2237c360ce5c1f14d85a9e",
+  "en_updated_at": "2024-07-05T14:55:30+00:00",
+  "en_entity_uuid": "c01acd10-15e2-4c65-879f-16e370e66f50",
+  "jp_previous_status": "confirmed-absent-by-targeted-xmlrpc",
+  "jp_previous_source_sha256": null,
+  "jp_previous_updated_at": null,
+  "jp_previous_entity_uuid": null,
+  "technical_spec_version": "1.4",
+  "reference_url": "https://scp-wiki.wikidot.com/theme:wikifot",
+  "candidate_source": "candidate.wikidot.txt",
+  "candidate_css": "candidate.css",
+  "source_file": "upstream-en.wikidot.txt",
+  "existing_jp_source": null,
+  "source_identity": {
+    "slug": "theme:wikifot",
+    "title": "Wikifot Theme",
+    "en": {
+      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:wikifot/source.wikidot.txt",
+      "sha256": "406f9fdca96043830e4656383a55643885cf1bd55a2237c360ce5c1f14d85a9e",
+      "updated_at": "2024-07-05T14:55:30+00:00",
+      "entity_uuid": "c01acd10-15e2-4c65-879f-16e370e66f50",
+      "tags": [
+        "_cc",
+        "joke",
+        "theme"
+      ],
+      "attached_files": [],
+      "revisions": 12
+    },
+    "jp": {
+      "status": "confirmed-absent-by-targeted-xmlrpc",
+      "source_path": null,
+      "sha256": null,
+      "updated_at": null,
+      "entity_uuid": null,
+      "tags": [],
+      "absence_run": "theme-jp-absence-check-20260923"
+    },
+    "existing_jp_audit": "new-jp-candidate-verified",
+    "technical_spec_version": "1.4",
+    "final_verdict": "warn"
+  },
+  "dependencies": {
+    "slug": "theme:wikifot",
+    "en_includes": [
+      ":scp-int:component:interwiki-style priority=1",
+      ":scp-wiki:theme:wikifot",
+      "theme:wikifot",
+      "component:image-block caption=An image I forgot to upload"
+    ],
+    "en_external_dependencies": [
+      "https://flickr.com/tags/bsod"
+    ],
+    "jp_includes": [],
+    "jp_external_dependencies": [],
+    "base_family": "sigma"
+  },
+  "human_port_candidate": "human-port-candidate.wikidot.txt",
+  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_wikifot/theme_wikifot_Japanese.wikidot.txt",
+  "acceptance_selectors": "../shared-acceptance-selectors.txt",
+  "candidate_input": "human-port-candidate.wikidot.txt",
+  "candidate_css_source": "candidate-source.css",
+  "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
+  "candidate_source_hash": "550fa3c183832d172679901732716aabebaa8e68a9d4f259582c43de263198bc",
+  "page_assets": [
+    {
+      "filename": "table.png",
+      "sha256": "61d58db78f6aec50335ca228add57a43332a69a01078beb3235b39645452057a",
+      "bytes": 17211,
+      "asset_file": "61d58db78f6aec50335ca228add57a43332a69a01078beb3235b39645452057a.png",
+      "source_urls": [
+        "https://scpaiueouiuiuiui.wjfiles.localhost:18443/local--resized-images//table.png/medium.jpg"
+      ],
+      "acquired_from": "https://scp-wiki.wdfiles.com/local--files/theme:wikifot/table.png",
+      "classification": "localize-into-candidate-package",
+      "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; "
+    }
+  ],
+  "final_verdict": "warn",
+  "existing_jp_audit": "new-jp-candidate-verified",
+  "asset_dependency_decisions_path": "install/local/theme-lab/ports/wikifot/assets.json",
+  "asset_dependency_decision_count": 1
+}
