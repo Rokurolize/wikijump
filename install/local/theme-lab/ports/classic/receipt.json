@@ -36,7 +36,78 @@
   "edit_iterations": 3,
   "manual_devtools_fallback_count": 0,
   "manual_visual_inspection_count": 1,
-  "theme_lab_findings": [],
+  "theme_lab_findings": {
+    "first_check": {
+      "verdict": "fail",
+      "captured_top_issue_count": 8,
+      "issue_counts_by_kind": {
+        "missing_selector": 2,
+        "viewport_overflow": 1,
+        "unresolved_include": 3,
+        "collapsed_selector": 2
+      },
+      "evidence": "install/local/theme-lab/ports/classic/receipt.json#theme_lab_checks[0]"
+    },
+    "candidate_page_images": {
+      "initially_broken": 2,
+      "initial_failures": [
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:7657035-49-8um1/scp_foundation_logo.png",
+          "alt": "scp_foundation_logo.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:7657035-48-7ahr/base_image_frame.png",
+          "alt": "base_image_frame.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        }
+      ],
+      "final_broken": 0,
+      "resolution_evidence": "install/local/theme-lab/ports/classic/page-assets.json",
+      "status": "repaired-or-removed-and-finally-verified"
+    },
+    "derived_preview_include_scope": {
+      "unseeded_includes_omitted": [
+        "component:interwiki-style",
+        "credit:end-preview",
+        "credit:start-preview",
+        "theme:classic"
+      ],
+      "status": "documented-preview-fixture-scope",
+      "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+    },
+    "final_candidate": {
+      "verdict": "warn",
+      "errors": 0,
+      "next_actions": 0,
+      "viewport_status": {
+        "desktop": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "laptop": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "tablet": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "mobile": {
+          "status": "pass",
+          "document_overflow_px": 0
+        }
+      },
+      "torture": "pass",
+      "broken_images": 0
+    }
+  },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/classic/candidate.wikidot.source.txt",
   "source_candidate_sha256": "b6ffca1f5e8de7ab7e1b37fc882adf44ab7539f3c68c071fb7577102dc84efb4",

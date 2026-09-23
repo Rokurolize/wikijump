@@ -34,7 +34,70 @@
   "edit_iterations": 3,
   "manual_devtools_fallback_count": 0,
   "manual_visual_inspection_count": 1,
-  "theme_lab_findings": [],
+  "theme_lab_findings": {
+    "first_check": {
+      "verdict": "fail",
+      "captured_top_issue_count": 7,
+      "issue_counts_by_kind": {
+        "unresolved_include": 5,
+        "collapsed_selector": 1,
+        "expanded_selector": 1
+      },
+      "evidence": "install/local/theme-lab/ports/extra-black-highlighter-theme/receipt.json#theme_lab_checks[0]"
+    },
+    "candidate_page_images": {
+      "initially_broken": 1,
+      "initial_failures": [
+        {
+          "src": "https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg",
+          "alt": "black-highlighter-logo.svg",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        }
+      ],
+      "final_broken": 0,
+      "resolution_evidence": "install/local/theme-lab/ports/extra-black-highlighter-theme/page-assets.json",
+      "status": "repaired-or-removed-and-finally-verified"
+    },
+    "derived_preview_include_scope": {
+      "unseeded_includes_omitted": [
+        "component:bhl-dark-sidebar",
+        "component:image-block",
+        "component:interwiki-style",
+        "theme:black-highlighter-theme",
+        "theme:extra-black-highlighter-theme"
+      ],
+      "status": "documented-preview-fixture-scope",
+      "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+    },
+    "final_candidate": {
+      "verdict": "warn",
+      "errors": 0,
+      "next_actions": 0,
+      "viewport_status": {
+        "desktop": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "laptop": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "tablet": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "mobile": {
+          "status": "pass",
+          "document_overflow_px": 0
+        }
+      },
+      "torture": "pass",
+      "broken_images": 0
+    }
+  },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/candidate.wikidot.source.txt",
   "source_candidate_sha256": "be1822fa4b177265b411dbc7b8fd9e96acf714683c2be9021e6ad9fbe267c797",

@@ -20,6 +20,48 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def summarize_theme_lab_findings(slug: str, receipt: dict, final_result: dict, page_image_rows: dict) -> dict:
+    checks = receipt.get("theme_lab_checks", [])
+    first = checks[0] if checks else {}
+    issues = first.get("top_issues", [])
+    kinds: dict[str, int] = {}
+    for issue in issues:
+        key = issue.get("kind", "unknown")
+        kinds[key] = kinds.get(key, 0) + 1
+    image_row = page_image_rows.get(slug, {"slug": slug, "broken": []})
+    broken_rows = image_row.get("broken", [])
+    final_broken_images = len(final_result.get("image_diagnostics", {}).get("broken", []))
+    fixture = json.loads((PORTS / slug.split(":", 1)[1] / "preview-fixture.json").read_text())
+    return {
+        "first_check": {
+            "verdict": first.get("verdict"),
+            "captured_top_issue_count": len(issues),
+            "issue_counts_by_kind": kinds,
+            "evidence": f"install/local/theme-lab/ports/{slug.split(':', 1)[1]}/receipt.json#theme_lab_checks[0]",
+        },
+        "candidate_page_images": {
+            "initially_broken": len(broken_rows),
+            "initial_failures": broken_rows,
+            "final_broken": final_broken_images,
+            "resolution_evidence": f"install/local/theme-lab/ports/{slug.split(':', 1)[1]}/page-assets.json" if (PORTS / slug.split(":", 1)[1] / "page-assets.json").exists() else "final Theme Lab image diagnostics and candidate asset manifest",
+            "status": "repaired-or-removed-and-finally-verified" if broken_rows and final_broken_images == 0 else "no-initial-image-failure" if not broken_rows else "fail",
+        },
+        "derived_preview_include_scope": {
+            "unseeded_includes_omitted": fixture.get("omitted_unseeded_includes", []),
+            "status": "documented-preview-fixture-scope",
+            "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved.",
+        },
+        "final_candidate": {
+            "verdict": final_result.get("verdict"),
+            "errors": final_result.get("errors"),
+            "next_actions": final_result.get("next_actions"),
+            "viewport_status": final_result.get("viewport_status"),
+            "torture": final_result.get("torture"),
+            "broken_images": final_broken_images,
+        },
+    }
+
+
 def main() -> int:
     manifest = json.loads(MANIFEST.read_text())
     rows = [json.loads(line) for line in RUN.read_text().splitlines() if line.strip()]
@@ -35,6 +77,7 @@ def main() -> int:
     timing = {key: [row["timing_ms"][key] for row in results.values() if key in row.get("timing_ms", {})]
               for key in ("total", "visual_ms", "preview_ms")}
     user_credit_adaptations = json.loads((PORTS / "localized-user-credit-adaptations.json").read_text())
+    image_findings = {row["slug"]: row for row in json.loads((PORTS / "candidate-page-image-findings.json").read_text())}
     adapted_user_credits = {row["theme"]: row["replaced_site_local_user_links"] for row in user_credit_adaptations["themes"]}
     manifest["technical_spec_version"] = "1.4"
     manifest["warm_edit_verdict_benchmark"] = {
@@ -60,6 +103,7 @@ def main() -> int:
         "timing_ms_median": {key: round(statistics.median(values), 1) for key, values in timing.items()},
         "warning_policy": "Warnings are documented selector-count differences plus non-gating screenshot RMSE differences caused by different localized showcase content and JP-native runtime chrome. Four-viewport paired screenshot contact sheets were reviewed for theme identity, logo/palette, composition, and responsive structure. No error, next_action, viewport overflow, missing CSS/page image asset, torture regression, or font diagnostic failure was observed.",
     }
+    productivity = []
     for theme in manifest["themes"]:
         slug = theme["slug"]
         name = slug.split(":", 1)[1]
@@ -94,6 +138,7 @@ def main() -> int:
         receipt["final_verdict"] = result["verdict"]
         receipt["final_status"] = result["status"]
         receipt["final_theme_lab_check"] = result
+        receipt["theme_lab_findings"] = summarize_theme_lab_findings(slug, receipt, result, image_findings)
         receipt["offline_external_request_count"] = result["external_requests"]
         receipt["asset_status"] = {
             "candidate_missing": result["missing_candidate_assets"],
@@ -205,6 +250,16 @@ def main() -> int:
             ) if (package / "acceptance-selectors.txt").exists() else [],
         }
         receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n")
+        productivity.append({
+            "slug": slug,
+            "theme_lab_checks": receipt["check_count"],
+            "css_edit_iterations": receipt["edit_iterations"],
+            "manual_devtools_fallback_count": receipt["manual_devtools_fallback_count"],
+            "manual_visual_inspection_count": receipt["manual_visual_inspection_count"],
+            "initially_broken_page_images": receipt["theme_lab_findings"]["candidate_page_images"]["initially_broken"],
+            "first_check_top_issue_count": receipt["theme_lab_findings"]["first_check"]["captured_top_issue_count"],
+            "first_check_issue_counts_by_kind": receipt["theme_lab_findings"]["first_check"]["issue_counts_by_kind"],
+        })
 
         prior = receipt.get("jp", {})
         jp_note = (f"Previous public JP source SHA-256 {prior.get('sha256')} (updated {prior.get('updated_at')}); EN was refreshed to {receipt['en']['updated_at']}."
@@ -271,6 +326,7 @@ def main() -> int:
             "torture_status": result["torture"],
             "visual_status": result["visual"],
             "visual_review": receipt["visual_review"],
+            "theme_lab_findings": receipt["theme_lab_findings"],
             "receipt_path": f"install/local/theme-lab/ports/{name}/receipt.json",
             "existing_jp_audit": receipt["existing_jp_audit"],
         })
@@ -349,6 +405,15 @@ def main() -> int:
     asset_index = {"schema_version": 1, "asset_count": len(asset_rows), "total_bytes": sum(row["bytes"] for row in asset_rows), "themes": 34, "assets": asset_rows}
     (PORTS / "shared-replay-assets.json").write_text(json.dumps(asset_index, ensure_ascii=False, indent=2) + "\n")
     manifest["shared_replay_asset_index"] = "install/local/theme-lab/ports/shared-replay-assets.json"
+    manifest["campaign_productivity"] = {
+        "themes": len(productivity),
+        "theme_lab_checks": sum(row["theme_lab_checks"] for row in productivity),
+        "css_edit_iterations": sum(row["css_edit_iterations"] for row in productivity),
+        "manual_devtools_fallback_count": sum(row["manual_devtools_fallback_count"] for row in productivity),
+        "manual_visual_inspection_count": sum(row["manual_visual_inspection_count"] for row in productivity),
+        "initially_broken_page_images": sum(row["initially_broken_page_images"] for row in productivity),
+        "per_theme": productivity,
+    }
     MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps({"updated_themes": len(expected), "regression": summary, "source": str(MANIFEST.relative_to(ROOT))}, ensure_ascii=False))
     return 0

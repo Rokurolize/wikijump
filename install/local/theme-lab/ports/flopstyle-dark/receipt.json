@@ -33,7 +33,95 @@
   "edit_iterations": 3,
   "manual_devtools_fallback_count": 0,
   "manual_visual_inspection_count": 1,
-  "theme_lab_findings": [],
+  "theme_lab_findings": {
+    "first_check": {
+      "verdict": "fail",
+      "captured_top_issue_count": 12,
+      "issue_counts_by_kind": {
+        "missing_selector": 2,
+        "new_horizontal_overflow": 3,
+        "new_component_overflow": 3,
+        "new_viewport_overflow": 1,
+        "viewport_overflow": 3
+      },
+      "evidence": "install/local/theme-lab/ports/flopstyle-dark/receipt.json#theme_lab_checks[0]"
+    },
+    "candidate_page_images": {
+      "initially_broken": 2,
+      "initial_failures": [
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:7657035-49-8um1/scp_foundation_logo.png",
+          "alt": "scp_foundation_logo.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scpaiueouiuiuiui.wjfiles.localhost:18443/local--resized-images//alt_logo_tyrian.png/medium.jpg",
+          "alt": "alt_logo_tyrian.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        }
+      ],
+      "final_broken": 0,
+      "resolution_evidence": "install/local/theme-lab/ports/flopstyle-dark/page-assets.json",
+      "status": "repaired-or-removed-and-finally-verified"
+    },
+    "derived_preview_include_scope": {
+      "unseeded_includes_omitted": [
+        ":snippets:bs-image",
+        "component:acs-animation",
+        "component:betterfootnotes",
+        "component:croqstyle",
+        "component:fade-in",
+        "component:image-block",
+        "component:interwiki-style",
+        "component:license-box-end",
+        "component:license-box-theme",
+        "component:text-style",
+        "component:toggle-sidebar",
+        "info:end",
+        "info:end-standalone",
+        "info:start",
+        "info:start-standalone",
+        "unterminated:[[include##** ##var(--c-symbol)|:scp-jp:component:flops-header##\n**##var(--c-keyword)||####var(--c-builtin)|item####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|containment####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|level####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|security####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|disruption####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|disruption-bg-color####var(--c-keyword)|=##**",
+        "unterminated:[[include##** ##var(--c-symbol)|:scp-jp:theme:flopstyle-dark##",
+        "unterminated:[[include##** ##var(--c-symbol)|:scp-jp:theme:flopstyle-dark##\n**##var(--c-keyword)||##**##var(--c-string)|witch=a##",
+        "unterminated:[[include##** ##var(--c-symbol)|:snippets:bs-image##\n**##var(--c-keyword)||####var(--c-builtin)|image####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|heading####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|caption####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|link####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|alt####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|width####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|float####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|kind####var(--c-keyword)|=##**",
+        "unterminated:[[include##** ##var(--c-symbol)|:snippets:bs-image##\n**##var(--c-keyword)||####var(--c-builtin)|image####var(--c-keyword)|=##**Larry_the_cat.jpg\n**##var(--c-keyword)||####var(--c-builtin)|heading####var(--c-keyword)|=##**猫のラリー\n**##var(--c-keyword)||####var(--c-builtin)|caption####var(--c-keyword)|=##**とても柔らかい。\n**##var(--c-keyword)||####var(--c-builtin)|link####var(--c-keyword)|=##**@@/local--files/theme:flopstyle-dark/Larry_the_cat.jpg@@\n**##var(--c-keyword)||####var(--c-builtin)|alt####var(--c-keyword)|=##ベージュ色の猫ラリーが、庭で身構えて座っている。**\n**##var(--c-keyword)||####var(--c-builtin)|width####var(--c-keyword)|=##**300px\n**##var(--c-keyword)||####var(--c-builtin)|float####var(--c-keyword)|=##**middle\n**##var(--c-keyword)||####var(--c-builtin)|kind####var(--c-keyword)|=##**primary"
+      ],
+      "status": "documented-preview-fixture-scope",
+      "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+    },
+    "final_candidate": {
+      "verdict": "warn",
+      "errors": 0,
+      "next_actions": 0,
+      "viewport_status": {
+        "desktop": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "laptop": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "tablet": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "mobile": {
+          "status": "pass",
+          "document_overflow_px": 0
+        }
+      },
+      "torture": "pass",
+      "broken_images": 0
+    }
+  },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/flopstyle-dark/candidate.wikidot.source.txt",
   "source_candidate_sha256": "cfb44bd64b36997a2abc6aed9b587b1a8f73a66a5037804b6e02f43d6d4842d7",
