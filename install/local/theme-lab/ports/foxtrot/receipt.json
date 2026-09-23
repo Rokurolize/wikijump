@@ -34,7 +34,262 @@
   "edit_iterations": 3,
   "manual_devtools_fallback_count": 0,
   "manual_visual_inspection_count": 1,
-  "theme_lab_findings": [],
+  "theme_lab_findings": {
+    "first_check": {
+      "verdict": "fail",
+      "captured_top_issue_count": 12,
+      "issue_counts_by_kind": {
+        "new_horizontal_overflow": 1,
+        "new_viewport_overflow": 1,
+        "new_component_overflow": 1,
+        "viewport_overflow": 2,
+        "unresolved_include": 7
+      },
+      "evidence": "install/local/theme-lab/ports/foxtrot/receipt.json#theme_lab_checks[0]"
+    },
+    "candidate_page_images": {
+      "initially_broken": 24,
+      "initial_failures": [
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-84-cvcw/canada_light-JP.png",
+          "alt": "canada_light-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-85-6k0m/canada_dark-JP.png",
+          "alt": "canada_dark-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-86-9vrb/slothspit_light-JP.png",
+          "alt": "slothspit_light-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-87-iriu/slothspit_dark-JP.png",
+          "alt": "slothspit_dark-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-88-5988/poland_light-JP.png",
+          "alt": "poland_light-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-89-40fu/poland_dark-JP.png",
+          "alt": "poland_dark-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-90-h0l3/vanguard_light-JP.png",
+          "alt": "vanguard_light-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-91-ps8h/vanguard_dark-JP.png",
+          "alt": "vanguard_dark-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-92-n9nj/threshold_light-JP.png",
+          "alt": "threshold_light-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-93-mf91/threshold_dark-JP.png",
+          "alt": "threshold_dark-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-94-9j68/overwatch_light-JP.png",
+          "alt": "overwatch_light-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-95-mgaw/overwatch_dark-JP.png",
+          "alt": "overwatch_dark-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-96-88ic/spc_light-JP.png",
+          "alt": "spc_light-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-97-wj4h/spc_dark-JP.png",
+          "alt": "spc_dark-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-98-f31h/fishing_light-JP.png",
+          "alt": "fishing_light-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-99-ct6y/fishing_dark-JP.png",
+          "alt": "fishing_dark-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-100-vd38/nightfall_light-JP.png",
+          "alt": "nightfall_light-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-101-t3p2/nightfall_dark-JP.png",
+          "alt": "nightfall_dark-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-102-yhl7/hybrasil_light-JP.png",
+          "alt": "hybrasil_light-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-103-f7xn/hybrasil_dark-JP.png",
+          "alt": "hybrasil_dark-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-104-s61v/goc_light-JP.png",
+          "alt": "goc_light-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-105-hrgt/goc_dark-JP.png",
+          "alt": "goc_dark-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-106-g20u/spooky_light-JP.png",
+          "alt": "spooky_light-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-107-fk3e/spooky_dark-JP.png",
+          "alt": "spooky_dark-JP.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        }
+      ],
+      "final_broken": 0,
+      "resolution_evidence": "install/local/theme-lab/ports/foxtrot/page-assets.json",
+      "status": "repaired-or-removed-and-finally-verified"
+    },
+    "derived_preview_include_scope": {
+      "unseeded_includes_omitted": [
+        "component:acs-animation",
+        "component:author-label-source",
+        "component:betterfootnotes",
+        "component:fade-in",
+        "component:image-block",
+        "component:interwiki-style",
+        "component:toggle-sidebar",
+        "credit:end-preview",
+        "credit:start-preview",
+        "theme:foxtrot",
+        "theme:foxtrot@@"
+      ],
+      "status": "documented-preview-fixture-scope",
+      "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+    },
+    "final_candidate": {
+      "verdict": "warn",
+      "errors": 0,
+      "next_actions": 0,
+      "viewport_status": {
+        "desktop": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "laptop": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "tablet": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "mobile": {
+          "status": "pass",
+          "document_overflow_px": 0
+        }
+      },
+      "torture": "pass",
+      "broken_images": 0
+    }
+  },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/foxtrot/candidate.wikidot.source.txt",
   "source_candidate_sha256": "e37eee985a4bb849485ed73558bdcb085efc5d0424566062d243b0740a55fcd8",

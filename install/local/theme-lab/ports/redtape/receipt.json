@@ -35,7 +35,89 @@
   "edit_iterations": 3,
   "manual_devtools_fallback_count": 0,
   "manual_visual_inspection_count": 1,
-  "theme_lab_findings": [],
+  "theme_lab_findings": {
+    "first_check": {
+      "verdict": "fail",
+      "captured_top_issue_count": 12,
+      "issue_counts_by_kind": {
+        "unresolved_include": 11,
+        "collapsed_selector": 1
+      },
+      "evidence": "install/local/theme-lab/ports/redtape/receipt.json#theme_lab_checks[0]"
+    },
+    "candidate_page_images": {
+      "initially_broken": 3,
+      "initial_failures": [
+        {
+          "src": "https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg",
+          "alt": "black-highlighter-logo.svg",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-86-isur/redtapeexample.png",
+          "alt": "redtapeexample.png",
+          "selector": "img.image",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        },
+        {
+          "src": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-98-hfa3/newtempest.png",
+          "alt": "newtempest.png",
+          "selector": "img.angled",
+          "complete": true,
+          "natural_width": 0,
+          "natural_height": 0
+        }
+      ],
+      "final_broken": 0,
+      "resolution_evidence": "install/local/theme-lab/ports/redtape/page-assets.json",
+      "status": "repaired-or-removed-and-finally-verified"
+    },
+    "derived_preview_include_scope": {
+      "unseeded_includes_omitted": [
+        "component:centered-header-bhl",
+        "component:image-block",
+        "component:interwiki-style",
+        "component:toggle-sidebar-bhl",
+        "credit:cc4",
+        "credit:end-preview",
+        "credit:start-preview",
+        "theme:black-highlighter-theme",
+        "theme:redtape@@"
+      ],
+      "status": "documented-preview-fixture-scope",
+      "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+    },
+    "final_candidate": {
+      "verdict": "warn",
+      "errors": 0,
+      "next_actions": 0,
+      "viewport_status": {
+        "desktop": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "laptop": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "tablet": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "mobile": {
+          "status": "pass",
+          "document_overflow_px": 0
+        }
+      },
+      "torture": "pass",
+      "broken_images": 0
+    }
+  },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/redtape/candidate.wikidot.source.txt",
   "source_candidate_sha256": "24bfe69358fc6f976302014f5571463f4d554fe2e54710b368842ddb03b5c7ce",

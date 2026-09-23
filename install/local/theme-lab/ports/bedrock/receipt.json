@@ -32,7 +32,57 @@
   "edit_iterations": 3,
   "manual_devtools_fallback_count": 0,
   "manual_visual_inspection_count": 1,
-  "theme_lab_findings": [],
+  "theme_lab_findings": {
+    "first_check": {
+      "verdict": "fail",
+      "captured_top_issue_count": 2,
+      "issue_counts_by_kind": {
+        "unresolved_include": 1,
+        "collapsed_selector": 1
+      },
+      "evidence": "install/local/theme-lab/ports/bedrock/receipt.json#theme_lab_checks[0]"
+    },
+    "candidate_page_images": {
+      "initially_broken": 0,
+      "initial_failures": [],
+      "final_broken": 0,
+      "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+      "status": "no-initial-image-failure"
+    },
+    "derived_preview_include_scope": {
+      "unseeded_includes_omitted": [
+        "component:image-block",
+        "theme:bedrock"
+      ],
+      "status": "documented-preview-fixture-scope",
+      "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+    },
+    "final_candidate": {
+      "verdict": "warn",
+      "errors": 0,
+      "next_actions": 0,
+      "viewport_status": {
+        "desktop": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "laptop": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "tablet": {
+          "status": "pass",
+          "document_overflow_px": 0
+        },
+        "mobile": {
+          "status": "pass",
+          "document_overflow_px": 0
+        }
+      },
+      "torture": "pass",
+      "broken_images": 0
+    }
+  },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/bedrock/candidate.wikidot.source.txt",
   "source_candidate_sha256": "e18e1c32cdb4167959ad301800ec1d9681343a6bfcb33c785b6e6fcc6b161b38",

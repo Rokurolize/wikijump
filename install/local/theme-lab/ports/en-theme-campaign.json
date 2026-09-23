@@ -243,7 +243,58 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/bedrock/assets.json",
-      "dependency_decision_count": 52
+      "dependency_decision_count": 52,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 2,
+          "issue_counts_by_kind": {
+            "unresolved_include": 1,
+            "collapsed_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/bedrock/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "theme:bedrock"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:basalt",
@@ -496,7 +547,69 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/basalt/assets.json",
-      "dependency_decision_count": 243
+      "dependency_decision_count": 243,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 12,
+          "issue_counts_by_kind": {
+            "unresolved_include": 12
+          },
+          "evidence": "install/local/theme-lab/ports/basalt/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 1,
+          "initial_failures": [
+            {
+              "src": "https://scp-wiki.wdfiles.com/local--files/theme:basalt/basalt-theme-logo.svg",
+              "alt": "basalt-theme-logo.svg",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/basalt/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "@@[[span",
+            "component:acs-animation",
+            "component:betterfootnotes",
+            "component:image-block",
+            "component:interwiki-style"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:foxtrot",
@@ -841,7 +954,263 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/foxtrot/assets.json",
-      "dependency_decision_count": 47
+      "dependency_decision_count": 47,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 12,
+          "issue_counts_by_kind": {
+            "new_horizontal_overflow": 1,
+            "new_viewport_overflow": 1,
+            "new_component_overflow": 1,
+            "viewport_overflow": 2,
+            "unresolved_include": 7
+          },
+          "evidence": "install/local/theme-lab/ports/foxtrot/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 24,
+          "initial_failures": [
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-84-cvcw/canada_light-JP.png",
+              "alt": "canada_light-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-85-6k0m/canada_dark-JP.png",
+              "alt": "canada_dark-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-86-9vrb/slothspit_light-JP.png",
+              "alt": "slothspit_light-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-87-iriu/slothspit_dark-JP.png",
+              "alt": "slothspit_dark-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-88-5988/poland_light-JP.png",
+              "alt": "poland_light-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-89-40fu/poland_dark-JP.png",
+              "alt": "poland_dark-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-90-h0l3/vanguard_light-JP.png",
+              "alt": "vanguard_light-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-91-ps8h/vanguard_dark-JP.png",
+              "alt": "vanguard_dark-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-92-n9nj/threshold_light-JP.png",
+              "alt": "threshold_light-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-93-mf91/threshold_dark-JP.png",
+              "alt": "threshold_dark-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-94-9j68/overwatch_light-JP.png",
+              "alt": "overwatch_light-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-95-mgaw/overwatch_dark-JP.png",
+              "alt": "overwatch_dark-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-96-88ic/spc_light-JP.png",
+              "alt": "spc_light-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-97-wj4h/spc_dark-JP.png",
+              "alt": "spc_dark-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-98-f31h/fishing_light-JP.png",
+              "alt": "fishing_light-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-99-ct6y/fishing_dark-JP.png",
+              "alt": "fishing_dark-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-100-vd38/nightfall_light-JP.png",
+              "alt": "nightfall_light-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-101-t3p2/nightfall_dark-JP.png",
+              "alt": "nightfall_dark-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-102-yhl7/hybrasil_light-JP.png",
+              "alt": "hybrasil_light-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-103-f7xn/hybrasil_dark-JP.png",
+              "alt": "hybrasil_dark-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-104-s61v/goc_light-JP.png",
+              "alt": "goc_light-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-105-hrgt/goc_dark-JP.png",
+              "alt": "goc_dark-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-106-g20u/spooky_light-JP.png",
+              "alt": "spooky_light-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:5722815-107-fk3e/spooky_dark-JP.png",
+              "alt": "spooky_dark-JP.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/foxtrot/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:acs-animation",
+            "component:author-label-source",
+            "component:betterfootnotes",
+            "component:fade-in",
+            "component:image-block",
+            "component:interwiki-style",
+            "component:toggle-sidebar",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:foxtrot",
+            "theme:foxtrot@@"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:black-highlighter-theme",
@@ -1080,7 +1449,75 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/black-highlighter-theme/assets.json",
-      "dependency_decision_count": 38
+      "dependency_decision_count": 38,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 7,
+          "issue_counts_by_kind": {
+            "unresolved_include": 5,
+            "collapsed_selector": 1,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/black-highlighter-theme/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 1,
+          "initial_failures": [
+            {
+              "src": "https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg",
+              "alt": "black-highlighter-logo.svg",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/black-highlighter-theme/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:bhl-dark-sidebar",
+            "component:centered-header-bhl",
+            "component:collapsible-sidebar",
+            "component:image-block",
+            "component:interwiki-style",
+            "component:toggle-sidebar-bhl",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:black-highlighter-theme"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:site",
@@ -1270,7 +1707,54 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/site/assets.json",
-      "dependency_decision_count": 0
+      "dependency_decision_count": 0,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "warn",
+          "captured_top_issue_count": 1,
+          "issue_counts_by_kind": {
+            "collapsed_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/site/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:isolated-terminal",
@@ -1560,7 +2044,75 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/isolated-terminal/assets.json",
-      "dependency_decision_count": 53
+      "dependency_decision_count": 53,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 12,
+          "issue_counts_by_kind": {
+            "missing_selector": 2,
+            "unresolved_include": 9,
+            "collapsed_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/isolated-terminal/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 1,
+          "initial_failures": [
+            {
+              "src": "https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg",
+              "alt": "black-highlighter-logo.svg",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/isolated-terminal/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:ayu18",
+            "component:centered-header-bhl",
+            "component:image-block",
+            "component:interwiki-style",
+            "component:toggle-sidebar-bhl",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:black-highlighter-theme",
+            "theme:isolated-terminal"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:penumbra",
@@ -1801,7 +2353,64 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/penumbra/assets.json",
-      "dependency_decision_count": 0
+      "dependency_decision_count": 0,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 10,
+          "issue_counts_by_kind": {
+            "missing_selector": 2,
+            "viewport_overflow": 1,
+            "unresolved_include": 4,
+            "collapsed_selector": 2,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/penumbra/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "component:toggle-sidebar",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:penumbra"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:scpedia",
@@ -2007,7 +2616,73 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/scpedia/assets.json",
-      "dependency_decision_count": 22
+      "dependency_decision_count": 22,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 10,
+          "issue_counts_by_kind": {
+            "missing_selector": 2,
+            "new_horizontal_overflow": 1,
+            "viewport_overflow": 1,
+            "unresolved_include": 3,
+            "collapsed_selector": 2,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/scpedia/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 1,
+          "initial_failures": [
+            {
+              "src": "https://scp-wiki.wdfiles.com/local--files/estrellayoshte/u.png",
+              "alt": "u.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/scpedia/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "info:end",
+            "info:start",
+            "theme:scpedia"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:al-slop",
@@ -2253,7 +2928,61 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/al-slop/assets.json",
-      "dependency_decision_count": 18
+      "dependency_decision_count": 18,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 6,
+          "issue_counts_by_kind": {
+            "viewport_overflow": 1,
+            "unresolved_include": 4,
+            "collapsed_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/al-slop/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "component:license-box-end",
+            "component:license-box-theme",
+            "component:sigma-plus"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:wikifot",
@@ -2464,7 +3193,69 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/wikifot/assets.json",
-      "dependency_decision_count": 1
+      "dependency_decision_count": 1,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 4,
+          "issue_counts_by_kind": {
+            "viewport_overflow": 1,
+            "unresolved_include": 2,
+            "collapsed_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/wikifot/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 1,
+          "initial_failures": [
+            {
+              "src": "https://scpaiueouiuiuiui.wjfiles.localhost:18443/local--resized-images//table.png/medium.jpg",
+              "alt": "table.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/wikifot/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "component:interwiki-style",
+            "theme:wikifot"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:classic",
@@ -2687,7 +3478,79 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/classic/assets.json",
-      "dependency_decision_count": 4
+      "dependency_decision_count": 4,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 8,
+          "issue_counts_by_kind": {
+            "missing_selector": 2,
+            "viewport_overflow": 1,
+            "unresolved_include": 3,
+            "collapsed_selector": 2
+          },
+          "evidence": "install/local/theme-lab/ports/classic/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 2,
+          "initial_failures": [
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:7657035-49-8um1/scp_foundation_logo.png",
+              "alt": "scp_foundation_logo.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:7657035-48-7ahr/base_image_frame.png",
+              "alt": "base_image_frame.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/classic/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:interwiki-style",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:classic"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:sigma",
@@ -2892,7 +3755,61 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/sigma/assets.json",
-      "dependency_decision_count": 37
+      "dependency_decision_count": 37,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 4,
+          "issue_counts_by_kind": {
+            "missing_selector": 1,
+            "viewport_overflow": 1,
+            "unresolved_include": 1,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/sigma/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "theme:black-highlighter-theme",
+            "theme:sigma"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:y2k",
@@ -3110,7 +4027,64 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/y2k/assets.json",
-      "dependency_decision_count": 3
+      "dependency_decision_count": 3,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 10,
+          "issue_counts_by_kind": {
+            "missing_selector": 2,
+            "viewport_overflow": 1,
+            "unresolved_include": 4,
+            "collapsed_selector": 2,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/y2k/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "component:interwiki-style",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:y2k"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:yossistyle",
@@ -3316,7 +4290,55 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/yossistyle/assets.json",
-      "dependency_decision_count": 0
+      "dependency_decision_count": 0,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 2,
+          "issue_counts_by_kind": {
+            "viewport_overflow": 1,
+            "collapsed_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/yossistyle/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:space",
@@ -3565,7 +4587,64 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/space/assets.json",
-      "dependency_decision_count": 21
+      "dependency_decision_count": 21,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 9,
+          "issue_counts_by_kind": {
+            "new_viewport_overflow": 1,
+            "viewport_overflow": 1,
+            "unresolved_include": 4,
+            "collapsed_selector": 2,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/space/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "component:sigma-plus",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:space"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:jakstyle",
@@ -3801,7 +4880,65 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/jakstyle/assets.json",
-      "dependency_decision_count": 38
+      "dependency_decision_count": 38,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 11,
+          "issue_counts_by_kind": {
+            "unresolved_include": 9,
+            "collapsed_selector": 1,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/jakstyle/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:centered-header-bhl",
+            "component:image-block",
+            "component:interwiki-style",
+            "component:toggle-sidebar-bhl",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:black-highlighter-theme",
+            "theme:jakstyle"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:pataphysics",
@@ -4041,7 +5178,63 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/pataphysics/assets.json",
-      "dependency_decision_count": 5
+      "dependency_decision_count": 5,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 9,
+          "issue_counts_by_kind": {
+            "missing_selector": 2,
+            "viewport_overflow": 1,
+            "unresolved_include": 4,
+            "collapsed_selector": 2
+          },
+          "evidence": "install/local/theme-lab/ports/pataphysics/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "component:interwiki-style",
+            "credit:end",
+            "credit:start",
+            "theme:pataphysics"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:turbo-vision",
@@ -4297,7 +5490,65 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/turbo-vision/assets.json",
-      "dependency_decision_count": 26
+      "dependency_decision_count": 26,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 11,
+          "issue_counts_by_kind": {
+            "new_component_overflow": 1,
+            "viewport_overflow": 4,
+            "unresolved_include": 5,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/turbo-vision/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "component:image-block@@",
+            "component:interwiki-style",
+            "component:toggle-sidebar",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:turbo-vision"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:skipos",
@@ -4506,7 +5757,62 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/skipos/assets.json",
-      "dependency_decision_count": 0
+      "dependency_decision_count": 0,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 6,
+          "issue_counts_by_kind": {
+            "missing_selector": 2,
+            "viewport_overflow": 1,
+            "unresolved_include": 2,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/skipos/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "theme:bedrock",
+            "theme:skipos",
+            "unterminated:[[include :scp-jp:component:interwiki-style\n| theme=https://scp-jp.wdfiles.com/local--code/theme%3Askipos/1"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:extra-black-highlighter-theme",
@@ -4755,7 +6061,71 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/assets.json",
-      "dependency_decision_count": 39
+      "dependency_decision_count": 39,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 7,
+          "issue_counts_by_kind": {
+            "unresolved_include": 5,
+            "collapsed_selector": 1,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/extra-black-highlighter-theme/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 1,
+          "initial_failures": [
+            {
+              "src": "https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg",
+              "alt": "black-highlighter-logo.svg",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/extra-black-highlighter-theme/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:bhl-dark-sidebar",
+            "component:image-block",
+            "component:interwiki-style",
+            "theme:black-highlighter-theme",
+            "theme:extra-black-highlighter-theme"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:aesthetic-theme",
@@ -5004,7 +6374,81 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/aesthetic-theme/assets.json",
-      "dependency_decision_count": 66
+      "dependency_decision_count": 66,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 10,
+          "issue_counts_by_kind": {
+            "unresolved_include": 8,
+            "collapsed_selector": 1,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/aesthetic-theme/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 2,
+          "initial_failures": [
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-57-rycj/AESTHETIC_logo.svg",
+              "alt": "AESTHETIC_logo.svg",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg",
+              "alt": "black-highlighter-logo.svg",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/aesthetic-theme/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:centered-header-bhl",
+            "component:interwiki-style",
+            "component:toggle-sidebar-bhl",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:aesthetic-theme",
+            "theme:black-highlighter-theme"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:flopstyle-dark",
@@ -5368,7 +6812,96 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/flopstyle-dark/assets.json",
-      "dependency_decision_count": 78
+      "dependency_decision_count": 78,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 12,
+          "issue_counts_by_kind": {
+            "missing_selector": 2,
+            "new_horizontal_overflow": 3,
+            "new_component_overflow": 3,
+            "new_viewport_overflow": 1,
+            "viewport_overflow": 3
+          },
+          "evidence": "install/local/theme-lab/ports/flopstyle-dark/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 2,
+          "initial_failures": [
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file:7657035-49-8um1/scp_foundation_logo.png",
+              "alt": "scp_foundation_logo.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scpaiueouiuiuiui.wjfiles.localhost:18443/local--resized-images//alt_logo_tyrian.png/medium.jpg",
+              "alt": "alt_logo_tyrian.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/flopstyle-dark/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            ":snippets:bs-image",
+            "component:acs-animation",
+            "component:betterfootnotes",
+            "component:croqstyle",
+            "component:fade-in",
+            "component:image-block",
+            "component:interwiki-style",
+            "component:license-box-end",
+            "component:license-box-theme",
+            "component:text-style",
+            "component:toggle-sidebar",
+            "info:end",
+            "info:end-standalone",
+            "info:start",
+            "info:start-standalone",
+            "unterminated:[[include##** ##var(--c-symbol)|:scp-jp:component:flops-header##\n**##var(--c-keyword)||####var(--c-builtin)|item####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|containment####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|level####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|security####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|disruption####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|disruption-bg-color####var(--c-keyword)|=##**",
+            "unterminated:[[include##** ##var(--c-symbol)|:scp-jp:theme:flopstyle-dark##",
+            "unterminated:[[include##** ##var(--c-symbol)|:scp-jp:theme:flopstyle-dark##\n**##var(--c-keyword)||##**##var(--c-string)|witch=a##",
+            "unterminated:[[include##** ##var(--c-symbol)|:snippets:bs-image##\n**##var(--c-keyword)||####var(--c-builtin)|image####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|heading####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|caption####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|link####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|alt####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|width####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|float####var(--c-keyword)|=##**\n**##var(--c-keyword)||####var(--c-builtin)|kind####var(--c-keyword)|=##**",
+            "unterminated:[[include##** ##var(--c-symbol)|:snippets:bs-image##\n**##var(--c-keyword)||####var(--c-builtin)|image####var(--c-keyword)|=##**Larry_the_cat.jpg\n**##var(--c-keyword)||####var(--c-builtin)|heading####var(--c-keyword)|=##**猫のラリー\n**##var(--c-keyword)||####var(--c-builtin)|caption####var(--c-keyword)|=##**とても柔らかい。\n**##var(--c-keyword)||####var(--c-builtin)|link####var(--c-keyword)|=##**@@/local--files/theme:flopstyle-dark/Larry_the_cat.jpg@@\n**##var(--c-keyword)||####var(--c-builtin)|alt####var(--c-keyword)|=##ベージュ色の猫ラリーが、庭で身構えて座っている。**\n**##var(--c-keyword)||####var(--c-builtin)|width####var(--c-keyword)|=##**300px\n**##var(--c-keyword)||####var(--c-builtin)|float####var(--c-keyword)|=##**middle\n**##var(--c-keyword)||####var(--c-builtin)|kind####var(--c-keyword)|=##**primary"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:much-cool",
@@ -5594,7 +7127,64 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/much-cool/assets.json",
-      "dependency_decision_count": 5
+      "dependency_decision_count": 5,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 10,
+          "issue_counts_by_kind": {
+            "missing_selector": 2,
+            "new_component_overflow": 1,
+            "viewport_overflow": 1,
+            "unresolved_include": 4,
+            "collapsed_selector": 2
+          },
+          "evidence": "install/local/theme-lab/ports/much-cool/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "component:interwiki-style",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:much-cool"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:inkblot",
@@ -5813,7 +7403,79 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/inkblot/assets.json",
-      "dependency_decision_count": 47
+      "dependency_decision_count": 47,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 9,
+          "issue_counts_by_kind": {
+            "missing_selector": 2,
+            "new_viewport_overflow": 2,
+            "new_component_overflow": 3,
+            "unresolved_include": 1,
+            "collapsed_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/inkblot/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 2,
+          "initial_failures": [
+            {
+              "src": "https://scpaiueouiuiuiui.wjfiles.localhost:18443/local--resized-images//pancakes.png/medium.jpg",
+              "alt": "pancakes.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scpaiueouiuiuiui.wjfiles.localhost:18443/local--resized-images//pancakes.png/medium.jpg",
+              "alt": "pancakes.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/inkblot/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:croqstyle",
+            "component:interwiki-style",
+            "theme:inkblot"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:scheme",
@@ -6015,7 +7677,61 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/scheme/assets.json",
-      "dependency_decision_count": 194
+      "dependency_decision_count": 194,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 7,
+          "issue_counts_by_kind": {
+            "missing_selector": 2,
+            "unresolved_include": 3,
+            "collapsed_selector": 2
+          },
+          "evidence": "install/local/theme-lab/ports/scheme/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:interwiki-style",
+            "info:end",
+            "info:start",
+            "theme:scheme"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:paperstack",
@@ -6282,7 +7998,69 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/paperstack/assets.json",
-      "dependency_decision_count": 1
+      "dependency_decision_count": 1,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 8,
+          "issue_counts_by_kind": {
+            "viewport_overflow": 1,
+            "unresolved_include": 4,
+            "collapsed_selector": 1,
+            "expanded_selector": 2
+          },
+          "evidence": "install/local/theme-lab/ports/paperstack/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 1,
+          "initial_failures": [
+            {
+              "src": "https://scp-jp.wdfiles.com/local--files/theme%3Apaperstack/lgtrans.png",
+              "alt": "lgtrans.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/paperstack/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "theme:paperstack"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:cosmonaut",
@@ -6521,7 +8299,62 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/cosmonaut/assets.json",
-      "dependency_decision_count": 22
+      "dependency_decision_count": 22,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 6,
+          "issue_counts_by_kind": {
+            "unresolved_include": 4,
+            "collapsed_selector": 1,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/cosmonaut/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "component:interwiki-style",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:cosmonaut"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:monotypical",
@@ -6754,7 +8587,87 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/monotypical/assets.json",
-      "dependency_decision_count": 40
+      "dependency_decision_count": 40,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 8,
+          "issue_counts_by_kind": {
+            "missing_selector": 2,
+            "unresolved_include": 3,
+            "collapsed_selector": 2,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/monotypical/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 3,
+          "initial_failures": [
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-78-mugj/mono-nord.png",
+              "alt": "mono-nord.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-79-daqr/mono-solarized.png",
+              "alt": "mono-solarized.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-80-rcg6/mono-dracula.png",
+              "alt": "mono-dracula.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/monotypical/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:monotypical"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:minimalist-bhl",
@@ -7014,7 +8927,65 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/minimalist-bhl/assets.json",
-      "dependency_decision_count": 39
+      "dependency_decision_count": 39,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 12,
+          "issue_counts_by_kind": {
+            "missing_selector": 2,
+            "unresolved_include": 9,
+            "collapsed_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/minimalist-bhl/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:centered-header-bhl",
+            "component:image-block",
+            "component:interwiki-style",
+            "component:toggle-sidebar-bhl",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:black-highlighter-theme",
+            "theme:minimalist-bhl"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:hansarp",
@@ -7253,7 +9224,71 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/hansarp/assets.json",
-      "dependency_decision_count": 49
+      "dependency_decision_count": 49,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 8,
+          "issue_counts_by_kind": {
+            "unresolved_include": 6,
+            "collapsed_selector": 1,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/hansarp/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 1,
+          "initial_failures": [
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-42-9f6d/hansarplogo.png",
+              "alt": "hansarplogo.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/hansarp/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:interwiki-style",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:black-highlighter-theme",
+            "theme:hansarp"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:night-rush-theme",
@@ -7471,7 +9506,64 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/night-rush-theme/assets.json",
-      "dependency_decision_count": 3
+      "dependency_decision_count": 3,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 12,
+          "issue_counts_by_kind": {
+            "missing_selector": 2,
+            "new_component_overflow": 4,
+            "viewport_overflow": 1,
+            "unresolved_include": 4,
+            "collapsed_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/night-rush-theme/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 0,
+          "initial_failures": [],
+          "final_broken": 0,
+          "resolution_evidence": "final Theme Lab image diagnostics and candidate asset manifest",
+          "status": "no-initial-image-failure"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:image-block",
+            "info:end",
+            "info:more",
+            "info:start",
+            "theme:night-rush-theme"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:scp-offices-theme",
@@ -7709,7 +9801,79 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/scp-offices-theme/assets.json",
-      "dependency_decision_count": 58
+      "dependency_decision_count": 58,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 8,
+          "issue_counts_by_kind": {
+            "unresolved_include": 6,
+            "collapsed_selector": 1,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/scp-offices-theme/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 2,
+          "initial_failures": [
+            {
+              "src": "https://scp-jp.wdfiles.com/local--files/theme:scp-offices-theme/scpoffices_logo.svg",
+              "alt": "scpoffices_logo.svg",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg",
+              "alt": "black-highlighter-logo.svg",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/scp-offices-theme/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:interwiki-style",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:black-highlighter-theme",
+            "theme:scp-offices-theme"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:redtape",
@@ -8009,7 +10173,90 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/redtape/assets.json",
-      "dependency_decision_count": 66
+      "dependency_decision_count": 66,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 12,
+          "issue_counts_by_kind": {
+            "unresolved_include": 11,
+            "collapsed_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/redtape/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 3,
+          "initial_failures": [
+            {
+              "src": "https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg",
+              "alt": "black-highlighter-logo.svg",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-86-isur/redtapeexample.png",
+              "alt": "redtapeexample.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-98-hfa3/newtempest.png",
+              "alt": "newtempest.png",
+              "selector": "img.angled",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/redtape/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:centered-header-bhl",
+            "component:image-block",
+            "component:interwiki-style",
+            "component:toggle-sidebar-bhl",
+            "credit:cc4",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:black-highlighter-theme",
+            "theme:redtape@@"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     },
     {
       "slug": "theme:ouroborous-theme",
@@ -8246,7 +10493,79 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/ouroborous-theme/assets.json",
-      "dependency_decision_count": 52
+      "dependency_decision_count": 52,
+      "theme_lab_findings": {
+        "first_check": {
+          "verdict": "fail",
+          "captured_top_issue_count": 8,
+          "issue_counts_by_kind": {
+            "unresolved_include": 6,
+            "collapsed_selector": 1,
+            "expanded_selector": 1
+          },
+          "evidence": "install/local/theme-lab/ports/ouroborous-theme/receipt.json#theme_lab_checks[0]"
+        },
+        "candidate_page_images": {
+          "initially_broken": 2,
+          "initial_failures": [
+            {
+              "src": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-46-l81f/ouroborous_logo.png",
+              "alt": "ouroborous_logo.png",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            },
+            {
+              "src": "https://scp-jp.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg",
+              "alt": "black-highlighter-logo.svg",
+              "selector": "img.image",
+              "complete": true,
+              "natural_width": 0,
+              "natural_height": 0
+            }
+          ],
+          "final_broken": 0,
+          "resolution_evidence": "install/local/theme-lab/ports/ouroborous-theme/page-assets.json",
+          "status": "repaired-or-removed-and-finally-verified"
+        },
+        "derived_preview_include_scope": {
+          "unseeded_includes_omitted": [
+            "component:interwiki-style",
+            "credit:end-preview",
+            "credit:start-preview",
+            "theme:black-highlighter-theme",
+            "theme:ouroborous-theme"
+          ],
+          "status": "documented-preview-fixture-scope",
+          "rationale": "The local JP authoring preview does not seed every foreign/documentation include. The derived display fixture omits those includes and records them here; the untouched candidate Wikidot source remains frozen in the package. This is a preview-fixture limitation, not an assertion that those source references were resolved."
+        },
+        "final_candidate": {
+          "verdict": "warn",
+          "errors": 0,
+          "next_actions": 0,
+          "viewport_status": {
+            "desktop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "laptop": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "tablet": {
+              "status": "pass",
+              "document_overflow_px": 0
+            },
+            "mobile": {
+              "status": "pass",
+              "document_overflow_px": 0
+            }
+          },
+          "torture": "pass",
+          "broken_images": 0
+        }
+      }
     }
   ],
   "regression_corpus": [
@@ -8280,5 +10599,510 @@
     "external_requests": 0,
     "next_actions": 0,
     "verification_scope": "CSS edit against persistent warmed JP preview and loopback reference; reference comparison and CSS/assets verdict enabled; viewport/torture/interaction/visual acceptance deferred to full check"
+  },
+  "campaign_productivity": {
+    "themes": 34,
+    "theme_lab_checks": 306,
+    "css_edit_iterations": 102,
+    "manual_devtools_fallback_count": 0,
+    "manual_visual_inspection_count": 34,
+    "initially_broken_page_images": 50,
+    "per_theme": [
+      {
+        "slug": "theme:bedrock",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 2,
+        "first_check_issue_counts_by_kind": {
+          "unresolved_include": 1,
+          "collapsed_selector": 1
+        }
+      },
+      {
+        "slug": "theme:basalt",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 1,
+        "first_check_top_issue_count": 12,
+        "first_check_issue_counts_by_kind": {
+          "unresolved_include": 12
+        }
+      },
+      {
+        "slug": "theme:foxtrot",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 24,
+        "first_check_top_issue_count": 12,
+        "first_check_issue_counts_by_kind": {
+          "new_horizontal_overflow": 1,
+          "new_viewport_overflow": 1,
+          "new_component_overflow": 1,
+          "viewport_overflow": 2,
+          "unresolved_include": 7
+        }
+      },
+      {
+        "slug": "theme:black-highlighter-theme",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 1,
+        "first_check_top_issue_count": 7,
+        "first_check_issue_counts_by_kind": {
+          "unresolved_include": 5,
+          "collapsed_selector": 1,
+          "expanded_selector": 1
+        }
+      },
+      {
+        "slug": "theme:site",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 1,
+        "first_check_issue_counts_by_kind": {
+          "collapsed_selector": 1
+        }
+      },
+      {
+        "slug": "theme:isolated-terminal",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 1,
+        "first_check_top_issue_count": 12,
+        "first_check_issue_counts_by_kind": {
+          "missing_selector": 2,
+          "unresolved_include": 9,
+          "collapsed_selector": 1
+        }
+      },
+      {
+        "slug": "theme:penumbra",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 10,
+        "first_check_issue_counts_by_kind": {
+          "missing_selector": 2,
+          "viewport_overflow": 1,
+          "unresolved_include": 4,
+          "collapsed_selector": 2,
+          "expanded_selector": 1
+        }
+      },
+      {
+        "slug": "theme:scpedia",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 1,
+        "first_check_top_issue_count": 10,
+        "first_check_issue_counts_by_kind": {
+          "missing_selector": 2,
+          "new_horizontal_overflow": 1,
+          "viewport_overflow": 1,
+          "unresolved_include": 3,
+          "collapsed_selector": 2,
+          "expanded_selector": 1
+        }
+      },
+      {
+        "slug": "theme:al-slop",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 6,
+        "first_check_issue_counts_by_kind": {
+          "viewport_overflow": 1,
+          "unresolved_include": 4,
+          "collapsed_selector": 1
+        }
+      },
+      {
+        "slug": "theme:wikifot",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 1,
+        "first_check_top_issue_count": 4,
+        "first_check_issue_counts_by_kind": {
+          "viewport_overflow": 1,
+          "unresolved_include": 2,
+          "collapsed_selector": 1
+        }
+      },
+      {
+        "slug": "theme:classic",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 2,
+        "first_check_top_issue_count": 8,
+        "first_check_issue_counts_by_kind": {
+          "missing_selector": 2,
+          "viewport_overflow": 1,
+          "unresolved_include": 3,
+          "collapsed_selector": 2
+        }
+      },
+      {
+        "slug": "theme:sigma",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 4,
+        "first_check_issue_counts_by_kind": {
+          "missing_selector": 1,
+          "viewport_overflow": 1,
+          "unresolved_include": 1,
+          "expanded_selector": 1
+        }
+      },
+      {
+        "slug": "theme:y2k",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 10,
+        "first_check_issue_counts_by_kind": {
+          "missing_selector": 2,
+          "viewport_overflow": 1,
+          "unresolved_include": 4,
+          "collapsed_selector": 2,
+          "expanded_selector": 1
+        }
+      },
+      {
+        "slug": "theme:yossistyle",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 2,
+        "first_check_issue_counts_by_kind": {
+          "viewport_overflow": 1,
+          "collapsed_selector": 1
+        }
+      },
+      {
+        "slug": "theme:space",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 9,
+        "first_check_issue_counts_by_kind": {
+          "new_viewport_overflow": 1,
+          "viewport_overflow": 1,
+          "unresolved_include": 4,
+          "collapsed_selector": 2,
+          "expanded_selector": 1
+        }
+      },
+      {
+        "slug": "theme:jakstyle",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 11,
+        "first_check_issue_counts_by_kind": {
+          "unresolved_include": 9,
+          "collapsed_selector": 1,
+          "expanded_selector": 1
+        }
+      },
+      {
+        "slug": "theme:pataphysics",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 9,
+        "first_check_issue_counts_by_kind": {
+          "missing_selector": 2,
+          "viewport_overflow": 1,
+          "unresolved_include": 4,
+          "collapsed_selector": 2
+        }
+      },
+      {
+        "slug": "theme:turbo-vision",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 11,
+        "first_check_issue_counts_by_kind": {
+          "new_component_overflow": 1,
+          "viewport_overflow": 4,
+          "unresolved_include": 5,
+          "expanded_selector": 1
+        }
+      },
+      {
+        "slug": "theme:skipos",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 6,
+        "first_check_issue_counts_by_kind": {
+          "missing_selector": 2,
+          "viewport_overflow": 1,
+          "unresolved_include": 2,
+          "expanded_selector": 1
+        }
+      },
+      {
+        "slug": "theme:extra-black-highlighter-theme",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 1,
+        "first_check_top_issue_count": 7,
+        "first_check_issue_counts_by_kind": {
+          "unresolved_include": 5,
+          "collapsed_selector": 1,
+          "expanded_selector": 1
+        }
+      },
+      {
+        "slug": "theme:aesthetic-theme",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 2,
+        "first_check_top_issue_count": 10,
+        "first_check_issue_counts_by_kind": {
+          "unresolved_include": 8,
+          "collapsed_selector": 1,
+          "expanded_selector": 1
+        }
+      },
+      {
+        "slug": "theme:flopstyle-dark",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 2,
+        "first_check_top_issue_count": 12,
+        "first_check_issue_counts_by_kind": {
+          "missing_selector": 2,
+          "new_horizontal_overflow": 3,
+          "new_component_overflow": 3,
+          "new_viewport_overflow": 1,
+          "viewport_overflow": 3
+        }
+      },
+      {
+        "slug": "theme:much-cool",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 10,
+        "first_check_issue_counts_by_kind": {
+          "missing_selector": 2,
+          "new_component_overflow": 1,
+          "viewport_overflow": 1,
+          "unresolved_include": 4,
+          "collapsed_selector": 2
+        }
+      },
+      {
+        "slug": "theme:inkblot",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 2,
+        "first_check_top_issue_count": 9,
+        "first_check_issue_counts_by_kind": {
+          "missing_selector": 2,
+          "new_viewport_overflow": 2,
+          "new_component_overflow": 3,
+          "unresolved_include": 1,
+          "collapsed_selector": 1
+        }
+      },
+      {
+        "slug": "theme:scheme",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 7,
+        "first_check_issue_counts_by_kind": {
+          "missing_selector": 2,
+          "unresolved_include": 3,
+          "collapsed_selector": 2
+        }
+      },
+      {
+        "slug": "theme:paperstack",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 1,
+        "first_check_top_issue_count": 8,
+        "first_check_issue_counts_by_kind": {
+          "viewport_overflow": 1,
+          "unresolved_include": 4,
+          "collapsed_selector": 1,
+          "expanded_selector": 2
+        }
+      },
+      {
+        "slug": "theme:cosmonaut",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 6,
+        "first_check_issue_counts_by_kind": {
+          "unresolved_include": 4,
+          "collapsed_selector": 1,
+          "expanded_selector": 1
+        }
+      },
+      {
+        "slug": "theme:monotypical",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 3,
+        "first_check_top_issue_count": 8,
+        "first_check_issue_counts_by_kind": {
+          "missing_selector": 2,
+          "unresolved_include": 3,
+          "collapsed_selector": 2,
+          "expanded_selector": 1
+        }
+      },
+      {
+        "slug": "theme:minimalist-bhl",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 12,
+        "first_check_issue_counts_by_kind": {
+          "missing_selector": 2,
+          "unresolved_include": 9,
+          "collapsed_selector": 1
+        }
+      },
+      {
+        "slug": "theme:hansarp",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 1,
+        "first_check_top_issue_count": 8,
+        "first_check_issue_counts_by_kind": {
+          "unresolved_include": 6,
+          "collapsed_selector": 1,
+          "expanded_selector": 1
+        }
+      },
+      {
+        "slug": "theme:night-rush-theme",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 0,
+        "first_check_top_issue_count": 12,
+        "first_check_issue_counts_by_kind": {
+          "missing_selector": 2,
+          "new_component_overflow": 4,
+          "viewport_overflow": 1,
+          "unresolved_include": 4,
+          "collapsed_selector": 1
+        }
+      },
+      {
+        "slug": "theme:scp-offices-theme",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 2,
+        "first_check_top_issue_count": 8,
+        "first_check_issue_counts_by_kind": {
+          "unresolved_include": 6,
+          "collapsed_selector": 1,
+          "expanded_selector": 1
+        }
+      },
+      {
+        "slug": "theme:redtape",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 3,
+        "first_check_top_issue_count": 12,
+        "first_check_issue_counts_by_kind": {
+          "unresolved_include": 11,
+          "collapsed_selector": 1
+        }
+      },
+      {
+        "slug": "theme:ouroborous-theme",
+        "theme_lab_checks": 9,
+        "css_edit_iterations": 3,
+        "manual_devtools_fallback_count": 0,
+        "manual_visual_inspection_count": 1,
+        "initially_broken_page_images": 2,
+        "first_check_top_issue_count": 8,
+        "first_check_issue_counts_by_kind": {
+          "unresolved_include": 6,
+          "collapsed_selector": 1,
+          "expanded_selector": 1
+        }
+      }
+    ]
   }
 }
