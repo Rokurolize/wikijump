@@ -52,8 +52,9 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.github.io/files/theme/night-rush-theme/style0.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "2a89b06bce29eec82df41b40b9f42433bf7149e6e736abfc9c12b8be5e3f89cf",
+      "candidate_css_sha256": "64d2cc1f38ac04402e0ab6f6ace602e7a684ba2a27dca665b006677dfb803505",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }

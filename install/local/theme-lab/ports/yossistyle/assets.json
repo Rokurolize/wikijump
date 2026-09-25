@@ -6,5 +6,6 @@
   "template_placeholders": [],
   "asset_replacements": {},
   "omitted_assets": [],
-  "dependency_decisions": []
+  "dependency_decisions": [],
+  "candidate_base_css_assets": []
 }

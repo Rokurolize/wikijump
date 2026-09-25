@@ -31,8 +31,9 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.github.io/files/theme/classic/style0.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "dbd7125c4163be7ef2bc1908adfe5f75b30d1e55f719484637c45350a2d81604",
+      "candidate_css_sha256": "c81ade95a7062dfdc11ba46cddf9784832902d8027c7e539f34a972890226611",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }

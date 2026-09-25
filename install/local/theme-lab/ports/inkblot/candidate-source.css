@@ -86,3 +86,11 @@
 }
 /* JP runtime header DOM: keep theme title positioning inside the current SCP-JP header. */
 #header h1, #header h2 { max-width: calc(100vw - 2rem) !important; box-sizing: border-box; left: auto !important; right: auto !important; }
+
+/* Preserve code-reading affordances when the theme's serif body face reaches page action panes. */
+#action-area .page-source,
+#action-area textarea.editor-wikitext { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+
+/* SCP-JP interactive visual review repair v1: inkblot source panes */
+#action-area .page-source,
+#action-area textarea.editor-wikitext { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }

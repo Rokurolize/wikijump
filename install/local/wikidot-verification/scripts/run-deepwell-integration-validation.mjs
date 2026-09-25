@@ -15,6 +15,24 @@ function fail(message) {
   throw new Error(message);
 }
 
+function testThreads() {
+  const raw = process.env.WIKIJUMP_DEEPWELL_TEST_THREADS?.trim() || "1";
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1 || value > 16) {
+    fail("WIKIJUMP_DEEPWELL_TEST_THREADS must be an integer from 1 through 16");
+  }
+  return String(value);
+}
+
+function nextestPartition() {
+  const value = process.env.WIKIJUMP_DEEPWELL_NEXTEST_PARTITION?.trim();
+  if (!value) return null;
+  if (!/^(?:hash|count|slice):[1-9][0-9]*\/[1-9][0-9]*$/u.test(value)) {
+    fail("WIKIJUMP_DEEPWELL_NEXTEST_PARTITION must look like hash:1/4, count:2/4, or slice:3/4");
+  }
+  return value;
+}
+
 function imageName(role) {
   const override = process.env[`WIKIJUMP_DEEPWELL_TEST_${role.toUpperCase()}_IMAGE`];
   return override?.trim() || DEFAULT_IMAGES[role];
@@ -108,7 +126,10 @@ async function run() {
         "",
         "Runs Deepwell tests against a task-owned PostgreSQL/Valkey/MinIO stack.",
         "Arguments before -- are forwarded to `cargo test`; arguments after -- are forwarded",
-        "to the Rust test harness after the runner's mandatory `--test-threads 1` argument.",
+        "to the Rust test harness after the runner's bounded `--test-threads` argument.",
+        "Set WIKIJUMP_DEEPWELL_TEST_THREADS=1..16 to select task-owned integration-test concurrency.",
+        "Set WIKIJUMP_DEEPWELL_NEXTEST_PARTITION=hash:I/N to run one independently provisioned",
+        "nextest shard; each shard still defaults to one active test so task-owned state is isolated.",
         "",
       ].join("\n"),
     );
@@ -196,11 +217,21 @@ async function run() {
       "--seed", "deepwell/seeder",
       "install/local/deepwell/config.toml",
     ], {env: {...env, DEEPWELL_RUNTIME_ACTION: "seeder"}});
-    await command(cargo, [
-      "test", "--offline", "--locked",
-      "--manifest-path", "deepwell/Cargo.toml", ...cargoTestArgs,
-      "--", "--test-threads", "1", ...harnessArgs,
-    ], {env});
+    const partition = nextestPartition();
+    if (partition) {
+      await command(cargo, [
+        "nextest", "run", "--offline", "--locked",
+        "--manifest-path", "deepwell/Cargo.toml", ...cargoTestArgs,
+        "--partition", partition, "--test-threads", testThreads(),
+        ...(harnessArgs.length ? ["--", ...harnessArgs] : []),
+      ], {env});
+    } else {
+      await command(cargo, [
+        "test", "--offline", "--locked",
+        "--manifest-path", "deepwell/Cargo.toml", ...cargoTestArgs,
+        "--", "--test-threads", testThreads(), ...harnessArgs,
+      ], {env});
+    }
   } finally {
     process.removeListener("SIGINT", onSignal);
     process.removeListener("SIGTERM", onSignal);

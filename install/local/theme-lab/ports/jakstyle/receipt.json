@@ -95,7 +95,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/jakstyle/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "54f574e20a118f51b9e18192e498507f5b59cae6f380cf58d993350476acd0c2",
+  "source_candidate_sha256": "9ba6c3ef751ffae04fe984f2743cf8ac1071567c48f4f4099238b4032784bdbd",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -103,7 +103,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/jakstyle/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "54f574e20a118f51b9e18192e498507f5b59cae6f380cf58d993350476acd0c2",
+  "candidate_source_sha256": "9ba6c3ef751ffae04fe984f2743cf8ac1071567c48f4f4099238b4032784bdbd",
   "human_port_candidate_path": "install/local/theme-lab/ports/jakstyle/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "e90739b02bf2ff8e314c0d0481936260fe9e0d3db8ccb646bd6025fee91f463d",
   "theme_lab_checks": [
@@ -577,8 +577,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "df6828938ecde15c92869647b94dce23e5c88a1d479217f2b25276624d20d090",
-  "candidate_css_sha256": "7c250cb268fdb689c922a3d7a21ecb68397b95aff0c1fce3acc6765d9df36f03",
+  "candidate_preview_sha256": "e639f1e808ccad8f625b424cdfff91f5b08917ae5bb3b92d8a714a26ad5e38ed",
+  "candidate_css_sha256": "d780f63f2f61a2723af55b6eef978d67d515d01c815327ebaeb72345ff073651",
   "final_theme_lab_check": {
     "slug": "theme:jakstyle",
     "verdict": "warn",
@@ -1286,8 +1286,8 @@
     "en_revision_newer_than_jp": true,
     "candidate_source_delta": {
       "unchanged": false,
-      "inserted_lines": 2,
-      "removed_lines": 2,
+      "inserted_lines": 173,
+      "removed_lines": 3,
       "diff_path": "install/local/theme-lab/ports/jakstyle/existing-jp-candidate.diff"
     },
     "source_action": "adapted-existing-jp-source",

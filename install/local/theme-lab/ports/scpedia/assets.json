@@ -345,22 +345,23 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Roboto&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "f9c78aaa97a3efe706bbaddc4e03b7ec32f522529d58e4fd7d18899dce4f8d25",
+      "candidate_css_sha256": "4c1828e8284c3bf286f4a4be11a1c7b0662d752b49bef29dbe5dd80894004949",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Ascpedia/1",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "f9c78aaa97a3efe706bbaddc4e03b7ec32f522529d58e4fd7d18899dce4f8d25",
+      "candidate_css_sha256": "4c1828e8284c3bf286f4a4be11a1c7b0662d752b49bef29dbe5dd80894004949",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ascpedia/linuxlibertine.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "f9c78aaa97a3efe706bbaddc4e03b7ec32f522529d58e4fd7d18899dce4f8d25",
+      "candidate_css_sha256": "4c1828e8284c3bf286f4a4be11a1c7b0662d752b49bef29dbe5dd80894004949",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }

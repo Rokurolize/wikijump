@@ -95,7 +95,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/minimalist-bhl/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "746b309436ce191a4e479a4a10406905e0c5f67263475732f98e3b32e8851abb",
+  "source_candidate_sha256": "0c0b8c1155dbce7854772c0df4a0731ae71d248bd542f9b1fb0d937e8325139a",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -103,7 +103,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/minimalist-bhl/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "746b309436ce191a4e479a4a10406905e0c5f67263475732f98e3b32e8851abb",
+  "candidate_source_sha256": "0c0b8c1155dbce7854772c0df4a0731ae71d248bd542f9b1fb0d937e8325139a",
   "human_port_candidate_path": "install/local/theme-lab/ports/minimalist-bhl/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "66d2b5303c6b5c4530835fd993c8f9a9e48ab9ac15d3d81eb367d17a038a5391",
   "theme_lab_checks": [
@@ -678,8 +678,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "a9ddfc908dc2b29e06a0aaf05f895a3f76468ae9c77713e326fc815a52e6e4bf",
-  "candidate_css_sha256": "a1b2f0f2c7be18322ce7d1460d7d296b6dd773a994df0134a9d370db4046437f",
+  "candidate_preview_sha256": "1013f069507cb53d5f26f50c77da216dd12622296096389962d52cc0d78e3b36",
+  "candidate_css_sha256": "d0c46fc4c3fa5712ddee3eb23783f90cc50ea7b4fcdb99a978dca6f8e547d93a",
   "final_theme_lab_check": {
     "slug": "theme:minimalist-bhl",
     "verdict": "warn",
@@ -1429,8 +1429,8 @@
     "en_revision_newer_than_jp": true,
     "candidate_source_delta": {
       "unchanged": false,
-      "inserted_lines": 3,
-      "removed_lines": 3,
+      "inserted_lines": 148,
+      "removed_lines": 4,
       "diff_path": "install/local/theme-lab/ports/minimalist-bhl/existing-jp-candidate.diff"
     },
     "source_action": "adapted-existing-jp-source",

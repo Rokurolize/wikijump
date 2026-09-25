@@ -222,6 +222,22 @@ fixtureState.filesByPageId[3000173] = {
   }
 }
 
+fixtureState.filesByPageId[3000340] = {
+  "theme-lab-visual-fixture_日本語長名_320px_readability_and_download_controls.txt": {
+    file_id: 5_600_003,
+    file_created_at: "2026-09-24T00:00:00Z",
+    file_updated_at: null,
+    revision_id: 9_600_003,
+    revision_created_at: "2026-09-24T00:00:00Z",
+    revision_user_id: 123,
+    name: "theme-lab-visual-fixture_日本語長名_320px_readability_and_download_controls.txt",
+    content: Buffer.from("run-owned long Japanese filename visual fixture"),
+    mime: "text/plain",
+    size: 49,
+    revision_comments: "responsive Files pane visual regression fixture"
+  }
+}
+
 /** @param {import("node:http").IncomingMessage} request */
 export const requestContextHeaders = (request) => ({
   page: request.headers["x-deepwell-page"],

@@ -563,43 +563,44 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "8faf5f07cd4fe22d68ecf95bd11a8951860d9a368233904bda2d0baf7b045850",
+      "candidate_css_sha256": "083b35053552ca27a5ccf3271b63651ec8ca0452b250e6efd27ab38327cc2330",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "8faf5f07cd4fe22d68ecf95bd11a8951860d9a368233904bda2d0baf7b045850",
+      "candidate_css_sha256": "083b35053552ca27a5ccf3271b63651ec8ca0452b250e6efd27ab38327cc2330",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "8faf5f07cd4fe22d68ecf95bd11a8951860d9a368233904bda2d0baf7b045850",
+      "candidate_css_sha256": "083b35053552ca27a5ccf3271b63651ec8ca0452b250e6efd27ab38327cc2330",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://pseudo-scp-jp.wdfiles.com/local--code/theme%3Aextra-black-highlighter-theme/1",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "8faf5f07cd4fe22d68ecf95bd11a8951860d9a368233904bda2d0baf7b045850",
+      "candidate_css_sha256": "083b35053552ca27a5ccf3271b63651ec8ca0452b250e6efd27ab38327cc2330",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "8faf5f07cd4fe22d68ecf95bd11a8951860d9a368233904bda2d0baf7b045850",
+      "candidate_css_sha256": "083b35053552ca27a5ccf3271b63651ec8ca0452b250e6efd27ab38327cc2330",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "8faf5f07cd4fe22d68ecf95bd11a8951860d9a368233904bda2d0baf7b045850",
+      "candidate_css_sha256": "083b35053552ca27a5ccf3271b63651ec8ca0452b250e6efd27ab38327cc2330",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }

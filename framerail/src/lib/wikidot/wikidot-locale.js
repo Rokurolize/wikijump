@@ -8,6 +8,25 @@ export const isJapaneseWikidotLocale = (locale) => {
 }
 
 /**
+ * @param {string | null | undefined} locale
+ * @returns {string}
+ */
+export const editPermissionDeniedMessage = (locale) => {
+  const normalized = `${locale ?? ""}`.toLowerCase().replaceAll("_", "-")
+  if (isJapaneseWikidotLocale(normalized)) return "このページを編集する権限がありません。"
+
+  const language = normalized.split("-", 1)[0]
+  if (language === "ko") return "이 페이지를 편집할 권한이 없습니다."
+  if (language === "zh") {
+    return /^(zh-hant|zh-tw|zh-hk|zh-mo)(-|$)/u.test(normalized)
+      ? "您沒有權限編輯此頁面。"
+      : "您没有权限编辑此页面。"
+  }
+
+  return "You don't have permission to edit this page."
+}
+
+/**
  * Wikidot exposes `ja-corrections` as a site language identifier, but it
  * is not a valid BCP 47 locale and JavaScript's Intl APIs reject it.
  * Preserve the raw identifier at the Wikidot compatibility boundary and

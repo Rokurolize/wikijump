@@ -56,3 +56,90 @@
  [[div style="font-size: 85%;"]]
  [[code type="css"]]
  :root {
+@@ -2737,4 +2737,86 @@
+ [[/code]]
+ [[/collapsible]]
+ 
+-[[/iftags]]+[[/iftags]]
++
++[[module CSS]]
++/* SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused. */
++@media (min-width: 768px) {
++  #search-top-box-form:hover #search-top-box-input,
++  #search-top-box-form:focus-within #search-top-box-input {
++    display: inline-block !important;
++  }
++}
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive acceptance: monotypical account and navigation behavior */
++
++/* SCP-JP interaction adaptation: give the zero-width account area a readable user label and a pointer-enabled menu. */
++#login-status { width: max-content !important; font-size: .875rem !important; pointer-events: auto !important; }
++#login-status .printuser { width: auto !important; font-size: inherit !important; }
++#login-status #account-options { pointer-events: auto !important; }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive acceptance: monotypical 320px credit modal width */
++
++/* SCP-JP interaction adaptation: give the zero-width account area a readable user label and a pointer-enabled menu. */
++#login-status { width: max-content !important; font-size: .875rem !important; pointer-events: auto !important; }
++#login-status .printuser { width: auto !important; font-size: inherit !important; }
++#login-status #account-options { pointer-events: auto !important; }
++
++/* The current shared credit:start modal has a 400px desktop width. Clamp the modal shell at SCP-JP's 320px policy boundary without shrinking desktop styling. */
++@media (max-width: 400px) {
++  #u-credit-view .modalcontainer, #u-credit-otherwise .modalcontainer { left: 50% !important; right: auto !important; width: calc(100vw - 1rem) !important; max-width: calc(100vw - 1rem) !important; min-width: 0 !important; transform: translate(-50%, -50%) !important; box-sizing: border-box !important; }
++  #u-credit-view .modalbox, #u-credit-otherwise .modalbox { width: 100% !important; max-width: 100% !important; min-width: 0 !important; max-height: calc(100vh - 1rem) !important; overflow: auto !important; box-sizing: border-box !important; overflow-wrap: anywhere; }
++}
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive acceptance: monotypical 320px credit modal responsive revision 2 */
++
++/* SCP-JP interaction adaptation: give the zero-width account area a readable user label and a pointer-enabled menu. */
++#login-status { width: max-content !important; font-size: .875rem !important; pointer-events: auto !important; }
++#login-status .printuser { width: auto !important; font-size: inherit !important; }
++#login-status #account-options { pointer-events: auto !important; }
++
++/* The current shared credit:start modal has a 400px desktop width. Clamp the modal shell at SCP-JP's 320px policy boundary without shrinking desktop styling. */
++@media (max-width: 400px) {
++  #u-credit-view .modalcontainer, #u-credit-otherwise .modalcontainer { left: 50% !important; right: auto !important; width: calc(100vw - 1rem) !important; max-width: calc(100vw - 1rem) !important; min-width: 0 !important; transform: translateX(-50%) !important; box-sizing: border-box !important; }
++  #u-credit-view .modalbox, #u-credit-otherwise .modalbox { width: 100% !important; max-width: 100% !important; min-width: 0 !important; max-height: calc(100vh - 1rem) !important; overflow: auto !important; box-sizing: border-box !important; overflow-wrap: anywhere; }
++}
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual follow-up: monotypical */
++
++/* Visual follow-up: constrain the credit modal to the visible viewport and scroll its own content so the return link is reachable. */
++@media (max-width: 600px) { #u-credit-view .modalcontainer, #u-credit-otherwise .modalcontainer { top: 1rem !important; bottom: 1rem !important; height: auto !important; max-height: calc(100dvh - 2rem) !important; } #u-credit-view .modalbox, #u-credit-otherwise .modalbox { max-height: calc(100dvh - 2rem) !important; overflow-y: auto !important; box-sizing: border-box !important; } }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual follow-up v2: monotypical */
++
++/* Visual follow-up: constrain the credit modal to the visible viewport and scroll its own content so the return link is reachable. */
++@media (max-width: 600px) { #u-credit-view .modalcontainer, #u-credit-otherwise .modalcontainer { top: 1rem !important; bottom: 1rem !important; height: auto !important; max-height: calc(100dvh - 2rem) !important; } #u-credit-view .modalbox, #u-credit-otherwise .modalbox { max-height: calc(100dvh - 2rem) !important; overflow-y: auto !important; box-sizing: border-box !important; } }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual acceptance header/navigation repair v3: monotypical */
++
++/* Preserve the monotypical display face while keeping the two-word Foundation wordmark on one line at the SCP-JP 320px boundary. */
++@media (max-width: 360px) { #header h1 span::before { white-space: nowrap !important; font-size: clamp(1.05rem, 7vw, 1.35rem) !important; letter-spacing: -.035em !important; } }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual acceptance image review repair v14: monotypical */
++/* Image-reviewed 320px repair: Monotypical's visible Foundation wordmark is a generated h1 anchor pseudo-element; prevent the fallback overflow-wrap:anywhere from splitting the final letters. */
++@media (max-width: 360px) { #header h1 a::before { white-space: normal !important; overflow-wrap: normal !important; word-break: normal !important; hyphens: none !important; font-size: clamp(1rem, 6.5vw, 1.25rem) !important; letter-spacing: -.035em !important; } }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual acceptance image review repair v46: monotypical */
++/* Full-resolution review: the close link remains focused after the #side-bar fragment is cleared, so :focus-within re-raises the drawer and backdrop. Keep target-open and keyboard navigation behavior, but let a non-target closed drawer stay below the page. */
++@media (max-width: 767px) { #side-bar:focus-within:not(:target) { z-index: -1 !important; } }
++[[/module]]

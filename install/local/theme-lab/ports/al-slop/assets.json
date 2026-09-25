@@ -280,22 +280,23 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Boogaloo&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "846b2f93f2882bb8565fd63bc5ab0cae6bd9ee98ea23f8fb45096aa337313f04",
+      "candidate_css_sha256": "fce1b6eebf086ed52d933234bc4bd759cb739fd35c8c6eb25b345dd4c4441021",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Margarine&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "846b2f93f2882bb8565fd63bc5ab0cae6bd9ee98ea23f8fb45096aa337313f04",
+      "candidate_css_sha256": "fce1b6eebf086ed52d933234bc4bd759cb739fd35c8c6eb25b345dd4c4441021",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wikidot.com/theme:al-slop/code/1",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "846b2f93f2882bb8565fd63bc5ab0cae6bd9ee98ea23f8fb45096aa337313f04",
+      "candidate_css_sha256": "fce1b6eebf086ed52d933234bc4bd759cb739fd35c8c6eb25b345dd4c4441021",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }

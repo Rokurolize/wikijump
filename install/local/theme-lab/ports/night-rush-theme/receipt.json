@@ -94,15 +94,15 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/night-rush-theme/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "05a20d5b6e1534554099e014972271405efabf5a119d6c84b8a3b2b021922453",
+  "source_candidate_sha256": "a2bd8da70fa64c3c712759b1d75a86e27b00035fb7bea5b08b658ef374bf0502",
   "candidate_origin": "current official SCP-JP page source",
-  "existing_jp_source_differs_from_candidate": false,
+  "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
     "theme_squares_expanded": 0,
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/night-rush-theme/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "05a20d5b6e1534554099e014972271405efabf5a119d6c84b8a3b2b021922453",
+  "candidate_source_sha256": "a2bd8da70fa64c3c712759b1d75a86e27b00035fb7bea5b08b658ef374bf0502",
   "human_port_candidate_path": "install/local/theme-lab/ports/night-rush-theme/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "acec6cfd975a42732a3cbcc6eb4602ba1a780579fb55f28694b7f54774acf9f0",
   "theme_lab_checks": [
@@ -885,8 +885,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "a6d46f9a940a657053903a2077f12168b3ff67198b93b188cd8ac5db9077f70a",
-  "candidate_css_sha256": "2a89b06bce29eec82df41b40b9f42433bf7149e6e736abfc9c12b8be5e3f89cf",
+  "candidate_preview_sha256": "4b49acc7bf0f0096f993534c3bec9ea22a4c3da9d2d54ff09df985f33f8514f6",
+  "candidate_css_sha256": "64d2cc1f38ac04402e0ab6f6ace602e7a684ba2a27dca665b006677dfb803505",
   "final_theme_lab_check": {
     "slug": "theme:night-rush-theme",
     "verdict": "warn",
@@ -1439,12 +1439,12 @@
     "current_en_updated_at": "2022-12-20T21:40:07+00:00",
     "en_revision_newer_than_jp": false,
     "candidate_source_delta": {
-      "unchanged": true,
-      "inserted_lines": 0,
-      "removed_lines": 0,
-      "diff_path": null
+      "unchanged": false,
+      "inserted_lines": 72,
+      "removed_lines": 1,
+      "diff_path": "install/local/theme-lab/ports/night-rush-theme/existing-jp-candidate.diff"
     },
-    "source_action": "retained-existing-jp-source",
+    "source_action": "adapted-existing-jp-source",
     "technical_validation": "current EN reference and local SCP-JP DOM were compared; all required viewport, rating fixture, asset, font, interaction, offline, and torture gates are bound in final_theme_lab_check"
   },
   "technical_requirements": {

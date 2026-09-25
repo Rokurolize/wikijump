@@ -109,7 +109,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/scp-offices-theme/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "a2c099f6ffcc1ac12b46679b59f83044ff503c073283b5874ef25bb8847c13d4",
+  "source_candidate_sha256": "645ad8f6c1cbc5b3fc4a23dee7fe21df3f3172e241207513094912401eefbebe",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -117,7 +117,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/scp-offices-theme/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "a2c099f6ffcc1ac12b46679b59f83044ff503c073283b5874ef25bb8847c13d4",
+  "candidate_source_sha256": "645ad8f6c1cbc5b3fc4a23dee7fe21df3f3172e241207513094912401eefbebe",
   "human_port_candidate_path": "install/local/theme-lab/ports/scp-offices-theme/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "24d7ddb6f6f076dac4038822ca246b2c0b69c860ef4ed52f5683b58047994f30",
   "theme_lab_checks": [
@@ -573,8 +573,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "9760c1d07ef22a8aa3ca6a88416bf23d6b1c65f0f5b80c5907a5f90fd5ca98e4",
-  "candidate_css_sha256": "b9a939254f3847b04e4e18e5d3308b2e5a82295846796e688aa0faa0bc154a33",
+  "candidate_preview_sha256": "468d72c037015525afee9cfe6a3d65558253bd49d8fdd10618ae13c3890a87a6",
+  "candidate_css_sha256": "7058588c819cf88bfbe6885f9c656df1eb7a6c428d74f238ceb7ceab73b55035",
   "final_theme_lab_check": {
     "slug": "theme:scp-offices-theme",
     "verdict": "warn",
@@ -1237,8 +1237,8 @@
     "en_revision_newer_than_jp": true,
     "candidate_source_delta": {
       "unchanged": false,
-      "inserted_lines": 3,
-      "removed_lines": 3,
+      "inserted_lines": 63,
+      "removed_lines": 4,
       "diff_path": "install/local/theme-lab/ports/scp-offices-theme/existing-jp-candidate.diff"
     },
     "source_action": "adapted-existing-jp-source",

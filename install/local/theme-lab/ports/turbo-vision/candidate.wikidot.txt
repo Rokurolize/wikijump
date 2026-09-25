@@ -1644,6 +1644,21 @@ div.page-rate-widget-box .rate-points {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 + Theme Lab runtime fixture
 
 [[div class="creditRate"]][[div class="rateBox"]][[div class="rate-box-with-credit-button"]]

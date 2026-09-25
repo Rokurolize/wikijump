@@ -295,3 +295,27 @@ SCP-JPのタブ表示
 脚注の日本語本文[[footnote]]日本語フォントと折返しを確認する脚注です。[[/footnote]]
 [[code]]@media (max-width: 640px) { .sample { font-family: sans-serif; } }
 日本語コード例[[/code]]
+
+[[module CSS]]
+/* SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused. */
+@media (min-width: 768px) {
+  #search-top-box-form:hover #search-top-box-input,
+  #search-top-box-form:focus-within #search-top-box-input {
+    display: inline-block !important;
+  }
+}
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive visual acceptance mobile header refinement v5: black-highlighter-theme */
+
+/* The inherited mobile drawer clips its close label against the screen edge; reserve a small inner text inset while retaining the full-screen dimmer anchor. */
+@media (max-width: 767px) { #side-bar a.close-menu { padding-inline-start: .65rem !important; box-sizing: border-box !important; } }
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive visual acceptance interaction repair v1: black-highlighter-theme */
+
+/* Keep BHL's credit return action as one compact Japanese control instead of splitting it across vertical lines at phone widths. */
+@media (max-width: 600px) { #u-credit-otherwise .modalbox a[href="#u-credit-view"] { display: inline-flex !important; width: max-content !important; min-width: 0 !important; max-width: 100% !important; white-space: nowrap !important; word-break: keep-all !important; overflow-wrap: normal !important; line-height: 1.25 !important; } }
+[[/module]]

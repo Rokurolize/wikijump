@@ -141,3 +141,169 @@
  [[/div]]
  [[/=]]
  
+@@ -4245,4 +4245,165 @@
+     background: linear-gradient(90deg, var(--dark-bg-2) 2em, #0000 2em calc(100% - 2em), var(--dark-bg-2) calc(100% - 2em)), linear-gradient(rgb(var(--accent)) 1px, var(--dark-bg-2) 1px);
+ }
+ [[/module]]
+->[[/iftags]][[/iftags]][[/iftags]]+>[[/iftags]][[/iftags]][[/iftags]]
++
++[[module CSS]]
++/* SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused. */
++@media (min-width: 768px) {
++  #search-top-box-form:hover #search-top-box-input,
++  #search-top-box-form:focus-within #search-top-box-input {
++    display: inline-block !important;
++  }
++}
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive acceptance: foxtrot account and navigation behavior */
++
++/* SCP-JP interaction adaptation: place the account menu below Foxtrot's header instead of clipping it above the viewport. */
++#login-status #account-options { top: calc(100% + .25rem) !important; right: 0 !important; z-index: 50 !important; }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive acceptance: foxtrot page and sidebar link contrast */
++
++/* SCP-JP interaction adaptation: place the account menu below Foxtrot's header instead of clipping it above the viewport. */
++#login-status #account-options { top: calc(100% + .25rem) !important; right: 0 !important; z-index: 50 !important; }
++
++/* Keep Foxtrot's dark-plum and scarlet identity while restoring readable navigation and content links. */
++#side-bar a, #side-bar a:visited, #main-content a, #action-area a, .modalbox .credit a { color: #f0d9ff !important; text-decoration: underline; text-decoration-thickness: .06em; text-underline-offset: .14em; }
++#side-bar a:hover, #side-bar a:focus-visible, #main-content a:hover, #main-content a:focus-visible, #action-area a:hover, #action-area a:focus-visible, .modalbox .credit a:hover, .modalbox .credit a:focus-visible { color: #fff !important; background-color: #4a174e !important; outline: 2px solid #f0d9ff; outline-offset: 2px; }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual follow-up: foxtrot */
++
++/* SCP-JP mobile header adaptation: keep the localized identity and search within independent rows at the 320px policy boundary. */
++@media (max-width: 400px) { #header { height: auto !important; min-height: 0 !important; } #header h1, #header h2 { position: static !important; float: none !important; display: block !important; width: 100% !important; max-width: 100% !important; height: auto !important; line-height: 1.2 !important; overflow-wrap: anywhere !important; } #search-top-box { position: static !important; inset: auto !important; float: none !important; clear: both !important; display: block !important; width: 100% !important; max-width: 100% !important; margin: .5rem 0 0 !important; } #search-top-box-form { position: static !important; float: none !important; display: flex !important; justify-content: flex-end; width: 100% !important; } }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual follow-up v2: foxtrot */
++
++/* SCP-JP mobile header adaptation: keep the localized identity and search within independent rows at the 320px policy boundary. */
++@media (max-width: 400px) { #header { height: auto !important; min-height: 0 !important; } #header h1, #header h2 { position: static !important; float: none !important; display: block !important; width: 100% !important; max-width: 100% !important; height: auto !important; line-height: 1.2 !important; overflow-wrap: anywhere !important; } #search-top-box { position: static !important; inset: auto !important; float: none !important; clear: both !important; display: block !important; width: 100% !important; max-width: 100% !important; margin: .5rem 0 0 !important; } #search-top-box-form { position: static !important; float: none !important; display: flex !important; justify-content: flex-end; width: 100% !important; } #top-bar { position: relative !important; inset: auto !important; width: 100% !important; max-width: 100% !important; margin: .35rem 0 0 !important; box-sizing: border-box !important; } }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual acceptance evidence fix v2: foxtrot */
++
++/* Fit Foxtrot's localized site identity beside its circular logo on phone widths; the source gives the live site headings a desktop-sized left offset. */
++@media (max-width: 767px) { #header { height: auto !important; min-height: 0 !important; } #header h1, #header h2 { position: static !important; float: none !important; clear: both !important; display: block !important; width: 100% !important; max-width: 100% !important; margin: .2rem 0 !important; padding-left: 4rem !important; box-sizing: border-box !important; line-height: 1.25 !important; overflow-wrap: anywhere !important; } #search-top-box { position: static !important; inset: auto !important; float: none !important; clear: both !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; } }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual acceptance mobile header fix v3: foxtrot */
++
++/* The source's zero-line-height header spans collapse the localized site title into the subtitle at phone widths. Keep both real SCP-JP labels readable in compact rows and retain Foxtrot's circular mark and TETON WY USA identity label. */
++@media (max-width: 767px) {
++  #header { min-height: 13rem !important; }
++  #header h1, #header h2 { width: 100% !important; max-width: 100% !important; height: auto !important; margin: .15rem 0 !important; padding: 0 !important; text-align: center !important; line-height: 1.25 !important; }
++  #header h1 > a { width: 100% !important; margin: 0 !important; color: #f1edf5 !important; font-size: .8rem !important; line-height: 1.25 !important; }
++  #header h1 > a > span, #header h2 > span { display: block !important; height: auto !important; color: #f1edf5 !important; -webkit-text-fill-color: #f1edf5 !important; font-size: .8rem !important; line-height: 1.25 !important; text-shadow: none !important; }
++  #header h1 > a::before { content: none !important; }
++  #header h1 > a::after { top: 4rem !important; }
++  #header h2::before { display: none !important; }
++  #search-top-box { position: static !important; inset: auto !important; width: 100% !important; max-width: 100% !important; margin-top: .5rem !important; }
++}
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual acceptance mobile header refinement v4: foxtrot */
++
++/* Keep the Foxtrot type label between the site's title and subtitle instead of painting over either localized line. */
++@media (max-width: 767px) { #header h1 > a::after { top: 5.35rem !important; } }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual acceptance mobile header refinement v5: foxtrot */
++
++/* Keep the Foxtrot type label between the site's title and subtitle instead of painting over either localized line. */
++@media (max-width: 767px) { #header::after { content: none !important; } #header h1 > a::after { top: 5.35rem !important; } }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual acceptance mobile header layout correction v6: foxtrot */
++
++/* Reflow the real localized site name and subtitle above the Foxtrot label; the source positioned its generated label twice and reserved desktop-sized anchor height. */
++@media (max-width: 767px) {
++  #header { min-height: 14rem !important; }
++  #header h1, #header h2 { height: auto !important; margin: .1rem 0 !important; padding: 0 !important; line-height: 1.25 !important; }
++  #header h1 > a { display: block !important; position: static !important; width: 100% !important; height: auto !important; margin: 0 !important; color: #f1edf5 !important; font-size: .8rem !important; line-height: 1.25 !important; text-align: center !important; }
++  #header h1 > a > span, #header h2 > span { display: block !important; height: auto !important; color: #f1edf5 !important; -webkit-text-fill-color: #f1edf5 !important; font-size: .8rem !important; line-height: 1.25 !important; }
++  #header h1 > a::after { content: none !important; }
++  #header::after { content: "TETON WY USA" !important; position: absolute !important; top: 4.5rem !important; left: 50% !important; transform: translateX(-50%) !important; color: var(--header-txt-color) !important; font: 700 .9rem/1.3 Arial, sans-serif !important; white-space: nowrap !important; pointer-events: none !important; }
++  #header h2::before { display: none !important; }
++  #search-top-box { position: static !important; inset: auto !important; width: 100% !important; max-width: 100% !important; margin-top: 3.25rem !important; }
++}
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual acceptance mobile header layout correction v7: foxtrot */
++
++/* Reflow the real localized site name and subtitle above the Foxtrot label; the source positioned its generated label twice and reserved desktop-sized anchor height. */
++@media (max-width: 767px) {
++  #header { min-height: 14rem !important; }
++  #header h1 { height: 1.4rem !important; overflow: visible !important; }
++  #header h1, #header h2 { margin: .1rem 0 !important; padding: 0 !important; line-height: 1.25 !important; }
++  #header h1 > a { display: block !important; position: static !important; width: 100% !important; height: 1.4rem !important; margin: 0 !important; color: #f1edf5 !important; font-size: .8rem !important; line-height: 1.25 !important; text-align: center !important; }
++  #header h1 > a > span, #header h2 > span { display: block !important; height: auto !important; color: #f1edf5 !important; -webkit-text-fill-color: #f1edf5 !important; font-size: .8rem !important; line-height: 1.25 !important; }
++  #header h1 > a::after { content: none !important; }
++  #header::after { content: "TETON WY USA" !important; position: absolute !important; top: 4.5rem !important; left: 50% !important; transform: translateX(-50%) !important; color: var(--header-txt-color) !important; font: 700 .9rem/1.3 Arial, sans-serif !important; white-space: nowrap !important; pointer-events: none !important; }
++  #header h2::before { display: none !important; }
++  #search-top-box { position: static !important; inset: auto !important; width: 100% !important; max-width: 100% !important; margin-top: 3.25rem !important; }
++}
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual acceptance mobile header flow repair v8: foxtrot */
++
++/* The legacy logo anchor keeps a 142px inner line box despite a short heading. Position the actual site name in its semantic heading row and return the account controls to document flow so neither overlays the title. */
++@media (max-width: 767px) {
++  #header h1 { position: relative !important; }
++  #header h1 > a > span { position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; width: 100% !important; text-align: center !important; }
++  #login-status { position: static !important; inset: auto !important; width: max-content !important; max-width: 100% !important; margin: .35rem 0 0 auto !important; }
++}
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual acceptance narrow header repair v9: foxtrot */
++
++/* At the policy boundary the long subtitle wraps under the fixed hamburger. Put that subtitle below the logo's touch target and move its theme label with it. */
++@media (max-width: 360px) { #header h2 { margin-top: 1.35rem !important; } #header::after { top: 6.25rem !important; } #header { min-height: 15rem !important; } }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual acceptance image review repair v15: foxtrot */
++/* Image-reviewed tabview repair: Foxtrot's dark-plum page inherited a white YUI tab panel with pale text, washing out the tab content. Keep its native plum surface and readable light copy inside the existing panel. */
++#page-content .yui-navset .yui-content { background-color: #190d1c !important; color: #f2eaf4 !important; border-color: #a778b2 !important; }
++#page-content .yui-navset .yui-content a { color: #f0d9ff !important; }
++#page-content .yui-navset .yui-content a:hover, #page-content .yui-navset .yui-content a:focus-visible { color: #fff !important; background-color: #4a174e !important; }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual acceptance image review repair v16: foxtrot */
++/* Direct image + computed-style finding: the light surface was #toc inside the YUI tab's folded content, not the tab panel. Match the TOC to Foxtrot's dark-plum body and retain a readable lilac border/link treatment. */
++#page-content #toc { color: #f2eaf4 !important; background-color: #190d1c !important; border: 1px solid #a778b2 !important; }
++#page-content #toc a { color: #f0d9ff !important; }
++#page-content #toc a:hover, #page-content #toc a:focus-visible { color: #fff !important; background-color: #4a174e !important; }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP interactive visual acceptance image review repair v23: foxtrot */
++
++/* At 320px Foxtrot's fixed credit-view panel is offset below the viewport, and its file rows exceed the phone width. Center only the JP credit modal; let the established file-list scroller expose full metadata/actions without clipping filenames. */
++@media (max-width: 400px) { #u-credit-view:target { position: fixed !important; inset: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; } #u-credit-view:target .modalcontainer { position: static !important; inset: auto !important; width: calc(100vw - 1rem) !important; max-width: calc(100vw - 1rem) !important; max-height: calc(100dvh - 1rem) !important; } #u-credit-view:target .modalbox { max-width: 100% !important; max-height: calc(100dvh - 1rem) !important; overflow: auto !important; box-sizing: border-box !important; } #action-area .file-list-scroll { max-width: calc(100vw - 2rem) !important; overflow-x: auto !important; } #action-area .file-list { min-width: 32rem !important; } }
++[[/module]]
++
++[[module CSS]]
++/* SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport. */
++#top-bar .top-bar ul li ul, #top-bar .mobile-top-bar ul li ul { left: auto !important; right: 2rem !important; width: min(22rem, calc(100vw - 1rem)) !important; min-width: 0 !important; max-width: calc(100vw - 1rem) !important; box-sizing: border-box !important; }
++#top-bar .top-bar ul li ul li, #top-bar .mobile-top-bar ul li ul li { width: 100% !important; min-width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; }
++#top-bar .top-bar ul li ul li a, #top-bar .mobile-top-bar ul li ul li a { display: block !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; white-space: normal !important; overflow-wrap: anywhere !important; box-sizing: border-box !important; }
++@media (max-width: 767px) { #top-bar .mobile-top-bar ul li ul { width: auto !important; min-width: min(12rem, calc(100vw - 1rem)) !important; } }
++[[/module]]

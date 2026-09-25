@@ -30,7 +30,7 @@
   "technical_spec_version": "1.4",
   "final_verdict": "warn",
   "package_path": "install/local/theme-lab/ports/penumbra",
-  "candidate_source_hash": "f164a9b83100be37a9695d067604cc3563032bcd1cfd6016e7e5200ad21a72b7",
+  "candidate_source_hash": "7a6c3c8074875c8388880e852da021d3969ad1437afde227784e25d4743f0492",
   "inline_css_bytes": 0,
   "check_count": 9,
   "edit_iterations": 3,
@@ -95,7 +95,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/penumbra/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "0912c51873b7dbda7f083fddebfc40b3f46c63059582293970ef36848891eff2",
+  "source_candidate_sha256": "72670cac72662ba00816cf13b4a6cf4e6d615f6100c13c23403207bfc2e27b19",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -103,7 +103,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/penumbra/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "0912c51873b7dbda7f083fddebfc40b3f46c63059582293970ef36848891eff2",
+  "candidate_source_sha256": "72670cac72662ba00816cf13b4a6cf4e6d615f6100c13c23403207bfc2e27b19",
   "human_port_candidate_path": "install/local/theme-lab/ports/penumbra/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "a8ea847d3cef6ea5720c2c69dc56917a1a437fd4f817411d4da94cd61f50a096",
   "theme_lab_checks": [
@@ -881,8 +881,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "1e91c3812322de4228b8179846129c15945de0033f7f04f4f8e8ced58530135d",
-  "candidate_css_sha256": "d46f1909556ff0994f8a767470348125a0056f2dbb3f5470b525a100072b2aec",
+  "candidate_preview_sha256": "7a6c3c8074875c8388880e852da021d3969ad1437afde227784e25d4743f0492",
+  "candidate_css_sha256": "b3264510c416beb3bf0be63dcc5826d4f6ebcd512cfcc8967eb85a3cd6c7b45d",
   "final_theme_lab_check": {
     "slug": "theme:penumbra",
     "verdict": "warn",
@@ -1482,8 +1482,8 @@
     "en_revision_newer_than_jp": true,
     "candidate_source_delta": {
       "unchanged": false,
-      "inserted_lines": 2,
-      "removed_lines": 2,
+      "inserted_lines": 142,
+      "removed_lines": 3,
       "diff_path": "install/local/theme-lab/ports/penumbra/existing-jp-candidate.diff"
     },
     "source_action": "adapted-existing-jp-source",
@@ -1642,6 +1642,6 @@
     "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/penumbra/assets.json",
-  "asset_dependency_decision_count": 0,
+  "asset_dependency_decision_count": 77,
   "page_asset_dependency_decisions_path": null
 }

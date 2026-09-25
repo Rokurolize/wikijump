@@ -161,15 +161,14 @@ export const handlePageLookupRpc = ({ rpcRequest, request, response }) => {
       page_id: rpcRequest.params.page_id,
       from_revision_number: rpcRequest.params.from_revision_number,
       to_revision_number: rpcRequest.params.to_revision_number,
-      lines: [
-        {
-          kind: rpcRequest.params.from_revision_number === 1 ? "removed" : "added",
-          text:
-            rpcRequest.params.from_revision_number === 1
-              ? "OLD STALE DIFF"
-              : "NEW CURRENT DIFF"
-        }
-      ]
+      lines:
+        rpcRequest.params.from_revision_number === 1
+          ? [{ kind: "removed", text: "OLD STALE DIFF" }]
+          : [
+              { kind: "added", text: "NEW CURRENT DIFF" },
+              { kind: "removed", text: "OLD REVISION TEXT" },
+              { kind: "unchanged", text: "SHARED FIXTURE TEXT" }
+            ]
     }
     if (rpcRequest.params.from_revision_number === 1) {
       fixtureState.pendingPageRevisionDiffResponse = (outcome = "failure") => {

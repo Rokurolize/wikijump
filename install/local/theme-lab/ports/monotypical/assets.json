@@ -562,36 +562,37 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://api.fonts.coollabs.io/css2?family=Fira+Code:wght@400;700&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "a3fd398b9f948e6ecd326ec59334d9be192333f8a242cf80f05d8de8dbeebc98",
+      "candidate_css_sha256": "b886d514da429fd1d8053556f12eebac2522c27fef1931d504dc888d1faaf871",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://api.fonts.coollabs.io/css2?family=Ubuntu&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "a3fd398b9f948e6ecd326ec59334d9be192333f8a242cf80f05d8de8dbeebc98",
+      "candidate_css_sha256": "b886d514da429fd1d8053556f12eebac2522c27fef1931d504dc888d1faaf871",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://api.fonts.coollabs.io/css2?family=Urbanist:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "a3fd398b9f948e6ecd326ec59334d9be192333f8a242cf80f05d8de8dbeebc98",
+      "candidate_css_sha256": "b886d514da429fd1d8053556f12eebac2522c27fef1931d504dc888d1faaf871",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "a3fd398b9f948e6ecd326ec59334d9be192333f8a242cf80f05d8de8dbeebc98",
+      "candidate_css_sha256": "b886d514da429fd1d8053556f12eebac2522c27fef1931d504dc888d1faaf871",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Amonotypical/5",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "a3fd398b9f948e6ecd326ec59334d9be192333f8a242cf80f05d8de8dbeebc98",
+      "candidate_css_sha256": "b886d514da429fd1d8053556f12eebac2522c27fef1931d504dc888d1faaf871",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }

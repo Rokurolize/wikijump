@@ -100,7 +100,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/scpedia/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "0a4ced16184440b227c17291a12dca1958185f69ec0501182f2071da27f259bd",
+  "source_candidate_sha256": "c1b5f73166c5a0838185ea424bd6e01e3594efc2c7875adf66e3b22881276342",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -108,7 +108,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/scpedia/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "0a4ced16184440b227c17291a12dca1958185f69ec0501182f2071da27f259bd",
+  "candidate_source_sha256": "c1b5f73166c5a0838185ea424bd6e01e3594efc2c7875adf66e3b22881276342",
   "human_port_candidate_path": "install/local/theme-lab/ports/scpedia/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "5316c14f73b16462234cdbd4b06e8174fa41c57910492058df171404ad3a8e96",
   "theme_lab_checks": [
@@ -1094,8 +1094,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "448b3fb3a048a34ae4d48c935a6f650ba05fd2b83e1e9e95549240a1b0cf7a02",
-  "candidate_css_sha256": "f9c78aaa97a3efe706bbaddc4e03b7ec32f522529d58e4fd7d18899dce4f8d25",
+  "candidate_preview_sha256": "66b806d26975163f18fc984239524038b403717d402812f06863ee92ff67438a",
+  "candidate_css_sha256": "4c1828e8284c3bf286f4a4be11a1c7b0662d752b49bef29dbe5dd80894004949",
   "final_theme_lab_check": {
     "slug": "theme:scpedia",
     "verdict": "warn",

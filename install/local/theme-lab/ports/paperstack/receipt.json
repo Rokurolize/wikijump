@@ -100,7 +100,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/paperstack/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "c7e7c14dc9ec42f08d5bffda1312a76f78fc2e941fb1944a91bef2c06df9c9e3",
+  "source_candidate_sha256": "fbb156a6ee05e90ef24cf7e53e0cff45f51bae1929610b24aad86577b9ee1ff7",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -108,7 +108,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/paperstack/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "c7e7c14dc9ec42f08d5bffda1312a76f78fc2e941fb1944a91bef2c06df9c9e3",
+  "candidate_source_sha256": "fbb156a6ee05e90ef24cf7e53e0cff45f51bae1929610b24aad86577b9ee1ff7",
   "human_port_candidate_path": "install/local/theme-lab/ports/paperstack/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "ae89b529a8182a14fcb9bd4022d431aba0d432da2bf31c4b42d228e27a1f55d6",
   "theme_lab_checks": [
@@ -988,8 +988,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "708e9e327d058e743b2518f8d0fcf6362af00c6125a843a79125193ffb07a755",
-  "candidate_css_sha256": "d1a2c87df021b5d529537afc535672913926d10533654a06a405116f73cb3594",
+  "candidate_preview_sha256": "aa51697e30ce61bdf289de1ae193cb0ff0adda51bd54dc75a5a9e5063708a24f",
+  "candidate_css_sha256": "6838394d41ccc1f2d7c4d03fb74735f5abcdac963e7b56a26dd03c3244078e58",
   "final_theme_lab_check": {
     "slug": "theme:paperstack",
     "verdict": "warn",
@@ -1681,8 +1681,8 @@
     "en_revision_newer_than_jp": true,
     "candidate_source_delta": {
       "unchanged": false,
-      "inserted_lines": 4,
-      "removed_lines": 4,
+      "inserted_lines": 91,
+      "removed_lines": 5,
       "diff_path": "install/local/theme-lab/ports/paperstack/existing-jp-candidate.diff"
     },
     "source_action": "adapted-existing-jp-source",
@@ -1841,6 +1841,6 @@
     "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/paperstack/assets.json",
-  "asset_dependency_decision_count": 1,
+  "asset_dependency_decision_count": 70,
   "page_asset_dependency_decisions_path": "install/local/theme-lab/ports/paperstack/page-assets.json"
 }

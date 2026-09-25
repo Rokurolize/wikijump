@@ -25,7 +25,7 @@
   "technical_spec_version": "1.4",
   "final_verdict": "warn",
   "package_path": "install/local/theme-lab/ports/inkblot",
-  "candidate_source_hash": "eb4f0d31324c9b7949043c9a42a415d42e26230c144829a7eba7b118269d79c9",
+  "candidate_source_hash": "2dd68c2ca0ac4da99716d4c9aadaca59631f22389d1f921e0634badafc79c631",
   "inline_css_bytes": 1801,
   "check_count": 9,
   "edit_iterations": 3,
@@ -105,7 +105,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/inkblot/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "8e20a5ee69aed1c383120aea5ce2899ccac5023b27f4a2734b7e0ed356aa6dee",
+  "source_candidate_sha256": "cd23181e4484790b7f5ced563c672496f1466699effa0f1eae8deb2dd03b5110",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -113,7 +113,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/inkblot/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "8e20a5ee69aed1c383120aea5ce2899ccac5023b27f4a2734b7e0ed356aa6dee",
+  "candidate_source_sha256": "cd23181e4484790b7f5ced563c672496f1466699effa0f1eae8deb2dd03b5110",
   "human_port_candidate_path": "install/local/theme-lab/ports/inkblot/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "eb4f0d31324c9b7949043c9a42a415d42e26230c144829a7eba7b118269d79c9",
   "theme_lab_checks": [
@@ -743,8 +743,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "8dc443bd6789ea0ff4c75b3c3ced792be5d02dd85603f41342054fd4702f0109",
-  "candidate_css_sha256": "149dcf3333cbe91a3c09155a142a31c9464dbf2ba50f6e74930bfa02e2a6802f",
+  "candidate_preview_sha256": "2dd68c2ca0ac4da99716d4c9aadaca59631f22389d1f921e0634badafc79c631",
+  "candidate_css_sha256": "12e6972e14518e7ca1a9bc1c27867ab36097ca579f73f6ed3fdf3b340b32d0f5",
   "final_theme_lab_check": {
     "slug": "theme:inkblot",
     "verdict": "warn",
@@ -1469,5 +1469,17 @@
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/inkblot/assets.json",
   "asset_dependency_decision_count": 47,
-  "page_asset_dependency_decisions_path": "install/local/theme-lab/ports/inkblot/page-assets.json"
+  "page_asset_dependency_decisions_path": "install/local/theme-lab/ports/inkblot/page-assets.json",
+  "visual_acceptance_findings": [
+    {
+      "kind": "theme-specific",
+      "surface": [
+        "page.source",
+        "page.edit"
+      ],
+      "finding": "Libre Baskerville body typography made Wikidot source/editor harder to scan.",
+      "fix": "Scoped monospace font to #action-area .page-source and textarea.editor-wikitext.",
+      "after_review": "Chromium desktop/mobile/320px, Firefox desktop/mobile, WebKit desktop/mobile images directly reviewed; all show aligned monospace source."
+    }
+  ]
 }

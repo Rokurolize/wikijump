@@ -1604,6 +1604,16 @@ div[id$="button-hovertip"] {
     translate: 0 1rem !important;
 }
 
+/* The SCP-JP credit Rate module must remain in the modal reading flow; the
+   inherited absolute positioning otherwise covers the license/back links. */
+#u-credit-view .modalbox-ratemodule,
+#u-credit-otherwise .modalbox-ratemodule {
+    position: static !important;
+    inset: auto !important;
+    float: none !important;
+    margin: 0.75rem auto 0 !important;
+}
+
 .buttons .btn {
     background-color: var(--primaryBackgroundColor);
     border-color: var(--accentColor);
@@ -1843,3 +1853,26 @@ body {
 }
 /* JP runtime header DOM: keep theme title positioning inside the current SCP-JP header. */
 #header h1, #header h2 { max-width: calc(100vw - 2rem) !important; box-sizing: border-box; left: auto !important; right: auto !important; }
+@media (max-width: 767px) {
+  #u-credit-view .modalbox { max-height: calc(100vh - 2rem); overflow-y: auto; }
+  #u-credit-view .modalbox-ratemodule {
+    position: static !important;
+    inset: auto !important;
+    float: none !important;
+    margin: .75rem auto 0 !important;
+  }
+}
+
+/* SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused. */
+@media (min-width: 768px) {
+  #search-top-box-form:hover #search-top-box-input,
+  #search-top-box-form:focus-within #search-top-box-input {
+    display: inline-block !important;
+  }
+}
+
+/* SCP-JP interactive visual follow-up v2: cosmonaut */
+
+/* Keep the Cosmonaut starfield and cloud identity around the page, while giving the revision diff a quiet opaque reading surface so the decorative cloud layer cannot cross added/removed prose. */
+#action-area .revision-diff { position: relative !important; isolation: isolate; background-color: #071012 !important; }
+#action-area .revision-diff .revision-diff-line { position: relative; z-index: 1; }

@@ -285,7 +285,7 @@
             class="revision-row"
             data-id={revisionItem.revision_id}
           >
-            <td class="revision-attribute revision-number">
+            <td class="revision-attribute revision-number" data-label={data.internationalization?.["wiki-page-revision-number"]}>
               {revisionItem.revision_number}
             </td>
             <td class="revision-attribute action optionstd">
@@ -336,18 +336,18 @@
                 </a>
               {/if}
             </td>
-            <td class="revision-attribute revision-type">
+            <td class="revision-attribute revision-type" data-label={data.internationalization?.["wiki-page-revision-type"]}>
               {data.internationalization?.[
                 `wiki-page-revision-type.${revisionItem.revision_type}`
               ]}
             </td>
-            <td class="revision-attribute user">
+            <td class="revision-attribute user" data-label={data.internationalization?.["wiki-page-revision-user"]}>
               <RevisionAuthor author={revisionItem.author} />
             </td>
-            <td class="revision-attribute created-at">
+            <td class="revision-attribute created-at" data-label={data.internationalization?.["wiki-page-revision-created-at"]}>
               {new Date(revisionItem.created_at).toLocaleString()}
             </td>
-            <td class="revision-attribute comments">
+            <td class="revision-attribute comments" data-label={data.internationalization?.["wiki-page-revision-comments"]}>
               {revisionItem.comments}
             </td>
           </tr>
@@ -543,6 +543,269 @@
     }
   }
 
+  // Themes often assume a particular fixed width for the imported Wikidot
+  // History table. In the current JP action pane, that assumption squeezes
+  // the author and turns the V/S/R controls into a vertical column. Give the
+  // semantic columns stable minimums while leaving the theme in control of
+  // colors, borders, and row decoration.
+  @media (min-width: 601px) {
+    :global(#action-area .revision-list .page-history) {
+      display: block !important;
+      width: 100% !important;
+      table-layout: fixed !important;
+    }
+
+    :global(#action-area .revision-list .page-history tbody) {
+      display: block !important;
+      width: 100% !important;
+    }
+
+    :global(#action-area .revision-list .page-history tr.revision-header),
+    :global(#action-area .revision-list .page-history tr.revision-row) {
+      display: grid !important;
+      grid-template-columns: minmax(3rem, auto) minmax(5.5rem, max-content) minmax(4rem, 0.65fr) minmax(7rem, 0.9fr) minmax(10rem, 1fr) minmax(12rem, 1.4fr) !important;
+      // Imported themes may provide a named Wikidot grid with a fixed first
+      // row and a fractional comments row. The SCP-JP semantic table has no
+      // radio column, so those named areas place timestamps and comments on
+      // top of each other. Reset only placement geometry; keep theme styling.
+      grid-template-areas: none !important;
+      grid-template-rows: auto auto !important;
+      grid-auto-rows: auto !important;
+      align-items: start;
+      width: 100% !important;
+      box-sizing: border-box;
+    }
+
+    :global(#action-area .revision-list .page-history .revision-attribute) {
+      display: block !important;
+      box-sizing: border-box;
+      grid-area: auto !important;
+      min-width: 0 !important;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      position: static !important;
+      float: none !important;
+      vertical-align: top;
+    }
+
+    // Candidate themes may assign named grid areas and implicit placements
+    // to the imported revision table. Those area names do not exist on the JP
+    // semantic grid, so map each data column explicitly and put comments on a
+    // separate full-width row. Preserve theme colors, borders and typography.
+    :global(#action-area .revision-list .page-history tbody > tr.revision-row > td.revision-attribute.revision-number) {
+      grid-column: 1 !important;
+      grid-row: 1 !important;
+    }
+
+    :global(#action-area .revision-list .page-history tbody > tr.revision-row > td.revision-attribute.action) {
+      grid-column: 2 !important;
+      grid-row: 1 !important;
+    }
+
+    :global(#action-area .revision-list .page-history tbody > tr.revision-row > td.revision-attribute.revision-type) {
+      grid-column: 3 !important;
+      grid-row: 1 !important;
+    }
+
+    :global(#action-area .revision-list .page-history tbody > tr.revision-row > td.revision-attribute.user) {
+      grid-column: 4 !important;
+      grid-row: 1 !important;
+    }
+
+    :global(#action-area .revision-list .page-history tbody > tr.revision-row > td.revision-attribute.created-at) {
+      grid-column: 5 !important;
+      grid-row: 1 !important;
+    }
+
+    :global(#action-area .revision-list .page-history tbody > tr.revision-row > td.revision-attribute.comments) {
+      grid-column: 1 / -1 !important;
+      grid-row: 2 !important;
+    }
+
+    :global(#action-area .revision-list .page-history tbody > tr.revision-header > td.revision-attribute.revision-number) {
+      grid-column: 1 !important;
+      grid-row: 1 !important;
+    }
+
+    :global(#action-area .revision-list .page-history tbody > tr.revision-header > td.revision-attribute.action) {
+      grid-column: 2 !important;
+      grid-row: 1 !important;
+    }
+
+    :global(#action-area .revision-list .page-history tbody > tr.revision-header > td.revision-attribute.revision-type) {
+      grid-column: 3 !important;
+      grid-row: 1 !important;
+    }
+
+    :global(#action-area .revision-list .page-history tbody > tr.revision-header > td.revision-attribute.user) {
+      grid-column: 4 !important;
+      grid-row: 1 !important;
+    }
+
+    :global(#action-area .revision-list .page-history tbody > tr.revision-header > td.revision-attribute.created-at) {
+      grid-column: 5 !important;
+      grid-row: 1 !important;
+    }
+
+    :global(#action-area .revision-list .page-history tbody > tr.revision-header > td.revision-attribute.comments) {
+      grid-column: 6 !important;
+      grid-row: 1 !important;
+    }
+
+    :global(#action-area .revision-list .page-history .revision-attribute.action) {
+      white-space: nowrap !important;
+    }
+
+    :global(#action-area .revision-list .page-history .revision-attribute.action a) {
+      display: inline-block !important;
+      min-width: 1.25rem;
+      margin-inline-end: 0.15rem;
+      text-align: center;
+      white-space: nowrap !important;
+    }
+
+    :global(#action-area .revision-list .page-history .revision-attribute.user) {
+      min-width: 7rem !important;
+      overflow-wrap: normal;
+    }
+
+    :global(#action-area .revision-list .page-history tr.revision-header > *) {
+      min-width: 0 !important;
+      overflow-wrap: anywhere;
+    }
+
+    :global(#action-area .revision-list .page-history .revision-attribute.comments) {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (min-width: 601px) and (max-width: 900px) {
+    :global(#action-area .revision-list .page-history tbody > tr.revision-header),
+    :global(#action-area .revision-list .page-history tbody > tr.revision-row) {
+      grid-template-columns: minmax(2.5rem, auto) minmax(4rem, max-content) minmax(3rem, 0.6fr) minmax(6.5rem, 0.8fr) minmax(7rem, 1fr) minmax(5.5rem, 1.2fr) !important;
+    }
+
+    :global(#action-area .revision-list .page-history tbody > tr.revision-row > td.revision-attribute.user) {
+      min-width: 6.5rem !important;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .page-revision-header {
+      // Theme action panes commonly float their shared Close control at the
+      // upper-right. Clear that control so a wrapped Japanese/English heading
+      // cannot flow under it or collide with the revision list.
+      clear: both !important;
+      max-width: 100% !important;
+      box-sizing: border-box;
+      white-space: normal !important;
+      overflow-wrap: anywhere;
+    }
+
+    .revision-list {
+      display: block;
+      max-width: 100%;
+      margin-top: 1.25rem !important;
+      overflow-x: visible;
+    }
+
+    .revision-list .page-history {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      border-collapse: separate;
+
+      tbody {
+        display: block;
+      }
+
+      .revision-header {
+        // Theme styles can give this compatibility table row an explicit
+        // display value (often with higher selector specificity). At phone
+        // widths its labels are repeated on the actual cards below, so the
+        // wide column header must not consume space or appear as a second
+        // malformed card.
+        display: none !important;
+      }
+
+      .revision-row {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.35rem;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.6rem;
+        margin-block: 0.5rem;
+        border: 1px solid currentColor;
+      }
+
+      .revision-attribute {
+        display: grid;
+        grid-template-columns: minmax(5.5rem, 34%) minmax(0, 1fr);
+        gap: 0.5rem;
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.15rem 0;
+        overflow-wrap: anywhere;
+      }
+
+      .revision-number::before,
+      .revision-type::before,
+      .user::before,
+      .created-at::before,
+      .comments::before {
+        content: attr(data-label);
+        font-weight: 600;
+      }
+
+      // Comments inherit strongly varied table typography from themes. Give
+      // their value the full card width so large or monospace text wraps at
+      // natural word boundaries instead of being squeezed beside its label.
+      .comments {
+        grid-template-columns: minmax(0, 1fr) !important;
+      }
+
+      .comments::before {
+        grid-column: 1 / -1;
+      }
+
+      .action {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        min-width: 0;
+        white-space: normal;
+      }
+    }
+
+    // Keep this global selector outside the nested .revision-list block. If
+    // SCSS nests it, the generated descendant chain becomes impossible to
+    // match (#action-area is an ancestor of .revision-list).
+    :global(#action-area .revision-list .page-history tbody tr.revision-row > td.revision-attribute::before) {
+      content: attr(data-label) !important;
+      position: static !important;
+      inset: auto !important;
+      display: block !important;
+      width: auto !important;
+      max-width: 100% !important;
+      height: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      color: inherit !important;
+      font-family: inherit !important;
+      font-size: inherit !important;
+      font-weight: 600 !important;
+      line-height: inherit !important;
+      text-align: left !important;
+      text-transform: none !important;
+    }
+  }
+
   .revision-diff-panel {
     margin-top: 1rem;
   }
@@ -557,8 +820,14 @@
   .revision-diff {
     padding: 0.75rem;
     margin-top: 0.75rem;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     overflow: auto;
-    white-space: pre-wrap;
+    box-sizing: border-box;
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal;
 
     .revision-diff-line {
       display: block;
@@ -571,5 +840,29 @@
     .removed {
       background: rgb(255 225 225);
     }
+  }
+
+  // Theme selectors commonly target `pre` descendants with `white-space: pre`.
+  // Keep the UI's individual revision lines bounded and readable even when
+  // that upstream declaration would otherwise make the pre horizontally wider
+  // than a phone viewport.
+  :global(#action-area pre.revision-diff > .revision-diff-line) {
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere !important;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Theme CSS can set the page-wide light text color with enough reach to
+     wash out these pale semantic diff rows. Keep added/removed source legible
+     while retaining the conventional green/red distinction in every theme. */
+  :global(#action-area .revision-diff .revision-diff-line.added) {
+    color: #173421 !important;
+    background-color: rgb(220 255 220) !important;
+  }
+
+  :global(#action-area .revision-diff .revision-diff-line.removed) {
+    color: #4a2020 !important;
+    background-color: rgb(255 225 225) !important;
   }
 </style>

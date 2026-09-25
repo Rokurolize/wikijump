@@ -4,6 +4,7 @@
   import { getPageLayoutContext } from "$lib/layout/page-layout-context"
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { Layout, PagePane } from "$lib/types"
+  import { editPermissionDeniedMessage } from "$lib/wikidot/wikidot-locale"
   import { resolve } from "$app/paths"
   import {
     buildGeneratedPageStylesHead,
@@ -138,7 +139,7 @@
       if (!result.data.res.can_edit) {
         errorPopupState.current = {
           state: true,
-          message: "UNTRANSLATED:You don't have permission to edit this page",
+          message: editPermissionDeniedMessage(data.site.locale),
           data: null
         }
       } else {

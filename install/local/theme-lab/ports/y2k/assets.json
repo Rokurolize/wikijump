@@ -48,8 +48,9 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.wdfiles.com/local--code/theme:y2k/1",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "3181c5d4ce83962b6b5d25d3249aa93d0933ff3879c6855b0ff9a31b4d79eb6f",
+      "candidate_css_sha256": "80d2b3b875f0891e2f82855372cdb23b3a19d3a81db4c17dcfb9f9ca68134f62",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }

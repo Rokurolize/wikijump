@@ -31,7 +31,13 @@ a, a:visited, a.newpage, #side-bar a {
 div#container-wrap { background: none; }
 #container { margin-bottom: 26px; }
 #footer, #footer a { background: none; color: var(--text); }
-#license-area { display: none; }
+#license-area {
+  display: block;
+  padding: 1rem;
+  color: var(--text);
+  background: var(--paper);
+}
+#license-area a { color: var(--red); text-decoration: underline; }
 #content-wrap, #main-content { position: static; }
 
 #header { background: none; height: 200px; }
@@ -87,6 +93,14 @@ div#container-wrap { background: none; }
 }
 
 #search-top-box { position: fixed; top: 0; z-index: 14;}
+@media (min-width: 768px) {
+  #search-top-box-form:hover #search-top-box-input,
+  #search-top-box-form:focus-within #search-top-box-input {
+    display: inline-block !important;
+    color: var(--text);
+    background: var(--paper);
+  }
+}
 #search-top-box-form input[type="submit"],
 #search-top-box-form input[type="submit"]:hover,
 #search-top-box-form input[type="submit"]:focus {
@@ -233,6 +247,38 @@ h1 { color: var(--text); }
 }
 
 #u-credit-view { z-index: 20; }
+
+/* Keep the current SCP-JP Rate module in the modal's reading flow. The
+   upstream component positions it over the license link at desktop widths. */
+#u-credit-view .modalcontainer,
+#u-credit-otherwise .modalcontainer {
+  width: min(400px, calc(100vw - 2rem));
+  height: auto;
+  max-height: calc(100vh - 2rem);
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+}
+#u-credit-view .modalbox,
+#u-credit-otherwise .modalbox {
+  width: 100%;
+  min-width: 0;
+  max-height: calc(100vh - 2rem);
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+#u-credit-view .modalbox a,
+#u-credit-otherwise .modalbox a {
+  color: var(--red) !important;
+  text-decoration: underline;
+}
+#u-credit-view .modalbox-ratemodule,
+#u-credit-otherwise .modalbox-ratemodule {
+  position: static !important;
+  inset: auto !important;
+  float: none !important;
+  margin: .75rem auto 0 !important;
+}
 
 .chapter {
   margin: 0.25em;
@@ -445,7 +491,9 @@ table.wiki-content-table th {
   }
 
   #side-bar .side-block, #side-bar .red, #side-bar .green, #side-bar .blue {
-    background: none;
+    /* Keep the Korean theme's pale labels readable against SCP-JP's light
+       article canvas while preserving its red navigation-panel identity. */
+    background: var(--red);
     box-shadow: none;
     border: none;
     filter: brightness(1.2);
@@ -588,4 +636,85 @@ div.toweroff {
   .yui-navset, .yui-navset .yui-content, .yui-navset .yui-nav { width: 100%; max-width: 100%; box-sizing: border-box; }
   .yui-navset .yui-content { overflow-x: auto; }
   #page-content table { width: 100%; max-width: 100%; table-layout: fixed; }
+  #top-bar .mobile-top-bar { padding-right: 6rem; box-sizing: border-box; }
+  #search-top-box { top: 3rem; right: .5rem; }
+  #u-credit-view .modalbox { max-height: calc(100vh - 2rem); overflow-y: auto; }
+  #u-credit-view .modalbox-ratemodule {
+    position: static !important;
+    inset: auto !important;
+    float: none !important;
+    margin: .75rem auto 0 !important;
+  }
 }
+
+/* SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused. */
+@media (min-width: 768px) {
+  #search-top-box-form:hover #search-top-box-input,
+  #search-top-box-form:focus-within #search-top-box-input {
+    display: inline-block !important;
+  }
+}
+
+/* SCP-JP interactive acceptance: dear-dictator account and navigation behavior */
+
+/* SCP-JP visual acceptance: retain Dear Dictator's oxblood navigation panel while keeping Japanese navigation labels legible. */
+#side-bar .side-block, #side-bar .side-block a, #side-bar .collapsible-block-link, #side-bar .collapsible-block-unfolded-link { color: #fff0e8 !important; }
+#side-bar .side-block a:hover, #side-bar .collapsible-block-link:hover { color: #fff !important; background: #6d1420 !important; }
+
+/* SCP-JP interactive visual follow-up: dear-dictator */
+
+/* Visual follow-up: heading nodes have a stronger upstream selector than the sidebar wrapper; set the readable label color on each live navigation node. */
+#side-bar .side-block .heading, #side-bar .side-block a, #side-bar .collapsible-block-link, #side-bar .collapsible-block-unfolded-link { color: #fff0e8 !important; }
+
+/* SCP-JP interactive visual follow-up v2: dear-dictator */
+
+/* Visual follow-up: heading nodes have a stronger upstream selector than the sidebar wrapper; set the readable label color on each live navigation node. */
+#side-bar .side-block .heading, #side-bar .side-block a, #side-bar .collapsible-block-link, #side-bar .collapsible-block-unfolded-link { color: #fff0e8 !important; text-shadow: 0 1px 1px #3a0b0b; }
+
+/* SCP-JP interactive acceptance: dear-dictator visible license policy revision 2 */
+
+/* SCP-JP visual acceptance: retain Dear Dictator's oxblood navigation panel while keeping Japanese navigation labels legible. */
+#side-bar .side-block, #side-bar .side-block a, #side-bar .collapsible-block-link, #side-bar .collapsible-block-unfolded-link { color: #fff0e8 !important; }
+#side-bar .side-block a:hover, #side-bar .collapsible-block-link:hover { color: #fff !important; background: #6d1420 !important; }
+
+/* The SCP-JP custom-theme policy requires the shared license area to remain available; Dear Dictator's upstream hide rule is not valid on the JP runtime. */
+#license-area { display: block !important; color: var(--text); }
+
+/* SCP-JP interactive visual acceptance image review repair v2: dear-dictator */
+
+/* The JP mobile action-row screenshot showed the theme's pale gold link ink disappearing on its light control surface. Darken only live reader/action links; keep the gold buttons, borders and warning strip. */
+#page-content a, #page-options-bottom a, #page-options-bottom-2 a, .page-tags a { color: #705900 !important; -webkit-text-fill-color: #705900 !important; }
+#page-content a:hover, #page-content a:focus, #page-options-bottom a:hover, #page-options-bottom a:focus, #page-options-bottom-2 a:hover, #page-options-bottom-2 a:focus, .page-tags a:hover, .page-tags a:focus { color: #3e3100 !important; -webkit-text-fill-color: #3e3100 !important; }
+
+/* SCP-JP interactive visual acceptance mobile navigation repair v1: dear-dictator */
+
+/* The absolute mobile bar moves out of view after an inline action-pane scroll. Keep the theme navigation reachable at the viewport top while preserving its colors and controls. */
+@media (max-width: 767px) { #top-bar .mobile-top-bar { position: fixed !important; inset: 0 0 auto 0 !important; z-index: 13 !important; } }
+
+/* SCP-JP interactive visual acceptance image review repair v47: dear-dictator */
+/* Heritage credit review: the fixture's absolute Dendo rate strip painted over the author/license line in the short modal. Keep the oxblood/gold heritage treatment, but return the strip to document flow below the credit link. */
+#u-credit-view .modalbox.heritage > .Dendo { position: static !important; width: auto !important; left: auto !important; bottom: auto !important; margin: .75rem 0 0 !important; padding-bottom: .5rem !important; justify-content: center !important; }
+#u-credit-view .modalbox.heritage { padding-bottom: 1rem !important; }
+#action-area table.page-files th:last-child, #action-area table.page-files td:last-child { min-width: 5rem !important; white-space: nowrap !important; }
+
+/* SCP-JP interactive visual acceptance image review repair v48: dear-dictator */
+/* Narrow-mobile interaction review: Dear Dictator's fixed search form sat above the mobile menu hit target. Keep both controls visible, but give the menu trigger the higher interaction layer and bound search to its own control. */
+@media (max-width: 767px) { #top-bar .mobile-top-bar { z-index: 20 !important; } #search-top-box { z-index: 14 !important; width: auto !important; max-width: calc(100vw - 7rem) !important; } #search-top-box-form { width: auto !important; } }
+
+/* SCP-JP interactive visual acceptance image review repair v51: dear-dictator */
+/* The 320px screenshot shows the mobile slogan sharing the logo-art row, where its Japanese lines collide with the SCP-JP wordmark. Reserve the authored logo area, then render the theme slogan as centered lines below it; retain both the Dear Dictator artwork and palette. */
+@media (max-width: 600px) { #header { height: auto !important; min-height: 17rem !important; padding-bottom: 1rem !important; box-sizing: border-box !important; } #header h1 { width: 100% !important; margin: 0 !important; padding: 0 .75rem !important; box-sizing: border-box !important; } #header h1 > a { display: block !important; width: 100% !important; max-width: 100% !important; padding: 8.5rem 0 .75rem !important; transform: none !important; box-sizing: border-box !important; text-align: center !important; } #header h1 > a::before { display: block !important; max-width: 100% !important; margin: 0 auto !important; font-size: clamp(1rem, 4.8vw, 1.3rem) !important; line-height: 1.35 !important; white-space: pre-line !important; overflow-wrap: anywhere !important; box-sizing: border-box !important; } }
+/* SCP-JP interactive visual acceptance image review repair v52: dear-dictator */
+/* Current 320/390px screenshots showed the inherited pale-gold filename and action-pane Close links nearly disappearing on light panels. Reuse the existing reader's dark-gold link ink only for these live page-pane controls, preserving gold borders and pane/button surfaces. */
+#action-area table.page-files a, #action-area .action-area-close { color: #705900 !important; -webkit-text-fill-color: #705900 !important; }
+#action-area table.page-files a:hover, #action-area table.page-files a:focus, #action-area .action-area-close:hover, #action-area .action-area-close:focus { color: #3e3100 !important; -webkit-text-fill-color: #3e3100 !important; }
+
+/* SCP-JP interactive visual acceptance image review repair v53: dear-dictator */
+/* The v52 after-image showed that Wikijump renders Files as .file-list (not the legacy Wikidot table.page-files), leaving its filename pale gold. Bind the same readable dark-gold link treatment to the current runtime surface while retaining the legacy selector for Wikidot compatibility. */
+#action-area .file-list .file-name a { color: #705900 !important; -webkit-text-fill-color: #705900 !important; }
+#action-area .file-list .file-name a:hover, #action-area .file-list .file-name a:focus { color: #3e3100 !important; -webkit-text-fill-color: #3e3100 !important; }
+
+/* SCP-JP interactive visual acceptance image review repair v54: dear-dictator */
+/* v53 screenshot evidence established that the current Wikijump FileList is rendered outside #action-area. Target its unique filename surface directly; the rule remains inside this theme candidate and leaves ordinary page links untouched. */
+.file-list .file-name a { color: #705900 !important; -webkit-text-fill-color: #705900 !important; }
+.file-list .file-name a:hover, .file-list .file-name a:focus { color: #3e3100 !important; -webkit-text-fill-color: #3e3100 !important; }
