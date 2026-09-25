@@ -1,10 +1,1305 @@
 {
-  "assets": [],
+  "assets": [
+    {
+      "sha256": "8bd0cf822e178e54c9c18ed3322648bf46c8370a90c363dbde9077d865ad9df0",
+      "bytes": 7812,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-300-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 8bd0cf822e178e54c9c18ed3322648bf46c8370a90c363dbde9077d865ad9df0.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "8c2881687ae83aefa9717167ac4e0f17e10ac831182f996bebde6847f591cdeb",
+      "bytes": 10036,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-300-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 8c2881687ae83aefa9717167ac4e0f17e10ac831182f996bebde6847f591cdeb.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "4af95ddf2364eb14b5aebd322cfcf37fbd92e5940b27a189900490dc11e31d95",
+      "bytes": 23188,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-300-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 4af95ddf2364eb14b5aebd322cfcf37fbd92e5940b27a189900490dc11e31d95.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "092b53f590fffe7a1bbe238bc228433330a98616119649b512fe6420a8a3fdb7",
+      "bytes": 29792,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-300-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 092b53f590fffe7a1bbe238bc228433330a98616119649b512fe6420a8a3fdb7.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "92b583cb2a5c4c599ae764ffeedcd319d47ca2a25399de356ae0375cd32412b9",
+      "bytes": 6684,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-300-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 92b583cb2a5c4c599ae764ffeedcd319d47ca2a25399de356ae0375cd32412b9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "15787593791a89212f58fb1ccf55981cfd653d7e91009e478ab84d50f40ad11a",
+      "bytes": 8532,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-300-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 15787593791a89212f58fb1ccf55981cfd653d7e91009e478ab84d50f40ad11a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "6342d720e0c13f51e54dca708cc5c5c5a9093404622376ec36ea886e9bfdc474",
+      "bytes": 3528,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-300-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 6342d720e0c13f51e54dca708cc5c5c5a9093404622376ec36ea886e9bfdc474.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "f57dcde193279820e4fbd9cd764219af4e60b6689ad33d10ccc79341aecf2851",
+      "bytes": 5356,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-300-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at f57dcde193279820e4fbd9cd764219af4e60b6689ad33d10ccc79341aecf2851.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "1f713c0e46cdd60e7ed7acc97a86b6a0aa593743a6b5daf6463cf366c7d76de8",
+      "bytes": 5248,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-300-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 1f713c0e46cdd60e7ed7acc97a86b6a0aa593743a6b5daf6463cf366c7d76de8.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "7c09bd9b665b4cb5ce903e8dac32a396cf6e91720c61f8c87fdd6cf2a2a7bc8c",
+      "bytes": 7140,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-300-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 7c09bd9b665b4cb5ce903e8dac32a396cf6e91720c61f8c87fdd6cf2a2a7bc8c.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "9ebefc6c3447acdc666ffb73e364d3a743debab03c955fbe90c0ef8f04be0d6d",
+      "bytes": 7880,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-300-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 9ebefc6c3447acdc666ffb73e364d3a743debab03c955fbe90c0ef8f04be0d6d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d122386b81a79fe5e883c55cc7c92c55994d8d546fffc7e483d8e99a5e9ee681",
+      "bytes": 10664,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-300-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d122386b81a79fe5e883c55cc7c92c55994d8d546fffc7e483d8e99a5e9ee681.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "45f535adbc8853f90441057f037e0c0d9902ccf988abff5cb39511dfac77904a",
+      "bytes": 11748,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-300-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 45f535adbc8853f90441057f037e0c0d9902ccf988abff5cb39511dfac77904a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "91cccae51ba42b0a12d91f26a4e32541a36c93e34653cc2dbae56b44d0d3a592",
+      "bytes": 15132,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-300-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 91cccae51ba42b0a12d91f26a4e32541a36c93e34653cc2dbae56b44d0d3a592.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "8b9d7f0d058fe4dba5c3bc8cb0d107c98753a658608de5bace67103db921fb0d",
+      "bytes": 7832,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 8b9d7f0d058fe4dba5c3bc8cb0d107c98753a658608de5bace67103db921fb0d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "3563a6acdb8ef5c8fe03c7c9a53a6c47cab96914ce4f430251e9780dc40eafe9",
+      "bytes": 9992,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 3563a6acdb8ef5c8fe03c7c9a53a6c47cab96914ce4f430251e9780dc40eafe9.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "6dc9da171ccea71d525379ee1cbf51d143e31acac330a251bb71b3d6060e687c",
+      "bytes": 23312,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 6dc9da171ccea71d525379ee1cbf51d143e31acac330a251bb71b3d6060e687c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "9c30afe93cd10bd11045d2c7829c71335285284051debae71ca35f52468e5228",
+      "bytes": 29836,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 9c30afe93cd10bd11045d2c7829c71335285284051debae71ca35f52468e5228.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "2a8f07c041f0b99a91d2cc07e68666538c65c5413c1e2d6a703e4f6d9024e74d",
+      "bytes": 6676,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 2a8f07c041f0b99a91d2cc07e68666538c65c5413c1e2d6a703e4f6d9024e74d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "7a60615cb55e7cb7e562ff265f9c26943ef28aec751efa58c58167cb04ecef5d",
+      "bytes": 8456,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 7a60615cb55e7cb7e562ff265f9c26943ef28aec751efa58c58167cb04ecef5d.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e4a28f799aebc24f7f8aa22ce42a512ff4a7ce15edcb46f2a6aef073b46169b9",
+      "bytes": 3512,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e4a28f799aebc24f7f8aa22ce42a512ff4a7ce15edcb46f2a6aef073b46169b9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "8bbf57e5234bdf826cc151318d8c29a51043835e02be889283d7b47098fe2bb3",
+      "bytes": 5372,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 8bbf57e5234bdf826cc151318d8c29a51043835e02be889283d7b47098fe2bb3.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "2128f7ef85c2e577691bc2f23ef2004e00be9dabd4858e6e5b61790804883ddd",
+      "bytes": 5364,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 2128f7ef85c2e577691bc2f23ef2004e00be9dabd4858e6e5b61790804883ddd.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "b6486de9cccc519fcc2b4ddd70dbcb39f32d654dba781fcff69ed73efd3b548d",
+      "bytes": 7228,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at b6486de9cccc519fcc2b4ddd70dbcb39f32d654dba781fcff69ed73efd3b548d.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "587dcb11badf47fb0abd0415c12ca57da9ff365f665cede22d6523f1cfd6cc61",
+      "bytes": 7860,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 587dcb11badf47fb0abd0415c12ca57da9ff365f665cede22d6523f1cfd6cc61.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5de10f834d9191afcdfa42c79ccfd8d202be8af4f6d0e5cabea52b176d58ccd0",
+      "bytes": 10612,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5de10f834d9191afcdfa42c79ccfd8d202be8af4f6d0e5cabea52b176d58ccd0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "628351d0159a99af54aa170292b3ab3aa8b5141dfa31033df38b9f2269133b5d",
+      "bytes": 11960,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 628351d0159a99af54aa170292b3ab3aa8b5141dfa31033df38b9f2269133b5d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "230cd81d3dc64401b7e7d14caff7b10438b13b65a5dadd799b18e293483de1f1",
+      "bytes": 15100,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 230cd81d3dc64401b7e7d14caff7b10438b13b65a5dadd799b18e293483de1f1.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "126ef893d2eadade73359ff4f684166c6026a51df5f611ae67aa32aa12c256bc",
+      "bytes": 7816,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-500-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-500-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 126ef893d2eadade73359ff4f684166c6026a51df5f611ae67aa32aa12c256bc.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "7367d68ea81e7cfb6b112633bf36c1f4e807e2e293b50961bf0769cf2f4e69ae",
+      "bytes": 9992,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-500-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-500-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 7367d68ea81e7cfb6b112633bf36c1f4e807e2e293b50961bf0769cf2f4e69ae.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "9e4da5ad2c147be02544df5a732d22830a82b1e9800dc06267ba656f5c40f7e9",
+      "bytes": 23316,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-500-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-500-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 9e4da5ad2c147be02544df5a732d22830a82b1e9800dc06267ba656f5c40f7e9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "734de04f387ae2bf4082956bd3911f3cdc322c2e6c9459c98fff684ceaeb5100",
+      "bytes": 29832,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-500-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-500-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 734de04f387ae2bf4082956bd3911f3cdc322c2e6c9459c98fff684ceaeb5100.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "80009ffbe1938c63989d6236ed46ce47fcf26609f50988880b5fdc7799fb187a",
+      "bytes": 6688,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-500-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-500-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 80009ffbe1938c63989d6236ed46ce47fcf26609f50988880b5fdc7799fb187a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "dc29ec98c9d64e972a58772b00a19f66f57ef90bb93f423191524eed9f11554c",
+      "bytes": 8476,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-500-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-500-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at dc29ec98c9d64e972a58772b00a19f66f57ef90bb93f423191524eed9f11554c.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "c54a2773a6a3be88ca9aa9acbb8e7c179c9890478fc65cc775f4afd8c43d0a6a",
+      "bytes": 3532,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-500-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-500-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at c54a2773a6a3be88ca9aa9acbb8e7c179c9890478fc65cc775f4afd8c43d0a6a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5c2ccfdd78453ad53db81a24f04e15bbfb716caa3b6ce5b64dae8f88bfffd11a",
+      "bytes": 5360,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-500-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-500-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5c2ccfdd78453ad53db81a24f04e15bbfb716caa3b6ce5b64dae8f88bfffd11a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "471009300059ad5af29dd71f486dc6e7327e8147f960b44b2a99c16a773fda58",
+      "bytes": 5456,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-500-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-500-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 471009300059ad5af29dd71f486dc6e7327e8147f960b44b2a99c16a773fda58.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "91338d3b64e721426ffde7a12e03c182c43f76ae09eab88793ad17cdb9501498",
+      "bytes": 7280,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-500-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-500-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 91338d3b64e721426ffde7a12e03c182c43f76ae09eab88793ad17cdb9501498.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a9dded45ad33708b7138beda29f36b1932eab5fc16d655c99f82dedaa6fd8eef",
+      "bytes": 7848,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-500-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-500-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a9dded45ad33708b7138beda29f36b1932eab5fc16d655c99f82dedaa6fd8eef.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "837c66ca163ad31c2e3024c725ecba860fa2b1c07ab215db6187060b86cb5196",
+      "bytes": 10652,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-500-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-500-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 837c66ca163ad31c2e3024c725ecba860fa2b1c07ab215db6187060b86cb5196.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "caec0c99c10c5b1b551773ec1d4096bae531641baa7e2248ed47925418f092a0",
+      "bytes": 12008,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-500-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-500-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at caec0c99c10c5b1b551773ec1d4096bae531641baa7e2248ed47925418f092a0.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "87dc12dec071db0feea1d4a32c0a4e8e12e6ba8bd4fee845bb74411a2839adf9",
+      "bytes": 15108,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-500-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-500-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 87dc12dec071db0feea1d4a32c0a4e8e12e6ba8bd4fee845bb74411a2839adf9.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "ac96309b913ead8825f34fc0656f9b110861e30560f135b980e8561701cdc854",
+      "bytes": 7880,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at ac96309b913ead8825f34fc0656f9b110861e30560f135b980e8561701cdc854.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "141a8318c0c10c854256b3b99c6be3c82875cd053028db17a66baa262c11f118",
+      "bytes": 10100,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 141a8318c0c10c854256b3b99c6be3c82875cd053028db17a66baa262c11f118.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "53bd904d81c086b103b9e01ef84a98640b2124b78c789bb47ddabb4c41fc94b2",
+      "bytes": 23316,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 53bd904d81c086b103b9e01ef84a98640b2124b78c789bb47ddabb4c41fc94b2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "3d62226c639000a8b948f4843de7e1986affa5be37ec9bff386af2bdf611a3f0",
+      "bytes": 29876,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 3d62226c639000a8b948f4843de7e1986affa5be37ec9bff386af2bdf611a3f0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "8398e437adb984db8585cceb6b1cf0fd143b37359216a9ed67ae7fbabecb0e7c",
+      "bytes": 6712,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 8398e437adb984db8585cceb6b1cf0fd143b37359216a9ed67ae7fbabecb0e7c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a38b199df22c286bfc69c1e9cb0762d787ec6619838bb1b802e2962c6f2edc1a",
+      "bytes": 8536,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a38b199df22c286bfc69c1e9cb0762d787ec6619838bb1b802e2962c6f2edc1a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "38aeadf7d27bf1439b93f1355d85d640853ae8d4107845cd63280d9368a80c77",
+      "bytes": 3540,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 38aeadf7d27bf1439b93f1355d85d640853ae8d4107845cd63280d9368a80c77.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "6858657b5a323893376810cfd93524d2ffff255ccb24dd9efef5b28e4dce1118",
+      "bytes": 5368,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 6858657b5a323893376810cfd93524d2ffff255ccb24dd9efef5b28e4dce1118.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "05b92f016c10825d1170f475a8467a3a4c6170a18f7e25d75cc2569424aa49f8",
+      "bytes": 5412,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 05b92f016c10825d1170f475a8467a3a4c6170a18f7e25d75cc2569424aa49f8.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "1355d560be9e4bf63c72f2085bddcef55c6e757a674f09e512b5b7ff3945af16",
+      "bytes": 7268,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 1355d560be9e4bf63c72f2085bddcef55c6e757a674f09e512b5b7ff3945af16.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d23d952314a790a78d8583299a6cb8aec1c566bb07571f9b262381a8a3e45a81",
+      "bytes": 7900,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d23d952314a790a78d8583299a6cb8aec1c566bb07571f9b262381a8a3e45a81.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "b873e78bcd0d41e36fe87865814c77cf7e88b24334af3de55a64a844cb188337",
+      "bytes": 10700,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at b873e78bcd0d41e36fe87865814c77cf7e88b24334af3de55a64a844cb188337.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "552d9d6af197e007e1c2fb2c6995ebda58539156dd71ce7c00c4c2a09cb18de6",
+      "bytes": 12156,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 552d9d6af197e007e1c2fb2c6995ebda58539156dd71ce7c00c4c2a09cb18de6.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5a6320ca0fd64afd1f6e07c201b84fbc94db63c1316fd29e0fa159ca5d43828d",
+      "bytes": 15232,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5a6320ca0fd64afd1f6e07c201b84fbc94db63c1316fd29e0fa159ca5d43828d.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "deec93b60e18226cbbf2f620b3016f9c2fc07b1e21d6b3663e3bc34fefa0fc32",
+      "bytes": 7880,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-700-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at deec93b60e18226cbbf2f620b3016f9c2fc07b1e21d6b3663e3bc34fefa0fc32.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e0f7fbeb51aa8db930153c432962b3342ed8a6a14b328f526a3c6d95cb74ab84",
+      "bytes": 10084,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-700-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e0f7fbeb51aa8db930153c432962b3342ed8a6a14b328f526a3c6d95cb74ab84.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "987306692df7c81d1ffa1efc98414dfaae10de5e178cfba8e22e92ad9c872e43",
+      "bytes": 23040,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-700-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 987306692df7c81d1ffa1efc98414dfaae10de5e178cfba8e22e92ad9c872e43.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "00306519b47d03b24dc2a917c0fc796d3ccd3abdafa8d7b3755ce26c95a7b616",
+      "bytes": 29612,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-700-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 00306519b47d03b24dc2a917c0fc796d3ccd3abdafa8d7b3755ce26c95a7b616.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "f2cfd516545cff424741b1ba4bf5fc3b6b35611284336f66ce9ee66875512fe4",
+      "bytes": 6644,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-700-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at f2cfd516545cff424741b1ba4bf5fc3b6b35611284336f66ce9ee66875512fe4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5ca5bfff2a5d1e234c3bb2c37ff028da67f4f402fa6a3eed269fcf2b8a89495a",
+      "bytes": 8504,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-700-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5ca5bfff2a5d1e234c3bb2c37ff028da67f4f402fa6a3eed269fcf2b8a89495a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "3c76ce4aceb40e84a1dd7ad0f297d84bf2a76e3db231fd2739cce00f9c387ce2",
+      "bytes": 3520,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-700-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 3c76ce4aceb40e84a1dd7ad0f297d84bf2a76e3db231fd2739cce00f9c387ce2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "298dd6268e8bb1027f736295d0e1aadd6826145ff701c16116ad6e4b4c359444",
+      "bytes": 5356,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-700-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 298dd6268e8bb1027f736295d0e1aadd6826145ff701c16116ad6e4b4c359444.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "fb812d293d5aa5904dff4b593ccbb0f0702936cb41631c43f0d2de34496c0ac4",
+      "bytes": 5236,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-700-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at fb812d293d5aa5904dff4b593ccbb0f0702936cb41631c43f0d2de34496c0ac4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d869decfc4a2318017faf6f5e287be4c59268df4c079d202957ce45119e0d730",
+      "bytes": 7072,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-700-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d869decfc4a2318017faf6f5e287be4c59268df4c079d202957ce45119e0d730.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "f7a3c0d506bcae50f35e8a517158992158a182af047ae4398c8c9367dfa1d5ea",
+      "bytes": 7736,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-700-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at f7a3c0d506bcae50f35e8a517158992158a182af047ae4398c8c9367dfa1d5ea.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "624fad4c3226bdc06e5b08f798d744e4221f55dd709f28a59d9021750f2752ba",
+      "bytes": 10576,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-700-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 624fad4c3226bdc06e5b08f798d744e4221f55dd709f28a59d9021750f2752ba.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d351333c2ffd6af6aa0f1e66c42cacce5796e8adf65ba17a4d63370092e1d967",
+      "bytes": 11760,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-700-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d351333c2ffd6af6aa0f1e66c42cacce5796e8adf65ba17a4d63370092e1d967.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "89fb4a33e94ebbb4f595f4130d537d22cbe38b0f66e9a621a07faa5158933177",
+      "bytes": 15024,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-700-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 89fb4a33e94ebbb4f595f4130d537d22cbe38b0f66e9a621a07faa5158933177.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "54e9f097b2172b52bef202daedbd6b60c57138555f4ca6e4bb735bd30c023029",
+      "bytes": 21648,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 54e9f097b2172b52bef202daedbd6b60c57138555f4ca6e4bb735bd30c023029.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "99eac709b04b7e8a87206e4f7fd8df79cc892ae309df532eda1f4538a7bf681e",
+      "bytes": 23548,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Italic.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 99eac709b04b7e8a87206e4f7fd8df79cc892ae309df532eda1f4538a7bf681e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "dc8b14694b66c1381814d6f8e8bebbca8347433f032befdbbd38226c578b5f1e",
+      "bytes": 20920,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at dc8b14694b66c1381814d6f8e8bebbca8347433f032befdbbd38226c578b5f1e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "21fa8cfe955ff06b708bdebf0e2a6dcc7f4c693b952cf0d559126b900e71c65e",
+      "bytes": 22596,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold-Italic.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold-Italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 21fa8cfe955ff06b708bdebf0e2a6dcc7f4c693b952cf0d559126b900e71c65e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d4fc582fbdfa050a00fc1f7264ea4e5c8692e26ecf1b87cebd13c76101ed5f58",
+      "bytes": 28052,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Apenumbra/logo.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Apenumbra/logo.png",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d4fc582fbdfa050a00fc1f7264ea4e5c8692e26ecf1b87cebd13c76101ed5f58.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    }
+  ],
   "missing": [],
-  "imports": [],
+  "imports": [
+    "https://fonts.bunny.net/css2?family=Fira+Code:wght@300..700&display=swap",
+    "https://scp-wiki.wdfiles.com/local--code/theme%3Apenumbra/1"
+  ],
   "pruned_fonts": [],
   "template_placeholders": [],
   "asset_replacements": {},
   "omitted_assets": [],
-  "dependency_decisions": []
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-300-normal.woff2",
+      "sha256": "8bd0cf822e178e54c9c18ed3322648bf46c8370a90c363dbde9077d865ad9df0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 8bd0cf822e178e54c9c18ed3322648bf46c8370a90c363dbde9077d865ad9df0.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-300-normal.woff",
+      "sha256": "8c2881687ae83aefa9717167ac4e0f17e10ac831182f996bebde6847f591cdeb",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 8c2881687ae83aefa9717167ac4e0f17e10ac831182f996bebde6847f591cdeb.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-300-normal.woff2",
+      "sha256": "4af95ddf2364eb14b5aebd322cfcf37fbd92e5940b27a189900490dc11e31d95",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 4af95ddf2364eb14b5aebd322cfcf37fbd92e5940b27a189900490dc11e31d95.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-300-normal.woff",
+      "sha256": "092b53f590fffe7a1bbe238bc228433330a98616119649b512fe6420a8a3fdb7",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 092b53f590fffe7a1bbe238bc228433330a98616119649b512fe6420a8a3fdb7.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-300-normal.woff2",
+      "sha256": "92b583cb2a5c4c599ae764ffeedcd319d47ca2a25399de356ae0375cd32412b9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 92b583cb2a5c4c599ae764ffeedcd319d47ca2a25399de356ae0375cd32412b9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-300-normal.woff",
+      "sha256": "15787593791a89212f58fb1ccf55981cfd653d7e91009e478ab84d50f40ad11a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 15787593791a89212f58fb1ccf55981cfd653d7e91009e478ab84d50f40ad11a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-300-normal.woff2",
+      "sha256": "6342d720e0c13f51e54dca708cc5c5c5a9093404622376ec36ea886e9bfdc474",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 6342d720e0c13f51e54dca708cc5c5c5a9093404622376ec36ea886e9bfdc474.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-300-normal.woff",
+      "sha256": "f57dcde193279820e4fbd9cd764219af4e60b6689ad33d10ccc79341aecf2851",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at f57dcde193279820e4fbd9cd764219af4e60b6689ad33d10ccc79341aecf2851.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-300-normal.woff2",
+      "sha256": "1f713c0e46cdd60e7ed7acc97a86b6a0aa593743a6b5daf6463cf366c7d76de8",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 1f713c0e46cdd60e7ed7acc97a86b6a0aa593743a6b5daf6463cf366c7d76de8.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-300-normal.woff",
+      "sha256": "7c09bd9b665b4cb5ce903e8dac32a396cf6e91720c61f8c87fdd6cf2a2a7bc8c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 7c09bd9b665b4cb5ce903e8dac32a396cf6e91720c61f8c87fdd6cf2a2a7bc8c.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-300-normal.woff2",
+      "sha256": "9ebefc6c3447acdc666ffb73e364d3a743debab03c955fbe90c0ef8f04be0d6d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 9ebefc6c3447acdc666ffb73e364d3a743debab03c955fbe90c0ef8f04be0d6d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-300-normal.woff",
+      "sha256": "d122386b81a79fe5e883c55cc7c92c55994d8d546fffc7e483d8e99a5e9ee681",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d122386b81a79fe5e883c55cc7c92c55994d8d546fffc7e483d8e99a5e9ee681.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-300-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-300-normal.woff2",
+      "sha256": "45f535adbc8853f90441057f037e0c0d9902ccf988abff5cb39511dfac77904a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 45f535adbc8853f90441057f037e0c0d9902ccf988abff5cb39511dfac77904a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-300-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-300-normal.woff",
+      "sha256": "91cccae51ba42b0a12d91f26a4e32541a36c93e34653cc2dbae56b44d0d3a592",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 91cccae51ba42b0a12d91f26a4e32541a36c93e34653cc2dbae56b44d0d3a592.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff2",
+      "sha256": "8b9d7f0d058fe4dba5c3bc8cb0d107c98753a658608de5bace67103db921fb0d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 8b9d7f0d058fe4dba5c3bc8cb0d107c98753a658608de5bace67103db921fb0d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff",
+      "sha256": "3563a6acdb8ef5c8fe03c7c9a53a6c47cab96914ce4f430251e9780dc40eafe9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 3563a6acdb8ef5c8fe03c7c9a53a6c47cab96914ce4f430251e9780dc40eafe9.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff2",
+      "sha256": "6dc9da171ccea71d525379ee1cbf51d143e31acac330a251bb71b3d6060e687c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 6dc9da171ccea71d525379ee1cbf51d143e31acac330a251bb71b3d6060e687c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff",
+      "sha256": "9c30afe93cd10bd11045d2c7829c71335285284051debae71ca35f52468e5228",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 9c30afe93cd10bd11045d2c7829c71335285284051debae71ca35f52468e5228.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff2",
+      "sha256": "2a8f07c041f0b99a91d2cc07e68666538c65c5413c1e2d6a703e4f6d9024e74d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 2a8f07c041f0b99a91d2cc07e68666538c65c5413c1e2d6a703e4f6d9024e74d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff",
+      "sha256": "7a60615cb55e7cb7e562ff265f9c26943ef28aec751efa58c58167cb04ecef5d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 7a60615cb55e7cb7e562ff265f9c26943ef28aec751efa58c58167cb04ecef5d.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff2",
+      "sha256": "e4a28f799aebc24f7f8aa22ce42a512ff4a7ce15edcb46f2a6aef073b46169b9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e4a28f799aebc24f7f8aa22ce42a512ff4a7ce15edcb46f2a6aef073b46169b9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff",
+      "sha256": "8bbf57e5234bdf826cc151318d8c29a51043835e02be889283d7b47098fe2bb3",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 8bbf57e5234bdf826cc151318d8c29a51043835e02be889283d7b47098fe2bb3.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff2",
+      "sha256": "2128f7ef85c2e577691bc2f23ef2004e00be9dabd4858e6e5b61790804883ddd",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 2128f7ef85c2e577691bc2f23ef2004e00be9dabd4858e6e5b61790804883ddd.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff",
+      "sha256": "b6486de9cccc519fcc2b4ddd70dbcb39f32d654dba781fcff69ed73efd3b548d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at b6486de9cccc519fcc2b4ddd70dbcb39f32d654dba781fcff69ed73efd3b548d.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff2",
+      "sha256": "587dcb11badf47fb0abd0415c12ca57da9ff365f665cede22d6523f1cfd6cc61",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 587dcb11badf47fb0abd0415c12ca57da9ff365f665cede22d6523f1cfd6cc61.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff",
+      "sha256": "5de10f834d9191afcdfa42c79ccfd8d202be8af4f6d0e5cabea52b176d58ccd0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5de10f834d9191afcdfa42c79ccfd8d202be8af4f6d0e5cabea52b176d58ccd0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff2",
+      "sha256": "628351d0159a99af54aa170292b3ab3aa8b5141dfa31033df38b9f2269133b5d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 628351d0159a99af54aa170292b3ab3aa8b5141dfa31033df38b9f2269133b5d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff",
+      "sha256": "230cd81d3dc64401b7e7d14caff7b10438b13b65a5dadd799b18e293483de1f1",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 230cd81d3dc64401b7e7d14caff7b10438b13b65a5dadd799b18e293483de1f1.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-500-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-500-normal.woff2",
+      "sha256": "126ef893d2eadade73359ff4f684166c6026a51df5f611ae67aa32aa12c256bc",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 126ef893d2eadade73359ff4f684166c6026a51df5f611ae67aa32aa12c256bc.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-500-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-500-normal.woff",
+      "sha256": "7367d68ea81e7cfb6b112633bf36c1f4e807e2e293b50961bf0769cf2f4e69ae",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 7367d68ea81e7cfb6b112633bf36c1f4e807e2e293b50961bf0769cf2f4e69ae.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-500-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-500-normal.woff2",
+      "sha256": "9e4da5ad2c147be02544df5a732d22830a82b1e9800dc06267ba656f5c40f7e9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 9e4da5ad2c147be02544df5a732d22830a82b1e9800dc06267ba656f5c40f7e9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-500-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-500-normal.woff",
+      "sha256": "734de04f387ae2bf4082956bd3911f3cdc322c2e6c9459c98fff684ceaeb5100",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 734de04f387ae2bf4082956bd3911f3cdc322c2e6c9459c98fff684ceaeb5100.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-500-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-500-normal.woff2",
+      "sha256": "80009ffbe1938c63989d6236ed46ce47fcf26609f50988880b5fdc7799fb187a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 80009ffbe1938c63989d6236ed46ce47fcf26609f50988880b5fdc7799fb187a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-500-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-500-normal.woff",
+      "sha256": "dc29ec98c9d64e972a58772b00a19f66f57ef90bb93f423191524eed9f11554c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at dc29ec98c9d64e972a58772b00a19f66f57ef90bb93f423191524eed9f11554c.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-500-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-500-normal.woff2",
+      "sha256": "c54a2773a6a3be88ca9aa9acbb8e7c179c9890478fc65cc775f4afd8c43d0a6a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at c54a2773a6a3be88ca9aa9acbb8e7c179c9890478fc65cc775f4afd8c43d0a6a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-500-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-500-normal.woff",
+      "sha256": "5c2ccfdd78453ad53db81a24f04e15bbfb716caa3b6ce5b64dae8f88bfffd11a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5c2ccfdd78453ad53db81a24f04e15bbfb716caa3b6ce5b64dae8f88bfffd11a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-500-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-500-normal.woff2",
+      "sha256": "471009300059ad5af29dd71f486dc6e7327e8147f960b44b2a99c16a773fda58",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 471009300059ad5af29dd71f486dc6e7327e8147f960b44b2a99c16a773fda58.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-500-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-500-normal.woff",
+      "sha256": "91338d3b64e721426ffde7a12e03c182c43f76ae09eab88793ad17cdb9501498",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 91338d3b64e721426ffde7a12e03c182c43f76ae09eab88793ad17cdb9501498.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-500-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-500-normal.woff2",
+      "sha256": "a9dded45ad33708b7138beda29f36b1932eab5fc16d655c99f82dedaa6fd8eef",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a9dded45ad33708b7138beda29f36b1932eab5fc16d655c99f82dedaa6fd8eef.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-500-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-500-normal.woff",
+      "sha256": "837c66ca163ad31c2e3024c725ecba860fa2b1c07ab215db6187060b86cb5196",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 837c66ca163ad31c2e3024c725ecba860fa2b1c07ab215db6187060b86cb5196.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-500-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-500-normal.woff2",
+      "sha256": "caec0c99c10c5b1b551773ec1d4096bae531641baa7e2248ed47925418f092a0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at caec0c99c10c5b1b551773ec1d4096bae531641baa7e2248ed47925418f092a0.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-500-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-500-normal.woff",
+      "sha256": "87dc12dec071db0feea1d4a32c0a4e8e12e6ba8bd4fee845bb74411a2839adf9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 87dc12dec071db0feea1d4a32c0a4e8e12e6ba8bd4fee845bb74411a2839adf9.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-600-normal.woff2",
+      "sha256": "ac96309b913ead8825f34fc0656f9b110861e30560f135b980e8561701cdc854",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at ac96309b913ead8825f34fc0656f9b110861e30560f135b980e8561701cdc854.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-600-normal.woff",
+      "sha256": "141a8318c0c10c854256b3b99c6be3c82875cd053028db17a66baa262c11f118",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 141a8318c0c10c854256b3b99c6be3c82875cd053028db17a66baa262c11f118.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-600-normal.woff2",
+      "sha256": "53bd904d81c086b103b9e01ef84a98640b2124b78c789bb47ddabb4c41fc94b2",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 53bd904d81c086b103b9e01ef84a98640b2124b78c789bb47ddabb4c41fc94b2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-600-normal.woff",
+      "sha256": "3d62226c639000a8b948f4843de7e1986affa5be37ec9bff386af2bdf611a3f0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 3d62226c639000a8b948f4843de7e1986affa5be37ec9bff386af2bdf611a3f0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-600-normal.woff2",
+      "sha256": "8398e437adb984db8585cceb6b1cf0fd143b37359216a9ed67ae7fbabecb0e7c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 8398e437adb984db8585cceb6b1cf0fd143b37359216a9ed67ae7fbabecb0e7c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-600-normal.woff",
+      "sha256": "a38b199df22c286bfc69c1e9cb0762d787ec6619838bb1b802e2962c6f2edc1a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a38b199df22c286bfc69c1e9cb0762d787ec6619838bb1b802e2962c6f2edc1a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-600-normal.woff2",
+      "sha256": "38aeadf7d27bf1439b93f1355d85d640853ae8d4107845cd63280d9368a80c77",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 38aeadf7d27bf1439b93f1355d85d640853ae8d4107845cd63280d9368a80c77.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-600-normal.woff",
+      "sha256": "6858657b5a323893376810cfd93524d2ffff255ccb24dd9efef5b28e4dce1118",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 6858657b5a323893376810cfd93524d2ffff255ccb24dd9efef5b28e4dce1118.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-600-normal.woff2",
+      "sha256": "05b92f016c10825d1170f475a8467a3a4c6170a18f7e25d75cc2569424aa49f8",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 05b92f016c10825d1170f475a8467a3a4c6170a18f7e25d75cc2569424aa49f8.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-600-normal.woff",
+      "sha256": "1355d560be9e4bf63c72f2085bddcef55c6e757a674f09e512b5b7ff3945af16",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 1355d560be9e4bf63c72f2085bddcef55c6e757a674f09e512b5b7ff3945af16.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-600-normal.woff2",
+      "sha256": "d23d952314a790a78d8583299a6cb8aec1c566bb07571f9b262381a8a3e45a81",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d23d952314a790a78d8583299a6cb8aec1c566bb07571f9b262381a8a3e45a81.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-600-normal.woff",
+      "sha256": "b873e78bcd0d41e36fe87865814c77cf7e88b24334af3de55a64a844cb188337",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at b873e78bcd0d41e36fe87865814c77cf7e88b24334af3de55a64a844cb188337.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-600-normal.woff2",
+      "sha256": "552d9d6af197e007e1c2fb2c6995ebda58539156dd71ce7c00c4c2a09cb18de6",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 552d9d6af197e007e1c2fb2c6995ebda58539156dd71ce7c00c4c2a09cb18de6.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-600-normal.woff",
+      "sha256": "5a6320ca0fd64afd1f6e07c201b84fbc94db63c1316fd29e0fa159ca5d43828d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5a6320ca0fd64afd1f6e07c201b84fbc94db63c1316fd29e0fa159ca5d43828d.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-700-normal.woff2",
+      "sha256": "deec93b60e18226cbbf2f620b3016f9c2fc07b1e21d6b3663e3bc34fefa0fc32",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at deec93b60e18226cbbf2f620b3016f9c2fc07b1e21d6b3663e3bc34fefa0fc32.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-700-normal.woff",
+      "sha256": "e0f7fbeb51aa8db930153c432962b3342ed8a6a14b328f526a3c6d95cb74ab84",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e0f7fbeb51aa8db930153c432962b3342ed8a6a14b328f526a3c6d95cb74ab84.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-700-normal.woff2",
+      "sha256": "987306692df7c81d1ffa1efc98414dfaae10de5e178cfba8e22e92ad9c872e43",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 987306692df7c81d1ffa1efc98414dfaae10de5e178cfba8e22e92ad9c872e43.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-700-normal.woff",
+      "sha256": "00306519b47d03b24dc2a917c0fc796d3ccd3abdafa8d7b3755ce26c95a7b616",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 00306519b47d03b24dc2a917c0fc796d3ccd3abdafa8d7b3755ce26c95a7b616.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-700-normal.woff2",
+      "sha256": "f2cfd516545cff424741b1ba4bf5fc3b6b35611284336f66ce9ee66875512fe4",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at f2cfd516545cff424741b1ba4bf5fc3b6b35611284336f66ce9ee66875512fe4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-700-normal.woff",
+      "sha256": "5ca5bfff2a5d1e234c3bb2c37ff028da67f4f402fa6a3eed269fcf2b8a89495a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5ca5bfff2a5d1e234c3bb2c37ff028da67f4f402fa6a3eed269fcf2b8a89495a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-700-normal.woff2",
+      "sha256": "3c76ce4aceb40e84a1dd7ad0f297d84bf2a76e3db231fd2739cce00f9c387ce2",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 3c76ce4aceb40e84a1dd7ad0f297d84bf2a76e3db231fd2739cce00f9c387ce2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-700-normal.woff",
+      "sha256": "298dd6268e8bb1027f736295d0e1aadd6826145ff701c16116ad6e4b4c359444",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 298dd6268e8bb1027f736295d0e1aadd6826145ff701c16116ad6e4b4c359444.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-700-normal.woff2",
+      "sha256": "fb812d293d5aa5904dff4b593ccbb0f0702936cb41631c43f0d2de34496c0ac4",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at fb812d293d5aa5904dff4b593ccbb0f0702936cb41631c43f0d2de34496c0ac4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-700-normal.woff",
+      "sha256": "d869decfc4a2318017faf6f5e287be4c59268df4c079d202957ce45119e0d730",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d869decfc4a2318017faf6f5e287be4c59268df4c079d202957ce45119e0d730.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-700-normal.woff2",
+      "sha256": "f7a3c0d506bcae50f35e8a517158992158a182af047ae4398c8c9367dfa1d5ea",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at f7a3c0d506bcae50f35e8a517158992158a182af047ae4398c8c9367dfa1d5ea.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-700-normal.woff",
+      "sha256": "624fad4c3226bdc06e5b08f798d744e4221f55dd709f28a59d9021750f2752ba",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 624fad4c3226bdc06e5b08f798d744e4221f55dd709f28a59d9021750f2752ba.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-700-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-700-normal.woff2",
+      "sha256": "d351333c2ffd6af6aa0f1e66c42cacce5796e8adf65ba17a4d63370092e1d967",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d351333c2ffd6af6aa0f1e66c42cacce5796e8adf65ba17a4d63370092e1d967.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-700-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-700-normal.woff",
+      "sha256": "89fb4a33e94ebbb4f595f4130d537d22cbe38b0f66e9a621a07faa5158933177",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 89fb4a33e94ebbb4f595f4130d537d22cbe38b0f66e9a621a07faa5158933177.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans.woff2",
+      "sha256": "54e9f097b2172b52bef202daedbd6b60c57138555f4ca6e4bb735bd30c023029",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 54e9f097b2172b52bef202daedbd6b60c57138555f4ca6e4bb735bd30c023029.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Italic.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Italic.woff2",
+      "sha256": "99eac709b04b7e8a87206e4f7fd8df79cc892ae309df532eda1f4538a7bf681e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 99eac709b04b7e8a87206e4f7fd8df79cc892ae309df532eda1f4538a7bf681e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold.woff2",
+      "sha256": "dc8b14694b66c1381814d6f8e8bebbca8347433f032befdbbd38226c578b5f1e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at dc8b14694b66c1381814d6f8e8bebbca8347433f032befdbbd38226c578b5f1e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold-Italic.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold-Italic.woff2",
+      "sha256": "21fa8cfe955ff06b708bdebf0e2a6dcc7f4c693b952cf0d559126b900e71c65e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 21fa8cfe955ff06b708bdebf0e2a6dcc7f4c693b952cf0d559126b900e71c65e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Apenumbra/logo.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Apenumbra/logo.png",
+      "sha256": "d4fc582fbdfa050a00fc1f7264ea4e5c8692e26ecf1b87cebd13c76101ed5f58",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d4fc582fbdfa050a00fc1f7264ea4e5c8692e26ecf1b87cebd13c76101ed5f58.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.bunny.net/css2?family=Fira+Code:wght@300..700&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "b3264510c416beb3bf0be63dcc5826d4f6ebcd512cfcc8967eb85a3cd6c7b45d",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Apenumbra/1",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "b3264510c416beb3bf0be63dcc5826d4f6ebcd512cfcc8967eb85a3cd6c7b45d",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    }
+  ],
+  "candidate_base_css_assets": []
 }

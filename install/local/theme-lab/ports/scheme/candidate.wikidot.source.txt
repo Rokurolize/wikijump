@@ -1166,3 +1166,64 @@ div#extrac-div-3::before {
 [[/collapsible]]
 
 [[/iftags]]
+
+[[module CSS]]
+/* SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused. */
+@media (min-width: 768px) {
+  #search-top-box-form:hover #search-top-box-input,
+  #search-top-box-form:focus-within #search-top-box-input {
+    display: inline-block !important;
+  }
+}
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive visual acceptance mobile header refinement v5: scheme */
+
+/* The decorative gear overlaps the live site wordmark on narrow screens. Reserve the logo band, then lay the localized identity below it while preserving the original masthead art. */
+@media (max-width: 600px) { #header { height: auto !important; min-height: 18rem !important; padding-top: 10rem !important; box-sizing: border-box !important; } #header h1, #header h2 { position: static !important; float: none !important; clear: both !important; display: block !important; width: 100% !important; max-width: 100% !important; height: auto !important; margin: .25rem 0 !important; padding: 0 !important; transform: none !important; line-height: 1.25 !important; box-sizing: border-box !important; } #header h1 a { display: block !important; position: static !important; height: auto !important; max-height: none !important; margin: 0 !important; padding: 0 !important; line-height: 1.25 !important; font-size: 1.15rem !important; } #header h1 a:before { display: block !important; content: var(--title) !important; color: #f2f2f2 !important; text-shadow: 2px 2px 2px #000 !important; } #header h2:after { display: block !important; content: var(--short_subtitle, var(--subtitle)) !important; white-space: normal !important; color: #f0f0c0 !important; text-shadow: 1px 1px 1px rgba(0,0,0,.8) !important; } #header h2 span { display: none !important; } }
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive visual acceptance mobile navigation repair v1: scheme */
+
+/* The positioned gear decoration (div#extra-div-2, z-index 20) intercepted the mobile menu touch target. Raise the responsive navigation layer above its decorative header sibling without changing the artwork. */
+@media (max-width: 767px) { #top-bar { position: relative !important; z-index: 21 !important; } #top-bar .mobile-top-bar { position: relative !important; z-index: 22 !important; } #top-bar .mobile-top-bar .open-menu { position: relative !important; z-index: 23 !important; } }
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive visual acceptance mobile navigation repair v2: scheme */
+
+/* After the tap-test fix, the screenshot showed the static trigger at the top-bar's inherited top:179px position, where it overlaid the first article heading. Return the theme's mobile top bar to normal document flow so it reserves its own navigation row before the page title. */
+@media (max-width: 767px) { #top-bar { position: static !important; top: auto !important; margin-block: .25rem !important; z-index: auto !important; } #top-bar .mobile-top-bar { position: relative !important; top: auto !important; z-index: 21 !important; } #top-bar .mobile-top-bar .open-menu { position: relative !important; z-index: 22 !important; } }
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive visual acceptance image review repair v41: scheme */
+/* Current mobile submenu screenshot showed the longest Japanese navigation label clipped at the viewport edge. Keep the gear artwork and menu colors; anchor the opened list to the right edge with a viewport-bounded width and allow labels to wrap. */
+@media (max-width: 767px) { .mobile-top-bar > ul { position: absolute !important; inset: auto 0 auto auto !important; width: min(20rem, calc(100vw - 2rem)) !important; max-width: calc(100vw - 2rem) !important; min-width: 0 !important; box-sizing: border-box !important; } .mobile-top-bar > ul a { white-space: normal !important; overflow-wrap: anywhere !important; word-break: normal !important; line-height: 1.35 !important; } }
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive visual acceptance image review repair v42: scheme */
+/* Re-review showed the right-anchored submenu still covered the article title. Keep the expanded mobile links in normal flow so they wrap within the nav row and push article content down. */
+@media (max-width: 767px) { .mobile-top-bar > ul { position: static !important; inset: auto !important; display: block !important; width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin: .25rem 0 0 !important; box-sizing: border-box !important; } .mobile-top-bar > ul a { display: block !important; max-width: 100% !important; white-space: normal !important; overflow-wrap: anywhere !important; word-break: normal !important; line-height: 1.35 !important; box-sizing: border-box !important; } }
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive visual acceptance image review repair v43: scheme */
+/* The 390px and 320px after-images confirmed the list wrapped but the topbar retained a fixed-height box, leaving its open menu over the page heading. Let the actual expanded list contribute its intrinsic height in normal flow. */
+@media (max-width: 767px) { .mobile-top-bar { display: block !important; height: auto !important; min-height: 0 !important; max-height: none !important; overflow: visible !important; } .mobile-top-bar .open-menu { display: block !important; width: 100% !important; height: auto !important; min-height: 2.75rem !important; } .mobile-top-bar > ul { height: auto !important; min-height: 0 !important; max-height: none !important; overflow: visible !important; } }
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive visual acceptance image review repair v44: scheme */
+/* Browser diagnostics showed the outer nav row was static but its nested expanded submenu remained a positioned child, so the article title still painted behind it. Put only the open nested list back in flow and let long localized labels wrap. */
+@media (max-width: 767px) { .mobile-top-bar > ul { float: none !important; clear: both !important; } .mobile-top-bar > ul > li { float: none !important; display: block !important; width: 100% !important; } .mobile-top-bar > ul > li > ul { position: static !important; inset: auto !important; float: none !important; display: block !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; height: auto !important; max-height: none !important; margin: .25rem 0 !important; overflow: visible !important; box-sizing: border-box !important; } .mobile-top-bar > ul > li > ul a { display: block !important; max-width: 100% !important; white-space: normal !important; overflow-wrap: anywhere !important; } }
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive visual acceptance image review repair v45: scheme */
+/* Measured runtime geometry shows the floated mobile navigation is 231px tall while its #top-bar parent collapses to 21px. Make the actual parent establish a formatting context so the localized, expanded submenu reserves its full height before the article. */
+@media (max-width: 767px) { #top-bar { display: flow-root !important; width: 100% !important; height: auto !important; min-height: 0 !important; overflow: visible !important; } #top-bar .mobile-top-bar { float: none !important; } }
+[[/module]]

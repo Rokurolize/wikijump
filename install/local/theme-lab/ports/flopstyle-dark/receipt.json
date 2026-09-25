@@ -27,7 +27,7 @@
   "technical_spec_version": "1.4",
   "final_verdict": "warn",
   "package_path": "install/local/theme-lab/ports/flopstyle-dark",
-  "candidate_source_hash": "ab1d88cb4c7d3a22ac8d4552b286adb7636ed1333ce1c6f236d6128a9d1fa58c",
+  "candidate_source_hash": "ebd2c7f253ddf69fd9456889a0a88c7539ed358d716865448d70edb5eea14c45",
   "inline_css_bytes": 83129,
   "check_count": 9,
   "edit_iterations": 3,
@@ -124,7 +124,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/flopstyle-dark/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "cfb44bd64b36997a2abc6aed9b587b1a8f73a66a5037804b6e02f43d6d4842d7",
+  "source_candidate_sha256": "70b9947896e9c24a399b2082129cca671e72b302283fbd305693869c8d49bb22",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -132,7 +132,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/flopstyle-dark/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "cfb44bd64b36997a2abc6aed9b587b1a8f73a66a5037804b6e02f43d6d4842d7",
+  "candidate_source_sha256": "70b9947896e9c24a399b2082129cca671e72b302283fbd305693869c8d49bb22",
   "human_port_candidate_path": "install/local/theme-lab/ports/flopstyle-dark/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "1ba3503438000f4271894059e06dd0075bfcc10c416217af08042eff360b2abe",
   "theme_lab_checks": [
@@ -1613,7 +1613,7 @@
     }
   ],
   "candidate_preview_sha256": "ee23608343f562b35939a1308694ad2bad26d113307f866a93936b8ea9be5ab8",
-  "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
+  "candidate_css_sha256": "034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37",
   "final_theme_lab_check": {
     "slug": "theme:flopstyle-dark",
     "verdict": "warn",
@@ -2508,6 +2508,16 @@
     "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/flopstyle-dark/assets.json",
-  "asset_dependency_decision_count": 78,
-  "page_asset_dependency_decisions_path": "install/local/theme-lab/ports/flopstyle-dark/page-assets.json"
+  "asset_dependency_decision_count": 33,
+  "page_asset_dependency_decisions_path": "install/local/theme-lab/ports/flopstyle-dark/page-assets.json",
+  "interactive_visual_findings": [
+    {
+      "id": "flopstyle-dark-sidebar-link-contrast-v26",
+      "surface": "SCP-JP #side-bar desktop navigation and mobile drawer/submenu",
+      "finding": "Warm dark upstream sidebar links were nearly indistinguishable from the slate/charcoal sidebar background in actual Chromium laptop, tablet, mobile, and 320px screenshots.",
+      "fix": "Apply the theme warm light ink to sidebar headings and links; preserve the yellow hover background with dark ink.",
+      "evidence": "interactive-visual-audit.json screenshot review; current pre-fix screenshot SHA captured in campaign history; post-fix screenshot will be re-reviewed.",
+      "status": "fixed-awaiting-after-image-review"
+    }
+  ]
 }

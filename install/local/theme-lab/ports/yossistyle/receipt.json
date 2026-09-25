@@ -82,7 +82,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/yossistyle/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "c9987477d0e9079b7b15c55ac608b853e69c970484dc2b5b0e6f3cd6565c442c",
+  "source_candidate_sha256": "a010f595638b31c3a790fae7b297893b8ad3bb605251234f30458322b4d8c468",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -90,7 +90,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/yossistyle/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "c9987477d0e9079b7b15c55ac608b853e69c970484dc2b5b0e6f3cd6565c442c",
+  "candidate_source_sha256": "a010f595638b31c3a790fae7b297893b8ad3bb605251234f30458322b4d8c468",
   "human_port_candidate_path": "install/local/theme-lab/ports/yossistyle/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "9746388b517f272954dc43313b42efacbd0173b7b5c4564c22f3486c24d94715",
   "theme_lab_checks": [
@@ -607,8 +607,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "421aed2e5f41a3ae084f7b3cf88aec0fe0b55de7db82c88fa195b09eb2471050",
-  "candidate_css_sha256": "a3ae41b56ed94a56b8564ab1407ce8c09ab6aa8a4aa3d74ec11fa61ccd4f6e78",
+  "candidate_preview_sha256": "9b1317142c20150ecac353bd0c76728fbde9bbec0377ea020af4ad771c759ef1",
+  "candidate_css_sha256": "91f5114938f968865251a6a1bebf39b8180671be59bd44032788de4b0e57ee99",
   "final_theme_lab_check": {
     "slug": "theme:yossistyle",
     "verdict": "warn",

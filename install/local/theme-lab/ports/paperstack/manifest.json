@@ -113,5 +113,37 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/paperstack/assets.json",
-  "asset_dependency_decision_count": 1
+  "asset_dependency_decision_count": 70,
+  "interactive_acceptance": {
+    "theme_source": {
+      "path": "upstream-en.wikidot.txt",
+      "active_tags": [
+        "_cc",
+        "theme"
+      ],
+      "evidence": "Current SCP-EN page metadata tags and active CSS module; imports resolved from the existing content-addressed Theme Lab cache without network access.",
+      "candidate_tags": [
+        "テーマ"
+      ]
+    },
+    "resolved_theme_css": {
+      "source_path": "upstream-en.wikidot.txt",
+      "source_sha256": "473d6a0dcb753239797efd8dd829f1e34bb626419076023de8d4afe944adf187",
+      "active_tags": [
+        "_cc",
+        "theme"
+      ],
+      "candidate_source_sha256": "54de61c806eb8c023ad6ccd78bfff31174fe3a19dc8387d248a12461ec520916",
+      "candidate_active_tags": [
+        "テーマ"
+      ],
+      "css_source_path": "candidate-source.css",
+      "candidate_css_sha256": "531ea644ff0111737b55c868dafcb3623741b10457d145f95f7f550510fafe4c",
+      "asset_receipt_path": "assets.json",
+      "assets": 66,
+      "imports": 3,
+      "missing": 0,
+      "external_requests_during_build": 0
+    }
+  }
 }

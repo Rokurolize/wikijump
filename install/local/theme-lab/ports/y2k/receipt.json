@@ -93,7 +93,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/y2k/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "17ae938a563963b196c7c69c5c9ade9d4615bb83ae6f8e8d43508816959536e1",
+  "source_candidate_sha256": "7b9050dee6c61604132d3a3d208f73ab4c889bf74f7f2f38f733f0057500b2c0",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -101,7 +101,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/y2k/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "17ae938a563963b196c7c69c5c9ade9d4615bb83ae6f8e8d43508816959536e1",
+  "candidate_source_sha256": "7b9050dee6c61604132d3a3d208f73ab4c889bf74f7f2f38f733f0057500b2c0",
   "human_port_candidate_path": "install/local/theme-lab/ports/y2k/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "9c9f91ce5182bc5f147858f5f405f980a127e4e6b9801a32f1a21d94d6e34152",
   "theme_lab_checks": [
@@ -885,8 +885,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "c97498ea5f9d1fda9e3012a20a4f13b51bec17d8905bd7c397771460ce4b5caf",
-  "candidate_css_sha256": "3181c5d4ce83962b6b5d25d3249aa93d0933ff3879c6855b0ff9a31b4d79eb6f",
+  "candidate_preview_sha256": "09b7a7f720b9adc5e430463b90fbd382167ab9ff4cc7a9bbcb1c50ced9fbff77",
+  "candidate_css_sha256": "80d2b3b875f0891e2f82855372cdb23b3a19d3a81db4c17dcfb9f9ca68134f62",
   "final_theme_lab_check": {
     "slug": "theme:y2k",
     "verdict": "warn",
@@ -1460,8 +1460,8 @@
     "en_revision_newer_than_jp": true,
     "candidate_source_delta": {
       "unchanged": false,
-      "inserted_lines": 1,
-      "removed_lines": 1,
+      "inserted_lines": 110,
+      "removed_lines": 2,
       "diff_path": "install/local/theme-lab/ports/y2k/existing-jp-candidate.diff"
     },
     "source_action": "adapted-existing-jp-source",

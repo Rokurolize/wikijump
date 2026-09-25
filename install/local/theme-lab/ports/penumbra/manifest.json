@@ -90,5 +90,37 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/penumbra/assets.json",
-  "asset_dependency_decision_count": 0
+  "asset_dependency_decision_count": 77,
+  "interactive_acceptance": {
+    "theme_source": {
+      "path": "upstream-en.wikidot.txt",
+      "active_tags": [
+        "_cc",
+        "theme"
+      ],
+      "evidence": "Current SCP-EN page metadata tags and active CSS module; imports resolved from the existing content-addressed Theme Lab cache without network access.",
+      "candidate_tags": [
+        "テーマ"
+      ]
+    },
+    "resolved_theme_css": {
+      "source_path": "upstream-en.wikidot.txt",
+      "source_sha256": "befb285563d3f8d956f49726d2272a051bdab6ac4b9a84dd0ba856490c0890b5",
+      "active_tags": [
+        "_cc",
+        "theme"
+      ],
+      "candidate_source_sha256": "72670cac72662ba00816cf13b4a6cf4e6d615f6100c13c23403207bfc2e27b19",
+      "candidate_active_tags": [
+        "テーマ"
+      ],
+      "css_source_path": "candidate-source.css",
+      "candidate_css_sha256": "b3264510c416beb3bf0be63dcc5826d4f6ebcd512cfcc8967eb85a3cd6c7b45d",
+      "asset_receipt_path": "assets.json",
+      "assets": 75,
+      "imports": 2,
+      "missing": 0,
+      "external_requests_during_build": 0
+    }
+  }
 }

@@ -30,3 +30,9 @@
 #header h1, #header h2 { max-width: calc(100vw - 2rem) !important; box-sizing: border-box; left: auto !important; right: auto !important; }
 /* Campaign JP adaptation turbo-vision: Theme Lab viewport evidence. */
 @media (max-width: 1600px) { #page-content .offset-right, #page-content .offset-left { margin-left: 0 !important; margin-right: 0 !important; max-width: 100%; } }
+
+/* SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport. */
+#top-bar .top-bar ul li ul, #top-bar .mobile-top-bar ul li ul { left: auto !important; right: 2rem !important; width: min(22rem, calc(100vw - 1rem)) !important; min-width: 0 !important; max-width: calc(100vw - 1rem) !important; box-sizing: border-box !important; }
+#top-bar .top-bar ul li ul li, #top-bar .mobile-top-bar ul li ul li { width: 100% !important; min-width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; }
+#top-bar .top-bar ul li ul li a, #top-bar .mobile-top-bar ul li ul li a { display: block !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; white-space: normal !important; overflow-wrap: anywhere !important; box-sizing: border-box !important; }
+@media (max-width: 767px) { #top-bar .mobile-top-bar ul li ul { width: auto !important; min-width: min(12rem, calc(100vw - 1rem)) !important; } }

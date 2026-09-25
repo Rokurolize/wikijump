@@ -95,7 +95,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/space/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "6b681b7655250551b3c1677252c5499c230db126fd5e9b3df842a931dfaef3c4",
+  "source_candidate_sha256": "2e30960b5c4f4ed08e2481962ef6d17e3cae17ff64d9caebf93c3574791736dc",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -103,7 +103,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/space/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "6b681b7655250551b3c1677252c5499c230db126fd5e9b3df842a931dfaef3c4",
+  "candidate_source_sha256": "2e30960b5c4f4ed08e2481962ef6d17e3cae17ff64d9caebf93c3574791736dc",
   "human_port_candidate_path": "install/local/theme-lab/ports/space/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "b17a253456f0a733d5fcafe4f4b16c4bb06050cec2c7461b08466c58eb048589",
   "theme_lab_checks": [
@@ -749,8 +749,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "bf33c3800972f4352c486c7f7c9ab571e00085e7eba3e60483eaa35c550ffb3c",
-  "candidate_css_sha256": "ebaff3f3f45f405ee4053b4f8f6c2c6e71aa2c00269a13130e9a02407c2e2d2e",
+  "candidate_preview_sha256": "2996bc48eb76140291a90a1ad690db6f8b62a5a838e4face53f6162b8406d784",
+  "candidate_css_sha256": "5745eb9224451358eaca498d6072f3a34128b2e1c2f8d757be2d5f8ab34a8680",
   "final_theme_lab_check": {
     "slug": "theme:space",
     "verdict": "warn",
@@ -1409,8 +1409,8 @@
     "en_revision_newer_than_jp": true,
     "candidate_source_delta": {
       "unchanged": false,
-      "inserted_lines": 3,
-      "removed_lines": 3,
+      "inserted_lines": 110,
+      "removed_lines": 4,
       "diff_path": "install/local/theme-lab/ports/space/existing-jp-candidate.diff"
     },
     "source_action": "adapted-existing-jp-source",

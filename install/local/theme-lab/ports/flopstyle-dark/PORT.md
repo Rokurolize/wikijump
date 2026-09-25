@@ -6,6 +6,7 @@ State: **verified local candidate; not published**. Current upstream source is f
 
 - Existing SCP-JP counterpart: confirmed absent by targeted XML-RPC refresh.
 - Initial candidate source: `upstream-en.wikidot.txt`. Candidate CSS extracts its inline CSS modules; external and included dependencies remain in `manifest.json`.
+- Theme Lab's default replay uses only unconditional CSS modules. The source page documents optional variants inside `ift` wrappers; its live SCP-JP default `1`–`3` stylesheet imports resolve to the frozen upstream SCP-Wiki `local--code` resources because the not-yet-published SCP-JP aliases return Wikidot's `No such page` body. `scripts/extract-css-modules.mjs` excludes documentation code blocks and inactive conditional modules before `scripts/freeze-css.py` localizes the CSS. The selected PEENUMBRA palette is not part of the default bundle.
 - Dependency family: `independent`.
 
 ## Technical decisions
@@ -16,7 +17,7 @@ The evidence-backed rules in `../TECHNICAL-LOCALIZATION-SPEC.md` apply; the fina
 
 - EN source identity: `31af257ac4fde398b560f6106ee4f1e916291c40141938a9fcc5b6ef95335c46`; updated `2026-09-02T02:33:56+00:00`.
 - JP baseline: No public JP counterpart existed after the targeted XML-RPC absence check.
-- Final candidate source/CSS SHA-256: `cfb44bd64b36997a2abc6aed9b587b1a8f73a66a5037804b6e02f43d6d4842d7` / `9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2`.
+- Final candidate source/CSS SHA-256: `70b9947896e9c24a399b2082129cca671e72b302283fbd305693869c8d49bb22` / `034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37`.
 - Offline Theme Lab verdict: `warn`, zero errors/actions, torture `pass`, candidate missing assets `0`, external requests `0`.
 - Candidate page images: `2` rendered, `0` broken; `2` of `2` declared page attachments replayed from verified local bytes.
 - Geometry: desktop, laptop, tablet, and mobile all report zero document overflow.

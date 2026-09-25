@@ -26,7 +26,7 @@
   "technical_spec_version": "1.4",
   "final_verdict": "warn",
   "package_path": "install/local/theme-lab/ports/skipos",
-  "candidate_source_hash": "1fcac8f15edc43ec8e2aad13e756e52840276d5eef89910e818cfecc4f36d261",
+  "candidate_source_hash": "c4774d677d6ca118ce5930cb718097e25832ec0644a5bf57ead32979d64e9ac2",
   "inline_css_bytes": 0,
   "check_count": 9,
   "edit_iterations": 3,
@@ -89,7 +89,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/skipos/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507",
+  "source_candidate_sha256": "a9a86fc0dc7e97062220e342a6f5e82c326891e8de0f07d42d9ba03195d4ad19",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -97,7 +97,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/skipos/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507",
+  "candidate_source_sha256": "a9a86fc0dc7e97062220e342a6f5e82c326891e8de0f07d42d9ba03195d4ad19",
   "human_port_candidate_path": "install/local/theme-lab/ports/skipos/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "1fcac8f15edc43ec8e2aad13e756e52840276d5eef89910e818cfecc4f36d261",
   "theme_lab_checks": [
@@ -736,8 +736,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "cb52c19132dcca14ab7f619d8f78e04c092e1e5d88e312592aa3ba5c239d3e01",
-  "candidate_css_sha256": "d46f1909556ff0994f8a767470348125a0056f2dbb3f5470b525a100072b2aec",
+  "candidate_preview_sha256": "19c1b75afa86489e0771e1e7d47e904a02a273ac7d71277e9e336470d42a1288",
+  "candidate_css_sha256": "73755801789f0c324bc96fa179ff28bed7fd25a75424dabeb6e4a7a025ea2e3f",
   "final_theme_lab_check": {
     "slug": "theme:skipos",
     "verdict": "warn",
@@ -1494,6 +1494,6 @@
     "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/skipos/assets.json",
-  "asset_dependency_decision_count": 0,
+  "asset_dependency_decision_count": 100,
   "page_asset_dependency_decisions_path": null
 }

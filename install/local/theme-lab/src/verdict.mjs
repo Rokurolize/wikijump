@@ -246,6 +246,18 @@ export function buildVerdict({
         document_overflow_px: result.document_overflow_px ?? 0,
       }]))
     : null;
+  const proposedActions = nextActions(issues, styleChanges);
+  // Inactive media rules are useful leads before responsive evidence exists.
+  // Once the complete viewport sweep has passed, those leads have been
+  // exercised and should remain visible as style evidence rather than asking
+  // for an edit with no failing viewport to reproduce.
+  const resolvedActions = viewportStatus && Object.values(viewportStatus).length > 0 &&
+    Object.values(viewportStatus).every((entry) => entry.status === "pass")
+    ? proposedActions.filter((action) => action.kind === "inspect_inactive_media")
+    : [];
+  const actionableActions = resolvedActions.length
+    ? proposedActions.filter((action) => action.kind !== "inspect_inactive_media")
+    : proposedActions;
 
   return {
     verdict,
@@ -253,7 +265,11 @@ export function buildVerdict({
     issue_count: issues.length,
     top_issues: issues.slice(0, limits.topIssues),
     style_changes: styleChanges,
-    next_actions: nextActions(issues, styleChanges),
+    next_actions: actionableActions,
+    ...(resolvedActions.length ? {resolved_actions: resolvedActions.map((action) => ({
+      ...action,
+      resolution: "all measured acceptance viewports pass; retain as a reviewed cascade difference",
+    }))} : {}),
     reference: reference
       ? {
           url: reference.reference_url ?? reference.url ?? null,

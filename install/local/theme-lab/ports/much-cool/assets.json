@@ -66,15 +66,16 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Vollkorn+SC&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "ddb399b6b23f3700dff031cc7863f0c2cf04b2fe46f771dbbc420aa12835216f",
+      "candidate_css_sha256": "15ac495d64b799f2f4bbea4b309d1592d8305f298601b1e343b4ed14e50dd0e2",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Amuch-cool/1",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "ddb399b6b23f3700dff031cc7863f0c2cf04b2fe46f771dbbc420aa12835216f",
+      "candidate_css_sha256": "15ac495d64b799f2f4bbea4b309d1592d8305f298601b1e343b4ed14e50dd0e2",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }

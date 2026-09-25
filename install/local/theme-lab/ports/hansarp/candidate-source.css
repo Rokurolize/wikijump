@@ -29,3 +29,9 @@
 @media (max-width: 979px) { #header { overflow-x: clip; } #page-content .page-rate-widget-box { position: relative; left: 5px !important; } }
 /* Campaign JP root clip: Theme Lab showed an unowned 6px decoration overhang at tablet/mobile. */
 @media (max-width: 979px) { html, body { overflow-x: clip !important; } }
+
+/* SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport. */
+#top-bar .top-bar ul li ul, #top-bar .mobile-top-bar ul li ul { left: auto !important; right: 2rem !important; width: min(22rem, calc(100vw - 1rem)) !important; min-width: 0 !important; max-width: calc(100vw - 1rem) !important; box-sizing: border-box !important; }
+#top-bar .top-bar ul li ul li, #top-bar .mobile-top-bar ul li ul li { width: 100% !important; min-width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; }
+#top-bar .top-bar ul li ul li a, #top-bar .mobile-top-bar ul li ul li a { display: block !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; white-space: normal !important; overflow-wrap: anywhere !important; box-sizing: border-box !important; }
+@media (max-width: 767px) { #top-bar .mobile-top-bar ul li ul { width: auto !important; min-width: min(12rem, calc(100vw - 1rem)) !important; } }

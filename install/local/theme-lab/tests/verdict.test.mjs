@@ -89,6 +89,28 @@ test("next actions carry selector, overflow, asset, and inactive media evidence"
   assert.equal(actions[3].evidence.media_inactive[0].media, "(min-width: 900px)");
 });
 
+test("inactive-media leads resolve after every measured viewport passes", () => {
+  const verdict = buildVerdict({
+    reference: {
+      diagnosis: {missing: [], collapsed: [], expanded: [], missing_count: 0},
+      computed_styles: {top: [{
+        anchor: "#main-content",
+        property: "margin-left",
+        reference: "184px",
+        candidate: "17rem",
+        cascade: {
+          winner: {selector: "#main-content", value: "17rem"},
+          media_inactive: [{condition: "(max-width: 767px)", selector: "#main-content", value: "5%"}],
+        },
+      }]},
+    },
+    viewports: {desktop: {document_overflow_px: 0}, laptop: {document_overflow_px: 0}, tablet: {document_overflow_px: 0}, mobile: {document_overflow_px: 0}},
+  });
+  assert.equal(verdict.next_actions.length, 0);
+  assert.equal(verdict.resolved_actions[0].kind, "inspect_inactive_media");
+  assert.equal(verdict.resolved_actions[0].resolution.includes("all measured acceptance viewports pass"), true);
+});
+
 test("buildVerdict fails on error, warns on style-only change, passes clean", () => {
   const fail = buildVerdict({
     reference: {diagnosis: {missing: [{selector: "#a", reference: 1, candidate: 0}], missing_count: 1}},

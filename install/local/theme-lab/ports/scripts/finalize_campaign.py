@@ -6,6 +6,7 @@ import hashlib
 import json
 import difflib
 from pathlib import Path
+import re
 import statistics
 import sys
 
@@ -18,6 +19,18 @@ ITERATION_BENCHMARK = PORTS / "warm-edit-verdict-benchmark.json"
 
 def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def content_addressed_css_assets(css_path: Path) -> list[str]:
+    """Return local content-addressed resources referenced by a CSS file."""
+    if not css_path.is_file():
+        return []
+    css = re.sub(r"/\*[\s\S]*?\*/", "", css_path.read_text(encoding="utf-8"))
+    return sorted(set(re.findall(
+        r"url\(\s*['\"]?(?:[^'\")]*?/)?([0-9a-f]{64}\.[a-z0-9]+)['\"]?\s*\)",
+        css,
+        flags=re.IGNORECASE,
+    )))
 
 
 def summarize_theme_lab_findings(slug: str, receipt: dict, final_result: dict, page_image_rows: dict) -> dict:
@@ -365,6 +378,28 @@ def main() -> int:
                 "candidate_css_sha256": digest(package / "candidate.css"),
                 "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool.",
             })
+        base_css_assets = []
+        for filename in content_addressed_css_assets(package / "candidate-base.css"):
+            base_asset = asset_root / filename
+            expected_sha = filename.split(".", 1)[0]
+            if not base_asset.is_file() or digest(base_asset) != expected_sha:
+                raise SystemExit(f"candidate base CSS asset missing or corrupt: {theme['slug']} {filename}")
+            base_css_assets.append({
+                "filename": filename,
+                "sha256": expected_sha,
+                "decision": "localize-into-package",
+                "decision_evidence": "The active candidate-base.css references this local content-addressed file; bytes are SHA-256 verified and replayed without a remote fetch.",
+            })
+            asset_users.setdefault(filename, set()).add(name)
+            decisions.append({
+                "resource_type": "candidate-base-css-url-asset",
+                "source_path": f"install/local/theme-lab/ports/{name}/candidate-base.css",
+                "filename": filename,
+                "sha256": expected_sha,
+                "decision": "localize-into-package",
+                "evidence": base_css_assets[-1]["decision_evidence"],
+            })
+        asset_manifest["candidate_base_css_assets"] = base_css_assets
         asset_manifest["dependency_decisions"] = decisions
         (package / "assets.json").write_text(json.dumps(asset_manifest, ensure_ascii=False, indent=2) + "\n")
         theme["dependency_decisions_path"] = f"install/local/theme-lab/ports/{name}/assets.json"

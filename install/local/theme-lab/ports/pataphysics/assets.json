@@ -66,15 +66,16 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "7551e8d9b3f9a3ffa0471517092b58106137606d9b229f13c96e97f1254717f6",
+      "candidate_css_sha256": "7510083ee6ded5991dcb3eeaca7346ff79beab7ed2947a5ded67cca65bcc01a4",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "7551e8d9b3f9a3ffa0471517092b58106137606d9b229f13c96e97f1254717f6",
+      "candidate_css_sha256": "7510083ee6ded5991dcb3eeaca7346ff79beab7ed2947a5ded67cca65bcc01a4",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }
