@@ -100,7 +100,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "be1822fa4b177265b411dbc7b8fd9e96acf714683c2be9021e6ad9fbe267c797",
+  "source_candidate_sha256": "19896ae34d3300789fa3c22063352a88d48547ef5abd6ac62cf1abb685f18ae4",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -108,7 +108,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "be1822fa4b177265b411dbc7b8fd9e96acf714683c2be9021e6ad9fbe267c797",
+  "candidate_source_sha256": "19896ae34d3300789fa3c22063352a88d48547ef5abd6ac62cf1abb685f18ae4",
   "human_port_candidate_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "41599fe6d22ed63d835475a90f46f1382ed97c06f01c916415a5d649bd59e861",
   "theme_lab_checks": [
@@ -594,8 +594,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "86fa13292a3a44a09fd37f22ef07b8a2a20c16b8a0550840626c131acba7137c",
-  "candidate_css_sha256": "8faf5f07cd4fe22d68ecf95bd11a8951860d9a368233904bda2d0baf7b045850",
+  "candidate_preview_sha256": "883c12e7077e28a3c0cc40c5974f295d1dbbb79f0564615a2d0d3cab57af3033",
+  "candidate_css_sha256": "083b35053552ca27a5ccf3271b63651ec8ca0452b250e6efd27ab38327cc2330",
   "final_theme_lab_check": {
     "slug": "theme:extra-black-highlighter-theme",
     "verdict": "warn",
@@ -1299,8 +1299,8 @@
     "en_revision_newer_than_jp": true,
     "candidate_source_delta": {
       "unchanged": false,
-      "inserted_lines": 1,
-      "removed_lines": 1,
+      "inserted_lines": 26,
+      "removed_lines": 2,
       "diff_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/existing-jp-candidate.diff"
     },
     "source_action": "adapted-existing-jp-source",

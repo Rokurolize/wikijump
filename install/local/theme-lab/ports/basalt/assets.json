@@ -4112,36 +4112,37 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://cdn.scpwiki.com/theme/en/basalt/basalt-bedrock-min.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "a22c2ac79d06ea5ed97c4d9576ae3705e4cbfb17895d24bddf0bc69b76055a7e",
+      "candidate_css_sha256": "a11d628beb2c0d6694b2bb178a192e1c367b26e7b758e93742dbc9c6012d7961",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "a22c2ac79d06ea5ed97c4d9576ae3705e4cbfb17895d24bddf0bc69b76055a7e",
+      "candidate_css_sha256": "a11d628beb2c0d6694b2bb178a192e1c367b26e7b758e93742dbc9c6012d7961",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Sofia+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "a22c2ac79d06ea5ed97c4d9576ae3705e4cbfb17895d24bddf0bc69b76055a7e",
+      "candidate_css_sha256": "a11d628beb2c0d6694b2bb178a192e1c367b26e7b758e93742dbc9c6012d7961",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://rsms.me/inter/inter.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "a22c2ac79d06ea5ed97c4d9576ae3705e4cbfb17895d24bddf0bc69b76055a7e",
+      "candidate_css_sha256": "a11d628beb2c0d6694b2bb178a192e1c367b26e7b758e93742dbc9c6012d7961",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Abasalt/1",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "a22c2ac79d06ea5ed97c4d9576ae3705e4cbfb17895d24bddf0bc69b76055a7e",
+      "candidate_css_sha256": "a11d628beb2c0d6694b2bb178a192e1c367b26e7b758e93742dbc9c6012d7961",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }

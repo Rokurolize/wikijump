@@ -65,7 +65,13 @@
 {/if}
 
 {#if fileMap.size > 0}
-  <div class="file-list">
+  <div
+    class="file-list-scroll"
+    role="region"
+    aria-label={data.internationalization?.["wiki-page-file"] ?? "Files"}
+    tabindex="0"
+  >
+  <div class="file-list populated" class:wikidot>
     <div class="file-list-header">
       <div class="file-attribute file-name">
         {data.internationalization?.["wiki-page-file.name"]}
@@ -197,27 +203,51 @@
       </div>
     {/each}
   </div>
+  </div>
 {:else}
+  <div class="file-list-scroll">
   <div class="file-list">
     <div class="file-list-message">
       {data.internationalization?.["wiki-page-file-no-files"]}
     </div>
   </div>
+  </div>
 {/if}
 
 <style lang="scss">
+  .file-list-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
   .file-list {
     display: table;
     width: 100%;
     padding: 0 0 2em;
 
+    &.populated {
+      width: max(100%, 68rem);
+    }
+
     .file-list-header,
     .file-row {
-      display: table-row;
+      display: grid;
+      grid-template-columns: minmax(16rem, 2fr) minmax(9rem, 1fr) minmax(9rem, 1fr) minmax(10rem, 1.2fr) minmax(5rem, 0.6fr) minmax(14rem, 1.4fr);
 
       .file-attribute {
-        display: table-cell;
+        min-width: 0;
       }
+    }
+
+    .file-attribute.file-name a {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    &.wikidot .file-list-header,
+    &.wikidot .file-row {
+      grid-template-columns: minmax(16rem, 2fr) minmax(9rem, 1fr) minmax(9rem, 1fr) minmax(5rem, 0.6fr) minmax(14rem, 1.4fr);
     }
   }
 </style>

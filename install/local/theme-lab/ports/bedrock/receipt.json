@@ -85,7 +85,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/bedrock/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "e18e1c32cdb4167959ad301800ec1d9681343a6bfcb33c785b6e6fcc6b161b38",
+  "source_candidate_sha256": "06fb1fa08de4fab76af30ad28829e3223ae4e861b01966114cbe933ddd4c2489",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -93,7 +93,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/bedrock/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "e18e1c32cdb4167959ad301800ec1d9681343a6bfcb33c785b6e6fcc6b161b38",
+  "candidate_source_sha256": "06fb1fa08de4fab76af30ad28829e3223ae4e861b01966114cbe933ddd4c2489",
   "human_port_candidate_path": "install/local/theme-lab/ports/bedrock/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "978cf2bfca99e9e778036ef9b8657ff955570218dbdd75b794ffdecc15bdd908",
   "theme_lab_checks": [
@@ -437,8 +437,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "bfd6f0697132659f5bbf8e82d5cad9332e18de80e074d1abc02a83a52bac8664",
-  "candidate_css_sha256": "cd443cdff93d75bafad590ba34c2c617748599fa8482fe76ff1fa472e70784a4",
+  "candidate_preview_sha256": "7ec50c469bd11b0ff7d93491bbfac9807f26e87978209cf438f7cb8342e842a5",
+  "candidate_css_sha256": "f8e1d5eee4c5928180fbc40f2da0533417a9fc324247bd19c8cb0f16291178fa",
   "final_theme_lab_check": {
     "slug": "theme:bedrock",
     "verdict": "warn",

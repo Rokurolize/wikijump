@@ -1,10 +1,1160 @@
 {
-  "assets": [],
+  "assets": [
+    {
+      "sha256": "1bc10b01688ba9fafa5c24d70372d9dbfc0b38c08a961263854d35751a89820a",
+      "bytes": 10600,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 1bc10b01688ba9fafa5c24d70372d9dbfc0b38c08a961263854d35751a89820a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "96e48c8d9624d1fc3ea5aa144d0d14ffc28a9a482c43ce4f41a79d0ce6d158e9",
+      "bytes": 9540,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-italic.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 96e48c8d9624d1fc3ea5aa144d0d14ffc28a9a482c43ce4f41a79d0ce6d158e9.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "6de912e531b6c98084f1b2d5e5a91bad77be4e68bc4e396e43c46fc435e5f3d9",
+      "bytes": 24356,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 6de912e531b6c98084f1b2d5e5a91bad77be4e68bc4e396e43c46fc435e5f3d9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d385a38cf5bef6b1bc8edbf95167bdaa9992b231c9e887a991ae11486576c073",
+      "bytes": 24036,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-italic.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d385a38cf5bef6b1bc8edbf95167bdaa9992b231c9e887a991ae11486576c073.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e8731a7e2b00fc4f5e4ae47bff5168ea54e706c183cb213abbf88e46019e6879",
+      "bytes": 16128,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e8731a7e2b00fc4f5e4ae47bff5168ea54e706c183cb213abbf88e46019e6879.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "6b277c0646c6b5134c1788450be33b00341f91ca6b056e17421d00ba5774fc5a",
+      "bytes": 14972,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-italic.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 6b277c0646c6b5134c1788450be33b00341f91ca6b056e17421d00ba5774fc5a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "c5c00e8a32022dfedd2e7e864898ed007232e1450c6de1d6b847fe8825c2c5ce",
+      "bytes": 17008,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at c5c00e8a32022dfedd2e7e864898ed007232e1450c6de1d6b847fe8825c2c5ce.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a6dd94f71e249eb386cd66f1138dcccefe21eb06a13298d8875eff87e4f5c901",
+      "bytes": 15476,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-italic.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a6dd94f71e249eb386cd66f1138dcccefe21eb06a13298d8875eff87e4f5c901.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "675d4bace127bffba2eeaf798fbf39fe0c505659bc614c662f5a8be95fc0be4c",
+      "bytes": 8692,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 675d4bace127bffba2eeaf798fbf39fe0c505659bc614c662f5a8be95fc0be4c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "cf302238b1728a2632348ed925e6dd132a92e7f1b20bfa545012bc54523dd1ab",
+      "bytes": 6988,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-italic.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at cf302238b1728a2632348ed925e6dd132a92e7f1b20bfa545012bc54523dd1ab.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "4ffb25726a7ce4ccd80de297624d63000e827e7eccfbe37243ba3e8647e3d4ed",
+      "bytes": 13412,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 4ffb25726a7ce4ccd80de297624d63000e827e7eccfbe37243ba3e8647e3d4ed.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "860e0a179c3251cad1d355217b3bcdf36a868334ea3140fd6ac5383dc344d550",
+      "bytes": 11652,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-italic.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 860e0a179c3251cad1d355217b3bcdf36a868334ea3140fd6ac5383dc344d550.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "4d357ebec81bfa49564898619330dc79f1ead19a57a6dd9ef834937385759ab4",
+      "bytes": 11000,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 4d357ebec81bfa49564898619330dc79f1ead19a57a6dd9ef834937385759ab4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "cf3365ce34925d06ca44aaafb367a4e17aef311a2f3d941fcb4892973531d2b7",
+      "bytes": 10100,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-italic.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at cf3365ce34925d06ca44aaafb367a4e17aef311a2f3d941fcb4892973531d2b7.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a18bdcbc7aaeb2ee3fb50b9af5d689111e9a79767d75e40f22d70de8ded5e4ba",
+      "bytes": 26464,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a18bdcbc7aaeb2ee3fb50b9af5d689111e9a79767d75e40f22d70de8ded5e4ba.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a1e2e7d4a8bacdcc7f996cdf0b473a8974bfa8535bd1e0ea8ed8e10015a1e0b2",
+      "bytes": 26164,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-italic.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a1e2e7d4a8bacdcc7f996cdf0b473a8974bfa8535bd1e0ea8ed8e10015a1e0b2.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e83127cc867a2128ae39c56c10f60b62d1aacb69f40894eb7ca9b97a24188070",
+      "bytes": 16464,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e83127cc867a2128ae39c56c10f60b62d1aacb69f40894eb7ca9b97a24188070.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d9456fcf3ff10d3c870645b5e47ddfe17be65837b8fcb9df92f2dfdd23c17e63",
+      "bytes": 15516,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-italic.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d9456fcf3ff10d3c870645b5e47ddfe17be65837b8fcb9df92f2dfdd23c17e63.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "ff495e0841395139634bfee5ae7f851fad239f57d2af16e753fd0a71728f21d3",
+      "bytes": 17708,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at ff495e0841395139634bfee5ae7f851fad239f57d2af16e753fd0a71728f21d3.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a744b5775b026fc2176c3816715e2848bca96364a1c95ffb2aa891d2f7322db0",
+      "bytes": 16184,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-italic.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a744b5775b026fc2176c3816715e2848bca96364a1c95ffb2aa891d2f7322db0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "a5c196466198d48c4737952909751c751b4d4b25a7396fc74aa26c31bd11d816",
+      "bytes": 8996,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at a5c196466198d48c4737952909751c751b4d4b25a7396fc74aa26c31bd11d816.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "fbda67f0c87edcb5e777924b5077a61ce9099e4dd58a08ce033fb50b60ffaf05",
+      "bytes": 7264,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-italic.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at fbda67f0c87edcb5e777924b5077a61ce9099e4dd58a08ce033fb50b60ffaf05.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "2cf57507ead8601f23573503a70413a7abee0c10ea406b8edfa60baf1291fabb",
+      "bytes": 13796,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 2cf57507ead8601f23573503a70413a7abee0c10ea406b8edfa60baf1291fabb.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "cf95e1d04c73f61f200c9b41b76b1254daeaafdcc8472dad3345b55c51669dc2",
+      "bytes": 12144,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-italic.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at cf95e1d04c73f61f200c9b41b76b1254daeaafdcc8472dad3345b55c51669dc2.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "02296067bc904d2ad19b49445bdaf6586cc44704e668e16e248f708e5005a290",
+      "bytes": 9940,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 02296067bc904d2ad19b49445bdaf6586cc44704e668e16e248f708e5005a290.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "8d899d62a1e18740c6f9d8c1a760be8e511ef222e54ab68d3bc88c94d0d104b0",
+      "bytes": 8760,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 8d899d62a1e18740c6f9d8c1a760be8e511ef222e54ab68d3bc88c94d0d104b0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "3b646991d30055a93a4ecc499713d4347953a74a947ecab435ab72070cbdab0e",
+      "bytes": 22588,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 3b646991d30055a93a4ecc499713d4347953a74a947ecab435ab72070cbdab0e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "828907bfd14855c880789878bd2b38ffd284a6c27c8b80f6069900f70dae3901",
+      "bytes": 22104,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 828907bfd14855c880789878bd2b38ffd284a6c27c8b80f6069900f70dae3901.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "69afad88a0740b6e5647f1104c9176a261f1ad9d60202f605456a983799752e9",
+      "bytes": 14800,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 69afad88a0740b6e5647f1104c9176a261f1ad9d60202f605456a983799752e9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "89b819d4fef67eda2ce2c12f2f2b3978141fb73faebeb23ec895a3d7f8e66964",
+      "bytes": 13512,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 89b819d4fef67eda2ce2c12f2f2b3978141fb73faebeb23ec895a3d7f8e66964.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "c93d2a12aaa280f68b9ab7b726ff8dfedda67c99ef9abed047c1847a1cc6d583",
+      "bytes": 15980,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at c93d2a12aaa280f68b9ab7b726ff8dfedda67c99ef9abed047c1847a1cc6d583.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "85db75b89e3c0bee23ea75ede70c73024f62516ccdb6be55eb0c5c7a7866433a",
+      "bytes": 14360,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 85db75b89e3c0bee23ea75ede70c73024f62516ccdb6be55eb0c5c7a7866433a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "771538f7f26551bd13ab97d585de6ce7ebe3b432837999d5b743391b48f4946a",
+      "bytes": 8204,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 771538f7f26551bd13ab97d585de6ce7ebe3b432837999d5b743391b48f4946a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "aa3bd4c4c493c3110ca5f5ac3f0cd688482982b40e4cf9cb601f931df2a8ccf5",
+      "bytes": 6392,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at aa3bd4c4c493c3110ca5f5ac3f0cd688482982b40e4cf9cb601f931df2a8ccf5.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e2580ad78906551e1f9ad621f608cd16ce4d5a992e53c651dd6b3504547576f2",
+      "bytes": 12148,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e2580ad78906551e1f9ad621f608cd16ce4d5a992e53c651dd6b3504547576f2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e60c70b37422d621549800db28c60764e16ccce7403a2d2957a8ac079818b28a",
+      "bytes": 10288,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e60c70b37422d621549800db28c60764e16ccce7403a2d2957a8ac079818b28a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "0a9ebd9019415ee9f161b38fb24b5ee7736e2c8b85bf1e79e1e4c7c0010d55cb",
+      "bytes": 10368,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 0a9ebd9019415ee9f161b38fb24b5ee7736e2c8b85bf1e79e1e4c7c0010d55cb.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "b080df76b8210429debab3f7fadf5975af7d9e43b1b0e51912ba4fde56e87865",
+      "bytes": 9220,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at b080df76b8210429debab3f7fadf5975af7d9e43b1b0e51912ba4fde56e87865.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "8960851d691c054ed38e259bdcf1a6190d157b4203ed5bb32c632a863fb8ec2f",
+      "bytes": 24252,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 8960851d691c054ed38e259bdcf1a6190d157b4203ed5bb32c632a863fb8ec2f.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "7861a349af1e925a80d56547c2c9e0b1e9f6a9002a9a6867351da2f05122ad21",
+      "bytes": 23876,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 7861a349af1e925a80d56547c2c9e0b1e9f6a9002a9a6867351da2f05122ad21.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "730becc6f005c18c31440f14d34677f2704a85e6afffd4bee6a64d5c95f45a55",
+      "bytes": 15040,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 730becc6f005c18c31440f14d34677f2704a85e6afffd4bee6a64d5c95f45a55.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "dc111b4254f64561fe50a3645f75bb66e4daa6b026c40d9e55de27f2671b8de0",
+      "bytes": 13888,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at dc111b4254f64561fe50a3645f75bb66e4daa6b026c40d9e55de27f2671b8de0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "b25dfd4f979e442ae1e25cd0894463434cf01ba21ac1a35d39f4a82bd4cc060e",
+      "bytes": 16448,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at b25dfd4f979e442ae1e25cd0894463434cf01ba21ac1a35d39f4a82bd4cc060e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "ba265b263be35814d27c13d42c6b9a36a0ec5b3a565d38011109bfa556a8d775",
+      "bytes": 14772,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at ba265b263be35814d27c13d42c6b9a36a0ec5b3a565d38011109bfa556a8d775.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5d34b803637befe3714d55d383d9149692c39838c8deb45c8cbdd43b0fd09b98",
+      "bytes": 8460,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5d34b803637befe3714d55d383d9149692c39838c8deb45c8cbdd43b0fd09b98.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "ae433d3b3cdfc7d2b2ecb4173442cca23b58448cf05c21f7f589cf67f67b2dde",
+      "bytes": 6584,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at ae433d3b3cdfc7d2b2ecb4173442cca23b58448cf05c21f7f589cf67f67b2dde.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d60d3d0b182753d5640e372c57669f508b79172ac4ff6b460d987ddd34cac199",
+      "bytes": 12304,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d60d3d0b182753d5640e372c57669f508b79172ac4ff6b460d987ddd34cac199.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "d3fc6b34ef8f2968cf6b1b548e3d49e8ad3b26ebe60eb01172621b059b7133e5",
+      "bytes": 10616,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at d3fc6b34ef8f2968cf6b1b548e3d49e8ad3b26ebe60eb01172621b059b7133e5.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "8b9d7f0d058fe4dba5c3bc8cb0d107c98753a658608de5bace67103db921fb0d",
+      "bytes": 7832,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 8b9d7f0d058fe4dba5c3bc8cb0d107c98753a658608de5bace67103db921fb0d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "3563a6acdb8ef5c8fe03c7c9a53a6c47cab96914ce4f430251e9780dc40eafe9",
+      "bytes": 9992,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 3563a6acdb8ef5c8fe03c7c9a53a6c47cab96914ce4f430251e9780dc40eafe9.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "6dc9da171ccea71d525379ee1cbf51d143e31acac330a251bb71b3d6060e687c",
+      "bytes": 23312,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 6dc9da171ccea71d525379ee1cbf51d143e31acac330a251bb71b3d6060e687c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "9c30afe93cd10bd11045d2c7829c71335285284051debae71ca35f52468e5228",
+      "bytes": 29836,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 9c30afe93cd10bd11045d2c7829c71335285284051debae71ca35f52468e5228.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "2a8f07c041f0b99a91d2cc07e68666538c65c5413c1e2d6a703e4f6d9024e74d",
+      "bytes": 6676,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 2a8f07c041f0b99a91d2cc07e68666538c65c5413c1e2d6a703e4f6d9024e74d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "7a60615cb55e7cb7e562ff265f9c26943ef28aec751efa58c58167cb04ecef5d",
+      "bytes": 8456,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 7a60615cb55e7cb7e562ff265f9c26943ef28aec751efa58c58167cb04ecef5d.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "e4a28f799aebc24f7f8aa22ce42a512ff4a7ce15edcb46f2a6aef073b46169b9",
+      "bytes": 3512,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at e4a28f799aebc24f7f8aa22ce42a512ff4a7ce15edcb46f2a6aef073b46169b9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "8bbf57e5234bdf826cc151318d8c29a51043835e02be889283d7b47098fe2bb3",
+      "bytes": 5372,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 8bbf57e5234bdf826cc151318d8c29a51043835e02be889283d7b47098fe2bb3.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "2128f7ef85c2e577691bc2f23ef2004e00be9dabd4858e6e5b61790804883ddd",
+      "bytes": 5364,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 2128f7ef85c2e577691bc2f23ef2004e00be9dabd4858e6e5b61790804883ddd.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "b6486de9cccc519fcc2b4ddd70dbcb39f32d654dba781fcff69ed73efd3b548d",
+      "bytes": 7228,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at b6486de9cccc519fcc2b4ddd70dbcb39f32d654dba781fcff69ed73efd3b548d.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "587dcb11badf47fb0abd0415c12ca57da9ff365f665cede22d6523f1cfd6cc61",
+      "bytes": 7860,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 587dcb11badf47fb0abd0415c12ca57da9ff365f665cede22d6523f1cfd6cc61.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "5de10f834d9191afcdfa42c79ccfd8d202be8af4f6d0e5cabea52b176d58ccd0",
+      "bytes": 10612,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 5de10f834d9191afcdfa42c79ccfd8d202be8af4f6d0e5cabea52b176d58ccd0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "628351d0159a99af54aa170292b3ab3aa8b5141dfa31033df38b9f2269133b5d",
+      "bytes": 11960,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 628351d0159a99af54aa170292b3ab3aa8b5141dfa31033df38b9f2269133b5d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "230cd81d3dc64401b7e7d14caff7b10438b13b65a5dadd799b18e293483de1f1",
+      "bytes": 15100,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 230cd81d3dc64401b7e7d14caff7b10438b13b65a5dadd799b18e293483de1f1.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "54e9f097b2172b52bef202daedbd6b60c57138555f4ca6e4bb735bd30c023029",
+      "bytes": 21648,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 54e9f097b2172b52bef202daedbd6b60c57138555f4ca6e4bb735bd30c023029.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "99eac709b04b7e8a87206e4f7fd8df79cc892ae309df532eda1f4538a7bf681e",
+      "bytes": 23548,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Italic.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 99eac709b04b7e8a87206e4f7fd8df79cc892ae309df532eda1f4538a7bf681e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "dc8b14694b66c1381814d6f8e8bebbca8347433f032befdbbd38226c578b5f1e",
+      "bytes": 20920,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at dc8b14694b66c1381814d6f8e8bebbca8347433f032befdbbd38226c578b5f1e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "sha256": "21fa8cfe955ff06b708bdebf0e2a6dcc7f4c693b952cf0d559126b900e71c65e",
+      "bytes": 22596,
+      "content_type": "font/woff2",
+      "original_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold-Italic.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold-Italic.woff2",
+      "decision": "localize-into-package",
+      "decision_evidence": "SHA-256 verified at 21fa8cfe955ff06b708bdebf0e2a6dcc7f4c693b952cf0d559126b900e71c65e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    }
+  ],
   "missing": [],
-  "imports": [],
+  "imports": [
+    "https://fonts.bunny.net/css2?family=Fira+Code&display=swap",
+    "https://fonts.bunny.net/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400;1,600&display=swap",
+    "https://scp-wiki.wdfiles.com/local--code/theme%3Apaperstack/1"
+  ],
   "pruned_fonts": [],
   "template_placeholders": [],
   "asset_replacements": {},
   "omitted_assets": [],
-  "dependency_decisions": []
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-italic.woff2",
+      "sha256": "1bc10b01688ba9fafa5c24d70372d9dbfc0b38c08a961263854d35751a89820a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 1bc10b01688ba9fafa5c24d70372d9dbfc0b38c08a961263854d35751a89820a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-italic.woff",
+      "sha256": "96e48c8d9624d1fc3ea5aa144d0d14ffc28a9a482c43ce4f41a79d0ce6d158e9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 96e48c8d9624d1fc3ea5aa144d0d14ffc28a9a482c43ce4f41a79d0ce6d158e9.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-italic.woff2",
+      "sha256": "6de912e531b6c98084f1b2d5e5a91bad77be4e68bc4e396e43c46fc435e5f3d9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 6de912e531b6c98084f1b2d5e5a91bad77be4e68bc4e396e43c46fc435e5f3d9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-italic.woff",
+      "sha256": "d385a38cf5bef6b1bc8edbf95167bdaa9992b231c9e887a991ae11486576c073",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d385a38cf5bef6b1bc8edbf95167bdaa9992b231c9e887a991ae11486576c073.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-italic.woff2",
+      "sha256": "e8731a7e2b00fc4f5e4ae47bff5168ea54e706c183cb213abbf88e46019e6879",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e8731a7e2b00fc4f5e4ae47bff5168ea54e706c183cb213abbf88e46019e6879.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-italic.woff",
+      "sha256": "6b277c0646c6b5134c1788450be33b00341f91ca6b056e17421d00ba5774fc5a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 6b277c0646c6b5134c1788450be33b00341f91ca6b056e17421d00ba5774fc5a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-italic.woff2",
+      "sha256": "c5c00e8a32022dfedd2e7e864898ed007232e1450c6de1d6b847fe8825c2c5ce",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at c5c00e8a32022dfedd2e7e864898ed007232e1450c6de1d6b847fe8825c2c5ce.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-italic.woff",
+      "sha256": "a6dd94f71e249eb386cd66f1138dcccefe21eb06a13298d8875eff87e4f5c901",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a6dd94f71e249eb386cd66f1138dcccefe21eb06a13298d8875eff87e4f5c901.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-italic.woff2",
+      "sha256": "675d4bace127bffba2eeaf798fbf39fe0c505659bc614c662f5a8be95fc0be4c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 675d4bace127bffba2eeaf798fbf39fe0c505659bc614c662f5a8be95fc0be4c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-italic.woff",
+      "sha256": "cf302238b1728a2632348ed925e6dd132a92e7f1b20bfa545012bc54523dd1ab",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at cf302238b1728a2632348ed925e6dd132a92e7f1b20bfa545012bc54523dd1ab.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-italic.woff2",
+      "sha256": "4ffb25726a7ce4ccd80de297624d63000e827e7eccfbe37243ba3e8647e3d4ed",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 4ffb25726a7ce4ccd80de297624d63000e827e7eccfbe37243ba3e8647e3d4ed.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-italic.woff",
+      "sha256": "860e0a179c3251cad1d355217b3bcdf36a868334ea3140fd6ac5383dc344d550",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 860e0a179c3251cad1d355217b3bcdf36a868334ea3140fd6ac5383dc344d550.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-italic.woff2",
+      "sha256": "4d357ebec81bfa49564898619330dc79f1ead19a57a6dd9ef834937385759ab4",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 4d357ebec81bfa49564898619330dc79f1ead19a57a6dd9ef834937385759ab4.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-italic.woff",
+      "sha256": "cf3365ce34925d06ca44aaafb367a4e17aef311a2f3d941fcb4892973531d2b7",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at cf3365ce34925d06ca44aaafb367a4e17aef311a2f3d941fcb4892973531d2b7.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-italic.woff2",
+      "sha256": "a18bdcbc7aaeb2ee3fb50b9af5d689111e9a79767d75e40f22d70de8ded5e4ba",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a18bdcbc7aaeb2ee3fb50b9af5d689111e9a79767d75e40f22d70de8ded5e4ba.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-italic.woff",
+      "sha256": "a1e2e7d4a8bacdcc7f996cdf0b473a8974bfa8535bd1e0ea8ed8e10015a1e0b2",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a1e2e7d4a8bacdcc7f996cdf0b473a8974bfa8535bd1e0ea8ed8e10015a1e0b2.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-italic.woff2",
+      "sha256": "e83127cc867a2128ae39c56c10f60b62d1aacb69f40894eb7ca9b97a24188070",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e83127cc867a2128ae39c56c10f60b62d1aacb69f40894eb7ca9b97a24188070.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-italic.woff",
+      "sha256": "d9456fcf3ff10d3c870645b5e47ddfe17be65837b8fcb9df92f2dfdd23c17e63",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d9456fcf3ff10d3c870645b5e47ddfe17be65837b8fcb9df92f2dfdd23c17e63.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-italic.woff2",
+      "sha256": "ff495e0841395139634bfee5ae7f851fad239f57d2af16e753fd0a71728f21d3",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at ff495e0841395139634bfee5ae7f851fad239f57d2af16e753fd0a71728f21d3.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-italic.woff",
+      "sha256": "a744b5775b026fc2176c3816715e2848bca96364a1c95ffb2aa891d2f7322db0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a744b5775b026fc2176c3816715e2848bca96364a1c95ffb2aa891d2f7322db0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-italic.woff2",
+      "sha256": "a5c196466198d48c4737952909751c751b4d4b25a7396fc74aa26c31bd11d816",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at a5c196466198d48c4737952909751c751b4d4b25a7396fc74aa26c31bd11d816.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-italic.woff",
+      "sha256": "fbda67f0c87edcb5e777924b5077a61ce9099e4dd58a08ce033fb50b60ffaf05",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at fbda67f0c87edcb5e777924b5077a61ce9099e4dd58a08ce033fb50b60ffaf05.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-italic.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-italic.woff2",
+      "sha256": "2cf57507ead8601f23573503a70413a7abee0c10ea406b8edfa60baf1291fabb",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 2cf57507ead8601f23573503a70413a7abee0c10ea406b8edfa60baf1291fabb.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-italic.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-italic.woff",
+      "sha256": "cf95e1d04c73f61f200c9b41b76b1254daeaafdcc8472dad3345b55c51669dc2",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at cf95e1d04c73f61f200c9b41b76b1254daeaafdcc8472dad3345b55c51669dc2.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-normal.woff2",
+      "sha256": "02296067bc904d2ad19b49445bdaf6586cc44704e668e16e248f708e5005a290",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 02296067bc904d2ad19b49445bdaf6586cc44704e668e16e248f708e5005a290.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-400-normal.woff",
+      "sha256": "8d899d62a1e18740c6f9d8c1a760be8e511ef222e54ab68d3bc88c94d0d104b0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 8d899d62a1e18740c6f9d8c1a760be8e511ef222e54ab68d3bc88c94d0d104b0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2",
+      "sha256": "3b646991d30055a93a4ecc499713d4347953a74a947ecab435ab72070cbdab0e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 3b646991d30055a93a4ecc499713d4347953a74a947ecab435ab72070cbdab0e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff",
+      "sha256": "828907bfd14855c880789878bd2b38ffd284a6c27c8b80f6069900f70dae3901",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 828907bfd14855c880789878bd2b38ffd284a6c27c8b80f6069900f70dae3901.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-normal.woff2",
+      "sha256": "69afad88a0740b6e5647f1104c9176a261f1ad9d60202f605456a983799752e9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 69afad88a0740b6e5647f1104c9176a261f1ad9d60202f605456a983799752e9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-400-normal.woff",
+      "sha256": "89b819d4fef67eda2ce2c12f2f2b3978141fb73faebeb23ec895a3d7f8e66964",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 89b819d4fef67eda2ce2c12f2f2b3978141fb73faebeb23ec895a3d7f8e66964.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-normal.woff2",
+      "sha256": "c93d2a12aaa280f68b9ab7b726ff8dfedda67c99ef9abed047c1847a1cc6d583",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at c93d2a12aaa280f68b9ab7b726ff8dfedda67c99ef9abed047c1847a1cc6d583.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-normal.woff",
+      "sha256": "85db75b89e3c0bee23ea75ede70c73024f62516ccdb6be55eb0c5c7a7866433a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 85db75b89e3c0bee23ea75ede70c73024f62516ccdb6be55eb0c5c7a7866433a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-normal.woff2",
+      "sha256": "771538f7f26551bd13ab97d585de6ce7ebe3b432837999d5b743391b48f4946a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 771538f7f26551bd13ab97d585de6ce7ebe3b432837999d5b743391b48f4946a.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-400-normal.woff",
+      "sha256": "aa3bd4c4c493c3110ca5f5ac3f0cd688482982b40e4cf9cb601f931df2a8ccf5",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at aa3bd4c4c493c3110ca5f5ac3f0cd688482982b40e4cf9cb601f931df2a8ccf5.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-normal.woff2",
+      "sha256": "e2580ad78906551e1f9ad621f608cd16ce4d5a992e53c651dd6b3504547576f2",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e2580ad78906551e1f9ad621f608cd16ce4d5a992e53c651dd6b3504547576f2.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-400-normal.woff",
+      "sha256": "e60c70b37422d621549800db28c60764e16ccce7403a2d2957a8ac079818b28a",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e60c70b37422d621549800db28c60764e16ccce7403a2d2957a8ac079818b28a.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-normal.woff2",
+      "sha256": "0a9ebd9019415ee9f161b38fb24b5ee7736e2c8b85bf1e79e1e4c7c0010d55cb",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 0a9ebd9019415ee9f161b38fb24b5ee7736e2c8b85bf1e79e1e4c7c0010d55cb.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-greek-600-normal.woff",
+      "sha256": "b080df76b8210429debab3f7fadf5975af7d9e43b1b0e51912ba4fde56e87865",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at b080df76b8210429debab3f7fadf5975af7d9e43b1b0e51912ba4fde56e87865.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2",
+      "sha256": "8960851d691c054ed38e259bdcf1a6190d157b4203ed5bb32c632a863fb8ec2f",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 8960851d691c054ed38e259bdcf1a6190d157b4203ed5bb32c632a863fb8ec2f.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff",
+      "sha256": "7861a349af1e925a80d56547c2c9e0b1e9f6a9002a9a6867351da2f05122ad21",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 7861a349af1e925a80d56547c2c9e0b1e9f6a9002a9a6867351da2f05122ad21.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-normal.woff2",
+      "sha256": "730becc6f005c18c31440f14d34677f2704a85e6afffd4bee6a64d5c95f45a55",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 730becc6f005c18c31440f14d34677f2704a85e6afffd4bee6a64d5c95f45a55.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-600-normal.woff",
+      "sha256": "dc111b4254f64561fe50a3645f75bb66e4daa6b026c40d9e55de27f2671b8de0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at dc111b4254f64561fe50a3645f75bb66e4daa6b026c40d9e55de27f2671b8de0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-normal.woff2",
+      "sha256": "b25dfd4f979e442ae1e25cd0894463434cf01ba21ac1a35d39f4a82bd4cc060e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at b25dfd4f979e442ae1e25cd0894463434cf01ba21ac1a35d39f4a82bd4cc060e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-normal.woff",
+      "sha256": "ba265b263be35814d27c13d42c6b9a36a0ec5b3a565d38011109bfa556a8d775",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at ba265b263be35814d27c13d42c6b9a36a0ec5b3a565d38011109bfa556a8d775.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-normal.woff2",
+      "sha256": "5d34b803637befe3714d55d383d9149692c39838c8deb45c8cbdd43b0fd09b98",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5d34b803637befe3714d55d383d9149692c39838c8deb45c8cbdd43b0fd09b98.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-vietnamese-600-normal.woff",
+      "sha256": "ae433d3b3cdfc7d2b2ecb4173442cca23b58448cf05c21f7f589cf67f67b2dde",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at ae433d3b3cdfc7d2b2ecb4173442cca23b58448cf05c21f7f589cf67f67b2dde.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-normal.woff2",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-normal.woff2",
+      "sha256": "d60d3d0b182753d5640e372c57669f508b79172ac4ff6b460d987ddd34cac199",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d60d3d0b182753d5640e372c57669f508b79172ac4ff6b460d987ddd34cac199.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-normal.woff",
+      "final_url": "https://fonts.bunny.net/ibm-plex-sans/files/ibm-plex-sans-cyrillic-ext-600-normal.woff",
+      "sha256": "d3fc6b34ef8f2968cf6b1b548e3d49e8ad3b26ebe60eb01172621b059b7133e5",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at d3fc6b34ef8f2968cf6b1b548e3d49e8ad3b26ebe60eb01172621b059b7133e5.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff2",
+      "sha256": "8b9d7f0d058fe4dba5c3bc8cb0d107c98753a658608de5bace67103db921fb0d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 8b9d7f0d058fe4dba5c3bc8cb0d107c98753a658608de5bace67103db921fb0d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-400-normal.woff",
+      "sha256": "3563a6acdb8ef5c8fe03c7c9a53a6c47cab96914ce4f430251e9780dc40eafe9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 3563a6acdb8ef5c8fe03c7c9a53a6c47cab96914ce4f430251e9780dc40eafe9.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff2",
+      "sha256": "6dc9da171ccea71d525379ee1cbf51d143e31acac330a251bb71b3d6060e687c",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 6dc9da171ccea71d525379ee1cbf51d143e31acac330a251bb71b3d6060e687c.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-400-normal.woff",
+      "sha256": "9c30afe93cd10bd11045d2c7829c71335285284051debae71ca35f52468e5228",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 9c30afe93cd10bd11045d2c7829c71335285284051debae71ca35f52468e5228.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff2",
+      "sha256": "2a8f07c041f0b99a91d2cc07e68666538c65c5413c1e2d6a703e4f6d9024e74d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 2a8f07c041f0b99a91d2cc07e68666538c65c5413c1e2d6a703e4f6d9024e74d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-400-normal.woff",
+      "sha256": "7a60615cb55e7cb7e562ff265f9c26943ef28aec751efa58c58167cb04ecef5d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 7a60615cb55e7cb7e562ff265f9c26943ef28aec751efa58c58167cb04ecef5d.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff2",
+      "sha256": "e4a28f799aebc24f7f8aa22ce42a512ff4a7ce15edcb46f2a6aef073b46169b9",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at e4a28f799aebc24f7f8aa22ce42a512ff4a7ce15edcb46f2a6aef073b46169b9.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-symbols2-400-normal.woff",
+      "sha256": "8bbf57e5234bdf826cc151318d8c29a51043835e02be889283d7b47098fe2bb3",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 8bbf57e5234bdf826cc151318d8c29a51043835e02be889283d7b47098fe2bb3.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff2",
+      "sha256": "2128f7ef85c2e577691bc2f23ef2004e00be9dabd4858e6e5b61790804883ddd",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 2128f7ef85c2e577691bc2f23ef2004e00be9dabd4858e6e5b61790804883ddd.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-greek-ext-400-normal.woff",
+      "sha256": "b6486de9cccc519fcc2b4ddd70dbcb39f32d654dba781fcff69ed73efd3b548d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at b6486de9cccc519fcc2b4ddd70dbcb39f32d654dba781fcff69ed73efd3b548d.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff2",
+      "sha256": "587dcb11badf47fb0abd0415c12ca57da9ff365f665cede22d6523f1cfd6cc61",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 587dcb11badf47fb0abd0415c12ca57da9ff365f665cede22d6523f1cfd6cc61.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-latin-ext-400-normal.woff",
+      "sha256": "5de10f834d9191afcdfa42c79ccfd8d202be8af4f6d0e5cabea52b176d58ccd0",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 5de10f834d9191afcdfa42c79ccfd8d202be8af4f6d0e5cabea52b176d58ccd0.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff2",
+      "sha256": "628351d0159a99af54aa170292b3ab3aa8b5141dfa31033df38b9f2269133b5d",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 628351d0159a99af54aa170292b3ab3aa8b5141dfa31033df38b9f2269133b5d.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/fira-code/files/fira-code-cyrillic-ext-400-normal.woff",
+      "sha256": "230cd81d3dc64401b7e7d14caff7b10438b13b65a5dadd799b18e293483de1f1",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 230cd81d3dc64401b7e7d14caff7b10438b13b65a5dadd799b18e293483de1f1.woff; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans.woff2",
+      "sha256": "54e9f097b2172b52bef202daedbd6b60c57138555f4ca6e4bb735bd30c023029",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 54e9f097b2172b52bef202daedbd6b60c57138555f4ca6e4bb735bd30c023029.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Italic.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Italic.woff2",
+      "sha256": "99eac709b04b7e8a87206e4f7fd8df79cc892ae309df532eda1f4538a7bf681e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 99eac709b04b7e8a87206e4f7fd8df79cc892ae309df532eda1f4538a7bf681e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold.woff2",
+      "sha256": "dc8b14694b66c1381814d6f8e8bebbca8347433f032befdbbd38226c578b5f1e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at dc8b14694b66c1381814d6f8e8bebbca8347433f032befdbbd38226c578b5f1e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-url-asset",
+      "source_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold-Italic.woff2",
+      "final_url": "https://cdn.jsdelivr.net/gh/SYwaves/Webfont-Archive@master/Josefin-Sans-Bold-Italic.woff2",
+      "sha256": "21fa8cfe955ff06b708bdebf0e2a6dcc7f4c693b952cf0d559126b900e71c65e",
+      "decision": "localize-into-package",
+      "evidence": "SHA-256 verified at 21fa8cfe955ff06b708bdebf0e2a6dcc7f4c693b952cf0d559126b900e71c65e.woff2; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.bunny.net/css2?family=Fira+Code&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "6838394d41ccc1f2d7c4d03fb74735f5abcdac963e7b56a26dd03c3244078e58",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.bunny.net/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400;1,600&display=swap",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "6838394d41ccc1f2d7c4d03fb74735f5abcdac963e7b56a26dd03c3244078e58",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Apaperstack/1",
+      "decision": "localize-into-package",
+      "candidate_css_sha256": "6838394d41ccc1f2d7c4d03fb74735f5abcdac963e7b56a26dd03c3244078e58",
+      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+    }
+  ],
+  "candidate_base_css_assets": []
 }

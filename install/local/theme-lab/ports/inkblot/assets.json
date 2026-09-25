@@ -731,29 +731,30 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "149dcf3333cbe91a3c09155a142a31c9464dbf2ba50f6e74930bfa02e2a6802f",
+      "candidate_css_sha256": "12e6972e14518e7ca1a9bc1c27867ab36097ca579f73f6ed3fdf3b340b32d0f5",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Montserrat:wght@300;600&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "149dcf3333cbe91a3c09155a142a31c9464dbf2ba50f6e74930bfa02e2a6802f",
+      "candidate_css_sha256": "12e6972e14518e7ca1a9bc1c27867ab36097ca579f73f6ed3fdf3b340b32d0f5",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Prata&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "149dcf3333cbe91a3c09155a142a31c9464dbf2ba50f6e74930bfa02e2a6802f",
+      "candidate_css_sha256": "12e6972e14518e7ca1a9bc1c27867ab36097ca579f73f6ed3fdf3b340b32d0f5",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Ainkblot/1",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "149dcf3333cbe91a3c09155a142a31c9464dbf2ba50f6e74930bfa02e2a6802f",
+      "candidate_css_sha256": "12e6972e14518e7ca1a9bc1c27867ab36097ca579f73f6ed3fdf3b340b32d0f5",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }

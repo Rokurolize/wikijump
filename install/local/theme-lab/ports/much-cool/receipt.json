@@ -95,15 +95,15 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/much-cool/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "0305019f63ac920a0451b2fe9c17aa8c84992d86ae8b2243692e3d29c7354833",
+  "source_candidate_sha256": "f8f436af3f7efa60d5a479594278cc76e85b6a3179511d6661ced5843657f710",
   "candidate_origin": "current official SCP-JP page source",
-  "existing_jp_source_differs_from_candidate": false,
+  "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
     "theme_squares_expanded": 0,
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/much-cool/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "0305019f63ac920a0451b2fe9c17aa8c84992d86ae8b2243692e3d29c7354833",
+  "candidate_source_sha256": "f8f436af3f7efa60d5a479594278cc76e85b6a3179511d6661ced5843657f710",
   "human_port_candidate_path": "install/local/theme-lab/ports/much-cool/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "1659e8da7d111e02fb8b340c608e300b7c40842016415201aa6d8587c2e56c4a",
   "theme_lab_checks": [
@@ -853,8 +853,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "c0d3182cd33cf01072774ad248df17ded0477e7785dce50c321190aeb3d98793",
-  "candidate_css_sha256": "ddb399b6b23f3700dff031cc7863f0c2cf04b2fe46f771dbbc420aa12835216f",
+  "candidate_preview_sha256": "0ef5b1e25132f8d984a2ac6a50a4fef146eb3974e9bcee19760ffe0860e6079d",
+  "candidate_css_sha256": "15ac495d64b799f2f4bbea4b309d1592d8305f298601b1e343b4ed14e50dd0e2",
   "final_theme_lab_check": {
     "slug": "theme:much-cool",
     "verdict": "warn",
@@ -1395,12 +1395,12 @@
     "current_en_updated_at": "2026-04-12T05:13:12+00:00",
     "en_revision_newer_than_jp": true,
     "candidate_source_delta": {
-      "unchanged": true,
-      "inserted_lines": 0,
-      "removed_lines": 0,
-      "diff_path": null
+      "unchanged": false,
+      "inserted_lines": 25,
+      "removed_lines": 1,
+      "diff_path": "install/local/theme-lab/ports/much-cool/existing-jp-candidate.diff"
     },
-    "source_action": "retained-existing-jp-source",
+    "source_action": "adapted-existing-jp-source",
     "technical_validation": "current EN reference and local SCP-JP DOM were compared; all required viewport, rating fixture, asset, font, interaction, offline, and torture gates are bound in final_theme_lab_check"
   },
   "technical_requirements": {

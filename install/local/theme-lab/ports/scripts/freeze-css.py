@@ -71,10 +71,17 @@ class CacheCSS:
                 self.missing[target] = "css-import-not-in-frozen-reference-cache"
                 return ""
             body, kind, final = item
-            if "css" not in kind:
+            decoded = body.decode("utf-8", errors="replace")
+            # Wikidot local--code serves executable stylesheet bodies as
+            # text/plain on some branch/CDN routes. The browser still treats
+            # them as CSS when reached through @import, so preserve that
+            # evidenced MIME quirk only when the body has an unmistakable CSS
+            # rule/at-rule shape. Ordinary prose remains fail-closed.
+            looks_like_css = bool(re.search(r"(?:^|[;}\s])(?:@(?:charset|import|media|font-face|supports|layer|keyframes)\b|[-.#*:]?[\w\[\]:().,#>+~* -]+\s*\{)", decoded[:20000], re.I | re.M))
+            if "css" not in kind and not (kind == "text/plain" and looks_like_css):
                 self.missing[target] = f"import-not-css:{kind}"
                 return ""
-            return self.flatten_imports(body.decode("utf-8", errors="replace"), final, depth + 1)
+            return self.flatten_imports(decoded, final, depth + 1)
 
         while IMPORT_RE.search(text):
             old = text

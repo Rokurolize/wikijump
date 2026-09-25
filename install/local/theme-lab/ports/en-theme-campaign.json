@@ -1707,7 +1707,7 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/site/assets.json",
-      "dependency_decision_count": 0,
+      "dependency_decision_count": 51,
       "theme_lab_findings": {
         "first_check": {
           "verdict": "warn",
@@ -2353,7 +2353,7 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/penumbra/assets.json",
-      "dependency_decision_count": 0,
+      "dependency_decision_count": 77,
       "theme_lab_findings": {
         "first_check": {
           "verdict": "fail",
@@ -5757,7 +5757,7 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/skipos/assets.json",
-      "dependency_decision_count": 0,
+      "dependency_decision_count": 100,
       "theme_lab_findings": {
         "first_check": {
           "verdict": "fail",
@@ -6812,7 +6812,7 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/flopstyle-dark/assets.json",
-      "dependency_decision_count": 78,
+      "dependency_decision_count": 33,
       "theme_lab_findings": {
         "first_check": {
           "verdict": "fail",
@@ -7998,7 +7998,7 @@
         "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/paperstack/assets.json",
-      "dependency_decision_count": 1,
+      "dependency_decision_count": 70,
       "theme_lab_findings": {
         "first_check": {
           "verdict": "fail",

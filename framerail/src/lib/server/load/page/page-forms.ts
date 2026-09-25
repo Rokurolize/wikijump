@@ -18,28 +18,59 @@ import { valibot } from "sveltekit-superforms/adapters"
 
 import type { PageView } from "$lib/server/deepwell/views"
 
-export const buildPageForms = async (request: Request) => ({
-  pageDeleteForm: await superValidate(request, valibot(pageDeleteSchema)),
-  pageEditForm: await superValidate(request, valibot(pageEditSchema)),
-  fileUploadForm: await superValidate(request, valibot(pageFileUploadSchema)),
-  fileEditForm: await superValidate(request, valibot(pageFileEditSchema)),
-  fileMoveForm: await superValidate(request, valibot(pageFileMoveSchema)),
-  fileRestoreForm: await superValidate(request, valibot(pageFileRestoreSchema)),
-  layoutForm: await superValidate(request, valibot(layoutSchema)),
-  pageMoveForm: await superValidate(request, valibot(pageMoveSchema)),
-  pageParentForm: await superValidate(request, valibot(pageParentFormSchema)),
-  pageLockForm: await superValidate(request, valibot(pageLockSchema)),
-  pageRestoreForm: await superValidate(request, valibot(pageRestoreSchema))
-})
+export const buildPageForms = async (request: Request) => {
+  const [
+    pageDeleteForm,
+    pageEditForm,
+    fileUploadForm,
+    fileEditForm,
+    fileMoveForm,
+    fileRestoreForm,
+    layoutForm,
+    pageMoveForm,
+    pageParentForm,
+    pageLockForm,
+    pageRestoreForm
+  ] = await Promise.all([
+    superValidate(request, valibot(pageDeleteSchema)),
+    superValidate(request, valibot(pageEditSchema)),
+    superValidate(request, valibot(pageFileUploadSchema)),
+    superValidate(request, valibot(pageFileEditSchema)),
+    superValidate(request, valibot(pageFileMoveSchema)),
+    superValidate(request, valibot(pageFileRestoreSchema)),
+    superValidate(request, valibot(layoutSchema)),
+    superValidate(request, valibot(pageMoveSchema)),
+    superValidate(request, valibot(pageParentFormSchema)),
+    superValidate(request, valibot(pageLockSchema)),
+    superValidate(request, valibot(pageRestoreSchema))
+  ])
+
+  return {
+    pageDeleteForm,
+    pageEditForm,
+    fileUploadForm,
+    fileEditForm,
+    fileMoveForm,
+    fileRestoreForm,
+    layoutForm,
+    pageMoveForm,
+    pageParentForm,
+    pageLockForm,
+    pageRestoreForm
+  }
+}
 
 export const buildPageErrorForms = async (request: Request, response: PageView) => {
-  const pageEditForm = await superValidate(request, valibot(pageEditSchema))
+  const [pageEditForm, pageRestoreForm] = await Promise.all([
+    superValidate(request, valibot(pageEditSchema)),
+    superValidate(request, valibot(pageRestoreSchema))
+  ])
   if (response.type === "missing" && response.data.new_page_wikitext !== null) {
     pageEditForm.data.wikitext = response.data.new_page_wikitext
   }
 
   return {
     pageEditForm,
-    pageRestoreForm: await superValidate(request, valibot(pageRestoreSchema))
+    pageRestoreForm
   }
 }

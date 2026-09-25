@@ -18,3 +18,18 @@
 }
 /* JP runtime header DOM: keep theme title positioning inside the current SCP-JP header. */
 #header h1, #header h2 { max-width: calc(100vw - 2rem) !important; box-sizing: border-box; left: auto !important; right: auto !important; }
+/* SCP-JP interactive visual acceptance repair: fit Night Rush's opened mobile submenu inside the viewport. */
+@media (max-width: 767px) {
+  #top-bar ul li ul { left: auto !important; right: 0 !important; max-width: calc(100vw - 1rem) !important; box-sizing: border-box !important; }
+  #top-bar ul li ul li a { white-space: normal !important; overflow-wrap: anywhere !important; }
+}
+/* SCP-JP interactive visual acceptance repair: restore Night Rush masthead flow at tablet widths. */
+@media (min-width: 768px) and (max-width: 900px) {
+  #header { position: relative !important; display: flow-root !important; height: auto !important; min-height: 0 !important; max-height: none !important; padding: 1.25rem 1rem .75rem !important; box-sizing: border-box !important; }
+  #header h1, #header h2 { position: relative !important; float: none !important; display: block !important; clear: both !important; width: auto !important; max-width: calc(100vw - 10rem) !important; height: auto !important; min-height: 0 !important; max-height: none !important; margin: .45rem 0 .45rem 9rem !important; line-height: 1.2 !important; white-space: normal !important; overflow-wrap: anywhere !important; }
+  #header h1 { font-size: clamp(1.5rem, 4vw, 2.2rem) !important; }
+  #header h2 { font-size: clamp(1rem, 2vw, 1.25rem) !important; }
+  #header h1 > a, #header h1 > a > span, #header h2 > span { position: static !important; display: block !important; width: auto !important; height: auto !important; min-height: 0 !important; max-height: none !important; line-height: inherit !important; white-space: normal !important; overflow-wrap: anywhere !important; }
+  #search-top-box { position: static !important; float: none !important; clear: both !important; display: block !important; width: 100% !important; max-width: 100% !important; margin: .5rem 0 0 !important; }
+  #search-top-box-form { position: static !important; float: none !important; display: flex !important; justify-content: flex-end; width: 100% !important; }
+}

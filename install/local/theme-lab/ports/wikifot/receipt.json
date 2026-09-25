@@ -97,7 +97,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/wikifot/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "550fa3c183832d172679901732716aabebaa8e68a9d4f259582c43de263198bc",
+  "source_candidate_sha256": "c3c9d779e3654fc68cc06a364d42a75d7e188b931af95f1532ed23026fa09567",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -105,7 +105,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/wikifot/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "550fa3c183832d172679901732716aabebaa8e68a9d4f259582c43de263198bc",
+  "candidate_source_sha256": "c3c9d779e3654fc68cc06a364d42a75d7e188b931af95f1532ed23026fa09567",
   "human_port_candidate_path": "install/local/theme-lab/ports/wikifot/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "550fa3c183832d172679901732716aabebaa8e68a9d4f259582c43de263198bc",
   "theme_lab_checks": [
@@ -833,8 +833,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "4c6e6361cf01b05afacf2a87a9f2435dbe1e3efdc173afc6c588ff43e850dbe6",
-  "candidate_css_sha256": "d74c44f40176fae1b5964f9b1def7840fecb053f1ec0ca174f98aeacf29f6a91",
+  "candidate_preview_sha256": "fefa2ab800033e759e7f19445ecdca6792c9d10d8cee14701028e231ede82d04",
+  "candidate_css_sha256": "4d0f6a5e95714b15c7644e8e327b4617b900e0d4f1bc1f142316da0fb24f4cad",
   "final_theme_lab_check": {
     "slug": "theme:wikifot",
     "verdict": "warn",

@@ -3284,15 +3284,16 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Song+Myung&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "4e726a7309188f13a17a3d11de83e0711054f1a28b55181ad2a902fcbd315d76",
+      "candidate_css_sha256": "6fd9f0e8f88f486c138b53aa560bd29b939fc5183756f3e21cc8503f6b892d71",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wikidot.com/theme:scheme/code/2",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "4e726a7309188f13a17a3d11de83e0711054f1a28b55181ad2a902fcbd315d76",
+      "candidate_css_sha256": "6fd9f0e8f88f486c138b53aa560bd29b939fc5183756f3e21cc8503f6b892d71",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }

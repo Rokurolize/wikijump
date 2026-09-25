@@ -283,3 +283,70 @@ Bedrockは現在Common Themeと互換性がありません。
 }
 [[/module]]
 [[/iftags]]
+
+[[module CSS]]
+/* SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused. */
+@media (min-width: 768px) {
+  #search-top-box-form:hover #search-top-box-input,
+  #search-top-box-form:focus-within #search-top-box-input {
+    display: inline-block !important;
+  }
+}
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive acceptance: preserve Bedrock's navigation in the current Wikijump shell without letting its hover drawer cover the article/actions. */
+@media (min-width: 768px) {
+  #content-wrap { display: flex !important; align-items: flex-start; gap: 1rem; }
+  #side-bar { position: static !important; inset: auto !important; float: none !important; flex: 0 0 min(19rem, 30vw); width: min(19rem, 30vw) !important; max-width: none !important; height: auto !important; max-height: none; overflow: visible !important; transition: none !important; z-index: auto !important; }
+  #main-content { flex: 1 1 0; width: auto !important; min-width: 0; max-width: none !important; margin: 0 !important; }
+  #page-content { width: 100%; max-width: 100%; box-sizing: border-box; }
+}
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive acceptance: bedrock account and navigation behavior */
+
+/* SCP-JP interactive acceptance: preserve Bedrock's navigation in the current Wikijump shell without letting its hover drawer cover the article/actions. */
+@media (min-width: 768px) {
+  #content-wrap { display: flex !important; align-items: flex-start; gap: 1rem; }
+  #side-bar { position: static !important; inset: auto !important; float: none !important; flex: 0 0 min(19rem, 30vw); width: min(19rem, 30vw) !important; max-width: none !important; height: auto !important; max-height: none; overflow: visible !important; transition: none !important; z-index: auto !important; }
+  #main-content { flex: 1 1 0; width: auto !important; min-width: 0; max-width: none !important; margin: 0 !important; }
+  #page-content { width: 100%; max-width: 100%; box-sizing: border-box; }
+}
+
+/* Keep the runtime account control targetable while retaining Bedrock's compact avatar treatment. */
+#login-status { pointer-events: auto !important; }
+#login-status #account-options { pointer-events: auto !important; }
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive visual acceptance evidence fix v1: bedrock */
+
+/* Opaque the open desktop dropdown so the article title underneath cannot merge with the last menu row. */
+@media (min-width: 768px) { #top-bar .top-bar li ul { background-color: rgb(var(--swatch-menubg-color, 248, 248, 248)) !important; } }
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive visual acceptance mobile header refinement v5: bedrock */
+
+/* Keep the drawer close label inside the viewport while the full-screen close anchor continues to dim the page. */
+@media (max-width: 767px) { #side-bar a.close-menu { padding-inline-start: .65rem !important; box-sizing: border-box !important; } }
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive visual acceptance image review repair v23: bedrock */
+
+/* Bedrock's expanded mobile menu inherited a transparent item list; provide an opaque slate menu surface while retaining its pale-blue edge and type identity. */
+@media (max-width: 900px) { .mobile-top-bar ul, .mobile-top-bar > ul ul { background-color: #263744 !important; } }
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive visual acceptance image review repair v31: bedrock */
+
+/* The inherited Basalt base reset SCP-JP's fixed credit dialog container to normal flow, leaving the mobile modal at the top-left. Center both real credit-dialog states in the viewport while retaining the theme's own panel and fader colors. */
+@media (max-width: 767px) {
+ #u-credit-view:target .modalcontainer, #u-credit-otherwise:target .modalcontainer { position: absolute !important; inset: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; width: 100% !important; height: 100% !important; max-width: none !important; margin: 0 !important; box-sizing: border-box !important; }
+ #u-credit-view:target .modalbox, #u-credit-otherwise:target .modalbox { width: min(37.5rem, calc(100vw - 1rem)) !important; min-width: 0 !important; max-width: calc(100vw - 1rem) !important; height: min(50svh, calc(100dvh - 1rem)) !important; max-height: calc(100dvh - 1rem) !important; margin: 0 !important; box-sizing: border-box !important; }
+}
+[[/module]]

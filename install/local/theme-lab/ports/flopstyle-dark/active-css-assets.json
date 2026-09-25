@@ -1,0 +1,186 @@
+{
+  "assets": [
+    {
+      "sha256": "ba826fb84c2e961578adf3a08b5778b87905d4443445d1d56d84f9f157d5ea4b",
+      "bytes": 19012,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-800-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-800-normal.woff2"
+    },
+    {
+      "sha256": "26f9e611260b72c43467d0a0ab4f56c5068ec431e41d9e3088fa74117ca086d8",
+      "bytes": 20660,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-800-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-800-normal.woff"
+    },
+    {
+      "sha256": "e9796e8de1954ee72e8d5de23d26bb8f577d4b903abae1fe11db8904279516ef",
+      "bytes": 11180,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-800-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-800-normal.woff2"
+    },
+    {
+      "sha256": "5e25e27cb096fc27d247878d088c43ce2dc2839f5fe8bdf80114c7af0fa1a030",
+      "bytes": 10924,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-800-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-800-normal.woff"
+    },
+    {
+      "sha256": "59f6ebeb71a14c64edc538eba78a010c1c9ef680a66a559ec3cf4b0d12db1a8b",
+      "bytes": 33624,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-800-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-800-normal.woff2"
+    },
+    {
+      "sha256": "d54740b154f92d9fff855599f16bb2435ea68803b9795388574432d45092d7b7",
+      "bytes": 41688,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-800-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-800-normal.woff"
+    },
+    {
+      "sha256": "24f149c36fd7d848a1f7beb294f829a8764927181d3002f7b02021295e75f8fd",
+      "bytes": 7900,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-800-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-800-normal.woff2"
+    },
+    {
+      "sha256": "20ece9e9814aa6304cd7cab78f244962b80f2693460e711e8706b7bf295e43ab",
+      "bytes": 7328,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-800-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-800-normal.woff"
+    },
+    {
+      "sha256": "f61413d2fbb61e639bdb53e4e47b7b6f275953b408b18eeb0b200fb66d55c4cf",
+      "bytes": 12144,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-800-normal.woff2",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-800-normal.woff2"
+    },
+    {
+      "sha256": "9693830cf4c1b4304095ae7f80dfcc3bc4401514f56d4250d57b0118d3772c70",
+      "bytes": 12036,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-800-normal.woff",
+      "final_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-800-normal.woff"
+    },
+    {
+      "sha256": "b7753f30f8bd4925cf48a2ffe936c52ff1f16fe441f8c0245acf046296ac590f",
+      "bytes": 19572,
+      "content_type": "font/woff2",
+      "original_url": "https://fonts.bunny.net/comic-neue/files/comic-neue-latin-400-normal.woff2",
+      "final_url": "https://fonts.bunny.net/comic-neue/files/comic-neue-latin-400-normal.woff2"
+    },
+    {
+      "sha256": "54c45748205d08203132f268717d38a32e107a369081a0467e9aa7750668c10d",
+      "bytes": 16664,
+      "content_type": "font/woff",
+      "original_url": "https://fonts.bunny.net/comic-neue/files/comic-neue-latin-400-normal.woff",
+      "final_url": "https://fonts.bunny.net/comic-neue/files/comic-neue-latin-400-normal.woff"
+    },
+    {
+      "sha256": "25d2d7acf204d85c5fb0867b93c4df5feab84257fa74fda436753e6d0174722e",
+      "bytes": 23148,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/alt_logo_bw.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/alt_logo_bw.png"
+    },
+    {
+      "sha256": "a5f9b60dd4733b1ca39be370959b1ddfd4da9bf82e05fea11979b5796de8eb39",
+      "bytes": 35024,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/wkUri0y.webp",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/wkUri0y.webp"
+    },
+    {
+      "sha256": "1506e2662da1b9aaa65315c0fe0cbb016e18544b6ad0590cd617f6ed4c4e3849",
+      "bytes": 85289,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/CQCcN7e.webp",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/CQCcN7e.webp"
+    },
+    {
+      "sha256": "2e8c85ad5e1ee5089890d9d94bd2bdb942cedbe9e3eae746aa4da5f487f8325b",
+      "bytes": 54791,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wdfiles.com/local--files/desk-of-junior-designer-s-yvonne/miscdept.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/desk-of-junior-designer-s-yvonne/miscdept.png"
+    },
+    {
+      "sha256": "5c7750b9c5b59fa75e159fdd49655bcb82b8277b1e81fc8f86d9f9af8fa47df0",
+      "bytes": 90133,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/spc_logo.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/spc_logo.png"
+    },
+    {
+      "sha256": "eabe424dd70c56173c2cfcfe8ca6b328ef2077d6ce9b3243540148a2d76f20ab",
+      "bytes": 404,
+      "content_type": "text/html",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/water_ripples.webp",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/water_ripples.webp"
+    },
+    {
+      "sha256": "1f778b4a92e2a2f42b9481818a638bc5c06ac614a69d87d8d80cd86325878e95",
+      "bytes": 110126,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/Q2TCZnd.webp",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/Q2TCZnd.webp"
+    },
+    {
+      "sha256": "d88e7360de7975504b8d0a5676930793c1ae33e6d67aeda84e484f35cc816152",
+      "bytes": 63926,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/4uLBoQ3.webp",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/4uLBoQ3.webp"
+    },
+    {
+      "sha256": "d2e837d1e7e52173f4f531c9d89e1e00dcec4c4ff733560c7cd9c1469161ea0e",
+      "bytes": 111883,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/alt_logo_trans.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/alt_logo_trans.png"
+    },
+    {
+      "sha256": "0f80a46802573730c8c18aab2022761d1ec548268dd5d2734b50ad4a27dc6303",
+      "bytes": 80241,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/wl_hr.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/wl_hr.png"
+    },
+    {
+      "sha256": "69d997478237b769cda0f420d39f6932a9d9ce71d6c2738426aeec117a051abe",
+      "bytes": 81504,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/wl_border.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/wl_border.png"
+    },
+    {
+      "sha256": "069bad48e1d52238bb71e1ba1ab5f05eb6c3f7029247dfbcb262070f801f3c87",
+      "bytes": 351,
+      "content_type": "image/gif",
+      "original_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/alt_loader.gif",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/alt_loader.gif"
+    }
+  ],
+  "missing": [],
+  "imports": [
+    "https://fonts.bunny.net/css2?family=Comic+Neue&display=swap",
+    "https://fonts.bunny.net/css2?family=Montserrat:wght@800&display=swap",
+    "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/1",
+    "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/2",
+    "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/3",
+    "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/tabview.css",
+    "https://scp-wiki.wikidot.com/local--files/theme%3Aflopstyle-dark/backend.css"
+  ],
+  "pruned_fonts": [],
+  "template_placeholders": [],
+  "asset_replacements": {},
+  "omitted_assets": []
+}

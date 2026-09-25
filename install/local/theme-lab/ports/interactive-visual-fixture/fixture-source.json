@@ -1,0 +1,31 @@
+{
+  "schema": "theme_lab_interactive_fixture.v1",
+  "slug": "theme-lab-visual-acceptance-20260924",
+  "title": "SCP-JP Theme Lab Interactive Visual Fixture",
+  "source_sha256": "c4dd52bf17dfd4e8d5b2f854e5c37645027e2aae362ca6504c0fdd086aa423b8",
+  "source_bytes": 13324,
+  "variants": {
+    "normal": "fixture.wikidot.txt",
+    "no_rate": "fixture-no-rate.wikidot.txt",
+    "heritage": {
+      "source": "fixture-heritage.wikidot.txt",
+      "tag": "殿堂入り"
+    }
+  },
+  "credit_source_identity": "source-identity.json",
+  "module_source_adaptation": "Credit component markup is frozen from current JP source. Remote style is flattened from credit:style; remote decorative backmodule iframes and images are represented by local equivalent text/controls so replay does not send requests. Original snapshots and hashes are retained.",
+  "features": [
+    "Rate",
+    "current credit:start/otherwise/end markup",
+    "credit view and otherwise hash targets",
+    "Japanese reader components",
+    "TOC",
+    "tabs",
+    "collapsible",
+    "table",
+    "blockquote",
+    "code",
+    "image-block",
+    "footnote"
+  ]
+}

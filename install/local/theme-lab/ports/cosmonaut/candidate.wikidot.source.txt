@@ -1940,3 +1940,21 @@ body {
 @import url(https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/2);
 [[/module]]
 [!--   --]
+
+[[module CSS]]
+/* SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused. */
+@media (min-width: 768px) {
+  #search-top-box-form:hover #search-top-box-input,
+  #search-top-box-form:focus-within #search-top-box-input {
+    display: inline-block !important;
+  }
+}
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP interactive visual follow-up v2: cosmonaut */
+
+/* Keep the Cosmonaut starfield and cloud identity around the page, while giving the revision diff a quiet opaque reading surface so the decorative cloud layer cannot cross added/removed prose. */
+#action-area .revision-diff { position: relative !important; isolation: isolate; background-color: #071012 !important; }
+#action-area .revision-diff .revision-diff-line { position: relative; z-index: 1; }
+[[/module]]

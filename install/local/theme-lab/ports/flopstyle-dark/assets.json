@@ -215,246 +215,17 @@
       "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/alt_loader.gif",
       "decision": "localize-into-package",
       "decision_evidence": "SHA-256 verified at 069bad48e1d52238bb71e1ba1ab5f05eb6c3f7029247dfbcb262070f801f3c87.gif; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "0d1e21c24a9092515ec777ee45760bc711f85a4ad5049d4d62b0a987f81ac407",
-      "bytes": 17814,
-      "content_type": "image/png",
-      "original_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/alt_logo_tyrian.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/alt_logo_tyrian.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at 0d1e21c24a9092515ec777ee45760bc711f85a4ad5049d4d62b0a987f81ac407.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "f299e7fb233c4edc8b1f813f4e5a09be5ca2bf3c974acea6bd5fb9de39265f7e",
-      "bytes": 228053,
-      "content_type": "image/png",
-      "original_url": "https://scp-wiki.wdfiles.com/local--files/secure-facility-dossier-site-120/120.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/secure-facility-dossier-site-120/120.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at f299e7fb233c4edc8b1f813f4e5a09be5ca2bf3c974acea6bd5fb9de39265f7e.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "f0fb8d1e3b280202e8253cba76e35df283825f2d6325afa82db4d15b1ac47304",
-      "bytes": 29332,
-      "content_type": "image/png",
-      "original_url": "https://i.imgur.com/xGEezVe.png",
-      "final_url": "https://i.imgur.com/xGEezVe.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at f0fb8d1e3b280202e8253cba76e35df283825f2d6325afa82db4d15b1ac47304.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "da8119c8c0f1cbc7bc07df9e62cd72ced9d117dc1ac1d6098e982283cc86cbff",
-      "bytes": 26057,
-      "content_type": "image/png",
-      "original_url": "https://scp-wiki.wdfiles.com/local--files/the-s-c-plastics-hub/Big87.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/the-s-c-plastics-hub/Big87.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at da8119c8c0f1cbc7bc07df9e62cd72ced9d117dc1ac1d6098e982283cc86cbff.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "eabe424dd70c56173c2cfcfe8ca6b328ef2077d6ce9b3243540148a2d76f20ab",
-      "bytes": 404,
-      "content_type": "text/html",
-      "original_url": "https://scp-wiki.wdfiles.com/local--files/azamo/ATOM.svg",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/azamo/ATOM.svg",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at eabe424dd70c56173c2cfcfe8ca6b328ef2077d6ce9b3243540148a2d76f20ab.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "7ccd1bd8e6962347d10b0f217a9255bf58ecfd76e0a0b1f1431e6bedf839173d",
-      "bytes": 9873,
-      "content_type": "image/svg+xml",
-      "original_url": "https://scp-wiki.wdfiles.com/local--files/jerden-insignia/Site-184.svg",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/jerden-insignia/Site-184.svg",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at 7ccd1bd8e6962347d10b0f217a9255bf58ecfd76e0a0b1f1431e6bedf839173d.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "aa3fe960509bbf92da95b92b082b310647f160b550be15270cd68a991aa3f0ac",
-      "bytes": 27379,
-      "content_type": "image/svg+xml",
-      "original_url": "https://scp-wiki.wdfiles.com/local--files/fragment%3Ascp-6500-13/overwatchheaderthreshold.svg",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/fragment%3Ascp-6500-13/overwatchheaderthreshold.svg",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at aa3fe960509bbf92da95b92b082b310647f160b550be15270cd68a991aa3f0ac.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "f29804820baa4b8a8bd81221d068872a1378e1f4cc20e031c5997ec5efd4ebbe",
-      "bytes": 382352,
-      "content_type": "image/png",
-      "original_url": "https://i.imgur.com/tslbdWm.png",
-      "final_url": "https://i.imgur.com/tslbdWm.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at f29804820baa4b8a8bd81221d068872a1378e1f4cc20e031c5997ec5efd4ebbe.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "c4bfb8e90137b1e47d48bff2a1b2cff9e37348bd54fa008e411ce36070b2ab89",
-      "bytes": 31216,
-      "content_type": "image/png",
-      "original_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/spirograph.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/spirograph.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at c4bfb8e90137b1e47d48bff2a1b2cff9e37348bd54fa008e411ce36070b2ab89.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "7a022de179a466ad9711d5f2848123c5cba6eedf22e51a8dc04ed6e5d64b205d",
-      "bytes": 36816,
-      "content_type": "font/ttf",
-      "original_url": "https://fonts.gstatic.com/s/russoone/v18/Z9XUDmZRWg6M1LvRYsH-yA.ttf",
-      "final_url": "https://fonts.gstatic.com/s/russoone/v18/Z9XUDmZRWg6M1LvRYsH-yA.ttf",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at 7a022de179a466ad9711d5f2848123c5cba6eedf22e51a8dc04ed6e5d64b205d.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "db7134f3be63a56f9648aa775cc8980dfd2a28d4eed38cfbf46b118b098eb270",
-      "bytes": 157120,
-      "content_type": "font/ttf",
-      "original_url": "https://fonts.gstatic.com/s/ptmono/v14/9oRONYoBnWILk-9ArCg.ttf",
-      "final_url": "https://fonts.gstatic.com/s/ptmono/v14/9oRONYoBnWILk-9ArCg.ttf",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at db7134f3be63a56f9648aa775cc8980dfd2a28d4eed38cfbf46b118b098eb270.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "4e175ee281687e77ed6669ce31a42ea908cc788d0a88505f13866b4f6d02087e",
-      "bytes": 2613,
-      "content_type": "image/svg+xml",
-      "original_url": "https://scpkrsandbox.wdfiles.com/local--files/collab:gocdesk-translated/ICSUT_W.svg",
-      "final_url": "https://scpkrsandbox.wdfiles.com/local--files/collab:gocdesk-translated/ICSUT_W.svg",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at 4e175ee281687e77ed6669ce31a42ea908cc788d0a88505f13866b4f6d02087e.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "8edd92323cc66093f827ee1f66c75c51e7677d93c876afefff3cb7be7d01307b",
-      "bytes": 140653,
-      "content_type": "image/png",
-      "original_url": "https://i.postimg.cc/jdtNs3GH/spicycrustpizza.png",
-      "final_url": "https://i.postimg.cc/jdtNs3GH/spicycrustpizza.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at 8edd92323cc66093f827ee1f66c75c51e7677d93c876afefff3cb7be7d01307b.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "9f59e3a0e1c0008f2ef97b1c94e5d96c43748bbc92993570d1133454a484254c",
-      "bytes": 150524,
-      "content_type": "font/ttf",
-      "original_url": "https://fonts.gstatic.com/s/specialelite/v20/XLYgIZbkc4JPUL5CVArUVL0nhnc.ttf",
-      "final_url": "https://fonts.gstatic.com/s/specialelite/v20/XLYgIZbkc4JPUL5CVArUVL0nhnc.ttf",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at 9f59e3a0e1c0008f2ef97b1c94e5d96c43748bbc92993570d1133454a484254c.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "09704b28aa35d4f3440bc6e016c040c920116ce651a0b8bbc46a04cceaa021db",
-      "bytes": 112171,
-      "content_type": "image/png",
-      "original_url": "https://i.imgur.com/m76qsGD.png",
-      "final_url": "https://i.imgur.com/m76qsGD.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at 09704b28aa35d4f3440bc6e016c040c920116ce651a0b8bbc46a04cceaa021db.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "ecfd5bce8ca8c391d34f6bc33b44a575a23ce0840729cee781a73d6488cbd1c2",
-      "bytes": 38176,
-      "content_type": "font/ttf",
-      "original_url": "https://fonts.gstatic.com/s/jollylodger/v21/BXRsvFTAh_bGkA1uQ48dlB3VWQ.ttf",
-      "final_url": "https://fonts.gstatic.com/s/jollylodger/v21/BXRsvFTAh_bGkA1uQ48dlB3VWQ.ttf",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at ecfd5bce8ca8c391d34f6bc33b44a575a23ce0840729cee781a73d6488cbd1c2.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "bb1d158af6315b64791c1f6b3697eff4e8af87e34cdf6a166b091da83d306624",
-      "bytes": 24522,
-      "content_type": "image/png",
-      "original_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/pumpkin.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/pumpkin.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at bb1d158af6315b64791c1f6b3697eff4e8af87e34cdf6a166b091da83d306624.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "3398e2e03471fe67567c9bcfaec61c01e46986d9e97fbac3662cc85c1bcf7a67",
-      "bytes": 15302,
-      "content_type": "image/png",
-      "original_url": "https://i.postimg.cc/rmz1gNgc/alt-logo-rhizome.png",
-      "final_url": "https://i.postimg.cc/rmz1gNgc/alt-logo-rhizome.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at 3398e2e03471fe67567c9bcfaec61c01e46986d9e97fbac3662cc85c1bcf7a67.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "a778cc12dc2c6bce995fe31ff8622a2d16cec5b6456281a1785af9c979806480",
-      "bytes": 114211,
-      "content_type": "image/png",
-      "original_url": "https://i.postimg.cc/85wHG8RV/Flag-of-Corbenic-Square-B-W.png",
-      "final_url": "https://i.postimg.cc/85wHG8RV/Flag-of-Corbenic-Square-B-W.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at a778cc12dc2c6bce995fe31ff8622a2d16cec5b6456281a1785af9c979806480.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "11c86148cec1c9a1fcc2e566bf92076cfcc98f8d60faf6bc5782fd98c093f072",
-      "bytes": 10269,
-      "content_type": "image/png",
-      "original_url": "https://scp-wiki.wdfiles.com/local--files/nightfall-hub/moon1.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/nightfall-hub/moon1.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at 11c86148cec1c9a1fcc2e566bf92076cfcc98f8d60faf6bc5782fd98c093f072.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "a6be65d0df1ff54d8c624c4e86d6edbc6f00ac4a40cecf30fecfced7b6c98f71",
-      "bytes": 94342,
-      "content_type": "image/png",
-      "original_url": "https://scp-wiki.wdfiles.com/local--files/nightfall-hub/bloodmoon.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/nightfall-hub/bloodmoon.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at a6be65d0df1ff54d8c624c4e86d6edbc6f00ac4a40cecf30fecfced7b6c98f71.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "cdcd5f49f0c2d4ad17a61c4649d2ba3d64cac04cf9a6e06a14f11b5e102e8a16",
-      "bytes": 409192,
-      "content_type": "image/png",
-      "original_url": "https://scp-wiki.wdfiles.com/local--files/nightfall-hub/divbox.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/nightfall-hub/divbox.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at cdcd5f49f0c2d4ad17a61c4649d2ba3d64cac04cf9a6e06a14f11b5e102e8a16.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "sha256": "87e8c2672948b671b65956e01e6558c6eabf3ca10dd249778f669cb809371f7b",
-      "bytes": 99011,
-      "content_type": "image/png",
-      "original_url": "https://i.imgur.com/yzBOtZe.png",
-      "final_url": "https://i.imgur.com/yzBOtZe.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at 87e8c2672948b671b65956e01e6558c6eabf3ca10dd249778f669cb809371f7b.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
     }
   ],
   "missing": [],
   "imports": [
     "https://fonts.bunny.net/css2?family=Comic+Neue&display=swap",
     "https://fonts.bunny.net/css2?family=Montserrat:wght@800&display=swap",
-    "https://fonts.googleapis.com/css2?family=Jolly+Lodger&display=swap",
-    "https://fonts.googleapis.com/css2?family=PT+Mono&display=swap",
-    "https://fonts.googleapis.com/css2?family=Russo+One&display=swap",
-    "https://fonts.googleapis.com/css2?family=Special+Elite&display=swap",
-    "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/calzone.css",
-    "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/chthonian.css",
-    "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/documentation.css",
-    "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/galaxias.css",
-    "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/monster.css",
-    "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/pedagogy.css",
-    "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/prairie.css",
-    "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/rhizome.css",
-    "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/seafoam.css",
-    "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/syzygy.css",
+    "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/1",
+    "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/2",
+    "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/3",
     "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/tabview.css",
-    "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/witch.css",
-    "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/witching-hour.css",
-    "https://scp-wiki.wikidot.com/local--files/theme%3Aflopstyle-dark/backend.css",
-    "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/inferno.css",
-    "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/maple.css",
-    "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/peenumbra.css",
-    "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/plastic.css",
-    "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/threshold.css",
-    "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/vanguard.css",
-    "https://scp-wiki.wikidot.com/theme:flopstyle-dark/code/1",
-    "https://scp-wiki.wikidot.com/theme:flopstyle-dark/code/2",
-    "https://scp-wiki.wikidot.com/theme:flopstyle-dark/code/3"
+    "https://scp-wiki.wikidot.com/local--files/theme%3Aflopstyle-dark/backend.css"
   ],
   "pruned_fonts": [],
   "template_placeholders": [],
@@ -654,391 +425,54 @@
       "evidence": "SHA-256 verified at 069bad48e1d52238bb71e1ba1ab5f05eb6c3f7029247dfbcb262070f801f3c87.gif; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
     },
     {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/alt_logo_tyrian.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/alt_logo_tyrian.png",
-      "sha256": "0d1e21c24a9092515ec777ee45760bc711f85a4ad5049d4d62b0a987f81ac407",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at 0d1e21c24a9092515ec777ee45760bc711f85a4ad5049d4d62b0a987f81ac407.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/secure-facility-dossier-site-120/120.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/secure-facility-dossier-site-120/120.png",
-      "sha256": "f299e7fb233c4edc8b1f813f4e5a09be5ca2bf3c974acea6bd5fb9de39265f7e",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at f299e7fb233c4edc8b1f813f4e5a09be5ca2bf3c974acea6bd5fb9de39265f7e.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://i.imgur.com/xGEezVe.png",
-      "final_url": "https://i.imgur.com/xGEezVe.png",
-      "sha256": "f0fb8d1e3b280202e8253cba76e35df283825f2d6325afa82db4d15b1ac47304",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at f0fb8d1e3b280202e8253cba76e35df283825f2d6325afa82db4d15b1ac47304.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/the-s-c-plastics-hub/Big87.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/the-s-c-plastics-hub/Big87.png",
-      "sha256": "da8119c8c0f1cbc7bc07df9e62cd72ced9d117dc1ac1d6098e982283cc86cbff",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at da8119c8c0f1cbc7bc07df9e62cd72ced9d117dc1ac1d6098e982283cc86cbff.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/azamo/ATOM.svg",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/azamo/ATOM.svg",
-      "sha256": "eabe424dd70c56173c2cfcfe8ca6b328ef2077d6ce9b3243540148a2d76f20ab",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at eabe424dd70c56173c2cfcfe8ca6b328ef2077d6ce9b3243540148a2d76f20ab.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/jerden-insignia/Site-184.svg",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/jerden-insignia/Site-184.svg",
-      "sha256": "7ccd1bd8e6962347d10b0f217a9255bf58ecfd76e0a0b1f1431e6bedf839173d",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at 7ccd1bd8e6962347d10b0f217a9255bf58ecfd76e0a0b1f1431e6bedf839173d.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/fragment%3Ascp-6500-13/overwatchheaderthreshold.svg",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/fragment%3Ascp-6500-13/overwatchheaderthreshold.svg",
-      "sha256": "aa3fe960509bbf92da95b92b082b310647f160b550be15270cd68a991aa3f0ac",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at aa3fe960509bbf92da95b92b082b310647f160b550be15270cd68a991aa3f0ac.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://i.imgur.com/tslbdWm.png",
-      "final_url": "https://i.imgur.com/tslbdWm.png",
-      "sha256": "f29804820baa4b8a8bd81221d068872a1378e1f4cc20e031c5997ec5efd4ebbe",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at f29804820baa4b8a8bd81221d068872a1378e1f4cc20e031c5997ec5efd4ebbe.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/spirograph.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/spirograph.png",
-      "sha256": "c4bfb8e90137b1e47d48bff2a1b2cff9e37348bd54fa008e411ce36070b2ab89",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at c4bfb8e90137b1e47d48bff2a1b2cff9e37348bd54fa008e411ce36070b2ab89.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://fonts.gstatic.com/s/russoone/v18/Z9XUDmZRWg6M1LvRYsH-yA.ttf",
-      "final_url": "https://fonts.gstatic.com/s/russoone/v18/Z9XUDmZRWg6M1LvRYsH-yA.ttf",
-      "sha256": "7a022de179a466ad9711d5f2848123c5cba6eedf22e51a8dc04ed6e5d64b205d",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at 7a022de179a466ad9711d5f2848123c5cba6eedf22e51a8dc04ed6e5d64b205d.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://fonts.gstatic.com/s/ptmono/v14/9oRONYoBnWILk-9ArCg.ttf",
-      "final_url": "https://fonts.gstatic.com/s/ptmono/v14/9oRONYoBnWILk-9ArCg.ttf",
-      "sha256": "db7134f3be63a56f9648aa775cc8980dfd2a28d4eed38cfbf46b118b098eb270",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at db7134f3be63a56f9648aa775cc8980dfd2a28d4eed38cfbf46b118b098eb270.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scpkrsandbox.wdfiles.com/local--files/collab:gocdesk-translated/ICSUT_W.svg",
-      "final_url": "https://scpkrsandbox.wdfiles.com/local--files/collab:gocdesk-translated/ICSUT_W.svg",
-      "sha256": "4e175ee281687e77ed6669ce31a42ea908cc788d0a88505f13866b4f6d02087e",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at 4e175ee281687e77ed6669ce31a42ea908cc788d0a88505f13866b4f6d02087e.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://i.postimg.cc/jdtNs3GH/spicycrustpizza.png",
-      "final_url": "https://i.postimg.cc/jdtNs3GH/spicycrustpizza.png",
-      "sha256": "8edd92323cc66093f827ee1f66c75c51e7677d93c876afefff3cb7be7d01307b",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at 8edd92323cc66093f827ee1f66c75c51e7677d93c876afefff3cb7be7d01307b.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://fonts.gstatic.com/s/specialelite/v20/XLYgIZbkc4JPUL5CVArUVL0nhnc.ttf",
-      "final_url": "https://fonts.gstatic.com/s/specialelite/v20/XLYgIZbkc4JPUL5CVArUVL0nhnc.ttf",
-      "sha256": "9f59e3a0e1c0008f2ef97b1c94e5d96c43748bbc92993570d1133454a484254c",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at 9f59e3a0e1c0008f2ef97b1c94e5d96c43748bbc92993570d1133454a484254c.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://i.imgur.com/m76qsGD.png",
-      "final_url": "https://i.imgur.com/m76qsGD.png",
-      "sha256": "09704b28aa35d4f3440bc6e016c040c920116ce651a0b8bbc46a04cceaa021db",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at 09704b28aa35d4f3440bc6e016c040c920116ce651a0b8bbc46a04cceaa021db.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://fonts.gstatic.com/s/jollylodger/v21/BXRsvFTAh_bGkA1uQ48dlB3VWQ.ttf",
-      "final_url": "https://fonts.gstatic.com/s/jollylodger/v21/BXRsvFTAh_bGkA1uQ48dlB3VWQ.ttf",
-      "sha256": "ecfd5bce8ca8c391d34f6bc33b44a575a23ce0840729cee781a73d6488cbd1c2",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at ecfd5bce8ca8c391d34f6bc33b44a575a23ce0840729cee781a73d6488cbd1c2.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/pumpkin.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/pumpkin.png",
-      "sha256": "bb1d158af6315b64791c1f6b3697eff4e8af87e34cdf6a166b091da83d306624",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at bb1d158af6315b64791c1f6b3697eff4e8af87e34cdf6a166b091da83d306624.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://i.postimg.cc/rmz1gNgc/alt-logo-rhizome.png",
-      "final_url": "https://i.postimg.cc/rmz1gNgc/alt-logo-rhizome.png",
-      "sha256": "3398e2e03471fe67567c9bcfaec61c01e46986d9e97fbac3662cc85c1bcf7a67",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at 3398e2e03471fe67567c9bcfaec61c01e46986d9e97fbac3662cc85c1bcf7a67.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://i.postimg.cc/85wHG8RV/Flag-of-Corbenic-Square-B-W.png",
-      "final_url": "https://i.postimg.cc/85wHG8RV/Flag-of-Corbenic-Square-B-W.png",
-      "sha256": "a778cc12dc2c6bce995fe31ff8622a2d16cec5b6456281a1785af9c979806480",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at a778cc12dc2c6bce995fe31ff8622a2d16cec5b6456281a1785af9c979806480.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/nightfall-hub/moon1.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/nightfall-hub/moon1.png",
-      "sha256": "11c86148cec1c9a1fcc2e566bf92076cfcc98f8d60faf6bc5782fd98c093f072",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at 11c86148cec1c9a1fcc2e566bf92076cfcc98f8d60faf6bc5782fd98c093f072.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/nightfall-hub/bloodmoon.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/nightfall-hub/bloodmoon.png",
-      "sha256": "a6be65d0df1ff54d8c624c4e86d6edbc6f00ac4a40cecf30fecfced7b6c98f71",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at a6be65d0df1ff54d8c624c4e86d6edbc6f00ac4a40cecf30fecfced7b6c98f71.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/nightfall-hub/divbox.png",
-      "final_url": "https://scp-wiki.wdfiles.com/local--files/nightfall-hub/divbox.png",
-      "sha256": "cdcd5f49f0c2d4ad17a61c4649d2ba3d64cac04cf9a6e06a14f11b5e102e8a16",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at cdcd5f49f0c2d4ad17a61c4649d2ba3d64cac04cf9a6e06a14f11b5e102e8a16.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://i.imgur.com/yzBOtZe.png",
-      "final_url": "https://i.imgur.com/yzBOtZe.png",
-      "sha256": "87e8c2672948b671b65956e01e6558c6eabf3ca10dd249778f669cb809371f7b",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at 87e8c2672948b671b65956e01e6558c6eabf3ca10dd249778f669cb809371f7b.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Comic+Neue&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
+      "candidate_css_sha256": "034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Montserrat:wght@800&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
+      "candidate_css_sha256": "034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
-      "source_url": "https://fonts.googleapis.com/css2?family=Jolly+Lodger&display=swap",
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/1",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
+      "candidate_css_sha256": "034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
-      "source_url": "https://fonts.googleapis.com/css2?family=PT+Mono&display=swap",
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/2",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
+      "candidate_css_sha256": "034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
-      "source_url": "https://fonts.googleapis.com/css2?family=Russo+One&display=swap",
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/3",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://fonts.googleapis.com/css2?family=Special+Elite&display=swap",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/calzone.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/chthonian.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/documentation.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/galaxias.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/monster.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/pedagogy.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/prairie.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/rhizome.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/seafoam.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/syzygy.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
+      "candidate_css_sha256": "034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/tabview.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/witch.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/witching-hour.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
+      "candidate_css_sha256": "034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wikidot.com/local--files/theme%3Aflopstyle-dark/backend.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/inferno.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/maple.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/peenumbra.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/plastic.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/threshold.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/vanguard.css",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wikidot.com/theme:flopstyle-dark/code/1",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wikidot.com/theme:flopstyle-dark/code/2",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wikidot.com/theme:flopstyle-dark/code/3",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "9468b9add093001b033bc2e6b25b691f6bf194c6680500d7c240f39a8df7e1e2",
+      "candidate_css_sha256": "034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }

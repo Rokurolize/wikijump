@@ -116,6 +116,34 @@
     align-items: center;
     justify-content: center;
   }
+
+  @media (max-width: 600px) {
+    #odialog-container .owindow.error {
+      box-sizing: border-box;
+      max-width: calc(100vw - 1rem) !important;
+      min-width: 0 !important;
+    }
+
+    #odialog-container .owindow.error .content,
+    #odialog-container .owindow.error .content > *,
+    #odialog-container .owindow.error .button-bar {
+      box-sizing: border-box;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      overflow-wrap: anywhere;
+      white-space: normal;
+    }
+
+    #odialog-container .owindow.error .content {
+      display: block !important;
+    }
+
+    #odialog-container .owindow.error .button-bar {
+      display: flex;
+      justify-content: flex-end;
+    }
+  }
+
   .modal-container {
     position: fixed;
     top: 0;

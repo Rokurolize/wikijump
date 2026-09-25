@@ -275,50 +275,51 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://api.fonts.coollabs.io/css2?family=Anonymous+Pro:wght@400;700&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "09477c2bc348af6f3a47007206abced04054ba4edd9147444e871cbecba9c587",
+      "candidate_css_sha256": "e27ea1b7a049ec4aabc42b820745e606136144e00bb20f252772c4e19ffc262e",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://api.fonts.coollabs.io/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "09477c2bc348af6f3a47007206abced04054ba4edd9147444e871cbecba9c587",
+      "candidate_css_sha256": "e27ea1b7a049ec4aabc42b820745e606136144e00bb20f252772c4e19ffc262e",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://api.fonts.coollabs.io/css2?family=Berkshire+Swash&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "09477c2bc348af6f3a47007206abced04054ba4edd9147444e871cbecba9c587",
+      "candidate_css_sha256": "e27ea1b7a049ec4aabc42b820745e606136144e00bb20f252772c4e19ffc262e",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Kaisei+Opti:wght@700&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "09477c2bc348af6f3a47007206abced04054ba4edd9147444e871cbecba9c587",
+      "candidate_css_sha256": "e27ea1b7a049ec4aabc42b820745e606136144e00bb20f252772c4e19ffc262e",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-75-r6x7/particles.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "09477c2bc348af6f3a47007206abced04054ba4edd9147444e871cbecba9c587",
+      "candidate_css_sha256": "e27ea1b7a049ec4aabc42b820745e606136144e00bb20f252772c4e19ffc262e",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/1",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "09477c2bc348af6f3a47007206abced04054ba4edd9147444e871cbecba9c587",
+      "candidate_css_sha256": "e27ea1b7a049ec4aabc42b820745e606136144e00bb20f252772c4e19ffc262e",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/2",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "09477c2bc348af6f3a47007206abced04054ba4edd9147444e871cbecba9c587",
+      "candidate_css_sha256": "e27ea1b7a049ec4aabc42b820745e606136144e00bb20f252772c4e19ffc262e",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }

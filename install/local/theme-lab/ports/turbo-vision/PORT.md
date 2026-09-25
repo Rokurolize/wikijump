@@ -16,7 +16,7 @@ The evidence-backed rules in `../TECHNICAL-LOCALIZATION-SPEC.md` apply; the fina
 
 - EN source identity: `c28a37187cdc6bcb768921c8a05f805b18d153a929411db17971dd8e9019f97f`; updated `2026-04-12T05:37:45+00:00`.
 - JP baseline: Previous public JP source SHA-256 325801b1dd4a3d1fb23f216c08a0ea56519d32da234638a8b5022c45a30d982c (updated 2025-03-10T09:59:50+00:00); EN was refreshed to 2026-04-12T05:37:45+00:00.
-- Final candidate source/CSS SHA-256: `c98353315cf9e50d0521e153cf9aacab133573b0a698acafbaaba49a1b60d4e8` / `494266c68fe7b9baf4c66e8529d67c17113fc4c11c9db6a994ea7b90073d1449`.
+- Final candidate source/CSS SHA-256: `2eb8a67aa819a58e0da88dfeecd991eba03a1b3a117aac84c6e7e9b42b3daa10` / `c6977644ef93d658017450c305490a630499f14e7108185e03186445b2d0f5c8`.
 - Offline Theme Lab verdict: `warn`, zero errors/actions, torture `pass`, candidate missing assets `0`, external requests `0`.
 - Candidate page images: `0` rendered, `0` broken; `0` of `0` declared page attachments replayed from verified local bytes.
 - Geometry: desktop, laptop, tablet, and mobile all report zero document overflow.

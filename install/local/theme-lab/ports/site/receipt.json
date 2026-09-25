@@ -80,7 +80,7 @@
   },
   "final_status": "warn-no-actionable-issues",
   "source_candidate_path": "install/local/theme-lab/ports/site/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "266aebc62fbeadb0fe493c6da1a89c8c340f0c30058a527a09ed6571ff02e003",
+  "source_candidate_sha256": "f452b2e23d6b9701d1ce194416af7747382ddd75166a9c743545533342a03a92",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -88,7 +88,7 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/site/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "266aebc62fbeadb0fe493c6da1a89c8c340f0c30058a527a09ed6571ff02e003",
+  "candidate_source_sha256": "f452b2e23d6b9701d1ce194416af7747382ddd75166a9c743545533342a03a92",
   "human_port_candidate_path": "install/local/theme-lab/ports/site/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "266aebc62fbeadb0fe493c6da1a89c8c340f0c30058a527a09ed6571ff02e003",
   "theme_lab_checks": [
@@ -378,8 +378,8 @@
       }
     }
   ],
-  "candidate_preview_sha256": "6dec06fe5bad6428fb7fffcd2490bb405c698597ed0b2bc4cb3da765afd3da7a",
-  "candidate_css_sha256": "d46f1909556ff0994f8a767470348125a0056f2dbb3f5470b525a100072b2aec",
+  "candidate_preview_sha256": "f880941b07b80694d1b82dc5bdff8f583bc9c23fa9e8a6cf5ccaca5fc7173a14",
+  "candidate_css_sha256": "1c69e2059807bc7cf8db8fdbe52b23d58ea3bd490b4a404dcb88636b625cc3c3",
   "final_theme_lab_check": {
     "slug": "theme:site",
     "verdict": "warn",
@@ -1103,6 +1103,9 @@
     "rationale": "Raw full-page RMSE remains diagnostic and intentionally is not called a visual pass: EN and JP fixtures have localized showcase copy/images, native account/navigation/rating chrome, and different page-module repetition. Paired screenshots were reviewed for the theme's intended identity and layout; the raw metrics remain available for review."
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/site/assets.json",
-  "asset_dependency_decision_count": 0,
-  "page_asset_dependency_decisions_path": null
+  "asset_dependency_decision_count": 51,
+  "page_asset_dependency_decisions_path": null,
+  "candidate_base_css_path": "install/local/theme-lab/ports/site/candidate-base.css",
+  "candidate_base_css_sha256": "869c96d0a83b3beef1775abe5c08801a319443a301ea6e8f056b0a38ad9e6833",
+  "candidate_base_css_network_requests": 0
 }

@@ -189,7 +189,7 @@
   "candidate_input": "human-port-candidate.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
-  "candidate_source_hash": "ab1d88cb4c7d3a22ac8d4552b286adb7636ed1333ce1c6f236d6128a9d1fa58c",
+  "candidate_source_hash": "ebd2c7f253ddf69fd9456889a0a88c7539ed358d716865448d70edb5eea14c45",
   "page_assets": [
     {
       "filename": "alt_logo_tyrian.png",
@@ -219,5 +219,6 @@
   "final_verdict": "warn",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/flopstyle-dark/assets.json",
-  "asset_dependency_decision_count": 78
+  "asset_dependency_decision_count": 33,
+  "candidate_css_sha256": "560912abe069b287d25546ce77410dab1b83cdeac90fa5e2e0c8f7f5bbfe7cd1"
 }

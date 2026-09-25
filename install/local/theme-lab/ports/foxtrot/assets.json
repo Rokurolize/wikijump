@@ -356,22 +356,23 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Creepster&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "94b9a50fe643166b147a7ab8d84b58302422755b1a22c7b2ae7f17b1c5d71a28",
+      "candidate_css_sha256": "48945c99fe06c76f94e978c56c96a77623f4b92c58c77c57806fa957af7a3d27",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Russo+One&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "94b9a50fe643166b147a7ab8d84b58302422755b1a22c7b2ae7f17b1c5d71a28",
+      "candidate_css_sha256": "48945c99fe06c76f94e978c56c96a77623f4b92c58c77c57806fa957af7a3d27",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css?family=Saira+Stencil+One&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "94b9a50fe643166b147a7ab8d84b58302422755b1a22c7b2ae7f17b1c5d71a28",
+      "candidate_css_sha256": "48945c99fe06c76f94e978c56c96a77623f4b92c58c77c57806fa957af7a3d27",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }

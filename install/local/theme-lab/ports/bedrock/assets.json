@@ -914,22 +914,23 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://cdn.scpwiki.com/theme/en/basalt/basalt-bedrock-min.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "cd443cdff93d75bafad590ba34c2c617748599fa8482fe76ff1fa472e70784a4",
+      "candidate_css_sha256": "f8e1d5eee4c5928180fbc40f2da0533417a9fc324247bd19c8cb0f16291178fa",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "cd443cdff93d75bafad590ba34c2c617748599fa8482fe76ff1fa472e70784a4",
+      "candidate_css_sha256": "f8e1d5eee4c5928180fbc40f2da0533417a9fc324247bd19c8cb0f16291178fa",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://rsms.me/inter/inter.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "cd443cdff93d75bafad590ba34c2c617748599fa8482fe76ff1fa472e70784a4",
+      "candidate_css_sha256": "f8e1d5eee4c5928180fbc40f2da0533417a9fc324247bd19c8cb0f16291178fa",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }

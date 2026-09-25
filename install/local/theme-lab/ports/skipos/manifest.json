@@ -72,5 +72,37 @@
   "final_verdict": "warn",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/skipos/assets.json",
-  "asset_dependency_decision_count": 0
+  "asset_dependency_decision_count": 100,
+  "interactive_acceptance": {
+    "theme_source": {
+      "path": "upstream-en.wikidot.txt",
+      "active_tags": [
+        "_cc",
+        "theme"
+      ],
+      "evidence": "EN meta.json tags plus the current EN source CSS modules guarded by [[iftags +theme]]; imported CSS bytes already exist in the content-addressed Theme Lab cache",
+      "candidate_tags": [
+        "テーマ"
+      ]
+    },
+    "resolved_theme_css": {
+      "source_path": "upstream-en.wikidot.txt",
+      "source_sha256": "846904b0214ea2a126cccdd984834608efc30236df82ebd3b1b86da36c8969dd",
+      "active_tags": [
+        "_cc",
+        "theme"
+      ],
+      "candidate_source_sha256": "a9a86fc0dc7e97062220e342a6f5e82c326891e8de0f07d42d9ba03195d4ad19",
+      "candidate_active_tags": [
+        "テーマ"
+      ],
+      "css_source_path": "candidate-source.css",
+      "candidate_css_sha256": "73755801789f0c324bc96fa179ff28bed7fd25a75424dabeb6e4a7a025ea2e3f",
+      "asset_receipt_path": "assets.json",
+      "assets": 94,
+      "imports": 6,
+      "missing": 0,
+      "external_requests_during_build": 0
+    }
+  }
 }

@@ -149,9 +149,14 @@ export async function inspectBrokenImages(page) {
   await page.evaluate(async () => {
     const images = [...document.images];
     await Promise.all(images.map((image) => {
-      if (image.complete) return Promise.resolve();
+      // A replaced src can briefly report complete=true for the prior failed
+      // resource. Wait for successful decode whenever dimensions are still
+      // absent; otherwise a valid locally substituted page attachment is
+      // falsely diagnosed as broken before its data URL finishes decoding.
+      if (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) return Promise.resolve();
+      const decoded = typeof image.decode === "function" ? image.decode().catch(() => {}) : Promise.resolve();
       return Promise.race([
-        image.decode().catch(() => {}),
+        decoded,
         new Promise((resolve) => setTimeout(resolve, 1200)),
       ]);
     }));

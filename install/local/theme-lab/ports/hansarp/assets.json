@@ -673,71 +673,72 @@
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Azeret+Mono&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "198d130255f384b1ec6357e5b9220a5c784af537e95a722f664923a74fc4b43d",
+      "candidate_css_sha256": "bc3538f028e67d821fd460103a73cd1addec338ba674cb35a0e2b64e1794cfc7",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "198d130255f384b1ec6357e5b9220a5c784af537e95a722f664923a74fc4b43d",
+      "candidate_css_sha256": "bc3538f028e67d821fd460103a73cd1addec338ba674cb35a0e2b64e1794cfc7",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Klee+One:wght@600&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "198d130255f384b1ec6357e5b9220a5c784af537e95a722f664923a74fc4b43d",
+      "candidate_css_sha256": "bc3538f028e67d821fd460103a73cd1addec338ba674cb35a0e2b64e1794cfc7",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "198d130255f384b1ec6357e5b9220a5c784af537e95a722f664923a74fc4b43d",
+      "candidate_css_sha256": "bc3538f028e67d821fd460103a73cd1addec338ba674cb35a0e2b64e1794cfc7",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Mali:wght@400;700&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "198d130255f384b1ec6357e5b9220a5c784af537e95a722f664923a74fc4b43d",
+      "candidate_css_sha256": "bc3538f028e67d821fd460103a73cd1addec338ba674cb35a0e2b64e1794cfc7",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "198d130255f384b1ec6357e5b9220a5c784af537e95a722f664923a74fc4b43d",
+      "candidate_css_sha256": "bc3538f028e67d821fd460103a73cd1addec338ba674cb35a0e2b64e1794cfc7",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "198d130255f384b1ec6357e5b9220a5c784af537e95a722f664923a74fc4b43d",
+      "candidate_css_sha256": "bc3538f028e67d821fd460103a73cd1addec338ba674cb35a0e2b64e1794cfc7",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "198d130255f384b1ec6357e5b9220a5c784af537e95a722f664923a74fc4b43d",
+      "candidate_css_sha256": "bc3538f028e67d821fd460103a73cd1addec338ba674cb35a0e2b64e1794cfc7",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "198d130255f384b1ec6357e5b9220a5c784af537e95a722f664923a74fc4b43d",
+      "candidate_css_sha256": "bc3538f028e67d821fd460103a73cd1addec338ba674cb35a0e2b64e1794cfc7",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Ahansarp/1",
       "decision": "localize-into-package",
-      "candidate_css_sha256": "198d130255f384b1ec6357e5b9220a5c784af537e95a722f664923a74fc4b43d",
+      "candidate_css_sha256": "bc3538f028e67d821fd460103a73cd1addec338ba674cb35a0e2b64e1794cfc7",
       "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
     }
-  ]
+  ],
+  "candidate_base_css_assets": []
 }
