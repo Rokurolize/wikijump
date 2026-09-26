@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {fileURLToPath} from "node:url";
@@ -35,6 +37,9 @@ test("every frozen surface anchor resolves inside the repository", async () => {
   const fixture = await loadOfflineSurfaceCoverage(fixturePath);
   const result = await verifyCoverageAnchorFiles(fixture, repositoryRoot);
   assert.equal(result.status, "pass", JSON.stringify(result.missing, null, 2));
+  assert.deepEqual(result.unresolvedNamedTests, []);
+  assert.deepEqual(result.unresolvedCommands, []);
+  assert.deepEqual(result.unresolvedAnchors, []);
   assert.deepEqual(result.rowsWithoutExecutableOwner, []);
   assert.ok(result.checked > 100, `expected broad executable coverage, got ${result.checked}`);
 });
@@ -80,6 +85,108 @@ test("a bogus test name in a valid test file rejects a row with no other owner",
   );
 });
 
+
+test("source fragments cannot masquerade as executable named-test owners", async () => {
+  const anchor = "deepwell/src/services/filter/structs.rs#impl";
+  const result = await verifyCoverageAnchorFiles(
+    {rows: [{surface_id: "surface:99999994", anchors: [anchor]}]},
+    repositoryRoot,
+  );
+  assert.equal(result.status, "fail");
+  assert.deepEqual(result.unresolvedNamedTests.map((entry) => entry.anchor), [anchor]);
+  assert.equal(result.rowsWithoutExecutableOwner.length, 1);
+});
+
+test("a bogus named claim still fails when a bare test file also owns the row", async () => {
+  const bogus = "deepwell/src/services/filter/structs.rs#definitely_not_a_test";
+  const result = await verifyCoverageAnchorFiles(
+    {
+      rows: [
+        {
+          surface_id: "surface:99999993",
+          anchors: [bogus, "deepwell/src/services/filter/structs.rs"],
+        },
+      ],
+    },
+    repositoryRoot,
+  );
+  assert.equal(result.status, "fail");
+  assert.deepEqual(result.unresolvedNamedTests.map((entry) => entry.anchor), [bogus]);
+  assert.deepEqual(result.rowsWithoutExecutableOwner, []);
+});
+
+test("a real test name with an invented qualified suffix is rejected", async () => {
+  const anchor =
+    "deepwell/src/services/filter/structs.rs#filter_class_names_and_option_conversion_are_stable::bogus";
+  const result = await verifyCoverageAnchorFiles(
+    {rows: [{surface_id: "surface:99999992", anchors: [anchor]}]},
+    repositoryRoot,
+  );
+  assert.equal(result.status, "fail");
+  assert.deepEqual(result.unresolvedNamedTests.map((entry) => entry.anchor), [anchor]);
+});
+
+test("an unscoped cargo filter does not establish executable ownership", async () => {
+  const result = await verifyCoverageAnchorFiles(
+    {
+      rows: [
+        {
+          surface_id: "surface:99999991",
+          anchors: ["cargo test definitely_nonexistent_test"],
+        },
+      ],
+    },
+    repositoryRoot,
+  );
+  assert.equal(result.status, "fail");
+  assert.equal(result.rowsWithoutExecutableOwner.length, 1);
+});
+
+test("Rust test ownership follows declared modules instead of neighboring files", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-coverage-modules-"));
+  t.after(() => fs.rm(root, {recursive: true, force: true}));
+  await fs.mkdir(path.join(root, "deepwell/tests/root"), {recursive: true});
+  await fs.writeFile(
+    path.join(root, "deepwell/tests/root.rs"),
+    '#[path = "root/declared.rs"]\nmod declared;\n',
+  );
+  await fs.writeFile(
+    path.join(root, "deepwell/tests/root/declared.rs"),
+    "#[test]\nfn declared_case() {}\n",
+  );
+  await fs.writeFile(
+    path.join(root, "deepwell/tests/root/neighbor.rs"),
+    "#[test]\nfn neighboring_but_unreachable_case() {}\n",
+  );
+
+  const declared = await verifyCoverageAnchorFiles(
+    {
+      rows: [
+        {
+          surface_id: "surface:99999990",
+          anchors: ["deepwell/tests/root.rs#declared_case"],
+        },
+      ],
+    },
+    root,
+  );
+  assert.equal(declared.status, "pass");
+
+  const neighbor = await verifyCoverageAnchorFiles(
+    {
+      rows: [
+        {
+          surface_id: "surface:99999989",
+          anchors: ["deepwell/tests/root.rs#neighboring_but_unreachable_case"],
+        },
+      ],
+    },
+    root,
+  );
+  assert.equal(neighbor.status, "fail");
+  assert.equal(neighbor.unresolvedNamedTests.length, 1);
+});
+
 test("declared-test extraction is not desynchronized by regex literals that contain quotes", () => {
   // A regex such as /'nonce-([^']+)'/u contains quote characters that would
   // otherwise open a string state and hide every later test declaration.
@@ -93,6 +200,20 @@ test("declared-test extraction is not desynchronized by regex literals that cont
   ].join("\n");
   const declared = extractDeclaredPublicTests("example.test.js", source);
   assert.deepEqual([...declared].sort(), ["after regex", "before regex"]);
+});
+
+test("declared-test extraction recognizes regex literals after return without treating division as regex", () => {
+  const afterReturn = extractDeclaredPublicTests(
+    "example.test.js",
+    'function pattern() { return /\'/; }\ntest("after return regex", () => {});',
+  );
+  assert.deepEqual([...afterReturn], ["after return regex"]);
+
+  const afterDivision = extractDeclaredPublicTests(
+    "example.test.js",
+    'const quotient = left / right;\ntest("after division", () => {});',
+  );
+  assert.deepEqual([...afterDivision], ["after division"]);
 });
 
 test("campaign-only acceptance is no longer represented only by WJLab artifacts", async () => {

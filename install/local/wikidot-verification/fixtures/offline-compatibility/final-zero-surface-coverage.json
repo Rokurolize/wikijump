@@ -230,11 +230,9 @@
         "deepwell/tests/page_template_assignment.rs#page_view_exposes_category_data_form_definition_in_template_order",
         "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_checkbox_and_wiki_contract",
         "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_text_and_select_control_contract",
-        "framerail/tests/data-form-create-flow.spec.ts#data-form create and edit browser flow",
         "framerail/tests/data-form-create-flow.spec.ts#data-form create flow renders controls and stores Wikidot source",
         "framerail/tests/data-form-create-flow.spec.ts#data-form text and select controls match live validation and storage",
-        "framerail/tests/data-form-create-flow.spec.ts#pathological data-form match patterns fail closed without blocking the editor",
-        "framerail/tests/wikidot-data-form.test.js#data-form source serialization unit tests"
+        "framerail/tests/data-form-create-flow.spec.ts#pathological data-form match patterns fail closed without blocking the editor"
       ],
       "migrated_from_campaign_only": false
     },
@@ -313,8 +311,7 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal",
-        "install/local/wikidot-verification/tests/issue1391-data-form-ui-era-artifact.test.mjs#issue 1391 retained lifecycle evidence"
+        "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal"
       ],
       "migrated_from_campaign_only": false
     },
@@ -376,8 +373,7 @@
         "deepwell/src/services/data_form.rs#file_field_exposes_only_the_observed_editor_boundary",
         "deepwell/tests/page_template_assignment.rs#page_view_exposes_file_data_form_create_control_without_write_lifecycle",
         "framerail/tests/wikidot-data-form-scalar-fields.test.js#file field exposes only Wikidot's observed hidden upload-state control",
-        "install/local/wikidot-verification/tests/data-form-file-field-artifact.test.mjs#file-field artifact has the exact public evidence identity and no secret material",
-        "install/local/wikidot-verification/tests/data-form-file-field-artifact.test.mjs#retained file-field live artifact boundary"
+        "install/local/wikidot-verification/tests/data-form-file-field-artifact.test.mjs#file-field artifact has the exact public evidence identity and no secret material"
       ],
       "migrated_from_campaign_only": false
     },
@@ -400,9 +396,7 @@
         "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_hidden_password_static_url_scalar_contract",
         "framerail/tests/wikidot-data-form-scalar-fields.test.js#hidden-configured-value-create ignores injected submissions",
         "framerail/tests/wikidot-data-form-scalar-fields.test.js#hidden-configured-value-edit-reload remains configured and has no control",
-        "install/local/wikidot-verification/tests/data-form-scalar-fields-artifact.test.mjs#hidden generated forms declare no control, fragment, or form field",
-        "install/local/wikidot-verification/tests/data-form-scalar-fields-artifact.test.mjs#hidden has two positive and two negative live controls",
-        "install/local/wikidot-verification/tests/data-form-scalar-fields-artifact.test.mjs#hidden records create, storage, display, edit, reload, and cleanup"
+        "install/local/wikidot-verification/tests/data-form-scalar-fields-artifact.test.mjs#hidden generated forms declare no control, fragment, or form field"
       ],
       "migrated_from_campaign_only": false
     },
@@ -464,8 +458,7 @@
         "deepwell/src/services/data_form.rs#file_field_exposes_only_the_observed_editor_boundary",
         "deepwell/tests/page_template_assignment.rs#page_view_exposes_file_data_form_create_control_without_write_lifecycle",
         "framerail/tests/wikidot-data-form-scalar-fields.test.js#file field exposes only Wikidot's observed hidden upload-state control",
-        "install/local/wikidot-verification/tests/data-form-images-links-youtube-artifact.test.mjs#media and links artifact has the exact independent feature contract",
-        "install/local/wikidot-verification/tests/data-form-images-links-youtube-artifact.test.mjs#retained images live artifact boundary"
+        "install/local/wikidot-verification/tests/data-form-images-links-youtube-artifact.test.mjs#media and links artifact has the exact independent feature contract"
       ],
       "migrated_from_campaign_only": false
     },
@@ -2410,9 +2403,7 @@
         "deepwell/src/services/render/site_changes.rs#tests::site_changes_flags_derive_from_revision_authority",
         "deepwell/src/services/render/site_changes.rs#tests::site_changes_options_accept_only_the_observed_read_filters",
         "deepwell/src/services/render/url_arguments.rs#tests::actor_sensitive_page_graph_modules_require_runtime_rendering",
-        "deepwell/tests/page.rs#sitechanges_ajax_endpoint_filters_before_pagination_and_matches_observed_reads",
         "deepwell/tests/page.rs#sitechanges_default_snapshot_filters_before_the_initial_page_limit",
-        "framerail/tests/ajax-module-connector.test.js#dispatches the sealed SiteChanges read matrix with Wikidot metadata",
         "framerail/tests/ajax-module-connector.test.js#fails closed for unobserved SiteChanges shapes before Deepwell"
       ],
       "migrated_from_campaign_only": false
@@ -2512,9 +2503,7 @@
         "framerail/tests/wikidot-user-info-account-label-public-boundary.test.js#UserInfo keeps an imported Pro profile without inventing an account-type label",
         "framerail/tests/wikidot-user-info-account-label-public-boundary.test.js#UserInfo omits unobserved imported karma labels",
         "framerail/tests/wikidot-user-info-account-label-public-boundary.test.js#UserInfo projects imported free accounts and the observed none/high karma labels",
-        "framerail/tests/wikidot-user-info-target-route.test.js#UserInfo calls the typed user view with the route target and no session",
-        "framerail/tests/wikidot-user-info-target-route.test.js#UserInfo target -1 stays HTTP 200 with the exact missing body data",
-        "framerail/tests/wikidot-user-info-target-route.test.js#UserInfo target 0 stays HTTP 200 with the exact missing body data"
+        "framerail/tests/wikidot-user-info-target-route.test.js#UserInfo calls the typed user view with the route target and no session"
       ],
       "migrated_from_campaign_only": false
     },
@@ -10240,7 +10229,6 @@
       "anchors": [
         "deepwell/src/services/view/redirect.rs::noredirect_notice_escapes_destination_text",
         "deepwell/tests/page.rs::mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views",
-        "deepwell/tests/page.rs::simpletodo_and_sendinvitations_modules_match_live_preview_and_page_view_basics",
         "framerail/tests/new-page-helper.spec.ts",
         "install/local/wikidot-verification/tests/open43-a1037-forms-candidate-case-set.test.mjs",
         "install/local/wikidot-verification/tests/open43-mailform-candidate-case-set.test.mjs"
@@ -10264,7 +10252,6 @@
       "anchors": [
         "deepwell/src/services/view/redirect.rs::noredirect_notice_escapes_destination_text",
         "deepwell/tests/page.rs::mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views",
-        "deepwell/tests/page.rs::simpletodo_and_sendinvitations_modules_match_live_preview_and_page_view_basics",
         "framerail/tests/new-page-helper.spec.ts",
         "install/local/wikidot-verification/tests/open43-a1037-forms-candidate-case-set.test.mjs",
         "install/local/wikidot-verification/tests/open43-mailform-candidate-case-set.test.mjs"
@@ -10288,7 +10275,6 @@
       "anchors": [
         "deepwell/src/services/view/redirect.rs::noredirect_notice_escapes_destination_text",
         "deepwell/tests/page.rs::mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views",
-        "deepwell/tests/page.rs::simpletodo_and_sendinvitations_modules_match_live_preview_and_page_view_basics",
         "framerail/tests/new-page-helper.spec.ts",
         "install/local/wikidot-verification/tests/open43-a1037-forms-candidate-case-set.test.mjs",
         "install/local/wikidot-verification/tests/open43-mailform-candidate-case-set.test.mjs"
@@ -10330,7 +10316,6 @@
       "anchors": [
         "deepwell/src/services/view/redirect.rs::noredirect_notice_escapes_destination_text",
         "deepwell/tests/page.rs::mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views",
-        "deepwell/tests/page.rs::simpletodo_and_sendinvitations_modules_match_live_preview_and_page_view_basics",
         "framerail/tests/new-page-helper.spec.ts",
         "install/local/wikidot-verification/tests/open43-a1037-forms-candidate-case-set.test.mjs",
         "install/local/wikidot-verification/tests/open43-mailform-candidate-case-set.test.mjs"
@@ -10373,7 +10358,6 @@
       "anchors": [
         "deepwell/src/services/view/redirect.rs::noredirect_notice_escapes_destination_text",
         "deepwell/tests/page.rs::mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views",
-        "deepwell/tests/page.rs::simpletodo_and_sendinvitations_modules_match_live_preview_and_page_view_basics",
         "framerail/tests/new-page-helper.spec.ts",
         "install/local/wikidot-verification/tests/open43-a1037-forms-candidate-case-set.test.mjs",
         "install/local/wikidot-verification/tests/open43-mailform-candidate-case-set.test.mjs"
@@ -10394,7 +10378,6 @@
         "products"
       ],
       "anchors": [
-        "deepwell/src/services/view/redirect.rs#tests",
         "deepwell/tests/page.rs#imported_redirect_noredirect_renders_live_error_block",
         "framerail/tests/page-redirect.test.ts"
       ],
@@ -10435,7 +10418,6 @@
       "anchors": [
         "deepwell/src/services/view/redirect.rs::noredirect_notice_escapes_destination_text",
         "deepwell/tests/page.rs::mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views",
-        "deepwell/tests/page.rs::simpletodo_and_sendinvitations_modules_match_live_preview_and_page_view_basics",
         "framerail/tests/new-page-helper.spec.ts",
         "install/local/wikidot-verification/tests/open43-a1037-forms-candidate-case-set.test.mjs",
         "install/local/wikidot-verification/tests/open43-mailform-candidate-case-set.test.mjs"
@@ -11028,13 +11010,6 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/src/api.rs#build_server_state_without_workers_with_job_queue_namespace",
-        "deepwell/src/services/context.rs#ServiceContext::defer_public_content_cache_invalidate_site",
-        "deepwell/src/services/context.rs#ServiceContext::defer_rerender_page",
-        "deepwell/src/services/outdate.rs#OutdateService::outdate",
-        "deepwell/src/services/page_revision/service.rs#PageRevisionService::rerender_inner",
-        "deepwell/src/services/render/runtime.rs#RenderRuntime::fetch_include_source_from_site",
-        "deepwell/tests/job_queue.rs#component_css_save_dispatches_one_post_commit_dependent_rerender",
         "deepwell/tests/job_queue.rs#component_css_save_refreshes_direct_dependent_before_rpc_returns",
         "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
         "deepwell/tests/page.rs#component_css_include_visibility_and_lifecycle_matrix",
@@ -11057,13 +11032,6 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/src/api.rs#build_server_state_without_workers_with_job_queue_namespace",
-        "deepwell/src/services/context.rs#ServiceContext::defer_public_content_cache_invalidate_site",
-        "deepwell/src/services/context.rs#ServiceContext::defer_rerender_page",
-        "deepwell/src/services/outdate.rs#OutdateService::outdate",
-        "deepwell/src/services/page_revision/service.rs#PageRevisionService::rerender_inner",
-        "deepwell/src/services/render/runtime.rs#RenderRuntime::fetch_include_source_from_site",
-        "deepwell/tests/job_queue.rs#component_css_save_dispatches_one_post_commit_dependent_rerender",
         "deepwell/tests/job_queue.rs#component_css_save_refreshes_direct_dependent_before_rpc_returns",
         "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
         "deepwell/tests/page.rs#component_css_include_visibility_and_lifecycle_matrix",
@@ -11086,13 +11054,6 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/src/api.rs#build_server_state_without_workers_with_job_queue_namespace",
-        "deepwell/src/services/context.rs#ServiceContext::defer_public_content_cache_invalidate_site",
-        "deepwell/src/services/context.rs#ServiceContext::defer_rerender_page",
-        "deepwell/src/services/outdate.rs#OutdateService::outdate",
-        "deepwell/src/services/page_revision/service.rs#PageRevisionService::rerender_inner",
-        "deepwell/src/services/render/runtime.rs#RenderRuntime::fetch_include_source_from_site",
-        "deepwell/tests/job_queue.rs#component_css_save_dispatches_one_post_commit_dependent_rerender",
         "deepwell/tests/job_queue.rs#component_css_save_refreshes_direct_dependent_before_rpc_returns",
         "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
         "deepwell/tests/page.rs#component_css_include_visibility_and_lifecycle_matrix",
@@ -11169,13 +11130,6 @@
         "products"
       ],
       "anchors": [
-        "deepwell/src/api.rs#build_server_state_without_workers_with_job_queue_namespace",
-        "deepwell/src/services/context.rs#ServiceContext::defer_public_content_cache_invalidate_site",
-        "deepwell/src/services/context.rs#ServiceContext::defer_rerender_page",
-        "deepwell/src/services/outdate.rs#OutdateService::outdate",
-        "deepwell/src/services/page_revision/service.rs#PageRevisionService::rerender_inner",
-        "deepwell/src/services/render/runtime.rs#RenderRuntime::fetch_include_source_from_site",
-        "deepwell/tests/job_queue.rs#component_css_save_dispatches_one_post_commit_dependent_rerender",
         "deepwell/tests/job_queue.rs#component_css_save_refreshes_direct_dependent_before_rpc_returns",
         "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
         "deepwell/tests/page.rs#component_css_include_visibility_and_lifecycle_matrix"
@@ -11251,7 +11205,6 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/src/services/view/service.rs#ViewService::get_wikidot_breadcrumbs",
         "deepwell/tests/authoring_boundaries.rs#imported_breadcrumbs_fail_closed_at_relation_boundaries",
         "deepwell/tests/authoring_boundaries.rs#revision_diff_fails_closed_across_every_source_boundary",
         "deepwell/tests/page.rs#imported_breadcrumbs_hide_private_and_deleted_ancestors",
@@ -11298,7 +11251,6 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/src/services/view/service.rs#ViewService::get_wikidot_breadcrumbs",
         "deepwell/tests/authoring_boundaries.rs#imported_breadcrumbs_fail_closed_at_relation_boundaries",
         "deepwell/tests/authoring_boundaries.rs#revision_diff_fails_closed_across_every_source_boundary",
         "deepwell/tests/page.rs#imported_breadcrumbs_hide_private_and_deleted_ancestors",
@@ -11326,7 +11278,6 @@
         "products"
       ],
       "anchors": [
-        "deepwell/src/services/view/service.rs#ViewService::get_wikidot_breadcrumbs",
         "deepwell/tests/authoring_boundaries.rs#imported_breadcrumbs_fail_closed_at_relation_boundaries",
         "deepwell/tests/authoring_boundaries.rs#revision_diff_fails_closed_across_every_source_boundary",
         "deepwell/tests/page.rs#imported_breadcrumbs_hide_private_and_deleted_ancestors",
@@ -11353,7 +11304,6 @@
         "products"
       ],
       "anchors": [
-        "deepwell/src/services/view/service.rs#ViewService::get_wikidot_breadcrumbs",
         "deepwell/tests/authoring_boundaries.rs#imported_breadcrumbs_fail_closed_at_relation_boundaries",
         "deepwell/tests/authoring_boundaries.rs#revision_diff_fails_closed_across_every_source_boundary",
         "deepwell/tests/page.rs#imported_breadcrumbs_hide_private_and_deleted_ancestors",
@@ -11419,7 +11369,6 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/src/services/view/service.rs#ViewService::get_wikidot_breadcrumbs",
         "deepwell/tests/authoring_boundaries.rs#imported_breadcrumbs_fail_closed_at_relation_boundaries",
         "deepwell/tests/authoring_boundaries.rs#revision_diff_fails_closed_across_every_source_boundary",
         "deepwell/tests/page.rs#imported_breadcrumbs_hide_private_and_deleted_ancestors",
@@ -12448,7 +12397,6 @@
       "anchors": [
         "deepwell/tests/media.rs",
         "deepwell/tests/media.rs::authored_embedvideo_marker_cannot_forge_a_typed_requirement",
-        "deepwell/tests/media.rs::embedvideo_preview_and_saved_page_share_render_identity",
         "deepwell/tests/media.rs::embedvideo_preview_fails_closed_for_unsupported_media",
         "deepwell/tests/media.rs::embedvideo_preview_resolves_only_allowlisted_typed_media",
         "deepwell/tests/media.rs::literal_and_generated_owners_never_activate_embedvideo",
@@ -12510,7 +12458,6 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/media.rs#embedvideo_preview_and_saved_page_share_render_identity",
         "deepwell/tests/page.rs#renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
       ],
       "migrated_from_campaign_only": false
@@ -12749,11 +12696,9 @@
         "deepwell/tests/page.rs::file_mutations_require_parent_page_edit_permission",
         "framerail/tests/page-file-client-ip.test.js",
         "framerail/tests/page-file-upload-lifecycle.test.js",
-        "framerail/tests/page-file-upload-lifecycle.test.js records the internal Deepwell caller order, and framerail/tests/presigned-upload.test.js proves file commit cannot run before an accepted PUT.",
         "framerail/tests/presigned-upload.test.js",
         "framerail/tests/xmlrpc-api.spec.ts",
         "framerail/tests/xmlrpc-api.spec.ts::XML-RPC endpoint saves and reads small page attachments",
-        "framerail/tests/xmlrpc-deepwell-fixture/file-read-handler.js",
         "framerail/tests/xmlrpc-file-upload-lifecycle.test.js",
         "framerail/tests/xmlrpc-file-upload-lifecycle.test.js::XML-RPC file save preserves its commit fault when pending cleanup also fails",
         "install/local/wikidot-verification/tests/corpus-import-attachments.test.mjs",
@@ -12784,11 +12729,9 @@
         "deepwell/tests/page.rs::file_mutations_require_parent_page_edit_permission",
         "framerail/tests/page-file-client-ip.test.js",
         "framerail/tests/page-file-upload-lifecycle.test.js",
-        "framerail/tests/page-file-upload-lifecycle.test.js records the internal Deepwell caller order, and framerail/tests/presigned-upload.test.js proves file commit cannot run before an accepted PUT.",
         "framerail/tests/presigned-upload.test.js",
         "framerail/tests/xmlrpc-api.spec.ts",
         "framerail/tests/xmlrpc-api.spec.ts::XML-RPC endpoint saves and reads small page attachments",
-        "framerail/tests/xmlrpc-deepwell-fixture/file-read-handler.js",
         "framerail/tests/xmlrpc-file-upload-lifecycle.test.js",
         "framerail/tests/xmlrpc-file-upload-lifecycle.test.js::XML-RPC file save preserves its commit fault when pending cleanup also fails",
         "install/local/wikidot-verification/tests/corpus-import-attachments.test.mjs",
@@ -12864,11 +12807,9 @@
         "deepwell/tests/page.rs::file_mutations_require_parent_page_edit_permission",
         "framerail/tests/page-file-client-ip.test.js",
         "framerail/tests/page-file-upload-lifecycle.test.js",
-        "framerail/tests/page-file-upload-lifecycle.test.js records the internal Deepwell caller order, and framerail/tests/presigned-upload.test.js proves file commit cannot run before an accepted PUT.",
         "framerail/tests/presigned-upload.test.js",
         "framerail/tests/xmlrpc-api.spec.ts",
         "framerail/tests/xmlrpc-api.spec.ts::XML-RPC endpoint saves and reads small page attachments",
-        "framerail/tests/xmlrpc-deepwell-fixture/file-read-handler.js",
         "framerail/tests/xmlrpc-file-upload-lifecycle.test.js",
         "framerail/tests/xmlrpc-file-upload-lifecycle.test.js::XML-RPC file save preserves its commit fault when pending cleanup also fails",
         "install/local/wikidot-verification/tests/corpus-import-attachments.test.mjs",
@@ -12916,7 +12857,6 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/src/services/site/service.rs#SiteService::update",
         "deepwell/tests/site.rs::site_update_restricts_icon_sources_to_site_owned_routes",
         "framerail/tests/site-icon-source.test.js::imported site icons redirect only to site-owned Wikidot resources",
         "framerail/tests/site-icon-source.test.js::local site icons redirect only to same-origin file routes",
@@ -13001,7 +12941,6 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/src/services/site/service.rs#SiteService::update",
         "deepwell/tests/site.rs::site_update_restricts_icon_sources_to_site_owned_routes",
         "framerail/tests/site-icon-source.test.js::imported site icons redirect only to site-owned Wikidot resources",
         "framerail/tests/site-icon-source.test.js::local site icons redirect only to same-origin file routes",
@@ -13050,14 +12989,7 @@
       ],
       "anchors": [
         "deepwell/tests/media.rs",
-        "deepwell/tests/media.rs::current_ftml_pin_preserves_promoted_image_dom::issue-776-g06-f-equals-image",
-        "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m776-float-lookalike",
-        "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m776-nbsp",
-        "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m776-space-one",
-        "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m776-space-two",
-        "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m776-tab",
         "deepwell/tests/media.rs::m776_m806_image_argument_boundary_matches_retained_live_preview",
-        "deepwell/tests/media.rs::source_less_local_images_keep_original_and_resized_asset_identities::issue-776-source-less-floating-image",
         "install/local/wikidot-verification/tests/m776-m806-image-argument-boundary-evidence.test.mjs",
         "install/local/wikidot-verification/tests/open43-media-browser-candidate.test.mjs",
         "wws/src/handler/resized_image.rs::tests::public_route_caps_concurrent_decode_work",
@@ -13081,7 +13013,7 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/media.rs#current_ftml_pin_preserves_promoted_image_dom::issue-776-g06-f-equals-image"
+        "deepwell/tests/media.rs#current_ftml_pin_preserves_promoted_image_dom"
       ],
       "migrated_from_campaign_only": false
     },
@@ -13099,11 +13031,7 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/media.rs#image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m776-float-lookalike",
-        "deepwell/tests/media.rs#image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m776-nbsp",
-        "deepwell/tests/media.rs#image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m776-space-one",
-        "deepwell/tests/media.rs#image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m776-space-two",
-        "deepwell/tests/media.rs#image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m776-tab"
+        "deepwell/tests/media.rs#image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page"
       ],
       "migrated_from_campaign_only": false
     },
@@ -13121,7 +13049,6 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/media.rs#source_less_local_images_keep_original_and_resized_asset_identities::issue-776-source-less-floating-image",
         "wws/src/handler/resized_image.rs#tests::public_route_caps_concurrent_decode_work",
         "wws/src/handler/resized_image.rs#tests::public_route_checks_acl_before_file_details_and_rejects_unsafe_inputs",
         "wws/src/handler/resized_image.rs#tests::public_route_tracks_latest_revision_and_fails_closed_after_rename_or_delete",
@@ -13165,15 +13092,7 @@
       ],
       "anchors": [
         "deepwell/tests/media.rs",
-        "deepwell/tests/media.rs::current_ftml_pin_preserves_promoted_image_dom::issue-806-g61-centered-image-multi-space",
-        "deepwell/tests/media.rs::current_ftml_pin_preserves_promoted_image_dom::issue-806-g61-centered-image-one-space",
-        "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m806-lookalike",
-        "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m806-nbsp",
-        "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m806-space-one",
-        "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m806-space-two",
-        "deepwell/tests/media.rs::image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m806-tab",
         "deepwell/tests/media.rs::m776_m806_image_argument_boundary_matches_retained_live_preview",
-        "deepwell/tests/media.rs::source_less_local_images_keep_original_and_resized_asset_identities::issue-806-source-less-centered-image",
         "install/local/wikidot-verification/tests/m776-m806-image-argument-boundary-evidence.test.mjs",
         "install/local/wikidot-verification/tests/open43-media-browser-candidate.test.mjs",
         "wws/src/handler/resized_image.rs::tests::public_route_caps_concurrent_decode_work",
@@ -13197,8 +13116,7 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/media.rs#current_ftml_pin_preserves_promoted_image_dom::issue-806-g61-centered-image-multi-space",
-        "deepwell/tests/media.rs#current_ftml_pin_preserves_promoted_image_dom::issue-806-g61-centered-image-one-space"
+        "deepwell/tests/media.rs#current_ftml_pin_preserves_promoted_image_dom"
       ],
       "migrated_from_campaign_only": false
     },
@@ -13216,11 +13134,7 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/media.rs#image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m806-lookalike",
-        "deepwell/tests/media.rs#image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m806-nbsp",
-        "deepwell/tests/media.rs#image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m806-space-one",
-        "deepwell/tests/media.rs#image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m806-space-two",
-        "deepwell/tests/media.rs#image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page::m806-tab"
+        "deepwell/tests/media.rs#image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page"
       ],
       "migrated_from_campaign_only": false
     },
@@ -13238,7 +13152,6 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/media.rs#source_less_local_images_keep_original_and_resized_asset_identities::issue-806-source-less-centered-image",
         "wws/src/handler/resized_image.rs#tests::public_route_caps_concurrent_decode_work",
         "wws/src/handler/resized_image.rs#tests::public_route_checks_acl_before_file_details_and_rejects_unsafe_inputs",
         "wws/src/handler/resized_image.rs#tests::public_route_tracks_latest_revision_and_fails_closed_after_rename_or_delete",
@@ -13281,7 +13194,6 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/src/services/render/ftml_user_info.rs#tests",
         "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries",
         "install/local/wikidot-verification/tests/open43-q1026-user-identity-candidate-case-set.test.mjs"
       ],
@@ -13302,7 +13214,6 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/src/services/render/ftml_user_info.rs#tests",
         "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries",
         "install/local/wikidot-verification/tests/open43-q1026-user-identity-candidate-case-set.test.mjs"
       ],
@@ -13323,7 +13234,6 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/src/services/render/ftml_user_info.rs#tests",
         "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries",
         "install/local/wikidot-verification/tests/open43-q1026-user-identity-candidate-case-set.test.mjs"
       ],
@@ -13343,7 +13253,6 @@
         "products"
       ],
       "anchors": [
-        "deepwell/src/services/render/ftml_user_info.rs#tests",
         "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries"
       ],
       "migrated_from_campaign_only": true
@@ -13362,7 +13271,6 @@
         "products"
       ],
       "anchors": [
-        "deepwell/src/services/render/ftml_user_info.rs#tests",
         "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries"
       ],
       "migrated_from_campaign_only": false
@@ -13520,7 +13428,6 @@
       ],
       "anchors": [
         "deepwell/src/services/render/categories.rs::tests::category_page_list_matches_wikidot_shape_and_escapes_values",
-        "framerail/tests/ajax-module-connector.test.js#WikiCategoriesPageListModule",
         "framerail/tests/wikidot-categories.test.js",
         "install/local/wikidot-verification/tests/open43-categories-candidate-case-set.test.mjs"
       ],
@@ -13542,7 +13449,6 @@
       ],
       "anchors": [
         "deepwell/src/services/render/categories.rs#tests::category_page_list_matches_wikidot_shape_and_escapes_values",
-        "framerail/tests/ajax-module-connector.test.js#WikiCategoriesPageListModule",
         "framerail/tests/wikidot-categories.test.js",
         "install/local/wikidot-verification/tests/open43-categories-candidate-case-set.test.mjs"
       ],
@@ -13562,7 +13468,6 @@
         "products"
       ],
       "anchors": [
-        "deepwell/src/services/render/categories.rs#tests",
         "deepwell/tests/page.rs#categories_module_lists_active_categories_and_honors_include_hidden"
       ],
       "migrated_from_campaign_only": false
@@ -13582,7 +13487,6 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/src/services/render/user_directory.rs#tests",
         "deepwell/tests/page.rs#listusers_module_matches_live_preview_and_runtime_viewer",
         "deepwell/tests/page.rs#members_list_ajax_paginates_only_filtered_site_identities",
         "deepwell/tests/page.rs#members_module_queries_only_visible_site_members_and_roles",
@@ -13608,7 +13512,6 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/src/services/render/user_directory.rs#tests",
         "deepwell/tests/page.rs#listusers_module_matches_live_preview_and_runtime_viewer",
         "deepwell/tests/page.rs#members_list_ajax_paginates_only_filtered_site_identities",
         "deepwell/tests/page.rs#members_module_queries_only_visible_site_members_and_roles",
@@ -13652,7 +13555,6 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/src/services/render/user_directory.rs#tests",
         "deepwell/tests/page.rs#listusers_module_matches_live_preview_and_runtime_viewer",
         "deepwell/tests/page.rs#members_list_ajax_paginates_only_filtered_site_identities",
         "deepwell/tests/page.rs#members_module_queries_only_visible_site_members_and_roles",
@@ -13697,7 +13599,6 @@
         "products"
       ],
       "anchors": [
-        "deepwell/src/services/render/user_directory.rs#tests",
         "deepwell/tests/page.rs#members_module_queries_only_visible_site_members_and_roles"
       ],
       "migrated_from_campaign_only": false
@@ -13716,7 +13617,6 @@
         "products"
       ],
       "anchors": [
-        "deepwell/src/services/render/user_directory.rs#tests",
         "deepwell/tests/page.rs#listusers_module_matches_live_preview_and_runtime_viewer",
         "deepwell/tests/page.rs#members_list_ajax_paginates_only_filtered_site_identities",
         "deepwell/tests/page.rs#members_module_queries_only_visible_site_members_and_roles",
@@ -14307,8 +14207,6 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/page.rs#sitechanges_ajax_endpoint_filters_before_pagination_and_matches_observed_reads",
-        "framerail/tests/ajax-module-connector.test.js#dispatches the sealed SiteChanges read matrix with Wikidot metadata",
         "framerail/tests/ajax-module-connector.test.js#fails closed for unobserved SiteChanges shapes before Deepwell"
       ],
       "migrated_from_campaign_only": false
@@ -14364,7 +14262,6 @@
         "products"
       ],
       "anchors": [
-        "deepwell/src/services/render/search_feed.rs#tests",
         "deepwell/tests/page.rs#search_and_feed_modules_match_live_preview_and_page_view_boundaries"
       ],
       "migrated_from_campaign_only": false
@@ -14383,7 +14280,6 @@
         "products"
       ],
       "anchors": [
-        "deepwell/src/services/render/search_feed.rs#tests",
         "deepwell/tests/page.rs#search_and_feed_modules_match_live_preview_and_page_view_boundaries"
       ],
       "migrated_from_campaign_only": false
@@ -14403,7 +14299,6 @@
         "verification"
       ],
       "anchors": [
-        "deepwell/src/services/render/search_feed.rs#tests",
         "deepwell/src/services/render/search_feed.rs#tests::distinguishes_feed_source_recognition_from_missing_source",
         "deepwell/src/services/render/search_feed.rs#tests::feed_inaccessible_source_error_escapes_the_source_url",
         "deepwell/src/services/render/search_feed.rs#tests::renders_the_live_search_unavailable_contract",
@@ -15182,8 +15077,6 @@
         "deepwell/tests/site.rs::site_settings_update_round_trips_and_rejects_stale_revision",
         "deepwell/tests/site.rs::site_update_requires_site_edit_permission",
         "framerail/tests/deployment-environment.test.js::defaults CSRF origin checks from deployment environment",
-        "framerail/tests/site-settings-foundation.test.js::renders the seven general controls in captured order and keeps layout separate",
-        "framerail/tests/site-settings-foundation.test.js::serves the observed legacy admin path through the same SSR and action seam",
         "framerail/tests/site-settings-foundation.test.js::uses the captured Wiki Settings language values in source order",
         "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs",
         "install/local/wikidot-verification/tests/open43-settings-browser-candidate-case-set.test.mjs",
@@ -15209,8 +15102,6 @@
         "deepwell/tests/site.rs::site_settings_update_round_trips_and_rejects_stale_revision",
         "deepwell/tests/site.rs::site_update_requires_site_edit_permission",
         "framerail/tests/deployment-environment.test.js::defaults CSRF origin checks from deployment environment",
-        "framerail/tests/site-settings-foundation.test.js::renders the seven general controls in captured order and keeps layout separate",
-        "framerail/tests/site-settings-foundation.test.js::serves the observed legacy admin path through the same SSR and action seam",
         "framerail/tests/site-settings-foundation.test.js::uses the captured Wiki Settings language values in source order",
         "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs",
         "install/local/wikidot-verification/tests/open43-settings-browser-candidate-case-set.test.mjs",
@@ -15236,8 +15127,6 @@
         "deepwell/tests/site.rs::site_settings_update_round_trips_and_rejects_stale_revision",
         "deepwell/tests/site.rs::site_update_requires_site_edit_permission",
         "framerail/tests/deployment-environment.test.js::defaults CSRF origin checks from deployment environment",
-        "framerail/tests/site-settings-foundation.test.js::renders the seven general controls in captured order and keeps layout separate",
-        "framerail/tests/site-settings-foundation.test.js::serves the observed legacy admin path through the same SSR and action seam",
         "framerail/tests/site-settings-foundation.test.js::uses the captured Wiki Settings language values in source order",
         "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs",
         "install/local/wikidot-verification/tests/site-content-backup.test.mjs"
@@ -15353,7 +15242,6 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/site-settings-foundation.test.js#renders the seven general controls in captured order and keeps layout separate",
         "framerail/tests/site-settings-foundation.test.js#uses the captured Wiki Settings language values in source order"
       ],
       "migrated_from_campaign_only": false
@@ -15376,8 +15264,6 @@
         "deepwell/tests/site.rs::site_settings_update_round_trips_and_rejects_stale_revision",
         "deepwell/tests/site.rs::site_update_requires_site_edit_permission",
         "framerail/tests/deployment-environment.test.js::defaults CSRF origin checks from deployment environment",
-        "framerail/tests/site-settings-foundation.test.js::renders the seven general controls in captured order and keeps layout separate",
-        "framerail/tests/site-settings-foundation.test.js::serves the observed legacy admin path through the same SSR and action seam",
         "framerail/tests/site-settings-foundation.test.js::uses the captured Wiki Settings language values in source order",
         "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs",
         "install/local/wikidot-verification/tests/site-content-backup.test.mjs"
@@ -15398,7 +15284,6 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/site-settings-foundation.test.js#connects settings to server rendered head and toolbar authority",
         "framerail/tests/site-settings-foundation.test.js#keeps analytics disabled by default and emits only the observed queue entries"
       ],
       "migrated_from_campaign_only": false
@@ -15422,7 +15307,6 @@
         "deepwell/tests/site.rs::site_update_requires_site_edit_permission",
         "framerail/tests/external-integration-policy.test.js",
         "framerail/tests/external-integration-policy.test.js::the local emulator ships no Google Analytics beacon",
-        "framerail/tests/site-settings-foundation.test.js::connects settings to server rendered head and toolbar authority",
         "framerail/tests/site-settings-foundation.test.js::keeps analytics disabled by default and emits only the observed queue entries",
         "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs",
         "install/local/wikidot-verification/tests/open43-settings-browser-candidate-case-set.test.mjs",
@@ -15449,7 +15333,6 @@
         "deepwell/tests/site.rs::site_update_requires_site_edit_permission",
         "framerail/tests/external-integration-policy.test.js",
         "framerail/tests/external-integration-policy.test.js::the local emulator ships no Google Analytics beacon",
-        "framerail/tests/site-settings-foundation.test.js::connects settings to server rendered head and toolbar authority",
         "framerail/tests/site-settings-foundation.test.js::keeps analytics disabled by default and emits only the observed queue entries",
         "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs",
         "install/local/wikidot-verification/tests/open43-settings-browser-candidate-case-set.test.mjs",
@@ -15490,8 +15373,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/external-integration-policy.test.js#the local emulator ships no Google Analytics beacon",
-        "framerail/tests/site-settings-foundation.test.js#connects settings to server rendered head and toolbar authority"
+        "framerail/tests/external-integration-policy.test.js#the local emulator ships no Google Analytics beacon"
       ],
       "migrated_from_campaign_only": false
     },
@@ -15509,8 +15391,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/external-integration-policy.test.js",
-        "framerail/tests/site-settings-foundation.test.js#connects settings to server rendered head and toolbar authority"
+        "framerail/tests/external-integration-policy.test.js"
       ],
       "migrated_from_campaign_only": false
     },
@@ -15722,8 +15603,7 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/site.rs#site_settings_update_round_trips_and_rejects_stale_revision",
-        "framerail/tests/site-settings-foundation.test.js#routes admin writes through trusted site and revision-bound actions"
+        "deepwell/tests/site.rs#site_settings_update_round_trips_and_rejects_stale_revision"
       ],
       "migrated_from_campaign_only": false
     },
@@ -15763,8 +15643,6 @@
       "anchors": [
         "deepwell/tests/site.rs::promoted_sites_are_public_imported_sites_and_fail_closed_after_anonymous_view_revocation",
         "deepwell/tests/site.rs::site_settings_update_round_trips_and_rejects_stale_revision",
-        "framerail/tests/site-settings-foundation.test.js::connects settings to server rendered head and toolbar authority",
-        "framerail/tests/site-settings-foundation.test.js::routes admin writes through trusted site and revision-bound actions",
         "framerail/tests/site-settings-public-boundary.test.js::server-renders analytics, theme, and toolbar settings from the request view",
         "install/local/wikidot-verification/tests/open43-settings-browser-candidate-case-set.test.mjs"
       ],
@@ -15787,8 +15665,6 @@
       "anchors": [
         "deepwell/tests/site.rs::promoted_sites_are_public_imported_sites_and_fail_closed_after_anonymous_view_revocation",
         "deepwell/tests/site.rs::site_settings_update_round_trips_and_rejects_stale_revision",
-        "framerail/tests/site-settings-foundation.test.js::connects settings to server rendered head and toolbar authority",
-        "framerail/tests/site-settings-foundation.test.js::routes admin writes through trusted site and revision-bound actions",
         "framerail/tests/site-settings-public-boundary.test.js::server-renders analytics, theme, and toolbar settings from the request view",
         "install/local/wikidot-verification/tests/open43-settings-browser-candidate-case-set.test.mjs"
       ],
@@ -16066,8 +15942,7 @@
       ],
       "anchors": [
         "framerail/tests/ajax-module-connector-edit-meta.test.js",
-        "framerail/tests/page-edit-meta-public-boundary.test.js",
-        "framerail/tests/wikidot_edit_meta_client_contract_test.py"
+        "framerail/tests/page-edit-meta-public-boundary.test.js"
       ],
       "migrated_from_campaign_only": false
     },

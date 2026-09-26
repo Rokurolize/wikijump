@@ -1,7 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import {extractDeclaredPublicTests} from "../../../../scripts/lib/wikidot-implementation-ledger.mjs";
+import {
+  extractDeclaredPublicTests,
+  extractDeclaredRustModuleReferences,
+} from "../../../../scripts/lib/wikidot-implementation-ledger.mjs";
 
 export const OFFLINE_SURFACE_COVERAGE_SCHEMA =
   "wikijump.offline_compatibility_surface_coverage.v1";
@@ -17,13 +20,15 @@ const DEEPWELL_RUNNER_RE =
   /^node (install\/local\/wikidot-verification\/scripts\/run-deepwell-integration-validation\.mjs)\b/u;
 const CARGO_TEST_RE = /^(?:DATABASE_URL=\S+ )?cargo test\b/u;
 const NODE_TEST_RE = /^node --test\b/u;
-const SCRIPT_ANCHOR_RE = /^(scripts\/[^\s]+)/u;
+const FRAMERAIL_RUNNER = "scripts/run-framerail-unit-tests.sh";
+const DEEPWELL_RUST_ROOTS = ["deepwell/src/", "deepwell/tests/"];
+const WWS_RUST_ROOTS = ["wws/src/", "wws/tests/"];
 const PUBLIC_TEST_FILE_ROOTS = [
-  "deepwell/tests/",
+  ...DEEPWELL_RUST_ROOTS,
   "framerail/tests/",
   "install/local/wikidot-verification/tests/",
   "install/standing/tests/",
-  "wws/tests/",
+  ...WWS_RUST_ROOTS,
 ];
 
 function isSupportedPublicTestFile(relativePath) {
@@ -58,29 +63,90 @@ function sha256(value, label) {
 // An anchor is a coverage ownership claim. Commands name a runnable test entry
 // point, plain paths name a runnable test target, and `<path>#<name>` /
 // `<path>::<name>` additionally name the test (or evidence case) inside it.
+function shellTokens(command) {
+  return command.trim().split(/\s+/u).filter(Boolean);
+}
+
+function rustCommandTarget(tokens, manifestDirectory = "deepwell") {
+  const testIndex = tokens.indexOf("--test");
+  const libIndex = tokens.indexOf("--lib");
+  let rustRoot = null;
+  let selectorStart = -1;
+  if (testIndex !== -1 && tokens[testIndex + 1]) {
+    rustRoot = `${manifestDirectory}/tests/${tokens[testIndex + 1]}.rs`;
+    selectorStart = testIndex + 2;
+  } else if (libIndex !== -1) {
+    rustRoot = `${manifestDirectory}/src/lib.rs`;
+    selectorStart = libIndex + 1;
+  }
+  if (rustRoot === null) return null;
+  const separator = tokens.indexOf("--", selectorStart);
+  const selectorTokens = tokens
+    .slice(selectorStart, separator === -1 ? tokens.length : separator)
+    .filter((token) => !token.startsWith("-"));
+  if (selectorTokens.length > 1) return null;
+  const testArguments = separator === -1 ? [] : tokens.slice(separator + 1);
+  return {
+    rustRoot,
+    selector: selectorTokens[0] ?? null,
+    exact: testArguments.includes("--exact"),
+  };
+}
+
 function parseCoverageAnchor(anchor) {
   if (typeof anchor !== "string" || anchor.length === 0) return null;
   const runner = anchor.match(DEEPWELL_RUNNER_RE);
-  if (runner) return {kind: "command", files: [runner[1]], fragment: null};
-  if (CARGO_TEST_RE.test(anchor) || NODE_TEST_RE.test(anchor)) {
-    const files = [];
-    const nodeTest = anchor.match(/^node --test\s+(.+)$/u);
-    if (nodeTest) {
-      for (const file of nodeTest[1].split(/\s+/u)) {
-        if (file.length > 0) files.push(file);
-      }
-    }
-    const manifest = anchor.match(/--manifest-path\s+(\S+)/u);
-    if (manifest) files.push(manifest[1]);
-    else if (CARGO_TEST_RE.test(anchor)) files.push("deepwell/Cargo.toml");
-    if (files.length === 0) return null;
-    return {kind: "command", files, fragment: null};
+  if (runner) {
+    const tokens = shellTokens(anchor);
+    const rust = rustCommandTarget(tokens.slice(2));
+    return {
+      kind: "command",
+      command: "deepwell-runner",
+      files: [runner[1], ...(rust ? [rust.rustRoot] : [])],
+      rust,
+      fragment: null,
+    };
+  }
+  if (CARGO_TEST_RE.test(anchor)) {
+    const tokens = shellTokens(anchor).filter((token) => !/^DATABASE_URL=/u.test(token));
+    const manifestIndex = tokens.indexOf("--manifest-path");
+    const manifest = manifestIndex === -1 ? null : tokens[manifestIndex + 1];
+    const manifestDirectory = manifest ? path.posix.dirname(manifest) : null;
+    const rust = manifestDirectory ? rustCommandTarget(tokens, manifestDirectory) : null;
+    return {
+      kind: "command",
+      command: "cargo-test",
+      files: [...(manifest ? [manifest] : []), ...(rust ? [rust.rustRoot] : [])],
+      rust,
+      fragment: null,
+    };
+  }
+  if (NODE_TEST_RE.test(anchor)) {
+    const tokens = shellTokens(anchor).slice(2);
+    const files = tokens.filter((token) => !token.startsWith("-"));
+    const unsupported = tokens.some((token) => token.startsWith("-"));
+    return {
+      kind: "command",
+      command: "node-test",
+      files,
+      unsupported,
+      fragment: null,
+    };
+  }
+  if (anchor === FRAMERAIL_RUNNER || anchor.startsWith(`${FRAMERAIL_RUNNER} `)) {
+    const files = shellTokens(anchor)
+      .slice(1)
+      .map((file) => (file.startsWith("framerail/") ? file : `framerail/${file}`));
+    return {
+      kind: "command",
+      command: "framerail-runner",
+      files: [FRAMERAIL_RUNNER, ...files],
+      testFiles: files,
+      fragment: null,
+    };
   }
   const direct = anchor.match(DIRECT_ANCHOR_RE);
-  if (!direct) {
-    const script = anchor.match(SCRIPT_ANCHOR_RE);
-    return script ? {kind: "file", files: [script[1]], fragment: null} : null;
-  }
+  if (!direct) return null;
   const file = direct[1];
   const rest = anchor.slice(file.length);
   if (rest.length === 0) return {kind: "file", files: [file], fragment: null};
@@ -110,10 +176,9 @@ function declaredTestNames(fragment) {
   for (const part of text.split(";")) {
     const trimmed = part.trim();
     if (trimmed.length === 0) continue;
-    for (const segment of trimmed.split("::")) {
-      const name = segment.trim();
-      if (name.length > 0) names.push(name);
-    }
+    const segments = trimmed.split("::").map((segment) => segment.trim());
+    if (segments.some((segment) => segment.length === 0)) return [];
+    names.push(segments.at(-1));
   }
   return [...new Set(names)];
 }
@@ -127,23 +192,66 @@ async function readSource(repositoryRoot, relativePath, cache) {
   return pending;
 }
 
-// `cargo test --test page` runs declarations that live in `page/*.rs`
-// submodules, so a `page.rs#name` anchor must resolve against the whole module
-// tree. The parsing itself is owned by the shared implementation ledger.
-async function collectRustModuleTests(repositoryRoot, directory, target, sourceCache) {
-  const absolute = path.resolve(repositoryRoot, directory);
-  const relativeBack = path.relative(repositoryRoot, absolute);
-  if (relativeBack.startsWith("..") || path.isAbsolute(relativeBack)) return;
-  const entries = await fs.readdir(absolute, {withFileTypes: true}).catch(() => []);
-  for (const entry of entries) {
-    const relative = `${directory}/${entry.name}`;
-    if (entry.isFile() && entry.name.endsWith(".rs")) {
-      const source = await readSource(repositoryRoot, relative, sourceCache);
-      if (source === null) continue;
-      const declared = extractDeclaredPublicTests(relative, source);
-      if (declared !== null) for (const name of declared) target.add(name);
-    } else if (entry.isDirectory()) {
-      await collectRustModuleTests(repositoryRoot, relative, target, sourceCache);
+function isRustCrateRoot(relativePath) {
+  return (
+    relativePath === "deepwell/src/lib.rs" ||
+    relativePath === "wws/src/lib.rs" ||
+    /^deepwell\/tests\/[^/]+\.rs$/u.test(relativePath) ||
+    /^wws\/tests\/[^/]+\.rs$/u.test(relativePath)
+  );
+}
+
+function rustModuleCandidates(relativePath, reference) {
+  const directory = path.posix.dirname(relativePath);
+  if (reference.path) {
+    return [path.posix.normalize(path.posix.join(directory, reference.path))];
+  }
+  const basename = path.posix.basename(relativePath);
+  const moduleDirectory =
+    basename === "mod.rs" || isRustCrateRoot(relativePath)
+      ? directory
+      : path.posix.join(directory, basename.slice(0, -3));
+  return [
+    path.posix.join(moduleDirectory, `${reference.name}.rs`),
+    path.posix.join(moduleDirectory, reference.name, "mod.rs"),
+  ];
+}
+
+async function collectDeclaredRustTests(
+  repositoryRoot,
+  relativePath,
+  target,
+  sourceCache,
+  visited,
+  modulePrefix = "",
+) {
+  if (visited.has(relativePath)) return;
+  visited.add(relativePath);
+  const source = await readSource(repositoryRoot, relativePath, sourceCache);
+  if (source === null) return;
+  const declared = extractDeclaredPublicTests(relativePath, source);
+  if (declared !== null) {
+    for (const name of declared) {
+      target.add(name);
+      if (modulePrefix) target.add(`${modulePrefix}::${name}`);
+    }
+  }
+  for (const reference of extractDeclaredRustModuleReferences(source)) {
+    for (const candidate of rustModuleCandidates(relativePath, reference)) {
+      const candidateSource = await readSource(repositoryRoot, candidate, sourceCache);
+      if (candidateSource === null) continue;
+      const prefix = modulePrefix
+        ? `${modulePrefix}::${reference.name}`
+        : reference.name;
+      await collectDeclaredRustTests(
+        repositoryRoot,
+        candidate,
+        target,
+        sourceCache,
+        visited,
+        prefix,
+      );
+      break;
     }
   }
 }
@@ -155,22 +263,54 @@ async function declaredTestsFor(repositoryRoot, relativePath, cache) {
     if (source === null) return null;
     const declared = extractDeclaredPublicTests(relativePath, source);
     if (declared === null) return null;
-    const all = new Set(declared);
-    if (relativePath.endsWith(".rs")) {
-      const moduleDirectory = relativePath.endsWith("/mod.rs")
-        ? path.posix.dirname(relativePath)
-        : relativePath.slice(0, -3);
-      await collectRustModuleTests(
-        repositoryRoot,
-        moduleDirectory,
-        all,
-        cache.sourceCache,
-      );
-    }
+    if (!relativePath.endsWith(".rs")) return declared;
+    const all = new Set();
+    await collectDeclaredRustTests(
+      repositoryRoot,
+      relativePath,
+      all,
+      cache.sourceCache,
+      new Set(),
+    );
     return all;
   })();
   cache.set(relativePath, pending);
   return pending;
+}
+
+function normalizeRustTestPath(value) {
+  return value
+    .split("::")
+    .filter((segment) => segment !== "tests")
+    .join("::");
+}
+
+async function commandHasExecutableOwner(target, repositoryRoot, cache) {
+  if (target.command === "cargo-test" || target.command === "deepwell-runner") {
+    if (!target.rust) return false;
+    const declared = await declaredTestsFor(repositoryRoot, target.rust.rustRoot, cache);
+    if (declared === null || declared.size === 0) return false;
+    if (target.rust.selector === null) return true;
+    const selector = normalizeRustTestPath(target.rust.selector);
+    return [...declared].some((name) => {
+      const candidate = normalizeRustTestPath(name);
+      return target.rust.exact
+        ? candidate === selector || candidate.endsWith(`::${selector}`)
+        : candidate.includes(selector);
+    });
+  }
+  const testFiles =
+    target.command === "framerail-runner" ? target.testFiles : target.files;
+  if (target.command === "node-test" && target.unsupported) return false;
+  if (!Array.isArray(testFiles) || testFiles.length === 0) return false;
+  let hasDeclaredTest = false;
+  for (const relativePath of testFiles) {
+    if (!isSupportedPublicTestFile(relativePath)) return false;
+    const declared = await declaredTestsFor(repositoryRoot, relativePath, cache);
+    if (declared === null || declared.size === 0) return false;
+    hasDeclaredTest = true;
+  }
+  return hasDeclaredTest;
 }
 
 function createDeclaredTestCache() {
@@ -265,6 +405,8 @@ export async function loadOfflineSurfaceCoverage(filePath) {
 export async function verifyCoverageAnchorFiles(fixture, repositoryRoot) {
   const missing = [];
   const unresolvedNamedTests = [];
+  const unresolvedCommands = [];
+  const unresolvedAnchors = [];
   const rowsWithoutExecutableOwner = [];
   const checked = new Set();
   const cache = createDeclaredTestCache();
@@ -273,8 +415,11 @@ export async function verifyCoverageAnchorFiles(fixture, repositoryRoot) {
     let owned = false;
     for (const anchor of row.anchors ?? []) {
       const target = parseCoverageAnchor(anchor);
-      if (!target) continue;
-      let filesOk = true;
+      if (!target) {
+        unresolvedAnchors.push({anchor, reason: "unsupported-anchor"});
+        continue;
+      }
+      let filesOk = target.files.length > 0;
       for (const relative of target.files) {
         const absolute = path.resolve(repositoryRoot, relative);
         const relativeBack = path.relative(repositoryRoot, absolute);
@@ -291,38 +436,47 @@ export async function verifyCoverageAnchorFiles(fixture, repositoryRoot) {
         }
       }
       if (!filesOk) continue;
-      if (target.kind !== "named") {
-        owned = true;
+
+      if (target.kind === "command") {
+        if (await commandHasExecutableOwner(target, repositoryRoot, cache)) {
+          owned = true;
+        } else {
+          unresolvedCommands.push({anchor, reason: "no-runnable-test-selected"});
+        }
         continue;
       }
 
       const relativeFile = target.files[0];
+      if (target.kind === "file") {
+        if (!isSupportedPublicTestFile(relativeFile)) {
+          unresolvedAnchors.push({anchor, path: relativeFile, reason: "not-a-runnable-test-target"});
+          continue;
+        }
+        const declared = await declaredTestsFor(repositoryRoot, relativeFile, cache);
+        if (declared !== null && declared.size > 0) owned = true;
+        else unresolvedAnchors.push({anchor, path: relativeFile, reason: "no-declared-runnable-tests"});
+        continue;
+      }
+
+      if (!isSupportedPublicTestFile(relativeFile)) {
+        unresolvedNamedTests.push({
+          anchor,
+          path: relativeFile,
+          name: target.fragment,
+          reason: "not-a-public-test-file",
+        });
+        continue;
+      }
       const declared = await declaredTestsFor(repositoryRoot, relativeFile, cache);
       const names = declaredTestNames(target.fragment);
-      if (declared !== null && names.some((name) => declared.has(name))) {
+      if (
+        declared !== null &&
+        names.length > 0 &&
+        names.every((name) => declared.has(name))
+      ) {
         owned = true;
         continue;
       }
-      if (!isSupportedPublicTestFile(relativeFile)) {
-        // Source/evidence files keep the fixture's exact source-anchor
-        // convention: the anchor names a symbol or evidence case rather than a
-        // test declaration, and an uncaptured name must not silently own a row.
-        const source = await readSource(
-          repositoryRoot,
-          relativeFile,
-          cache.sourceCache,
-        );
-        if (
-          source !== null &&
-          (source.includes(target.fragment) ||
-            source.includes(target.fragment.split("::")[0]))
-        ) {
-          owned = true;
-          continue;
-        }
-      }
-      // A supported public test file must declare the named runnable test. A
-      // file-level declaration of some other test is not an executable owner.
       unresolvedNamedTests.push({
         anchor,
         path: relativeFile,
@@ -340,7 +494,11 @@ export async function verifyCoverageAnchorFiles(fixture, repositoryRoot) {
   }
 
   const status =
-    missing.length === 0 && rowsWithoutExecutableOwner.length === 0
+    missing.length === 0 &&
+    unresolvedNamedTests.length === 0 &&
+    unresolvedCommands.length === 0 &&
+    unresolvedAnchors.length === 0 &&
+    rowsWithoutExecutableOwner.length === 0
       ? "pass"
       : "fail";
   return {
@@ -348,6 +506,8 @@ export async function verifyCoverageAnchorFiles(fixture, repositoryRoot) {
     checked: checked.size,
     missing,
     unresolvedNamedTests,
+    unresolvedCommands,
+    unresolvedAnchors,
     rowsWithoutExecutableOwner,
   };
 }
