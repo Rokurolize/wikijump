@@ -1,9 +1,15 @@
+import { ExpiryHeap } from "./expiry-heap.js"
+
 /**
  * @template T
  * @typedef {object} ByteLimitedCacheEntry
  * @property {T} value
  * @property {number} expiresAt
  * @property {number} bytes
+ * @property {string} key
+ * @property {number} heapIndex
+ * @property {ByteLimitedCacheEntry<T> | null} previous
+ * @property {ByteLimitedCacheEntry<T> | null} next
  */
 
 /**
@@ -23,28 +29,56 @@ export const createByteLimitedCache = ({
 }) => {
   /** @type {Map<string, ByteLimitedCacheEntry<T>>} */
   const entries = new Map()
+  const expirations = new ExpiryHeap()
+  /** @type {ByteLimitedCacheEntry<T> | null} */
+  let oldest = null
+  /** @type {ByteLimitedCacheEntry<T> | null} */
+  let newest = null
   let totalBytes = 0
+
+  /** @param {ByteLimitedCacheEntry<T>} entry */
+  const unlink = (entry) => {
+    if (entry.previous) entry.previous.next = entry.next
+    else oldest = entry.next
+    if (entry.next) entry.next.previous = entry.previous
+    else newest = entry.previous
+    entry.previous = null
+    entry.next = null
+  }
+
+  /** @param {ByteLimitedCacheEntry<T>} entry */
+  const append = (entry) => {
+    entry.previous = newest
+    if (newest) newest.next = entry
+    else oldest = entry
+    newest = entry
+  }
 
   /** @param {string} key */
   const deleteEntry = (key) => {
     const entry = entries.get(key)
     if (!entry) return
     totalBytes -= entry.bytes
+    expirations.remove(entry)
+    unlink(entry)
     entries.delete(key)
   }
 
   /** @param {number} nowMs */
   const pruneExpired = (nowMs) => {
-    for (const [key, entry] of entries) {
-      if (entry.expiresAt <= nowMs) deleteEntry(key)
+    for (
+      let entry = expirations.first();
+      entry && entry.expiresAt <= nowMs;
+      entry = expirations.first()
+    ) {
+      deleteEntry(entry.key)
     }
   }
 
   const pruneOverflow = () => {
     while (entries.size > maxEntries || totalBytes > maxBytes) {
-      const oldest = entries.keys().next()
-      if (oldest.done) return
-      deleteEntry(oldest.value)
+      if (!oldest) return
+      deleteEntry(oldest.key)
     }
   }
 
@@ -60,8 +94,8 @@ export const createByteLimitedCache = ({
       return null
     }
     if (touchOnRead) {
-      entries.delete(key)
-      entries.set(key, entry)
+      unlink(entry)
+      append(entry)
     }
     return entry.value
   }
@@ -78,7 +112,18 @@ export const createByteLimitedCache = ({
     deleteEntry(key)
     if (expiresAt <= nowMs || bytes > maxBytes) return false
 
-    entries.set(key, { value, expiresAt, bytes })
+    const entry = {
+      key,
+      value,
+      expiresAt,
+      bytes,
+      heapIndex: -1,
+      previous: null,
+      next: null
+    }
+    entries.set(key, entry)
+    append(entry)
+    expirations.insert(entry)
     totalBytes += bytes
     pruneOverflow()
     return entries.has(key)
@@ -91,6 +136,9 @@ export const createByteLimitedCache = ({
     size: () => entries.size,
     clear() {
       entries.clear()
+      expirations.clear()
+      oldest = null
+      newest = null
       totalBytes = 0
     }
   }

@@ -5,7 +5,6 @@ import {
   writeRedisCommand
 } from "./redis-command-state.js"
 import { connectRedisSocket } from "./redis-connection.js"
-import { parseRedisResponse } from "./redis-protocol.js"
 import { RedisFenceInvalidationSubscriber } from "./redis-subscriber.js"
 
 const REDIS_COMMAND_TIMEOUT_MS = 1000
@@ -84,22 +83,20 @@ class RedisCacheStore {
   /** @param {Buffer} chunk */
   handleData(chunk) {
     const state = this.commandState
-    state.buffer = Buffer.concat([state.buffer, chunk])
+    state.decoder.append(chunk)
 
     while (state.pending.length > 0) {
       let parsed
       try {
-        parsed = parseRedisResponse(state.buffer)
+        parsed = state.decoder.read()
       } catch (error) {
         const request = state.pending.shift()
         request?.reject(error instanceof Error ? error : new Error(String(error)))
-        state.buffer = Buffer.alloc(0)
         this.reset()
         return
       }
       if (!parsed) return
 
-      state.buffer = state.buffer.subarray(parsed.nextOffset)
       state.pending.shift()?.resolve(parsed.value)
     }
   }
