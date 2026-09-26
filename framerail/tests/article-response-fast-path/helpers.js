@@ -161,13 +161,26 @@ export const createDeferredGetStore = (store, shouldDefer) => {
   }
 }
 
+export const createFenceSubscriber = () => {
+  const subscriber = {
+    callbacks: null,
+    subscribe(callbacks) {
+      subscriber.callbacks = callbacks
+      return { close() {} }
+    }
+  }
+  return subscriber
+}
+
 export const createTrustedFenceCache = async (store, options = {}) => {
+  const subscriber = createFenceSubscriber()
   const fenceCache = createMemoryArticleResponseFenceCache({
     store,
+    subscriber,
     ...options
   })
-  await fenceCache.markSubscribedForTest()
-  return fenceCache
+  subscriber.callbacks.onSubscribed()
+  return { fenceCache, subscriber }
 }
 
 export const withServer = async (

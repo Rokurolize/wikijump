@@ -110,7 +110,7 @@ test("article response fast path trusted local fence second hot hit does zero st
   const stores = await createFastPathFixtureStore()
   const tokenStore = createCountingStore(stores.tokenStore)
   const responseStore = createCountingStore(stores.responseStore)
-  const fenceCache = await createTrustedFenceCache(tokenStore)
+  const { fenceCache } = await createTrustedFenceCache(tokenStore)
 
   await withServer(
     { responseStore, tokenStore },
@@ -199,7 +199,7 @@ test("article response fast path trusted public content invalidation prevents ol
   const stores = await createFastPathFixtureStore()
   const tokenStore = createCountingStore(stores.tokenStore)
   const responseStore = createCountingStore(stores.responseStore)
-  const fenceCache = await createTrustedFenceCache(tokenStore)
+  const { fenceCache, subscriber } = await createTrustedFenceCache(tokenStore)
 
   await withServer(
     { responseStore, tokenStore },
@@ -211,7 +211,7 @@ test("article response fast path trusted public content invalidation prevents ol
         "<!doctype html><html><body>cached article</body></html>"
       )
 
-      await fenceCache.applyMessageForTest(
+      subscriber.callbacks.onMessage(
         JSON.stringify({
           type: "public-content",
           site_id: SITE_ID,
@@ -235,7 +235,7 @@ test("article response fast path trusted anonymous permission invalidation preve
   const stores = await createFastPathFixtureStore()
   const tokenStore = createCountingStore(stores.tokenStore)
   const responseStore = createCountingStore(stores.responseStore)
-  const fenceCache = await createTrustedFenceCache(tokenStore)
+  const { fenceCache, subscriber } = await createTrustedFenceCache(tokenStore)
 
   await withServer(
     { responseStore, tokenStore },
@@ -247,7 +247,7 @@ test("article response fast path trusted anonymous permission invalidation preve
         "<!doctype html><html><body>cached article</body></html>"
       )
 
-      await fenceCache.applyMessageForTest(
+      subscriber.callbacks.onMessage(
         JSON.stringify({
           type: "anonymous-permission",
           site_id: SITE_ID,
@@ -299,7 +299,7 @@ test("article response fast path revalidates local fences after invalidation dur
     )
     const deferredStore =
       scenario.defer === "token" ? deferredTokenStore : deferredResponseStore
-    const fenceCache = await createTrustedFenceCache(deferredTokenStore)
+    const { fenceCache, subscriber } = await createTrustedFenceCache(deferredTokenStore)
 
     await withServer(
       { responseStore: deferredResponseStore, tokenStore: deferredTokenStore },
@@ -308,7 +308,7 @@ test("article response fast path revalidates local fences after invalidation dur
           headers: fastPathHeaders
         })
         await deferredStore.started
-        await fenceCache.applyMessageForTest(JSON.stringify(scenario.message))
+        subscriber.callbacks.onMessage(JSON.stringify(scenario.message))
         deferredStore.resume()
 
         const response = await responsePromise
@@ -325,7 +325,7 @@ test("article response fast path malformed fence messages fail closed to Redis f
   const stores = await createFastPathFixtureStore()
   const tokenStore = createCountingStore(stores.tokenStore)
   const responseStore = createCountingStore(stores.responseStore)
-  const fenceCache = await createTrustedFenceCache(tokenStore)
+  const { fenceCache, subscriber } = await createTrustedFenceCache(tokenStore)
 
   await withServer(
     { responseStore, tokenStore },
@@ -337,7 +337,7 @@ test("article response fast path malformed fence messages fail closed to Redis f
         "<!doctype html><html><body>cached article</body></html>"
       )
 
-      await fenceCache.applyMessageForTest("{not-json")
+      subscriber.callbacks.onMessage("{not-json")
 
       const second = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })
       assert.equal(second.status, 200)
@@ -358,7 +358,7 @@ test("article response fast path local fence disconnect clears hot cache and fal
   const stores = await createFastPathFixtureStore()
   const tokenStore = createCountingStore(stores.tokenStore)
   const responseStore = createCountingStore(stores.responseStore)
-  const fenceCache = await createTrustedFenceCache(tokenStore)
+  const { fenceCache, subscriber } = await createTrustedFenceCache(tokenStore)
 
   await withServer(
     { responseStore, tokenStore },
@@ -370,7 +370,7 @@ test("article response fast path local fence disconnect clears hot cache and fal
         "<!doctype html><html><body>cached article</body></html>"
       )
 
-      fenceCache.markDisconnectedForTest()
+      subscriber.callbacks.onDisconnect()
 
       const second = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })
       assert.equal(second.status, 200)
