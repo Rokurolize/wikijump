@@ -140,6 +140,10 @@
     "jp_overrides_sha256": "a3689191d39ca1e5d8667feecea6c72b9b4aa6eec416c1cf225aad2d3677d9b6",
     "semantic_css_sha256": "b114c5bf6564ed95e1302a75b633082409856b319ec46265abf53950ee6e92b3",
     "canonical_override_sha256": "09c6fc30af9f1f9f1a078a2a80ca7effe808625823a721533eee8c000cfd2c2f",
-    "exact_duplicate_rules_removed": 0
+    "final_source": "maintenance/final.wikidot.txt",
+    "final_source_sha256": "9f316f2970fa2d3eabedd40b2c2bb3d5acde506ecf1d552d5602b73b2abb099a",
+    "exact_duplicate_rules_removed": 0,
+    "redundant_same_value_declarations_removed": 0,
+    "empty_rules_removed": 0
   }
 }

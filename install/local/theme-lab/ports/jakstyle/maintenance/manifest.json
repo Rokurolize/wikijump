@@ -3,17 +3,238 @@
   "frozen_candidate_source_sha256": "9ba6c3ef751ffae04fe984f2743cf8ac1071567c48f4f4099238b4032784bdbd",
   "base_source_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
   "raw_jp_overrides_sha256": "5be2544da0d27b7783b9d1f4f02c676d097c24898310c885c885e8a4a4fef649",
-  "jp_overrides_sha256": "6870bb9a79a2cab879db514fba2af6f8a9163dc9094917073fc7126104fea478",
+  "jp_overrides_sha256": "a3be1c70b4857b4fdebfa54637b3b0af4ed3978e89200653a9db9545cc4f3410",
   "semantic_css_sha256": "b0ceed399cc338eec65cbc09fe9895cc97d2fb1edc5137a937182e8cde3047c4",
-  "canonical_override_sha256": "d7be098cbe31327557ea7777b89328db50964ea1af5c87f64b022f4d7ccf423f",
+  "canonical_override_sha256": "7eb2de3eb79c3e876da116a2aabafb8d6457041de677e2792f15442489a949e5",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "6042de81aa8c26f743cad26d9b9ea4da948c15ac941a185a9f99095b9e4e215e",
+  "final_source_inputs": {
+    "base_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
+    "jp_overrides_sha256": "a3be1c70b4857b4fdebfa54637b3b0af4ed3978e89200653a9db9545cc4f3410"
+  },
+  "ordered_include_sha256": "150dae8ecd8f3064f5b808b9b5c669821ecbe6ac081ebddca5964e8c1308f4ea",
+  "declaration_reviews": {
+    "[[],\".modalbox .credit a\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#action-area .page-backlinks-header\",\"-webkit-text-fill-color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#action-area .page-backlinks-header\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#header h1\",\"-webkit-text-fill-color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#header h1\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"position\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"position\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#page-options-bottom a\",\"-webkit-text-fill-color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#page-options-bottom a\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#page-options-bottom-2 #backlinks-button\",\"-webkit-text-fill-color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#page-options-bottom-2 #backlinks-button\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#page-options-bottom-2 #delete-button\",\"-webkit-text-fill-color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#page-options-bottom-2 #delete-button\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#page-options-bottom-2 a\",\"-webkit-text-fill-color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#page-options-bottom-2 a\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#u-credit-otherwise .modalbox a\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\".modalbox .credit a\",\"text-decoration\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\".modalbox .credit a\",\"text-underline-offset\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#header h1 a span\",\"-webkit-text-fill-color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#header h1 a span\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#header h1 a\",\"-webkit-text-fill-color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#header h1 a\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#header h2 span\",\"-webkit-text-fill-color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#header h2 span\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#header h2\",\"-webkit-text-fill-color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#header h2\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header\",\"position\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .collapsible-block-link\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#u-credit-otherwise .modalbox a\",\"text-decoration\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#u-credit-otherwise .modalbox a\",\"text-underline-offset\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    }
+  },
   "adaptation_block_count": 21,
   "raw_override_rule_count": 111,
   "canonical_override_rule_count": 107,
   "exact_duplicate_rules_removed": 4,
+  "redundant_same_value_declarations_removed": 18,
+  "empty_rules_removed": 7,
   "active_tags": [
     "テーマ"
   ],
-  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
   "historical_adaptations": [
     {
       "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",

@@ -6,7 +6,7 @@
   }
 }
 
-/* SCP-JP credit acceptance: the upstream port hides the current SCP-JP heritage Rate wrapper with !important, although credit:start/end render a tagged heritage state. */
+/* SCP-JP credit compatibility: the upstream port hides the current SCP-JP heritage Rate wrapper with !important, although credit:start/end render a tagged heritage state. */
 .creditRate .rateBox.heritage-wrap {
   display: inline-flex !important;
 }

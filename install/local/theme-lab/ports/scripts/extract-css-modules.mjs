@@ -4,7 +4,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
-const tokens=/@@|\[\[code(?:\s+[^\]]*)?\]\]|\[\[\/code\]\]|\[\[iftags(?:\s+[^\]]+)?\]\]|\[\[\/iftags\]\]|\[\[ift\{[^}]+\}gs(?:\s+[^\]]+)?\]\]|\[\[\/ift\{[^}]+\}gs\]\]|\[\[module\s+CSS\]\]/giu;
+const tokens=/\{\{|\}\}|@@|\[\[code(?:\s+[^\]]*)?\]\]|\[\[\/code\]\]|\[\[iftags(?:\s+[^\]]+)?\]\]|\[\[\/iftags\]\]|\[\[ift\{[^}]+\}gs(?:\s+[^\]]+)?\]\]|\[\[\/ift\{[^}]+\}gs\]\]|\[\[module\s+CSS\]\]/giu;
 
 function findCssModuleClose(source,start){
   let string=null;
@@ -46,10 +46,14 @@ export function extractUnconditionalCssModules(source,{activeTags=[]}={}){
   const conditions=[];
   let inCode=false;
   let inEscapedCode=false;
+  let inWikidotEscape=false;
   tokens.lastIndex=0;
   let match;
   while((match=tokens.exec(source))!==null){
     const token=match[0].toLowerCase();
+    if(token==='{{'){inWikidotEscape=true;continue;}
+    if(token==='}}'&&inWikidotEscape){inWikidotEscape=false;continue;}
+    if(inWikidotEscape)continue;
     if(token==='@@'){inEscapedCode=!inEscapedCode;continue;}
     if(token.startsWith('[[code')){inCode=true;continue;}
     if(token==='[[/code]]'){inCode=false;continue;}

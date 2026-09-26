@@ -10,7 +10,7 @@
     },
     {
       "id": "sigma-search-adaptation-owned-by-acceptance-layer",
-      "reason": "The accepted Space candidate places the shared Sigma search fix with the later JP acceptance layer. Remove the generated base copy so ownership and cascade order are explicit and reproducible.",
+      "reason": "The canonical JP override owns the shared Sigma search interaction. Remove its generated base copy so the final source has one owner and stable cascade order. This transform requires the exact generated rule exactly once and fails closed if that source changes; on an upstream update, review whether the search behavior remains necessary and keep the rule in one layer.",
       "expected_matches": 1,
       "before": "\n/* SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused. */\n@media (min-width: 768px) {\n  #search-top-box-form:hover #search-top-box-input,\n  #search-top-box-form:focus-within #search-top-box-input {\n    display: inline-block !important;\n  }\n}\n",
       "after": "\n"

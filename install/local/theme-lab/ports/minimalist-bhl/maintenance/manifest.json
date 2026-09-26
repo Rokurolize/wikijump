@@ -3,17 +3,63 @@
   "frozen_candidate_source_sha256": "0c0b8c1155dbce7854772c0df4a0731ae71d248bd542f9b1fb0d937e8325139a",
   "base_source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
   "raw_jp_overrides_sha256": "edad14ae7fc1f5cde7eed72ed64138c79d9cbb77107586fe3515596876be7821",
-  "jp_overrides_sha256": "3485e93b644e336787140a58ab8c177d38c6680ed0f3382f008d96b9b1b854f6",
+  "jp_overrides_sha256": "bf0bf155f30e21ab9989d90b4578a24827938e0934bc6f45db22efd9a7eb0b20",
   "semantic_css_sha256": "e51bec70c76fde9bb969bbc90daf0a7f31fecd3cfc778e926398850fbb7eb4ce",
-  "canonical_override_sha256": "3bf430555784a16f0df9d4f219d8a9344490ed2befe42d73265e5e297660dfd1",
+  "canonical_override_sha256": "27dea77443cbc2410a774565ece97676e4c0f7d2686cf6e79e3aa475a59cba3c",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "4edcd82701bc5c1bca93459cab56778c78de011e38cb6d0e59342394ceac50f2",
+  "final_source_inputs": {
+    "base_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
+    "jp_overrides_sha256": "bf0bf155f30e21ab9989d90b4578a24827938e0934bc6f45db22efd9a7eb0b20"
+  },
+  "ordered_include_sha256": "eec1f08d4ed8c510d3f66438b5a7e23345c6ab58b61edfc14bac7a16787a5b96",
+  "declaration_reviews": {
+    "[[],\"#page-content .collapsible-block-unfolded *\",\"-webkit-text-fill-color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#page-content .collapsible-block-unfolded *\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#page-content .collapsible-block-unfolded\",\"-webkit-text-fill-color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#page-content .collapsible-block-unfolded\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#page-content .collapsible-block-unfolded a\",\"text-decoration\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    }
+  },
   "adaptation_block_count": 16,
   "raw_override_rule_count": 80,
   "canonical_override_rule_count": 67,
   "exact_duplicate_rules_removed": 13,
+  "redundant_same_value_declarations_removed": 5,
+  "empty_rules_removed": 2,
   "active_tags": [
     "テーマ"
   ],
-  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
   "historical_adaptations": [
     {
       "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",

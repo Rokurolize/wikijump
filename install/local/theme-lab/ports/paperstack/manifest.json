@@ -161,9 +161,13 @@
     "jp_overrides": "maintenance/jp-overrides.css",
     "manifest": "maintenance/manifest.json",
     "base_sha256": "39dc4c06547aa7c7e49ac6f35fe38480a35dd7687331496ac6c4f6ef54c0fd99",
-    "jp_overrides_sha256": "c94a4360cb93db7a408fb6df6d56caf982850daaae7532d157599bf0b7fb80de",
+    "jp_overrides_sha256": "c2b958e8bf8dd9bb709de2cd63c1588cff9f430eb3d39409130aec48c955f907",
     "semantic_css_sha256": "6771a90eaaf708059eaa618cb83580bd2acc9d10ff37c3d36dc86c5a192a320d",
-    "canonical_override_sha256": "3c1f42c90d7694e47ebf9565b8f0cdf5a4669dc65874adce22a6aa66cf0e3145",
-    "exact_duplicate_rules_removed": 8
+    "canonical_override_sha256": "625bb777efa07d0215e29574f65dfc08caffaab56ee741f5f10ab3097bd78841",
+    "final_source": "maintenance/final.wikidot.txt",
+    "final_source_sha256": "f007e089fb39578b7d61c0324c8e18b6fd71d4e4c13ff9336de027857a1d4e04",
+    "exact_duplicate_rules_removed": 8,
+    "redundant_same_value_declarations_removed": 37,
+    "empty_rules_removed": 1
   }
 }

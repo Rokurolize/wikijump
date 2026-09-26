@@ -6,21 +6,21 @@
   }
 }
 
-/* SCP-JP interactive acceptance: preserve Bedrock's navigation in the current Wikijump shell without letting its hover drawer cover the article/actions. */
+/* SCP-JP interaction compatibility: preserve Bedrock's navigation in the current Wikijump shell without letting its hover drawer cover the article/actions. */
 /* Keep the runtime account control targetable while retaining Bedrock's compact avatar treatment. */
 @media (min-width: 768px) {
   #content-wrap {
     display: flex !important; align-items: flex-start; gap: 1rem;
   }
-  
+
   #side-bar {
     position: static !important; inset: auto !important; float: none !important; flex: 0 0 min(19rem, 30vw); width: min(19rem, 30vw) !important; max-width: none !important; height: auto !important; max-height: none; overflow: visible !important; transition: none !important; z-index: auto !important;
   }
-  
+
   #main-content {
     flex: 1 1 0; width: auto !important; min-width: 0; max-width: none !important; margin: 0 !important;
   }
-  
+
   #page-content {
     width: 100%; max-width: 100%; box-sizing: border-box;
   }
@@ -62,7 +62,7 @@
   #u-credit-otherwise:target .modalcontainer {
     position: absolute !important; inset: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; width: 100% !important; height: 100% !important; max-width: none !important; margin: 0 !important; box-sizing: border-box !important;
   }
-  
+
   #u-credit-view:target .modalbox,
   #u-credit-otherwise:target .modalbox {
     width: min(37.5rem, calc(100vw - 1rem)) !important; min-width: 0 !important; max-width: calc(100vw - 1rem) !important; height: min(50svh, calc(100dvh - 1rem)) !important; max-height: calc(100dvh - 1rem) !important; margin: 0 !important; box-sizing: border-box !important;
