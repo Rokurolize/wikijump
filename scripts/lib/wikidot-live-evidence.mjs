@@ -6,6 +6,26 @@ function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
 }
 
+/**
+ * Reads a file, optionally memoizing its bytes for the duration of one run.
+ * Callers must scope `cache` to a single validation pass: a cache that outlives
+ * a rewrite would hide the hash drift these checks exist to detect. Every
+ * reference still re-verifies its expected hash against the returned bytes.
+ */
+function readFileCached(cache, path) {
+  if (cache) {
+    const cached = cache.get(path);
+    if (cached !== undefined) {
+      return cached;
+    }
+  }
+  const bytes = readFileSync(path);
+  if (cache) {
+    cache.set(path, bytes);
+  }
+  return bytes;
+}
+
 export function resolveWikidotLiveEvidenceFormat(evidence) {
   const format =
     evidence.format ?? (evidence.path.endsWith(".jsonl") ? "jsonl" : "json");
@@ -15,7 +35,7 @@ export function resolveWikidotLiveEvidenceFormat(evidence) {
   throw new Error(`Unsupported Wikidot live evidence format: ${format}`);
 }
 
-export function verifiedExternalEvidenceCaseIds(evidenceRow) {
+export function verifiedExternalEvidenceCaseIds(evidenceRow, fileCache) {
   const indices = evidenceRow.external_indices ?? [];
   if (indices.length === 0) {
     return new Set();
@@ -25,7 +45,7 @@ export function verifiedExternalEvidenceCaseIds(evidenceRow) {
   if (!sums?.path || !sums?.sha256) {
     throw new Error("External evidence indices require a SHA256SUMS binding");
   }
-  const sumsBytes = readFileSync(sums.path);
+  const sumsBytes = readFileCached(fileCache, sums.path);
   if (sha256(sumsBytes) !== sums.sha256) {
     throw new Error(`External SHA256SUMS hash drifted: ${sums.path}`);
   }
@@ -42,7 +62,7 @@ export function verifiedExternalEvidenceCaseIds(evidenceRow) {
     if (!index?.path || !index.sha256) {
       throw new Error("External evidence index is missing its binding");
     }
-    const indexBytes = readFileSync(index.path);
+    const indexBytes = readFileCached(fileCache, index.path);
     if (sha256(indexBytes) !== index.sha256) {
       throw new Error(`External evidence index hash drifted: ${index.path}`);
     }
@@ -65,7 +85,7 @@ export function verifiedExternalEvidenceCaseIds(evidenceRow) {
       if (caseIds.has(entry.case_id)) {
         throw new Error(`Duplicate external evidence case: ${entry.case_id}`);
       }
-      const rawBytes = readFileSync(entry.path);
+      const rawBytes = readFileCached(fileCache, entry.path);
       if (sha256(rawBytes) !== entry.sha256) {
         throw new Error(`External evidence raw hash drifted: ${entry.path}`);
       }
