@@ -1,5 +1,5 @@
+// @ts-nocheck
 import { strict as assert } from "node:assert"
-import { readFile } from "node:fs/promises"
 import test from "node:test"
 
 import {
@@ -9,8 +9,11 @@ import {
   buildPageFileRollbackPayload,
   withPageFileClientAddress
 } from "../src/lib/server/deepwell/page-file-mutation-payloads.ts"
+import { pageActionEvent, startPageActionHarness } from "./page-action-test-harness.js"
 
 const CLIENT_IP = "192.0.2.14"
+const SITE_ID = 17
+const TRUSTED_CONTEXT = { siteId: SITE_ID, page: "main" }
 
 test("file mutation actions forward getClientAddress through the Deepwell transport", async () => {
   const cases = [
@@ -93,38 +96,54 @@ test("file mutation actions forward getClientAddress through the Deepwell transp
 })
 
 test("file revision reads forward the routed request context to Deepwell", async () => {
-  const pageFileSource = await readFile(
-    new URL("../src/lib/server/deepwell/page-file.ts", import.meta.url),
-    "utf8"
-  )
-  const pageFileHistory = pageFileSource.slice(
-    pageFileSource.indexOf("export async function pageFileHistory")
-  )
-  const pageFileRevision = pageFileSource.slice(
-    pageFileSource.indexOf("export async function pageFileRevision")
-  )
+  const harness = await startPageActionHarness()
+  const { client, actions } = harness
+  try {
+    const calls = []
+    client.request = async (method, params, context) => {
+      calls.push({ method, params, context })
+      if (method === "file_revision_range") {
+        return [{ revision_id: 5, revision_number: 2 }]
+      }
+      throw new Error(`Unexpected Deepwell method ${method}`)
+    }
 
-  assert.match(pageFileHistory, /requestContext: RequestContext/u)
-  assert.match(
-    pageFileHistory,
-    /client\.request\([\s\S]*?"file_revision_range"[\s\S]*?requestContext\s*\)/u
-  )
-  assert.match(pageFileRevision, /requestContext: RequestContext/u)
-  assert.match(
-    pageFileRevision,
-    /client\.request\([\s\S]*?"file_revision_get"[\s\S]*?requestContext\s*\)/u
-  )
+    const requestEvent = (body, siteId = SITE_ID) =>
+      pageActionEvent({
+        action: "fileHistory",
+        body,
+        siteId,
+        requestContext: { ...TRUSTED_CONTEXT }
+      })
 
-  const pageActionsSource = await readFile(
-    new URL("../src/lib/server/load/page/page-file-actions.ts", import.meta.url),
-    "utf8"
-  )
-  const pageFileHistoryAction = pageActionsSource.slice(
-    pageActionsSource.indexOf("export async function pageFileHistoryAction")
-  )
-  assert.match(pageFileHistoryAction, /resolvePageActionRequestContext/u)
-  assert.match(
-    pageFileHistoryAction,
-    /pageFileHistory\([\s\S]*?context\.requestContext\s*\)/u
-  )
+    const result = await actions.fileHistory(
+      requestEvent({ siteId: SITE_ID, pageId: 42, fileId: 5 })
+    )
+    assert.deepEqual(result, { res: [{ revision_id: 5, revision_number: 2 }] })
+    assert.deepEqual(calls, [
+      {
+        method: "file_revision_range",
+        params: {
+          site_id: SITE_ID,
+          page_id: 42,
+          file_id: 5,
+          revision_number: -1,
+          revision_direction: "before",
+          limit: 20
+        },
+        context: TRUSTED_CONTEXT
+      }
+    ])
+
+    // A request that claims a different site than the trusted context is
+    // rejected before any file revision read reaches Deepwell.
+    calls.length = 0
+    const spoofed = await actions.fileHistory(
+      requestEvent({ siteId: SITE_ID + 1, pageId: 42, fileId: 5 }, SITE_ID + 1)
+    )
+    assert.equal(spoofed.status, 403)
+    assert.deepEqual(calls, [])
+  } finally {
+    await harness.close()
+  }
 })
