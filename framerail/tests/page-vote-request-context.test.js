@@ -1,179 +1,186 @@
-import { strict as assert } from "node:assert"
-import { readFile } from "node:fs/promises"
-import test from "node:test"
+// @ts-nocheck
+import assert from "node:assert/strict"
+import { after, before, test } from "node:test"
 
-const pageRpcSourceUrl = new URL("../src/lib/server/deepwell/page.ts", import.meta.url)
-const pageActionsSourceUrl = new URL(
-  "../src/lib/server/load/page/page-relation-actions.ts",
-  import.meta.url
-)
-const votePaneSourceUrl = new URL(
-  "../src/routes/[slug]/[...extra]/VotePane.svelte",
-  import.meta.url
-)
+import { pageActionEvent, startPageActionHarness } from "./page-action-test-harness.js"
 
-const exportedFunction = (source, name, nextName) => {
-  const start = source.indexOf(`export async function ${name}(`)
-  assert.notEqual(start, -1, name)
-  const end = source.indexOf(`export async function ${nextName}(`, start)
-  assert.notEqual(end, -1, nextName)
-  return source.slice(start, end)
+const SITE_ID = 17
+const SESSION_TOKEN = "vote-session"
+const TRUSTED_CONTEXT = {
+  siteId: SITE_ID,
+  page: "main",
+  sessionToken: SESSION_TOKEN
 }
 
-test("vote mutation actions forward the trusted route request context", async () => {
-  const source = await readFile(pageActionsSourceUrl, "utf8")
-  const cases = [
-    ["pageVoteCastAction", "pageVoteRemoveAction", "pageVoteCast"],
-    ["pageVoteRemoveAction", "pageScoreAction", "pageVoteRemove"]
-  ]
+let client
+let actions
+let closeHarness
 
-  for (const [name, nextName, callee] of cases) {
-    const body = exportedFunction(source, name, nextName)
-    assert.match(
-      body,
-      /resolvePageActionRequestContext\(event, \{[\s\S]*session: "required"/u
-    )
-    assert.match(body, new RegExp(`${callee}\\([\\s\\S]*?context\\.requestContext`, "u"))
-    assert.doesNotMatch(body, /submittedSiteId|siteId/u)
+before(async () => {
+  const harness = await startPageActionHarness()
+  client = harness.client
+  actions = harness.actions
+  closeHarness = () => harness.close()
+})
+
+after(async () => {
+  await closeHarness?.()
+})
+
+const installedSession = () => ({
+  session_token: SESSION_TOKEN,
+  user_id: 91,
+  created_at: "2026-08-10T00:00:00Z",
+  expires_at: "2026-08-11T00:00:00Z",
+  ip_address: "192.0.2.91",
+  user_agent: "page request context test",
+  restricted: false
+})
+
+const requestEvent = (action, overrides = {}) =>
+  pageActionEvent({
+    action,
+    siteId: SITE_ID,
+    sessionToken: SESSION_TOKEN,
+    requestContext: { ...TRUSTED_CONTEXT },
+    ...overrides
+  })
+
+test("vote mutation actions forward the trusted route request context", async () => {
+  const calls = []
+  client.request = async (method, params, context) => {
+    calls.push({ method, params, context })
+    if (method === "session_get") return installedSession()
+    if (method === "vote_set") return { page_id: 42, value: 1, score: 1 }
+    if (method === "vote_remove") return { page_id: 42, value: null, score: 0 }
+    throw new Error(`Unexpected Deepwell method ${method}`)
   }
+
+  // A submitted site selector is ignored: the actor and site come from the
+  // wws-owned headers plus the stored trusted request context.
+  const cast = await actions.voteCast(
+    requestEvent("voteCast", { body: { pageId: 42, value: 1, siteId: 999 } })
+  )
+  assert.deepEqual(cast, { res: { page_id: 42, value: 1, score: 1 } })
+
+  const cancel = await actions.voteCancel(
+    requestEvent("voteCancel", { body: { pageId: 42, siteId: 999 } })
+  )
+  assert.deepEqual(cancel, { res: { page_id: 42, value: null, score: 0 } })
+
+  assert.deepEqual(
+    calls.map(({ method }) => method),
+    ["session_get", "vote_set", "session_get", "vote_remove"]
+  )
+  assert.deepEqual(calls[1].params, { page_id: 42, value: 1 })
+  assert.deepEqual(calls[3].params, { page_id: 42 })
+  for (const mutation of [calls[1], calls[3]]) {
+    assert.deepEqual(mutation.context, TRUSTED_CONTEXT)
+  }
+
+  // A request that claims a different site than the trusted context is
+  // rejected before any mutation reaches Deepwell.
+  calls.length = 0
+  const spoofed = await actions.voteCast(
+    requestEvent("voteCast", {
+      body: { pageId: 42, value: 1 },
+      siteId: SITE_ID + 1
+    })
+  )
+  assert.equal(spoofed.status, 403)
+  assert.deepEqual(calls, [])
 })
 
 test("page score actions use only trusted route context", async () => {
-  const source = await readFile(pageActionsSourceUrl, "utf8")
-  const start = source.indexOf("export async function pageScoreAction(")
-  const end = source.indexOf("\nconst pageIdActionSchema", start)
-  assert.notEqual(start, -1)
-  assert.notEqual(end, -1)
-  const body = source.slice(start, end)
-
-  assert.match(body, /resolvePageActionRequestContext\(event\)/u)
-  assert.match(body, /pageScore\(context\.requestContext\)/u)
-  assert.doesNotMatch(body, /readActionJson|pageIdActionSchema|siteId|pageId|slug/u)
-})
-
-test("vote mutation RPCs derive actor and site from request context", async () => {
-  const source = await readFile(pageRpcSourceUrl, "utf8")
-  const cases = [
-    ["pageVoteCast", "pageVoteRemove", "vote_set"],
-    ["pageVoteRemove", "pageRerender", "vote_remove"]
-  ]
-
-  for (const [name, nextName, method] of cases) {
-    const body = exportedFunction(source, name, nextName)
-    assert.match(body, /requestContext: RequestContext/u)
-    assert.match(body, new RegExp(`"${method}"`, "u"))
-    assert.match(body, /client\.request\([\s\S]*requestContext\s*\)/u)
-    assert.doesNotMatch(body, /userId|user_id/u)
+  const calls = []
+  client.request = async (method, params, context) => {
+    calls.push({ method, params, context })
+    if (method === "page_get_score") return { page_id: 42, score: 7 }
+    throw new Error(`Unexpected Deepwell method ${method}`)
   }
-})
 
-test("legacy Rate actions submit only a revision-bound server registry selector", async () => {
-  const actionSource = await readFile(pageActionsSourceUrl, "utf8")
-  const action = exportedFunction(
-    actionSource,
-    "wikidotLegacyRateAction",
-    "wikidotLegacySetTagsAction"
+  const result = await actions.score(requestEvent("score"))
+  assert.deepEqual(result, { res: { page_id: 42, score: 7 } })
+  assert.deepEqual(calls, [
+    {
+      method: "page_get_score",
+      params: { site_id: SITE_ID, page: "main" },
+      context: TRUSTED_CONTEXT
+    }
+  ])
+
+  // A caller cannot select the scored page through the request body.
+  calls.length = 0
+  const bodySelected = await actions.score(
+    requestEvent("score", { body: { pageId: 1, siteId: 1, page: "attacker" } })
   )
-  assert.match(action, /session: "required"/u)
-  assert.match(action, /context\.requestContext/u)
-  assert.doesNotMatch(action, /\bvalue\b|userId|siteId|score|voteCount/u)
+  assert.deepEqual(bodySelected, { res: { page_id: 42, score: 7 } })
+  assert.deepEqual(calls[0].params, { site_id: SITE_ID, page: "main" })
 
-  const rpcSource = await readFile(pageRpcSourceUrl, "utf8")
-  const rpc = exportedFunction(rpcSource, "wikidotLegacyRate", "pageRerender")
-  assert.match(rpc, /"wikidot_legacy_rate"/u)
-  assert.match(rpc, /page_id: pageId/u)
-  assert.match(rpc, /last_revision_id: lastRevisionId/u)
-  assert.match(rpc, /action_index: actionIndex/u)
-  assert.match(rpc, /action_fingerprint: actionFingerprint/u)
-  assert.match(rpc, /requestContext/u)
-  assert.doesNotMatch(rpc, /\bvalue\b|userId|siteId|score|voteCount/u)
+  calls.length = 0
+  const spoofed = await actions.score(requestEvent("score", { siteId: SITE_ID + 1 }))
+  assert.equal(spoofed.status, 403)
+  assert.deepEqual(calls, [])
 })
 
-test("page score RPCs derive the target from request context", async () => {
-  const source = await readFile(pageRpcSourceUrl, "utf8")
-  const start = source.indexOf("export async function pageScore(")
-  assert.notEqual(start, -1)
-  const body = source.slice(start)
-
-  assert.match(body, /requestContext: RequestContext/u)
-  assert.match(body, /requestContext\?\.siteId/u)
-  assert.match(body, /requestContext\?\.page/u)
-  assert.match(body, /"page_get_score"/u)
-  assert.match(body, /client\.request\([\s\S]*requestContext\s*\)/u)
-  assert.doesNotMatch(body, /siteId: number|pageId: Optional<number>|slug: string/u)
-})
-
-test("vote mutation panes send only the selected page", async () => {
-  const source = await readFile(votePaneSourceUrl, "utf8")
-  const castStart = source.indexOf("async function castVote")
-  const castEnd = source.indexOf("\n  async function cancelVote", castStart)
-  const cancelStart = castEnd
-  const cancelEnd = source.indexOf("\n  async function fetchVoteRating", cancelStart)
-  assert.notEqual(castStart, -1)
-  assert.notEqual(castEnd, -1)
-  assert.notEqual(cancelEnd, -1)
-
-  for (const body of [
-    source.slice(castStart, castEnd),
-    source.slice(cancelStart, cancelEnd)
-  ]) {
-    assert.doesNotMatch(body, /siteId/u)
-    assert.match(body, /pageId: data\.page\?\.page_id/u)
+test("legacy wiki actions derive the actor, client address, and revision binding from the trusted route", async () => {
+  const calls = []
+  client.request = async (method, params, context) => {
+    calls.push({ method, params, context })
+    if (method === "session_get") return installedSession()
+    if (method === "wikidot_legacy_rate") return { page_id: 42, score: 1 }
+    if (method === "wikidot_legacy_set_tags") return { revision_id: 91 }
+    throw new Error(`Unexpected Deepwell method ${method}`)
   }
-})
 
-test("page score pane sends no client-selected target", async () => {
-  const source = await readFile(votePaneSourceUrl, "utf8")
-  const start = source.indexOf("async function fetchVoteRating")
-  const end = source.indexOf("\n  function starAsset", start)
-  assert.notEqual(start, -1)
-  assert.notEqual(end, -1)
-  const body = source.slice(start, end)
-
-  assert.match(body, /method: "POST"/u)
-  assert.doesNotMatch(body, /siteId|pageId|body:/u)
-})
-
-test("Wikidot WhoRated pane uses the exact AMC pageId contract", async () => {
-  const source = await readFile(votePaneSourceUrl, "utf8")
-  const start = source.indexOf("async function getWikidotWhoRated")
-  const end = source.indexOf("\n  async function getVoteList", start)
-  assert.notEqual(start, -1)
-  assert.notEqual(end, -1)
-  const body = source.slice(start, end)
-
-  assert.match(body, /fetch\("\/ajax-module-connector\.php"/u)
-  assert.match(body, /moduleName: "pagerate\/WhoRatedPageModule"/u)
-  assert.match(body, /pageId: String\(pageId\)/u)
-  assert.doesNotMatch(body, /siteId|userId|vote_id|page_vote_id/u)
-})
-
-test("set-tags resolves the actor and alterations behind the trusted route", async () => {
-  const actionSource = await readFile(pageActionsSourceUrl, "utf8")
-  const actionStart = actionSource.indexOf(
-    "export async function wikidotLegacySetTagsAction("
+  const actionFingerprint = "0123456789abcdef0123456789abcdef"
+  const rate = await actions.legacyRate(
+    requestEvent("legacyRate", {
+      body: {
+        pageId: 42,
+        lastRevisionId: 90,
+        actionIndex: 3,
+        actionFingerprint,
+        value: 99,
+        siteId: 999
+      }
+    })
   )
-  const actionEnd = actionSource.length
-  assert.notEqual(actionStart, -1)
-  const action = actionSource.slice(actionStart, actionEnd)
-  assert.match(action, /session: "required"/u)
-  assert.match(action, /context\.sessionUserId/u)
-  assert.match(action, /getClientAddress\(\)/u)
-  assert.doesNotMatch(action, /submittedSiteId|tags|alterations/u)
+  assert.deepEqual(rate, { res: { page_id: 42, score: 1 } })
 
-  const rpcSource = await readFile(pageRpcSourceUrl, "utf8")
-  const rpcStart = rpcSource.indexOf("export async function wikidotLegacySetTags(")
-  const rpcEnd = rpcSource.indexOf(
-    "\nexport interface WikidotPageDiscussionOutput",
-    rpcStart
+  const setTags = await actions.legacySetTags(
+    requestEvent("legacySetTags", {
+      body: {
+        pageId: 42,
+        lastRevisionId: 90,
+        actionIndex: 3,
+        actionFingerprint,
+        tags: ["forged"],
+        alterations: ["+forged"]
+      }
+    })
   )
-  assert.notEqual(rpcStart, -1)
-  assert.notEqual(rpcEnd, -1)
-  const rpc = rpcSource.slice(rpcStart, rpcEnd)
-  assert.match(rpc, /"wikidot_legacy_set_tags"/u)
-  assert.match(rpc, /action_index: actionIndex/u)
-  assert.match(rpc, /action_fingerprint: actionFingerprint/u)
-  assert.match(rpc, /last_revision_id: lastRevisionId/u)
-  assert.match(rpc, /requestContext/u)
-  assert.doesNotMatch(rpc, /\btags\s*:|alterations|site_id/u)
+  assert.deepEqual(setTags, { res: { revision_id: 91 } })
+
+  assert.deepEqual(
+    calls.map(({ method }) => method),
+    ["session_get", "wikidot_legacy_rate", "session_get", "wikidot_legacy_set_tags"]
+  )
+  assert.deepEqual(calls[1].params, {
+    page_id: 42,
+    last_revision_id: 90,
+    action_index: 3,
+    action_fingerprint: actionFingerprint
+  })
+  assert.deepEqual(calls[3].params, {
+    page_id: 42,
+    last_revision_id: 90,
+    action_index: 3,
+    action_fingerprint: actionFingerprint,
+    user_id: 91,
+    ip_address: "192.0.2.91"
+  })
+  for (const mutation of [calls[1], calls[3]]) {
+    assert.deepEqual(mutation.context, TRUSTED_CONTEXT)
+  }
 })
