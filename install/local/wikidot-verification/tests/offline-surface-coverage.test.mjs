@@ -98,13 +98,13 @@ test("source fragments cannot masquerade as executable named-test owners", async
 });
 
 test("a bogus named claim still fails when a bare test file also owns the row", async () => {
-  const bogus = "deepwell/src/services/filter/structs.rs#definitely_not_a_test";
+  const bogus = "deepwell/src/services/filter/matcher.rs#definitely_not_a_test";
   const result = await verifyCoverageAnchorFiles(
     {
       rows: [
         {
           surface_id: "surface:99999993",
-          anchors: [bogus, "deepwell/src/services/filter/structs.rs"],
+          anchors: [bogus, "deepwell/src/services/filter/matcher.rs"],
         },
       ],
     },
@@ -117,7 +117,7 @@ test("a bogus named claim still fails when a bare test file also owns the row", 
 
 test("a real test name with an invented qualified suffix is rejected", async () => {
   const anchor =
-    "deepwell/src/services/filter/structs.rs#filter_class_names_and_option_conversion_are_stable::bogus";
+    "deepwell/src/services/filter/matcher.rs#filter_summary_debug_redacts_private_filter_details::bogus";
   const result = await verifyCoverageAnchorFiles(
     {rows: [{surface_id: "surface:99999992", anchors: [anchor]}]},
     repositoryRoot,

@@ -152,7 +152,11 @@ impl TestRunner {
 
     #[allow(unused)]
     pub fn set_request_context(&mut self, req_ctx: RequestContext) {
-        self.with_dependent_mut(|_owner, ctx| ctx.set_request_for_test(req_ctx));
+        self.with_dependent_mut(|owner, ctx| {
+            let replacement = ServiceContext::new(&owner.state, owner.transaction());
+            let previous = std::mem::replace(ctx, replacement);
+            *ctx = previous.with_request(req_ctx);
+        });
     }
 
     #[allow(unused)]

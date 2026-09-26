@@ -106,12 +106,34 @@ function normalizeSource(value) {
 
 function registeredMethods(apiSource) {
   const productionSource = apiSource.split("#[cfg(test)]", 1)[0]
+  const isolationSelector = productionSource.match(
+    /fn rpc_transaction_isolation\(method_name: &str\) -> Option<IsolationLevel> \{([\s\S]*?)\n\}\n\nasync fn build_module/u
+  )
+  const selectedIsolation = new Map()
+  if (isolationSelector) {
+    if (!/register!\(@with_isolation \$name, \$method, rpc_transaction_isolation\(\$name\)\)/u.test(productionSource)) {
+      throw new Error(`${API_PATH} does not use the declared RPC isolation selector`)
+    }
+    const selectorBody = isolationSelector[1]
+    const matchBody = selectorBody.match(/^\s*match method_name \{([\s\S]*?)\}\s*$/u)?.[1]
+    if (!matchBody || !/_\s*=>\s*None\s*,?/u.test(matchBody)) {
+      throw new Error(`${API_PATH} RPC isolation selector has no default`)
+    }
+    const explicitArm = /"([^"]+)"\s*=>\s*Some\(IsolationLevel::([A-Za-z_][A-Za-z0-9_]*)\)\s*,?/gu
+    for (const match of matchBody.matchAll(explicitArm)) {
+      if (selectedIsolation.has(match[1])) throw new Error(`duplicate RPC isolation selector: ${match[1]}`)
+      selectedIsolation.set(match[1], match[2])
+    }
+    if (matchBody.replaceAll(explicitArm, "").replace(/_\s*=>\s*None\s*,?/u, "").trim()) {
+      throw new Error(`${API_PATH} contains an unsupported RPC isolation selector arm`)
+    }
+  }
   const registrations = [...productionSource.matchAll(
     /register!\s*\(\s*"([^"]+)"\s*,\s*([A-Za-z_][A-Za-z0-9_]*)(?:\s*,\s*isolation\s*=\s*IsolationLevel::([A-Za-z_][A-Za-z0-9_]*))?\s*,?\s*\)/gu
   )].map((match) => ({
     method: match[1],
     handler: match[2],
-    isolation: match[3] === undefined ? "default" : match[3]
+    isolation: match[3] ?? selectedIsolation.get(match[1]) ?? "default"
   }))
   const declaredNames = [...productionSource.matchAll(/register!\s*\(\s*"([^"]+)"/gu)].map((match) => match[1])
   if (registrations.length === 0) throw new Error(`${API_PATH} declares no JSON-RPC methods`)
@@ -122,6 +144,9 @@ function registeredMethods(apiSource) {
   for (const registration of registrations) {
     if (names.has(registration.method)) throw new Error(`duplicate JSON-RPC registration: ${registration.method}`)
     names.add(registration.method)
+  }
+  for (const method of selectedIsolation.keys()) {
+    if (!names.has(method)) throw new Error(`RPC isolation selector names unregistered method: ${method}`)
   }
   return registrations.sort((left, right) => left.method.localeCompare(right.method, "en"))
 }

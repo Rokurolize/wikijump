@@ -163,12 +163,12 @@ impl EmailService {
 
         // Determine email provider classification if no mx_providers
         if mailcheck.mx_providers.is_empty() {
-            if mailcheck.public_domain {
-                provider_classification = EmailProviderClassification::PublicEmail;
-            } else if mailcheck.mx {
-                provider_classification = EmailProviderClassification::SelfHosted;
-            } else {
+            if !mailcheck.mx {
                 provider_classification = EmailProviderClassification::NoProvider;
+            } else if mailcheck.public_domain {
+                provider_classification = EmailProviderClassification::PublicEmail;
+            } else {
+                provider_classification = EmailProviderClassification::SelfHosted;
             }
         }
 
