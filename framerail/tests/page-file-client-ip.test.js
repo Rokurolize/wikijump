@@ -8,6 +8,30 @@ const CLIENT_IP = "192.0.2.14"
 const SITE_ID = 17
 const TRUSTED_CONTEXT = { siteId: SITE_ID, page: "main" }
 
+const formEvent = (action, fields) => {
+  const data = new FormData()
+  for (const [name, value] of Object.entries(fields)) data.set(name, String(value))
+  return {
+    request: new Request(`https://wikijump.test/main?/${action}`, {
+      method: "POST",
+      body: data,
+      headers: {
+        "X-Wikijump-Site-Id": String(SITE_ID),
+        "X-Wikijump-Site-Slug": "test"
+      }
+    }),
+    getClientAddress: () => CLIENT_IP,
+    params: { slug: "main" },
+    cookies: { get: () => "file-session" },
+    locals: {
+      requestContext: {
+        ...TRUSTED_CONTEXT,
+        sessionToken: "file-session"
+      }
+    }
+  }
+}
+
 test("file edit, restore, and rollback actions forward getClientAddress through Deepwell", async () => {
   const harness = await startPageActionHarness()
   const { client, actions } = harness
@@ -20,30 +44,6 @@ test("file edit, restore, and rollback actions forward getClientAddress through 
         return { ok: true }
       }
       throw new Error(`Unexpected Deepwell method ${method}`)
-    }
-
-    const formEvent = (action, fields) => {
-      const data = new FormData()
-      for (const [name, value] of Object.entries(fields)) data.set(name, String(value))
-      return {
-        request: new Request(`https://wikijump.test/main?/${action}`, {
-          method: "POST",
-          body: data,
-          headers: {
-            "X-Wikijump-Site-Id": String(SITE_ID),
-            "X-Wikijump-Site-Slug": "test"
-          }
-        }),
-        getClientAddress: () => CLIENT_IP,
-        params: { slug: "main" },
-        cookies: { get: () => "file-session" },
-        locals: {
-          requestContext: {
-            ...TRUSTED_CONTEXT,
-            sessionToken: "file-session"
-          }
-        }
-      }
     }
 
     await actions.fileEdit(
@@ -105,6 +105,75 @@ test("file edit, restore, and rollback actions forward getClientAddress through 
         { ...TRUSTED_CONTEXT, sessionToken: "file-session" },
         { ...TRUSTED_CONTEXT, sessionToken: "file-session" },
         { ...TRUSTED_CONTEXT, sessionToken: "file-session" }
+      ]
+    )
+  } finally {
+    await harness.close()
+  }
+})
+
+test("file delete and move actions bind the actor and routed page context", async () => {
+  const harness = await startPageActionHarness()
+  const { client, actions } = harness
+  try {
+    const calls = []
+    client.request = async (method, params, context) => {
+      calls.push({ method, params, context })
+      if (method === "session_get") return { user_id: 3 }
+      if (method === "file_delete" || method === "file_move") return { ok: true }
+      throw new Error(`Unexpected Deepwell method ${method}`)
+    }
+
+    await actions.fileDelete(
+      pageActionEvent({
+        action: "fileDelete",
+        body: { siteId: SITE_ID, pageId: 42, lastRevisionId: 8, fileId: 5, comments: "delete" },
+        siteId: SITE_ID,
+        sessionToken: "file-session",
+        requestContext: { ...TRUSTED_CONTEXT, sessionToken: "file-session" }
+      })
+    )
+    await actions.fileMove(
+      formEvent("fileMove", {
+        siteId: SITE_ID,
+        pageId: 42,
+        lastRevisionId: 8,
+        fileId: 5,
+        destinationPage: "other-page",
+        name: "",
+        comments: "move"
+      })
+    )
+
+    assert.deepEqual(
+      calls.filter(({ method }) => method === "file_delete" || method === "file_move"),
+      [
+        {
+          method: "file_delete",
+          params: {
+            site_id: SITE_ID,
+            page_id: 42,
+            user_id: 3,
+            file: 5,
+            last_revision_id: 8,
+            revision_comments: "delete"
+          },
+          context: { ...TRUSTED_CONTEXT, sessionToken: "file-session" }
+        },
+        {
+          method: "file_move",
+          params: {
+            site_id: SITE_ID,
+            current_page_id: 42,
+            destination_page: "other-page",
+            user_id: 3,
+            file_id: 5,
+            last_revision_id: 8,
+            name: undefined,
+            revision_comments: "move"
+          },
+          context: { ...TRUSTED_CONTEXT, sessionToken: "file-session" }
+        }
       ]
     )
   } finally {
