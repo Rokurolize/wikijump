@@ -106,14 +106,18 @@ export function extractCssReferences(cssText, baseUrl) {
   const imports = [];
   const assets = [];
   const importPattern = /@import\s+(?:url\(\s*)?["']?([^"')]+)["']?\s*\)?([^;]*);/gu;
+  const importRanges = [];
   let match;
-  let assetText = cssText;
   while ((match = importPattern.exec(cssText)) !== null) {
     imports.push({url: resolveUrl(baseUrl, splitCssValue(match[1])), raw: match[0]});
-    assetText = assetText.split(match[0]).join(" ");
+    importRanges.push([match.index, match.index + match[0].length]);
   }
   const urlPattern = /url\(\s*["']?([^"')]+)["']?\s*\)/gu;
-  while ((match = urlPattern.exec(assetText)) !== null) {
+  let importIndex = 0;
+  while ((match = urlPattern.exec(cssText)) !== null) {
+    while (importIndex < importRanges.length && importRanges[importIndex][1] <= match.index) importIndex += 1;
+    const range = importRanges[importIndex];
+    if (range && match.index >= range[0] && match.index < range[1]) continue;
     const raw = splitCssValue(match[1]);
     if (raw.startsWith("data:") || raw.startsWith("#") || raw.startsWith("blob:")) continue;
     assets.push({url: resolveUrl(baseUrl, raw), raw});
@@ -413,14 +417,15 @@ export class ReferenceCache {
     const rootText = root.bytes.toString("utf8");
     const references = extractHtmlReferences(rootText, rootUrl);
     const pending = references.map((url) => ({url, depth: 0}));
-    let assetCount = 0;
+    let pendingHead = 0;
+    const budget = {count: 0};
     const visited = new Set();
-    while (pending.length > 0) {
-      const {url, depth} = pending.shift();
+    while (pendingHead < pending.length) {
+      const {url, depth} = pending[pendingHead++];
       if (visited.has(url)) continue;
       visited.add(url);
-      if (assetCount >= this.limits.maxAssets || depth > this.limits.maxImportDepth) {
-        const code = assetCount >= this.limits.maxAssets ? "reference_asset_limit" : "reference_import_depth";
+      if (budget.count >= this.limits.maxAssets || depth > this.limits.maxImportDepth) {
+        const code = budget.count >= this.limits.maxAssets ? "reference_asset_limit" : "reference_import_depth";
         this.failedAssets.push({url, code, message: `reference asset omitted by ${code}`});
         urlToLocal.set(url, "/missing");
         continue;
@@ -444,14 +449,10 @@ export class ReferenceCache {
         urlToLocal.set(url, "/missing");
         continue;
       }
-      assetCount += 1;
+      budget.count += 1;
       if (contentTypeIsCss(record.content_type)) {
         const cssText = record.bytes.toString("utf8");
-        const {imports, assets} = extractCssReferences(cssText, record.final_url ?? url);
-        for (const entry of [...imports, ...assets]) {
-          if (!visited.has(entry.url)) pending.push({url: entry.url, depth: depth + 1});
-        }
-        const localMap = await this.#localizeCss(cssText, record.final_url ?? url, depth, offline, visited);
+        const localMap = await this.#localizeCss(cssText, record.final_url ?? url, depth, offline, visited, budget);
         for (const [key, value] of localMap) urlToLocal.set(key, value);
         const rewritten = rewriteCssReferences(cssText, record.final_url ?? url, urlToLocal);
         const stored = await this.storeObject(Buffer.from(rewritten), record.content_type, {originalUrl: url});
@@ -486,12 +487,17 @@ export class ReferenceCache {
     };
   }
 
-  async #localizeCss(cssText, baseUrl, depth, offline, visited) {
+  async #localizeCss(cssText, baseUrl, depth, offline, visited, budget) {
     const map = new Map();
     const {imports, assets} = extractCssReferences(cssText, baseUrl);
     for (const entry of [...imports, ...assets]) {
       if (visited.has(entry.url)) continue;
       visited.add(entry.url);
+      if (budget.count >= this.limits.maxAssets) {
+        map.set(entry.url, "/missing");
+        this.failedAssets.push({url: entry.url, code: "reference_asset_limit", message: "reference asset omitted by reference_asset_limit"});
+        continue;
+      }
       if (depth + 1 > this.limits.maxImportDepth) {
         map.set(entry.url, "/missing");
         this.failedAssets.push({url: entry.url, code: "reference_import_depth", message: "reference CSS import depth exceeded"});
@@ -513,9 +519,10 @@ export class ReferenceCache {
         map.set(entry.url, "/missing");
         continue;
       }
+      budget.count += 1;
       if (contentTypeIsCss(record.content_type)) {
         const nested = record.bytes.toString("utf8");
-        const nestedMap = await this.#localizeCss(nested, record.final_url ?? entry.url, depth + 1, offline, visited);
+        const nestedMap = await this.#localizeCss(nested, record.final_url ?? entry.url, depth + 1, offline, visited, budget);
         for (const [key, value] of nestedMap) map.set(key, value);
         const rewritten = rewriteCssReferences(nested, record.final_url ?? entry.url, map);
         const stored = await this.storeObject(Buffer.from(rewritten), record.content_type, {originalUrl: entry.url});
