@@ -3,6 +3,10 @@
 use super::*;
 
 const TAG_CLOUD_DEFAULT_LIMIT: usize = 50;
+/// PostgreSQL accepts at most 65,535 bind parameters per statement. Chunk the
+/// revision-tag lookup well below that so a large site cannot fail the whole
+/// render with a protocol-limit error.
+const REVISION_ID_QUERY_CHUNK: usize = 10_000;
 const TAG_CLOUD_DEFAULT_TARGET: &str = "system:page-tags";
 const TAG_CLOUD_DEFAULT_WIDTH: u16 = 300;
 const TAG_CLOUD_DEFAULT_HEIGHT: u16 = 300;
@@ -49,7 +53,6 @@ struct TagCloudArguments {
 
 #[derive(Debug, FromQueryResult)]
 struct TagCloudPage {
-    page_id: i64,
     page_category_id: i64,
     latest_revision_id: Option<i64>,
 }
@@ -495,7 +498,7 @@ impl RenderService {
         let statement = Statement::from_sql_and_values(
             txn.get_database_backend(),
             format!(
-                "SELECT p.page_id, p.page_category_id, p.latest_revision_id \
+                "SELECT p.page_category_id, p.latest_revision_id \
                  FROM page p \
                  JOIN page_category pc ON pc.category_id = p.page_category_id \
                  WHERE p.site_id = $1 \
@@ -508,79 +511,71 @@ impl RenderService {
             .all(txn)
             .await
             .or_raise(make_error)?;
-        let mut category_permissions = HashMap::new();
-        let mut visible_revision_ids = Vec::with_capacity(pages.len());
-        for page in pages {
-            let can_view = if let Some(can_view) =
-                category_permissions.get(&page.page_category_id)
-            {
-                *can_view
-            } else {
-                let can_view = PermissionService::check_user_can(
-                    ctx,
-                    &CheckPermissionContext {
-                        user_id: None,
-                        site_id: current_site_id,
-                        page_reference: Some(Reference::Id(page.page_id)),
-                    },
-                    Permission {
-                        resource_type: Resource::Page,
-                        resource_category: Some(Reference::Id(page.page_category_id)),
-                        action: Action::View,
-                    },
-                )
-                .await
-                .or_raise(make_error)?;
-                category_permissions.insert(page.page_category_id, can_view);
-                can_view
-            };
-            if !can_view {
-                continue;
-            }
+        // The TagCloud viewer is anonymous, so a page reference cannot grant a
+        // page-scoped virtual role such as PageAuthor. Every scanned page can
+        // therefore share one permission derivation plus one category probe per
+        // distinct category, instead of a full page-scoped check per page.
+        let category_permissions = &mut BTreeMap::new();
+        let category_ids = pages
+            .iter()
+            .map(|page| Some(page.page_category_id))
+            .collect::<Vec<_>>();
+        let viewable = PermissionService::batch_check_page_view_without_page_roles(
+            ctx,
+            None,
+            current_site_id,
+            &category_ids,
+            category_permissions,
+        )
+        .await
+        .or_raise(make_error)?;
 
-            if let Some(revision_id) = page.latest_revision_id {
-                visible_revision_ids.push(revision_id);
-            }
-        }
+        let visible_revision_ids = pages
+            .iter()
+            .zip(viewable)
+            .filter(|(_, can_view)| *can_view)
+            .filter_map(|(page, _)| page.latest_revision_id)
+            .collect::<Vec<_>>();
 
         if visible_revision_ids.is_empty() {
             return Ok(Vec::new());
         }
 
-        let revision_values = visible_revision_ids
-            .iter()
-            .copied()
-            .map(Value::from)
-            .collect::<Vec<_>>();
-        let revision_placeholders = (1..=revision_values.len())
-            .map(|index| format!("${index}"))
-            .collect::<Vec<_>>()
-            .join(", ");
-        let revision_statement = Statement::from_sql_and_values(
-            txn.get_database_backend(),
-            format!(
-                "SELECT pr.tags \
-                 FROM page_revision pr \
-                 WHERE pr.revision_id IN ({revision_placeholders})",
-            ),
-            revision_values,
-        );
-        let revisions = TagCloudRevisionTags::find_by_statement(revision_statement)
-            .all(txn)
-            .await
-            .or_raise(make_error)?;
+        // Fetch revision tags in bounded chunks so a site with more pages than
+        // PostgreSQL's bind-parameter ceiling still renders instead of failing.
         let mut counts = BTreeMap::<String, usize>::new();
-        for revision in revisions {
-            if let Some(branch_tag) = current_branch_tag
-                && !revision.tags.iter().any(|tag| tag == branch_tag)
-            {
-                continue;
-            }
-            for tag in revision.tags {
-                if tag.trim().is_empty() {
+        for chunk in visible_revision_ids.chunks(REVISION_ID_QUERY_CHUNK) {
+            let revision_values =
+                chunk.iter().copied().map(Value::from).collect::<Vec<_>>();
+            let revision_placeholders = (1..=revision_values.len())
+                .map(|index| format!("${index}"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let revision_statement = Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                format!(
+                    "SELECT pr.tags \
+                     FROM page_revision pr \
+                     WHERE pr.revision_id IN ({revision_placeholders})",
+                ),
+                revision_values,
+            );
+            let revisions = TagCloudRevisionTags::find_by_statement(revision_statement)
+                .all(txn)
+                .await
+                .or_raise(make_error)?;
+            for revision in revisions {
+                if let Some(branch_tag) = current_branch_tag
+                    && !revision.tags.iter().any(|tag| tag == branch_tag)
+                {
                     continue;
                 }
-                *counts.entry(tag).or_default() += 1;
+                for tag in revision.tags {
+                    if tag.trim().is_empty() {
+                        continue;
+                    }
+                    *counts.entry(tag).or_default() += 1;
+                }
             }
         }
 

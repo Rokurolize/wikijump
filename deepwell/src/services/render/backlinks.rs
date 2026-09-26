@@ -30,12 +30,11 @@ use super::service::{
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::ServiceContext;
-use crate::services::permission::{CheckPermissionContext, PermissionService};
-use crate::types::Reference;
-use crate::types::{Action, Permission, Resource};
+use crate::services::permission::PermissionService;
 use ftml::settings::WikitextSettings;
 use regex::Regex;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement};
+use std::collections::BTreeMap;
 use std::sync::LazyLock;
 
 /// The most Backlinks rows one module render will load.
@@ -51,7 +50,6 @@ pub(super) static BACKLINKS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 
 #[derive(Debug, FromQueryResult)]
 pub(in crate::services::render) struct BacklinksModulePage {
-    pub(in crate::services::render) page_id: i64,
     pub(in crate::services::render) page_category_id: i64,
     pub(in crate::services::render) slug: String,
     pub(in crate::services::render) title: String,
@@ -100,6 +98,10 @@ impl RenderService {
 
         let mut expanded = String::with_capacity(wikitext.len());
         let mut cursor = 0;
+        // The module resolves for the page being rendered, which is fixed for
+        // this call, so every occurrence shares one load. `None` means the scan
+        // was incomplete and each occurrence stays literal.
+        let mut cached_pages: Option<Option<Vec<BacklinksModulePage>>> = None;
 
         for captures in BACKLINKS_MODULE_REGEX.captures_iter(&wikitext) {
             let mtch = captures.get(0).unwrap();
@@ -114,25 +116,31 @@ impl RenderService {
                 continue;
             }
 
-            let pages = match current_page_id {
+            let pages: &[BacklinksModulePage] = match current_page_id {
                 Some(current_page_id) => {
-                    let Some(pages) = Self::load_backlinks_module_pages(
-                        ctx,
-                        current_site_id,
-                        current_page_id,
-                    )
-                    .await?
-                    else {
-                        expanded.push_str(mtch.as_str());
-                        cursor = mtch.end();
-                        continue;
-                    };
-                    pages
+                    if cached_pages.is_none() {
+                        cached_pages = Some(
+                            Self::load_backlinks_module_pages(
+                                ctx,
+                                current_site_id,
+                                current_page_id,
+                            )
+                            .await?,
+                        );
+                    }
+                    match cached_pages.as_ref().expect("pages were just loaded") {
+                        Some(pages) => pages,
+                        None => {
+                            expanded.push_str(mtch.as_str());
+                            cursor = mtch.end();
+                            continue;
+                        }
+                    }
                 }
-                None => Vec::new(),
+                None => &[],
             };
             expanded.push_str(
-                &compat_html.push_block_html(render_backlinks_module_box(&pages)),
+                &compat_html.push_block_html(render_backlinks_module_box(pages)),
             );
             cursor = mtch.end();
         }
@@ -159,7 +167,7 @@ impl RenderService {
         let statement = Statement::from_string(
             txn.get_database_backend(),
             format!(
-                "SELECT p.page_id, p.page_category_id, p.slug, pr.title, pr.hidden \
+                "SELECT p.page_category_id, p.slug, pr.title, pr.hidden \
                  FROM page_connection pc \
                  JOIN page p ON p.page_id = pc.from_page_id \
                  JOIN page_revision pr ON pr.revision_id = p.latest_revision_id \
@@ -180,24 +188,27 @@ impl RenderService {
             return Ok(None);
         }
 
-        let mut viewable = Vec::with_capacity(rows.len());
-        for row in rows {
-            let anonymously_viewable = PermissionService::check_user_can(
+        // The Backlinks module always renders for an anonymous viewer, so a page
+        // reference cannot grant a page-scoped virtual role. One batched
+        // derivation plus one category probe per distinct category replaces a
+        // page-scoped check per row.
+        let category_ids = rows
+            .iter()
+            .map(|row| Some(row.page_category_id))
+            .collect::<Vec<_>>();
+        let anonymously_viewable =
+            PermissionService::batch_check_page_view_without_page_roles(
                 ctx,
-                &CheckPermissionContext {
-                    user_id: None,
-                    site_id: current_site_id,
-                    page_reference: Some(Reference::Id(row.page_id)),
-                },
-                Permission {
-                    resource_type: Resource::Page,
-                    resource_category: Some(Reference::Id(row.page_category_id)),
-                    action: Action::View,
-                },
+                None,
+                current_site_id,
+                &category_ids,
+                &mut BTreeMap::new(),
             )
             .await
             .or_raise(make_error)?;
 
+        let mut viewable = Vec::with_capacity(rows.len());
+        for (row, anonymously_viewable) in rows.into_iter().zip(anonymously_viewable) {
             if anonymously_viewable
                 && !row
                     .hidden

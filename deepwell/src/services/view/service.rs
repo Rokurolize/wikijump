@@ -64,7 +64,8 @@ use crate::services::relation::{
 };
 use crate::services::render::{
     LegacyActionRegistry, MembershipActionRegistry, RenderOutput, RenderService,
-    compiled_generator_is_current, has_theme_previewer_no_ui,
+    ViewablePageRef, compiled_generator_is_current, has_theme_previewer_no_ui,
+    view_decisions_for_scanned_pages,
 };
 use crate::services::settings::{
     NavigationPageHtml, PageRatingPermission, PageRatingSettings, SettingsService,
@@ -1676,7 +1677,7 @@ ORDER BY breadcrumb_chain.depth ASC
         site_id: i64,
         user_id: Option<i64>,
     ) -> Result<Vec<PageTemplateSummary>> {
-        let Some(template_category) =
+        let Some(_template_category) =
             CategoryService::get_optional(ctx, site_id, Reference::from("template"))
                 .await?
         else {
@@ -1693,33 +1694,55 @@ ORDER BY breadcrumb_chain.depth ASC
         .await?;
         pages.sort_by(|left, right| left.slug.cmp(&right.slug));
 
+        // Resolve the viewer's access once for the whole list instead of a
+        // page-scoped permission derivation per template, then fetch the
+        // viewable templates' latest title and wikitext in one query. Only
+        // viewable pages are fetched, matching the original read scope.
+        let scanned = pages
+            .iter()
+            .map(|page| ViewablePageRef {
+                page_id: page.page_id,
+                site_id: page.site_id,
+                page_category_id: Some(page.page_category_id),
+            })
+            .collect::<Vec<_>>();
+        let viewable = view_decisions_for_scanned_pages(
+            ctx,
+            user_id,
+            &scanned,
+            &mut BTreeMap::new(),
+        )
+        .await?;
+        let visible_page_ids = pages
+            .iter()
+            .zip(&viewable)
+            .filter(|(_, can_view)| **can_view)
+            .map(|(page, _)| page.page_id)
+            .collect::<Vec<_>>();
+        let mut summaries = PageRevisionService::get_latest_title_and_wikitext_batch(
+            ctx,
+            site_id,
+            &visible_page_ids,
+        )
+        .await?;
+
         let mut templates = Vec::with_capacity(pages.len());
-        for page in pages {
-            let user_can_view_template = PermissionService::check_user_can(
-                ctx,
-                &CheckPermissionContext {
-                    user_id,
-                    site_id,
-                    page_reference: Some(Reference::Id(page.page_id)),
-                },
-                Permission {
-                    resource_type: Resource::Page,
-                    resource_category: Some(Reference::Id(template_category.category_id)),
-                    action: Action::View,
-                },
-            )
-            .await?;
+        for (page, user_can_view_template) in pages.into_iter().zip(viewable) {
             if !user_can_view_template {
                 continue;
             }
 
-            let revision =
-                PageRevisionService::get_latest(ctx, site_id, page.page_id).await?;
-            let wikitext = TextService::get(ctx, &revision.wikitext_hash).await?;
+            let Some(Some((title, wikitext))) = summaries.remove(&page.page_id) else {
+                return Err(Error::new(
+                    format!("template page ID {} has no latest revision", page.page_id,),
+                    ErrorType::PageRevision,
+                )
+                .into());
+            };
             templates.push(PageTemplateSummary {
                 page_id: page.page_id,
                 slug: page.slug,
-                title: revision.title,
+                title,
                 wikitext,
             });
         }
