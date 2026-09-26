@@ -6,30 +6,18 @@
   }
 }
 
-/* SCP-JP interactive acceptance: flopstyle-dark mobile navigation readability revision 2 */
+/* SCP-JP interaction compatibility: flopstyle-dark mobile navigation readability */
 #login-status {
   color: #181818 !important;
 }
-
-#side-bar .side-block .heading,
-#side-bar .side-block .collapsible-block-link,
-#side-bar .side-block .collapsible-block-unfolded-link,
-#side-bar .side-block > a {
+#side-bar .side-block .collapsible-block-link {
   color: #fff !important;
 }
-
-/* Visual follow-up: the expanded submenu surface is yellow, so all labels on that panel need dark ink. */
-#side-bar .side-block a,
-#side-bar .collapsible-block-link,
-#side-bar .collapsible-block-unfolded a,
-#side-bar .collapsible-block-unfolded-link {
-  color: #28220c !important;
+#side-bar .side-block .collapsible-block-unfolded-link {
+  color: #fff !important;
 }
-
-#side-bar .side-block a:hover,
-#side-bar .collapsible-block-link:hover,
-#side-bar .collapsible-block-unfolded a:hover {
-  color: #171200 !important; background: #fff68a !important;
+#side-bar .side-block > a {
+  color: #fff !important;
 }
 
 /* The opened slate drawer has dark inherited links on a dark panel. Use the theme's warm light text for navigation only and keep its yellow hover state. */
@@ -52,11 +40,11 @@
   #u-credit-view:target {
     position: fixed !important; inset: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;
   }
-  
+
   #u-credit-view:target .modalcontainer {
     position: static !important; inset: auto !important; width: calc(100vw - 1rem) !important; max-width: calc(100vw - 1rem) !important; max-height: calc(100dvh - 1rem) !important;
   }
-  
+
   #u-credit-view:target .modalbox {
     max-width: 100% !important; max-height: calc(100dvh - 1rem) !important; overflow: auto !important; box-sizing: border-box !important;
   }
@@ -81,11 +69,11 @@
   .sidebox {
     width: calc((100vw - 1008px) / 2) !important; max-width: calc((100vw - 1008px) / 2) !important;
   }
-  
+
   .sidebox .wiki-content-table {
     width: 100% !important; max-width: 100% !important; table-layout: fixed !important;
   }
-  
+
   .sidebox .wiki-content-table th,
   .sidebox .wiki-content-table td {
     overflow-wrap: anywhere !important;
@@ -96,11 +84,11 @@
   .sidebox {
     position: relative !important; left: auto !important; width: 100% !important; max-width: 100% !important; max-height: none !important; margin: 1rem auto !important;
   }
-  
+
   .sidebox .wiki-content-table {
     width: 100% !important; max-width: 100% !important; table-layout: fixed !important;
   }
-  
+
   .sidebox .wiki-content-table th,
   .sidebox .wiki-content-table td {
     overflow-wrap: anywhere !important;

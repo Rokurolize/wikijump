@@ -3,17 +3,27 @@
   "frozen_candidate_source_sha256": "586784a5830a65c735d39c62c642425646d4ff87159cd864698102d68a8d99e6",
   "base_source_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
   "raw_jp_overrides_sha256": "f3e53882ed57eccf39074dbfb6c5c1b400f198698f76aa9391b4a9a2bdfb2be1",
-  "jp_overrides_sha256": "e75a54a30d029247f39bd328695edd3d5408d50a9013b1c9e792022a0f37f40c",
+  "jp_overrides_sha256": "bb0032cb8fffaa123382dfd80f00ba52743aad28f8141ed156533dad2c711084",
   "semantic_css_sha256": "dc02be0110236c51e6790f00f8bf54758606925c5ab18124cd785803f90e3a52",
   "canonical_override_sha256": "26b1d1bf88b4da6459ab1a6a199291caeb7966403c813ebad2b4a0a70632253f",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "44f461d90a0e3895969478001eb8a32d2604cd32564ce3ef05a4c72f15b5b906",
+  "final_source_inputs": {
+    "base_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
+    "jp_overrides_sha256": "bb0032cb8fffaa123382dfd80f00ba52743aad28f8141ed156533dad2c711084"
+  },
+  "ordered_include_sha256": "c78e9a83788409eaefc15c359fcb4481f5a4db39f8b72b619cf819a452412df2",
+  "declaration_reviews": {},
   "adaptation_block_count": 4,
   "raw_override_rule_count": 13,
   "canonical_override_rule_count": 13,
   "exact_duplicate_rules_removed": 0,
+  "redundant_same_value_declarations_removed": 0,
+  "empty_rules_removed": 0,
   "active_tags": [
     "テーマ"
   ],
-  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
   "historical_adaptations": [
     {
       "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",

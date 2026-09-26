@@ -75,6 +75,15 @@ test("maintenance audit infers the localized Japanese theme tag when legacy mani
   assert.deepEqual(audit.localization_baseline.inline_css_changed_selectors, [".theme"]);
 });
 
+test("maintenance audit recovers the active upstream theme tag for legacy sources", () => {
+  const upstream = "[[iftags +theme]][[module CSS]].theme { color: red; }[[/module]][[/iftags]]";
+  const localized = "[[iftags +theme]][[module CSS]].theme { color: blue; }[[/module]][[/iftags]]";
+  const audit = buildPortMaintenanceAudit({manifest: {slug: "theme:sample"}, upstreamSource: upstream, humanPortSource: localized, candidateSource: localized});
+  assert.deepEqual(audit.upstream.active_tags, ["theme"]);
+  assert.deepEqual(audit.localization_baseline.active_tags, ["theme"]);
+  assert.deepEqual(audit.localization_baseline.inline_css_changed_selectors, [".theme"]);
+});
+
 test("maintenance audit reports the bound canonical maintenance layer", () => {
   const source = "[[module CSS]].theme { color: red; }[[/module]]";
   const manifest = {
@@ -88,14 +97,35 @@ test("maintenance audit reports the bound canonical maintenance layer", () => {
     upstreamSource: source,
     humanPortSource: source,
     candidateSource: source,
-    maintenanceManifest: {adaptation_block_count: 3, raw_override_rule_count: 8, canonical_override_rule_count: 6, exact_duplicate_rules_removed: 2, semantic_css_sha256: "a", canonical_override_sha256: "b"},
+    maintenanceManifest: {adaptation_block_count: 3, raw_override_rule_count: 8, canonical_override_rule_count: 6, exact_duplicate_rules_removed: 2, semantic_css_sha256: "a", canonical_override_sha256: "b", final_source: "maintenance/final.wikidot.txt", final_source_sha256: sha256Text("final"), declaration_reviews: {}},
     maintenanceOverrideCss: ".a { color: red; } .a { color: blue; }",
+    maintenanceFinalSource: "final",
   });
   assert.equal(audit.maintenance_source.bound, true);
   assert.equal(audit.maintenance_source.adaptation_block_count, 3);
   assert.equal(audit.maintenance_source.exact_duplicate_rules_removed, 2);
   assert.equal(audit.maintenance_source.override_cascade.shadowed_conflicting_declaration_count, 1);
+  assert.equal(audit.maintenance_source.override_cascade.conflicts[0].review_status, "unresolved");
   assert.deepEqual(audit.maintenance_source.canonical_override_selectors, [".a"]);
+  assert.equal(audit.maintenance_source.final_source.hash_matches, true);
+  assert.equal(audit.maintenance_source.unresolved_findings, 1);
+});
+
+test("maintenance conflict statuses require a non-empty rationale and appear in audit rows", () => {
+  const source = "[[module CSS]].theme { color: red; }[[/module]]";
+  const key = JSON.stringify([[], ".a", "color"]);
+  const audit = buildPortMaintenanceAudit({
+    manifest: {slug: "theme:sample", en_source_sha256: sha256Text(source)},
+    upstreamSource: source,
+    humanPortSource: source,
+    candidateSource: source,
+    maintenanceManifest: {declaration_reviews: {[key]: {status: "intentional-fallback", rationale: "Keep the established fallback before the newer value."}}},
+    maintenanceOverrideCss: ".a { color: red; } .a { color: blue; }",
+  });
+  const [finding] = audit.maintenance_source.override_cascade.conflicts;
+  assert.equal(finding.review_status, "intentional-fallback");
+  assert.equal(finding.review_rationale, "Keep the established fallback before the newer value.");
+  assert.equal(audit.maintenance_source.unresolved_findings, 0);
 });
 
 test("upstream update plan highlights selectors touched by JP localization", () => {
@@ -107,7 +137,7 @@ test("upstream update plan highlights selectors touched by JP localization", () 
   const audit = buildPortMaintenanceAudit({manifest, upstreamSource: oldUpstream, humanPortSource: localized, candidateSource: candidate, assetsReceipt: {imports: ["https://cdn.invalid/base.css"]}, maintenanceOverrideCss: "#side-bar a { color: #123; }"});
   const plan = buildUpstreamUpdatePlan({audit, manifest, oldUpstreamSource: oldUpstream, newUpstreamSource: newUpstream});
   assert.deepEqual(plan.localization_overlap_selectors, ["#side-bar a"]);
-  assert.deepEqual(plan.localization_overlap_sources["#side-bar a"], ["jp-localization-baseline", "acceptance-adaptation", "canonical-jp-overrides"]);
+  assert.deepEqual(plan.localization_overlap_sources["#side-bar a"], ["jp-localization-baseline", "canonical-jp-overrides"]);
   assert.equal(plan.review_scope.recheck_jp_overrides, true);
   assert.equal(plan.transitive_css_dependency_refresh_required, true);
 });

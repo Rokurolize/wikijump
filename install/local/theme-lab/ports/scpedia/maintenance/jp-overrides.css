@@ -11,20 +11,20 @@
   #header {
     height: auto !important; min-height: 0 !important;
   }
-  
+
   #header h1,
   #header h2 {
     position: static !important; float: none !important; display: block !important; width: 100% !important; max-width: 100% !important; height: auto !important; line-height: 1.2 !important; overflow-wrap: anywhere !important;
   }
-  
+
   #search-top-box {
     position: static !important; inset: auto !important; float: none !important; clear: both !important; display: block !important; width: 100% !important; max-width: 100% !important; margin: .5rem 0 0 !important;
   }
-  
+
   #search-top-box-form {
     position: static !important; float: none !important; display: flex !important; justify-content: flex-end; width: 100% !important;
   }
-  
+
   #top-bar {
     position: relative !important; inset: auto !important; width: 100% !important; max-width: 100% !important; margin: .35rem 0 0 !important; box-sizing: border-box !important;
   }
@@ -60,63 +60,67 @@
   }
 }
 
-/* Narrow-mobile visual review: long page-tag and attachment names forced the viewport sideways before opening Files/History, clipping their first/last characters. Let those existing labels wrap inside the real JP content column, and let the History card grid shrink to that column without clipping or hiding overflow. */
+/* SCP-JP narrow-mobile compatibility: long page-tag and attachment names forced the viewport sideways before opening Files/History, clipping their first/last characters. Let those existing labels wrap inside the real JP content column, and let the History card grid shrink to that column without clipping or hiding overflow. */
 @media (max-width: 400px) {
   #main-content .page-tags {
-    width: 100% !important; min-width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; align-items: flex-start !important;
+        align-items: flex-start !important;
   }
-  
+
   #main-content .page-tags span {
     flex: 1 1 0 !important; width: 0 !important; min-width: 0 !important; max-width: 100% !important; white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important;
+  }#action-area .file-list {
+    min-width: 0 !important;  box-sizing: border-box !important; white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important;
   }
-  
-  #action-area .file-list,
-  #action-area .file-list .file-row,
-  #action-area .file-list .file-name,
-  #action-area .file-list .file-name a {
+#action-area .file-list .file-row {
     min-width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important;
   }
-  
+#action-area .file-list .file-name {
+    min-width: 0 !important;  box-sizing: border-box !important;
+  }
+#action-area .file-list .file-name a {
+    min-width: 0 !important;  box-sizing: border-box !important;
+  }
+
   #action-area .revision-list,
   #action-area .revision-list .page-history {
-    width: 100% !important; min-width: 0 !important; max-width: 100% !important; margin-inline: 0 !important; padding-inline: 0 !important; box-sizing: border-box !important;
+        padding-inline: 0 !important;
   }
 }
 
-/* Follow-up 320px image review: the page-tags markup's label is an anonymous flex text item, so flex min-content width defeated span wrapping. Render it as ordinary flowing text; constrain only the real Files scroller (retaining its intentional wide table) and reset inherited History-card intrinsic widths so the browser does not horizontally pan the whole page. */
+/* SCP-JP 320px compatibility: the page-tags markup's label is an anonymous flex text item, so flex min-content width defeated span wrapping. Render it as ordinary flowing text; constrain only the real Files scroller (retaining its intentional wide table) and reset inherited History-card intrinsic widths so the browser does not horizontally pan the whole page. */
 @media (max-width: 400px) {
   #main-content .page-tags {
     display: block !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; white-space: normal !important; overflow-wrap: anywhere !important; box-sizing: border-box !important;
   }
-  
+
   #main-content .page-tags::before {
     display: inline-flex !important; vertical-align: top !important;
   }
-  
+
   #action-area .file-list-scroll {
     display: block !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; overflow-x: auto !important; box-sizing: border-box !important;
   }
-  
+
   #action-area .file-list {
     width: max(100%, 68rem) !important; max-width: none !important;
   }
-  
+
   #action-area .file-list .file-name,
   #action-area .file-list .file-name a {
     max-width: 16rem !important; white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important;
   }
-  
+
   #action-area .revision-list,
   #action-area .revision-list .page-history,
   #action-area .revision-list .page-history tbody,
   #action-area .revision-list .page-history tr.revision-row {
     width: 100% !important; min-width: 0 !important; max-width: 100% !important; margin-inline: 0 !important; box-sizing: border-box !important;
   }
-  
+
   #action-area .revision-list .page-history {
     table-layout: fixed !important;
   }
-  
+
   #action-area .revision-list .page-history .revision-attribute {
     min-width: 0 !important; max-width: 100% !important; overflow-wrap: anywhere !important; box-sizing: border-box !important;
   }

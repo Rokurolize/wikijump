@@ -3,17 +3,252 @@
   "frozen_candidate_source_sha256": "a2bd8da70fa64c3c712759b1d75a86e27b00035fb7bea5b08b658ef374bf0502",
   "base_source_sha256": "5d0cc657cd638addbb28f8278832126dc863b1ae0ae339f216dceff45ef2f98c",
   "raw_jp_overrides_sha256": "8ad94119059c59c106ee99dd013d88cd328a641d0fc8fc41f8701ec500ddaa73",
-  "jp_overrides_sha256": "70bc7dad93f4b641c04cd1b16d155788fa74fd2a11110161be9b47758e81323b",
+  "jp_overrides_sha256": "d4b1cdf04c852a346af359e71a3a9f20ca4d897b963c83b8a6c9285fc1c189dc",
   "semantic_css_sha256": "809f865dbf31cf59fb489d16decff42469e7776a183359d1f527501cc4a6d14a",
-  "canonical_override_sha256": "8e303e49b2a01492e801d11ab02be78be352365b431b886d645d75d11fb554e7",
+  "canonical_override_sha256": "4df0265cdf0759610f995644321c9ad4264b1e406861594581c477becd15b2dd",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "208c7b9596b67ef0e84449a0c760113bc4dddb6b90f0cdfb3c55c4a00ecb8405",
+  "final_source_inputs": {
+    "base_sha256": "5d0cc657cd638addbb28f8278832126dc863b1ae0ae339f216dceff45ef2f98c",
+    "jp_overrides_sha256": "d4b1cdf04c852a346af359e71a3a9f20ca4d897b963c83b8a6c9285fc1c189dc"
+  },
+  "ordered_include_sha256": "83ad1115a159ae14f8539e9048739280b0efbc7821e368dd7952da15cbe1c2f6",
+  "declaration_reviews": {
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a > span\",\"height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep auto before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 0,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a > span\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a > span\",\"min-height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep 1.25em before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 0,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep auto before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 0,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"min-height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep 1.25em before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 0,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"display\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep auto before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 0,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"min-height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep 1.25em before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 0,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2 > span\",\"height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep auto before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 0,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2 > span\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2 > span\",\"min-height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep 1.25em before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 0,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"display\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep auto before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 0,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"min-height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep 1.25em before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 0,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a > span\",\"display\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a > span\",\"overflow-wrap\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a > span\",\"white-space\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"display\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"overflow-wrap\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"white-space\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"max-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"overflow-wrap\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"white-space\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2 > span\",\"display\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2 > span\",\"overflow-wrap\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2 > span\",\"white-space\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"max-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"overflow-wrap\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"white-space\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    }
+  },
   "adaptation_block_count": 9,
   "raw_override_rule_count": 41,
   "canonical_override_rule_count": 36,
   "exact_duplicate_rules_removed": 5,
+  "redundant_same_value_declarations_removed": 9,
+  "empty_rules_removed": 0,
   "active_tags": [
     "テーマ"
   ],
-  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
   "historical_adaptations": [
     {
       "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",

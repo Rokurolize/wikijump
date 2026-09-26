@@ -6,14 +6,24 @@
   "jp_overrides_sha256": "05b8c63ab9886f67fd9702798caa4b655d300ef9881aecb606de3a457a0d242c",
   "semantic_css_sha256": "8eeb5587edb75fdb82055a1621ef8038c79da382e8354c112d536346e166323c",
   "canonical_override_sha256": "afd8daab350a682d5f7f21d40547d4925d5631d24d45b7c4cfa59afce4fbe238",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "50e1632d136b16753ece335f2eec90a97f575355f77a250f0fe473c53ad612ba",
+  "final_source_inputs": {
+    "base_sha256": "125e50c40b0349ef982256b192fa88f713db3ab7127efbacc9c1b65288304bd4",
+    "jp_overrides_sha256": "05b8c63ab9886f67fd9702798caa4b655d300ef9881aecb606de3a457a0d242c"
+  },
+  "ordered_include_sha256": "e9f30608842976191b376319c29641e6486dc3186e85b134368beceb6862db6e",
+  "declaration_reviews": {},
   "adaptation_block_count": 3,
   "raw_override_rule_count": 6,
   "canonical_override_rule_count": 6,
   "exact_duplicate_rules_removed": 0,
+  "redundant_same_value_declarations_removed": 0,
+  "empty_rules_removed": 0,
   "active_tags": [
     "テーマ"
   ],
-  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
   "historical_adaptations": [
     {
       "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",

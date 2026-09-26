@@ -19,17 +19,17 @@
   #u-credit-otherwise .modalcontainer {
     top: 1rem !important; bottom: 1rem !important; height: auto !important; max-height: calc(100dvh - 2rem) !important;
   }
-  
+
   #u-credit-otherwise .modalbox {
     max-height: calc(100dvh - 2rem) !important; overflow-y: auto !important;
   }
-  
+
   #u-credit-otherwise .modalbox a[href="#u-credit-view"] {
     display: inline-block !important; min-width: 3rem !important; white-space: nowrap !important;
   }
 }
 
-/* Follow-up image review: the upstream BHL title uses two stacked pseudo-elements; recoloring only ::after left the dark ::before glyph fill visible on the magenta masthead. Apply the same high-contrast fill to both layers while retaining a dark outline and the original emblem/background. */
+/* SCP-JP compatibility: the upstream BHL title uses two stacked pseudo-elements; recoloring only ::after left the dark ::before glyph fill visible on the magenta masthead. Apply the same high-contrast fill to both layers while retaining a dark outline and the original emblem/background. */
 @media (max-width: 767px) {
   #header h1 a::before,
   #header h1 a::after {
@@ -43,17 +43,11 @@
   color: #160c2d !important; -webkit-text-fill-color: #160c2d !important; text-shadow: none !important;
 }
 
-/* Image review found the expanded article disclosure retained aqua ink on Aesthetic's fluorescent lime panel. Keep the neon surface and use the established deep-plum ink only inside the open content; links stay underlined. */
-#page-content .collapsible-block-unfolded .collapsible-block-content,
-#page-content .collapsible-block-unfolded .collapsible-block-content * {
-  color: #160c2d !important; -webkit-text-fill-color: #160c2d !important; text-shadow: none !important;
-}
-
 #page-content .collapsible-block-unfolded .collapsible-block-content a {
   text-decoration: underline !important; text-underline-offset: .14em;
 }
 
-/* Follow-up image review found the fluorescent yellow surface belongs to the TOC links, while the opened disclosure body uses Aesthetic's dark panel. Restore the light body ink and darken only links on the yellow TOC surface. */
+/* SCP-JP compatibility requires the fluorescent yellow surface belongs to the TOC links, while the opened disclosure body uses Aesthetic's dark panel. Restore the light body ink and darken only links on the yellow TOC surface. */
 #page-content .collapsible-block-unfolded .collapsible-block-content,
 #page-content .collapsible-block-unfolded .collapsible-block-content * {
   color: #d9e9fb !important; -webkit-text-fill-color: #d9e9fb !important; text-shadow: none !important;
@@ -61,12 +55,6 @@
 
 #page-content #toc-list a {
   color: #160c2d !important; -webkit-text-fill-color: #160c2d !important; text-shadow: none !important;
-}
-
-/* The mobile theme header is a higher stacking context than SCP-JP's credit layer, so its hamburger crossed the fader and hid the otherwise-modal title. Drop only the header stack below the visible credit dialog while a credit hash is active. */
-body:has(#u-credit-view:target) #header,
-body:has(#u-credit-otherwise:target) #header {
-  z-index: 9 !important;
 }
 
 /* V33 lowering z-index alone did not form a stacking context because the theme leaves #header unpositioned. During either SCP-JP credit hash, isolate the in-flow header below the shared modal/fader so its high-z hamburger cannot cross the overlay. */
