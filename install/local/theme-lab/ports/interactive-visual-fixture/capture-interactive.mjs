@@ -7,7 +7,9 @@ import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {candidateIdentity} from '../scripts/candidate-identity.mjs';
 import {storeContentAddressedScreenshot} from '../scripts/content-addressed-screenshot.mjs';
+import {compactAuditRecord,compactSupersededRecord} from '../scripts/capture-audit-records.mjs';
 import {withAuditLock} from '../scripts/audit-lock.mjs';
+import {applyExactVisualReviewReuseToRows,verifyExactReviewSources} from '../scripts/visual-review-reuse.mjs';
 import {topFixedNavigationInset} from './top-fixed-navigation-inset.mjs';
 
 const packageDir=path.dirname(fileURLToPath(import.meta.url));
@@ -20,7 +22,7 @@ const engineArg=process.argv.find(x=>x.startsWith('--engine='))?.slice(9)??'chro
 const viewportArg=process.argv.find(x=>x.startsWith('--viewport='))?.slice(11)??'desktop';
 const stateArg=process.argv.find(x=>x.startsWith('--state='))?.slice(8);
 const transportOriginArg=process.argv.find(x=>x.startsWith('--transport-origin='))?.slice(19);
-const stateArgs=stateArg?new Set(stateArg.split(',').filter(Boolean)):null;
+const stateArgs=stateArg!==undefined?new Set(stateArg.split(',')):null;
 const forceCapture=process.argv.includes('--force');
 const anonymousArg=process.argv.includes('--anonymous');
 const defaultConcurrency={chromium:6,firefox:4,webkit:6}[engineArg]??4;
@@ -222,6 +224,13 @@ states.push(
 // compatibility evidence.
 const crossEngineCoreStates=new Set(['page.normal|settled','credit.view|open','page.history|list','page.source|open','nav.sidebar|open','nav.sidebar|open-submenu']);
 const engineStates=engineArg==='chromium'?states:states.filter(spec=>crossEngineCoreStates.has(`${spec.surface}|${spec.state}`));
+if(stateArgs){
+ const knownStates=new Set(states.map(spec=>`${spec.surface}.${spec.state}`));
+ for(const state of stateArgs){
+  if(!state.trim())throw new Error('states must be non-empty');
+  if(!knownStates.has(state))throw new Error(`unknown capture state: ${state}`);
+ }
+}
 let webkitProxyBlocked=0;let webkitProxy=null;
 if(engineArg==='webkit'){
  // Playwright's WebKit request routing cancels SvelteKit's Vite module loads
@@ -232,10 +241,15 @@ if(engineArg==='webkit'){
  webkitProxy.on('connect',(_request,socket)=>{webkitProxyBlocked++;socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n')});
  await new Promise((resolve,reject)=>{webkitProxy.once('error',reject);webkitProxy.listen(0,'127.0.0.1',resolve)});
 }
-const engine=registry[engineArg];const browser=await engine.launch({headless:true,...(webkitProxy?{proxy:{server:`http://127.0.0.1:${webkitProxy.address().port}`,bypass:'*.localhost,localhost,127.0.0.1'}}:{})});
-let authenticatedStorage=null;let authBootstrapMs=0;let authBootstrapBlocked=0;let authBrowser=null;if(!anonymousArg){const authStartedAt=performance.now();if(engineArg==='webkit')authBrowser=await chromium.launch({headless:true});const authContext=await (authBrowser??browser).newContext({ignoreHTTPSErrors:true});await authContext.route('**/*',async route=>{if(new URL(route.request().url()).origin===origin){await route.continue();return}authBootstrapBlocked++;await route.abort('blockedbyclient')});const authPage=await authContext.newPage();await authPage.goto(`${origin}/-/login`,{waitUntil:'domcontentloaded'});await authPage.locator('.auth-name-or-email').fill(verificationAdminEmail);await authPage.locator('.auth-password').fill(verificationAdminPassword);await authPage.locator('#login button[type=submit]').click();await authPage.waitForFunction(()=>!document.querySelector('#login'),null,{timeout:15000});authenticatedStorage=await authContext.storageState();await authContext.close();if(authBrowser)await authBrowser.close();authBootstrapMs=Math.round(performance.now()-authStartedAt)}
+const engine=registry[engineArg];let browser=null;
 const records=[];
-const auditPath=path.join(portsDir,'interactive-visual-audit.json');
+let authenticatedStorage=null;let authBootstrapMs=0;let authBootstrapBlocked=0;let authBrowser=null;
+try{
+browser=await engine.launch({headless:true,...(webkitProxy?{proxy:{server:`http://127.0.0.1:${webkitProxy.address().port}`,bypass:'*.localhost,localhost,127.0.0.1'}}:{})});
+if(!anonymousArg){const authStartedAt=performance.now();if(engineArg==='webkit')authBrowser=await chromium.launch({headless:true});const authContext=await (authBrowser??browser).newContext({ignoreHTTPSErrors:true});await authContext.route('**/*',async route=>{if(new URL(route.request().url()).origin===origin){await route.continue();return}authBootstrapBlocked++;await route.abort('blockedbyclient')});const authPage=await authContext.newPage();await authPage.goto(`${origin}/-/login`,{waitUntil:'domcontentloaded'});await authPage.locator('.auth-name-or-email').fill(verificationAdminEmail);await authPage.locator('.auth-password').fill(verificationAdminPassword);await authPage.locator('#login button[type=submit]').click();await authPage.waitForFunction(()=>!document.querySelector('#login'),null,{timeout:15000});authenticatedStorage=await authContext.storageState();await authContext.close();if(authBrowser)await authBrowser.close();authBootstrapMs=Math.round(performance.now()-authStartedAt)}
+const auditPath=process.env.THEME_LAB_INTERACTIVE_AUDIT_PATH
+ ? path.resolve(process.env.THEME_LAB_INTERACTIVE_AUDIT_PATH)
+ : path.join(portsDir,'interactive-visual-audit.json');
 const repoRoot=path.resolve(packageDir,'../../../../../');
 const runtimeFilesForSurface=surface=>surface==='dialog.generic'?['framerail/src/lib/popup/error.svelte','framerail/src/routes/[slug]/[...extra]/PageView.svelte','framerail/src/lib/wikidot/wikidot-locale.js']:surface.startsWith('page.history')?['framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte']:surface.startsWith('page.files')?['framerail/src/routes/[slug]/[...extra]/FileList.svelte']:surface.startsWith('nav.')||surface.startsWith('shell.')?['framerail/src/lib/sigma-esque/wikidot.svelte','framerail/src/routes/+layout.svelte']:['framerail/src/routes/[slug]/[...extra]/PageView.svelte'];
 const runtimeSurfaceContracts={};for(const surface of new Set(engineStates.map(spec=>spec.surface))){const files=runtimeFilesForSurface(surface);if(viewportArg==='mobile'||viewportArg==='narrow-mobile')files.push('framerail/src/lib/sigma-esque/wikidot.svelte');const chunks=await Promise.all([...new Set(files)].map(async file=>[file,await fs.readFile(path.join(repoRoot,file))]));const hash=crypto.createHash('sha256');for(const [file,content] of chunks){hash.update(file);hash.update('\0');hash.update(content)}runtimeSurfaceContracts[surface]=hash.digest('hex')}
@@ -273,34 +287,99 @@ if(process.argv.includes('--dump-contracts')){console.log(JSON.stringify({schema
 async function mapLimit(items,limit,mapper){let next=0;const workers=Array.from({length:Math.min(limit,items.length)},(_,workerIndex)=>async()=>{while(true){const index=next++;if(index>=items.length)return;await mapper(items[index],index,workerIndex)}});await Promise.all(workers.map(worker=>worker()))}
 let priorRows=[];try{priorRows=JSON.parse(await fs.readFile(auditPath,'utf8')).records??[]}catch{}
 const priorRowsByKey=new Map(priorRows.map(row=>[`${row.theme}|${row.browser_engine}|${row.viewport}|${row.surface}|${row.state}`,row]));
-function compactAuditRecord(record){
- const diagnostics=record.visual_diagnostics;
- const compactSelectors=record.surface.startsWith('credit.')?['.page-rate-widget-box','.creditButton a','#u-credit-view .modalbox','#u-credit-view .page-rate-widget-box','#u-credit-view .page-rate-widget-box .rate-points','#u-credit-view .page-rate-widget-box .rateup','#u-credit-view .page-rate-widget-box .ratedown','#u-credit-view .page-rate-widget-box .cancel','#u-credit-view .creditRate','#u-credit-view .creditBottomRate','#u-credit-view .creditBottomRate .page-rate-widget-box','#u-credit-view .creditBottomRate .rate-points','#u-credit-view .creditBottomRate .rateup','#u-credit-otherwise .modalbox','#u-credit-otherwise .modalbox .credit.otherwise','#u-credit-otherwise .modalbox .credit-back','#u-credit-otherwise .modalbox .credit-back a[href="#u-credit-view"]']:record.surface.startsWith('page.edit')?['#action-area','textarea.editor-wikitext','#edit-page-comments']:record.surface.startsWith('page.history')?['.page-history','.revision-diff','.revision-diff-controls','.page-source']:record.surface.startsWith('page.source')?['#action-area','#page-options-bottom','#page-options-bottom-2','.page-source','.action-area-close','.mobile-top-bar .open-menu a']:record.surface.startsWith('page.files')?['.file-list-scroll','.file-list','.file-row']:record.surface.startsWith('nav.')?['#top-bar','#top-bar .top-bar','.mobile-top-bar','#side-bar','#side-bar .close-menu','#side-bar .collapsible-block-unfolded']:record.surface.startsWith('shell.')?['#login-status','#footer','#license-area','.scpnet-interwiki-frame']:record.surface==='page.normal'?['#page-content','#action-area','#side-bar','#header','#extra-div-1','#extra-div-2','#page-title','#login-status','.mobile-top-bar','.yui-navset','.yui-navset .yui-nav a','.yui-navset .yui-nav a em','.yui-navset .yui-content']:['#action-area','#page-title','#page-content'];
- const elements=diagnostics?.elements?Object.fromEntries(compactSelectors.filter(selector=>selector in diagnostics.elements).map(selector=>{const value=diagnostics.elements[selector];return[selector,value?{text:value.text,value:value.value?.slice(0,240)??null,children:value.children,rect:value.rect,display:value.display,visibility:value.visibility,position:value.position,z:value.z_index,color:value.color,background:value.background_color,backgroundImage:value.background_image,backgroundPosition:value.background_position,backgroundSize:value.background_size,font:value.font_family,fontSize:value.font_size,fontWeight:value.font_weight,lineHeight:value.line_height,letterSpacing:value.letter_spacing,textShadow:value.text_shadow,textStroke:value.text_stroke,textFill:value.text_fill,filter:value.filter,before:value.before,after:value.after,overflowX:value.overflow_x,scrollWidth:value.scroll_width,clientWidth:value.client_width}:null]})):undefined;
- const history=diagnostics?.historyInstances?{tables:diagnostics.historyInstances.length,rows:diagnostics.historyInstances.reduce((sum,table)=>sum+(table.rows?.length??0),0),rect:diagnostics.historyInstances[0]?.rect??null,layout:diagnostics.historyInstances.flatMap(table=>table.rows.map(row=>({row:row.text,rect:row.rect,cells:row.cells.map(cell=>({name:cell.class_name,text:cell.text,rect:cell.rect,display:cell.display,font_size:cell.font_size,line_height:cell.line_height}))})))}:undefined;
- const sequence=[];const seen=new Set();for(const event of record.action_sequence??[]){const compact={type:event.type,target:event.target};const key=JSON.stringify(compact);if(!seen.has(key)){seen.add(key);sequence.push(compact)}if(sequence.length>=16)break}
- const {asset_dependencies:assetDependencies,visual_diagnostics:_,action_sequence:__,...rest}=record;
- const viewport=diagnostics?.viewport?{width:diagnostics.viewport.width,height:diagnostics.viewport.height,documentWidth:diagnostics.viewport.document_width,scrollX:diagnostics.viewport.scroll_x,scrollY:diagnostics.viewport.scroll_y}:undefined;
- return{...rest,asset_dependency_count:assetDependencies?.length??record.asset_dependency_count??0,visual_diagnostics:diagnostics?{viewport,top_fixed_navigation_inset:diagnostics.topFixedNavigationInset,elements,history,title_overlaps:diagnostics.titleOverlaps??[],header_text:diagnostics.headerText??[],header_children:diagnostics.headerChildren??[]}:null,action_sequence:sequence};
+async function persistBatch(batch,theme){
+ const lockStarted=performance.now();
+ return withAuditLock(auditPath,async()=>{
+  const auditLockWaitMs=Math.round(performance.now()-lockStarted);
+  let previousDocument={};
+  try{previousDocument=JSON.parse(await fs.readFile(auditPath,'utf8'))}
+  catch(error){if(error.code!=='ENOENT')throw error}
+  const previous=previousDocument.records??[];
+  const priorReviewRows=[...(previousDocument.superseded_records??[]),...previous];
+  const reviewReuseCount=applyExactVisualReviewReuseToRows(batch,await verifyExactReviewSources(priorReviewRows,batch,portsDir));
+  const nextByKey=new Map(batch.map(row=>[`${row.theme}|${row.browser_engine}|${row.viewport}|${row.surface}|${row.state}`,row]));
+  const keys=new Set(nextByKey.keys());
+  const validStates=new Set(
+   engineStates
+    .filter(spec=>(spec.viewports??defaultInteractionViewports).includes(viewportArg))
+    .map(spec=>`${spec.surface}|${spec.state}`)
+  );
+  const superseded=[];
+  for(const row of previous){
+   const key=`${row.theme}|${row.browser_engine}|${row.viewport}|${row.surface}|${row.state}`;
+   if(!keys.has(key))continue;
+   const next=nextByKey.get(key);
+   if(
+    row.screenshot_sha256===next.screenshot_sha256 &&
+    row.candidate_sha256===next.candidate_sha256 &&
+    row.candidate_source_sha256===next.candidate_source_sha256 &&
+    row.environment_contract_sha256===next.environment_contract_sha256 &&
+    row.capture_state_action_contract_sha256===next.capture_state_action_contract_sha256
+   )continue;
+   let historicalScreenshotStatus='no-path';
+   if(row.screenshot){
+    try{
+     const bytes=await fs.readFile(path.join(portsDir,row.screenshot));
+     historicalScreenshotStatus=crypto.createHash('sha256').update(bytes).digest('hex')===row.screenshot_sha256?'valid':'hash-mismatch';
+    }catch(error){
+     historicalScreenshotStatus=error.code==='ENOENT'?'missing':'unreadable';
+    }
+   }
+   superseded.push({
+    ...row,
+    superseded_at:new Date().toISOString(),
+    historical_screenshot_valid:historicalScreenshotStatus==='valid',
+    historical_screenshot_status:historicalScreenshotStatus
+   });
+  }
+  const retained=previous.filter(row=>{
+   const key=`${row.theme}|${row.browser_engine}|${row.viewport}|${row.surface}|${row.state}`;
+   if(keys.has(key))return false;
+   if(!stateArgs&&row.theme===theme&&row.browser_engine===engineArg&&row.viewport===viewportArg){
+    return validStates.has(`${row.surface}|${row.state}`);
+   }
+   return true;
+  });
+  // Rows already present in the audit have already crossed the compaction
+  // boundary. Re-compacting them on every writer pass both burns CPU on the
+  // ~5k-row audit and is lossy because compact diagnostics intentionally use
+  // a smaller field vocabulary than fresh browser diagnostics.
+  const merged=[...retained,...batch.map(compactAuditRecord)];
+  const compactHistory=[
+   ...(previousDocument.superseded_records??[]),
+   ...superseded.map(compactSupersededRecord)
+  ];
+  const nextDocument={
+   ...previousDocument,
+   schema:'scp_jp_interactive_visual_audit.v1',
+   updated_at:new Date().toISOString(),
+   fixture_url:base,
+   viewport:viewports[viewportArg],
+   network_policy:{
+    external_requests_sent:merged.reduce((n,row)=>n+(row.external_requests_sent??0),0),
+    external_requests_blocked_during_auth:authBootstrapBlocked,
+    external_requests_blocked_during_states:merged.reduce((n,row)=>n+(row.external_requests_blocked??0),0)
+   },
+   engine_scope:{
+    chromium:'full interaction state inventory',
+    firefox:'core states: normal page, credit view, History list, Source, and mobile sidebar open/expanded',
+    webkit:'core states: normal page, credit view, History list, Source, and mobile sidebar open/expanded; Safari compatibility proxy, not Safari'
+   },
+   state_applicability:applicabilityContract,
+   records:merged,
+   superseded_records:compactHistory,
+   visual_review_reuse_updates:(previousDocument.visual_review_reuse_updates??0)+reviewReuseCount
+  };
+  const tempPath=`${auditPath}.${process.pid}.tmp`;
+  await fs.writeFile(tempPath,JSON.stringify(nextDocument)+'\n');
+  await fs.rename(tempPath,auditPath);
+  return {reviewReuseCount,auditLockWaitMs};
+ });
 }
-function compactSupersededRecord(record){
- return{
-  theme:record.theme,browser_engine:record.browser_engine,browser_version:record.browser_version,viewport:record.viewport,surface:record.surface,state:record.state,
-  screenshot:record.screenshot,screenshot_sha256:record.screenshot_sha256,candidate_sha256:record.candidate_sha256,candidate_source_sha256:record.candidate_source_sha256,
-  base_css_sha256:record.base_css_sha256,asset_dependency_sha256:record.asset_dependency_sha256,fixture_contract_sha256:record.fixture_contract_sha256,
-  run_contract_sha256:record.run_contract_sha256,environment_contract_sha256:record.environment_contract_sha256,
-  capture_state_action_contract_sha256:record.capture_state_action_contract_sha256,runtime_surface_contract_sha256:record.runtime_surface_contract_sha256,
-  classification:record.classification,reviewed_after_last_change:record.reviewed_after_last_change,
-  superseded_at:record.superseded_at,historical_screenshot_valid:record.historical_screenshot_valid,
-  failure:record.failure??record.unconfirmed_items?.find(item=>String(item).startsWith('action/capture failed'))??null
- }
-}
-async function persistBatch(batch,theme){await withAuditLock(auditPath,async()=>{let previous=[];let previousDocument={};try{previousDocument=JSON.parse(await fs.readFile(auditPath,'utf8'));previous=previousDocument.records??[]}catch{}const nextByKey=new Map(batch.map(r=>[`${r.theme}|${r.browser_engine}|${r.viewport}|${r.surface}|${r.state}`,r]));const keys=new Set(nextByKey.keys());const validStates=new Set(engineStates.filter(spec=>(spec.viewports??defaultInteractionViewports).includes(viewportArg)).map(spec=>`${spec.surface}|${spec.state}`));const superseded=[];for(const row of previous){const key=`${row.theme}|${row.browser_engine}|${row.viewport}|${row.surface}|${row.state}`;if(!keys.has(key))continue;const next=nextByKey.get(key);if(row.screenshot_sha256===next.screenshot_sha256&&row.candidate_sha256===next.candidate_sha256&&row.candidate_source_sha256===next.candidate_source_sha256&&row.environment_contract_sha256===next.environment_contract_sha256&&row.capture_state_action_contract_sha256===next.capture_state_action_contract_sha256)continue;let imageValid=false;if(row.screenshot){try{const bytes=await fs.readFile(path.join(portsDir,row.screenshot));imageValid=crypto.createHash('sha256').update(bytes).digest('hex')===row.screenshot_sha256}catch{}}superseded.push({...row,superseded_at:new Date().toISOString(),historical_screenshot_valid:imageValid})}const retained=previous.filter(r=>{const key=`${r.theme}|${r.browser_engine}|${r.viewport}|${r.surface}|${r.state}`;if(keys.has(key))return false;if(!stateArgs&&r.theme===theme&&r.browser_engine===engineArg&&r.viewport===viewportArg)return validStates.has(`${r.surface}|${r.state}`);return true});const merged=[...retained,...batch].map(compactAuditRecord);const compactHistory=[...(previousDocument.superseded_records??[]),...superseded].map(compactSupersededRecord);const tempPath=`${auditPath}.${process.pid}.tmp`;await fs.writeFile(tempPath,JSON.stringify({schema:'scp_jp_interactive_visual_audit.v1',updated_at:new Date().toISOString(),fixture_url:base,viewport:viewports[viewportArg],network_policy:{external_requests_sent:0,external_requests_blocked_during_auth:authBootstrapBlocked,external_requests_blocked_during_states:merged.reduce((n,r)=>n+(r.external_requests_blocked??0),0)},engine_scope:{chromium:'full interaction state inventory',firefox:'core states: normal page, credit view, History list, Source, and mobile sidebar open/expanded',webkit:'core states: normal page, credit view, History list, Source, and mobile sidebar open/expanded; Safari compatibility proxy, not Safari'},state_applicability:applicabilityContract,records:merged,superseded_records:compactHistory})+'\n');await fs.rename(tempPath,auditPath)})}
-try{
  const localAssetPathCache=new Map();const fileShaCache=new Map();const dataUrlCache=new Map();
  for(const theme of themes){
   const dir=path.join(portsDir,theme);const cssPath=path.join(dir,'candidate.css');
-  let css;try{css=await fs.readFile(cssPath,'utf8')}catch{records.push({theme,session_state:anonymousArg||spec.guest?'logged_out':'administrator',browser_engine:engineArg,viewport:viewportArg,surface:'theme.css',state:'missing',classification:'UNCONFIRMED',unconfirmed_items:['candidate.css is missing']});continue}
+  let css;try{css=await fs.readFile(cssPath,'utf8')}catch(error){throw new Error(`cannot read candidate.css for ${theme}`,{cause:error})}
   const baseCss=await fs.readFile(path.join(dir,'candidate-base.css'),'utf8').catch(()=> '');
   const runtimeSupportCss=await fs.readFile(path.join(packageDir,'runtime-asset-replay.css'),'utf8');
   const baseCssSha=baseCss?crypto.createHash('sha256').update(baseCss).digest('hex'):null;
@@ -324,7 +403,7 @@ try{
   const preflight=new Map();
   for(const spec of applicable){
    const key=`${theme}|${engineArg}|${viewportArg}|${spec.surface}|${spec.state}`;const old=priorRowsByKey.get(key);const fixtureSha=await fixtureContractSha(spec);const stateActionContract=actionContractFor(spec);const environmentContractSha=crypto.createHash('sha256').update(JSON.stringify({runContractSha,fixtureSha,site:runContract.target_site,transportOrigin:origin,baselineTheme:runContract.baseline_theme,browserEngine:engineArg,browserVersion:browser.version(),viewportName:viewportArg,viewportSize:viewports[viewportArg],assetDependencySha})).digest('hex');let reusable=false;
-   if(!forceCapture&&old&&old.candidate_sha256===candidateSha&&old.candidate_source_sha256===candidateSourceSha&&old.asset_dependency_sha256===assetDependencySha&&old.fixture_contract_sha256===fixtureSha&&old.run_contract_sha256===runContractSha&&old.environment_contract_sha256===environmentContractSha&&old.capture_state_action_contract_sha256===stateActionContract&&old.runtime_surface_contract_sha256===runtimeSurfaceContracts[spec.surface]&&old.browser_version===browser.version()&&old.screenshot&&!old.asset_failures?.length&&!old.page_errors?.length&&!old.unconfirmed_items?.some(x=>x.startsWith('action/capture failed'))){try{const oldBytes=await fs.readFile(path.join(portsDir,old.screenshot));reusable=crypto.createHash('sha256').update(oldBytes).digest('hex')===old.screenshot_sha256}catch{}}
+   if(!forceCapture&&old&&old.candidate_sha256===candidateSha&&old.candidate_source_sha256===candidateSourceSha&&old.asset_dependency_sha256===assetDependencySha&&old.fixture_contract_sha256===fixtureSha&&old.run_contract_sha256===runContractSha&&old.environment_contract_sha256===environmentContractSha&&old.capture_state_action_contract_sha256===stateActionContract&&old.runtime_surface_contract_sha256===runtimeSurfaceContracts[spec.surface]&&old.browser_version===browser.version()&&old.session_state===(anonymousArg||spec.guest?'logged_out':'administrator')&&old.screenshot&&!old.failure&&old.external_requests_sent===0&&Array.isArray(old.asset_failures)&&old.asset_failures.length===0&&Array.isArray(old.page_errors)&&old.page_errors.length===0&&!old.unconfirmed_items?.some(x=>x.startsWith('action/capture failed'))){try{const oldBytes=await fs.readFile(path.join(portsDir,old.screenshot));reusable=crypto.createHash('sha256').update(oldBytes).digest('hex')===old.screenshot_sha256}catch{}}
    preflight.set(`${spec.surface}|${spec.state}`,{old,reusable,fixtureSha,stateActionContract,environmentContractSha});
   }
   const freshStates=applicable.filter(spec=>!preflight.get(`${spec.surface}|${spec.state}`).reusable);
@@ -380,12 +459,17 @@ try{
     }catch{}
    }
    const actionSequence=await page.evaluate(()=>window.__themeLabActionTrace??[]).catch(()=>[]);const diagnostics=await visualDiagnostics(page,spec.surface).catch(()=>null);
+   if(!actionError&&actionResponses.some(response=>response.type==='failure'||response.status>=400||response.error_message))actionError='action response reported failure';
    records.push({theme,session_state:anonymousArg||spec.guest?'logged_out':'administrator',target_site:runContract.target_site.slug,transport_origin:origin,locale:runContract.target_site.locale,baseline_theme:runContract.baseline_theme.name,baseline_theme_css_href:baselineThemeHref,browser_engine:engineArg,browser_version:browser.version(),viewport:viewportArg,viewport_size:viewports[viewportArg],surface:spec.surface,state:spec.state,fixture:spec.fixtureSlug??'run-owned:theme-lab-visual-acceptance-imported-20260924',candidate_source_sha256:candidateSourceSha,base_css_path:baseCss?'candidate-base.css':null,base_css_sha256:baseCssSha,asset_dependency_sha256:assetDependencySha,asset_dependencies:assetDependencies,fixture_contract_sha256:fixtureSha,run_contract_sha256:runContractSha,environment_contract_sha256:environmentContractSha,capture_state_action_contract_sha256:stateActionContract,settled_animations_finished:settledAnimationsFinished,runtime_surface_contract_sha256:runtimeSurfaceContracts[spec.surface],duration_ms:Math.round(performance.now()-stateStartedAt),phase_durations_ms:phaseDurations,action_sequence:actionSequence,screenshot:shot?.path??null,screenshot_sha256:shot?.sha256??null,candidate_sha256:candidateSha,visual_diagnostics:diagnostics,classification:'UNCONFIRMED',visual_findings:[],intentional_differences:[],unconfirmed_items:actionError?[`action/capture failed: ${actionError}`]:['screenshot captured but awaiting image review'],reviewed_after_last_change:false,external_requests_sent:0,external_requests_blocked:(engineArg==='webkit'?webkitProxyBlocked:externalCount)-externalBefore,asset_failures:assetRequests.filter(x=>['missing','decode-failed'].includes(x.status)),page_errors:errors,action_responses:actionResponses});
    page.off('pageerror',pageErrorHandler);page.off('response',responseHandler);if(!reuseWorkerPages)await page.close();
   };
   await mapLimit(applicable,concurrencyArg,captureState);
   await context.close();if(guestContextPromise)await (await guestContextPromise).close();
-  const themeRecords=records.filter(r=>r.theme===theme);await persistBatch(themeRecords,theme);console.log(JSON.stringify({progress:`${themes.indexOf(theme)+1}/${themes.length}`,theme,records:themeRecords.length,captured:themeRecords.filter(r=>r.screenshot).length,failed_actions:themeRecords.filter(r=>r.unconfirmed_items?.some(x=>x.startsWith('action/capture failed'))).length,pages_created:pagesCreated}));
+  const themeRecords=records.filter(r=>r.theme===theme);
+  // Cached rows are an unlocked startup snapshot. Only newly captured rows
+  // may replace the latest audit; a concurrent reviewer owns cached rows.
+  const freshKeys=new Set(freshStates.map(spec=>`${spec.surface}|${spec.state}`));
+  const {reviewReuseCount,auditLockWaitMs}=await persistBatch(themeRecords.filter(row=>freshKeys.has(`${row.surface}|${row.state}`)),theme);console.log(JSON.stringify({progress:`${themes.indexOf(theme)+1}/${themes.length}`,theme,records:themeRecords.length,captured:themeRecords.filter(r=>r.screenshot).length,review_reused:reviewReuseCount,audit_lock_wait_ms:auditLockWaitMs,failed_actions:themeRecords.filter(r=>r.unconfirmed_items?.some(x=>x.startsWith('action/capture failed'))).length,pages_created:pagesCreated}));
  }
-}finally{await browser.close();if(authBrowser)await authBrowser.close();if(webkitProxy){webkitProxy.closeAllConnections();await new Promise(resolve=>webkitProxy.close(resolve))}}
+}finally{await browser?.close();if(authBrowser)await authBrowser.close();if(webkitProxy){webkitProxy.closeAllConnections();await new Promise(resolve=>webkitProxy.close(resolve))}}
 console.log(JSON.stringify({engine:engineArg,viewport:viewportArg,themes:themes.length,records:records.length,captured:records.filter(r=>r.screenshot).length,unconfirmed:records.filter(r=>r.classification==='UNCONFIRMED').length,blocked_external:records.reduce((n,r)=>n+(r.external_requests_blocked??0),0),asset_failures:records.reduce((n,r)=>n+(r.asset_failures?.length??0),0),auth_bootstrap_ms:authBootstrapMs,auth_external_blocked:authBootstrapBlocked,concurrency:concurrencyArg}));

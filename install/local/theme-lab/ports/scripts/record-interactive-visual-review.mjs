@@ -22,13 +22,22 @@ export function applyVisualReviews(rows, reviews, currentIdentity, reviewedAt = 
     if (!/^[0-9a-f]{64}$/u.test(review.screenshot_sha256 ?? '')) throw new Error('review needs an exact screenshot SHA-256');
     if (!allowed.has(review.classification)) throw new Error(`invalid visual classification: ${review.classification}`);
     if (typeof review.note !== 'string' || review.note.trim().length < 12) throw new Error('review needs a concrete visual note');
-    if (review.classification === 'PASS_INTENTIONAL_DIVERGENCE' && !review.intentional_difference) throw new Error('intentional divergence needs its reason');
+    if (review.classification === 'PASS_INTENTIONAL_DIVERGENCE' && (typeof review.intentional_difference !== 'string' || !review.intentional_difference.trim())) throw new Error('intentional divergence needs its reason');
+    if (review.classification === 'NEEDS_FIX' && (!Array.isArray(review.visual_findings) || !review.visual_findings.length || review.visual_findings.some(item => typeof item !== 'string' || !item.trim()))) throw new Error('NEEDS_FIX needs a concrete finding');
     const matched = rowsByScreenshot.get(review.screenshot_sha256) ?? [];
     if (!matched.length) throw new Error(`screenshot hash not present in audit: ${review.screenshot_sha256}`);
     for (const row of matched) {
       const identity = currentIdentity.get(row.theme);
       if (!identity || row.candidate_sha256 !== identity.candidate_sha256 || row.candidate_source_sha256 !== identity.candidate_source_sha256) {
         throw new Error(`stale candidate evidence: ${row.theme} ${row.viewport} ${row.surface}.${row.state}`);
+      }
+      if (row.failure || !Array.isArray(row.asset_failures) || row.asset_failures.length ||
+          !Array.isArray(row.page_errors) || row.page_errors.length || row.external_requests_sent !== 0 ||
+          !Array.isArray(row.unconfirmed_items) ||
+          row.unconfirmed_items.some(item => item !== 'screenshot captured but awaiting image review') ||
+          row.action_responses != null && (!Array.isArray(row.action_responses) ||
+            row.action_responses.some(response => !response || response.type === 'failure' || response.status >= 400 || response.error_message))) {
+        throw new Error('cannot clear failed or unknown capture evidence with visual review');
       }
       updates.push({row, review});
     }
@@ -39,6 +48,8 @@ export function applyVisualReviews(rows, reviews, currentIdentity, reviewedAt = 
     row.intentional_differences = review.intentional_difference ? [review.intentional_difference] : [];
     row.unconfirmed_items = [];
     row.reviewed_after_last_change = true;
+    delete row.visual_review_reuse;
+    delete row.review_provenance;
     row.visual_review = {
       method: 'direct-image-vision-review',
       reviewed_at: reviewedAt,
