@@ -31,9 +31,6 @@
 //! * `user` / `block` / `user` &mdash; User has blocked another user
 //! * `page` / `star` / `user` &mdash; User has starred a page
 
-#[macro_use]
-mod macros;
-
 mod page_attribution;
 mod page_star;
 mod page_watch;

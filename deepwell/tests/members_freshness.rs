@@ -194,6 +194,8 @@ async fn saved_members_pages_refresh_after_membership_changes_without_mutating_r
                 "accepted": {"cause": "accepted", "user_id": ADMIN_USER_ID},
             },
             "created_by": ADMIN_USER_ID,
+
+            "ip_address": common::IP_ADDRESS,
         }),
     );
 

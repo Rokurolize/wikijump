@@ -42,6 +42,7 @@ export async function membershipJoin(
   lastRevisionId: number,
   actionIndex: number,
   actionFingerprint: string,
+  ipAddress: string,
   context: Exclude<RequestContext, void>
 ): Promise<MembershipJoinOutcome> {
   return await client.request(
@@ -50,7 +51,8 @@ export async function membershipJoin(
       page_id: pageId,
       last_revision_id: lastRevisionId,
       action_index: actionIndex,
-      action_fingerprint: actionFingerprint
+      action_fingerprint: actionFingerprint,
+      ip_address: ipAddress
     },
     context
   )
@@ -62,6 +64,7 @@ export async function membershipPasswordSubmit(
   actionIndex: number,
   actionFingerprint: string,
   password: string,
+  ipAddress: string,
   context: Exclude<RequestContext, void>
 ): Promise<MembershipPasswordOutcome> {
   return client.request(
@@ -71,7 +74,8 @@ export async function membershipPasswordSubmit(
       last_revision_id: lastRevisionId,
       action_index: actionIndex,
       action_fingerprint: actionFingerprint,
-      password
+      password,
+      ip_address: ipAddress
     },
     context
   )
@@ -104,6 +108,7 @@ export async function membershipEmailInvitationAccept(
   actionIndex: number,
   actionFingerprint: string,
   hash: string,
+  ipAddress: string,
   context: Exclude<RequestContext, void>
 ): Promise<MembershipEmailInvitationOutcome> {
   return client.request(
@@ -113,7 +118,8 @@ export async function membershipEmailInvitationAccept(
       last_revision_id: lastRevisionId,
       action_index: actionIndex,
       action_fingerprint: actionFingerprint,
-      hash
+      hash,
+      ip_address: ipAddress
     },
     context
   )
@@ -131,6 +137,7 @@ export async function membershipApplicationReview(
   userId: number,
   decision: "accept" | "decline",
   reply: string,
+  ipAddress: string,
   context: Exclude<RequestContext, void>
 ): Promise<MembershipApplicationStatus> {
   return client.request(
@@ -139,7 +146,8 @@ export async function membershipApplicationReview(
       site_id: siteId,
       user_id: userId,
       decision,
-      reply
+      reply,
+      ip_address: ipAddress
     },
     context
   )

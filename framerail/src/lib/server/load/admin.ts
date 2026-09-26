@@ -604,7 +604,7 @@ export async function membershipAction({
   }
 }
 
-export async function membershipReviewAction({ request, cookies }: RequestEvent) {
+export async function membershipReviewAction({ request, cookies, getClientAddress }: RequestEvent) {
   const form = await superValidate(request, valibot(membershipReviewSchema))
   if (!form.valid) return fail(400, { form })
   const sessionToken = cookies.get("wikijump_token")
@@ -622,6 +622,7 @@ export async function membershipReviewAction({ request, cookies }: RequestEvent)
       form.data.userId,
       form.data.decision,
       form.data.reply,
+      getClientAddress(),
       { sessionToken, siteId }
     )
     return { form, res }

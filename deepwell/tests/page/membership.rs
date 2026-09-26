@@ -115,6 +115,7 @@ async fn public_membership_module_states_are_distinct_and_opaque() {
             },
             created_by: SYSTEM_USER_ID,
         },
+        common::IP_ADDRESS,
     )
     .await
     .expect("membership preview fixture actor should become a member");
@@ -191,6 +192,7 @@ async fn membership_by_password_module_matches_live_anonymous_and_member_output(
             },
             created_by: SYSTEM_USER_ID,
         },
+        common::IP_ADDRESS,
     )
     .await
     .expect("sample user should become a site member for MembershipByPassword");

@@ -487,6 +487,7 @@ async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries(
             },
             created_by: SYSTEM_USER_ID,
         },
+        common::IP_ADDRESS,
     )
     .await
     .expect("forum-mini member actor should be created");

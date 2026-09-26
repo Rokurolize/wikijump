@@ -168,7 +168,7 @@ pub async fn site_ban_remove(
 
     authorize_site_ban_mutation(ctx, site_id, removed_by, "remove a site ban").await?;
 
-    RelationService::remove_site_ban_with_audit(
+    RelationService::remove_site_ban(
         ctx,
         RemoveSiteBan {
             site_id,

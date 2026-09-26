@@ -74,6 +74,7 @@ pub struct AcceptMembershipEmailInvitation {
     pub action_index: usize,
     pub action_fingerprint: String,
     pub hash: String,
+    pub ip_address: std::net::IpAddr,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
@@ -119,6 +120,7 @@ pub struct SubmitMembershipPassword {
     pub action_index: usize,
     pub action_fingerprint: String,
     pub password: String,
+    pub ip_address: std::net::IpAddr,
 }
 
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
@@ -134,6 +136,7 @@ pub struct ReviewMembershipApplication {
     pub user_id: i64,
     pub decision: MembershipApplicationReviewDecision,
     pub reply: String,
+    pub ip_address: std::net::IpAddr,
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -142,6 +145,7 @@ pub struct JoinMembership {
     pub last_revision_id: i64,
     pub action_index: usize,
     pub action_fingerprint: String,
+    pub ip_address: std::net::IpAddr,
 }
 
 /// One closed browser action emitted beside a renderer-owned Join control.

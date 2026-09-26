@@ -24,6 +24,10 @@ use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::relation::Model as RelationModel;
 use crate::services::ServiceContext;
 use crate::types::RelationType;
-use paste::paste;
+use deepwell_relation_impl_derive::impl_relation;
 
-impl_relation!(PageStar, Page, page_id, User, user_id, ());
+impl_relation! {
+    name => PageStar,
+    dest => page_id: Page,
+    from => user_id: User,
+}

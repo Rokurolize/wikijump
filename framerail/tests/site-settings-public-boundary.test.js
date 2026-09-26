@@ -908,7 +908,13 @@ describe("Wikidot site settings public boundaries", () => {
         { method: "session_get", params: [sessionToken], context: undefined },
         {
           method: "membership_application_review",
-          params: { site_id: siteId, user_id: 91, decision: "accept", reply: "welcome" },
+          params: {
+            site_id: siteId,
+            user_id: 91,
+            decision: "accept",
+            reply: "welcome",
+            ip_address: "192.0.2.63"
+          },
           context: { sessionToken, siteId }
         }
       ])

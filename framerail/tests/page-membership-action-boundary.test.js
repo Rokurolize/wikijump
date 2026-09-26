@@ -6,6 +6,7 @@ import { after, before, test } from "node:test"
 import { createTestViteServer } from "./vite-test-server.js"
 
 const root = fileURLToPath(new URL("..", import.meta.url))
+const clientAddress = "192.0.2.91"
 
 let previousWorkingDirectory
 let vite
@@ -48,6 +49,7 @@ const membershipEvent = () => ({
       "X-Wikijump-Site-Slug": "test"
     }
   }),
+  getClientAddress: () => clientAddress,
   params: { slug: "main" },
   cookies: { get: () => "membership-session" },
   locals: {
@@ -74,6 +76,7 @@ const typedMembershipEvent = (
       "X-Wikijump-Site-Slug": "test"
     }
   }),
+  getClientAddress: () => clientAddress,
   params: { slug: "main", extra },
   cookies: { get: () => sessionToken },
   locals: {
@@ -123,7 +126,8 @@ test("root and slug page routes bind actor-verified membership Join", async () =
           page_id: 42,
           last_revision_id: 90,
           action_index: 3,
-          action_fingerprint: "0123456789abcdef0123456789abcdef"
+          action_fingerprint: "0123456789abcdef0123456789abcdef",
+          ip_address: clientAddress
         },
         context: {
           siteId: 17,
@@ -324,7 +328,8 @@ test("email invitation action derives the opaque hash from the trusted route, no
     last_revision_id: 90,
     action_index: 3,
     action_fingerprint: fingerprint,
-    hash: "route-authority-hash"
+    hash: "route-authority-hash",
+    ip_address: clientAddress
   })
   assert.equal(JSON.stringify(mutation.params).includes("forged-body-hash"), false)
   assert.deepEqual(mutation.context, {

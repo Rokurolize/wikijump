@@ -9322,6 +9322,7 @@ async fn saved_rate_sidecar_binds_exact_revision_and_mutates_idempotently() {
             },
             created_by: SYSTEM_USER_ID,
         },
+        common::IP_ADDRESS,
     )
     .await
     .expect("Rate policy fixture actor should become a member");
@@ -10477,6 +10478,7 @@ async fn members_module_queries_only_visible_site_members_and_roles() {
                 },
                 created_by: SYSTEM_USER_ID,
             },
+            common::IP_ADDRESS,
         )
         .await
         .expect("member-directory fixture membership should be created");
@@ -10491,6 +10493,7 @@ async fn members_module_queries_only_visible_site_members_and_roles() {
             },
             created_by: SYSTEM_USER_ID,
         },
+        common::IP_ADDRESS,
     )
     .await
     .expect("comparison-site member fixture should be created");
@@ -14931,7 +14934,6 @@ async fn page_watchers_returns_active_typed_identities_in_deterministic_order() 
             CreatePageWatch {
                 page_id: target.page_id,
                 user_id,
-                metadata: (),
                 created_by: ADMIN_USER_ID,
             },
         )
@@ -14943,7 +14945,6 @@ async fn page_watchers_returns_active_typed_identities_in_deterministic_order() 
         CreatePageWatch {
             page_id: target.page_id,
             user_id: SYSTEM_USER_ID,
-            metadata: (),
             created_by: ADMIN_USER_ID,
         },
     )
@@ -14964,7 +14965,6 @@ async fn page_watchers_returns_active_typed_identities_in_deterministic_order() 
         CreatePageWatch {
             page_id: other.page_id,
             user_id: UNKNOWN_USER_ID,
-            metadata: (),
             created_by: ADMIN_USER_ID,
         },
     )
@@ -15030,7 +15030,6 @@ async fn page_watchers_requires_target_view_permission_and_site_ownership() {
         CreatePageWatch {
             page_id: target.page_id,
             user_id: ADMIN_USER_ID,
-            metadata: (),
             created_by: ADMIN_USER_ID,
         },
     )
@@ -15094,7 +15093,6 @@ async fn page_watchers_fails_closed_when_any_active_identity_is_incomplete() {
             CreatePageWatch {
                 page_id: target.page_id,
                 user_id,
-                metadata: (),
                 created_by: ADMIN_USER_ID,
             },
         )
@@ -17879,6 +17877,7 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
             },
             created_by: SYSTEM_USER_ID,
         },
+        common::IP_ADDRESS,
     )
     .await
     .expect("restore permission fixture actor should be a site member");
