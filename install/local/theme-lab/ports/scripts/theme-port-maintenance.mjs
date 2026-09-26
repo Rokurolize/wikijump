@@ -43,12 +43,16 @@ async function loadTheme(name) {
   }
   let maintenanceManifest = null;
   let maintenanceOverrideCss = "";
+  let maintenanceFinalSource = "";
+  let localizationTransformManifest = null;
   if (manifest.maintenance_source?.manifest) {
     maintenanceManifest = JSON.parse(await fs.readFile(path.join(dir, manifest.maintenance_source.manifest), "utf8"));
     maintenanceOverrideCss = await fs.readFile(path.join(dir, manifest.maintenance_source.jp_overrides), "utf8");
+    if (manifest.maintenance_source.final_source) maintenanceFinalSource = await fs.readFile(path.join(dir, manifest.maintenance_source.final_source), "utf8");
   }
+  if (manifest.flattened_css_transforms) localizationTransformManifest = JSON.parse(await fs.readFile(path.join(dir, manifest.flattened_css_transforms), "utf8"));
   const maintenanceException = maintenanceExceptions?.import_provenance?.[manifest.slug] ?? null;
-  return {dir, manifest, upstreamSource, humanPortSource, candidateSource, assetsReceipt, maintenanceException, maintenanceManifest, maintenanceOverrideCss};
+  return {dir, manifest, upstreamSource, humanPortSource, candidateSource, assetsReceipt, maintenanceException, maintenanceManifest, maintenanceOverrideCss, maintenanceFinalSource, localizationTransformManifest};
 }
 
 async function themeNames() {
@@ -85,9 +89,19 @@ if (command === "audit") {
     themes_with_maintenance_source: audits.filter((item) => item.maintenance_source.bound).length,
     maintenance_adaptation_blocks: audits.reduce((sum, item) => sum + (item.maintenance_source.adaptation_block_count ?? 0), 0),
     maintenance_exact_duplicate_rules_removed: audits.reduce((sum, item) => sum + (item.maintenance_source.exact_duplicate_rules_removed ?? 0), 0),
+    maintenance_redundant_same_value_declarations_removed: audits.reduce((sum, item) => sum + (item.maintenance_source.redundant_same_value_declarations_removed ?? 0), 0),
+    maintenance_empty_rules_removed: audits.reduce((sum, item) => sum + (item.maintenance_source.empty_rules_removed ?? 0), 0),
     maintenance_repeated_selector_contexts: audits.reduce((sum, item) => sum + (item.maintenance_source.override_cascade?.repeated_selector_context_count ?? 0), 0),
     maintenance_redundant_same_value_declarations: audits.reduce((sum, item) => sum + (item.maintenance_source.override_cascade?.redundant_same_value_declaration_count ?? 0), 0),
     maintenance_shadowed_conflicting_declarations: audits.reduce((sum, item) => sum + (item.maintenance_source.override_cascade?.shadowed_conflicting_declaration_count ?? 0), 0),
+    maintenance_final_sources: audits.filter((item) => item.maintenance_source.final_source?.hash_matches).length,
+    maintenance_final_source_hash_mismatches: audits.filter((item) => item.maintenance_source.final_source && !item.maintenance_source.final_source.hash_matches).map((item) => item.theme),
+    maintenance_reviewed_findings: audits.reduce((sum, item) => sum + (item.maintenance_source.reviewed_finding_count ?? 0), 0),
+    maintenance_review_status_counts: audits.reduce((counts, item) => {
+      for (const [status, count] of Object.entries(item.maintenance_source.declaration_review_status_counts ?? {})) counts[status] = (counts[status] ?? 0) + count;
+      return counts;
+    }, {}),
+    maintenance_unresolved_findings: audits.reduce((sum, item) => sum + (item.maintenance_source.unresolved_findings ?? 0), 0),
     themes_with_shadowed_conflicting_declarations: audits.filter((item) => (item.maintenance_source.override_cascade?.shadowed_conflicting_declaration_count ?? 0) > 0).map((item) => item.theme),
   };
   console.log(JSON.stringify(result, null, 2));

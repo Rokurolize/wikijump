@@ -265,13 +265,19 @@ function importProvenance(assetsReceipt) {
   }));
 }
 
-function sourceTags(manifest) {
-  return manifest?.interactive_acceptance?.theme_source?.active_tags ?? manifest?.source_identity?.en?.tags ?? [];
+function sourceTags(manifest, source = "") {
+  const declared = manifest?.interactive_acceptance?.theme_source?.active_tags ?? manifest?.source_identity?.en?.tags;
+  if (Array.isArray(declared) && declared.length) return declared;
+  // The migrated source pages are captured as the `theme` tag variant. Older
+  // port manifests predate explicit source-tag metadata, so recover this
+  // narrow, repository-owned contract from the active page condition.
+  return /\[\[iftags\s+\+theme\s*\]\]/iu.test(source) ? ["theme"] : [];
 }
 
 function candidateTags(manifest, source = "") {
   const explicit = manifest?.interactive_acceptance?.theme_source?.candidate_tags;
   if (Array.isArray(explicit) && explicit.length) return explicit;
+  if (/\[\[iftags\s+\+theme\s*\]\]/iu.test(source)) return ["theme"];
   if (/\[\[iftags\s+[^\]]*\+テーマ(?:\s|\]\])/iu.test(source)) return ["テーマ"];
   return [];
 }
@@ -285,8 +291,9 @@ function absoluteMetadataPaths(manifest) {
   return rows;
 }
 
-export function buildPortMaintenanceAudit({manifest, upstreamSource, humanPortSource, candidateSource, assetsReceipt = {}, maintenanceException = null, maintenanceManifest = null, maintenanceOverrideCss = ""}) {
-  const upstreamCss = cssFromSource(upstreamSource, sourceTags(manifest));
+export function buildPortMaintenanceAudit({manifest, upstreamSource, humanPortSource, candidateSource, assetsReceipt = {}, maintenanceException = null, maintenanceManifest = null, maintenanceOverrideCss = "", maintenanceFinalSource = "", localizationTransformManifest = null}) {
+  const upstreamActiveTags = sourceTags(manifest, upstreamSource);
+  const upstreamCss = cssFromSource(upstreamSource, upstreamActiveTags);
   const inferredCandidateTags = candidateTags(manifest, humanPortSource);
   const localizedCss = cssFromSource(humanPortSource, inferredCandidateTags);
   const baselineRuleChanges = diffCssRules(upstreamCss, localizedCss);
@@ -299,6 +306,44 @@ export function buildPortMaintenanceAudit({manifest, upstreamSource, humanPortSo
   const canonicalOverrideSelectors = maintenanceOverrideCss
     ? unique(parseStyleSheet(maintenanceOverrideCss).map((rule) => rule.selector)).sort()
     : [];
+  const overrideFindings = overrideCascade?.conflicts ?? [];
+  const declarationReviews = maintenanceManifest?.declaration_reviews ?? {};
+  const unresolvedFindings = overrideFindings.filter((finding) => {
+    const key = JSON.stringify([finding.at_context, finding.selector, finding.property]);
+    const review = declarationReviews[key];
+    return !review || !["resolved-canonical", "intentional-fallback", "intentional-cascade"].includes(review.status) || !String(review.rationale ?? "").trim();
+  });
+  const reviewStatusCounts = {};
+  const validReviewStatuses = new Set(["resolved-canonical", "intentional-fallback", "intentional-cascade"]);
+  for (const [key, review] of Object.entries(declarationReviews)) {
+    reviewStatusCounts[review.status] = (reviewStatusCounts[review.status] ?? 0) + 1;
+    if (!validReviewStatuses.has(review.status) || !String(review.rationale ?? "").trim()) {
+      unresolvedFindings.push({key, review_status: review.status ?? "missing", review_rationale: review.rationale ?? null});
+    }
+  }
+  const reviewedFindings = overrideFindings.map((finding) => {
+    const key = JSON.stringify([finding.at_context, finding.selector, finding.property]);
+    const review = declarationReviews[key] ?? null;
+    return {
+      ...finding,
+      review_status: review?.status ?? "unresolved",
+      review_rationale: review?.rationale ?? null,
+      review_counts: review ? {
+        conflicting_declarations_consolidated: review.conflicting_declarations_consolidated ?? 0,
+        same_value_declarations_removed: review.same_value_declarations_removed ?? review.redundant_declarations_removed ?? 0,
+        fallback_declarations_retained: review.fallback_declarations_retained ?? 0,
+      } : null,
+    };
+  });
+  const finalSourceHash = maintenanceFinalSource ? sha256Text(maintenanceFinalSource) : null;
+  const finalSourceTags = candidateTags(manifest, humanPortSource);
+  const finalSourceCss = maintenanceFinalSource ? cssFromSource(maintenanceFinalSource, finalSourceTags) : "";
+  const finalSourceSelectors = unique(parseStyleSheet(finalSourceCss).map((rule) => rule.selector)).sort();
+  const transformDependencies = (localizationTransformManifest?.transforms ?? []).map((transform) => ({
+    id: transform.id,
+    reason: transform.reason,
+    selectors: unique(parseStyleSheet(transform.before ?? "").map((rule) => rule.selector)).sort(),
+  }));
   return {
     theme: manifest.slug,
     reference_url: manifest.reference_url,
@@ -308,7 +353,7 @@ export function buildPortMaintenanceAudit({manifest, upstreamSource, humanPortSo
       expected_sha256: manifest.en_source_sha256 ?? manifest?.source_identity?.en?.sha256 ?? null,
       matches_manifest: upstreamSha === (manifest.en_source_sha256 ?? manifest?.source_identity?.en?.sha256),
       updated_at: manifest.en_updated_at ?? manifest?.source_identity?.en?.updated_at ?? null,
-      active_tags: sourceTags(manifest),
+      active_tags: upstreamActiveTags,
     },
     localization_baseline: {
       file: manifest.human_port_candidate ?? "human-port-candidate.wikidot.txt",
@@ -337,6 +382,7 @@ export function buildPortMaintenanceAudit({manifest, upstreamSource, humanPortSo
       applied_count: assetsReceipt?.localization_transforms?.length ?? 0,
       applied: assetsReceipt?.localization_transforms ?? [],
       manifest_provenance: assetsReceipt?.localization_transform_manifest ?? null,
+      declared: transformDependencies,
     },
     maintenance_source: {
       bound: Boolean(manifest.maintenance_source),
@@ -345,10 +391,25 @@ export function buildPortMaintenanceAudit({manifest, upstreamSource, humanPortSo
       raw_override_rule_count: maintenanceManifest?.raw_override_rule_count ?? null,
       canonical_override_rule_count: maintenanceManifest?.canonical_override_rule_count ?? null,
       exact_duplicate_rules_removed: maintenanceManifest?.exact_duplicate_rules_removed ?? null,
+      redundant_same_value_declarations_removed: maintenanceManifest?.redundant_same_value_declarations_removed ?? null,
+      empty_rules_removed: maintenanceManifest?.empty_rules_removed ?? null,
       semantic_css_sha256: maintenanceManifest?.semantic_css_sha256 ?? null,
       canonical_override_sha256: maintenanceManifest?.canonical_override_sha256 ?? null,
       canonical_override_selectors: canonicalOverrideSelectors,
-      override_cascade: overrideCascade,
+      final_source_selectors: finalSourceSelectors,
+      override_cascade: overrideCascade ? {...overrideCascade, conflicts: reviewedFindings} : null,
+      declaration_reviews: declarationReviews,
+      reviewed_finding_count: Object.keys(declarationReviews).length,
+      declaration_review_status_counts: reviewStatusCounts,
+      unresolved_findings: unresolvedFindings.length,
+      unresolved_finding_keys: unresolvedFindings.map((finding) => JSON.stringify([finding.at_context, finding.selector, finding.property])),
+      final_source: maintenanceManifest?.final_source ? {
+        file: maintenanceManifest.final_source,
+        expected_sha256: maintenanceManifest.final_source_sha256 ?? null,
+        actual_sha256: finalSourceHash,
+        hash_matches: finalSourceHash !== null && finalSourceHash === maintenanceManifest.final_source_sha256,
+        input_sha256: maintenanceManifest.final_source_inputs ?? null,
+      } : null,
     },
     metadata: {
       nonportable_absolute_path_fields: absoluteMetadataPaths(manifest),
@@ -363,14 +424,21 @@ export function buildUpstreamUpdatePlan({audit, manifest, oldUpstreamSource, new
   const upstreamRuleChanges = diffCssRules(oldCss, newCss);
   const changedSelectors = new Set(upstreamRuleChanges.map((row) => row.selector));
   const baselineSelectors = new Set(audit.localization_baseline.inline_css_changed_selectors);
-  const adaptationSelectors = new Set(audit.final_candidate.adaptations.flatMap((block) => block.selectors));
   const canonicalOverrideSelectors = new Set(audit.maintenance_source.canonical_override_selectors ?? []);
-  const collisions = [...changedSelectors].filter((selector) => baselineSelectors.has(selector) || adaptationSelectors.has(selector) || canonicalOverrideSelectors.has(selector)).sort();
+  const finalSourceSelectors = new Set(audit.maintenance_source.final_source_selectors ?? []);
+  const transformDependencies = audit.flattened_css_transforms.declared ?? [];
+  const transformSelectors = new Set(transformDependencies.flatMap((transform) => transform.selectors));
+  const collisions = [...changedSelectors].filter((selector) => baselineSelectors.has(selector) || canonicalOverrideSelectors.has(selector) || finalSourceSelectors.has(selector) || transformSelectors.has(selector)).sort();
   const overlapSources = Object.fromEntries(collisions.map((selector) => [selector, [
     ...(baselineSelectors.has(selector) ? ["jp-localization-baseline"] : []),
-    ...(adaptationSelectors.has(selector) ? ["acceptance-adaptation"] : []),
     ...(canonicalOverrideSelectors.has(selector) ? ["canonical-jp-overrides"] : []),
+    ...(finalSourceSelectors.has(selector) ? ["canonical-final-source"] : []),
+    ...(transformSelectors.has(selector) ? ["flattened-css-transform"] : []),
   ]]));
+  const transformOverlaps = transformDependencies.flatMap((transform) => {
+    const changed = transform.selectors.filter((selector) => changedSelectors.has(selector));
+    return changed.length ? [{id: transform.id, reason: transform.reason, changed_selectors: changed}] : [];
+  });
   return {
     theme: audit.theme,
     old_upstream_sha256: sha256Text(oldUpstreamSource),
@@ -380,6 +448,7 @@ export function buildUpstreamUpdatePlan({audit, manifest, oldUpstreamSource, new
     upstream_inline_css_rule_changes: upstreamRuleChanges,
     localization_overlap_selectors: collisions,
     localization_overlap_sources: overlapSources,
+    flattened_transform_overlaps: transformOverlaps,
     localization_overlap_count: collisions.length,
     transitive_css_dependency_refresh_required: audit.upstream_dependencies.css_import_count > 0,
     transitive_css_dependency_count: audit.upstream_dependencies.css_import_count,

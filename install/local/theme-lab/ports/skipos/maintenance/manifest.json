@@ -3,17 +3,70 @@
   "frozen_candidate_source_sha256": "a9a86fc0dc7e97062220e342a6f5e82c326891e8de0f07d42d9ba03195d4ad19",
   "base_source_sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507",
   "raw_jp_overrides_sha256": "a4f3b610d49d3c9248ea2e19d0d9dd6e77f66da673aa4a04b4a9c7362c9d94af",
-  "jp_overrides_sha256": "baf293342ddeb81d32b3865a64394f60c28d888f97b461bf397f6dfe9727d6d8",
+  "jp_overrides_sha256": "808ce05b25e4c0826a9ffce754bb237c93057937c2033a837a29d3ddaa122e7d",
   "semantic_css_sha256": "ad02deabef0ee4acb963c5574aff2fca9f80e2c3f4056b3df4d0c7624d486ee8",
-  "canonical_override_sha256": "5a8993fbae5938659f7ce8d340f8ecf5baf49bb99d99b252b097ad5cfc0416df",
+  "canonical_override_sha256": "42b5f5864de5cfddd5eb51e6061b84dab493560a552b2879be597294f017c0d5",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "f777faaf1ec43df7c7638a157985eda2a8d8d1666a536a5c37ca84a6209c21c5",
+  "final_source_inputs": {
+    "base_sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507",
+    "jp_overrides_sha256": "808ce05b25e4c0826a9ffce754bb237c93057937c2033a837a29d3ddaa122e7d"
+  },
+  "ordered_include_sha256": "b8f825e6db56e3bc095ebe4de9794f552f55a84afc2749d8b4eca6cdcc77a6a4",
+  "declaration_reviews": {
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"font-size\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"font-size\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"max-width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"min-width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"max-width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"min-width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    }
+  },
   "adaptation_block_count": 13,
   "raw_override_rule_count": 41,
   "canonical_override_rule_count": 34,
   "exact_duplicate_rules_removed": 7,
+  "redundant_same_value_declarations_removed": 3,
+  "empty_rules_removed": 0,
   "active_tags": [
     "テーマ"
   ],
-  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
   "historical_adaptations": [
     {
       "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
