@@ -6,6 +6,8 @@ import path from "node:path";
 import {spawn} from "node:child_process";
 import {fileURLToPath} from "node:url";
 
+import {evaluateNextestShard} from "../src/nextest-shard-summary.mjs";
+
 const here = path.dirname(fileURLToPath(import.meta.url));
 const runner = path.join(here, "run-deepwell-integration-validation.mjs");
 const args = process.argv.slice(2);
@@ -83,12 +85,15 @@ if (shards === 1) {
     let totalTests = 0;
     for (const result of results) {
       const text = fs.readFileSync(result.logPath, "utf8");
-      const summaries = [...text.matchAll(/Summary \[[^\]]+\]\s+(\d+) tests run:\s+(\d+) passed(?:,\s+(\d+) skipped)?/gu)];
-      const finalSummary = summaries.at(-1);
-      const tests = finalSummary ? Number(finalSummary[1]) : null;
-      const passed = finalSummary ? Number(finalSummary[2]) : null;
+      const evaluation = evaluateNextestShard({
+        code: result.code,
+        signal: result.signal,
+        text,
+      });
+      const tests = evaluation.summary?.tests ?? null;
+      const passed = evaluation.summary?.passed ?? null;
       if (tests !== null) totalTests += tests;
-      const ok = result.code === 0 && !result.signal;
+      const {ok} = evaluation;
       failed ||= !ok;
       process.stdout.write(`${JSON.stringify({
         shard: result.shard,
@@ -99,6 +104,11 @@ if (shards === 1) {
         passed,
       })}\n`);
       if (!ok) {
+        if (evaluation.missingSuccessfulSummary) {
+          process.stderr.write(
+            `Deepwell shard ${result.shard}/${shards} exited successfully without a parseable nextest Summary\n`,
+          );
+        }
         const lines = text.trimEnd().split("\n");
         process.stderr.write(`--- Deepwell shard ${result.shard}/${shards} tail ---\n${lines.slice(-120).join("\n")}\n`);
       }
