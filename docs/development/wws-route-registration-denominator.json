@@ -40,8 +40,8 @@
       },
       {
         "path": "deepwell/src/services/text_block/service.rs",
-        "git_blob": "4d3d1285dfec6f99af7b9e96f408efcc21c432b9",
-        "sha256": "5cf4254163c8f938a16147998bdc131701b092d4e2f71bf5c0d4f0dd8aa760a1"
+        "git_blob": "7af34cd8a755fec5918d21cdc15d2ad63f7020d1",
+        "sha256": "597d663efb768bea089fcf7cc90f451ade02dbc2b985764df3df3de3e0105003"
       },
       {
         "path": "deepwell/src/services/text_block/structs.rs",
