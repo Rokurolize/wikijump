@@ -491,11 +491,44 @@ function parseJavaScriptTestDeclaration(source, start) {
   return title.value;
 }
 
+// A `/` begins a regex literal unless the previous significant token can end
+// an expression. Without this, quotes inside a regex desynchronize the string
+// state machine and hide every later `test(...)`/`it(...)` declaration.
+function isJavaScriptRegexStart(previousSignificant) {
+  if (previousSignificant === null) return true;
+  return !/[A-Za-z0-9_$)\]]/u.test(previousSignificant);
+}
+
+function skipJavaScriptRegexLiteral(source, start) {
+  let index = start + 1;
+  let inCharacterClass = false;
+  while (index < source.length) {
+    const character = source[index];
+    if (character === "\n" || character === "\r") return start + 1;
+    if (character === "\\") {
+      index += Math.min(2, source.length - index);
+      continue;
+    }
+    if (character === "[") {
+      inCharacterClass = true;
+    } else if (character === "]") {
+      inCharacterClass = false;
+    } else if (character === "/" && !inCharacterClass) {
+      index += 1;
+      while (index < source.length && /[A-Za-z]/u.test(source[index])) index += 1;
+      return index;
+    }
+    index += 1;
+  }
+  return start + 1;
+}
+
 function extractJavaScriptTestDeclarations(source) {
   const declarations = new Set();
   let index = 0;
   let state = "normal";
   let lineHasCode = false;
+  let previousSignificant = null;
 
   while (index < source.length) {
     const character = source[index];
@@ -526,6 +559,7 @@ function extractJavaScriptTestDeclarations(source) {
       } else {
         if (character === quote) {
           state = "normal";
+          previousSignificant = quote;
         }
         if (character === "\n") {
           lineHasCode = false;
@@ -540,6 +574,7 @@ function extractJavaScriptTestDeclarations(source) {
       } else {
         if (character === "`") {
           state = "normal";
+          previousSignificant = "`";
         }
         if (character === "\n") {
           lineHasCode = false;
@@ -568,6 +603,12 @@ function extractJavaScriptTestDeclarations(source) {
       index += 2;
       continue;
     }
+    if (character === "/" && isJavaScriptRegexStart(previousSignificant)) {
+      index = skipJavaScriptRegexLiteral(source, index);
+      previousSignificant = "/";
+      lineHasCode = true;
+      continue;
+    }
     if (character === "'") {
       state = "single-string";
       lineHasCode = true;
@@ -594,13 +635,14 @@ function extractJavaScriptTestDeclarations(source) {
       }
     }
     lineHasCode = true;
+    previousSignificant = character;
     index += 1;
   }
 
   return declarations;
 }
 
-function extractDeclaredPublicTests(relativePath, source) {
+export function extractDeclaredPublicTests(relativePath, source) {
   if (relativePath.endsWith(".rs")) {
     return extractRustTestDeclarations(source);
   }

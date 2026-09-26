@@ -3,6 +3,7 @@ import path from "node:path";
 import test from "node:test";
 import {fileURLToPath} from "node:url";
 
+import {extractDeclaredPublicTests} from "../../../../scripts/lib/wikidot-implementation-ledger.mjs";
 import {
   CAMPAIGN_ONLY_MIGRATED_COUNT,
   FINAL_ZERO_SURFACE_COUNT,
@@ -34,7 +35,64 @@ test("every frozen surface anchor resolves inside the repository", async () => {
   const fixture = await loadOfflineSurfaceCoverage(fixturePath);
   const result = await verifyCoverageAnchorFiles(fixture, repositoryRoot);
   assert.equal(result.status, "pass", JSON.stringify(result.missing, null, 2));
+  assert.deepEqual(result.rowsWithoutExecutableOwner, []);
   assert.ok(result.checked > 100, `expected broad executable coverage, got ${result.checked}`);
+});
+
+test("a named test anchor resolves against declared tests, including Rust submodules", async () => {
+  const result = await verifyCoverageAnchorFiles(
+    {
+      rows: [
+        {
+          surface_id: "surface:99999997",
+          anchors: [
+            "deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          ],
+        },
+      ],
+    },
+    repositoryRoot,
+  );
+  assert.equal(result.status, "pass");
+  assert.deepEqual(result.rowsWithoutExecutableOwner, []);
+  assert.deepEqual(result.unresolvedNamedTests, []);
+});
+
+test("a bogus test name in a valid test file rejects a row with no other owner", async () => {
+  const bogus = "deepwell/tests/page.rs#not_a_real_listpages_regression";
+  const result = await verifyCoverageAnchorFiles(
+    {rows: [{surface_id: "surface:99999998", anchors: [bogus]}]},
+    repositoryRoot,
+  );
+  assert.equal(result.status, "fail");
+  assert.deepEqual(result.missing, []);
+  assert.deepEqual(
+    result.rowsWithoutExecutableOwner.map((row) => row.surface_id),
+    ["surface:99999998"],
+  );
+  assert.deepEqual(
+    result.unresolvedNamedTests.map((entry) => entry.anchor),
+    [bogus],
+  );
+  assert.equal(
+    result.unresolvedNamedTests[0].reason,
+    "not-a-declared-runnable-test",
+  );
+});
+
+test("declared-test extraction is not desynchronized by regex literals that contain quotes", () => {
+  // A regex such as /'nonce-([^']+)'/u contains quote characters that would
+  // otherwise open a string state and hide every later test declaration.
+  const source = [
+    "import test from \"node:test\";",
+    "test(\"before regex\", () => {",
+    "  const pattern = /'nonce-([^']+)'/u;",
+    "  assert.match(\"x\", pattern);",
+    "});",
+    "test(\"after regex\", () => {});",
+  ].join("\n");
+  const declared = extractDeclaredPublicTests("example.test.js", source);
+  assert.deepEqual([...declared].sort(), ["after regex", "before regex"]);
 });
 
 test("campaign-only acceptance is no longer represented only by WJLab artifacts", async () => {

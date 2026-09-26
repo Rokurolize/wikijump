@@ -33,17 +33,71 @@ const LINE_BUDGETS = new Map([
   ["deepwell/src/services/render/service.rs", 4_000],
 ]);
 
-const SPLIT_RUNTIME_MODULE_BUDGET = 700;
-const SPLIT_DATA_FORM_BUDGET = 700;
-const SPLIT_RENDER_SERVICE_BUDGET = 1_000;
-const SPLIT_LISTPAGES_SCANNER_BUDGET = 900;
-const SPLIT_LISTPAGES_RENDERING_BUDGET = 1_500;
-const SPLIT_LISTPAGES_SUBSTITUTION_BUDGET = 500;
-const SPLIT_LISTPAGES_SUBSTITUTION_RUNTIME_BUDGET = 900;
-const SPLIT_LISTPAGES_DELAYED_BUDGET = 700;
-const SPLIT_PAGE_QUERY_SERVICE_BUDGET = 700;
-const SPLIT_LISTPAGES_PREVIEW_CLASSIFICATION_BUDGET = 1_000;
-const SPLIT_COMPATIBILITY_INVENTORY_BUDGET = 700;
+// Directory-scoped line budgets. Each row names its directory, per-file maximum,
+// and the exact file filter the former per-directory test applied. One test walks
+// this table so a new split directory is a one-row addition rather than another
+// copy of the same readdir/filter/offender assertion. The filter is part of the
+// row so consolidating cannot widen a budget or admit a previously excluded file.
+const DIRECTORY_LINE_BUDGETS = [
+  {
+    directory: "deepwell/src/services/render/runtime_modules",
+    maximum: 700,
+    include: (name) => name.endsWith(".rs"),
+  },
+  {
+    directory: "deepwell/src/services/data_form",
+    maximum: 700,
+    include: (name) => name.endsWith(".rs"),
+  },
+  {
+    directory: "deepwell/src/services/render/service",
+    maximum: 1_000,
+    include: (name) => name.endsWith(".rs") && name !== "tests.rs",
+  },
+  {
+    directory: "deepwell/src/services/render/list_pages/scanner",
+    maximum: 900,
+    include: (name) =>
+      name.endsWith(".rs") &&
+      !name.endsWith("_tests.rs") &&
+      name !== "tests.rs",
+  },
+  {
+    directory: "deepwell/src/services/render/list_pages/rendering",
+    maximum: 1_500,
+    include: (name) => name.endsWith(".rs"),
+  },
+  {
+    directory: "deepwell/src/services/render/list_pages/substitution",
+    maximum: 500,
+    include: (name) => name.endsWith(".rs"),
+  },
+  {
+    directory: "deepwell/src/services/render/list_pages/substitution/runtime",
+    maximum: 900,
+    include: (name) => name.endsWith(".rs"),
+  },
+  {
+    directory: "deepwell/src/services/render/list_pages/delayed",
+    maximum: 700,
+    include: (name) => name.endsWith(".rs"),
+  },
+  {
+    directory: "deepwell/src/services/page_query/service",
+    maximum: 700,
+    include: (name) => name.endsWith(".rs"),
+  },
+  {
+    directory: "install/local/wikidot-verification/src/listpages-preview-classification",
+    maximum: 1_000,
+    include: (name) => name.endsWith(".mjs"),
+  },
+  {
+    directory: "install/local/wikidot-verification/src/compatibility-inventory",
+    maximum: 700,
+    include: (name) => name.endsWith(".mjs"),
+  },
+];
 
 function lineCount(relativePath) {
   const text = fs.readFileSync(path.join(REPOSITORY_ROOT, relativePath), "utf8");
@@ -61,239 +115,18 @@ test("compatibility-sensitive production entrypoints stay within their source-si
   assert.deepEqual(offenders, []);
 });
 
-test("split runtime-module implementation files stay bounded", () => {
-  const directory = path.join(
-    REPOSITORY_ROOT,
-    "deepwell/src/services/render/runtime_modules",
-  );
-  const offenders = fs
-    .readdirSync(directory)
-    .filter((name) => name.endsWith(".rs"))
-    .map((name) => {
-      const relativePath = "deepwell/src/services/render/runtime_modules/" + name;
-      return {
-        file: relativePath,
-        actual: lineCount(relativePath),
-      };
-    })
-    .filter(({ actual }) => actual > SPLIT_RUNTIME_MODULE_BUDGET)
-    .sort((left, right) => right.actual - left.actual);
-  assert.deepEqual(offenders, []);
-});
-
-test("split data-form implementation files stay bounded", () => {
-  const directory = path.join(
-    REPOSITORY_ROOT,
-    "deepwell/src/services/data_form",
-  );
-  const offenders = fs
-    .readdirSync(directory)
-    .filter((name) => name.endsWith(".rs"))
-    .map((name) => {
-      const relativePath = "deepwell/src/services/data_form/" + name;
-      return {
-        file: relativePath,
-        actual: lineCount(relativePath),
-      };
-    })
-    .filter(({ actual }) => actual > SPLIT_DATA_FORM_BUDGET)
-    .sort((left, right) => right.actual - left.actual);
-  assert.deepEqual(offenders, []);
-});
-
-test("split render-service implementation files stay bounded", () => {
-  const directory = path.join(
-    REPOSITORY_ROOT,
-    "deepwell/src/services/render/service",
-  );
-  const offenders = fs
-    .readdirSync(directory)
-    .filter((name) => name.endsWith(".rs") && name !== "tests.rs")
-    .map((name) => {
-      const relativePath = "deepwell/src/services/render/service/" + name;
-      return {
-        file: relativePath,
-        actual: lineCount(relativePath),
-      };
-    })
-    .filter(({ actual }) => actual > SPLIT_RENDER_SERVICE_BUDGET)
-    .sort((left, right) => right.actual - left.actual);
-  assert.deepEqual(offenders, []);
-});
-
-test("split ListPages scanner implementation files stay bounded", () => {
-  const directory = path.join(
-    REPOSITORY_ROOT,
-    "deepwell/src/services/render/list_pages/scanner",
-  );
-  const offenders = fs
-    .readdirSync(directory)
-    .filter(
-      (name) =>
-        name.endsWith(".rs") &&
-        !name.endsWith("_tests.rs") &&
-        name !== "tests.rs",
-    )
-    .map((name) => {
-      const relativePath =
-        "deepwell/src/services/render/list_pages/scanner/" + name;
-      return {
-        file: relativePath,
-        actual: lineCount(relativePath),
-      };
-    })
-    .filter(({ actual }) => actual > SPLIT_LISTPAGES_SCANNER_BUDGET)
-    .sort((left, right) => right.actual - left.actual);
-  assert.deepEqual(offenders, []);
-});
-
-test("split ListPages rendering implementation files stay bounded", () => {
-  const directory = path.join(
-    REPOSITORY_ROOT,
-    "deepwell/src/services/render/list_pages/rendering",
-  );
-  const offenders = fs
-    .readdirSync(directory)
-    .filter((name) => name.endsWith(".rs"))
-    .map((name) => {
-      const relativePath =
-        "deepwell/src/services/render/list_pages/rendering/" + name;
-      return {
-        file: relativePath,
-        actual: lineCount(relativePath),
-      };
-    })
-    .filter(({ actual }) => actual > SPLIT_LISTPAGES_RENDERING_BUDGET)
-    .sort((left, right) => right.actual - left.actual);
-  assert.deepEqual(offenders, []);
-});
-
-test("split ListPages substitution implementation files stay bounded", () => {
-  const directory = path.join(
-    REPOSITORY_ROOT,
-    "deepwell/src/services/render/list_pages/substitution",
-  );
-  const offenders = fs
-    .readdirSync(directory)
-    .filter((name) => name.endsWith(".rs"))
-    .map((name) => {
-      const relativePath =
-        "deepwell/src/services/render/list_pages/substitution/" + name;
-      return {
-        file: relativePath,
-        actual: lineCount(relativePath),
-      };
-    })
-    .filter(({ actual }) => actual > SPLIT_LISTPAGES_SUBSTITUTION_BUDGET)
-    .sort((left, right) => right.actual - left.actual);
-  assert.deepEqual(offenders, []);
-});
-
-test("split ListPages substitution runtime implementation files stay bounded", () => {
-  const directory = path.join(
-    REPOSITORY_ROOT,
-    "deepwell/src/services/render/list_pages/substitution/runtime",
-  );
-  const offenders = fs
-    .readdirSync(directory)
-    .filter((name) => name.endsWith(".rs"))
-    .map((name) => {
-      const relativePath =
-        "deepwell/src/services/render/list_pages/substitution/runtime/" + name;
-      return {
-        file: relativePath,
-        actual: lineCount(relativePath),
-      };
-    })
-    .filter(({ actual }) => actual > SPLIT_LISTPAGES_SUBSTITUTION_RUNTIME_BUDGET)
-    .sort((left, right) => right.actual - left.actual);
-  assert.deepEqual(offenders, []);
-});
-
-test("split ListPages delayed implementation files stay bounded", () => {
-  const directory = path.join(
-    REPOSITORY_ROOT,
-    "deepwell/src/services/render/list_pages/delayed",
-  );
-  const offenders = fs
-    .readdirSync(directory)
-    .filter((name) => name.endsWith(".rs"))
-    .map((name) => {
-      const relativePath =
-        "deepwell/src/services/render/list_pages/delayed/" + name;
-      return {
-        file: relativePath,
-        actual: lineCount(relativePath),
-      };
-    })
-    .filter(({ actual }) => actual > SPLIT_LISTPAGES_DELAYED_BUDGET)
-    .sort((left, right) => right.actual - left.actual);
-  assert.deepEqual(offenders, []);
-});
-
-test("split page-query service implementation files stay bounded", () => {
-  const directory = path.join(
-    REPOSITORY_ROOT,
-    "deepwell/src/services/page_query/service",
-  );
-  const offenders = fs
-    .readdirSync(directory)
-    .filter((name) => name.endsWith(".rs"))
-    .map((name) => {
-      const relativePath = "deepwell/src/services/page_query/service/" + name;
-      return {
-        file: relativePath,
-        actual: lineCount(relativePath),
-      };
-    })
-    .filter(({ actual }) => actual > SPLIT_PAGE_QUERY_SERVICE_BUDGET)
-    .sort((left, right) => right.actual - left.actual);
-  assert.deepEqual(offenders, []);
-});
-
-test("split ListPages preview-classification helpers stay bounded", () => {
-  const directory = path.join(
-    REPOSITORY_ROOT,
-    "install/local/wikidot-verification/src/listpages-preview-classification",
-  );
-  const offenders = fs
-    .readdirSync(directory)
-    .filter((name) => name.endsWith(".mjs"))
-    .map((name) => {
-      const relativePath =
-        "install/local/wikidot-verification/src/listpages-preview-classification/" +
-        name;
-      return {
-        file: relativePath,
-        actual: lineCount(relativePath),
-      };
-    })
-    .filter(
-      ({ actual }) =>
-        actual > SPLIT_LISTPAGES_PREVIEW_CLASSIFICATION_BUDGET,
-    )
-    .sort((left, right) => right.actual - left.actual);
-  assert.deepEqual(offenders, []);
-});
-
-test("split compatibility-inventory source-discovery helpers stay bounded", () => {
-  const directory = path.join(
-    REPOSITORY_ROOT,
-    "install/local/wikidot-verification/src/compatibility-inventory",
-  );
-  const offenders = fs
-    .readdirSync(directory)
-    .filter((name) => name.endsWith(".mjs"))
-    .map((name) => {
-      const relativePath =
-        "install/local/wikidot-verification/src/compatibility-inventory/" +
-        name;
-      return {
-        file: relativePath,
-        actual: lineCount(relativePath),
-      };
-    })
-    .filter(({ actual }) => actual > SPLIT_COMPATIBILITY_INVENTORY_BUDGET)
-    .sort((left, right) => right.actual - left.actual);
+test("split implementation directories stay within their source-size budgets", () => {
+  const offenders = [];
+  for (const { directory, maximum, include } of DIRECTORY_LINE_BUDGETS) {
+    const absolute = path.join(REPOSITORY_ROOT, directory);
+    for (const name of fs.readdirSync(absolute).filter(include)) {
+      const relativePath = `${directory}/${name}`;
+      const actual = lineCount(relativePath);
+      if (actual > maximum) {
+        offenders.push({ file: relativePath, actual, maximum });
+      }
+    }
+  }
+  offenders.sort((left, right) => right.actual - left.actual);
   assert.deepEqual(offenders, []);
 });

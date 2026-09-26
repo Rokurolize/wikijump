@@ -2,78 +2,45 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { candidateCaseSet, candidateCaseUsage } from "../src/candidate-case-command.mjs";
-import {
-  OPEN43_BROWSER_CANDIDATE_CASE_IDS,
-  OPEN43_CANDIDATE_DENOMINATORS,
-  OPEN43_PAGE_QUERY_CANDIDATE_CASE_IDS,
-  OPEN43_SETTINGS_LIFECYCLE_CANDIDATE_CASE_IDS,
-} from "../src/open43-candidate-denominator-registry.mjs";
+import { OPEN43_CANDIDATE_DENOMINATORS } from "../src/open43-candidate-denominator-registry.mjs";
 import { OPEN43_ISSUE775_CASE_IDS } from "../src/open43-issue775-edit-candidate-contract.mjs";
 import { OPEN43_ISSUE777_CASE_IDS } from "../src/open43-issue777-print-candidate-case-set.mjs";
 import { OPEN43_ISSUE1029_CASE_IDS } from "../src/open43-issue1029-join-candidate-case-set.mjs";
 import { OPEN43_ISSUE1041_CASE_IDS } from "../src/open43-issue1041-lifecycle-candidate-case-set.mjs";
 import { OPEN43_SETTINGS_BROWSER_CASE_IDS } from "../src/open43-settings-browser-candidate-contract.mjs";
+import { OPEN43_SETTINGS_LIFECYCLE_CASE_IDS } from "../src/open43-settings-lifecycle-candidate-contract.mjs";
 import { createOpen43SettingsLifecycleCandidateCaseSet } from "../src/open43-settings-lifecycle-candidate-case-set.mjs";
 
+// The registry module is the single owner of the Open43 candidate denominator.
+// This suite asserts the owner-key contract and that every registered denominator
+// is the exact array exported by its source-owned case set, so coverage cannot
+// drift into a second copied inventory. Global disjointness is asserted once
+// over every registered denominator rather than by re-listing case IDs.
 test("Open43 candidate denominators are exact, disjoint, and handoff-only", () => {
-  assert.deepEqual(OPEN43_SETTINGS_BROWSER_CASE_IDS, [
-    "S754_ANALYTICS_INITIAL",
-    "S754_ANALYTICS_SETTLED",
-    "S755_THEME_INITIAL",
-    "S755_THEME_SETTLED",
-    "S757_TOOLBAR_INITIAL",
-    "S757_TOOLBAR_SETTLED",
-    "S1046_ADMIN_INITIAL",
-    "S1046_ADMIN_SETTLED",
-    "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
+  assert.deepEqual(Object.keys(OPEN43_CANDIDATE_DENOMINATORS), [
+    "settings",
+    "issue775_edit",
+    "issue777_print",
+    "issue1029_join",
+    "issue1041_lifecycle",
+    "browser",
+    "settings_lifecycle",
+    "page_query",
   ]);
-  assert.deepEqual(OPEN43_BROWSER_CANDIDATE_CASE_IDS, [
-    "B610_CHROME_INITIAL",
-    "B610_CHROME_SETTLED",
-    "B610_FAVICON_ARTICLE_SIDEBAR_THEME_NETWORK",
-    "B610_EXACT_SERVED_IDENTITIES",
-    "B689_TABVIEW_INITIAL",
-    "B689_TABVIEW_SETTLED",
-    "B689_THEME_BASALT_GEOMETRY",
-    "B689_SCP8980_AND_NAVIGATION_LIFECYCLE",
-    "B690_GEOMETRY_INITIAL",
-    "B690_GEOMETRY_SETTLED",
-    "B690_FIXED_SIX_PAGE_DENOMINATOR",
-    "B690_PILOT_SCALE_COMPARE",
-    "B822_PAGE_TAGS_INITIAL",
-    "B822_PAGE_TAGS_SETTLED",
-  ]);
-  assert.deepEqual(OPEN43_SETTINGS_LIFECYCLE_CANDIDATE_CASE_IDS, ["S758_CREATE_INITIAL", "S758_CREATE_SETTLED"]);
-  assert.deepEqual(OPEN43_PAGE_QUERY_CANDIDATE_CASE_IDS, [
-    "Q779_EXPLICIT_ROOT_ACTOR_AND_LIFECYCLE_CANDIDATE",
-    "Q809_PERMISSION_BEFORE_LIMIT_CANDIDATE",
-    "Q809_SERVED_MUTATION_AND_BROWSER_CANDIDATE",
-    "Q811_DEFAULT_AUTHOR_DATE_AND_SERVED_MUTATION_CANDIDATE",
-    "Q1027_RENAME_DELETE_RESTORE_CACHE_AND_SERVED_CANDIDATE",
-    "Q1028_CATEGORY_LIFECYCLE_AND_CACHE",
-    "Q1040_DEFAULT_AUTHOR_DATE_AND_SERVED_MUTATION_CANDIDATE",
-  ]);
+  assert.equal(OPEN43_CANDIDATE_DENOMINATORS.settings.caseIds, OPEN43_SETTINGS_BROWSER_CASE_IDS);
+  assert.equal(OPEN43_CANDIDATE_DENOMINATORS.issue775_edit.caseIds, OPEN43_ISSUE775_CASE_IDS);
+  assert.equal(OPEN43_CANDIDATE_DENOMINATORS.issue777_print.caseIds, OPEN43_ISSUE777_CASE_IDS);
+  assert.equal(OPEN43_CANDIDATE_DENOMINATORS.issue1029_join.caseIds, OPEN43_ISSUE1029_CASE_IDS);
+  assert.equal(OPEN43_CANDIDATE_DENOMINATORS.issue1041_lifecycle.caseIds, OPEN43_ISSUE1041_CASE_IDS);
+  assert.equal(OPEN43_CANDIDATE_DENOMINATORS.settings_lifecycle.caseIds, OPEN43_SETTINGS_LIFECYCLE_CASE_IDS);
 
-  assert.deepEqual(Object.keys(OPEN43_CANDIDATE_DENOMINATORS), ["settings", "issue775_edit", "issue777_print", "issue1029_join", "issue1041_lifecycle", "browser", "settings_lifecycle", "page_query"]);
-  assert.deepEqual(OPEN43_CANDIDATE_DENOMINATORS.settings.caseIds, OPEN43_SETTINGS_BROWSER_CASE_IDS);
-  assert.deepEqual(OPEN43_CANDIDATE_DENOMINATORS.issue775_edit.caseIds, OPEN43_ISSUE775_CASE_IDS);
-  assert.deepEqual(OPEN43_CANDIDATE_DENOMINATORS.issue777_print.caseIds, OPEN43_ISSUE777_CASE_IDS);
-  assert.deepEqual(OPEN43_CANDIDATE_DENOMINATORS.issue1029_join.caseIds, OPEN43_ISSUE1029_CASE_IDS);
-  assert.deepEqual(OPEN43_CANDIDATE_DENOMINATORS.issue1041_lifecycle.caseIds, OPEN43_ISSUE1041_CASE_IDS);
+  // #758 lifecycle ownership must stay exclusive to the lifecycle denominator.
   assert.equal(OPEN43_CANDIDATE_DENOMINATORS.settings_lifecycle.caseIds.includes("S758_CREATE_INITIAL"), true);
   assert.equal(OPEN43_CANDIDATE_DENOMINATORS.page_query.caseIds.includes("S758_CREATE_INITIAL"), false);
   assert.equal(OPEN43_SETTINGS_BROWSER_CASE_IDS.includes("S758_CREATE_INITIAL"), false);
 
-  const all = [
-    ...OPEN43_SETTINGS_BROWSER_CASE_IDS,
-    ...OPEN43_ISSUE775_CASE_IDS,
-    ...OPEN43_ISSUE777_CASE_IDS,
-    ...OPEN43_ISSUE1029_CASE_IDS,
-    ...OPEN43_ISSUE1041_CASE_IDS,
-    ...OPEN43_BROWSER_CANDIDATE_CASE_IDS,
-    ...OPEN43_SETTINGS_LIFECYCLE_CANDIDATE_CASE_IDS,
-    ...OPEN43_PAGE_QUERY_CANDIDATE_CASE_IDS,
-  ];
+  const all = Object.values(OPEN43_CANDIDATE_DENOMINATORS).flatMap(({ caseIds }) => caseIds);
+  assert.ok(all.length > 0);
   assert.equal(new Set(all).size, all.length);
 });
 
@@ -84,7 +51,7 @@ test("#758 has an exact lifecycle-owner candidate adapter", async () => {
   }
   const registered = await candidateCaseSet("open43-settings-lifecycle");
   assert.equal(registered.id, "open43-settings-lifecycle");
-  assert.deepEqual(registered.caseIds, OPEN43_SETTINGS_LIFECYCLE_CANDIDATE_CASE_IDS);
+  assert.deepEqual(registered.caseIds, OPEN43_SETTINGS_LIFECYCLE_CASE_IDS);
   const lifecycle = createOpen43SettingsLifecycleCandidateCaseSet();
-  assert.deepEqual(lifecycle.caseIds, OPEN43_SETTINGS_LIFECYCLE_CANDIDATE_CASE_IDS);
+  assert.deepEqual(lifecycle.caseIds, OPEN43_SETTINGS_LIFECYCLE_CASE_IDS);
 });

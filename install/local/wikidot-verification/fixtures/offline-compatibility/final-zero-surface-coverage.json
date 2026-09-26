@@ -1035,8 +1035,8 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/wikidot-chrome.spec.ts#header-extra-div-1",
-        "framerail/tests/wikidot-static-styles.test.ts#header-extra-div-1"
+        "framerail/tests/wikidot-chrome.spec.ts#Wikidot header extension hooks exist at the initial no-script paint",
+        "framerail/tests/wikidot-static-styles.test.ts#the Wikidot header exposes the three legacy extension hooks in source order"
       ],
       "migrated_from_campaign_only": false
     },
@@ -10991,7 +10991,7 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/job_queue.rs#component_css_save_dispatches_one_post_commit_dependent_rerender"
+        "deepwell/tests/job_queue.rs#component_css_save_refreshes_direct_dependent_before_rpc_returns"
       ],
       "migrated_from_campaign_only": false
     },
@@ -11009,7 +11009,7 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/job_queue.rs#component_css_save_dispatches_one_post_commit_dependent_rerender"
+        "deepwell/tests/job_queue.rs#component_css_save_refreshes_direct_dependent_before_rpc_returns"
       ],
       "migrated_from_campaign_only": false
     },
@@ -11132,7 +11132,7 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/job_queue.rs#component_css_save_dispatches_one_post_commit_dependent_rerender"
+        "deepwell/tests/job_queue.rs#component_css_save_refreshes_direct_dependent_before_rpc_returns"
       ],
       "migrated_from_campaign_only": false
     },
@@ -15277,7 +15277,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/site-settings-foundation.test.js#serves the observed legacy admin path through the same SSR and action seam"
+        "framerail/tests/site-settings-public-boundary.test.js#serves the legacy admin route through the same rendered page and action seam"
       ],
       "migrated_from_campaign_only": false
     },
@@ -15808,7 +15808,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/site-settings-foundation.test.js#connects settings to server rendered head and toolbar authority"
+        "framerail/tests/site-settings-public-boundary.test.js#server-renders analytics, theme, and toolbar settings from the request view"
       ],
       "migrated_from_campaign_only": false
     },

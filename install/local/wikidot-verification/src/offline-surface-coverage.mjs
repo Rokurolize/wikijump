@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import {extractDeclaredPublicTests} from "../../../../scripts/lib/wikidot-implementation-ledger.mjs";
+
 export const OFFLINE_SURFACE_COVERAGE_SCHEMA =
   "wikijump.offline_compatibility_surface_coverage.v1";
 export const FINAL_ZERO_SURFACE_COUNT = 900;
@@ -9,6 +11,28 @@ export const CAMPAIGN_ONLY_MIGRATED_COUNT = 100;
 const SHA256_RE = /^[0-9a-f]{64}$/u;
 const SURFACE_ID_RE = /^surface:\d{8}$/u;
 const LANES = new Set(["products", "verification"]);
+const DIRECT_ANCHOR_RE =
+  /^(deepwell\/(?:src|tests)\/[^:#\s]+|wws\/(?:src|tests)\/[^:#\s]+|framerail\/tests\/[^:#\s]+|install\/local\/wikidot-verification\/tests\/[^:#\s]+)/u;
+const DEEPWELL_RUNNER_RE =
+  /^node (install\/local\/wikidot-verification\/scripts\/run-deepwell-integration-validation\.mjs)\b/u;
+const CARGO_TEST_RE = /^(?:DATABASE_URL=\S+ )?cargo test\b/u;
+const NODE_TEST_RE = /^node --test\b/u;
+const SCRIPT_ANCHOR_RE = /^(scripts\/[^\s]+)/u;
+const PUBLIC_TEST_FILE_ROOTS = [
+  "deepwell/tests/",
+  "framerail/tests/",
+  "install/local/wikidot-verification/tests/",
+  "install/standing/tests/",
+  "wws/tests/",
+];
+
+function isSupportedPublicTestFile(relativePath) {
+  if (/\.(?:test|spec)\.(?:[cm]?[jt]sx?)$/u.test(relativePath)) return true;
+  return (
+    relativePath.endsWith(".rs") &&
+    PUBLIC_TEST_FILE_ROOTS.some((root) => relativePath.startsWith(root))
+  );
+}
 
 function object(value, label) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -31,26 +55,128 @@ function sha256(value, label) {
   return value;
 }
 
-export function anchorFilePath(anchor) {
+// An anchor is a coverage ownership claim. Commands name a runnable test entry
+// point, plain paths name a runnable test target, and `<path>#<name>` /
+// `<path>::<name>` additionally name the test (or evidence case) inside it.
+function parseCoverageAnchor(anchor) {
   if (typeof anchor !== "string" || anchor.length === 0) return null;
-  const direct = anchor.match(
-    /^(deepwell\/(?:src|tests)\/[^:#\s]+|wws\/(?:src|tests)\/[^:#\s]+|framerail\/tests\/[^:#\s]+|install\/local\/wikidot-verification\/tests\/[^:#\s]+)/u,
-  );
-  if (direct) return direct[1];
-  const deepwellRunner = anchor.match(
-    /^node install\/local\/wikidot-verification\/scripts\/(run-deepwell-integration-validation\.mjs)/u,
-  );
-  if (deepwellRunner) {
-    return `install/local/wikidot-verification/scripts/${deepwellRunner[1]}`;
+  const runner = anchor.match(DEEPWELL_RUNNER_RE);
+  if (runner) return {kind: "command", files: [runner[1]], fragment: null};
+  if (CARGO_TEST_RE.test(anchor) || NODE_TEST_RE.test(anchor)) {
+    const files = [];
+    const nodeTest = anchor.match(/^node --test\s+(.+)$/u);
+    if (nodeTest) {
+      for (const file of nodeTest[1].split(/\s+/u)) {
+        if (file.length > 0) files.push(file);
+      }
+    }
+    const manifest = anchor.match(/--manifest-path\s+(\S+)/u);
+    if (manifest) files.push(manifest[1]);
+    else if (CARGO_TEST_RE.test(anchor)) files.push("deepwell/Cargo.toml");
+    if (files.length === 0) return null;
+    return {kind: "command", files, fragment: null};
   }
-  if (/^(?:DATABASE_URL=.* )?cargo test /u.test(anchor)) {
-    const manifest = anchor.match(/--manifest-path\s+([^\s]+)/u)?.[1];
-    return manifest ?? "deepwell/Cargo.toml";
+  const direct = anchor.match(DIRECT_ANCHOR_RE);
+  if (!direct) {
+    const script = anchor.match(SCRIPT_ANCHOR_RE);
+    return script ? {kind: "file", files: [script[1]], fragment: null} : null;
   }
-  const nodeTest = anchor.match(/^node --test\s+([^\s]+)/u)?.[1];
-  if (nodeTest) return nodeTest;
-  const script = anchor.match(/^(scripts\/[^\s]+)/u)?.[1];
-  return script ?? null;
+  const file = direct[1];
+  const rest = anchor.slice(file.length);
+  if (rest.length === 0) return {kind: "file", files: [file], fragment: null};
+  if (rest.startsWith("#")) {
+    return {kind: "named", files: [file], fragment: rest.slice(1)};
+  }
+  if (rest.startsWith("::")) {
+    return {kind: "named", files: [file], fragment: rest.slice(2)};
+  }
+  return null;
+}
+
+export function anchorFilePath(anchor) {
+  return parseCoverageAnchor(anchor)?.files[0] ?? null;
+}
+
+// Test anchors in the fixture use several repository conventions: a bare test
+// name, a `tests::` module path, a `fn name()` wrapper, and `test::case`
+// labels. Normalize all of them to the candidate test names they reference.
+function declaredTestNames(fragment) {
+  if (typeof fragment !== "string") return [];
+  const text = fragment
+    .trim()
+    .replace(/^(?:pub\s+)?(?:async\s+)?fn\s+/u, "")
+    .replace(/\(\)$/u, "");
+  const names = [];
+  for (const part of text.split(";")) {
+    const trimmed = part.trim();
+    if (trimmed.length === 0) continue;
+    for (const segment of trimmed.split("::")) {
+      const name = segment.trim();
+      if (name.length > 0) names.push(name);
+    }
+  }
+  return [...new Set(names)];
+}
+
+async function readSource(repositoryRoot, relativePath, cache) {
+  if (cache.has(relativePath)) return cache.get(relativePath);
+  const pending = fs
+    .readFile(path.resolve(repositoryRoot, relativePath), "utf8")
+    .catch(() => null);
+  cache.set(relativePath, pending);
+  return pending;
+}
+
+// `cargo test --test page` runs declarations that live in `page/*.rs`
+// submodules, so a `page.rs#name` anchor must resolve against the whole module
+// tree. The parsing itself is owned by the shared implementation ledger.
+async function collectRustModuleTests(repositoryRoot, directory, target, sourceCache) {
+  const absolute = path.resolve(repositoryRoot, directory);
+  const relativeBack = path.relative(repositoryRoot, absolute);
+  if (relativeBack.startsWith("..") || path.isAbsolute(relativeBack)) return;
+  const entries = await fs.readdir(absolute, {withFileTypes: true}).catch(() => []);
+  for (const entry of entries) {
+    const relative = `${directory}/${entry.name}`;
+    if (entry.isFile() && entry.name.endsWith(".rs")) {
+      const source = await readSource(repositoryRoot, relative, sourceCache);
+      if (source === null) continue;
+      const declared = extractDeclaredPublicTests(relative, source);
+      if (declared !== null) for (const name of declared) target.add(name);
+    } else if (entry.isDirectory()) {
+      await collectRustModuleTests(repositoryRoot, relative, target, sourceCache);
+    }
+  }
+}
+
+async function declaredTestsFor(repositoryRoot, relativePath, cache) {
+  if (cache.has(relativePath)) return cache.get(relativePath);
+  const pending = (async () => {
+    const source = await readSource(repositoryRoot, relativePath, cache.sourceCache);
+    if (source === null) return null;
+    const declared = extractDeclaredPublicTests(relativePath, source);
+    if (declared === null) return null;
+    const all = new Set(declared);
+    if (relativePath.endsWith(".rs")) {
+      const moduleDirectory = relativePath.endsWith("/mod.rs")
+        ? path.posix.dirname(relativePath)
+        : relativePath.slice(0, -3);
+      await collectRustModuleTests(
+        repositoryRoot,
+        moduleDirectory,
+        all,
+        cache.sourceCache,
+      );
+    }
+    return all;
+  })();
+  cache.set(relativePath, pending);
+  return pending;
+}
+
+function createDeclaredTestCache() {
+  const cache = new Map();
+  cache.sourceCache = new Map();
+  return cache;
 }
 
 export function validateOfflineSurfaceCoverage(value) {
@@ -130,25 +256,98 @@ export async function loadOfflineSurfaceCoverage(filePath) {
   return validateOfflineSurfaceCoverage(JSON.parse(raw));
 }
 
+// Resolve every coverage row to at least one executable owner. Commands and
+// plain paths are owners when their files exist. A named anchor is an owner
+// only when its name is a declared runnable test (including Rust submodules);
+// non-test/evidence files additionally accept an exact source-anchor match.
+// Named anchors that resolve to none of these are reported, and a row is
+// rejected when no anchor owns it.
 export async function verifyCoverageAnchorFiles(fixture, repositoryRoot) {
   const missing = [];
+  const unresolvedNamedTests = [];
+  const rowsWithoutExecutableOwner = [];
   const checked = new Set();
-  for (const row of fixture.rows) {
-    for (const anchor of row.anchors) {
-      const relative = anchorFilePath(anchor);
-      if (!relative || checked.has(relative)) continue;
-      checked.add(relative);
-      const absolute = path.resolve(repositoryRoot, relative);
-      const relativeBack = path.relative(repositoryRoot, absolute);
-      if (relativeBack.startsWith("..") || path.isAbsolute(relativeBack)) {
-        missing.push({anchor, reason: "outside-repository"});
+  const cache = createDeclaredTestCache();
+
+  for (const [index, row] of fixture.rows.entries()) {
+    let owned = false;
+    for (const anchor of row.anchors ?? []) {
+      const target = parseCoverageAnchor(anchor);
+      if (!target) continue;
+      let filesOk = true;
+      for (const relative of target.files) {
+        const absolute = path.resolve(repositoryRoot, relative);
+        const relativeBack = path.relative(repositoryRoot, absolute);
+        if (relativeBack.startsWith("..") || path.isAbsolute(relativeBack)) {
+          missing.push({anchor, reason: "outside-repository"});
+          filesOk = false;
+          continue;
+        }
+        checked.add(relative);
+        const stat = await fs.lstat(absolute).catch(() => null);
+        if (!stat?.isFile() || stat.isSymbolicLink()) {
+          missing.push({anchor, path: relative, reason: "missing"});
+          filesOk = false;
+        }
+      }
+      if (!filesOk) continue;
+      if (target.kind !== "named") {
+        owned = true;
         continue;
       }
-      const stat = await fs.lstat(absolute).catch(() => null);
-      if (!stat?.isFile() || stat.isSymbolicLink()) {
-        missing.push({anchor, path: relative, reason: "missing"});
+
+      const relativeFile = target.files[0];
+      const declared = await declaredTestsFor(repositoryRoot, relativeFile, cache);
+      const names = declaredTestNames(target.fragment);
+      if (declared !== null && names.some((name) => declared.has(name))) {
+        owned = true;
+        continue;
       }
+      if (!isSupportedPublicTestFile(relativeFile)) {
+        // Source/evidence files keep the fixture's exact source-anchor
+        // convention: the anchor names a symbol or evidence case rather than a
+        // test declaration, and an uncaptured name must not silently own a row.
+        const source = await readSource(
+          repositoryRoot,
+          relativeFile,
+          cache.sourceCache,
+        );
+        if (
+          source !== null &&
+          (source.includes(target.fragment) ||
+            source.includes(target.fragment.split("::")[0]))
+        ) {
+          owned = true;
+          continue;
+        }
+      }
+      // A supported public test file must declare the named runnable test. A
+      // file-level declaration of some other test is not an executable owner.
+      unresolvedNamedTests.push({
+        anchor,
+        path: relativeFile,
+        name: target.fragment,
+        reason: "not-a-declared-runnable-test",
+      });
+    }
+    if (!owned) {
+      rowsWithoutExecutableOwner.push({
+        surface_id: row.surface_id ?? null,
+        index,
+        anchors: [...(row.anchors ?? [])],
+      });
     }
   }
-  return {status: missing.length === 0 ? "pass" : "fail", checked: checked.size, missing};
+
+  const status =
+    missing.length === 0 && rowsWithoutExecutableOwner.length === 0
+      ? "pass"
+      : "fail";
+  return {
+    status,
+    checked: checked.size,
+    missing,
+    unresolvedNamedTests,
+    rowsWithoutExecutableOwner,
+  };
 }
