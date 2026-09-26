@@ -3743,7 +3743,7 @@
         "component": "deepwell",
         "handler": "membership_get",
         "source": "deepwell/src/endpoints/site_member.rs#membership_get",
-        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
+        "source_sha256": "24190cfd440805b4b407fb9fcaff65852032d5a8514e32f128487ad286ac5917",
         "function_sha256": "d2ae061a8ff993bcce1490c760551503aa1862d668c141846220ad777bc74eb8"
       },
       "params_schema": {
@@ -3798,8 +3798,8 @@
         "component": "deepwell",
         "handler": "membership_remove",
         "source": "deepwell/src/endpoints/site_member.rs#membership_remove",
-        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
-        "function_sha256": "9723b1832797babdf639013c3bca891d616c79a80625bc15b32762128175b51e"
+        "source_sha256": "24190cfd440805b4b407fb9fcaff65852032d5a8514e32f128487ad286ac5917",
+        "function_sha256": "67059196719e80c93d86abbee5c377cc38e37c2b920a686cb884218d2dd3dd17"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -3857,8 +3857,8 @@
         "component": "deepwell",
         "handler": "membership_set",
         "source": "deepwell/src/endpoints/site_member.rs#membership_set",
-        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
-        "function_sha256": "8b5e5e8990322fd5424fa1756188e97a91580c7aa833ac643537bf9d724a75b7"
+        "source_sha256": "24190cfd440805b4b407fb9fcaff65852032d5a8514e32f128487ad286ac5917",
+        "function_sha256": "ad274bc382daf9c0d9ab7a19b7df66aeb777d69d776ad1bc8e89b536f0d846b1"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -3919,7 +3919,7 @@
         "component": "deepwell",
         "handler": "membership_application_list",
         "source": "deepwell/src/endpoints/site_member.rs#membership_application_list",
-        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
+        "source_sha256": "24190cfd440805b4b407fb9fcaff65852032d5a8514e32f128487ad286ac5917",
         "function_sha256": "ece11bacf9ae0d230c0dd32b9f2826ce2721f462032d90250ee2414a5b87deb5"
       },
       "params_schema": {
@@ -3982,7 +3982,7 @@
         "component": "deepwell",
         "handler": "membership_application_review",
         "source": "deepwell/src/endpoints/site_member.rs#membership_application_review",
-        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
+        "source_sha256": "24190cfd440805b4b407fb9fcaff65852032d5a8514e32f128487ad286ac5917",
         "function_sha256": "3775afc22633325528f021e33f527ed85313ddb927bafef8eb6c213132c32312"
       },
       "params_schema": {
@@ -4041,7 +4041,7 @@
         "component": "deepwell",
         "handler": "membership_application_submit",
         "source": "deepwell/src/endpoints/site_member.rs#membership_application_submit",
-        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
+        "source_sha256": "24190cfd440805b4b407fb9fcaff65852032d5a8514e32f128487ad286ac5917",
         "function_sha256": "17797fef1ea4bd49dee92a39b164eb3a6e272df980bf2025bcefa29e776ed2ce"
       },
       "params_schema": {
@@ -4096,7 +4096,7 @@
         "component": "deepwell",
         "handler": "membership_email_invitation_accept",
         "source": "deepwell/src/endpoints/site_member.rs#membership_email_invitation_accept",
-        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
+        "source_sha256": "24190cfd440805b4b407fb9fcaff65852032d5a8514e32f128487ad286ac5917",
         "function_sha256": "f31569ee838578b10eb34af98a7766fdc76171451a90bb9936fd33b2765e2725"
       },
       "params_schema": {
@@ -4151,7 +4151,7 @@
         "component": "deepwell",
         "handler": "membership_join",
         "source": "deepwell/src/endpoints/site_member.rs#membership_join",
-        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
+        "source_sha256": "24190cfd440805b4b407fb9fcaff65852032d5a8514e32f128487ad286ac5917",
         "function_sha256": "214a40c3d690616c0dcd6101fb03b5447b8f179356364a98130895bd63987187"
       },
       "params_schema": {
@@ -4206,7 +4206,7 @@
         "component": "deepwell",
         "handler": "membership_password_submit",
         "source": "deepwell/src/endpoints/site_member.rs#membership_password_submit",
-        "source_sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532",
+        "source_sha256": "24190cfd440805b4b407fb9fcaff65852032d5a8514e32f128487ad286ac5917",
         "function_sha256": "3882c8069b98e5d2a49a9bb0ebaef27df326cf2358906ef2bd4cc86a82c62d23"
       },
       "params_schema": {
@@ -8630,7 +8630,7 @@
         "component": "deepwell",
         "handler": "site_ban_get",
         "source": "deepwell/src/endpoints/site_ban.rs#site_ban_get",
-        "source_sha256": "8ee58299de2eccba62775fffd9b9a8efba3aee5a1fe04a269e6f5a6a1634783e",
+        "source_sha256": "5aadd61799bee08432482b466824f99e180d48a079f6f4044653c031ea523496",
         "function_sha256": "6ad6d374aa38374baa9b4e78f960b61c95b324a9c1feb7511bb8ffd6db4d0881"
       },
       "params_schema": {
@@ -8687,8 +8687,8 @@
         "component": "deepwell",
         "handler": "site_ban_remove",
         "source": "deepwell/src/endpoints/site_ban.rs#site_ban_remove",
-        "source_sha256": "8ee58299de2eccba62775fffd9b9a8efba3aee5a1fe04a269e6f5a6a1634783e",
-        "function_sha256": "333602550f15acc0055c831fb0a501b0d820458ac93aa7d7def31bb3a0ac9835"
+        "source_sha256": "5aadd61799bee08432482b466824f99e180d48a079f6f4044653c031ea523496",
+        "function_sha256": "6a67dfd5572c7262678720d599cc49b435124f8bd42f46170d42d0d5838e908a"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -8728,7 +8728,7 @@
       "mutation_class": {
         "classification": "mutating",
         "source_signals": [
-          "RelationService::remove_site_ban_with_audit"
+          "RelationService::remove_site_ban"
         ]
       },
       "transaction_isolation": "default",
@@ -8748,7 +8748,7 @@
         "component": "deepwell",
         "handler": "site_ban_set",
         "source": "deepwell/src/endpoints/site_ban.rs#site_ban_set",
-        "source_sha256": "8ee58299de2eccba62775fffd9b9a8efba3aee5a1fe04a269e6f5a6a1634783e",
+        "source_sha256": "5aadd61799bee08432482b466824f99e180d48a079f6f4044653c031ea523496",
         "function_sha256": "744bbea9a86d4050a63c4c56a85e9dad368075db793a521971faf90cb7f923b0"
       },
       "params_schema": {

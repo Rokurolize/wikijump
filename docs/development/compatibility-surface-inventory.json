@@ -11385,7 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "a65fa6cf9465d9e9763feca4e85675e9dd9a198761351c13d9172b26d2193bbe"
+      "source_input_set_sha256": "cc8cee4f97a6205c3666fdba14f526c125a8e321c9ba74cb1f16c6c548eccc21"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11394,11 +11394,11 @@
     "registries": [
       {
         "path": "deepwell/Cargo.lock",
-        "sha256": "8a74f56ff46de2cd51658a36a57a9cb9a0304dbee5c4afe013abcbb5eb6b11fb"
+        "sha256": "dbad50e18ff49e80e0bce51c4bf42c14680ef0b86e90c9a417d22ea15cd90b43"
       },
       {
         "path": "deepwell/Cargo.toml",
-        "sha256": "888a7bb839234a469eb653c97fe4ef4fd23abd327b19aca8bea4b8eeac5fc48d"
+        "sha256": "211f5873a2328f20f6c2e037e9cae063fc3a6f1202af8004c451a6d4870e828b"
       },
       {
         "path": "deepwell/src/api.rs",
@@ -11502,11 +11502,11 @@
       },
       {
         "path": "deepwell/src/endpoints/site_ban.rs",
-        "sha256": "8ee58299de2eccba62775fffd9b9a8efba3aee5a1fe04a269e6f5a6a1634783e"
+        "sha256": "5aadd61799bee08432482b466824f99e180d48a079f6f4044653c031ea523496"
       },
       {
         "path": "deepwell/src/endpoints/site_member.rs",
-        "sha256": "d4d8c57d54469eff2eee65acb5303983461b42afaf3b27feabf554ee020da532"
+        "sha256": "24190cfd440805b4b407fb9fcaff65852032d5a8514e32f128487ad286ac5917"
       },
       {
         "path": "deepwell/src/endpoints/site.rs",
@@ -11546,7 +11546,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "46c2e38d5f4c5f0d965699552d70c3f0b5de68edef4450b29a04c2a7cc7f306c"
+        "sha256": "6d9de595b13ba7c08359726971f91b566d599714fdec515a0531d86932b76f51"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11610,7 +11610,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "972844e8fbded46e61615a17f7d1394fbb86a35ffec857f0037bb0016f9aac4a"
+        "sha256": "310afcb257cf9d4e56344bc39aec6b3ffb7c14b055c389493e3e60f453235b8a"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",

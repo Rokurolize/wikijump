@@ -48,7 +48,7 @@ const MUTATING_SERVICE_CALLS = new Set([
   "PageService::create", "PageService::delete", "PageService::edit", "PageService::r#move", "PageService::restore", "PageService::rollback", "PageService::set_layout",
   "ParentService::create", "ParentService::remove",
   "PermissionService::update_permissions_for_role",
-  "RelationService::clear_page_attributions", "RelationService::create_site_ban", "RelationService::create_site_member", "RelationService::create_user_bot_owner", "RelationService::remove_site_ban_with_audit", "RelationService::remove_site_member", "RelationService::remove_user_bot_owner", "RelationService::set_page_attributions",
+  "RelationService::clear_page_attributions", "RelationService::create_site_ban", "RelationService::create_site_member", "RelationService::create_user_bot_owner", "RelationService::remove_site_ban", "RelationService::remove_site_member", "RelationService::remove_user_bot_owner", "RelationService::set_page_attributions",
   "RoleService::create", "RoleService::delete", "RoleService::grant_role_to_user", "RoleService::reparent_role", "RoleService::revoke_role_from_user", "RoleService::update",
   "SessionService::create", "SessionService::invalidate", "SessionService::invalidate_others", "SessionService::renew", "SessionService::renew_restricted",
   "SiteService::create", "SiteService::update",
