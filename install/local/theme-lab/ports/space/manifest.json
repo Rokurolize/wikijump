@@ -17,7 +17,7 @@
     "slug": "theme:space",
     "title": "Generic Space Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:space/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "b761e86b65c8f5ac8df0e04435290c272dd928ef4bd6150f11444aa8dcabfb0f",
       "updated_at": "2026-04-12T05:02:40+00:00",
       "entity_uuid": "08c2e940-a61b-4fcb-b285-bcafcb11d48e",
@@ -27,11 +27,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 32
+      "revisions": 32,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:space"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:space/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "63bee9d3876ac78335c8a587c63b719efea9d3a9ab1bf945bdd807ce1f554c5d",
       "updated_at": "2024-07-04T11:38:26+00:00",
       "entity_uuid": "d83f3ed7-4796-4fe1-95c0-fd99c3c0d0c8",
@@ -39,7 +44,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:space"
+      }
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
@@ -99,13 +109,25 @@
     "base_family": "sigma"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_space/theme_space_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
+  "flattened_css_transforms": "localization-transforms.json",
+  "maintenance_classification": "maintenance-classification.json",
   "candidate_origin": "current official SCP-JP page source",
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/space/assets.json",
-  "asset_dependency_decision_count": 21
+  "asset_dependency_decision_count": 21,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
+    "jp_overrides_sha256": "701af5384031d90e1dda8605e82a361457f68269ece11d9c5849c6d6ddf8f494",
+    "semantic_css_sha256": "bc694f62a01815021532f7092034c57ffd8748afc6629409871856dfc1401ca1",
+    "canonical_override_sha256": "265a419289fa4dd88d0864d83f664d145a117ace41a028dc1ce3d3f6c5bb3dd7",
+    "exact_duplicate_rules_removed": 5
+  }
 }

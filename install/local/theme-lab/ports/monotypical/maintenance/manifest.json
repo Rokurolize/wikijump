@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "52eae3b67133422b83113dad6a1a4cc484c067614b0ded375d0923f852b77ef0",
+  "base_source_sha256": "9293fdfd3ee9faf3b644dc690c9abe8c2ce71f49d08fff711446edae8d45035a",
+  "raw_jp_overrides_sha256": "5cba052e3d4fcc6ac5de3453e7b740bf1f8641ba174b3e9dacde7c13bf0d492a",
+  "jp_overrides_sha256": "d8a028ed84a78215cec486618d81dcfc8330aef3f6b0a14c9542c2a54afa1ced",
+  "semantic_css_sha256": "10101ba2b75e912822d629f24936306e544e234b6567a8ed2a8cd910781422d3",
+  "canonical_override_sha256": "4434bcf6e7c52e5e9a1d0e63d8162649d5f3e314ed82ab374e0dcb294eaf8403",
+  "adaptation_block_count": 9,
+  "raw_override_rule_count": 30,
+  "canonical_override_rule_count": 18,
+  "exact_duplicate_rules_removed": 12,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: monotypical account and navigation behavior",
+      "rationale": "SCP-JP interaction adaptation: give the zero-width account area a readable user label and a pointer-enabled menu.",
+      "sha256": "568438f5ef3ce185fbe480e0b4fcb7a4a5f06b090a05fbd2c39e520988f12126",
+      "selectors": [
+        "#login-status",
+        "#login-status #account-options",
+        "#login-status .printuser"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: monotypical 320px credit modal width",
+      "rationale": "SCP-JP interaction adaptation: give the zero-width account area a readable user label and a pointer-enabled menu.",
+      "sha256": "35494e2aba5e2a2dd7cfb407853ff29284d5cfba72fa0133f697929dc36fb7ce",
+      "selectors": [
+        "#login-status",
+        "#login-status #account-options",
+        "#login-status .printuser",
+        "#u-credit-otherwise .modalbox",
+        "#u-credit-otherwise .modalcontainer",
+        "#u-credit-view .modalbox",
+        "#u-credit-view .modalcontainer"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: monotypical 320px credit modal responsive revision 2",
+      "rationale": "SCP-JP interaction adaptation: give the zero-width account area a readable user label and a pointer-enabled menu.",
+      "sha256": "3cd99bdfd22e893d359d1847461d37f01421bcb77aae94de5301ffa9d8e7e471",
+      "selectors": [
+        "#login-status",
+        "#login-status #account-options",
+        "#login-status .printuser",
+        "#u-credit-otherwise .modalbox",
+        "#u-credit-otherwise .modalcontainer",
+        "#u-credit-view .modalbox",
+        "#u-credit-view .modalcontainer"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up: monotypical",
+      "rationale": "Visual follow-up: constrain the credit modal to the visible viewport and scroll its own content so the return link is reachable.",
+      "sha256": "dcabea1fca09f9c2c3c9d6e6508604e83cd59397412f761d24ccffe4fda15954",
+      "selectors": [
+        "#u-credit-otherwise .modalbox",
+        "#u-credit-otherwise .modalcontainer",
+        "#u-credit-view .modalbox",
+        "#u-credit-view .modalcontainer"
+      ],
+      "at_contexts": [
+        "@media (max-width: 600px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up v2: monotypical",
+      "rationale": "Visual follow-up: constrain the credit modal to the visible viewport and scroll its own content so the return link is reachable.",
+      "sha256": "8e61c061e1aee8a4fbc7c362e415be3ec555f6318ebfcf8b78bb8031e3925b48",
+      "selectors": [
+        "#u-credit-otherwise .modalbox",
+        "#u-credit-otherwise .modalcontainer",
+        "#u-credit-view .modalbox",
+        "#u-credit-view .modalcontainer"
+      ],
+      "at_contexts": [
+        "@media (max-width: 600px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance header/navigation repair v3: monotypical",
+      "rationale": "Preserve the monotypical display face while keeping the two-word Foundation wordmark on one line at the SCP-JP 320px boundary.",
+      "sha256": "e7e27b74debdd8157a3ac6676d3477867fbee00d5bd42818f0b26f6ad4d2c57d",
+      "selectors": [
+        "#header h1 span::before"
+      ],
+      "at_contexts": [
+        "@media (max-width: 360px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v14: monotypical",
+      "rationale": "Image-reviewed 320px repair: Monotypical's visible Foundation wordmark is a generated h1 anchor pseudo-element; prevent the fallback overflow-wrap:anywhere from splitting the final letters.",
+      "sha256": "6e8270633f4dce7aab06ad6ce930e34e49395aab0ea675036206549aa8ed21c2",
+      "selectors": [
+        "#header h1 a::before"
+      ],
+      "at_contexts": [
+        "@media (max-width: 360px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v46: monotypical",
+      "rationale": "Full-resolution review: the close link remains focused after the #side-bar fragment is cleared, so :focus-within re-raises the drawer and backdrop. Keep target-open and keyboard navigation behavior, but let a non-target closed drawer stay below the page.",
+      "sha256": "0987003b805dec8d750a252849c3ea94d48c43e25c1af9717e5b3bd50307e4a3",
+      "selectors": [
+        "#side-bar:focus-within:not(:target)"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "2e30960b5c4f4ed08e2481962ef6d17e3cae17ff64d9caebf93c3574791736dc",
+  "base_source_sha256": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
+  "raw_jp_overrides_sha256": "70d31d8021a6ae9691c9958c87017e595f0c8c16078df307e48e6f31066d67fb",
+  "jp_overrides_sha256": "701af5384031d90e1dda8605e82a361457f68269ece11d9c5849c6d6ddf8f494",
+  "semantic_css_sha256": "bc694f62a01815021532f7092034c57ffd8748afc6629409871856dfc1401ca1",
+  "canonical_override_sha256": "265a419289fa4dd88d0864d83f664d145a117ace41a028dc1ce3d3f6c5bb3dd7",
+  "adaptation_block_count": 13,
+  "raw_override_rule_count": 59,
+  "canonical_override_rule_count": 54,
+  "exact_duplicate_rules_removed": 5,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: space account and navigation behavior",
+      "rationale": "SCP-JP credit acceptance: let the compact Rate control and its license link wrap as separate controls at phone widths while retaining the theme palette.",
+      "sha256": "91ad7da6441bc5aee13901f2f71f231d2efc4cdfc4bff8b796d846707d0fc699",
+      "selectors": [
+        "#u-credit-view .creditRate",
+        "#u-credit-view .rate-box-with-credit-button",
+        ".creditRate",
+        ".creditRate .rate-box-with-credit-button"
+      ],
+      "at_contexts": [
+        "@media (max-width: 600px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up: space",
+      "rationale": "SCP-JP mobile header adaptation: keep the localized identity and search within independent rows at the 320px policy boundary.",
+      "sha256": "600758e9bc3734b9df69c073b829c2357c1764f4654dd24f89d640af6e03fad9",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up v2: space",
+      "rationale": "SCP-JP mobile header adaptation: keep the localized identity and search within independent rows at the 320px policy boundary.",
+      "sha256": "1a30178636e1556836f72e77653179be1e457870d0dfad26c698b9565aa24cb8",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form",
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v1: space",
+      "rationale": "Keep the compact celestial Rate controls identifiable without depending on an icon-font asset.",
+      "sha256": "2b84564fb44f8a7d51f8f4345e59ea5d7437a2fd839d8d5a0f3f79e9ea510583",
+      "selectors": [
+        ".creditRate .cancel a::before",
+        ".creditRate .ratedown a::before",
+        ".creditRate .rateup a::before",
+        ".page-rate-widget-box .cancel a::before",
+        ".page-rate-widget-box .ratedown a::before",
+        ".page-rate-widget-box .rateup a::before"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive image-review repair v1: space",
+      "rationale": "The phone screenshot clips the long live site title at its intrinsic nowrap width; let the existing celestial heading treatment wrap without removing its starfield or accent.",
+      "sha256": "c8a5700b39ef5377d7ec7574953d501c4d9d90187bc8d1e03021505d8fc6aa52",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 a",
+        "#header h1 span",
+        "#header h2",
+        "#header h2 span"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v17: space",
+      "rationale": "Direct desktop screenshot finding: the SCP-JP localized Space title and subtitle line boxes touch in the inherited header, and the top bar starts too soon after the subtitle. Give these current runtime rows separate space while retaining the starfield, font and accent palette.",
+      "sha256": "605c12676d7f9bc3da991ad463c9baa37a1ffb83e12a7731498cfde5e7d8a66b",
+      "selectors": [
+        "#header",
+        "#header h2",
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (min-width: 601px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v23: space",
+      "rationale": "Tablet screenshot: the localized title and subtitle share a compressed masthead band. Let the header's identity rows take their natural height before the starfield navigation begins.",
+      "sha256": "d3b238d24df5dd80b5992dc7f999cdd8f8b5b28cf3b6475fd318a059d924ba0a",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2"
+      ],
+      "at_contexts": [
+        "@media (min-width: 601px) and (max-width: 900px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v36: space",
+      "rationale": "Vision review: the current SCP-JP heritage credit fixture gives .modalbox.heritage a pale paper card, while Space's inherited modal text token is near-white. Keep the heritage card/title/rating design and use readable Space-night ink only for its pale-card credit copy and links.",
+      "sha256": "3e5a3ca87275bdb48f2b26a694101fc506a8e38d144c2ee88af3aaa197bc5ac3",
+      "selectors": [
+        "#u-credit-otherwise .modalbox.heritage > .credit",
+        "#u-credit-otherwise .modalbox.heritage > .credit *",
+        "#u-credit-otherwise .modalbox.heritage > .credit a",
+        "#u-credit-view .modalbox.heritage > .credit",
+        "#u-credit-view .modalbox.heritage > .credit *",
+        "#u-credit-view .modalbox.heritage > .credit a"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v37: space",
+      "rationale": "Follow-up vision review: the Space tablet headings remained overlapped because the inherited display anchor and subtitle span still carried zero-line-height/max-height and masthead padding after their grid items were put in flow. Reset the actual text boxes at this breakpoint; keep the logo art, fonts and accent colors.",
+      "sha256": "27dc4968cd0ed3c4618c5a91279407c9d7bbd46b4b7a7978de5bd6218bdebcaf",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span",
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px) and (max-width: 900px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v38: space",
+      "rationale": "Follow-up image review: the title and subtitle no longer collide, but the imported top bar still touches the subtitle at 768px. Move only the native navigation rail below both readable identity rows.",
+      "sha256": "1753ec000c313070b44179afc94775d4da2e398611621da9e15ace2777054203",
+      "selectors": [
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px) and (max-width: 900px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
+      "rationale": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
+      "sha256": "a7d08f5e3645665482f335e0cfe80954a4da6781e0bbe546dc2f31f9383b6b82",
+      "selectors": [
+        "#top-bar .mobile-top-bar ul li ul",
+        "#top-bar .mobile-top-bar ul li ul li",
+        "#top-bar .mobile-top-bar ul li ul li a",
+        "#top-bar .top-bar ul li ul",
+        "#top-bar .top-bar ul li ul li",
+        "#top-bar .top-bar ul li ul li a"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP maintenance classification: jp-mobile-header-grid-columns",
+      "rationale": "Legacy campaign output added this final mobile header grid rule for the localized SCP-JP title but did not give the module an SCP-JP provenance comment. Treat it as a JP localization/compatibility layer rather than as upstream CSS.",
+      "sha256": "a7718a48b073816cd0319dd73fb3435f718e6c39b2c8c51d7586f9e24f586e29",
+      "selectors": [],
+      "at_contexts": [],
+      "legacy_unmarked": true
+    }
+  ]
+}

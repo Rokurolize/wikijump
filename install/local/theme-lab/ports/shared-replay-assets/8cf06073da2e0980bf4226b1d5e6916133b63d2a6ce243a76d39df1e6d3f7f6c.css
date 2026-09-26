@@ -1,0 +1,31 @@
+/* ==== FONTS ==== */
+
+/**
+ * Montserrat
+ *
+ * By
+ *	Julieta Ulanovsky, Sol Matas, Juan Pablo del Peral, Jacques Le Bailly
+ * License
+ *	Open Font License (OFL)
+ * Source Link
+ *	https://fonts.google.com/specimen/Montserrat/about
+**/
+
+ @import url(https://fonts.bunny.net/css2?family=Montserrat:wght@800&display=swap);
+
+/**
+ * Comic Neue
+ *
+ * By
+ *	Craig Rozynski, Hrant Papazian
+ * License
+ *	Open Font License (OFL)
+ * Source Link
+ *	https://fonts.google.com/specimen/Comic+Neue/about
+**/
+
+ @import url(https://fonts.bunny.net/css2?family=Comic+Neue&display=swap);
+
+/* == YUI TAB BASE == */
+
+ @import url(https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/tabview.css);

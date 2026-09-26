@@ -1,0 +1,14 @@
+@font-face {
+  font-family: 'M PLUS 1p';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQWBIgew.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'M PLUS 1p';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQfBMgew.ttf) format('truetype');
+}

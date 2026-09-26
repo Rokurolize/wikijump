@@ -1,0 +1,391 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap');
+
+/* Japanese Fonts */
+@import url("https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-13-vzwf/jfdot-mp12.css");
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300..700&display=swap');
+/*
+    Turbo Vision Theme
+    [2021 Wikidot Theme]
+    By JakdragonX
+    Based on SCP Sigma 9-Theme created by Aelanna and Dr Devan
+    Based on the original Turbo Vision Theme created by Croquembouche
+
+    The Turbo Vision theme is split into two CSS fragments.
+
+    This fragment styles user-created Turbo Blocks, and does not require
+    the other fragment in order to function correctly.
+*/
+/*
+    Turbo Vision Theme (ja-jp edition)
+    by oplax-counterpoint, 2024
+ */
+
+/* Inlined SVG images */
+:root {
+  /* border_white.svg, border_white2.svg, border_black2.svg
+      by Croquembouche, 2021
+      licensed under Creative Commons Attribution-ShareAlike 3.0 License
+   */
+  --svg-border-white:   url("data:image/svg+xml,%3C%3Fxml version='1.0'%3F%3E%3C!DOCTYPE svg%3E%3Csvg xmlns='http://www.w3.org/2000/svg' shape-rendering='crispEdges' viewBox='0 0 17.462 17.463' height='66' width='66'%3E%3Cpath d='M1.323 2.646v12.17H16.14V2.647zm.53.264H15.61v11.642H1.852z' fill='%23fff'/%3E%3C/svg%3E");
+  --svg-border-white2:  url("data:image/svg+xml,%3C%3Fxml version='1.0'%3F%3E%3C!DOCTYPE svg%3E%3Csvg xmlns='http://www.w3.org/2000/svg' shape-rendering='crispEdges' viewBox='0 0 17.462 17.463' height='66' width='66'%3E%3Cg fill='%23fff'%3E%3Cpath d='M.794 2.381v12.7h15.875v-12.7zm.529.265H16.14v12.17H1.323z'/%3E%3Cpath d='M1.587 2.91v11.642h14.288V2.91zm.53.265h13.229v11.112H2.116z'/%3E%3C/g%3E%3C/svg%3E");
+  --svg-border-black2:  url("data:image/svg+xml,%3C%3Fxml version='1.0'%3F%3E%3C!DOCTYPE svg%3E%3Csvg xmlns='http://www.w3.org/2000/svg' shape-rendering='crispEdges' viewBox='0 0 17.462 17.463' height='66' width='66'%3E%3Cpath d='M.794 2.381v12.7h15.875v-12.7zm.529.265H16.14v12.17H1.323z'/%3E%3Cpath d='M1.587 2.91v11.642h14.288V2.91zm.53.265h13.229v11.112H2.116z'/%3E%3C/svg%3E");
+}
+/* Font for Turbo Block */
+:root {
+  /*
+  --font-turbo-block: "IBM Plex Mono", sans-serif;
+   */
+  --font-turbo-block: 'IBM Plex Mono', "IBM Plex Sans JP", "Noto Sans JP", sans-serif;
+}
+
+/* BEFORE WE BEGIN, A QUICK FIX FOR UNDOING SIGMA-9 WEIRD THINGS */
+
+@media (min-width: 768px) and (max-width: 979px) {
+  div,
+  div table {
+    clear: initial;
+  }
+}
+
+.avatar-hover {
+  z-index: 1;
+}
+
+/* AND NOW... */
+/* ------------------------------------- */
+/* NOW FOR THE MAIN COURSE */
+
+/* VARIABLES */
+
+:root {
+  --turbo-block-shadow: 0.5em 1em 0 0 #3e3f47;
+  --turbo-block-border-width: 22px;
+}
+
+/* BLOCKQUOTES */
+
+.turbo-block blockquote,
+.turbo-block div.blockquote {
+  background-color: #aaaaaa;
+  color: #000;
+  padding: 0;
+  margin-bottom: 2em;
+  border-width: var(--turbo-block-border-width);
+  border-style: solid;
+  border-image: var(--svg-border-white) 16 round;
+  box-shadow: var(--turbo-block-shadow);
+}
+
+/* SIMPLE TABLES */
+
+.turbo-block table.wiki-content-table {
+  box-shadow: var(--turbo-block-shadow);
+  margin-bottom: 2em;
+}
+
+.turbo-block table.wiki-content-table td {
+  border: 1px solid #fff;
+  background-color: #aaaaaa;
+}
+
+.turbo-block table.wiki-content-table th {
+  border: 1px solid #011657;
+  color: #fff;
+  background-color: #011657;
+}
+
+/* "BLOCK" DIV'S, DEFAULT CONFIG */
+
+.turbo-block {
+  position: relative;
+  border-radius: 0;
+  border-width: var(--turbo-block-border-width);
+  border-style: solid;
+  box-shadow: var(--turbo-block-shadow);
+  color: white;
+  margin: 0.75rem 1.5rem 1.5rem 0.75rem;
+  z-index: 1;
+
+  /* Properties that apply to whole document in the general fragment */
+  font-family: var(--font-turbo-block);
+  font-size: 16px;
+  line-height: 22px;
+  letter-spacing: 0.5px;
+  image-rendering: pixelated;
+}
+
+.turbo-block .heading {
+  position: relative;
+  border: none;
+  margin-top: 1.5em;
+}
+
+.turbo-block .heading::before {
+  content: "";
+  border-top: 3px double white;
+  position: absolute;
+  width: calc(100% + 22px);
+  top: calc(50% - 1.5px);
+  left: 0;
+  margin: 0 -11px;
+}
+
+.turbo-block .heading p {
+  display: table;
+  position: relative;
+  padding: 0 8px;
+  background: inherit;
+  margin: 0 0 0 2em;
+  color: white;
+}
+
+.turbo-block hr {
+  padding: 0;
+  margin: 1em 0 0 -11px;
+  width: calc(100% + 22px);
+  max-width: none;
+  height: 3px;
+  border-top: 3px double white;
+  background: none;
+}
+.turbo-block.border-white hr {
+  border-color: white;
+}
+.turbo-block.border-black hr {
+  border-color: black;
+}
+
+.turbo-block::after {
+  content: attr(data-title);
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translate(-50%, 0);
+  color: white;
+  padding: 0 8px;
+}
+
+/* IMAGE BLOCKS */
+/* Image blocks are supposed to have a turbo block all of their own */
+
+.turbo-block .scp-image-block {
+  margin: 4px 0 0 0;
+  float: none;
+  border: none;
+  box-shadow: none;
+}
+
+.turbo-block .scp-image-caption {
+  background-color: transparent;
+  font-weight: normal;
+  border: none;
+}
+
+/* COLORIZED DIV BLOCKS */
+
+.turbo-block.bg-cyan,
+.turbo-block.bg-cyan::after,
+.turbo-block.bg-cyan .heading p {
+  background: #1f8785;
+}
+
+.turbo-block.bg-grey,
+.turbo-block.bg-grey::after,
+.turbo-block.bg-grey .heading p {
+  background: #bdbdbd;
+}
+
+.turbo-block.bg-red,
+.turbo-block.bg-red::after,
+.turbo-block.bg-red .heading p {
+  background: #840603;
+}
+
+.turbo-block.bg-orange,
+.turbo-block.bg-orange::after,
+.turbo-block.bg-orange .heading p {
+  background: #e39814;
+}
+
+.turbo-block.bg-green,
+.turbo-block.bg-green::after,
+.turbo-block.bg-green .heading p {
+  background: #13781f;
+}
+
+.turbo-block.bg-purple,
+.turbo-block.bg-purple::after,
+.turbo-block.bg-purple .heading p {
+  background: #7f0e9c;
+}
+
+.turbo-block.bg-yellow,
+.turbo-block.bg-yellow::after,
+.turbo-block.bg-yellow .heading p {
+  background: #bfcc2b;
+}
+
+.turbo-block.bg-black,
+.turbo-block.bg-black::after,
+.turbo-block.bg-black .heading p {
+  background: #000;
+}
+
+.turbo-block.bg-white,
+.turbo-block.bg-white::after,
+.turbo-block.bg-white .heading p {
+  background: #fff;
+}
+
+/* DIV "BLACK" AND "WHITE" AND WHAT THAT MEANS */
+
+.turbo-block.border-black {
+  border-image: var(--svg-border-black2) 16 round;
+}
+
+.turbo-block.border-black .heading::before {
+  border-color: black;
+}
+
+.turbo-block.border-white {
+  border-image: var(--svg-border-white2) 16 round;
+}
+
+.turbo-block.border-white .heading {
+  background-image: var(--svg-border-white2) 16 round;
+}
+
+.turbo-block.text-black,
+.turbo-block.text-black .heading p,
+.turbo-block.text-black::after {
+  color: black;
+}
+
+.turbo-block.text-white,
+.turbo-block.text-white .heading p,
+.turbo-block.text-white::after {
+  color: white;
+}
+
+/* LINKS IN COLORIZED BLOCKS */
+
+/* For big contrast and maximum readability, links in colorized blocks have
+ * their background set to the block's text color, and their text color set to
+ * the block's background color. This avoids any concerns about the default
+ * link color only being suitable for certain background colors.
+ */
+
+.turbo-block a {
+  padding: 0 2px;
+  background-color: white; /* default */
+}
+.turbo-block.text-white a {
+  background-color: white;
+}
+.turbo-block.text-black a {
+  background-color: black;
+}
+.turbo-block.bg-cyan a {
+  color: #1f8785;
+}
+.turbo-block.bg-grey a {
+  color: #bdbdbd;
+}
+.turbo-block.bg-red a {
+  color: #840603;
+}
+.turbo-block.bg-orange a {
+  color: #e39814;
+}
+.turbo-block.bg-green a {
+  color: #13781f;
+}
+.turbo-block.bg-purple a {
+  color: #7f0e9c;
+}
+.turbo-block.bg-yellow a {
+  color: #bfcc2b;
+}
+.turbo-block.bg-black a {
+  color: #000;
+}
+.turbo-block.bg-white a {
+  color: #fff;
+}
+.turbo-block a:hover {
+  text-decoration: none;
+  background-color: #11ff00;
+  color: black;
+}
+
+/* "OFFSET-LEFT|RIGHT" DIVS */
+
+.offset-right {
+  float: right;
+}
+.offset-right > * {
+  float: none;
+}
+
+.offset-left {
+  float: left;
+}
+.offset-left > * {
+  float: none;
+}
+
+.offset-right.right-5 {
+  margin-right: calc(((50vw - 50%) * -1) + 1rem);
+}
+
+.offset-right.right-4 {
+  margin-right: calc(((50vw - 50%) * -0.8) + 1rem);
+}
+
+.offset-right.right-3 {
+  margin-right: calc(((50vw - 50%) * -0.6) + 1rem);
+}
+
+.offset-right.right-2 {
+  margin-right: calc(((50vw - 50%) * -0.4) + 1rem);
+}
+
+.offset-right.right-1 {
+  margin-right: calc(((50vw - 50%) * -0.2) + 1rem);
+}
+
+.offset-left.left-5 {
+  margin-left: calc(((50vw - 50%) * -1) + 1rem);
+}
+
+.offset-left.left-4 {
+  margin-left: calc(((50vw - 50%) * -0.8) + 1rem);
+}
+
+.offset-left.left-3 {
+  margin-left: calc(((50vw - 50%) * -0.6) + 1rem);
+}
+
+.offset-left.left-2 {
+  margin-left: calc(((50vw - 50%) * -0.4) + 1rem);
+}
+
+.offset-left.left-1 {
+  margin-left: calc(((50vw - 50%) * -0.2) + 1rem);
+}
+
+/* FIXING MOBILE SHIT */
+
+@media (max-width: 600px) {
+  /* Stop all floats and offsets on really thin devices */
+  .offset-right,
+  .offset-left,
+  .turbo-block,
+  .turbo-block .scp-image-block {
+    float: none;
+    clear: both;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}

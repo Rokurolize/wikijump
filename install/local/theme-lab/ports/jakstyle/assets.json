@@ -569,43 +569,124 @@
       "source_url": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "d780f63f2f61a2723af55b6eef978d67d515d01c815327ebaeb72345ff073651",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b.css with SHA-256 872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+      "sha256": "872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b",
+      "asset_file": "872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "d780f63f2f61a2723af55b6eef978d67d515d01c815327ebaeb72345ff073651",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa.css with SHA-256 0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+      "sha256": "0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa",
+      "asset_file": "0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "d780f63f2f61a2723af55b6eef978d67d515d01c815327ebaeb72345ff073651",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99.css with SHA-256 e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
+      "sha256": "e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99",
+      "asset_file": "e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "d780f63f2f61a2723af55b6eef978d67d515d01c815327ebaeb72345ff073651",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d.css with SHA-256 0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "sha256": "0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d",
+      "asset_file": "0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "d780f63f2f61a2723af55b6eef978d67d515d01c815327ebaeb72345ff073651",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6.css with SHA-256 125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "sha256": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6",
+      "asset_file": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Ajakstyle/1",
       "decision": "localize-into-package",
       "candidate_css_sha256": "d780f63f2f61a2723af55b6eef978d67d515d01c815327ebaeb72345ff073651",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as f062a80a904e0e160c4a69aed243c08ba02d52760461130ac9ab6c2b4ffa4bef.css with SHA-256 f062a80a904e0e160c4a69aed243c08ba02d52760461130ac9ab6c2b4ffa4bef; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme%3Ajakstyle/1",
+      "sha256": "f062a80a904e0e160c4a69aed243c08ba02d52760461130ac9ab6c2b4ffa4bef",
+      "asset_file": "f062a80a904e0e160c4a69aed243c08ba02d52760461130ac9ab6c2b4ffa4bef.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+      "sha256": "872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b",
+      "normalized_text_sha256": "872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b",
+      "bytes": 4149,
+      "content_type": "text/css",
+      "asset_file": "872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+      "sha256": "0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa",
+      "normalized_text_sha256": "0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa",
+      "bytes": 836,
+      "content_type": "text/css",
+      "asset_file": "0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
+      "sha256": "e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99",
+      "normalized_text_sha256": "e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99",
+      "bytes": 2058,
+      "content_type": "text/css",
+      "asset_file": "e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "sha256": "0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d",
+      "normalized_text_sha256": "0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d",
+      "bytes": 487467,
+      "content_type": "text/css",
+      "asset_file": "0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "sha256": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6",
+      "normalized_text_sha256": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6",
+      "bytes": 62636,
+      "content_type": "text/css",
+      "asset_file": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Ajakstyle/1",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme%3Ajakstyle/1",
+      "sha256": "f062a80a904e0e160c4a69aed243c08ba02d52760461130ac9ab6c2b4ffa4bef",
+      "normalized_text_sha256": "f062a80a904e0e160c4a69aed243c08ba02d52760461130ac9ab6c2b4ffa4bef",
+      "bytes": 18000,
+      "content_type": "text/css",
+      "asset_file": "f062a80a904e0e160c4a69aed243c08ba02d52760461130ac9ab6c2b4ffa4bef.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }

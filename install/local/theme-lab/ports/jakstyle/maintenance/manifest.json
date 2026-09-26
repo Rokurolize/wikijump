@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "9ba6c3ef751ffae04fe984f2743cf8ac1071567c48f4f4099238b4032784bdbd",
+  "base_source_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
+  "raw_jp_overrides_sha256": "5be2544da0d27b7783b9d1f4f02c676d097c24898310c885c885e8a4a4fef649",
+  "jp_overrides_sha256": "6870bb9a79a2cab879db514fba2af6f8a9163dc9094917073fc7126104fea478",
+  "semantic_css_sha256": "b0ceed399cc338eec65cbc09fe9895cc97d2fb1edc5137a937182e8cde3047c4",
+  "canonical_override_sha256": "d7be098cbe31327557ea7777b89328db50964ea1af5c87f64b022f4d7ccf423f",
+  "adaptation_block_count": 21,
+  "raw_override_rule_count": 111,
+  "canonical_override_rule_count": 107,
+  "exact_duplicate_rules_removed": 4,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: jakstyle history control contrast",
+      "rationale": "Preserve Jakstyle's burgundy History controls and make the Compare label readable on their dark fill.",
+      "sha256": "d0ab65e30302b9adca4cd898824467448ee271523caabdd78ab2dd144230c969",
+      "selectors": [
+        "#action-area .revision-diff-controls button"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up: jakstyle",
+      "rationale": "SCP-JP credit acceptance: distinguish the license link from Jakstyle's red credit bar without changing its page palette.",
+      "sha256": "0896d74d3e749f44c1f2783e0e213e7c6e4ad933c0cdb134cc1324149d0cf934",
+      "selectors": [
+        "#u-credit-otherwise .modalbox a",
+        ".modalbox .credit a"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up v2: jakstyle",
+      "rationale": "SCP-JP credit acceptance: distinguish the license link from Jakstyle's red credit bar without changing its page palette.",
+      "sha256": "317a9cdd2f61a26b830c2e821d1d1c70b5b7159e71ffdaecf47227024344df08",
+      "selectors": [
+        "#side-bar .collapsible-block-link",
+        "#side-bar .collapsible-block-link:hover",
+        "#side-bar .collapsible-block-unfolded a",
+        "#side-bar .side-block a",
+        "#side-bar .side-block a:hover",
+        "#u-credit-otherwise .modalbox a",
+        ".modalbox .credit a"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v1: jakstyle",
+      "rationale": "The credit link is rendered on a light license panel, not on the adjacent burgundy stripe; keep the text dark enough for that actual surface.",
+      "sha256": "c8760de990b40ff5aa984317b6a34c0e823d7dff71531761b750963dbfd96f57",
+      "selectors": [
+        "#u-credit-otherwise .modalbox a",
+        ".modalbox .credit a"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v2: jakstyle",
+      "rationale": "A red error pane cannot use Jakstyle's default black text; keep its red frame and use the same light ink as its close control.",
+      "sha256": "a4ae789f86c35dbd1fb4bbafc0dd9b7e10bbd0d3aa865e44a4d5dccaef1a8bcc",
+      "selectors": [
+        "#odialog-container .owindow.error #modal-title",
+        "#odialog-container .owindow.error .modal-body",
+        "#odialog-container .owindow.error .modal-message-extra"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header refinement v5: jakstyle",
+      "rationale": "Jakstyle's dark masthead paints the live site name in a nearly identical dark red. Keep its red-on-black identity with a light red accessible heading ink.",
+      "sha256": "2f86b25c5d9d8201d9f8be8751491578b45b4720d743fe9f23558477ead1cdc7",
+      "selectors": [
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2 > span"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance header/navigation repair v3: jakstyle",
+      "rationale": "The cog is intentional Jakstyle artwork, but at phone width its full-size background sits over the live site wordmark. Keep the cog as a faint right-side watermark so the branded title remains readable.",
+      "sha256": "4cedd0fcd3401278fbe67a33c1ca05c04692c9b3976a64ed399f7ead415f420b",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#header::before"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v7: jakstyle",
+      "rationale": "The source mobile header is sticky at a negative top offset, which clips the localized wordmark on its first settled view. Keep the theme masthead visible and let title, subtitle, search, and mobile navigation occupy their own rows.",
+      "sha256": "9565326381128e27c4d64727ac8093cebead7e32fea0c5256d9ba5dcd27fc7f5",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span",
+        "#search-top-box",
+        "#top-bar",
+        ".mobile-top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v21: jakstyle",
+      "rationale": "Direct mobile image review: dark Japanese tab content is rendered on Jakstyle's deep burgundy YUI tab panel. Keep the panel identity and use its light text palette for content and links.",
+      "sha256": "fdd616323c4404f47ec3f16dfeaf761bda1440b89d6b435bb7e6cbc56e81b4a0",
+      "selectors": [
+        "#page-content .yui-navset .yui-content",
+        "#page-content .yui-navset .yui-content *",
+        "#page-content .yui-navset .yui-content a"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v22: jakstyle",
+      "rationale": "Image review at the 320px credit modal: the Rate widget's inherited dark labels are almost invisible on the crimson strip. Keep Jakstyle's red credit surface and use the existing pale masthead ink for the actual controls.",
+      "sha256": "68ee92963efc1973ad5511a99a2a14fb8b158ed82cf3bae8fa6d872936367331",
+      "selectors": [
+        "#u-credit-otherwise .creditRate",
+        "#u-credit-otherwise .creditRate *",
+        "#u-credit-view .creditRate",
+        "#u-credit-view .creditRate *",
+        ".creditRate .page-rate-widget-box",
+        ".creditRate .page-rate-widget-box *"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v23: jakstyle",
+      "rationale": "The real credit modal Rate box is a sibling beneath #u-credit-view, not a descendant of the article's .creditRate wrapper. Match the rendered module and its interactive descendants while retaining the burgundy strip.",
+      "sha256": "4c2491654425dfefa24091ff6f7776e03f0e83b58f9828cc91cfc863605e147f",
+      "selectors": [
+        "#u-credit-otherwise .credit-back",
+        "#u-credit-otherwise .credit-back a[href=\"#u-credit-view\"]",
+        "#u-credit-view .page-rate-widget-box",
+        "#u-credit-view .page-rate-widget-box *",
+        "#u-credit-view .rate-box-with-credit-button",
+        "#u-credit-view .rate-box-with-credit-button *"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v41: jakstyle",
+      "rationale": "Direct mobile screenshots show the selected Backlinks control and pane heading dark on burgundy. Preserve the burgundy action treatment and restore the theme's light foreground only on the selected action and matching pane heading.",
+      "sha256": "a97a04c660cbfac23ae0af1d949e4ddced64cb73a452aff3596b55b8c40c48a8",
+      "selectors": [
+        "#action-area .page-backlinks-header",
+        "#backlinks-button",
+        "#backlinks-button:active",
+        "#backlinks-button:focus",
+        "#backlinks-button:hover"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v42: jakstyle",
+      "rationale": "Full-resolution review of expanded actions found dark labels on burgundy buttons; a focused editor diagnostic also showed the populated source and background both computed to rgb(252,252,252). Retain the red controls and dark editor surface with readable theme-palette foregrounds.",
+      "sha256": "42278edbcaf89ee4bf0a1cb9c5aad5f1adee6bf6126a821751428ceac94468c6",
+      "selectors": [
+        "#action-area .page-backlinks-header",
+        "#action-area textarea.editor-wikitext",
+        "#page-options-bottom #more-options-button",
+        "#page-options-bottom-2 #backlinks-button",
+        "#page-options-bottom-2 #delete-button"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v43: jakstyle",
+      "rationale": "The regenerated More Options image still showed Delete ink against the burgundy action fill. Match this one destructive pane entry's label to the other readable light action controls.",
+      "sha256": "8a287d1eb36a5c63a950fe5062713b611322101f3b89f2c797d63c92aa2bf654",
+      "selectors": [
+        "#delete-button",
+        "#delete-button:active",
+        "#delete-button:focus",
+        "#delete-button:hover"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v47: jakstyle",
+      "rationale": "Full-resolution desktop review: Jakstyle's dark identity surfaces inherited browser-dark ink on burgundy/charcoal controls. Preserve the burgundy palette while restoring readable light labels for tabs, footnotes, header wordmark, sidebar headings, and selected page actions.",
+      "sha256": "f55c88ec95562026272bb2657aab8874f27e8f2bfa6f9eb333fdfb8eb9dc7155",
+      "selectors": [
+        "#header h1",
+        "#header h1 a",
+        "#header h1 a span",
+        "#header h2",
+        "#header h2 span",
+        "#page-content .footnote",
+        "#page-content .footnote *",
+        "#page-content .footnote-footer",
+        "#page-content .footnote-footer *",
+        "#page-content .footnotes-footer",
+        "#page-content .footnotes-footer *",
+        "#page-content .yui-navset .yui-nav li a",
+        "#page-content .yui-navset .yui-nav li a *",
+        "#page-content .yui-navset .yui-nav li.selected a",
+        "#page-content .yui-navset .yui-nav li.selected a *",
+        "#page-options-bottom a",
+        "#page-options-bottom a *",
+        "#page-options-bottom-2 a",
+        "#page-options-bottom-2 a *",
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input",
+        "#side-bar .collapsible-block-link",
+        "#side-bar .side-block .heading",
+        "#side-bar .side-block .heading *"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v48: jakstyle",
+      "rationale": "Re-review of the repaired desktop masthead found a decorative heading layer clipped above the header. Keep the visible logo anchor and subtitle ink, but suppress only the off-canvas parent text layer.",
+      "sha256": "45e80503203759e06a91c4e4ed7fac8fd15d1020ee8a4410fe954de44ad7eafc",
+      "selectors": [
+        "#header h1",
+        "#header h1 a",
+        "#header h1 a span",
+        "#header h2",
+        "#header h2 span"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v49: jakstyle",
+      "rationale": "The current desktop header exposes the upstream --header-title pseudo-layer above the masthead while the localized logo anchor is already visible. Suppress only that clipped decorative pseudo text; retain the logo artwork, localized title, subtitle, and palette.",
+      "sha256": "42a27ae73b2d6c9c060cfac4114d9ea3e8201521b962f8d9ac987008b453b97e",
+      "selectors": [
+        "#header h1::after",
+        "#header h1::before"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v50: jakstyle",
+      "rationale": "Full-resolution after-image identifies the clipped duplicate as #header h1 a::before, which emits the upstream English --header-title over the actual SCP-JP title. Preserve the authored logo background and visible localized anchor text; suppress only this duplicate wordmark pseudo-content.",
+      "sha256": "2bff0ca217a6074857da040a680a88fb02168e15a55ff41fffc1a3f54a28f981",
+      "selectors": [
+        "#header h1 > a::before"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v52: jakstyle",
+      "rationale": "Direct review of current theme screenshots found pale page-action text on pale btn-default surfaces, a target-open sidebar that shifted/cropped the article, and the wide SCP Foundation wordmark clipped at the viewport edge. Keep burgundy active controls and logo art while correcting their actual visible surfaces.",
+      "sha256": "8f030d6117b01cf12aa5740e9930040ef98609311a16bfc3b4894c2aeb7520d0",
+      "selectors": [
+        "#backlinks-button:not(:is(:hover,:focus,:focus-visible,:active))",
+        "#header",
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h1 > a::before",
+        "#header h2",
+        "#header h2 > span",
+        "#page-options-bottom #more-options-button",
+        "#page-options-bottom a",
+        "#page-options-bottom a:is(:hover,:focus,:focus-visible,:active)",
+        "#page-options-bottom-2 #delete-button",
+        "#page-options-bottom-2 a",
+        "#page-options-bottom-2 a:is(:hover,:focus,:focus-visible,:active)",
+        "#side-bar:target + #main-content"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)",
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v53: jakstyle",
+      "rationale": "The v52 full-resolution expanded-action after-image showed that older two-ID rules still won for pale Backlinks and disabled Delete controls. Override those exact SCP-JP buttons with readable dark burgundy ink on their current pale disabled surfaces; do not change the remaining action palette.",
+      "sha256": "17087175d67c8426fdb599e5fe6dc55f9cbc0f80be84a7df832cf206fb616884",
+      "selectors": [
+        "#page-options-bottom-2 #backlinks-button",
+        "#page-options-bottom-2 #delete-button"
+      ],
+      "at_contexts": []
+    }
+  ]
+}

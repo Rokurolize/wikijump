@@ -281,22 +281,64 @@
       "source_url": "https://fonts.bunny.net/css2?family=Boogaloo&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "fce1b6eebf086ed52d933234bc4bd759cb739fd35c8c6eb25b345dd4c4441021",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as d727d1b3e804f4a704712fa41ba691ced483cb9123a7c6791f61f001b94ada64.css with SHA-256 d727d1b3e804f4a704712fa41ba691ced483cb9123a7c6791f61f001b94ada64; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.bunny.net/css2?family=Boogaloo&display=swap",
+      "sha256": "d727d1b3e804f4a704712fa41ba691ced483cb9123a7c6791f61f001b94ada64",
+      "asset_file": "d727d1b3e804f4a704712fa41ba691ced483cb9123a7c6791f61f001b94ada64.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Margarine&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "fce1b6eebf086ed52d933234bc4bd759cb739fd35c8c6eb25b345dd4c4441021",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as d78b7a68ef88f97e9b60bf10951c82638773cca266a0edd9a991a68785a73b17.css with SHA-256 d78b7a68ef88f97e9b60bf10951c82638773cca266a0edd9a991a68785a73b17; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.bunny.net/css2?family=Margarine&display=swap",
+      "sha256": "d78b7a68ef88f97e9b60bf10951c82638773cca266a0edd9a991a68785a73b17",
+      "asset_file": "d78b7a68ef88f97e9b60bf10951c82638773cca266a0edd9a991a68785a73b17.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wikidot.com/theme:al-slop/code/1",
       "decision": "localize-into-package",
       "candidate_css_sha256": "fce1b6eebf086ed52d933234bc4bd759cb739fd35c8c6eb25b345dd4c4441021",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as c7e210a6b2dd0fd3ba9753eb98e2d3f857523053ab82716ecd51d2704c1ec607.css with SHA-256 c7e210a6b2dd0fd3ba9753eb98e2d3f857523053ab82716ecd51d2704c1ec607; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aal-slop/1",
+      "sha256": "c7e210a6b2dd0fd3ba9753eb98e2d3f857523053ab82716ecd51d2704c1ec607",
+      "asset_file": "c7e210a6b2dd0fd3ba9753eb98e2d3f857523053ab82716ecd51d2704c1ec607.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://fonts.bunny.net/css2?family=Boogaloo&display=swap",
+      "final_url": "https://fonts.bunny.net/css2?family=Boogaloo&display=swap",
+      "sha256": "d727d1b3e804f4a704712fa41ba691ced483cb9123a7c6791f61f001b94ada64",
+      "normalized_text_sha256": "d727d1b3e804f4a704712fa41ba691ced483cb9123a7c6791f61f001b94ada64",
+      "bytes": 482,
+      "content_type": "text/css",
+      "asset_file": "d727d1b3e804f4a704712fa41ba691ced483cb9123a7c6791f61f001b94ada64.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.bunny.net/css2?family=Margarine&display=swap",
+      "final_url": "https://fonts.bunny.net/css2?family=Margarine&display=swap",
+      "sha256": "d78b7a68ef88f97e9b60bf10951c82638773cca266a0edd9a991a68785a73b17",
+      "normalized_text_sha256": "d78b7a68ef88f97e9b60bf10951c82638773cca266a0edd9a991a68785a73b17",
+      "bytes": 1012,
+      "content_type": "text/css",
+      "asset_file": "d78b7a68ef88f97e9b60bf10951c82638773cca266a0edd9a991a68785a73b17.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-wiki.wikidot.com/theme:al-slop/code/1",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aal-slop/1",
+      "sha256": "c7e210a6b2dd0fd3ba9753eb98e2d3f857523053ab82716ecd51d2704c1ec607",
+      "normalized_text_sha256": "c7e210a6b2dd0fd3ba9753eb98e2d3f857523053ab82716ecd51d2704c1ec607",
+      "bytes": 6414,
+      "content_type": "text/css",
+      "asset_file": "c7e210a6b2dd0fd3ba9753eb98e2d3f857523053ab82716ecd51d2704c1ec607.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }

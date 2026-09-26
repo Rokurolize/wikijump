@@ -17,7 +17,7 @@
     "slug": "theme:basalt",
     "title": "Basalt Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:basalt/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "df4b78d344536f5b7c363ac86b2ddc6f3c31b3647693f473169550e03fca17c5",
       "updated_at": "2026-07-22T01:52:12+00:00",
       "entity_uuid": "eb88fa91-c4ae-4969-bc97-a86c8661f4a5",
@@ -26,7 +26,12 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 304
+      "revisions": 304,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:basalt"
+      }
     },
     "jp": {
       "status": "confirmed-absent-by-targeted-xmlrpc",
@@ -108,7 +113,7 @@
     "base_family": "basalt"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_basalt/theme_basalt_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "human-port-candidate.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -131,5 +136,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/basalt/assets.json",
-  "asset_dependency_decision_count": 243
+  "asset_dependency_decision_count": 243,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
+    "jp_overrides_sha256": "e47517174535415421c46a3e909b8a5c89cdf167731a929fd8d8ca83811e4ee3",
+    "semantic_css_sha256": "49da89aec7eb8b10f9a17dac68235e0dd22c46b17d780004878786ce53166cf8",
+    "canonical_override_sha256": "d991bfb3d6381236fe9a71b5c5e4dc2d65b9e50c80333779a0fd0f320de96941",
+    "exact_duplicate_rules_removed": 0
+  }
 }

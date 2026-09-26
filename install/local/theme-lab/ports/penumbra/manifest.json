@@ -17,7 +17,7 @@
     "slug": "theme:penumbra",
     "title": "Penumbra Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:penumbra/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "befb285563d3f8d956f49726d2272a051bdab6ac4b9a84dd0ba856490c0890b5",
       "updated_at": "2026-04-12T05:16:38+00:00",
       "entity_uuid": "94f238b1-d448-4ba2-81f6-3da09e32ab94",
@@ -26,11 +26,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 155
+      "revisions": 155,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:penumbra"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:penumbra/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "f164a9b83100be37a9695d067604cc3563032bcd1cfd6016e7e5200ad21a72b7",
       "updated_at": "2025-08-03T13:23:04+00:00",
       "entity_uuid": "bc01c0f2-dead-43d0-832c-c7a071205b12",
@@ -39,7 +44,12 @@
         "テーマ",
         "要翻訳"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:penumbra"
+      }
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
@@ -82,7 +92,7 @@
     "base_family": "independent"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_penumbra/theme_penumbra_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -122,5 +132,15 @@
       "missing": 0,
       "external_requests_during_build": 0
     }
+  },
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "391cf19d439895bf739b604bf0a12cc6a8ced5002d6c7f12c4410f6b3e6dd08a",
+    "jp_overrides_sha256": "b253c1815252f34225fce4c15370c54d2661ba82347c8bd7f3c28f7da8b2e641",
+    "semantic_css_sha256": "1c8134fdb22878a821950a07c53a8425f1d04163098266dc38d81a521b2a255d",
+    "canonical_override_sha256": "3ed7bf358e1c6987a6bb94eedff30e0939011f544f662e5e792ead230592fc21",
+    "exact_duplicate_rules_removed": 22
   }
 }

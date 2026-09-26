@@ -17,7 +17,7 @@
     "slug": "theme:inkblot",
     "title": "Inkblot Theme (Waldon Studio Theme)",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:inkblot/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "b40f3fbe59527d76b49423d9297cb30e41599b32b3b2e2912203bac066dbb0af",
       "updated_at": "2026-04-12T05:05:15+00:00",
       "entity_uuid": "ae519caf-d93c-4a87-8f16-ceabd02fe0cf",
@@ -25,7 +25,12 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 60
+      "revisions": 60,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:inkblot"
+      }
     },
     "jp": {
       "status": "confirmed-absent-by-targeted-xmlrpc",
@@ -64,10 +69,11 @@
     "base_family": "independent"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_inkblot/theme_inkblot_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "human-port-candidate.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
+  "flattened_css_transforms": "localization-transforms.json",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "candidate_source_hash": "eb4f0d31324c9b7949043c9a42a415d42e26230c144829a7eba7b118269d79c9",
   "page_assets": [
@@ -87,5 +93,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/inkblot/assets.json",
-  "asset_dependency_decision_count": 47
+  "asset_dependency_decision_count": 47,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
+    "jp_overrides_sha256": "19531838f8221b4c4bc9cfa0f8102f32c0c5a17b4c918a77ce3517add0d4ce04",
+    "semantic_css_sha256": "c344fe092573dd00c53b9142c67a79df33fd8e52f53864ccbb22183e7ee12084",
+    "canonical_override_sha256": "903eac17f74642a33b188ee1b52bca4cd793125ea93d6df0cb7b00e88b710067",
+    "exact_duplicate_rules_removed": 0
+  }
 }

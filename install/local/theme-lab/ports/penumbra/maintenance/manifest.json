@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "72670cac72662ba00816cf13b4a6cf4e6d615f6100c13c23403207bfc2e27b19",
+  "base_source_sha256": "391cf19d439895bf739b604bf0a12cc6a8ced5002d6c7f12c4410f6b3e6dd08a",
+  "raw_jp_overrides_sha256": "5f816bd42a21eed5173520a2b704cf2bec46551cef9fb4ce5b0fa472979d0c90",
+  "jp_overrides_sha256": "b253c1815252f34225fce4c15370c54d2661ba82347c8bd7f3c28f7da8b2e641",
+  "semantic_css_sha256": "1c8134fdb22878a821950a07c53a8425f1d04163098266dc38d81a521b2a255d",
+  "canonical_override_sha256": "3ed7bf358e1c6987a6bb94eedff30e0939011f544f662e5e792ead230592fc21",
+  "adaptation_block_count": 13,
+  "raw_override_rule_count": 88,
+  "canonical_override_rule_count": 66,
+  "exact_duplicate_rules_removed": 22,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up: penumbra",
+      "rationale": "SCP-JP mobile header adaptation: keep the localized identity and search within independent rows at the 320px policy boundary.",
+      "sha256": "79c06ec8a0866a4804a3081801747e518af10812e5c1128b69c019095c5a6e61",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up v2: penumbra",
+      "rationale": "SCP-JP mobile header adaptation: keep the localized identity and search within independent rows at the 320px policy boundary.",
+      "sha256": "9c4d0498d239ce39f4e6a684ea3e0fc774cf14730a6e84fb4049438a6ccfab19",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form",
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v1: penumbra",
+      "rationale": "Keep Penumbra's compact Rate controls identifiable when the imported module's icon glyph is absent.",
+      "sha256": "db4f88cf328de2b75d64e7b6fa74885e4b4f2c45d28dc9fbba093158230aa26a",
+      "selectors": [
+        ".creditRate .cancel a::before",
+        ".creditRate .ratedown a::before",
+        ".creditRate .rateup a::before",
+        ".page-rate-widget-box .cancel a::before",
+        ".page-rate-widget-box .ratedown a::before",
+        ".page-rate-widget-box .rateup a::before"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive image-review repair v1: penumbra",
+      "rationale": "The 320px capture places near-white title text on a white header and clips its intrinsic-width subtitle; use the theme's dark ink and allow both localized labels to wrap within the viewport.",
+      "sha256": "570f5a4a16bbd02f4fe5b59149f0e96c8046ba3fcafad6eaf974c52cce57d100",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 a",
+        "#header h1 span",
+        "#header h2",
+        "#header h2 span",
+        "#login-status",
+        "#login-status *"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v2: penumbra",
+      "rationale": "Chromium screenshots at 390px showed the live SCP-JP site title clipping horizontally and colliding with its subtitle. Keep the Penumbra ink/logo treatment while making the actual heading rows wrap and flow on phone widths.",
+      "sha256": "aadf3644a63cf034b8824ad80f9bbfdc6d93836695c2570fc595d16bc8d4a195",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 *",
+        "#header h2",
+        "#header h2 *",
+        "#search-top-box",
+        "#search-top-box-form"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v3: penumbra",
+      "rationale": "These captured JP theme headers share the legacy zero-line-height title recipe: the anchor reserves 80px/25px and the subtitle span reserves 19px with line-height 0, so real SCP-JP title text overlaps despite its headings being in document flow. Keep the logo's inline offset and theme colors while restoring natural wrapped line boxes.",
+      "sha256": "f2439fc9fcd5bdc018c526b768d21de3cc2a178f37337eea534c5495de506b71",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v4: penumbra",
+      "rationale": "Image review plus DOM evidence: the imported stylesheet sets logical block-size:0 on heading spans, so text paints outside a zero-height flow box and the following Search/mobile navigation overlaps it. Reset the logical constraint as well as physical height.",
+      "sha256": "0a6d14b39376564718226365ae96f3b49a110d72c4aeb09827791d6d6c325104",
+      "selectors": [
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span",
+        "#search-top-box",
+        "#search-top-box-form",
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v5: penumbra",
+      "rationale": "Follow-up to the visual defect: the same imported header positions .mobile-top-bar above the zero-height #top-bar. Return the responsive navigation list to flow after Search while its round open-menu button keeps its fixed touch target.",
+      "sha256": "b42c9076b33b342f852bbc5761d1ddc075e798b146364da0b02565145e58d5a1",
+      "selectors": [
+        "#top-bar",
+        ".mobile-top-bar",
+        ".mobile-top-bar > ul"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header correction v10: penumbra",
+      "rationale": "Reviewed mobile image shows Penumbra's dark masthead graphic behind the live Japanese site identity. Use its high-contrast light ink at phone widths; preserve the low-light article palette and circular mark.",
+      "sha256": "91dbbcd4f8c357664f050d4443e31f5d07d3bb6e8b38f9cb8e32310e80626b0d",
+      "selectors": [
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span",
+        "#login-status",
+        "#login-status *"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header correction v11: penumbra",
+      "rationale": "Reviewed mobile image shows Penumbra's dark masthead graphic behind the live Japanese site identity. Use its high-contrast light ink at phone widths; preserve the low-light article palette and circular mark.",
+      "sha256": "41e9d6bcf32de494541eb9876dc2a567db0233782a4d3717c2dfa5f1d87fac1a",
+      "selectors": [
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span",
+        "#login-status",
+        "#login-status *"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP responsive breakpoint visual repair v1: penumbra",
+      "rationale": "The captured 768px tablet state sits between Penumbra's mobile and desktop header breakpoints: its fixed EN masthead and responsive JP navigation collide. Flow the existing localized identity, search, and mobile menu until the desktop header fits.",
+      "sha256": "92c9b3e86c238ebf2e7fb1c3224f8fc277ec415ca59aa895cf30493b32dca613",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 *",
+        "#header h2",
+        "#header h2 *",
+        "#search-top-box",
+        "#search-top-box-form",
+        "#top-bar",
+        ".mobile-top-bar",
+        ".mobile-top-bar > ul"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px) and (max-width: 900px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP responsive breakpoint visual repair v2: penumbra",
+      "rationale": "The captured 768px tablet state sits between Penumbra's mobile and desktop header breakpoints: its fixed EN masthead and responsive JP navigation collide. Flow the existing localized identity, search, and mobile menu until the desktop header fits.",
+      "sha256": "62f1f34f9b24439d1caac8f500daad994d38d4d6368167f867041602aab47478",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 *",
+        "#header h2",
+        "#header h2 *",
+        "#search-top-box",
+        "#search-top-box-form",
+        "#top-bar",
+        "#top-bar .top-bar",
+        ".mobile-top-bar",
+        ".mobile-top-bar > ul"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px) and (max-width: 900px)"
+      ]
+    }
+  ]
+}

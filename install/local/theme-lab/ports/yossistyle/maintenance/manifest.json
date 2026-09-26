@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "a010f595638b31c3a790fae7b297893b8ad3bb605251234f30458322b4d8c468",
+  "base_source_sha256": "c9987477d0e9079b7b15c55ac608b853e69c970484dc2b5b0e6f3cd6565c442c",
+  "raw_jp_overrides_sha256": "abeae403ecbd127da155dde44845921af2f1c677ef7c4f6ad05954c3ac60d315",
+  "jp_overrides_sha256": "f0243e43ffc0e71eeaca892497eeaf378e6b4610e1459433781901be7e29b730",
+  "semantic_css_sha256": "cb48d673d08b772280e985d616003a5a97f5521058ff4467c786f0c7a5b428cb",
+  "canonical_override_sha256": "d00e71dd8f7eb85f556cf3feaa8a253b3c33cc0a39e566a6d63223703078ffc1",
+  "adaptation_block_count": 9,
+  "raw_override_rule_count": 43,
+  "canonical_override_rule_count": 38,
+  "exact_duplicate_rules_removed": 5,
+  "active_tags": [],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up: yossistyle",
+      "rationale": "SCP-JP mobile header adaptation: keep the localized identity and search within independent rows at the 320px policy boundary.",
+      "sha256": "5eaa4e5d2ae34af99cdcc2b94428595bb55c804c1769099bf631d3dd2783fdb1",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up v2: yossistyle",
+      "rationale": "SCP-JP mobile header adaptation: keep the localized identity and search within independent rows at the 320px policy boundary.",
+      "sha256": "3123d0456fab958ff311211a010ce67430a58658e7d4c5c3b8b545ff7e9f5278",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form",
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v3: yossistyle",
+      "rationale": "These captured JP theme headers share the legacy zero-line-height title recipe: the anchor reserves 80px/25px and the subtitle span reserves 19px with line-height 0, so real SCP-JP title text overlaps despite its headings being in document flow. Keep the logo's inline offset and theme colors while restoring natural wrapped line boxes.",
+      "sha256": "b24a81abe5e98c5042710a64e7b35faf773a9d049278f19d0ec9dd485cff8a38",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v4: yossistyle",
+      "rationale": "Image review plus DOM evidence: the imported stylesheet sets logical block-size:0 on heading spans, so text paints outside a zero-height flow box and the following Search/mobile navigation overlaps it. Reset the logical constraint as well as physical height.",
+      "sha256": "def824b61e247c407b5b23bcc61aa4791290fcd9dabb30c7828a22efa15f11d4",
+      "selectors": [
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span",
+        "#search-top-box",
+        "#search-top-box-form",
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v5: yossistyle",
+      "rationale": "Follow-up to the visual defect: the same imported header positions .mobile-top-bar above the zero-height #top-bar. Return the responsive navigation list to flow after Search while its round open-menu button keeps its fixed touch target.",
+      "sha256": "6872d5a809c07dc03557970b34ffc779b0f5eeafd7d31e9bcc5aef673d54de2c",
+      "selectors": [
+        "#top-bar",
+        ".mobile-top-bar",
+        ".mobile-top-bar > ul"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v6: yossistyle",
+      "rationale": "The inherited 76px logo gutter was added to a full-width heading, clipping the SCP-JP site title at the right edge. Let both localized heading blocks consume only their remaining inline space.",
+      "sha256": "65a87343213db2b07ee8b39a0ce1fb7881a8df45eb3632375b6b3bd2269d836e",
+      "selectors": [
+        "#header h1",
+        "#header h1 > a",
+        "#header h2"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v21: yossistyle",
+      "rationale": "Direct image review: the logged-in account name inherits an almost-white theme token on the white localized masthead. Keep the native header background and restore legible account ink.",
+      "sha256": "495835a6247e1f60c79925134364ea6e45cb4dce94a08fce991a724be9ff44ae",
+      "selectors": [
+        "#login-status",
+        "#login-status .printuser",
+        "#login-status .printuser a",
+        "#login-status a"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v23: yossistyle",
+      "rationale": "The reviewed account label remained faint after the first color change. Use the theme's dark masthead ink, full opacity and normal weight for account/navigation text only.",
+      "sha256": "ac3a399550d97663551aa61f9cf1aad3c1ce59f511ad2ceac956617fb1c7ef5e",
+      "selectors": [
+        "#login-status",
+        "#login-status .printuser",
+        "#login-status .printuser a",
+        "#login-status a"
+      ],
+      "at_contexts": []
+    }
+  ]
+}

@@ -1139,22 +1139,64 @@
       "source_url": "https://fonts.bunny.net/css2?family=Fira+Code&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "6838394d41ccc1f2d7c4d03fb74735f5abcdac963e7b56a26dd03c3244078e58",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 177aa1063d048de5417d6fa6da209b1a7559aeb64906ab62bd9d36d4697841fa.css with SHA-256 177aa1063d048de5417d6fa6da209b1a7559aeb64906ab62bd9d36d4697841fa; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.bunny.net/css2?family=Fira+Code&display=swap",
+      "sha256": "177aa1063d048de5417d6fa6da209b1a7559aeb64906ab62bd9d36d4697841fa",
+      "asset_file": "177aa1063d048de5417d6fa6da209b1a7559aeb64906ab62bd9d36d4697841fa.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400;1,600&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "6838394d41ccc1f2d7c4d03fb74735f5abcdac963e7b56a26dd03c3244078e58",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 946890cfa28c09b0df7a859054053a2a7534daa5a33ce5d2a95a3ba16b10f657.css with SHA-256 946890cfa28c09b0df7a859054053a2a7534daa5a33ce5d2a95a3ba16b10f657; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.bunny.net/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400;1,600&display=swap",
+      "sha256": "946890cfa28c09b0df7a859054053a2a7534daa5a33ce5d2a95a3ba16b10f657",
+      "asset_file": "946890cfa28c09b0df7a859054053a2a7534daa5a33ce5d2a95a3ba16b10f657.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Apaperstack/1",
       "decision": "localize-into-package",
       "candidate_css_sha256": "6838394d41ccc1f2d7c4d03fb74735f5abcdac963e7b56a26dd03c3244078e58",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as ced54bdc5900911444c06dcc427578b756f5cb6d3ad9ad053ced3dc35c6ab0a5.css with SHA-256 ced54bdc5900911444c06dcc427578b756f5cb6d3ad9ad053ced3dc35c6ab0a5; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Apaperstack/1",
+      "sha256": "ced54bdc5900911444c06dcc427578b756f5cb6d3ad9ad053ced3dc35c6ab0a5",
+      "asset_file": "ced54bdc5900911444c06dcc427578b756f5cb6d3ad9ad053ced3dc35c6ab0a5.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://fonts.bunny.net/css2?family=Fira+Code&display=swap",
+      "final_url": "https://fonts.bunny.net/css2?family=Fira+Code&display=swap",
+      "sha256": "177aa1063d048de5417d6fa6da209b1a7559aeb64906ab62bd9d36d4697841fa",
+      "normalized_text_sha256": "177aa1063d048de5417d6fa6da209b1a7559aeb64906ab62bd9d36d4697841fa",
+      "bytes": 3138,
+      "content_type": "text/css",
+      "asset_file": "177aa1063d048de5417d6fa6da209b1a7559aeb64906ab62bd9d36d4697841fa.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.bunny.net/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400;1,600&display=swap",
+      "final_url": "https://fonts.bunny.net/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400;1,600&display=swap",
+      "sha256": "946890cfa28c09b0df7a859054053a2a7534daa5a33ce5d2a95a3ba16b10f657",
+      "normalized_text_sha256": "946890cfa28c09b0df7a859054053a2a7534daa5a33ce5d2a95a3ba16b10f657",
+      "bytes": 11880,
+      "content_type": "text/css",
+      "asset_file": "946890cfa28c09b0df7a859054053a2a7534daa5a33ce5d2a95a3ba16b10f657.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Apaperstack/1",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Apaperstack/1",
+      "sha256": "ced54bdc5900911444c06dcc427578b756f5cb6d3ad9ad053ced3dc35c6ab0a5",
+      "normalized_text_sha256": "ced54bdc5900911444c06dcc427578b756f5cb6d3ad9ad053ced3dc35c6ab0a5",
+      "bytes": 10917,
+      "content_type": "text/css",
+      "asset_file": "ced54bdc5900911444c06dcc427578b756f5cb6d3ad9ad053ced3dc35c6ab0a5.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }

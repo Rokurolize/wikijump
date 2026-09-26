@@ -17,7 +17,7 @@
     "slug": "theme:jakstyle",
     "title": "JAKSTYLE",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:jakstyle/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "001da31e6e309460792f950ba5bcb78eba3c8a7305efb7a3e21e05365615d270",
       "updated_at": "2026-04-21T01:35:48+00:00",
       "entity_uuid": "3f6bd0c2-2736-43bc-98d7-5ef44874650c",
@@ -26,11 +26,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 317
+      "revisions": 317,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:jakstyle"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:jakstyle/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "043a9ecd102a053c1d7daa538e293a147117f722cfe6e232c694f6107c48dae2",
       "updated_at": "2023-02-20T06:32:47+00:00",
       "entity_uuid": "62da1961-d87e-40a7-b433-b8782035cd19",
@@ -38,7 +43,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:jakstyle"
+      }
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
@@ -94,7 +104,7 @@
     "base_family": "black-highlighter"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_jakstyle/theme_jakstyle_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -102,5 +112,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/jakstyle/assets.json",
-  "asset_dependency_decision_count": 38
+  "asset_dependency_decision_count": 38,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
+    "jp_overrides_sha256": "6870bb9a79a2cab879db514fba2af6f8a9163dc9094917073fc7126104fea478",
+    "semantic_css_sha256": "b0ceed399cc338eec65cbc09fe9895cc97d2fb1edc5137a937182e8cde3047c4",
+    "canonical_override_sha256": "d7be098cbe31327557ea7777b89328db50964ea1af5c87f64b022f4d7ccf423f",
+    "exact_duplicate_rules_removed": 4
+  }
 }

@@ -17,7 +17,7 @@
     "slug": "theme:cosmonaut",
     "title": "Cosmonaut Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:cosmonaut/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "7d315826293db9af4419d47ffd594a19bfbe6bd458493de0dc410f34693a18a4",
       "updated_at": "2025-12-14T11:15:02+00:00",
       "entity_uuid": "984e9112-604c-4dbd-ae86-2901d9f8bbf1",
@@ -27,11 +27,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 27
+      "revisions": 27,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:cosmonaut"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:cosmonaut/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "857c48d316a054139c6c667fcfadd14208885fcf1c3103b56c9a661a620e5fd2",
       "updated_at": "2025-03-11T09:05:30+00:00",
       "entity_uuid": "fc3efb5b-3598-44e3-bd1e-62f9e337c710",
@@ -39,7 +44,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:cosmonaut"
+      }
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
@@ -98,7 +108,7 @@
     "base_family": "independent"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_cosmonaut/theme_cosmonaut_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -106,5 +116,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/cosmonaut/assets.json",
-  "asset_dependency_decision_count": 22
+  "asset_dependency_decision_count": 22,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "e750036fbf808494c66552806ea74f30c8bbed43a239ee383d955c8c630fd0e1",
+    "jp_overrides_sha256": "7d785e0b9d0dd31ceda984b7800295eb3feb25ef3c7f39cad90330b67359c840",
+    "semantic_css_sha256": "9020bbaa72c513cf82549712de6ea453e5eea662257838e5ecdb1ff0280be3e0",
+    "canonical_override_sha256": "28884f3d2c127fd44ef016c700893c3f081bb81b40b09a9e4efbe585a243ce95",
+    "exact_duplicate_rules_removed": 0
+  }
 }

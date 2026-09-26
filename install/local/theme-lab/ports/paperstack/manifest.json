@@ -17,7 +17,7 @@
     "slug": "theme:paperstack",
     "title": "Paperstack Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:paperstack/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "473d6a0dcb753239797efd8dd829f1e34bb626419076023de8d4afe944adf187",
       "updated_at": "2026-04-12T05:15:56+00:00",
       "entity_uuid": "03c85737-7f10-4ccf-a543-310480328e29",
@@ -26,11 +26,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 105
+      "revisions": 105,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:paperstack"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:paperstack/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "6c36f989fdefaab3f2dbeff63bc5770e57b638650911eb9263e1b814dea27ee0",
       "updated_at": "2023-03-07T12:38:05+00:00",
       "entity_uuid": "1e488b54-154e-4ca3-b298-9023ad8c50a8",
@@ -39,7 +44,12 @@
         "テーマ",
         "要翻訳"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:paperstack"
+      }
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
@@ -90,7 +100,7 @@
     "base_family": "sigma"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_paperstack/theme_paperstack_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -145,5 +155,15 @@
       "missing": 0,
       "external_requests_during_build": 0
     }
+  },
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "39dc4c06547aa7c7e49ac6f35fe38480a35dd7687331496ac6c4f6ef54c0fd99",
+    "jp_overrides_sha256": "c94a4360cb93db7a408fb6df6d56caf982850daaae7532d157599bf0b7fb80de",
+    "semantic_css_sha256": "6771a90eaaf708059eaa618cb83580bd2acc9d10ff37c3d36dc86c5a192a320d",
+    "canonical_override_sha256": "3c1f42c90d7694e47ebf9565b8f0cdf5a4669dc65874adce22a6aa66cf0e3145",
+    "exact_duplicate_rules_removed": 8
   }
 }

@@ -17,7 +17,7 @@
     "slug": "theme:black-highlighter-theme",
     "title": "Black Highlighter Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:black-highlighter-theme/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "fa840cb320ea4de09864cd687aca308115f9027076d8c5712c3fb52cd5c31a58",
       "updated_at": "2024-09-03T02:55:28+00:00",
       "entity_uuid": "9e70e331-f9c0-4086-b237-e15680108311",
@@ -26,11 +26,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 134
+      "revisions": 134,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:black-highlighter-theme"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:black-highlighter-theme/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "809901626419de877645afccb36574a01ef943cfbd5d70a4b167210ebe4db939",
       "updated_at": "2025-11-16T06:26:19+00:00",
       "entity_uuid": "41755b0d-969f-4210-b9a6-a1ce9791b29d",
@@ -39,7 +44,12 @@
         "テーマ",
         "要翻訳"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:black-highlighter-theme"
+      }
     },
     "existing_jp_audit": "existing-jp-current-and-valid",
     "technical_spec_version": "1.4",
@@ -98,7 +108,7 @@
     "base_family": "black-highlighter"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_black-highlighter-theme/theme_black-highlighter-theme_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -121,5 +131,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-current-and-valid",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/black-highlighter-theme/assets.json",
-  "asset_dependency_decision_count": 38
+  "asset_dependency_decision_count": 38,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
+    "jp_overrides_sha256": "a3689191d39ca1e5d8667feecea6c72b9b4aa6eec416c1cf225aad2d3677d9b6",
+    "semantic_css_sha256": "b114c5bf6564ed95e1302a75b633082409856b319ec46265abf53950ee6e92b3",
+    "canonical_override_sha256": "09c6fc30af9f1f9f1a078a2a80ca7effe808625823a721533eee8c000cfd2c2f",
+    "exact_duplicate_rules_removed": 0
+  }
 }

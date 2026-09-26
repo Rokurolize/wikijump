@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "586784a5830a65c735d39c62c642425646d4ff87159cd864698102d68a8d99e6",
+  "base_source_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
+  "raw_jp_overrides_sha256": "f3e53882ed57eccf39074dbfb6c5c1b400f198698f76aa9391b4a9a2bdfb2be1",
+  "jp_overrides_sha256": "e75a54a30d029247f39bd328695edd3d5408d50a9013b1c9e792022a0f37f40c",
+  "semantic_css_sha256": "dc02be0110236c51e6790f00f8bf54758606925c5ab18124cd785803f90e3a52",
+  "canonical_override_sha256": "26b1d1bf88b4da6459ab1a6a199291caeb7966403c813ebad2b4a0a70632253f",
+  "adaptation_block_count": 4,
+  "raw_override_rule_count": 13,
+  "canonical_override_rule_count": 13,
+  "exact_duplicate_rules_removed": 0,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up v2: hansarp",
+      "rationale": "The moving orange Hansarp credit stripe crosses the license link; lift the link on a small opaque label without removing the stripe.",
+      "sha256": "41c7586f5891c674c85b1ec4a6d18773ce421cc89c1f7f28c57fdb4041964079",
+      "selectors": [
+        "#u-credit-otherwise .modalbox .credit a",
+        "#u-credit-view .modalbox .credit a"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v35: hansarp",
+      "rationale": "The 320px credit.otherwise back label had one Japanese character per line. Keep the paired credit/back controls on one reachable row.",
+      "sha256": "344ec433bfd3111e21ec3b06d9de0293fa54072bef5b045d78ba641d18724639",
+      "selectors": [
+        "#u-credit-otherwise .modalbox .credit-back",
+        "#u-credit-otherwise .modalbox .credit-back a[href=\"#u-credit-view\"]"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
+      "rationale": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
+      "sha256": "a7d08f5e3645665482f335e0cfe80954a4da6781e0bbe546dc2f31f9383b6b82",
+      "selectors": [
+        "#top-bar .mobile-top-bar ul li ul",
+        "#top-bar .mobile-top-bar ul li ul li",
+        "#top-bar .mobile-top-bar ul li ul li a",
+        "#top-bar .top-bar ul li ul",
+        "#top-bar .top-bar ul li ul li",
+        "#top-bar .top-bar ul li ul li a"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    }
+  ]
+}

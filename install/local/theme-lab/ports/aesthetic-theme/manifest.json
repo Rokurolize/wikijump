@@ -17,7 +17,7 @@
     "slug": "theme:aesthetic-theme",
     "title": "  ░▒▓ A E S T H E T I C  T H E M E ▓▒░",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:aesthetic-theme/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "35234ec38792ffc739258798c50bb91d993575fb23eb6b6a51c58c2d02b26efd",
       "updated_at": "2026-04-10T05:10:37+00:00",
       "entity_uuid": "6a04aa9c-9d23-4847-a489-ac026499344e",
@@ -26,11 +26,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 70
+      "revisions": 70,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:aesthetic-theme"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:aesthetic-theme/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "da06a9e340ca0f6faa0f900117f1c165eaffed070d2269df0a99aec038b06338",
       "updated_at": "2026-03-17T14:48:29+00:00",
       "entity_uuid": "c7771e6a-2f88-4ce6-b2a0-ff756da3bcab",
@@ -38,7 +43,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:aesthetic-theme"
+      }
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
@@ -98,7 +108,7 @@
     "base_family": "black-highlighter"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_aesthetic-theme/theme_aesthetic-theme_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -133,5 +143,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/aesthetic-theme/assets.json",
-  "asset_dependency_decision_count": 66
+  "asset_dependency_decision_count": 66,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
+    "jp_overrides_sha256": "d9dffa433a97880b561e8c037ad388012509772d487b534b43c8c4cf5e6832b7",
+    "semantic_css_sha256": "b7424c979db73b1fe593c7dbe6d2e4111540d22f029dcac531bf39d67bc60627",
+    "canonical_override_sha256": "335e9c6a20ba09b2d127cdfcc2e43f18d3d6d2faf454563604ea598c4d3cadf0",
+    "exact_duplicate_rules_removed": 1
+  }
 }

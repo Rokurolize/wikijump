@@ -17,7 +17,7 @@
     "slug": "theme:isolated-terminal",
     "title": "Isolated Terminal Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:isolated-terminal/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "120ce0a71fa1ca235d3ed1955957ebe037bdb8e4a160b7099fe810d61f17a257",
       "updated_at": "2026-02-01T03:34:54+00:00",
       "entity_uuid": "84535295-6775-4362-92bd-cc9a1d180064",
@@ -25,11 +25,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 122
+      "revisions": 122,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:isolated-terminal"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:isolated-terminal/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "4cffaa491e5f88926e9793f732bdb80616f0c8a91282b2544478e1b9caa41e30",
       "updated_at": "2026-07-30T02:50:04+00:00",
       "entity_uuid": "1725b727-8cc8-44ca-9980-cae2f35eee66",
@@ -37,7 +42,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:isolated-terminal"
+      }
     },
     "existing_jp_audit": "existing-jp-current-and-valid",
     "technical_spec_version": "1.4",
@@ -120,7 +130,7 @@
     "base_family": "black-highlighter"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_isolated-terminal/theme_isolated-terminal_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -143,5 +153,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-current-and-valid",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/isolated-terminal/assets.json",
-  "asset_dependency_decision_count": 53
+  "asset_dependency_decision_count": 53,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "e2a79c2965b4558f59b4a0884fc18563a7ee8c6ad17d27d6e5f219856044459c",
+    "jp_overrides_sha256": "e672d11abc8953d2ded7dad5b06cd4751398cb08edf6e0d1ff4912e7fd59408c",
+    "semantic_css_sha256": "6eafdb12b0dd4892adc031022c8633ca0cea55229ebf2c70aa1d45d93207d7dc",
+    "canonical_override_sha256": "0e900aac25db070867bf4041b43ebc434ff20dd0c74db6e79376fec959959d6a",
+    "exact_duplicate_rules_removed": 0
+  }
 }

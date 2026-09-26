@@ -53,6 +53,36 @@ function verifyFrozenPackage(item) {
       throw new Error(`${item.slug}: frozen CSS asset missing or corrupt: ${asset.sha256}`);
     }
   }
+  const imports = new Set(assetManifest.imports ?? []);
+  const importProvenance = assetManifest.import_provenance ?? [];
+  const provenImports = new Set(importProvenance.map((row) => row.source_url));
+  if (assetManifest.import_provenance_status === "complete") {
+    for (const url of imports) {
+      if (!provenImports.has(url)) throw new Error(`${item.slug}: frozen CSS import lacks byte provenance: ${url}`);
+    }
+  }
+  for (const row of importProvenance) {
+    const file = path.join(assetRoot, row.asset_file);
+    if (!row.asset_file || !fs.existsSync(file) || sha256(file) !== row.sha256) {
+      throw new Error(`${item.slug}: frozen CSS import missing or corrupt: ${row.source_url}`);
+    }
+  }
+  if (packageManifest.flattened_css_transforms) {
+    const transformPath = path.join(item.directory, packageManifest.flattened_css_transforms);
+    if (!fs.existsSync(transformPath)) {
+      throw new Error(`${item.slug}: flattened CSS transform manifest missing: ${packageManifest.flattened_css_transforms}`);
+    }
+    const transformManifest = JSON.parse(fs.readFileSync(transformPath, "utf8"));
+    const recordedManifest = assetManifest.localization_transform_manifest;
+    if (!recordedManifest || recordedManifest.sha256 !== sha256(transformPath)) {
+      throw new Error(`${item.slug}: flattened CSS transform manifest provenance is stale`);
+    }
+    const expectedIds = new Set((transformManifest.transforms ?? []).map((row) => row.id));
+    const appliedIds = new Set((assetManifest.localization_transforms ?? []).map((row) => row.id));
+    if (expectedIds.size !== appliedIds.size || [...expectedIds].some((id) => !appliedIds.has(id))) {
+      throw new Error(`${item.slug}: flattened CSS transforms were not all applied`);
+    }
+  }
   const pageAssetsPath = path.join(item.directory, "page-assets.json");
   if (fs.existsSync(pageAssetsPath)) {
     const pageAssets = JSON.parse(fs.readFileSync(pageAssetsPath, "utf8"));
@@ -94,6 +124,7 @@ const onlyIndex = process.argv.indexOf("--only");
 const only = onlyIndex >= 0 ? process.argv[onlyIndex + 1] : null;
 const noVisual = process.argv.includes("--no-visual");
 const iteration = process.argv.includes("--iteration");
+const verifyOnly = process.argv.includes("--verify-only");
 const selectedCases = only ? cases.filter((item) => item.slug === only) : cases;
 if (only && selectedCases.length !== 1) throw new Error(`unknown --only theme: ${only}`);
 
@@ -101,6 +132,11 @@ const failures = [];
 const summaries = [];
 for (const item of selectedCases) {
   verifyFrozenPackage(item);
+  if (verifyOnly) {
+    summaries.push({slug: item.slug, status: "verified"});
+    process.stdout.write(`${JSON.stringify(summaries.at(-1))}\n`);
+    continue;
+  }
   const args = [
     lab, "check", "--socket", item.socket ?? socket, "--site-id", String(siteId),
     "--wikitext", path.join(item.directory, item.candidate),
@@ -159,7 +195,8 @@ for (const item of selectedCases) {
 
 process.stdout.write(`${JSON.stringify({summary: {
   total: summaries.length,
-  mode: iteration ? "iteration" : "full-acceptance",
+  mode: verifyOnly ? "verify-only" : iteration ? "iteration" : "full-acceptance",
+  verified: summaries.filter((row) => row.status === "verified").length,
   pass: summaries.filter((row) => row.status === "pass").length,
   warn_no_actionable_issues: summaries.filter((row) => row.status === "warn-no-actionable-issues").length,
   failed: failures.length,

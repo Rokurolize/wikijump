@@ -17,7 +17,7 @@
     "slug": "theme:scp-offices-theme",
     "title": "SCP Offices Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:scp-offices-theme/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "b102a2474cef0f96202818ee1e283eab2807c83db8c69479e642b2758629a00a",
       "updated_at": "2026-04-12T05:22:32+00:00",
       "entity_uuid": "a3ecf48b-ca86-4cbf-ae91-cb1fe20ae830",
@@ -26,11 +26,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 58
+      "revisions": 58,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:scp-offices-theme"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:scp-offices-theme/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "712c7edf8e1060819d93f205158f599cf5318cdc4cec6d3e2c5241e059873808",
       "updated_at": "2023-01-20T10:11:35+00:00",
       "entity_uuid": "8608e150-db3a-41de-82a9-18dc866251d5",
@@ -38,7 +43,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:scp-offices-theme"
+      }
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
@@ -87,7 +97,7 @@
     "base_family": "black-highlighter"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_scp-offices-theme/theme_scp-offices-theme_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -122,5 +132,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/scp-offices-theme/assets.json",
-  "asset_dependency_decision_count": 58
+  "asset_dependency_decision_count": 58,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8",
+    "jp_overrides_sha256": "c1928e2d3805322fca2760322c749efbad60791b827683d47fde462b5a3e192e",
+    "semantic_css_sha256": "005fff8d149739e7d4c84372bedb5d38a16de20b6635419cfa8c6a9cf571d243",
+    "canonical_override_sha256": "b2841d3c8c5ed199f6a3f6d655a394d9765f120d1bccad465c94d6356be44e0f",
+    "exact_duplicate_rules_removed": 2
+  }
 }

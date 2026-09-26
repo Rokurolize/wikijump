@@ -17,7 +17,7 @@
     "slug": "theme:classic",
     "title": "Classic SCP Foundation Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:classic/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "306c9422efd40de805e391694aba91df5e660aab46a3b023959e6902a8d43728",
       "updated_at": "2026-07-12T20:13:59+00:00",
       "entity_uuid": "13d65bb3-c9a5-4451-9a7b-7c6df54ec9c4",
@@ -27,11 +27,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 95
+      "revisions": 95,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:classic"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:classic/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "261f3dbdd16444999df3fa36301ff4323237ab4bfed4ca50b2f99c13794e683e",
       "updated_at": "2025-12-26T07:04:03+00:00",
       "entity_uuid": "12eac644-b172-42e8-a603-7469436be637",
@@ -39,7 +44,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:classic"
+      }
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
@@ -82,7 +92,7 @@
     "base_family": "sigma"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_classic/theme_classic_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -117,5 +127,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/classic/assets.json",
-  "asset_dependency_decision_count": 4
+  "asset_dependency_decision_count": 4,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
+    "jp_overrides_sha256": "50f31f4b31bf27bfcd2f69558cbbffa6d5def49626841528ac876aab1f2c6846",
+    "semantic_css_sha256": "9ca10c2a5aee3763aa677fd29c40e4dfaada5f76733efb6d9a645c34a2af4160",
+    "canonical_override_sha256": "9a0618bb150510a87859f1aa2be2785345e4abb07494b11b3e1b7bf6b19d15dd",
+    "exact_duplicate_rules_removed": 5
+  }
 }

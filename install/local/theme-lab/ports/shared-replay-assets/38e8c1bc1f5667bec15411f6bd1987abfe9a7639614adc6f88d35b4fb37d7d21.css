@@ -1,0 +1,612 @@
+/*
+    Turbo Vision Theme
+    [2021 Wikidot Theme]
+    By JakdragonX
+    Based on SCP Sigma 9-Theme created by Aelanna and Dr Devan
+    Based on the original Turbo Vision Theme created by Croquembouche
+
+    The Turbo Vision theme is split into two CSS fragments.
+
+    This fragment styles general parts of the page, and requires the other
+    fragment in order to function correctly.
+*/
+/*
+    Turbo Vision Theme (ja-jp edition)
+    by oplax-counterpoint, 2024
+ */
+
+ /* Inlined Images */
+:root {
+  /* logo (1).png
+      by Croquembouche, 2021
+      licensed under Creative Commons Attribution-ShareAlike 3.0 License
+   */
+  --img-logo: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAATAAAAB5CAYAAAC+233jAAAABmJLR0QAAAAAAAD5Q7t/AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4ggTFTo6HMzFyQAAAa5JREFUeNrt3DGOwzAMAEEzQP7/4BROqS4pCMKkNFMfcA5lbyUwrqT7vj/XwSLi3fn5Tj+f7PmZX+/v42XEwFQCBggYgIABCBggYAACBiBgAAAAAAAAAAAALGHfUfGAk/uQnM+z52P+vc/HRVZgLAEDBAxAwAAEDBAwAAEDEDAAAAAAAAAAAACW9vvAsvu0srLz2X3fVPX5VM9n+vNX/77u76eLrMBYAgYIGICAAQgYIGAAAgYgYAAAAAAAAAAAACwxfR9VegDD943tPp/pTv++qt8/F1mBsQQMEDAAAQMQMEDAAAQMQMAAAAAAAAAAAABYovof2Df2e5+RfWB78/7Xvj8usgJjCRggYAACBiBggIABCBiAgAEAAAAAAAAAALBEdl9R931RT+9jmr4P7Onzr57P9Oef/n1mucgKCBiAgAEIGCBgAAIGIGAAAgYAAAAAAAAAALCBmL6Pqv2Ak/uYnM+z53P6/LvvE3ORFRhLwAABAxAwAAEDBAxAwAAEDAAAAAAAAAAAgCX+/YF9SL33ITm/2vP1/tsHBiBgAAIGCBiAgAEIGCBgAAIGUOcLVI50gWhjaj4AAAAASUVORK5CYII=");
+  /* small (1).png
+      by JakdragonX, 2021
+      licensed under Creative Commons Attribution-ShareAlike 3.0 License
+   */
+  --img-background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAACvCAYAAADaKn9TAAAAfElEQVRIS+1VQQqAMAxLP+F3dtMn+Lx2fnSiIm7dLk4RhOwYRgJJ0wqGOSF7QoB+XPPAcWA9uB1OB9gGtoFt+GEbQpjKq94FjJ7DAWZL+eMdICZAABzcYmaPVWLcSLMz3yCtVBygqiVHg9SpqFaytx3rSu55+rlbewyfACvenROenh5nvgAAAABJRU5ErkJggg==");
+
+  /* border_white.svg, border_white2.svg, border_black2.svg
+      by Croquembouche, 2021
+      licensed under Creative Commons Attribution-ShareAlike 3.0 License
+   */
+   --svg-border-white:   url("data:image/svg+xml,%3C%3Fxml version='1.0'%3F%3E%3C!DOCTYPE svg%3E%3Csvg xmlns='http://www.w3.org/2000/svg' shape-rendering='crispEdges' viewBox='0 0 17.462 17.463' height='66' width='66'%3E%3Cpath d='M1.323 2.646v12.17H16.14V2.647zm.53.264H15.61v11.642H1.852z' fill='%23fff'/%3E%3C/svg%3E");
+   --svg-border-white2:  url("data:image/svg+xml,%3C%3Fxml version='1.0'%3F%3E%3C!DOCTYPE svg%3E%3Csvg xmlns='http://www.w3.org/2000/svg' shape-rendering='crispEdges' viewBox='0 0 17.462 17.463' height='66' width='66'%3E%3Cg fill='%23fff'%3E%3Cpath d='M.794 2.381v12.7h15.875v-12.7zm.529.265H16.14v12.17H1.323z'/%3E%3Cpath d='M1.587 2.91v11.642h14.288V2.91zm.53.265h13.229v11.112H2.116z'/%3E%3C/g%3E%3C/svg%3E");
+   --svg-border-black2:  url("data:image/svg+xml,%3C%3Fxml version='1.0'%3F%3E%3C!DOCTYPE svg%3E%3Csvg xmlns='http://www.w3.org/2000/svg' shape-rendering='crispEdges' viewBox='0 0 17.462 17.463' height='66' width='66'%3E%3Cpath d='M.794 2.381v12.7h15.875v-12.7zm.529.265H16.14v12.17H1.323z'/%3E%3Cpath d='M1.587 2.91v11.642h14.288V2.91zm.53.265h13.229v11.112H2.116z'/%3E%3C/svg%3E");
+}
+/* Other Custom Properties */
+:root {
+  --jafont-body: "IBM Plex Sans JP", "Noto Sans JP";
+  --jafont-header: "JFDot MPlus 12";
+  --lafont-body: "IBM Plex Mono";
+
+  /* derived properties */
+  --body-font: var(--lafont-body), var(--jafont-body), sans-serif;
+  --header-font: var(--jafont-header), var(--jafont-body), monospace;
+  --rate-font: var(--header-font);
+}
+
+/* TODO Split these selectors across this one and the other one */
+
+body {
+  font-family: var(--body-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: black;
+  letter-spacing: 0.5px;
+  background-color: #bfcae3;
+  image-rendering: pixelated;
+}
+
+a {
+  color: #840603;
+}
+
+a:hover {
+  text-decoration: none;
+  background-color: #11ff00;
+  color: black;
+}
+
+a:visited {
+  color: #690ba0;
+}
+
+a.newpage {
+  color: #f55;
+  text-decoration: none;
+  background: transparent;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--header-font);
+}
+
+h1,
+#page-title {
+  font-family: var(--header-font);
+  color: #940000;
+  font-weight: bold;
+  line-height: 0.85em;
+}
+
+#page-title {
+  border-color: #fff;
+}
+
+hr {
+  background-color: #fff;
+  margin: 3.5em 1em 3.5em 1em;
+}
+
+blockquote,
+div.blockquote {
+  background-color: #aaaaaa;
+  color: #000;
+  padding: 0;
+  margin-bottom: 2em;
+  border-width: var(--turbo-block-border-width);
+  border-style: solid;
+  border-image: var(--svg-border-white) 16 round;
+  box-shadow: var(--turbo-block-shadow);
+}
+
+/* ACCOUNT STUFF (OPTIONS, SEARCH BAR, ETC.) */
+
+#account-options {
+  background-color: #fff;
+}
+
+#login-status {
+  color: #000;
+  background: #aaa;
+  border: 2px solid #fff;
+  font-size: 90%;
+  z-index: 30;
+}
+
+#login-status a {
+  background: transparent;
+  color: #840603;
+}
+
+#login-status a:hover {
+  background: #11ff00 !important;
+}
+
+#search-top-box-input,
+#search-top-box-input:hover,
+#search-top-box-input:focus,
+#search-top-box-form input[type="submit"],
+#search-top-box-form input[type="submit"]:hover,
+#search-top-box-form input[type="submit"]:focus {
+  border: #fff solid 2px;
+  background: #aaaaaa;
+  box-shadow: none;
+  border-radius: 0;
+  color: #fff;
+}
+
+#side-bar .side-block.media {
+  background: #aaaaaa;
+}
+
+/* HEADER */
+
+div#container-wrap {
+  background: var(--img-background) top left repeat-x;
+}
+
+div#header {
+  position: relative;
+  height: 142px;
+  background: var(--img-logo) 3.675em 1.25em no-repeat;
+  background-size: auto 100px;
+}
+
+div#header {
+  max-width: initial;
+}
+
+div#header,
+#top-bar {
+  width: 100%;
+}
+
+div#header h1 {
+  opacity: 0;
+  width: 310px;
+  min-height: 135px;
+}
+
+div#header h2 {
+  display: none;
+}
+
+#header h1,
+#header h2 {
+  margin-left: 55px;
+}
+
+/* TOP BAR */
+
+#top-bar {
+  font-size: 100%;
+  top: 142px;
+  max-width: none;
+  height: 20px;
+}
+
+#top-bar .top-bar > ul > li > a {
+  font-weight: 700; /* Perhaps this is Sigma-10 */
+}
+
+#top-bar ul li {
+  margin: 0 4px;
+}
+
+#top-bar ul li a {
+  font-family: var(--header-font);
+  color: #000;
+  background-color: transparent;
+  padding: 0;
+  border: none;
+  line-height: 19px;
+  max-height: 36px;
+}
+
+#top-bar ul li a:hover,
+#top-bar ul li:hover a {
+  text-decoration: none;
+  border: none;
+  background-color: #11ff00 !important;
+  color: #000;
+}
+
+#top-bar ul li a:hover::before,
+#top-bar ul li a:hover::after {
+  background-color: #11ff00;
+}
+
+#top-bar ul li a:visited {
+  color: #000 !important;
+}
+
+#top-bar ul li a::first-letter {
+  color: #840603;
+}
+
+#top-bar .open-menu a {
+  border: 2px solid #3f3f47 !important;
+  border-radius: 0;
+  background-color: #aaaaaa !important;
+  color: #840603 !important;
+}
+
+/* SIDE BAR */
+
+#side-bar .side-block,
+#interwiki .side-block {
+  position: relative;
+  border-radius: 0;
+  border-width: 22px;
+  border-style: solid;
+  padding: 0;
+  border-image: var(--svg-border-white2) 16 round;
+  box-shadow: 0.5em 1em 0 0 #3e3f47;
+  margin-bottom: 2em;
+}
+
+/* REMOVE
+.turbo-block .heading {
+  position: relative;
+  border: none;
+  margin: 2em 0 0 -11px;
+  width: calc(100% + 22px);
+  max-width: none;
+}
+
+.turbo-block .heading::before {
+  content: "";
+  border-top: 3px double white;
+  position: absolute;
+  width: 100%;
+  top: calc(50% - 1.5px);
+  left: 0;
+}
+
+.turbo-block .heading p {
+  display: table;
+  position: relative;
+  padding: 0 8px;
+  background: inherit;
+  margin: 0 0 0 2em;
+  color: white;
+}
+REMOVE */
+
+
+#side-bar .heading,
+#interwiki .heading {
+  position: relative;
+  font-size: 100%;
+  border: none;
+  padding: 0;
+  margin: 1em 0 0 -11px;
+  width: calc(100% + 22px);
+}
+
+#side-bar .heading::before,
+#interwiki .heading::before {
+  content: "";
+  border-top: 1px solid white;
+  position: absolute;
+  width: 100%;
+  top: calc(50% - 1.5px);
+  left: 0;
+}
+
+#side-bar .heading p,
+#interwiki .heading p {
+  position: relative;
+  display: inline-block;
+  padding: 0 8px;
+  margin-left: 1.5em;
+  color: white;
+  font-weight: normal;
+}
+
+#side-bar .side-block,
+#side-bar .side-block .heading p,
+#interwiki .side-block,
+#interwiki .side-block .heading p {
+  background-color: #64bec4;
+  font-size: 90%;
+}
+
+#side-bar .side-block.resources,
+#side-bar .side-block.resources .heading p {
+  background-color: #aaaaaa;
+  font-size: 90%;
+}
+
+#side-bar div.menu-item a,
+#side-bar .collapsible-block-link,
+#interwiki div.menu-item a,
+#interwiki .collapsible-block-link {
+  font-weight: normal;
+}
+
+#side-bar {
+  background-color: #a4a6ba;
+}
+
+/* TABS */
+
+div.yui-navset div.yui-content {
+  color: #000000;
+  background: #aaaaaa;
+  border-radius: 0;
+  border-width: 22px;
+  border-style: solid;
+  padding: 0;
+  border-image: var(--svg-border-white) 16 round;
+  box-shadow: 0.5em 1em 0 0 #3e3f47;
+  margin-bottom: 2em;
+}
+
+.yui-navset .yui-nav a,
+div.yui-navset div.yui-navset-top .yui-nav a {
+  /* protect nested tabviews from other orientations */
+  border: #dfdfdf outset 2px;
+}
+
+.yui-navset .yui-nav,
+.yui-navset .yui-navset-top .yui-nav {
+  font-family: var(--header-font);
+}
+
+.yui-navset .yui-nav .selected a,
+.yui-navset .yui-nav .selected a em,
+.yui-navset .yui-nav a em,
+.yui-navset .yui-navset-top .yui-nav a em {
+  border-color: transparent;
+}
+
+.yui-navset .yui-nav,
+.yui-navset .yui-navset-top .yui-nav {
+  border-color: #aaaaaa;
+}
+
+div.yui-navset ul.yui-nav a,
+div.yui-navset div.yui-navset-top ul.yui-nav a {
+  background: #aaaaaa;
+  border: #dfdfdf solid 2px;
+  border-bottom: transparent 0;
+}
+
+div.yui-navset ul.yui-nav a:hover,
+div.yui-navset ul.yui-nav a:focus {
+  background: #11ff00;
+  border: #fff solid 2px;
+  border-bottom: transparent 0;
+}
+
+div.yui-navset ul.yui-nav .selected a,
+div.yui-navset ul.yui-nav .selected a:focus,
+div.yui-navset ul.yui-nav .selected a:hover {
+  background: #011657;
+  border: #fff solid 2px;
+  border-bottom: transparent 0;
+}
+
+/* FIXED ISSUE WITH BOLDING ON TAB NAVIGATION */
+.yui-nav {
+  font-weight: bold;
+}
+
+/* SIMPLE TABLES */
+
+table.wiki-content-table {
+  box-shadow: var(--turbo-block-shadow);
+  margin-bottom: 2em;
+}
+
+table.wiki-content-table td {
+  border: 1px solid #fff;
+  background-color: #aaaaaa;
+}
+
+table.wiki-content-table th {
+  border: 1px solid #011657;
+  color: #fff;
+  background-color: #011657;
+}
+
+/* RATING MODULE */
+
+#page-content .page-rate-widget-box {
+  display:inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: none;
+
+  font-family: var(--rate-font);
+  font-weight: normal;
+  line-height: 14px;
+
+  span {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    height:18px;
+    box-sizing: border-box;
+  }
+}
+
+div.page-rate-widget-box .rate-points {
+  background-color: #011657;
+  border: 2px solid #011657;
+  border-radius: 0;
+  color: #fff;
+
+  font-family: inherit;
+  padding-top: 1px;
+
+  font-size: 11px;
+}
+.page-rate-widget-box .rateup,
+.page-rate-widget-box .ratedown {
+  background-color: #fff;
+  border-radius: 0;
+  border: 2px solid #011657;
+}
+.page-rate-widget-box .rateup a,
+.page-rate-widget-box .ratedown a {
+  background: transparent;
+  color: #011657;
+
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+
+  font-size: 0;
+  font-family: "FontAwesome";
+  font-weight: 400;
+
+  padding: 2px 5px;
+  height: 16px;
+  box-sizing: border-box;
+}
+.page-rate-widget-box .rateup a::before {
+  content: "\f067";
+  font-size: 10px;
+}
+.page-rate-widget-box .ratedown a::before {
+  content: "\f068";
+  font-size: 10px;
+}
+.page-rate-widget-box .rateup a:hover,
+.page-rate-widget-box .ratedown a:hover {
+  background: transparent;
+  color: #840603;
+}
+.page-rate-widget-box .cancel {
+  background: transparent;
+  border: 2px dashed #011657;
+  background-color: #011657;
+  border-radius: 0;
+
+  padding: 0 2px 0 3px;
+}
+.page-rate-widget-box .cancel a {
+  color: #fff;
+
+  font-family: "FontAwesome";
+  font-size: 0;
+  font-weight: 400;
+
+  padding: 3px 5px;
+  height: 12px;
+  line-height: 10px;
+}
+.page-rate-widget-box .cancel a::before {
+  content: "\f00d";
+  font-size: 10px;
+}
+.page-rate-widget-box .cancel a:hover {
+  background-color: transparent;
+  color: #840603;
+}
+
+/* CREDIT MODULE */
+
+#page-content .rate-box-with-credit-button {
+  background-color: #011657 !important;
+  border: 1px solid #011657;
+  line-height: 14px;
+  border-radius: 0;
+  color: #fff;
+  box-shadow: none;
+
+  min-width: 150px;
+
+  display: inline-flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+#page-content .rate-box-with-credit-button .creditButton {
+  background-color: inherit;
+  border: none;
+  border-radius: unset;
+  box-shadow: none;
+
+  height: 18px;
+  width: unset;
+  margin-left: unset;
+}
+#page-content .rate-box-with-credit-button .creditButton p a {
+  border-left-color: #011657;
+  border: 3px solid #011657;
+}
+#page-content .rate-box-with-credit-button .creditButton a {
+  color: #fff !important;
+
+  height: 12px;
+  font-size: 11px;
+}
+#page-content .rate-box-with-credit-button .creditButton a:hover {
+  background-color: #11ff00;
+  color: black;
+}
+
+#page-content .modalcontainer {
+  width: 29.4em; /* 0.85em:400px(25em) -> 1em:29.4em */
+}
+
+#page-content .modalbox {
+  background: #ced2eb !important;
+  color: #000;
+  box-shadow: none;
+  border-radius: 0;
+
+  hr {
+    margin: 1em 2em;
+  }
+}
+
+#u-credit-view div.credit.first {
+  /* スクロールバー分の空白を確保 */
+  padding: 0 1em;
+}
+
+/* LOCK INFO /*
+
+#lock-info {
+   background-color: #011657;
+}
+
+/* FIXING MOBILE SHIT */
+
+@media (max-width: 770px) {
+  #top-bar ul li {
+    height: 1.25em;
+  }
+}
+
+@media (max-width: 650px) {
+  div#header {
+    background-position: 3.675em 2.95em;
+    background-size: auto 75px;
+  }
+}

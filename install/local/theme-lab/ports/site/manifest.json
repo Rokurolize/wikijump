@@ -17,7 +17,7 @@
     "slug": "theme:site",
     "title": "Sigma-10 Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:site/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "17f5d83fc92f3f171fcdb790f78fe207db86203eeca1e34f508631fb36daca34",
       "updated_at": "2026-05-22T09:04:20+00:00",
       "entity_uuid": "46a81a48-3784-48df-8ebc-fd74756454b1",
@@ -25,7 +25,12 @@
         "admin"
       ],
       "attached_files": [],
-      "revisions": 10
+      "revisions": 10,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:site"
+      }
     },
     "jp": {
       "status": "confirmed-absent-by-targeted-xmlrpc",
@@ -53,7 +58,7 @@
     "base_family": "sigma"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_site/theme_site_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "human-port-candidate.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -393,5 +398,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/site/assets.json",
-  "asset_dependency_decision_count": 51
+  "asset_dependency_decision_count": 51,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343",
+    "jp_overrides_sha256": "66ca38b8a3d220f876a8e608fcfab53d06ae0d3826d2198f1b516879cb954911",
+    "semantic_css_sha256": "ace30406c37794bab3620db9c361fafc05dc4719aee177bb1a2c4192c466b1a8",
+    "canonical_override_sha256": "09d13cf96f242cde6ffc1a1a6dc07eb879f21aba813ddd6aeaf43d841343b7da",
+    "exact_duplicate_rules_removed": 8
+  }
 }

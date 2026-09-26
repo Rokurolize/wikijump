@@ -563,36 +563,104 @@
       "source_url": "https://api.fonts.coollabs.io/css2?family=Fira+Code:wght@400;700&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "b886d514da429fd1d8053556f12eebac2522c27fef1931d504dc888d1faaf871",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 07a71c5b7d18d9ffd18685b984b991ae0850d1ed66e4e59b0ffd8afb3554e2dd.css with SHA-256 07a71c5b7d18d9ffd18685b984b991ae0850d1ed66e4e59b0ffd8afb3554e2dd; the flattened final candidate was replayed offline.",
+      "final_url": "https://api.fonts.coollabs.io/css2?family=Fira+Code:wght@400;700&display=swap",
+      "sha256": "07a71c5b7d18d9ffd18685b984b991ae0850d1ed66e4e59b0ffd8afb3554e2dd",
+      "asset_file": "07a71c5b7d18d9ffd18685b984b991ae0850d1ed66e4e59b0ffd8afb3554e2dd.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://api.fonts.coollabs.io/css2?family=Ubuntu&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "b886d514da429fd1d8053556f12eebac2522c27fef1931d504dc888d1faaf871",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as eb37f7b7d9f5a949663e3926faf6a27c9e00a162cae5d16d636f796001c7be50.css with SHA-256 eb37f7b7d9f5a949663e3926faf6a27c9e00a162cae5d16d636f796001c7be50; the flattened final candidate was replayed offline.",
+      "final_url": "https://api.fonts.coollabs.io/css2?family=Ubuntu&display=swap",
+      "sha256": "eb37f7b7d9f5a949663e3926faf6a27c9e00a162cae5d16d636f796001c7be50",
+      "asset_file": "eb37f7b7d9f5a949663e3926faf6a27c9e00a162cae5d16d636f796001c7be50.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://api.fonts.coollabs.io/css2?family=Urbanist:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "b886d514da429fd1d8053556f12eebac2522c27fef1931d504dc888d1faaf871",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 48268dca9ad7b7a5cb5a25cd51a5f0eb39038162d8b202876bd8071c7bc992e7.css with SHA-256 48268dca9ad7b7a5cb5a25cd51a5f0eb39038162d8b202876bd8071c7bc992e7; the flattened final candidate was replayed offline.",
+      "final_url": "https://api.fonts.coollabs.io/css2?family=Urbanist:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap",
+      "sha256": "48268dca9ad7b7a5cb5a25cd51a5f0eb39038162d8b202876bd8071c7bc992e7",
+      "asset_file": "48268dca9ad7b7a5cb5a25cd51a5f0eb39038162d8b202876bd8071c7bc992e7.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "b886d514da429fd1d8053556f12eebac2522c27fef1931d504dc888d1faaf871",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9.css with SHA-256 6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/normalize-min.css",
+      "sha256": "6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9",
+      "asset_file": "6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Amonotypical/5",
       "decision": "localize-into-package",
       "candidate_css_sha256": "b886d514da429fd1d8053556f12eebac2522c27fef1931d504dc888d1faaf871",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 430530f99ba8e6908ae239b2d69e8116ac05fa0082593a7755434ddcc9381898.css with SHA-256 430530f99ba8e6908ae239b2d69e8116ac05fa0082593a7755434ddcc9381898; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme%3Amonotypical/5",
+      "sha256": "430530f99ba8e6908ae239b2d69e8116ac05fa0082593a7755434ddcc9381898",
+      "asset_file": "430530f99ba8e6908ae239b2d69e8116ac05fa0082593a7755434ddcc9381898.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://api.fonts.coollabs.io/css2?family=Fira+Code:wght@400;700&display=swap",
+      "final_url": "https://api.fonts.coollabs.io/css2?family=Fira+Code:wght@400;700&display=swap",
+      "sha256": "07a71c5b7d18d9ffd18685b984b991ae0850d1ed66e4e59b0ffd8afb3554e2dd",
+      "normalized_text_sha256": "07a71c5b7d18d9ffd18685b984b991ae0850d1ed66e4e59b0ffd8afb3554e2dd",
+      "bytes": 4880,
+      "content_type": "text/css",
+      "asset_file": "07a71c5b7d18d9ffd18685b984b991ae0850d1ed66e4e59b0ffd8afb3554e2dd.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://api.fonts.coollabs.io/css2?family=Ubuntu&display=swap",
+      "final_url": "https://api.fonts.coollabs.io/css2?family=Ubuntu&display=swap",
+      "sha256": "eb37f7b7d9f5a949663e3926faf6a27c9e00a162cae5d16d636f796001c7be50",
+      "normalized_text_sha256": "eb37f7b7d9f5a949663e3926faf6a27c9e00a162cae5d16d636f796001c7be50",
+      "bytes": 2086,
+      "content_type": "text/css",
+      "asset_file": "eb37f7b7d9f5a949663e3926faf6a27c9e00a162cae5d16d636f796001c7be50.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://api.fonts.coollabs.io/css2?family=Urbanist:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap",
+      "final_url": "https://api.fonts.coollabs.io/css2?family=Urbanist:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap",
+      "sha256": "48268dca9ad7b7a5cb5a25cd51a5f0eb39038162d8b202876bd8071c7bc992e7",
+      "normalized_text_sha256": "48268dca9ad7b7a5cb5a25cd51a5f0eb39038162d8b202876bd8071c7bc992e7",
+      "bytes": 5242,
+      "content_type": "text/css",
+      "asset_file": "48268dca9ad7b7a5cb5a25cd51a5f0eb39038162d8b202876bd8071c7bc992e7.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/normalize-min.css",
+      "sha256": "6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9",
+      "normalized_text_sha256": "6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9",
+      "bytes": 14695,
+      "content_type": "text/css",
+      "asset_file": "6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Amonotypical/5",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme%3Amonotypical/5",
+      "sha256": "430530f99ba8e6908ae239b2d69e8116ac05fa0082593a7755434ddcc9381898",
+      "normalized_text_sha256": "430530f99ba8e6908ae239b2d69e8116ac05fa0082593a7755434ddcc9381898",
+      "bytes": 103144,
+      "content_type": "text/css",
+      "asset_file": "430530f99ba8e6908ae239b2d69e8116ac05fa0082593a7755434ddcc9381898.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }

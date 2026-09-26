@@ -1,0 +1,339 @@
+/* ---- CODE SELECTORS ---- */
+ .code {
+	background: 0;
+	border-color: var(--textColorAlt);
+}
+
+ .hl-brackets, .hl-code, .hl-identifier {
+	color: var(--textColor);
+}
+
+ .hl-number, .hl-string {
+	color: hsl(360, 100%, 75%);
+}
+
+ .hl-quotes, .hl-special {
+	color: hsl(60, 100%, 50%);
+}
+
+ .hl-reserved {
+	color: hsl(240, 100%, 75%);
+}
+
+ .hl-var {
+	color: hsl(120, 100%, 50%);
+}
+
+/* ---- ACTION AREA TOP ---- */
+ .preview-message {
+	background: hsla(0, 100%, 13%, .7);
+}
+
+/* ---- ACTION AREA ---- */
+/* -- GLOBAL -- */
+ .page-options-bottom ol li, .page-options-bottom ul li,
+ #action-area ol li, #action-area ul li {
+	margin: 0;
+}
+
+ a.action-area-close {
+	padding: .2rem .33rem;
+
+	background: var(--fgColor);
+	border: thin solid var(--accentColor);
+}
+
+ a.action-area-close:hover {
+	background: var(--accentColor);
+}
+
+ form div.sub, table.form td div.sub {
+	color: var(--textColorAlt);
+}
+
+ .checkbox label input {
+	cursor: pointer;
+}
+
+ div.buttons input, input.button, button, a.button {
+	margin: .27rem .13rem;
+	padding: .2rem .33rem;
+
+	cursor: pointer;
+}
+
+/* -- PAGE OPTION | [EDIT] -- */
+ table.form td {
+	padding: 0 .33rem 0 0;
+}
+
+ #edit-page-form table.form td {
+	vertical-align: middle;
+}
+
+ #edit-page-title {
+	width: 100%;
+	padding: .33rem;
+
+	color: var(--accentColor);
+	background: var(--fgColor);
+	border: 0;
+
+	font: 1.35rem var(--header-font);
+	font-weight: 800;
+	text-align: center;
+}
+
+ .wd-editor-toolbar-panel {
+	filter: hue-rotate(120deg) invert(.81);
+}
+
+ textarea {
+	color: var(--textColor);
+	background: 0;
+}
+
+ .change-textarea-size a {
+	color: var(--accentColor);
+	background: var(--fgColor);
+	border-color: var(--accentColor);
+}
+
+ .change-textarea-size a:hover {
+	padding-bottom: .13rem;
+
+	color: var(--keyColor);
+	background: var(--accentColor);
+}
+
+ #lock-info {
+	color: var(--textColorAlt);
+	background: var(--fgColor);
+	border-color: var(--accentColor);
+}
+
+ .buttons .btn {
+	color: var(--accentColor);
+	background: var(--fgColor);
+	border-color: var(--accentColor);
+}
+
+ .buttons .btn:hover {
+	color: var(--keyColor);
+	background: var(--accentColor);
+}
+
+ #view-diff-div .button {
+	color: var(--accentColor);
+	background: var(--fgColor);
+	border-color: var(--accentColor);
+}
+
+ #view-diff-div .button:hover {
+	color: var(--keyColor);
+	background: var(--accentColor);
+}
+
+/* -- PAGE OPTION | [RATE] -- */
+ #who-rated-page-area span {
+	color: var(--textColor) !important;
+}
+
+ #action-area .page-rate-widget-box .rate-points { /* Action Area Rating Override */
+	color: var(--textColorAlt);
+}
+
+/* -- PAGE OPTION | [HISTORY] -- */
+ input.checkbox, .page-history input {
+	cursor: pointer;
+}
+
+ #h-perpage {
+	filter: invert(.81);
+
+	cursor: pointer;
+}
+
+ .pager .current {
+	background: var(--accentColor);
+	border-color: var(--textColor);
+}
+
+ .pager a, table.page-history td.optionstd a {
+	background: var(--fgColor);
+	border-color: var(--accentColor);
+}
+
+ .pager a:hover, table.page-history td.optionstd a:hover {
+	padding-bottom: 0;
+
+	color: var(--fgColor);
+	background: var(--accentColor);
+}
+
+ table.page-history tr:nth-child(1) {
+	color: var(--accentColor);
+	filter: saturate(.75) brightness(1.25);
+
+	font-weight: bold;
+	text-transform: capitalize;
+}
+
+/* -- PAGE OPTION | [FILES] -- */
+ table.page-files thead {
+	color: var(--accentColor);
+	filter: saturate(.75) brightness(1.25);
+}
+
+ .owindow .content td:nth-child(1) { /* File Info Modal */
+	color: var(--accentColor);
+	filter: saturate(.75) brightness(1.25);
+
+	font-weight: bold;
+}
+
+ table.page-files .highlight { /* File Options */
+	background: var(--fgColor);
+}
+
+ table.page-files .options {
+	display: inline-flex;
+	align-items: flex-start;
+	flex-direction: column;
+	gap: .13rem;
+}
+
+ table.page-files .options a:hover {
+	padding: 0;
+}
+
+ #file-upload-form b {
+	color: var(--accentColor);
+	filter: saturate(.75) brightness(1.25);
+}
+
+ #upload-userfile {
+	color: var(--keyColor) !important;
+	filter: invert(.81);
+
+	font-family: var(--body-font);
+}
+
+ input.text, input.text:focus, input.text:hover {
+	color: var(--textColor);
+	background: 0;
+
+	font-family: var(--body-font);
+}
+
+/* -- PAGE OPTION | [PAGE SOURCE] -- */
+ .page-source {
+	padding: 2rem;
+
+	color: var(--textColorMid);
+	background: var(--fgColor);
+	border: 0;
+	border-top: medium solid var(--accentColor);
+}
+
+/* -- PAGE OPTION | [PARENT] -- */
+ .yui-ac-content {
+	color: var(--textColorAlt);
+	background: var(--fgColor);
+	border-color: var(--accentColor);
+	border-top: 0;
+}
+
+ .autocomplete-list li.yui-ac-highlight {
+	color: var(--textColor);
+	background: var(--bgColor);
+}
+
+/* -- PAGE OPTION | [RENAME] -- */
+ #rename-option-rename td:nth-child(1) {
+	color: var(--accentColor);
+	filter: saturate(.75) brightness(1.25);
+
+	font-weight: bold;
+}
+
+/* ---- SHOW-CHANGES HIGHLIGHTS ---- */
+ .inline-diff ins, .inline-diff del {
+	color: var(--bgColor);
+}
+
+ .inline-diff ins::before {
+	color: hsl(240, 100%, 93%);
+}
+
+ .inline-diff del::before {
+	color: hsl(0, 100%, 90%);
+}
+
+ .inline-diff ins + del::before, .inline-diff del + ins::before {
+	color: transparent;
+}
+
+ .inline-diff br + ins::before, .inline-diff br + del::before,
+ .inline-diff ins:first-of-type::before, .inline-diff del:first-of-type::before {
+	position: absolute;
+	left: -1rem;
+	display: inline-block;
+	content: "\f111";
+
+	font: 110%/1 "FontAwesome";
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-rendering: optimizeLegibility;
+}
+
+/* ---- POP-UP WINDOWS  ---- */
+ .owindow {
+	background: var(--bgColor);
+	border-color: var(--accentColor);
+}
+
+ .owindow .title {
+	color: var(--accentColor);
+	background: var(--fgColor);
+
+	font-family: var(--header-font);
+}
+
+ .owindow .active {
+	color: var(--accentColor);
+	filter: saturate(.75) brightness(1.25);
+}
+
+ .owindow .content.modal-body img  {
+	background: var(--bgColor) !important;
+}
+
+ .owindow.owait .content {
+	padding-bottom: 2rem;
+
+	background-image: url(https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/alt_loader.gif);
+	filter: invert(.5) sepia(.5) saturate(1000%) hue-rotate(var(--tint));
+
+	font: 1.05rem var(--header-font);
+}
+
+ .owindow .button-bar a {
+	color: var(--accentColor);
+	background: var(--fgColor);
+	border-color: var(--accentColor);
+}
+
+ .owindow .button-bar a:hover, .owindow .button-bar a:focus {
+	color: var(--keyColor);
+	background: var(--accentColor);
+}
+
+/* ---- REDUCED MOTION ACCESSIBILITY ---- */
+ @media (prefers-reduced-motion: reduce) {
+	*, *::before, *::after {
+		animation-duration: .001s !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: .001s !important;
+    }
+}

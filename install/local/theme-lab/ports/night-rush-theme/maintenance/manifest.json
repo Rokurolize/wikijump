@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "a2bd8da70fa64c3c712759b1d75a86e27b00035fb7bea5b08b658ef374bf0502",
+  "base_source_sha256": "5d0cc657cd638addbb28f8278832126dc863b1ae0ae339f216dceff45ef2f98c",
+  "raw_jp_overrides_sha256": "8ad94119059c59c106ee99dd013d88cd328a641d0fc8fc41f8701ec500ddaa73",
+  "jp_overrides_sha256": "70bc7dad93f4b641c04cd1b16d155788fa74fd2a11110161be9b47758e81323b",
+  "semantic_css_sha256": "809f865dbf31cf59fb489d16decff42469e7776a183359d1f527501cc4a6d14a",
+  "canonical_override_sha256": "8e303e49b2a01492e801d11ab02be78be352365b431b886d645d75d11fb554e7",
+  "adaptation_block_count": 9,
+  "raw_override_rule_count": 41,
+  "canonical_override_rule_count": 36,
+  "exact_duplicate_rules_removed": 5,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up: night-rush-theme",
+      "rationale": "SCP-JP mobile header adaptation: keep the localized identity and search within independent rows at the 320px policy boundary.",
+      "sha256": "a88028e46323b7c7016616e8ae875bd26738ee0106a355563c5043dd0604a2b8",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up v2: night-rush-theme",
+      "rationale": "SCP-JP mobile header adaptation: keep the localized identity and search within independent rows at the 320px policy boundary.",
+      "sha256": "be87caffb3d6cfbd7bc3935a5600147dc92aa1325081b816e39567dae69d55f3",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form",
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance header/navigation repair v3: night-rush-theme",
+      "rationale": "The current mobile masthead overlays its subtitle on the title because both legacy heading boxes collapse. Restore natural heading flow while keeping the night-sky mark and the dark title treatment.",
+      "sha256": "a49cca0c3cdb7a09a1d7a3526f899ac581e0bf7e12f9b4edaa73d4cd7e4606f7",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v11: night-rush-theme",
+      "rationale": "Image-reviewed SCP-JP masthead adaptation: the localized site name occupied the same 64px header band as Night Rush's Foundation emblem. Reserve the emblem's left column for both semantic title rows on phone widths, while preserving the upstream background art and typography.",
+      "sha256": "65afef3cf2c6e98d5a7a21d87f6bb821b47eca0e0aa157a9dec3d0d30153c968",
+      "selectors": [
+        "#header h1 > a",
+        "#header h2 > span"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v12: night-rush-theme",
+      "rationale": "Follow-up image review: the theme's legacy nested anchor and subtitle spans retained one-line heights after their text wrapped. Let the localized site title and subtitle reserve all wrapped lines before Search/navigation flows below.",
+      "sha256": "c3fd770bded46f56caa6ac44c1e3906e586a913e4d89fb26f701dc8bfc738b43",
+      "selectors": [
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v23: night-rush-theme",
+      "rationale": "Tablet screenshot: the Foundation header mark, localized title and subtitle occupy the same fixed row. Restore masthead flow at this breakpoint without removing its starfield identity.",
+      "sha256": "7e3b52d86c3bfb7196a400f29c24121f1688146a84be1e2e2cb8a2f3be692fbc",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2"
+      ],
+      "at_contexts": [
+        "@media (min-width: 601px) and (max-width: 900px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance repair: keep opened Night Rush mobile submenu within the viewport.",
+      "rationale": "SCP-JP interactive visual acceptance repair: keep opened Night Rush mobile submenu within the viewport.",
+      "sha256": "5dc7483c85ca128602cd4619996ea31eb0e85d30b1bf603784245ee83bfbf6b5",
+      "selectors": [
+        "#top-bar ul li ul",
+        "#top-bar ul li ul li a"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance repair: restore Night Rush masthead flow at tablet widths.",
+      "rationale": "SCP-JP interactive visual acceptance repair: restore Night Rush masthead flow at tablet widths.",
+      "sha256": "98bc3c481fdf507abdc68a917f035fc6518512b401ad1e05cc6a15110f66bf5a",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span",
+        "#search-top-box",
+        "#search-top-box-form"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px) and (max-width: 900px)"
+      ]
+    }
+  ]
+}

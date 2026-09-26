@@ -17,7 +17,7 @@
     "slug": "theme:turbo-vision",
     "title": "Turbo Vision Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:turbo-vision/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "c28a37187cdc6bcb768921c8a05f805b18d153a929411db17971dd8e9019f97f",
       "updated_at": "2026-04-12T05:37:45+00:00",
       "entity_uuid": "689bd4b6-e02e-4d95-ae64-912d90131e03",
@@ -25,11 +25,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 54
+      "revisions": 54,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:turbo-vision"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:turbo-vision/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "325801b1dd4a3d1fb23f216c08a0ea56519d32da234638a8b5022c45a30d982c",
       "updated_at": "2025-03-10T09:59:50+00:00",
       "entity_uuid": "3e8c0107-1599-489b-a6e6-3cad3ab9d0e0",
@@ -37,7 +42,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:turbo-vision"
+      }
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
@@ -113,7 +123,7 @@
     "base_family": "independent"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_turbo-vision/theme_turbo-vision_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -121,5 +131,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/turbo-vision/assets.json",
-  "asset_dependency_decision_count": 26
+  "asset_dependency_decision_count": 26,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
+    "jp_overrides_sha256": "14747407aac35c5c87a0dbd82b2bfef6c408e048e4c792234b1c19214a89df34",
+    "semantic_css_sha256": "33856599ccb2752f820b2bc35ad8af8c91bb5e9a59dd899b7648c78ad08d3742",
+    "canonical_override_sha256": "8502894d69a9d0fe80cce18b2fdca2956ba839b712951b54d8d022c093f61672",
+    "exact_duplicate_rules_removed": 0
+  }
 }

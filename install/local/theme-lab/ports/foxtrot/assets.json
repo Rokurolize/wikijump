@@ -357,22 +357,64 @@
       "source_url": "https://fonts.googleapis.com/css2?family=Creepster&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "48945c99fe06c76f94e978c56c96a77623f4b92c58c77c57806fa957af7a3d27",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as e5a7d376768aa3ffe7532a21caa7f93e861381d32276d3482fe47e17a852b140.css with SHA-256 e5a7d376768aa3ffe7532a21caa7f93e861381d32276d3482fe47e17a852b140; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=Creepster&display=swap",
+      "sha256": "e5a7d376768aa3ffe7532a21caa7f93e861381d32276d3482fe47e17a852b140",
+      "asset_file": "e5a7d376768aa3ffe7532a21caa7f93e861381d32276d3482fe47e17a852b140.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Russo+One&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "48945c99fe06c76f94e978c56c96a77623f4b92c58c77c57806fa957af7a3d27",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 9594c5808ece545915d533de00a262359ddab39a9efcdc6aa26ce141abda9070.css with SHA-256 9594c5808ece545915d533de00a262359ddab39a9efcdc6aa26ce141abda9070; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=Russo+One&display=swap",
+      "sha256": "9594c5808ece545915d533de00a262359ddab39a9efcdc6aa26ce141abda9070",
+      "asset_file": "9594c5808ece545915d533de00a262359ddab39a9efcdc6aa26ce141abda9070.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css?family=Saira+Stencil+One&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "48945c99fe06c76f94e978c56c96a77623f4b92c58c77c57806fa957af7a3d27",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe.css with SHA-256 4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css?family=Saira+Stencil+One&display=swap",
+      "sha256": "4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe",
+      "asset_file": "4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Creepster&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Creepster&display=swap",
+      "sha256": "e5a7d376768aa3ffe7532a21caa7f93e861381d32276d3482fe47e17a852b140",
+      "normalized_text_sha256": "e5a7d376768aa3ffe7532a21caa7f93e861381d32276d3482fe47e17a852b140",
+      "bytes": 208,
+      "content_type": "text/css",
+      "asset_file": "e5a7d376768aa3ffe7532a21caa7f93e861381d32276d3482fe47e17a852b140.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Russo+One&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Russo+One&display=swap",
+      "sha256": "9594c5808ece545915d533de00a262359ddab39a9efcdc6aa26ce141abda9070",
+      "normalized_text_sha256": "9594c5808ece545915d533de00a262359ddab39a9efcdc6aa26ce141abda9070",
+      "bytes": 207,
+      "content_type": "text/css",
+      "asset_file": "9594c5808ece545915d533de00a262359ddab39a9efcdc6aa26ce141abda9070.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css?family=Saira+Stencil+One&display=swap",
+      "final_url": "https://fonts.googleapis.com/css?family=Saira+Stencil+One&display=swap",
+      "sha256": "4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe",
+      "normalized_text_sha256": "4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe",
+      "bytes": 235,
+      "content_type": "text/css",
+      "asset_file": "4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }
