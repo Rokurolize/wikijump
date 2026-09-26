@@ -7,6 +7,7 @@ import { getArticleResponseCacheStores } from "../src/lib/server/cache/article-r
 import { createFramerailServerRuntime } from "../server.js"
 import {
   createFastPathFixtureStore,
+  createFenceSubscriber,
   fastPathHeaders,
   // eslint-disable-next-line no-redeclare
   fetch
@@ -56,7 +57,16 @@ const closeRuntime = async (runtime) => {
 test("production-like server construction wires cache stores through hit and invalidation", async () => {
   const previousNodeEnv = process.env.NODE_ENV
   process.env.NODE_ENV = "production"
-  const stores = await createFastPathFixtureStore()
+  const fixture = await createFastPathFixtureStore()
+  const subscriber = createFenceSubscriber()
+  const stores = {
+    responseStore: fixture.responseStore,
+    tokenStore: {
+      get: (key) => fixture.tokenStore.get(key),
+      set: (key, value, ttlSeconds) => fixture.tokenStore.set(key, value, ttlSeconds),
+      subscribe: (callbacks) => subscriber.subscribe(callbacks)
+    }
+  }
   let handlerCalls = 0
   const runtime = createFramerailServerRuntime({
     cacheStores: stores,
@@ -69,7 +79,7 @@ test("production-like server construction wires cache stores through hit and inv
 
   try {
     assert.equal(getArticleResponseCacheStores(), stores)
-    await runtime.fenceCache.markSubscribedForTest()
+    subscriber.callbacks.onSubscribed()
     const baseUrl = await listen(runtime.server)
 
     const cached = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })
@@ -101,7 +111,7 @@ test("production-like server construction wires cache stores through hit and inv
     assert.equal(handlerCalls, 6)
 
     await stores.tokenStore.set(buildPublicContentFenceKey(6000005), "8")
-    await runtime.fenceCache.applyMessageForTest(
+    subscriber.callbacks.onMessage(
       JSON.stringify({ type: "public-content", site_id: 6000005, version: "8" })
     )
     const invalidated = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })

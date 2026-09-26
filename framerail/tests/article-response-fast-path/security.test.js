@@ -129,7 +129,7 @@ test("article response fast path fence invalidation clears prepared replay entri
   const tokenStore = createCountingStore(stores.tokenStore)
   const responseStore = createCountingStore(stores.responseStore)
   const hotCache = createLocalArticleResponseHotCache()
-  const fenceCache = await createTrustedFenceCache(tokenStore)
+  const { fenceCache, subscriber } = await createTrustedFenceCache(tokenStore)
 
   await withServer(
     { responseStore, tokenStore },
@@ -143,7 +143,7 @@ test("article response fast path fence invalidation clears prepared replay entri
       assert.equal(hotCache.size(), 1)
       assert.equal(hotCache.getReplay(stores.tokenKey).status, 200)
 
-      await fenceCache.applyMessageForTest(
+      subscriber.callbacks.onMessage(
         JSON.stringify({
           type: "public-content",
           site_id: SITE_ID,

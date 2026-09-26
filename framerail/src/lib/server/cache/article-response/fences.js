@@ -93,19 +93,6 @@ export const createMemoryArticleResponseFenceCache = ({ store, subscriber } = {}
       return state.canValidateFencesLocally(siteId)
     },
 
-    markSubscribedForTest: async () => {
-      state.markTrusted()
-    },
-
-    markDisconnectedForTest: () => {
-      state.poison()
-    },
-
-    /** @param {string} payload */
-    applyMessageForTest: async (payload) => {
-      applyMessage(payload)
-    },
-
     close() {
       subscription?.close?.()
     }

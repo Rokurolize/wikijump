@@ -6,6 +6,7 @@ import {
   buildPublicContentFenceKey,
   createMemoryArticleResponseFenceCache
 } from "../../src/lib/server/cache/article-response/fences.js"
+import { createFenceSubscriber } from "../article-response-fast-path/helpers.js"
 import {
   ARTICLE_RESPONSE_CACHE_MAX_BYTES,
   ARTICLE_RESPONSE_CACHE_MAX_ENTRIES,
@@ -67,12 +68,13 @@ test("memory article response fence cache does not store a seed raced by invalid
       return currentSeed
     }
   }
-  const fenceCache = createMemoryArticleResponseFenceCache({ store })
-  await fenceCache.markSubscribedForTest()
+  const subscriber = createFenceSubscriber()
+  const fenceCache = createMemoryArticleResponseFenceCache({ store, subscriber })
+  subscriber.callbacks.onSubscribed()
 
   const seedingRead = fenceCache.readFences({ siteId: 6000005 })
   await seedStarted
-  await fenceCache.applyMessageForTest(
+  subscriber.callbacks.onMessage(
     JSON.stringify({ type: "public-content", site_id: 6000005, version: "8" })
   )
   resumeSeed()
@@ -102,15 +104,16 @@ test("memory article response fence cache ignores non-anonymous user permission 
     }),
     true
   )
-  const fenceCache = createMemoryArticleResponseFenceCache({ store })
+  const subscriber = createFenceSubscriber()
+  const fenceCache = createMemoryArticleResponseFenceCache({ store, subscriber })
   fenceCache.attachHotCache(hotCache)
-  await fenceCache.markSubscribedForTest()
+  subscriber.callbacks.onSubscribed()
 
   assert.deepEqual(await fenceCache.readFences({ siteId: 6000005 }), {
     publicContentFence: "7",
     permissionFence: "site=11,user=13"
   })
-  await fenceCache.applyMessageForTest(
+  subscriber.callbacks.onMessage(
     JSON.stringify({
       type: "user-permission",
       site_id: 6000005,
