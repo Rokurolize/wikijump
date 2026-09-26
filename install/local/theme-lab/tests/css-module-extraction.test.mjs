@@ -62,3 +62,10 @@ test('ignores Wikidot-looking tokens inside CSS comments and strings',()=>{
   assert.match(css,/content: "\[\[\/module\]\] \[\[iftags \+archive\]\]"/u);
   assert.match(css,/\.later/u);
 });
+
+test('ignores escaped Wikidot CSS-module examples in localized documentation',()=>{
+  const source=`Use {{[[module CSS]]}} in a copied example.\n[[module CSS]].live { color: navy; }[[/module]]`;
+  const css=extractUnconditionalCssModules(source);
+  assert.match(css,/\.live/u);
+  assert.doesNotMatch(css,/copied example/u);
+});

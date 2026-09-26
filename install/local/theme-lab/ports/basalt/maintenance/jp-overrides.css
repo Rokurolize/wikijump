@@ -39,7 +39,7 @@
   #u-credit-otherwise:target .modalcontainer {
     position: absolute !important; inset: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; width: 100% !important; height: 100% !important; max-width: none !important; margin: 0 !important; box-sizing: border-box !important;
   }
-  
+
   #u-credit-view:target .modalbox,
   #u-credit-otherwise:target .modalbox {
     width: min(37.5rem, calc(100vw - 1rem)) !important; min-width: 0 !important; max-width: calc(100vw - 1rem) !important; height: min(50svh, calc(100dvh - 1rem)) !important; max-height: calc(100dvh - 1rem) !important; margin: 0 !important; box-sizing: border-box !important;

@@ -86,19 +86,23 @@
 #page-content .yui-navset .yui-nav a em,
 #page-content .yui-navset .yui-nav .selected a em {
   color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
-}
-
-#page-content .yui-navset .yui-content,
-#page-content .yui-navset .yui-content *,
-#page-content .collapsible-block-unfolded,
-#page-content .collapsible-block-unfolded *,
-#page-content .footnote,
-#page-content .footnote * {
+}#page-content .yui-navset .yui-content {
   color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
 }
-
-#page-content .yui-navset .yui-content a,
-#page-content .collapsible-block-unfolded a,
+#page-content .yui-navset .yui-content * {
+  color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
+}
+#page-content .footnote {
+  color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
+}
+#page-content .footnote * {
+  color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
+}#page-content .yui-navset .yui-content a {
+  text-decoration: underline !important; text-underline-offset: .14em;
+}
+#page-content .collapsible-block-unfolded a {
+   text-underline-offset: .14em;
+}
 #page-content .footnote a {
   text-decoration: underline !important; text-underline-offset: .14em;
 }
@@ -130,7 +134,7 @@
   color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
 }
 
-/* Image review found the previous light-on-crimson action rule also reached the live Files pane's white filename surface. Restore dark link ink on file rows and give the crimson upload/restore controls the same light label used by BHL tabs. */
+/* The current runtime shows the previous light-on-crimson action rule also reached the live Files pane's white filename surface. Restore dark link ink on file rows and give the crimson upload/restore controls the same light label used by BHL tabs. */
 #action-area .file-list .file-row .file-name a,
 #action-area .file-list .file-row .file-name a:visited {
   color: #64030f !important; -webkit-text-fill-color: #64030f !important; text-decoration: underline !important;
@@ -156,11 +160,11 @@
   #action-area .file-list .file-row .file-name a {
     min-width: 0 !important; max-width: 100% !important; white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-all !important;
   }
-  
+
   #u-credit-otherwise .modalbox .credit-back {
     display: flex !important; flex-wrap: nowrap !important; justify-content: center !important; align-items: center !important; gap: .35rem !important;
   }
-  
+
   #u-credit-otherwise .modalbox .credit-back a[href="#u-credit-view"] {
     display: inline-flex !important; width: auto !important; min-width: 3rem !important; white-space: nowrap !important; word-break: keep-all !important; overflow-wrap: normal !important;
   }

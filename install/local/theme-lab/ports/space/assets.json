@@ -401,7 +401,7 @@
     },
     {
       "id": "sigma-search-adaptation-owned-by-acceptance-layer",
-      "reason": "The accepted Space candidate places the shared Sigma search fix with the later JP acceptance layer. Remove the generated base copy so ownership and cascade order are explicit and reproducible.",
+      "reason": "The canonical JP override owns the shared Sigma search interaction. Remove its generated base copy so the final source has one owner and stable cascade order. This transform requires the exact generated rule exactly once and fails closed if that source changes; on an upstream update, review whether the search behavior remains necessary and keep the rule in one layer.",
       "matches": 1,
       "before_sha256": "140deef2808d582934db550930b142190fa448660083e7e344149de3e7f20dc1",
       "after_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
@@ -409,6 +409,6 @@
   ],
   "localization_transform_manifest": {
     "path": "localization-transforms.json",
-    "sha256": "c8fffd73c075e4e9bd4db86406920adbed5333ec7fb39ef09d860833d388bd9b"
+    "sha256": "bcd77fa80f58e4c41e8f36e177923abeacd4c06c9b92a8f9818eb254040381b3"
   }
 }

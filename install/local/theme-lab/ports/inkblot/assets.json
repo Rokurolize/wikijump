@@ -815,7 +815,7 @@
   "localization_transforms": [
     {
       "id": "source-pane-rule-owned-by-marked-jp-layer",
-      "reason": "The accepted Inkblot candidate moved this source-pane monospace rule into the later SCP-JP-marked acceptance layer. Remove the earlier unmarked copy so the flattened base plus marked insertions reproduces the accepted candidate without ambiguous ownership.",
+      "reason": "The flattened imported stylesheet contains this source-pane rule as well as the canonical JP override. Remove the imported copy so the JP compatibility layer owns the rule in one place. The transform requires this exact upstream text exactly once and fails closed if the imported bytes change; on an upstream update, review the source-pane rule and either refresh the anchor or move the adaptation into the updated upstream layer.",
       "matches": 1,
       "before_sha256": "df11fd2b50c3285d2474dc22fbda2d7f1473e533b0d6937d2e9f3124667c363c",
       "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -823,6 +823,6 @@
   ],
   "localization_transform_manifest": {
     "path": "localization-transforms.json",
-    "sha256": "fba4f7fa1a49e35abe79080ca96b35bbeff82a15663b0995d67da01227a4d8f2"
+    "sha256": "b152f8008e75376054578fc1361b0af13a7fe6d23171706e7626a99d14e166f2"
   }
 }

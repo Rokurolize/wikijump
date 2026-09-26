@@ -63,7 +63,7 @@
   #side-bar .collapsible-block-unfolded a {
     color: #082c31 !important; -webkit-text-fill-color: #082c31 !important; text-decoration: underline !important;
   }
-  
+
   #side-bar .side-block a:hover,
   #side-bar .collapsible-block-link:focus-visible {
     color: #071719 !important; background: #baf8f2 !important;

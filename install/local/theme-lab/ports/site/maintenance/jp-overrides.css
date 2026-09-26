@@ -6,29 +6,29 @@
   }
 }
 
-/* SCP-JP mobile-header adaptation revision 2: keep the search wrapper itself in flow; changing only its form leaves the theme's absolutely positioned parent overlaying the Japanese title. */
+/* SCP-JP mobile-header compatibility: keep the search wrapper itself in flow so its absolutely positioned parent does not cover the localized title. */
 @media (max-width: 767px) {
   #header {
-    height: auto !important; min-height: 0 !important; padding-bottom: .5rem;
+      padding-bottom: .5rem;
   }
-  
+
   #header h1,
   #header h2 {
-    display: block !important; position: static !important; float: none !important; clear: both !important; width: 100% !important; max-width: 100% !important; margin: .2rem 0 !important; line-height: 1.2 !important; box-sizing: border-box !important;
+    display: block !important; position: static !important; float: none !important; clear: both !important; width: 100% !important; max-width: 100% !important; margin: .2rem 0 !important;  box-sizing: border-box !important;
   }
-  
+
   #search-top-box {
     display: block !important; position: static !important; inset: auto !important; float: none !important; clear: both !important; width: 100% !important; max-width: 100% !important; margin: .5rem 0 0 !important; box-sizing: border-box !important;
   }
-  
+
   #search-top-box-form {
     display: flex !important; position: static !important; inset: auto !important; float: none !important; clear: both !important; justify-content: flex-end; width: 100% !important; max-width: 100% !important; margin: 0 !important; box-sizing: border-box !important;
   }
-  
+
   #search-top-box-input {
     display: inline-block !important; width: min(60vw, 14rem) !important; max-width: calc(100% - 3rem) !important; box-sizing: border-box !important;
   }
-  
+
   #top-bar {
     position: relative !important; inset: auto !important; width: 100% !important; max-width: 100% !important; margin: .35rem 0 0 !important; box-sizing: border-box !important;
   }
@@ -47,29 +47,29 @@
   #header {
     height: auto !important; min-height: 0 !important;
   }
-  
+
   #header h1,
   #header h2 {
     height: auto !important; min-height: 0 !important; max-height: none !important; line-height: 1.25 !important; white-space: normal !important; overflow-wrap: anywhere !important;
   }
-  
+
   #header h1 > a {
     display: block !important; width: auto !important; height: auto !important; min-height: 0 !important; max-height: none !important; padding-top: 2.5rem !important; padding-bottom: 0 !important; line-height: 1.25 !important; white-space: normal !important; overflow-wrap: anywhere !important; box-sizing: border-box !important;
   }
-  
+
   #header h1 > a > span {
     display: block !important; position: static !important; inset: auto !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; line-height: 1.25 !important; white-space: normal !important; overflow-wrap: anywhere !important;
   }
-  
+
   #header h2 > span {
     display: block !important; position: static !important; inset: auto !important; height: auto !important; min-height: 0 !important; padding-block: 0 !important; line-height: 1.25 !important; white-space: normal !important; overflow-wrap: anywhere !important;
   }
-  
+
   #top-bar a,
   #top-bar a:visited {
     color: #252525 !important; -webkit-text-fill-color: #252525 !important;
   }
-  
+
   #top-bar a:hover,
   #top-bar a:focus-visible {
     color: #111 !important;
@@ -85,16 +85,18 @@
   #header h2 > span {
     block-size: auto !important; min-block-size: 0 !important; max-block-size: none !important;
   }
-  
+
   #header h1 > a > span,
   #header h2 > span {
     overflow: visible !important;
-  }
-  
-  #search-top-box,
-  #search-top-box-form,
-  #top-bar {
+  }#search-top-box {
     block-size: auto !important; min-block-size: 0 !important;
+  }
+#search-top-box-form {
+    block-size: auto !important; min-block-size: 0 !important;
+  }
+#top-bar {
+     min-block-size: 0 !important;
   }
 }
 
@@ -103,11 +105,11 @@
   #top-bar {
     display: block !important; height: auto !important; min-height: 0 !important; block-size: auto !important;
   }
-  
+
   .mobile-top-bar {
     position: relative !important; inset: auto !important; display: block !important; width: 100% !important; max-width: 100% !important; height: auto !important; min-height: 0 !important; margin: .35rem 0 0 !important; block-size: auto !important;
   }
-  
+
   .mobile-top-bar > ul {
     position: static !important; inset: auto !important; display: flex !important; flex-wrap: wrap !important; align-items: center !important; width: 100% !important; height: auto !important; min-height: 0 !important; margin: 0 !important; block-size: auto !important;
   }

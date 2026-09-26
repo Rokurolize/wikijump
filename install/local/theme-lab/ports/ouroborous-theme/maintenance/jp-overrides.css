@@ -13,7 +13,7 @@
 }
 
 /* Keep the Ouroborous neon sidebar treatment while preventing the JP long-label and toggle line boxes from colliding. */
-/* SCP-JP interactive acceptance: Ouroborous small-text link contrast */
+/* SCP-JP interaction compatibility: Ouroborous small-text link contrast */
 /* At narrow widths keep Rate and the other-license link as separate flex items inside Ouroborous's modal instead of letting the neon control overlap its text. */
 #side-bar .collapsible-block-link {
   color: rgb(var(--swatch-menutxt-light-color)) !important; line-height: 1.45 !important; margin-block: .45rem !important; padding: .35rem .25rem !important; overflow-wrap: anywhere;
@@ -59,7 +59,7 @@
   #side-bar .side-block .heading {
     display: block !important; margin-block: .55rem .4rem !important; line-height: 1.35 !important;
   }
-  
+
   #side-bar .side-block .collapsible-block-link {
     display: block !important; position: static !important; margin-block: .35rem !important; line-height: 1.4 !important;
   }
@@ -85,14 +85,14 @@
   #page-options-bottom-2 a {
     color: #ff929e !important; text-decoration: underline !important; text-underline-offset: .12em;
   }
-  
+
   #page-options-bottom a:hover,
   #page-options-bottom-2 a:hover {
     color: #fff !important;
   }
 }
 
-/* Direct mobile image review: Ouroborous' active red tab keeps the browser-default black label, which disappears against the saturated fill. Preserve the red tab and use the theme's high-contrast light ink. */
+/* SCP-JP mobile compatibility: Ouroborous' active red tab keeps the browser-default black label, which disappears against the saturated fill. Preserve the red tab and use the theme's high-contrast light ink. */
 #page-content .yui-navset .yui-nav a,
 #page-content .yui-navset .yui-nav a em {
   color: #fff0f0 !important; -webkit-text-fill-color: #fff0f0 !important;
