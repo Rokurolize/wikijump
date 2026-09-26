@@ -1,8 +1,14 @@
 // @ts-nocheck
 import assert from "node:assert/strict"
+import { readFile } from "node:fs/promises"
 import { after, before, test } from "node:test"
 
 import { pageActionEvent, startPageActionHarness } from "./page-action-test-harness.js"
+
+const votePaneSourceUrl = new URL(
+  "../src/routes/[slug]/[...extra]/VotePane.svelte",
+  import.meta.url
+)
 
 const SITE_ID = 17
 const SESSION_TOKEN = "vote-session"
@@ -121,6 +127,20 @@ test("page score actions use only trusted route context", async () => {
   const spoofed = await actions.score(requestEvent("score", { siteId: SITE_ID + 1 }))
   assert.equal(spoofed.status, 403)
   assert.deepEqual(calls, [])
+})
+
+test("Wikidot WhoRated pane uses the exact AMC pageId contract", async () => {
+  const source = await readFile(votePaneSourceUrl, "utf8")
+  const start = source.indexOf("async function getWikidotWhoRated")
+  const end = source.indexOf("\n  async function getVoteList", start)
+  assert.notEqual(start, -1)
+  assert.notEqual(end, -1)
+  const body = source.slice(start, end)
+
+  assert.match(body, /fetch\("\/ajax-module-connector\.php"/u)
+  assert.match(body, /moduleName: "pagerate\/WhoRatedPageModule"/u)
+  assert.match(body, /pageId: String\(pageId\)/u)
+  assert.doesNotMatch(body, /siteId|userId|vote_id|page_vote_id/u)
 })
 
 test("legacy wiki actions derive the actor, client address, and revision binding from the trusted route", async () => {
