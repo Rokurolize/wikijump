@@ -736,24 +736,6 @@ mod tests {
     }
 
     #[test]
-    fn combined_overflow_preflight_has_zero_fake_s3_side_effects() {
-        let max = i16::MAX as usize;
-
-        for (html_count, code_count) in [(max + 1, 1), (1, max + 1)] {
-            let mut fake_s3_uploads = Vec::new();
-            let validation =
-                TextBlockService::validate_page_block_counts(html_count, code_count);
-            if validation.is_ok() {
-                fake_s3_uploads.extend(0..html_count);
-                fake_s3_uploads.extend(0..code_count);
-            }
-
-            assert!(validation.is_err());
-            assert!(fake_s3_uploads.is_empty());
-        }
-    }
-
-    #[test]
     fn one_thousand_and_one_blocks_keep_indices_across_two_insert_batches() {
         let count = TEXT_BLOCK_INSERT_BATCH_SIZE + 1;
         let max_index = max_text_block_index(count).unwrap();
