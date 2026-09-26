@@ -42,11 +42,13 @@ async function loadTheme(name) {
     if (error.code !== "ENOENT") throw error;
   }
   let maintenanceManifest = null;
+  let maintenanceOverrideCss = "";
   if (manifest.maintenance_source?.manifest) {
     maintenanceManifest = JSON.parse(await fs.readFile(path.join(dir, manifest.maintenance_source.manifest), "utf8"));
+    maintenanceOverrideCss = await fs.readFile(path.join(dir, manifest.maintenance_source.jp_overrides), "utf8");
   }
   const maintenanceException = maintenanceExceptions?.import_provenance?.[manifest.slug] ?? null;
-  return {dir, manifest, upstreamSource, humanPortSource, candidateSource, assetsReceipt, maintenanceException, maintenanceManifest};
+  return {dir, manifest, upstreamSource, humanPortSource, candidateSource, assetsReceipt, maintenanceException, maintenanceManifest, maintenanceOverrideCss};
 }
 
 async function themeNames() {
@@ -83,6 +85,10 @@ if (command === "audit") {
     themes_with_maintenance_source: audits.filter((item) => item.maintenance_source.bound).length,
     maintenance_adaptation_blocks: audits.reduce((sum, item) => sum + (item.maintenance_source.adaptation_block_count ?? 0), 0),
     maintenance_exact_duplicate_rules_removed: audits.reduce((sum, item) => sum + (item.maintenance_source.exact_duplicate_rules_removed ?? 0), 0),
+    maintenance_repeated_selector_contexts: audits.reduce((sum, item) => sum + (item.maintenance_source.override_cascade?.repeated_selector_context_count ?? 0), 0),
+    maintenance_redundant_same_value_declarations: audits.reduce((sum, item) => sum + (item.maintenance_source.override_cascade?.redundant_same_value_declaration_count ?? 0), 0),
+    maintenance_shadowed_conflicting_declarations: audits.reduce((sum, item) => sum + (item.maintenance_source.override_cascade?.shadowed_conflicting_declaration_count ?? 0), 0),
+    themes_with_shadowed_conflicting_declarations: audits.filter((item) => (item.maintenance_source.override_cascade?.shadowed_conflicting_declaration_count ?? 0) > 0).map((item) => item.theme),
   };
   console.log(JSON.stringify(result, null, 2));
 } else if (command === "plan") {
