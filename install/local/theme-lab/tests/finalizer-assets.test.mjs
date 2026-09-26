@@ -4,8 +4,10 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
+import {fileURLToPath} from 'node:url';
 
-const finalizer = path.resolve('ports/scripts/finalize_campaign.py');
+const testDir = path.dirname(fileURLToPath(import.meta.url));
+const finalizer = path.resolve(testDir, '../ports/scripts/finalize_campaign.py');
 
 test('campaign finalizer discovers only content-addressed local CSS assets', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'theme-lab-finalizer-assets-'));

@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {spawn} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {withAuditLock} from '../scripts/audit-lock.mjs';
 
 const scriptDir=path.dirname(fileURLToPath(import.meta.url));
 const repoRoot=path.resolve(scriptDir,'../../../../../');
@@ -92,11 +93,13 @@ async function startContainers(fingerprint,buildDir){
  const currentFingerprint=running?.Config?.Labels?.['theme-lab.source-sha'];
  if(currentFingerprint===fingerprint&&await isReady())return{restarted:false};
 
- await run('docker',['rm','-f',caddyContainer,framerailContainer]).catch(()=>{});
  const dev=await inspectContainer(devContainer);
  if(!dev)throw new Error(`required local-development container ${devContainer} is not running`);
  const network=Object.keys(dev.NetworkSettings?.Networks??{})[0];
  if(!network)throw new Error('could not determine the local-development Docker network');
+ await run('docker',['rm','-f',caddyContainer,framerailContainer]).catch(()=>{});
+ const created=[];
+ try{
 
  const envFile=path.join(os.tmpdir(),`theme-lab-built-env-${process.pid}`);
  const envLines=(dev.Config?.Env??[]).filter(value=>value.includes('=')).map(value=>{
@@ -117,6 +120,7 @@ async function startContainers(fingerprint,buildDir){
   }
   args.push(dev.Config.Image);
   await run('docker',args);
+  created.push(framerailContainer);
  }finally{await fs.rm(envFile,{force:true})}
 
  const caddyFile=path.join(cacheBase,'Caddyfile');
@@ -133,14 +137,21 @@ https://scpaiueouiuiuiui.wikijump.localhost {
 }
 `);
  await run('docker',['run','-d','--rm','--name',caddyContainer,'--network',network,'-p','127.0.0.1:3395:443','-v',`${caddyFile}:/etc/caddy/Caddyfile:ro`,'caddy:alpine','caddy','run','--config','/etc/caddy/Caddyfile','--adapter','caddyfile']);
+ created.push(caddyContainer);
 
  for(let attempt=0;attempt<60;attempt++){
   if(await isReady())return{restarted:true};
   await new Promise(resolve=>setTimeout(resolve,250));
  }
  throw new Error('built Framerail capture sidecar did not become ready');
+ }catch(error){
+  if(created.length)await run('docker',['rm','-f',...created.reverse()]).catch(()=>{});
+  throw error;
+ }
 }
 
+await fs.mkdir(cacheBase,{recursive:true});
+await withAuditLock(path.join(cacheBase,'bootstrap'),async()=>{
 const started=Date.now();
 let attempts=0;
 while(true){
@@ -156,3 +167,5 @@ while(true){
   throw error;
  }
 }
+
+},{attempts:12000});

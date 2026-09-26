@@ -30,3 +30,16 @@ test('content-addressed screenshot identity rejects path components', async t =>
   t.after(() => fs.rm(portsDir, {recursive: true, force: true}));
   await assert.rejects(storeContentAddressedScreenshot({portsDir, theme: '../escape', engine: 'chromium', viewport: 'mobile', stateKey: 'normal', bytes: Buffer.from('x')}), /invalid screenshot artifact identity/);
 });
+
+test('concurrent identical screenshots publish once without partial bytes or temp files', async t => {
+  const portsDir=await fs.mkdtemp(path.join(os.tmpdir(),'theme-lab-shots-race-'));
+  t.after(()=>fs.rm(portsDir,{recursive:true,force:true}));
+  const identity={portsDir,theme:'example',engine:'chromium',viewport:'mobile',stateKey:'normal',bytes:Buffer.alloc(1024*1024,7)};
+  const shots=await Promise.all(Array.from({length:8},()=>storeContentAddressedScreenshot(identity)));
+  assert.ok(shots.every(shot=>shot.path===shots[0].path));
+  const destination=path.join(portsDir,shots[0].path);
+  assert.deepEqual(await fs.readFile(destination),identity.bytes);
+  assert.equal((await fs.readdir(path.dirname(destination))).length,1);
+  await fs.writeFile(destination,'corrupted');
+  await assert.rejects(storeContentAddressedScreenshot(identity),/was altered/);
+});

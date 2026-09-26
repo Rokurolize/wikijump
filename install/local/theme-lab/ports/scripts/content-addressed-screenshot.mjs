@@ -17,7 +17,17 @@ export async function storeContentAddressedScreenshot({portsDir, theme, engine, 
     if (sha256(existing) !== digest) throw new Error(`content-addressed screenshot was altered: ${relativePath}`);
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;
-    await fs.writeFile(destination, bytes, {flag: 'wx'});
+    // Publish complete bytes atomically. Two captures of the same image may
+    // race, but neither may observe a partially written content-addressed file.
+    const temporary = `${destination}.${crypto.randomUUID()}.tmp`;
+    try {
+      await fs.writeFile(temporary, bytes, {flag: 'wx'});
+      try { await fs.link(temporary, destination); }
+      catch (publishError) {
+        if (publishError.code !== 'EEXIST') throw publishError;
+        if (sha256(await fs.readFile(destination)) !== digest) throw new Error(`content-addressed screenshot was altered: ${relativePath}`);
+      }
+    } finally { await fs.rm(temporary, {force: true}); }
   }
   return {path: relativePath.split(path.sep).join('/'), sha256: digest};
 }
