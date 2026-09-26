@@ -191,7 +191,7 @@ async function verifyRegistry(registry) {
     for (const reference of record.tests) {
       const match = /^(framerail\/tests\/[^:]+)::(.+)$/u.exec(reference)
       assert.ok(match, `${record.surface_id} has a noncanonical test link: ${reference}`)
-      const source = (await gitBlob(registry.source_revision, match[1])).toString("utf8")
+      const source = await readFile(new URL(match[1], root), "utf8")
       const escaped = match[2].replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")
       const anchors = source.match(new RegExp(`\\b(?:test|it)\\(\\s*["']${escaped}["']`, "gu")) ?? []
       assert.equal(anchors.length, 1, `${record.surface_id} has an unresolved test link: ${reference}`)
