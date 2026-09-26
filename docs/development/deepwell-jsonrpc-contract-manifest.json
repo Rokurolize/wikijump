@@ -3,7 +3,7 @@
   "source_identities": {
     "jsonrpc_registry": {
       "path": "deepwell/src/api.rs",
-      "sha256": "391a60a3f9eaf669b35cfbda082d865f11e8b1a4a4ea37090c6e108f66f61b72"
+      "sha256": "9431415dcfdfcf63eb35c27af0c1c63459f6550cc1ecd1c771fa05e5bed8983a"
     },
     "request_context_middleware": {
       "path": "deepwell/src/middleware.rs",
@@ -2327,16 +2327,12 @@
       },
       "transaction_isolation": "default",
       "test_witness": {
-        "kind": "source_contract_only",
-        "reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract",
-        "coverage_gap": {
-          "searched_root": "deepwell/tests",
-          "reason": "no direct run_endpoint handler invocation or rpc_request method invocation was found",
-          "searched_invocations": [
-            "run_endpoint!(runner, handler, ...)",
-            "rpc_request(\"method\", ...)"
-          ]
-        }
+        "kind": "endpoint_behavioral",
+        "reference": "deepwell/tests/email.rs#email_validation_classifies_the_mock_mailcheck_contract",
+        "alternatives": [
+          "deepwell/tests/email.rs#email_validation_rejects_an_empty_address"
+        ],
+        "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
     },
     {

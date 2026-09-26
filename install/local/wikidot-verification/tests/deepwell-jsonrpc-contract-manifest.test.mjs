@@ -60,6 +60,8 @@ test("Deepwell JSON-RPC manifest exactly covers the current registered contract"
   }
 
   const byMethod = new Map(manifest.methods.map((method) => [method.method, method]))
+  assert.equal(byMethod.get("parent_get_direct_metadata").transaction_isolation, "RepeatableRead")
+  assert.equal(byMethod.get("parent_get").transaction_isolation, "default")
   for (const method of ["page_draft_exists", "page_draft_remove", "page_draft_save", "site_tools_list_drafts"]) {
     assert.equal(byMethod.get(method).test_witness.kind, "source_contract_only")
   }
@@ -188,6 +190,25 @@ test("Deepwell JSON-RPC generator rejects a duplicate source registration", asyn
 
   assert.equal(result.status, 1)
   assert.match(result.stderr, /duplicate JSON-RPC registration: ping/u)
+})
+
+test("Deepwell JSON-RPC generator rejects an unrecognized isolation selector arm", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "deepwell-contract-isolation-"))
+  try {
+    await writeSourceFixture(root)
+    const apiPath = path.join(root, "deepwell/src/api.rs")
+    const apiSource = await fs.readFile(apiPath, "utf8")
+    await fs.writeFile(apiPath, apiSource.replace(
+      '"parent_get_direct_metadata" => Some(IsolationLevel::RepeatableRead),',
+      '"parent_get_direct_metadata" => Some(IsolationLevel::Serializable),\n        "parent_get" => None,'
+    ))
+
+    const result = runCli(cliPath, ["--root", root, "--output", path.join(root, "manifest.json")])
+    assert.equal(result.status, 1)
+    assert.match(result.stderr, /unsupported RPC isolation selector arm/u)
+  } finally {
+    await fs.rm(root, { recursive: true, force: true })
+  }
 })
 
 test("Deepwell JSON-RPC generator follows sync and qualified or generic local helpers", async (t) => {

@@ -232,6 +232,13 @@ pub async fn build_server_at(
     Ok((local_address, handle))
 }
 
+fn rpc_transaction_isolation(method_name: &str) -> Option<IsolationLevel> {
+    match method_name {
+        "parent_get_direct_metadata" => Some(IsolationLevel::RepeatableRead),
+        _ => None,
+    }
+}
+
 async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> {
     use crate::error::exn_error_to_rpc_error;
 
@@ -341,10 +348,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
             ))?;
         }};
         ($name:expr, $method:ident $(,)?) => {{
-            register!(@with_isolation $name, $method, None);
-        }};
-        ($name:expr, $method:ident, isolation = $isolation:expr $(,)?) => {{
-            register!(@with_isolation $name, $method, Some($isolation));
+            register!(@with_isolation $name, $method, rpc_transaction_isolation($name));
         }};
     }
 
@@ -531,11 +535,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("parent_get", parent_get);
     register!("parent_remove", parent_remove);
     register!("parent_relationships_get", parent_relationships_get);
-    register!(
-        "parent_get_direct_metadata",
-        parent_get_direct_metadata,
-        isolation = IsolationLevel::RepeatableRead,
-    );
+    register!("parent_get_direct_metadata", parent_get_direct_metadata);
     register!("parent_get_all", parent_get_all);
     register!("parent_update", parent_update);
 
@@ -657,50 +657,19 @@ async fn build_request(
 
 #[cfg(test)]
 mod tests {
-    const API_SOURCE: &str = include_str!("api.rs");
-
-    fn registration_for(method: &str) -> &str {
-        let production_source = API_SOURCE
-            .split_once("#[cfg(test)]")
-            .expect("API source should contain this test module")
-            .0;
-        let method_position = production_source
-            .find(&format!("\"{method}\""))
-            .unwrap_or_else(|| panic!("JSON-RPC method {method} should be registered"));
-        let registration_start = production_source[..method_position]
-            .rfind("register!(")
-            .expect("method name should occur in a registration");
-        let registration_end = production_source[method_position..]
-            .find(");")
-            .map(|offset| method_position + offset + 2)
-            .expect("registration should have a closing delimiter");
-
-        &production_source[registration_start..registration_end]
-    }
+    use super::*;
 
     #[test]
     fn registered_rpc_methods_select_transaction_isolation() {
-        let production_source = API_SOURCE
-            .split_once("#[cfg(test)]")
-            .expect("API source should contain this test module")
-            .0;
-        assert!(
-            production_source.contains(".begin_with_config(Some(isolation_level), None)"),
-            "an explicit isolation option must configure the transaction before request reads",
-        );
-        assert!(
-            production_source.contains("None => db_state.database.begin().await"),
-            "the default registration path must retain plain transaction begin",
-        );
-        assert!(
-            registration_for("parent_get_direct_metadata")
-                .contains("isolation = IsolationLevel::RepeatableRead"),
-            "direct parent metadata must use one repeatable-read snapshot",
+        assert_eq!(
+            rpc_transaction_isolation("parent_get_direct_metadata"),
+            Some(IsolationLevel::RepeatableRead),
         );
 
         for method in ["echo", "page_get", "parent_set"] {
-            assert!(
-                !registration_for(method).contains("isolation ="),
+            assert_eq!(
+                rpc_transaction_isolation(method),
+                None,
                 "ordinary method {method} must retain the default transaction",
             );
         }

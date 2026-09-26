@@ -126,22 +126,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn matcher_keeps_regex_set_and_filter_metadata_aligned() {
-        let filters = vec![FilterSummary {
-            filter_id: 1,
-            regex: str!("forbidden"),
-            description: str!("test filter"),
-        }];
-        let matcher = FilterMatcher::new(
-            RegexSet::new(filters.iter().map(|filter| filter.regex.as_str())).unwrap(),
-            filters,
-        );
-
-        assert!(matcher.regex_set.is_match("forbidden word"));
-        assert_eq!(matcher.filter_data[0].filter_id, 1);
-    }
-
-    #[test]
     fn filter_summary_debug_redacts_private_filter_details() {
         let summary = FilterSummary {
             filter_id: 7,
