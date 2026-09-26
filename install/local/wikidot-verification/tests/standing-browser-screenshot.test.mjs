@@ -43,6 +43,47 @@ test("CDP screenshot capture preserves immediate viewport and settled full-page 
   );
 });
 
+test("CDP screenshot capture fails closed on unusable metrics or PNG data", async (context) => {
+  const directory = await fs.mkdtemp(
+    path.join(os.tmpdir(), "standing-browser-screenshot-"),
+  );
+  context.after(() => fs.rm(directory, { recursive: true, force: true }));
+
+  const noSize = {
+    async send(method) {
+      if (method === "Page.getLayoutMetrics") {
+        return { cssContentSize: { width: 0, height: 0 } };
+      }
+      return { data: Buffer.from("png").toString("base64") };
+    },
+    async detach() {},
+  };
+  await assert.rejects(
+    () =>
+      capturePng(
+        { context: () => ({ newCDPSession: async () => noSize }) },
+        path.join(directory, "no-size.png"),
+        { fullPage: true },
+      ),
+    /no positive content size/u,
+  );
+
+  const emptyData = {
+    async send() {
+      return { data: "" };
+    },
+    async detach() {},
+  };
+  await assert.rejects(
+    () =>
+      capturePng(
+        { context: () => ({ newCDPSession: async () => emptyData }) },
+        path.join(directory, "empty.png"),
+      ),
+    /returned no PNG data/u,
+  );
+});
+
 test("successful CDP detach does not keep the process alive for the detach timeout", async () => {
   const childSource = String.raw`
     import os from "node:os";
