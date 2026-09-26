@@ -5,7 +5,6 @@ import {
   writeRedisCommand
 } from "./redis-command-state.js"
 import { connectRedisSocket } from "./redis-connection.js"
-import { parseRedisResponse } from "./redis-protocol.js"
 
 const REDIS_COMMAND_TIMEOUT_MS = 1000
 const REDIS_SUBSCRIBER_RETRY_DELAY_MS = 100
@@ -137,24 +136,22 @@ export class RedisFenceInvalidationSubscriber {
   /** @param {Buffer} chunk */
   handleData(chunk) {
     const state = this.commandState
-    state.buffer = Buffer.concat([state.buffer, chunk])
+    state.decoder.append(chunk)
 
-    while (state.buffer.length > 0) {
+    while (true) {
       let parsed
       try {
-        parsed = parseRedisResponse(state.buffer)
+        parsed = state.decoder.read()
       } catch (error) {
         state.pending
           .shift()
           ?.reject(error instanceof Error ? error : new Error(String(error)))
         this.onMalformed?.()
-        state.buffer = Buffer.alloc(0)
         this.reset()
         return
       }
       if (!parsed) return
 
-      state.buffer = state.buffer.subarray(parsed.nextOffset)
       const request = state.pending.shift()
       if (request) request.resolve(parsed.value)
       else this.handlePubSubMessage(parsed.value)

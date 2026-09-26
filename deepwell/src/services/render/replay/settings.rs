@@ -161,9 +161,4 @@ mod tests {
             parse_states(Some("render_failed'); DROP TABLE page;--".to_owned())).is_err()
         );
     }
-
-    #[test]
-    fn maximum_concurrency_is_sixteen() {
-        assert_eq!(MAX_REPLAY_CONCURRENCY, 16);
-    }
 }

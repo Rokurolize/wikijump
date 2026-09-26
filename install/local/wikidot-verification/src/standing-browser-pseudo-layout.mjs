@@ -554,10 +554,3 @@ export function comparePseudoLayouts(
         : "fail",
   };
 }
-
-export const __test = Object.freeze({
-  captureFromSnapshot,
-  rectangle,
-  union,
-  intersect,
-});

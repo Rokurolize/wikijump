@@ -225,6 +225,34 @@ function extractRustTestDeclarations(source) {
   return declarations;
 }
 
+export function extractDeclaredRustModuleReferences(source) {
+  const maskedLines = maskRustCommentsAndStrings(source).split(/\r?\n/u);
+  const originalLines = source.split(/\r?\n/u);
+  const references = [];
+  let pendingPath = null;
+
+  for (let index = 0; index < maskedLines.length; index += 1) {
+    const trimmed = maskedLines[index].trim();
+    if (/^#\[/u.test(trimmed)) {
+      if (/^#\[\s*path\s*=/u.test(trimmed)) {
+        const original = originalLines[index] ?? "";
+        const pathMatch = /^\s*#\[\s*path\s*=\s*"([^"]+)"\s*\]\s*$/u.exec(original);
+        pendingPath = pathMatch?.[1] ?? null;
+      }
+      continue;
+    }
+    if (trimmed.length === 0) continue;
+
+    const declaration = /^(?:pub(?:\([^)]*\))?\s+)?mod\s+([A-Za-z_][A-Za-z0-9_]*)\s*;/u.exec(trimmed);
+    if (declaration !== null) {
+      references.push({ name: declaration[1], path: pendingPath });
+    }
+    pendingPath = null;
+  }
+
+  return references;
+}
+
 function skipJavaScriptWhitespaceAndComments(source, start) {
   let index = start;
   while (index < source.length) {
@@ -491,11 +519,62 @@ function parseJavaScriptTestDeclaration(source, start) {
   return title.value;
 }
 
+// A `/` begins a regex literal unless the previous significant token can end
+// an expression. Without this, quotes inside a regex desynchronize the string
+// state machine and hide every later `test(...)`/`it(...)` declaration.
+const JAVASCRIPT_REGEX_PREFIX_KEYWORDS = new Set([
+  "await",
+  "case",
+  "delete",
+  "do",
+  "else",
+  "in",
+  "instanceof",
+  "of",
+  "return",
+  "throw",
+  "typeof",
+  "void",
+  "yield",
+]);
+
+function isJavaScriptRegexStart(previousSignificant) {
+  if (previousSignificant === null) return true;
+  if (JAVASCRIPT_REGEX_PREFIX_KEYWORDS.has(previousSignificant)) return true;
+  if (/^[A-Za-z0-9_$]+$/u.test(previousSignificant)) return false;
+  return !/^[)\]}'"`]$/u.test(previousSignificant);
+}
+
+function skipJavaScriptRegexLiteral(source, start) {
+  let index = start + 1;
+  let inCharacterClass = false;
+  while (index < source.length) {
+    const character = source[index];
+    if (character === "\n" || character === "\r") return start + 1;
+    if (character === "\\") {
+      index += Math.min(2, source.length - index);
+      continue;
+    }
+    if (character === "[") {
+      inCharacterClass = true;
+    } else if (character === "]") {
+      inCharacterClass = false;
+    } else if (character === "/" && !inCharacterClass) {
+      index += 1;
+      while (index < source.length && /[A-Za-z]/u.test(source[index])) index += 1;
+      return index;
+    }
+    index += 1;
+  }
+  return start + 1;
+}
+
 function extractJavaScriptTestDeclarations(source) {
   const declarations = new Set();
   let index = 0;
   let state = "normal";
   let lineHasCode = false;
+  let previousSignificant = null;
 
   while (index < source.length) {
     const character = source[index];
@@ -526,6 +605,7 @@ function extractJavaScriptTestDeclarations(source) {
       } else {
         if (character === quote) {
           state = "normal";
+          previousSignificant = quote;
         }
         if (character === "\n") {
           lineHasCode = false;
@@ -540,6 +620,7 @@ function extractJavaScriptTestDeclarations(source) {
       } else {
         if (character === "`") {
           state = "normal";
+          previousSignificant = "`";
         }
         if (character === "\n") {
           lineHasCode = false;
@@ -568,6 +649,12 @@ function extractJavaScriptTestDeclarations(source) {
       index += 2;
       continue;
     }
+    if (character === "/" && isJavaScriptRegexStart(previousSignificant)) {
+      index = skipJavaScriptRegexLiteral(source, index);
+      previousSignificant = "/";
+      lineHasCode = true;
+      continue;
+    }
     if (character === "'") {
       state = "single-string";
       lineHasCode = true;
@@ -587,20 +674,46 @@ function extractJavaScriptTestDeclarations(source) {
       continue;
     }
 
-    if (!lineHasCode && /[A-Za-z_$]/u.test(character)) {
-      const declaration = parseJavaScriptTestDeclaration(source, index);
-      if (declaration !== null) {
-        declarations.add(declaration);
+    if (/[A-Za-z_$]/u.test(character)) {
+      if (!lineHasCode) {
+        const declaration = parseJavaScriptTestDeclaration(source, index);
+        if (declaration !== null) declarations.add(declaration);
       }
+      const identifier = /^[A-Za-z_$][A-Za-z0-9_$]*/u.exec(source.slice(index));
+      previousSignificant = identifier[0];
+      lineHasCode = true;
+      index += identifier[0].length;
+      continue;
     }
     lineHasCode = true;
+    previousSignificant = character;
     index += 1;
+  }
+
+  // A malformed or unusually complex expression earlier in a test file must
+  // not hide later top-level Node/Playwright declarations. Re-scan physical
+  // line starts as a narrow recovery path and feed every candidate through
+  // the same declaration/callback parser. This deliberately accepts only
+  // `test(...)` / `it(...)` at the first non-whitespace token on a line.
+  let lineStart = 0;
+  while (lineStart < source.length) {
+    const lineEnd = source.indexOf("\n", lineStart);
+    const stop = lineEnd === -1 ? source.length : lineEnd;
+    const line = source.slice(lineStart, stop);
+    const match = /^\s*(?:test|it)\b/u.exec(line);
+    if (match !== null) {
+      const candidate = lineStart + match[0].search(/(?:test|it)\b/u);
+      const declaration = parseJavaScriptTestDeclaration(source, candidate);
+      if (declaration !== null) declarations.add(declaration);
+    }
+    if (lineEnd === -1) break;
+    lineStart = lineEnd + 1;
   }
 
   return declarations;
 }
 
-function extractDeclaredPublicTests(relativePath, source) {
+export function extractDeclaredPublicTests(relativePath, source) {
   if (relativePath.endsWith(".rs")) {
     return extractRustTestDeclarations(source);
   }

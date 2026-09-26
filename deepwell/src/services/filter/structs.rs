@@ -99,6 +99,14 @@ impl From<Option<i64>> for FilterClass {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sea_orm::{DatabaseBackend, EntityTrait, QueryFilter, QueryTrait};
+
+    fn filter_query_sql(filter_class: FilterClass) -> String {
+        crate::models::filter::Entity::find()
+            .filter(Condition::all().add(filter_class.to_condition()))
+            .build(DatabaseBackend::Postgres)
+            .to_string()
+    }
 
     #[test]
     fn filter_class_names_and_option_conversion_are_stable() {
@@ -110,10 +118,40 @@ mod tests {
     }
 
     #[test]
-    fn filter_class_conditions_are_constructible_for_all_scopes() {
-        let _ = FilterClass::Platform.to_condition();
-        let _ = FilterClass::Site(7).to_condition();
-        let _ = FilterClass::PlatformAndSite(7).to_condition();
+    fn filter_class_conditions_scope_platform_and_site_filters() {
+        let platform = filter_query_sql(FilterClass::Platform);
+        assert!(
+            platform.contains(r#""filter"."site_id" IS NULL"#),
+            "platform filters must select site-independent rows: {platform}"
+        );
+        assert!(
+            !platform.contains(r#""filter"."site_id" = 7"#),
+            "platform filters must not be scoped to a site: {platform}"
+        );
+
+        let site = filter_query_sql(FilterClass::Site(7));
+        assert!(
+            site.contains(r#""filter"."site_id" = 7"#),
+            "site filters must be scoped to their site: {site}"
+        );
+        assert!(
+            !site.contains("IS NULL"),
+            "site filters must exclude platform filters: {site}"
+        );
+
+        let combined = filter_query_sql(FilterClass::PlatformAndSite(7));
+        assert!(
+            combined.contains(r#""filter"."site_id" IS NULL"#),
+            "combined filters must include platform filters: {combined}"
+        );
+        assert!(
+            combined.contains(r#""filter"."site_id" = 7"#),
+            "combined filters must include the site filter: {combined}"
+        );
+        assert!(
+            combined.contains(" OR "),
+            "combined filters must OR platform and site scopes: {combined}"
+        );
     }
 }
 

@@ -1,3 +1,5 @@
+import { RedisResponseDecoder } from "./redis-response-decoder.js"
+import { RedisRequestQueue } from "./redis-request-queue.js"
 import { encodeRedisCommand } from "./redis-protocol.js"
 
 /**
@@ -8,15 +10,15 @@ import { encodeRedisCommand } from "./redis-protocol.js"
 /**
  * @typedef {object} RedisCommandState
  * @property {import("node:net").Socket | import("node:tls").TLSSocket | null} socket
- * @property {Buffer} buffer
- * @property {PendingRedisRequest[]} pending
+ * @property {RedisResponseDecoder} decoder
+ * @property {RedisRequestQueue<PendingRedisRequest>} pending
  */
 
 /** @returns {RedisCommandState} */
 export const createRedisCommandState = () => ({
   socket: null,
-  buffer: Buffer.alloc(0),
-  pending: []
+  decoder: new RedisResponseDecoder(),
+  pending: new RedisRequestQueue()
 })
 
 /**
@@ -29,7 +31,7 @@ export const createRedisCommandState = () => ({
  */
 export const attachRedisCommandSocket = ({ state, socket, onData, onDisconnect }) => {
   state.socket = socket
-  state.buffer = Buffer.alloc(0)
+  state.decoder = new RedisResponseDecoder()
   socket.on("data", onData)
   const disconnectIfCurrent = () => {
     if (state.socket === socket) onDisconnect()
@@ -45,11 +47,11 @@ export const attachRedisCommandSocket = ({ state, socket, onData, onDisconnect }
 export const resetRedisCommandState = (state, closedMessage) => {
   const socket = state.socket
   state.socket = null
-  state.buffer = Buffer.alloc(0)
+  state.decoder = new RedisResponseDecoder()
   const pending = state.pending
-  state.pending = []
+  state.pending = new RedisRequestQueue()
   if (socket && !socket.destroyed) socket.destroy()
-  for (const request of pending) {
+  for (let request; (request = pending.shift());) {
     request.reject(new Error(closedMessage))
   }
 }
@@ -64,7 +66,8 @@ export const resetRedisCommandState = (state, closedMessage) => {
  *   onTimeout: () => void
  * }} input
  * @returns {Promise<unknown>}
- * @throws {Error} If the Redis socket is unavailable; the returned promise also rejects on timeout or write failure.
+ * @throws {Error} If the Redis socket is unavailable; the returned promise
+ *   also rejects on timeout or write failure.
  */
 export const writeRedisCommand = ({
   state,
@@ -77,9 +80,10 @@ export const writeRedisCommand = ({
   const socket = state.socket
   if (!socket || socket.destroyed) throw new Error(unavailableMessage)
 
+  const queue = state.pending
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
-      state.pending = state.pending.filter((request) => request !== pendingRequest)
+      queue.remove(pendingNode)
       reject(new Error(timeoutMessage))
       onTimeout()
     }, timeoutMs)
@@ -94,10 +98,10 @@ export const writeRedisCommand = ({
         reject(error)
       }
     }
-    state.pending.push(pendingRequest)
+    const pendingNode = queue.push(pendingRequest)
     socket.write(encodeRedisCommand(parts), "utf8", (error) => {
       if (!error) return
-      state.pending = state.pending.filter((request) => request !== pendingRequest)
+      queue.remove(pendingNode)
       pendingRequest.reject(error)
     })
   })

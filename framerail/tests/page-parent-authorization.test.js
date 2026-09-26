@@ -1,43 +1,64 @@
-import { strict as assert } from "node:assert"
-import { readFile } from "node:fs/promises"
-import test from "node:test"
+// @ts-nocheck
+import assert from "node:assert/strict"
+import { after, before, test } from "node:test"
 
-const pageActionsSourceUrl = new URL(
-  "../src/lib/server/load/page/page-relation-actions.ts",
-  import.meta.url
-)
-const parentPaneSourceUrl = new URL(
-  "../src/routes/[slug]/[...extra]/ParentPane.svelte",
-  import.meta.url
-)
+import { pageActionEvent, startPageActionHarness } from "./page-action-test-harness.js"
 
-const exportedFunction = (source, name, nextName) => {
-  const start = source.indexOf(`export async function ${name}(`)
-  assert.notEqual(start, -1, name)
-  const end = source.indexOf(`export async function ${nextName}(`, start)
-  assert.notEqual(end, -1, nextName)
-  return source.slice(start, end)
-}
+const SITE_ID = 17
+const TRUSTED_CONTEXT = { siteId: SITE_ID, page: "main" }
 
-test("parent lookup derives the target site from trusted request context", async () => {
-  const source = await readFile(pageActionsSourceUrl, "utf8")
-  const action = exportedFunction(source, "pageParentGetAction", "pageVoteListAction")
+let client
+let actions
+let closeHarness
 
-  assert.doesNotMatch(action, /const \{ siteId, pageId, slug \} = requestData/u)
-  assert.match(action, /const \{ pageId, slug \} = requestData/u)
-  assert.match(action, /resolvePageActionRequestContext\(event\)/u)
-  assert.match(action, /pageParentGet\(context\.siteId, pageId, slug/u)
+before(async () => {
+  const harness = await startPageActionHarness()
+  client = harness.client
+  actions = harness.actions
+  closeHarness = () => harness.close()
 })
 
-test("parent lookup pane sends only the page selector", async () => {
-  const source = await readFile(parentPaneSourceUrl, "utf8")
-  const start = source.indexOf("async function fetchParents()")
-  const end = source.indexOf("\n  $effect", start)
-  assert.notEqual(start, -1)
-  assert.notEqual(end, -1)
-  const fetchParents = source.slice(start, end)
+after(async () => {
+  await closeHarness?.()
+})
 
-  assert.doesNotMatch(fetchParents, /siteId/u)
-  assert.match(fetchParents, /pageId: data\.page\?\.page_id/u)
-  assert.match(fetchParents, /slug: data\.page\?\.slug/u)
+const requestEvent = (overrides = {}) =>
+  pageActionEvent({
+    action: "parentGet",
+    siteId: SITE_ID,
+    requestContext: { ...TRUSTED_CONTEXT },
+    ...overrides
+  })
+
+test("parent lookup forwards only the trusted site and page selector", async () => {
+  const calls = []
+  client.request = async (method, params, context) => {
+    calls.push({ method, params, context })
+    if (method === "parent_get_all") return ["parent-page"]
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+
+  const byId = await actions.parentGet(
+    requestEvent({ body: { pageId: 42, slug: "main", siteId: 999 } })
+  )
+  assert.deepEqual(byId, { res: ["parent-page"] })
+  assert.deepEqual(calls[0], {
+    method: "parent_get_all",
+    params: { site_id: SITE_ID, page: 42 },
+    context: TRUSTED_CONTEXT
+  })
+
+  calls.length = 0
+  const bySlug = await actions.parentGet(requestEvent({ body: { slug: "main" } }))
+  assert.deepEqual(bySlug, { res: ["parent-page"] })
+  assert.deepEqual(calls[0].params, { site_id: SITE_ID, page: "main" })
+
+  // A request that claims a different site than the trusted context is
+  // rejected before any parent lookup reaches Deepwell.
+  calls.length = 0
+  const spoofed = await actions.parentGet(
+    requestEvent({ body: { slug: "main" }, siteId: SITE_ID + 1 })
+  )
+  assert.equal(spoofed.status, 403)
+  assert.deepEqual(calls, [])
 })

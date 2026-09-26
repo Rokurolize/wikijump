@@ -180,12 +180,4 @@ mod tests {
         let hash = PasswordService::new_hash("a").unwrap();
         PasswordService::verify_internal("a", &hash).unwrap();
     }
-
-    #[tokio::test]
-    async fn failure_sleep_completes_with_zero_configured_delay() {
-        let mut config = Config::integration_testing();
-        config.authentication_fail_delay = std::time::Duration::from_millis(0);
-
-        PasswordService::failure_sleep(&config).await;
-    }
 }
