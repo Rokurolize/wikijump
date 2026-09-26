@@ -117,10 +117,14 @@ controlled comparison.
 
 ## Intentional differences (no action)
 
-* Sigma-10 header hides the configured site title/tagline text
-  (`max-height:0; line-height:0`). The visible "Local Translation Corpus" string
-  is the local test site configuration, not SCP-JP source; production SCP-JP
-  would supply its own title/tagline.
+* Sigma-10 header hides the configured site title text (`#header h1 a`
+  `max-height:0; line-height:0`). The visible "Editable local translation
+  corpus" tagline is the local test site configuration, not SCP-JP source.
+  Wikijump wraps the title/tagline in `<h1><a><span>` / `<h2><span>` while
+  Wikidot's header has no span wrapper, so Sigma-10's `#header h2 span` rule only
+  matches on Wikijump; `line-height:0` does not hide glyphs either way, so the
+  tagline shows on both platforms. Production SCP-JP would supply its own
+  title/tagline; no migration action is required for the test site's text.
 * Desktop search input hidden for Wikidot parity (see SIGMA10-SEARCH-002 for the
   Wikijump decision).
 * Theme typography changes the credit notice width, so overflow magnitude differs
