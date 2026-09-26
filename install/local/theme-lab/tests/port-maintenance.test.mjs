@@ -4,10 +4,36 @@ import test from "node:test";
 import {
   buildPortMaintenanceAudit,
   buildUpstreamUpdatePlan,
+  analyzeOverrideCascade,
   diffCssRules,
   extractSCPJPAdaptationBlocks,
+  parseCssDeclarations,
   sha256Text,
 } from "../src/port-maintenance.mjs";
+
+test("parseCssDeclarations preserves semicolons inside functions and strings", () => {
+  assert.deepEqual(parseCssDeclarations('color: red; background: url("data:image/svg+xml;a:b"); content: "x;y" !important;'), [
+    {property: "color", value: "red", important: false},
+    {property: "background", value: 'url("data:image/svg+xml;a:b")', important: false},
+    {property: "content", value: '"x;y"', important: true},
+  ]);
+});
+
+test("analyzeOverrideCascade distinguishes redundant and conflicting shadowed declarations", () => {
+  const audit = analyzeOverrideCascade(`
+    .a { color: red; padding: 1rem; }
+    .b { color: blue; }
+    .a { color: red; padding: 2rem !important; }
+    .a { padding: 3rem; }
+  `);
+  assert.equal(audit.repeated_selector_context_count, 1);
+  assert.equal(audit.redundant_same_value_declaration_count, 1);
+  assert.equal(audit.shadowed_conflicting_declaration_count, 2);
+  const padding = audit.conflicts.find((row) => row.property === "padding");
+  assert.equal(padding.winner.value, "2rem");
+  assert.equal(padding.winner.important, true);
+  assert.equal(padding.review_class, "possible-historical-supersession-requires-manual-review");
+});
 
 test("diffCssRules notices declaration changes without selector changes", () => {
   assert.deepEqual(diffCssRules("#header { color: red; }", "#header { color: blue; }").map((row) => [row.selector, row.status]), [["#header", "changed"]]);
@@ -63,10 +89,13 @@ test("maintenance audit reports the bound canonical maintenance layer", () => {
     humanPortSource: source,
     candidateSource: source,
     maintenanceManifest: {adaptation_block_count: 3, raw_override_rule_count: 8, canonical_override_rule_count: 6, exact_duplicate_rules_removed: 2, semantic_css_sha256: "a", canonical_override_sha256: "b"},
+    maintenanceOverrideCss: ".a { color: red; } .a { color: blue; }",
   });
   assert.equal(audit.maintenance_source.bound, true);
   assert.equal(audit.maintenance_source.adaptation_block_count, 3);
   assert.equal(audit.maintenance_source.exact_duplicate_rules_removed, 2);
+  assert.equal(audit.maintenance_source.override_cascade.shadowed_conflicting_declaration_count, 1);
+  assert.deepEqual(audit.maintenance_source.canonical_override_selectors, [".a"]);
 });
 
 test("upstream update plan highlights selectors touched by JP localization", () => {
@@ -75,9 +104,10 @@ test("upstream update plan highlights selectors touched by JP localization", () 
   const localized = "[[module CSS]]#side-bar a { white-space: normal; }[[/module]]";
   const candidate = `${localized}\n[[module CSS]]/* SCP-JP acceptance: nav */ /* Japanese labels wrap. */ #side-bar a { overflow-wrap: anywhere; }[[/module]]`;
   const manifest = {slug: "theme:sample", en_source_sha256: sha256Text(oldUpstream), source_identity: {en: {tags: []}}};
-  const audit = buildPortMaintenanceAudit({manifest, upstreamSource: oldUpstream, humanPortSource: localized, candidateSource: candidate, assetsReceipt: {imports: ["https://cdn.invalid/base.css"]}});
+  const audit = buildPortMaintenanceAudit({manifest, upstreamSource: oldUpstream, humanPortSource: localized, candidateSource: candidate, assetsReceipt: {imports: ["https://cdn.invalid/base.css"]}, maintenanceOverrideCss: "#side-bar a { color: #123; }"});
   const plan = buildUpstreamUpdatePlan({audit, manifest, oldUpstreamSource: oldUpstream, newUpstreamSource: newUpstream});
   assert.deepEqual(plan.localization_overlap_selectors, ["#side-bar a"]);
+  assert.deepEqual(plan.localization_overlap_sources["#side-bar a"], ["jp-localization-baseline", "acceptance-adaptation", "canonical-jp-overrides"]);
   assert.equal(plan.review_scope.recheck_jp_overrides, true);
   assert.equal(plan.transitive_css_dependency_refresh_required, true);
 });

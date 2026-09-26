@@ -11,6 +11,178 @@ function unique(values) {
   return [...new Set(values)];
 }
 
+function splitTopLevelDeclarations(body) {
+  const parts = [];
+  let start = 0;
+  let quote = null;
+  let parenDepth = 0;
+  let bracketDepth = 0;
+  let inComment = false;
+  for (let index = 0; index < body.length; index += 1) {
+    const char = body[index];
+    const next = body[index + 1] ?? "";
+    if (inComment) {
+      if (char === "*" && next === "/") {
+        inComment = false;
+        index += 1;
+      }
+      continue;
+    }
+    if (quote !== null) {
+      if (char === "\\") index += 1;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === "/" && next === "*") {
+      inComment = true;
+      index += 1;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (char === "(") parenDepth += 1;
+    else if (char === ")") parenDepth -= 1;
+    else if (char === "[") bracketDepth += 1;
+    else if (char === "]") bracketDepth -= 1;
+    else if ((char === "{" || char === "}") && parenDepth === 0 && bracketDepth === 0) {
+      throw new Error("nested CSS is not supported by the declaration maintenance audit");
+    } else if (char === ";" && parenDepth === 0 && bracketDepth === 0) {
+      parts.push(body.slice(start, index));
+      start = index + 1;
+    }
+  }
+  if (quote !== null || inComment || parenDepth !== 0 || bracketDepth !== 0) {
+    throw new Error("unterminated CSS declaration syntax in maintenance overlay");
+  }
+  parts.push(body.slice(start));
+  return parts;
+}
+
+function topLevelColonIndex(text) {
+  let quote = null;
+  let parenDepth = 0;
+  let bracketDepth = 0;
+  let inComment = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const next = text[index + 1] ?? "";
+    if (inComment) {
+      if (char === "*" && next === "/") {
+        inComment = false;
+        index += 1;
+      }
+      continue;
+    }
+    if (quote !== null) {
+      if (char === "\\") index += 1;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === "/" && next === "*") {
+      inComment = true;
+      index += 1;
+      continue;
+    }
+    if (char === '"' || char === "'") quote = char;
+    else if (char === "(") parenDepth += 1;
+    else if (char === ")") parenDepth -= 1;
+    else if (char === "[") bracketDepth += 1;
+    else if (char === "]") bracketDepth -= 1;
+    else if (char === ":" && parenDepth === 0 && bracketDepth === 0) return index;
+  }
+  return -1;
+}
+
+export function parseCssDeclarations(body) {
+  const declarations = [];
+  for (const rawPart of splitTopLevelDeclarations(body)) {
+    const withoutComments = rawPart.replace(/\/\*[\s\S]*?\*\//gu, " ").trim();
+    if (!withoutComments) continue;
+    const colon = topLevelColonIndex(withoutComments);
+    if (colon < 1) throw new Error(`invalid CSS declaration in maintenance overlay: ${withoutComments.slice(0, 120)}`);
+    const rawProperty = withoutComments.slice(0, colon).trim();
+    let value = withoutComments.slice(colon + 1).trim();
+    if (!rawProperty || !value) throw new Error(`invalid CSS declaration in maintenance overlay: ${withoutComments.slice(0, 120)}`);
+    const property = rawProperty.startsWith("--") ? rawProperty : rawProperty.toLowerCase();
+    const important = /\s*!important\s*$/iu.test(value);
+    if (important) value = value.replace(/\s*!important\s*$/iu, "").trim();
+    declarations.push({property, value, important});
+  }
+  return declarations;
+}
+
+function selectorContextKey(rule) {
+  return JSON.stringify([rule.atContext ?? [], rule.selector]);
+}
+
+export function analyzeOverrideCascade(css) {
+  const rules = parseStyleSheet(css);
+  const selectorCounts = new Map();
+  const declarationOccurrences = new Map();
+  let declarationCount = 0;
+  for (const [ruleIndex, rule] of rules.entries()) {
+    const selectorKey = selectorContextKey(rule);
+    selectorCounts.set(selectorKey, (selectorCounts.get(selectorKey) ?? 0) + 1);
+    for (const [declarationIndex, declaration] of parseCssDeclarations(rule.body ?? "").entries()) {
+      declarationCount += 1;
+      const key = JSON.stringify([rule.atContext ?? [], rule.selector, declaration.property]);
+      const occurrences = declarationOccurrences.get(key) ?? [];
+      occurrences.push({rule_index: ruleIndex, declaration_index: declarationIndex, ...declaration});
+      declarationOccurrences.set(key, occurrences);
+    }
+  }
+
+  const conflicts = [];
+  let redundantSameValue = 0;
+  let shadowedConflicting = 0;
+  for (const [key, occurrences] of declarationOccurrences) {
+    if (occurrences.length < 2) continue;
+    const important = occurrences.filter((row) => row.important);
+    const winner = (important.length ? important : occurrences).at(-1);
+    const nonWinners = occurrences.filter((row) => row !== winner);
+    const redundant = nonWinners.filter((row) => row.value === winner.value).length;
+    const conflicting = nonWinners.length - redundant;
+    redundantSameValue += redundant;
+    shadowedConflicting += conflicting;
+    const [atContext, selector, property] = JSON.parse(key);
+    const specialSemantics = property.startsWith("--") || property.startsWith("-") || occurrences.some((row) => /\b(?:var|initial|inherit|unset|revert|revert-layer|currentcolor)\s*\(/iu.test(row.value) || /^(?:initial|inherit|unset|revert|revert-layer)$/iu.test(row.value));
+    const reviewClass = specialSemantics
+      ? "fallback-or-special-semantics-requires-manual-review"
+      : conflicting > 0
+        ? "possible-historical-supersession-requires-manual-review"
+        : "same-value-redundancy-candidate-requires-interaction-review";
+    conflicts.push({
+      selector,
+      at_context: atContext,
+      property,
+      occurrence_count: occurrences.length,
+      redundant_same_value_count: redundant,
+      shadowed_conflicting_count: conflicting,
+      review_class: reviewClass,
+      winner: {value: winner.value, important: winner.important, rule_index: winner.rule_index},
+      occurrences,
+    });
+  }
+  conflicts.sort((left, right) => {
+    if (right.shadowed_conflicting_count !== left.shadowed_conflicting_count) return right.shadowed_conflicting_count - left.shadowed_conflicting_count;
+    if (right.redundant_same_value_count !== left.redundant_same_value_count) return right.redundant_same_value_count - left.redundant_same_value_count;
+    return `${left.selector}\0${left.property}`.localeCompare(`${right.selector}\0${right.property}`);
+  });
+  const repeatedSelectorCounts = [...selectorCounts.values()].filter((count) => count > 1);
+  return {
+    rule_count: rules.length,
+    declaration_count: declarationCount,
+    repeated_selector_context_count: repeatedSelectorCounts.length,
+    repeated_rule_instance_count: repeatedSelectorCounts.reduce((sum, count) => sum + count, 0),
+    repeated_declaration_key_count: conflicts.length,
+    redundant_same_value_declaration_count: redundantSameValue,
+    shadowed_conflicting_declaration_count: shadowedConflicting,
+    conflicts,
+  };
+}
+
 function cssFromSource(source, activeTags = []) {
   try {
     return extractUnconditionalCssModules(source, {activeTags});
@@ -113,7 +285,7 @@ function absoluteMetadataPaths(manifest) {
   return rows;
 }
 
-export function buildPortMaintenanceAudit({manifest, upstreamSource, humanPortSource, candidateSource, assetsReceipt = {}, maintenanceException = null, maintenanceManifest = null}) {
+export function buildPortMaintenanceAudit({manifest, upstreamSource, humanPortSource, candidateSource, assetsReceipt = {}, maintenanceException = null, maintenanceManifest = null, maintenanceOverrideCss = ""}) {
   const upstreamCss = cssFromSource(upstreamSource, sourceTags(manifest));
   const inferredCandidateTags = candidateTags(manifest, humanPortSource);
   const localizedCss = cssFromSource(humanPortSource, inferredCandidateTags);
@@ -123,6 +295,10 @@ export function buildPortMaintenanceAudit({manifest, upstreamSource, humanPortSo
   const provenance = importProvenance(assetsReceipt);
   const provenanceUrls = new Set(provenance.map((row) => row.source_url));
   const upstreamSha = sha256Text(upstreamSource);
+  const overrideCascade = maintenanceOverrideCss ? analyzeOverrideCascade(maintenanceOverrideCss) : null;
+  const canonicalOverrideSelectors = maintenanceOverrideCss
+    ? unique(parseStyleSheet(maintenanceOverrideCss).map((rule) => rule.selector)).sort()
+    : [];
   return {
     theme: manifest.slug,
     reference_url: manifest.reference_url,
@@ -171,6 +347,8 @@ export function buildPortMaintenanceAudit({manifest, upstreamSource, humanPortSo
       exact_duplicate_rules_removed: maintenanceManifest?.exact_duplicate_rules_removed ?? null,
       semantic_css_sha256: maintenanceManifest?.semantic_css_sha256 ?? null,
       canonical_override_sha256: maintenanceManifest?.canonical_override_sha256 ?? null,
+      canonical_override_selectors: canonicalOverrideSelectors,
+      override_cascade: overrideCascade,
     },
     metadata: {
       nonportable_absolute_path_fields: absoluteMetadataPaths(manifest),
@@ -186,7 +364,13 @@ export function buildUpstreamUpdatePlan({audit, manifest, oldUpstreamSource, new
   const changedSelectors = new Set(upstreamRuleChanges.map((row) => row.selector));
   const baselineSelectors = new Set(audit.localization_baseline.inline_css_changed_selectors);
   const adaptationSelectors = new Set(audit.final_candidate.adaptations.flatMap((block) => block.selectors));
-  const collisions = [...changedSelectors].filter((selector) => baselineSelectors.has(selector) || adaptationSelectors.has(selector)).sort();
+  const canonicalOverrideSelectors = new Set(audit.maintenance_source.canonical_override_selectors ?? []);
+  const collisions = [...changedSelectors].filter((selector) => baselineSelectors.has(selector) || adaptationSelectors.has(selector) || canonicalOverrideSelectors.has(selector)).sort();
+  const overlapSources = Object.fromEntries(collisions.map((selector) => [selector, [
+    ...(baselineSelectors.has(selector) ? ["jp-localization-baseline"] : []),
+    ...(adaptationSelectors.has(selector) ? ["acceptance-adaptation"] : []),
+    ...(canonicalOverrideSelectors.has(selector) ? ["canonical-jp-overrides"] : []),
+  ]]));
   return {
     theme: audit.theme,
     old_upstream_sha256: sha256Text(oldUpstreamSource),
@@ -195,6 +379,7 @@ export function buildUpstreamUpdatePlan({audit, manifest, oldUpstreamSource, new
     upstream_inline_css_rule_change_count: upstreamRuleChanges.length,
     upstream_inline_css_rule_changes: upstreamRuleChanges,
     localization_overlap_selectors: collisions,
+    localization_overlap_sources: overlapSources,
     localization_overlap_count: collisions.length,
     transitive_css_dependency_refresh_required: audit.upstream_dependencies.css_import_count > 0,
     transitive_css_dependency_count: audit.upstream_dependencies.css_import_count,
