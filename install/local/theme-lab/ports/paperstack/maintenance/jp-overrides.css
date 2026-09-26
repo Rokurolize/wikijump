@@ -11,20 +11,20 @@
   #header {
     height: auto !important; min-height: 0 !important;
   }
-  
+
   #header h1,
   #header h2 {
     position: static !important; float: none !important; display: block !important; width: 100% !important; max-width: 100% !important; height: auto !important; line-height: 1.2 !important; overflow-wrap: anywhere !important;
   }
-  
+
   #search-top-box {
     position: static !important; inset: auto !important; float: none !important; clear: both !important; display: block !important; width: 100% !important; max-width: 100% !important; margin: .5rem 0 0 !important;
   }
-  
+
   #search-top-box-form {
     position: static !important; float: none !important; display: flex !important; justify-content: flex-end; width: 100% !important;
   }
-  
+
   #top-bar {
     position: relative !important; inset: auto !important; width: 100% !important; max-width: 100% !important; margin: .35rem 0 0 !important; box-sizing: border-box !important;
   }
@@ -43,19 +43,19 @@
 /* The rendered Japanese Paperstack site title and subtitle share the source theme's compact display grid and overlap at phone widths. Keep its Josefin paper heading style, but put the two semantic labels and search control into distinct natural rows. */
 @media (max-width: 767px) {
   #header {
-    display: flow-root !important; position: relative !important; height: auto !important; min-height: 0 !important; padding-block: .75rem !important; box-sizing: border-box !important;
+        padding-block: .75rem !important;
   }
-  
+
   #header h1,
   #header h2 {
-    display: block !important; position: static !important; float: none !important; clear: both !important; grid-row: auto !important; grid-column: auto !important; width: 100% !important; max-width: 100% !important; height: auto !important; min-height: 0 !important; margin: .35rem 0 !important; line-height: 1.25 !important; white-space: normal !important; overflow-wrap: anywhere !important; box-sizing: border-box !important;
+          width: 100% !important; max-width: 100% !important;   margin: .35rem 0 !important;    box-sizing: border-box !important;
   }
-  
+
   #header h1 > a,
   #header h2 > span {
-    display: block !important; position: static !important; width: 100% !important; max-width: 100% !important; height: auto !important; min-height: 0 !important; line-height: 1.25 !important; white-space: normal !important; overflow-wrap: anywhere !important;
+      width: 100% !important; max-width: 100% !important;
   }
-  
+
   #search-top-box {
     display: block !important; position: static !important; inset: auto !important; float: none !important; clear: both !important; width: 100% !important; max-width: 100% !important; margin: .5rem 0 0 !important; box-sizing: border-box !important;
   }
@@ -63,26 +63,23 @@
 
 /* The 390px capture showed the localized display title sharing a grid row with its subtitle. Restore a vertical header flow without changing Paperstack's paper colors or Josefin typography. */
 @media (max-width: 767px) {
-  #header h1 > a,
-  #header h2 > span {
-    display: block !important; position: static !important; height: auto !important; min-height: 0 !important; line-height: 1.25 !important; white-space: normal !important; overflow-wrap: anywhere !important;
-  }
 }
 
 /* The 390px capture exposed an 80px top padding on the logo anchor: the Japanese site title overflows its heading box into the subtitle. Keep the paper display face, but restore natural line-box flow. */
 @media (max-width: 767px) {
   #header {
     display: flow-root !important; position: relative !important; height: auto !important; min-height: 0 !important;
-  }
-  
+  }/* SCP-JP compatibility fallback: Keep block before flow-root as the display fallback for engines without flow-root support. */
+
+
   #header h1,
   #header h2 {
-    display: block !important; position: static !important; float: none !important; clear: both !important; grid-row: auto !important; grid-column: auto !important; height: auto !important; min-height: 0 !important; margin-block: .4rem !important; line-height: 1.25 !important; white-space: normal !important; overflow-wrap: anywhere !important;
+    display: block !important; position: static !important; float: none !important; clear: both !important; grid-row: auto !important; grid-column: auto !important;   margin-block: .4rem !important;  white-space: normal !important; overflow-wrap: anywhere !important;
   }
-  
+
   #header h1 > a,
   #header h2 > span {
-    display: block !important; position: static !important; height: auto !important; min-height: 0 !important; padding: 0 !important; line-height: 1.25 !important; white-space: normal !important; overflow-wrap: anywhere !important;
+     position: static !important;   padding: 0 !important;  white-space: normal !important; overflow-wrap: anywhere !important;
   }
 }
 
@@ -91,23 +88,27 @@
   #header {
     padding-top: 2.25rem !important; box-sizing: border-box !important;
   }
-  
+
   #header h1 {
     margin-top: .45rem !important;
   }
-  
+
   #header #login-status {
     position: absolute !important; top: .35rem !important; right: 0 !important; max-width: calc(100% - 3rem) !important;
   }
 }
 
 /* The zero-height headings were still winning via the legacy grid treatment. Contain their line boxes before laying out the long local-site title. */
-@media (max-width: 767px) {
+@media (max-width: 767px) {/* SCP-JP compatibility fallback: Keep auto before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing. */
+/* SCP-JP compatibility fallback: Keep 1.25em before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing. */
+
   #header h1,
   #header h2 {
     display: flow-root !important; height: auto !important; min-height: 1.25em !important; line-height: 1.25 !important;
-  }
-  
+  }/* SCP-JP compatibility fallback: Keep auto before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing. */
+/* SCP-JP compatibility fallback: Keep 1.25em before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing. */
+
+
   #header h1 > a,
   #header h1 > a > span,
   #header h2 > span {

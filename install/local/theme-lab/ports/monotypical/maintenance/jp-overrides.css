@@ -9,10 +9,6 @@
 /* SCP-JP interaction adaptation: give the zero-width account area a readable user label and a pointer-enabled menu. */
 /* The current shared credit:start modal has a 400px desktop width. Clamp the modal shell at SCP-JP's 320px policy boundary without shrinking desktop styling. */
 @media (max-width: 400px) {
-  #u-credit-view .modalcontainer,
-  #u-credit-otherwise .modalcontainer {
-    left: 50% !important; right: auto !important; width: calc(100vw - 1rem) !important; max-width: calc(100vw - 1rem) !important; min-width: 0 !important; transform: translate(-50%, -50%) !important; box-sizing: border-box !important;
-  }
 }
 
 /* SCP-JP interaction adaptation: give the zero-width account area a readable user label and a pointer-enabled menu. */
@@ -34,7 +30,7 @@
   #u-credit-otherwise .modalcontainer {
     left: 50% !important; right: auto !important; width: calc(100vw - 1rem) !important; max-width: calc(100vw - 1rem) !important; min-width: 0 !important; transform: translateX(-50%) !important; box-sizing: border-box !important;
   }
-  
+
   #u-credit-view .modalbox,
   #u-credit-otherwise .modalbox {
     width: 100% !important; max-width: 100% !important; min-width: 0 !important; max-height: calc(100vh - 1rem) !important; overflow: auto !important; box-sizing: border-box !important; overflow-wrap: anywhere;
@@ -47,7 +43,7 @@
   #u-credit-otherwise .modalcontainer {
     top: 1rem !important; bottom: 1rem !important; height: auto !important; max-height: calc(100dvh - 2rem) !important;
   }
-  
+
   #u-credit-view .modalbox,
   #u-credit-otherwise .modalbox {
     max-height: calc(100dvh - 2rem) !important; overflow-y: auto !important; box-sizing: border-box !important;
@@ -61,7 +57,7 @@
   }
 }
 
-/* Image-reviewed 320px repair: Monotypical's visible Foundation wordmark is a generated h1 anchor pseudo-element; prevent the fallback overflow-wrap:anywhere from splitting the final letters. */
+/* SCP-JP 320px compatibility: Monotypical's visible Foundation wordmark is a generated h1 anchor pseudo-element; prevent the fallback overflow-wrap:anywhere from splitting the final letters. */
 @media (max-width: 360px) {
   #header h1 a::before {
     white-space: normal !important; overflow-wrap: normal !important; word-break: normal !important; hyphens: none !important; font-size: clamp(1rem, 6.5vw, 1.25rem) !important; letter-spacing: -.035em !important;

@@ -3,15 +3,89 @@
   "frozen_candidate_source_sha256": "cd23181e4484790b7f5ced563c672496f1466699effa0f1eae8deb2dd03b5110",
   "base_source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
   "raw_jp_overrides_sha256": "9d862d91c8c5ff94943ab7199e5afb4c3070e8861ae63b3a3163ce12b0db3ccd",
-  "jp_overrides_sha256": "19531838f8221b4c4bc9cfa0f8102f32c0c5a17b4c918a77ce3517add0d4ce04",
+  "jp_overrides_sha256": "6ce025977c5045c91934087e059fbafd58e4727df4c3441c41fc06b6c169e543",
   "semantic_css_sha256": "c344fe092573dd00c53b9142c67a79df33fd8e52f53864ccbb22183e7ee12084",
-  "canonical_override_sha256": "903eac17f74642a33b188ee1b52bca4cd793125ea93d6df0cb7b00e88b710067",
+  "canonical_override_sha256": "1c704d7f43f16365915f7d05829f443da4705f4887e20c54fa5ac822b3898058",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "6470d573d540f779b9ca04da2093301d31a8a8f67870dc02a09b48c6618369a3",
+  "final_source_inputs": {
+    "base_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
+    "jp_overrides_sha256": "6ce025977c5045c91934087e059fbafd58e4727df4c3441c41fc06b6c169e543"
+  },
+  "ordered_include_sha256": "e279447da3763ae59e4c906da90e934bffefd431ad6faf8183aba9231e1fd1e7",
+  "declaration_reviews": {
+    "[[\"@media (max-width: 600px)\"],\"#u-credit-otherwise .modalbox a[href=\\\"#u-credit-view\\\"]\",\"display\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep inline-block before inline-flex as the display fallback for engines without inline-flex support.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 0,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 600px)\"],\"#u-credit-otherwise .modalbox a[href=\\\"#u-credit-view\\\"]\",\"padding\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\".creditRate .cancel a::before\",\"content\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\".creditRate .ratedown a::before\",\"content\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\".creditRate .rateup a::before\",\"content\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\".page-rate-widget-box .cancel a::before\",\"content\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\".page-rate-widget-box .ratedown a::before\",\"content\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\".page-rate-widget-box .rateup a::before\",\"content\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 600px)\"],\"#u-credit-otherwise .modalbox a[href=\\\"#u-credit-view\\\"]\",\"white-space\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    }
+  },
   "adaptation_block_count": 9,
   "raw_override_rule_count": 35,
   "canonical_override_rule_count": 35,
   "exact_duplicate_rules_removed": 0,
+  "redundant_same_value_declarations_removed": 5,
+  "empty_rules_removed": 0,
   "active_tags": [],
-  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
   "historical_adaptations": [
     {
       "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",

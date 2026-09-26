@@ -17,7 +17,7 @@
   #u-credit-otherwise .modalbox .credit-back {
     display: flex !important; flex-wrap: nowrap !important; justify-content: center !important; align-items: center !important; gap: .35rem !important;
   }
-  
+
   #u-credit-otherwise .modalbox .credit-back a[href="#u-credit-view"] {
     display: inline-flex !important; width: auto !important; min-width: 3rem !important; white-space: nowrap !important; word-break: keep-all !important; overflow-wrap: normal !important;
   }

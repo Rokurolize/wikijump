@@ -9,17 +9,12 @@
 /* Preserve Jakstyle's burgundy History controls and make the Compare label readable on their dark fill. */
 #action-area .revision-diff-controls button {
   color: #fff !important;
+}#side-bar .side-block a {
+  color: #fff0e8 !important; text-decoration: underline; text-underline-offset: .12em;
 }
-
-/* SCP-JP credit acceptance: distinguish the license link from Jakstyle's red credit bar without changing its page palette. */
-/* Restore contrast in the opened Jakstyle sidebar while keeping its burgundy panels distinct. */
-.modalbox .credit a,
-#u-credit-otherwise .modalbox a {
-  color: #fff !important; text-decoration: underline !important; text-underline-offset: .15em;
+#side-bar .collapsible-block-link {
+   text-decoration: underline; text-underline-offset: .12em;
 }
-
-#side-bar .side-block a,
-#side-bar .collapsible-block-link,
 #side-bar .collapsible-block-unfolded a {
   color: #fff0e8 !important; text-decoration: underline; text-underline-offset: .12em;
 }
@@ -53,17 +48,14 @@
 
 /* The cog is intentional Jakstyle artwork, but at phone width its full-size background sits over the live site wordmark. Keep the cog as a faint right-side watermark so the branded title remains readable. */
 @media (max-width: 767px) {
-  #header {
-    position: relative !important;
-  }
-  
+
   #header::before {
     background-position: right center !important; background-size: auto 72% !important; opacity: .08 !important; pointer-events: none !important;
   }
-  
+
   #header h1,
   #header h2 {
-    position: relative !important; z-index: 1 !important;
+     z-index: 1 !important;
   }
 }
 
@@ -72,32 +64,32 @@
   #header {
     top: 0 !important; position: relative !important; height: auto !important; min-height: 8rem !important; max-height: none !important; padding: 1.25rem .75rem .5rem !important; box-sizing: border-box !important; background-position: .5rem .5rem !important; background-size: 3.5rem auto !important;
   }
-  
+
   #header h1,
   #header h2 {
     position: static !important; float: none !important; display: block !important; width: auto !important; max-width: calc(100% - 3.5rem) !important; height: auto !important; min-height: 1.25em !important; margin: .25rem 0 .25rem 3.5rem !important; padding: 0 !important; line-height: 1.3 !important; white-space: normal !important; overflow-wrap: anywhere !important; box-sizing: border-box !important;
   }
-  
+
   #header h1 > a,
   #header h1 > a > span,
   #header h2 > span {
     position: static !important; display: block !important; width: auto !important; max-width: 100% !important; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; line-height: inherit !important; white-space: normal !important; overflow-wrap: anywhere !important;
   }
-  
+
   #search-top-box {
     position: relative !important; inset: auto !important; float: none !important; width: 100% !important; max-width: 100% !important; margin: .5rem 0 0 !important;
   }
-  
+
   #top-bar {
     position: relative !important; top: auto !important; width: 100% !important; height: auto !important; margin: .35rem 0 0 !important;
   }
-  
+
   .mobile-top-bar {
     position: relative !important; inset: auto !important; width: 100% !important; height: auto !important; min-height: 2.5rem !important;
   }
 }
 
-/* Direct mobile image review: dark Japanese tab content is rendered on Jakstyle's deep burgundy YUI tab panel. Keep the panel identity and use its light text palette for content and links. */
+/* SCP-JP mobile compatibility: dark Japanese tab content is rendered on Jakstyle's deep burgundy YUI tab panel. Keep the panel identity and use its light text palette for content and links. */
 #page-content .yui-navset .yui-content,
 #page-content .yui-navset .yui-content * {
   color: #fff0f2 !important; -webkit-text-fill-color: #fff0f2 !important;
@@ -132,19 +124,17 @@
 
 #u-credit-otherwise .credit-back a[href="#u-credit-view"] {
   display: inline-flex !important; width: max-content !important; min-width: 4.5rem !important; max-width: 100% !important; min-height: 2.25rem !important; white-space: nowrap !important; word-break: keep-all !important; overflow-wrap: normal !important; align-items: center !important; justify-content: center !important;
-}
-
-/* Direct mobile screenshots show the selected Backlinks control and pane heading dark on burgundy. Preserve the burgundy action treatment and restore the theme's light foreground only on the selected action and matching pane heading. */
-#backlinks-button,
-#backlinks-button:hover,
-#backlinks-button:focus,
-#backlinks-button:active,
-#action-area .page-backlinks-header {
+}/* Direct mobile screenshots show the selected Backlinks control and pane heading dark on burgundy. Preserve the burgundy action treatment and restore the theme's light foreground only on the selected action and matching pane heading. */
+#backlinks-button {
   color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
 }
-
-/* Full-resolution review of expanded actions found dark labels on burgundy buttons; a focused editor diagnostic also showed the populated source and background both computed to rgb(252,252,252). Retain the red controls and dark editor surface with readable theme-palette foregrounds. */
-#page-options-bottom-2 #backlinks-button {
+#backlinks-button:hover {
+  color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
+}
+#backlinks-button:focus {
+  color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
+}
+#backlinks-button:active {
   color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
 }
 
@@ -186,7 +176,7 @@
 #header h1 a span,
 #header h2,
 #header h2 span {
-  color: #ffe3e6 !important; -webkit-text-fill-color: #ffe3e6 !important; text-shadow: 0 1px 0 #4e0710 !important;
+    text-shadow: 0 1px 0 #4e0710 !important;
 }
 
 #side-bar .side-block .heading,
@@ -194,10 +184,9 @@
 #side-bar .collapsible-block-link {
   color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
 }
-
-#page-options-bottom a,
-#page-options-bottom-2 a,
-#page-options-bottom a *,
+#page-options-bottom a * {
+  color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
+}
 #page-options-bottom-2 a * {
   color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
 }
@@ -225,7 +214,7 @@
   content: none !important; display: none !important;
 }
 
-/* Full-resolution after-image identifies the clipped duplicate as #header h1 a::before, which emits the upstream English --header-title over the actual SCP-JP title. Preserve the authored logo background and visible localized anchor text; suppress only this duplicate wordmark pseudo-content. */
+/* The duplicate wordmark is emitted by #header h1 a::before, which emits the upstream English --header-title over the actual SCP-JP title. Preserve the authored logo background and visible localized anchor text; suppress only this duplicate wordmark pseudo-content. */
 #header h1 > a::before {
   content: none !important; display: none !important;
 }
@@ -234,11 +223,12 @@
 #page-options-bottom a,
 #page-options-bottom-2 a {
   color: #5b1020 !important; -webkit-text-fill-color: #5b1020 !important;
+}#page-options-bottom #more-options-button {
+  color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
 }
-
-#page-options-bottom #more-options-button,
-#page-options-bottom-2 #delete-button,
-#page-options-bottom a:is(:hover,:focus,:focus-visible,:active),
+#page-options-bottom a:is(:hover,:focus,:focus-visible,:active) {
+  color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
+}
 #page-options-bottom-2 a:is(:hover,:focus,:focus-visible,:active) {
   color: #fff0e8 !important; -webkit-text-fill-color: #fff0e8 !important;
 }
@@ -257,33 +247,33 @@
   #header {
     top: 0 !important; position: relative !important; height: var(--final-header-height-on-desktop) !important; min-height: 7.5rem !important; box-sizing: border-box !important;
   }
-  
+
   #header h1 {
     position: relative !important; float: none !important; height: auto !important; max-height: none !important; margin: 0 !important; padding: .8rem 1rem 0 7.5rem !important; line-height: 1.2 !important; box-sizing: border-box !important;
   }
-  
+
   #header h1 > a {
     display: block !important; position: static !important; width: auto !important; height: auto !important; max-height: none !important; margin: 0 !important; padding: 0 !important; line-height: 1.2 !important; white-space: normal !important;
   }
-  
+
   #header h1 > a::before {
     content: "SCP-JP" !important; display: block !important; color: #ffe3e6 !important; -webkit-text-fill-color: #ffe3e6 !important; font: inherit !important; line-height: 1.2 !important; text-shadow: 0 1px 0 #4e0710 !important;
   }
-  
+
   #header h1 > a > span {
     display: none !important;
   }
-  
+
   #header h2 {
     position: relative !important; float: none !important; height: auto !important; max-height: none !important; margin: .15rem 0 0 !important; padding: 0 1rem 0 7.5rem !important; line-height: 1.2 !important; box-sizing: border-box !important;
   }
-  
+
   #header h2 > span {
     display: block !important; position: static !important; height: auto !important; max-height: none !important; margin: 0 !important; padding: 0 !important; line-height: 1.2 !important;
   }
 }
 
-/* The v52 full-resolution expanded-action after-image showed that older two-ID rules still won for pale Backlinks and disabled Delete controls. Override those exact SCP-JP buttons with readable dark burgundy ink on their current pale disabled surfaces; do not change the remaining action palette. */
+/* The expanded page actions use pale surfaces for Backlinks and disabled Delete controls. Override those exact SCP-JP buttons with readable dark burgundy ink on their current pale disabled surfaces; do not change the remaining action palette. */
 #page-options-bottom-2 #backlinks-button,
 #page-options-bottom-2 #delete-button {
   color: #5b1020 !important; -webkit-text-fill-color: #5b1020 !important;

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import {canonicalExactRuleIdentity,compactExactDuplicateRules,composeMaintainableCandidate,semanticCssIdentity,splitMaintainableCandidate,verifyEquivalentCandidate} from '../ports/scripts/prepare-maintainable-sources.mjs';
+import {canonicalExactRuleIdentity,canonicalizeShadowedDeclarations,compactExactDuplicateRules,composeMaintainableCandidate,semanticCssIdentity,splitMaintainableCandidate,verifyEquivalentCandidate} from '../ports/scripts/prepare-maintainable-sources.mjs';
 
 test('splits trailing SCP-JP adaptation modules into one maintainable overlay',()=>{
   const source=`[[module CSS]]\n.base { color: black; }\n[[/module]]\nbody\n[[module CSS]]\n/* SCP-JP acceptance repair v9: sample */\n/* Japanese labels need room. */\n.nav { white-space: normal; }\n[[/module]]\n[[module CSS]]\n/* SCP-JP interaction adaptation: keep focus visible. */\n.nav:focus { outline: 2px solid; }\n[[/module]]\n`;
@@ -38,6 +38,14 @@ test('compose emits one final CSS module',()=>{
   assert.equal(composeMaintainableCandidate('body\n','.a{color:red}\n'),'body\n\n[[module CSS]]\n.a{color:red}\n[[/module]]\n');
 });
 
+test('equivalence proof binds the final page source to the ordered localization includes',()=>{
+  const source='[[include :scp:site-a]]\n[[module CSS]]\n.a { color: red; }\n[[/module]]\n';
+  const result=splitMaintainableCandidate(source);
+  const verified=verifyEquivalentCandidate({original:source,base:result.base,rawOverlayCss:result.overlayCss});
+  assert.match(verified.composed,/\[\[include :scp:site-a\]\]/u);
+  assert.match(verified.ordered_include_sha256,/^[a-f0-9]{64}$/u);
+});
+
 test('compactor removes only earlier exact duplicate rules and preserves canonical cascade',()=>{
   const overlays=[
     {marker:'one',rationale:'first',css:'/* first */\n.a, .b { color: red; }'},
@@ -56,4 +64,17 @@ test('compactor removes only earlier exact duplicate rules and preserves canonic
 
 test('compactor refuses leaf at-rules it cannot reconstruct',()=>{
   assert.throws(()=>compactExactDuplicateRules([{marker:'x',rationale:'x',css:'@font-face { font-family: x; src: url(x.woff2); }'}]),/cannot safely rewrite/u);
+});
+
+test('canonicalizer consolidates shadowed values and preserves documented syntax fallbacks',()=>{
+  const css='.a { color: red; padding: 1px; }\n.b { color: blue; }\n.a { color: red; padding: 2px; }\n.c { color: green; }\n.c { color: green; }\n@media (max-width: 600px) { .a { display: block !important; display: flow-root !important; } }';
+  const compacted=canonicalizeShadowedDeclarations(css);
+  assert.equal(compacted.removed,3);
+  assert.equal(compacted.empty_rules_removed,2);
+  assert.equal((compacted.css.match(/color: red/gu)??[]).length,1);
+  assert.match(compacted.css,/display: block !important; display: flow-root !important/u);
+  assert.doesNotMatch(compacted.css,/padding: 1px/u);
+  assert.match(compacted.css,/padding: 2px/u);
+  assert.match(compacted.css,/compatibility fallback/u);
+  assert.equal(compacted.decisions.find(row=>row.property==='display').status,'intentional-fallback');
 });

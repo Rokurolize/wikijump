@@ -8,27 +8,16 @@
 
 /* The mobile theme title and localized site title occupy separate header rows; keep the long page title in the article column. */
 @media (max-width: 767px) {
-  #header {
-    height: auto !important; min-height: 0 !important;
-  }
-  
-  #header h1,
-  #header h2 {
-    position: static !important; float: none !important; display: block !important; width: 100% !important; max-width: 100% !important; height: auto !important; line-height: 1.2 !important; overflow-wrap: anywhere !important;
-  }
 }
 
 /* The collage is the theme identity; place the localized header labels and search in flow over it so they do not cover the article title. */
 @media (max-width: 767px) {
-  #header {
-    height: auto !important; min-height: 0 !important; padding-bottom: .5rem;
-  }
-  
+
   #header h1,
   #header h2 {
     position: static !important; float: none !important; clear: both !important; display: block !important; width: 100% !important; max-width: 100% !important; height: auto !important; margin: .25rem 0 !important; line-height: 1.25 !important; overflow-wrap: anywhere !important; box-sizing: border-box !important;
   }
-  
+
   #search-top-box {
     position: static !important; inset: auto !important; float: none !important; clear: both !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important;
   }
@@ -39,11 +28,11 @@
   #header {
     min-height: 16rem !important; height: auto !important; padding-bottom: 1rem !important;
   }
-  
+
   #top-bar {
     position: relative !important; inset: auto !important; top: auto !important; left: auto !important; width: 100% !important; margin-top: .5rem !important;
   }
-  
+
   #login-status {
     position: relative !important; inset: auto !important; top: auto !important; right: auto !important; margin: .5rem 0 0 auto !important;
   }
@@ -54,11 +43,11 @@
   #side-bar a.close-menu {
     padding-inline-start: .65rem !important; box-sizing: border-box !important;
   }
-  
+
   #license-area {
     background: rgba(255,255,255,.94) !important; color: #242018 !important; padding: .65rem !important;
   }
-  
+
   #license-area a {
     color: #603b12 !important; text-decoration: underline !important;
   }
@@ -69,7 +58,7 @@
   #header {
     position: relative !important;
   }
-  
+
   #login-status {
     position: absolute !important; top: .35rem !important; right: .4rem !important; z-index: 20 !important; margin: 0 !important; max-width: calc(100vw - 2rem) !important;
   }
@@ -82,7 +71,7 @@
   }
 }
 
-/* Direct after-image review: the localized SCP-JP label is white over pale collage panels at the masthead's upper-right edge. Keep its white type and poster contrast, adding the theme's charcoal outline for legibility across variable imagery. */
+/* SCP-JP compatibility: the localized SCP-JP label is white over pale collage panels at the masthead's upper-right edge. Keep its white type and poster contrast, adding the theme's charcoal outline for legibility across variable imagery. */
 @media (min-width: 768px) {
   #header h2,
   #header h2 > span {
