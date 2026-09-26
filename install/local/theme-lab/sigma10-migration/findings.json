@@ -94,7 +94,8 @@
         "field_themes_containing_it": 4,
         "baseline_probe_also_adds_overflow": true,
         "note": "Document width equals ul.creditRate reachable_right for every theme that overflows; contained themes clip it and keep documentWidth 390."
-      }
+      },
+      "fix_verification": "In an isolated browser load of the captured Sigma-10 mobile DOM, adding .creditRate::before{white-space:pre-wrap !important} reduced document scrollWidth from 511 to 390."
     },
     {
       "id": "SIGMA10-SEARCH-002",
