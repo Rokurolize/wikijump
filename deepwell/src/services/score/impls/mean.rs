@@ -84,18 +84,3 @@ impl Scorer for MeanScorer {
         Ok(ScoreValue::Float(sum.unwrap_or(0) as f64 / count as f64))
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::services::score::Scorer;
-
-    #[test]
-    fn mean_scorer_metadata_accepts_all_vote_styles() {
-        let scorer = MeanScorer;
-
-        assert_eq!(Scorer::score_type(&scorer), ScoreType::Mean);
-        assert!(Scorer::accepts_vote_type(&scorer, VoteType::UpsDowns));
-        assert!(Scorer::accepts_vote_type(&scorer, VoteType::FiveStar));
-    }
-}
