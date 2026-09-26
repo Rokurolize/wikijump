@@ -11385,7 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "52dd9e43745e657d8afa61cad5edb73288f0f147c7248d98a63f292685551f23"
+      "source_input_set_sha256": "fb9258fd56d84c24c659b05e1b936abaf053788c2ba643fb086a6b247f5ab15f"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11546,7 +11546,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "45dade7655edf3f5b026ad055a91ed0a2d4285154ecd6d65a28a85931071997a"
+        "sha256": "8360a18a904f6dd6cc284ef4e317a21a38066e0fe716e6542ef06664019a4292"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -25016,7 +25016,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/auth.rs#mfa_setup_reset_disable_and_totp_login_flow"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
         ]
       },
       "evidence": {
@@ -25781,7 +25781,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/auth.rs#mfa_setup_reset_disable_and_totp_login_flow"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
         ]
       },
       "evidence": {
@@ -25826,7 +25826,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/auth.rs#mfa_setup_reset_disable_and_totp_login_flow"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
         ]
       },
       "evidence": {
@@ -29246,7 +29246,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/import.rs#import_user_creates_known_user_and_can_be_reclaimed"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
         ]
       },
       "evidence": {
