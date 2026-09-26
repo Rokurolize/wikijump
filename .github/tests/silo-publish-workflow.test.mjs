@@ -6,22 +6,22 @@ import { fileURLToPath } from "node:url"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const source = readFileSync(
-  path.join(root, ".github/workflows/docker-push-minio.yaml"),
+  path.join(root, ".github/workflows/docker-push-silo.yaml"),
   "utf8"
 )
 
-test("Minio publishing is triggered only by relevant develop pushes", () => {
+test("Silo publishing is triggered only by relevant develop pushes", () => {
   const trigger = source.slice(source.indexOf("on:\n"), source.indexOf("\nenv:\n"))
 
   assert.match(trigger, /^\s*push:$/m)
   assert.match(trigger, /^\s*branches:\s*\n\s*- develop$/m)
-  assert.match(trigger, /- 'install\/local\/minio\/\*'/)
-  assert.match(trigger, /- '\.github\/workflows\/docker-push-minio\.yaml'/)
+  assert.match(trigger, /- 'install\/local\/silo\/\*'/)
+  assert.match(trigger, /- '\.github\/workflows\/docker-push-silo\.yaml'/)
   assert.doesNotMatch(trigger, /pull_request|workflow_dispatch|branches-ignore/)
   assert.equal((trigger.match(/^\s*- develop$/gm) ?? []).length, 1)
 })
 
-test("Minio publish namespace and develop guards retain their audited intent", () => {
+test("Silo publish namespace and develop guards retain their audited intent", () => {
   assert.match(source, /^\s*REGISTRY: ghcr\.io$/m)
   assert.match(source, /^\s*IMAGE_NAME: scpwiki\/wikijump$/m)
   assert.match(source, /^\s*TAG: minio$/m)
@@ -33,7 +33,7 @@ test("Minio publish namespace and develop guards retain their audited intent", (
   assert.match(source, /^\s*id-token: write$/m)
 })
 
-test("third-party Minio publishing actions are pinned to full commits", () => {
+test("third-party Silo publishing actions are pinned to full commits", () => {
   const uses = [...source.matchAll(/^\s*uses:\s*([^\s#]+)/gm)].map((match) => match[1])
   assert.ok(uses.length >= 4)
 
