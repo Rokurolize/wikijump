@@ -183,4 +183,16 @@ test("legacy wiki actions derive the actor, client address, and revision binding
   for (const mutation of [calls[1], calls[3]]) {
     assert.deepEqual(mutation.context, TRUSTED_CONTEXT)
   }
+
+  // A request that claims a different site than the trusted context is
+  // rejected before any legacy mutation reaches Deepwell.
+  calls.length = 0
+  const spoofed = await actions.legacyRate(
+    requestEvent("legacyRate", {
+      body: { pageId: 42, lastRevisionId: 90, actionIndex: 3, actionFingerprint },
+      siteId: SITE_ID + 1
+    })
+  )
+  assert.equal(spoofed.status, 403)
+  assert.deepEqual(calls, [])
 })
