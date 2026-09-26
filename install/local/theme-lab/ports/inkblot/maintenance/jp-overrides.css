@@ -1,0 +1,115 @@
+/* SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused. */
+@media (min-width: 768px) {
+  #search-top-box-form:hover #search-top-box-input,
+  #search-top-box-form:focus-within #search-top-box-input {
+    display: inline-block !important;
+  }
+}
+
+/* Keep the other-license modal's final link and back control inside the 320px viewport and allow the modal itself to scroll. */
+@media (max-width: 600px) {
+  #u-credit-otherwise .modalcontainer {
+    top: 1rem !important; bottom: 1rem !important; height: auto !important; max-height: calc(100dvh - 2rem) !important;
+  }
+
+  #u-credit-otherwise .modalbox {
+    max-height: calc(100dvh - 2rem) !important; overflow-y: auto !important; box-sizing: border-box !important;
+  }/* SCP-JP compatibility fallback: Keep inline-block before inline-flex as the display fallback for engines without inline-flex support. */
+
+
+  #u-credit-otherwise .modalbox a[href="#u-credit-view"] {
+    display: inline-block !important;
+  }
+}
+
+/* Keep the circular inkblot Rate controls visibly distinguishable as increase/decrease actions. */
+.page-rate-widget-box .rateup a::before,
+.creditRate .rateup a::before {
+   font-size: .8rem !important; font-weight: 700 !important;
+}
+
+.page-rate-widget-box .ratedown a::before,
+.creditRate .ratedown a::before {
+   font-size: .8rem !important; font-weight: 700 !important;
+}
+
+.page-rate-widget-box .cancel a::before,
+.creditRate .cancel a::before {
+   font-size: .8rem !important; font-weight: 700 !important;
+}
+
+/* Give the decorative Inkblot rating dots semantic text marks in a known glyph font; the preceding icon-font override renders an empty circle for these characters. */
+.page-rate-widget-box .rateup a,
+.page-rate-widget-box .ratedown a,
+.page-rate-widget-box .cancel a,
+.creditRate .rateup a,
+.creditRate .ratedown a,
+.creditRate .cancel a {
+  font-family: Arial, sans-serif !important; font-size: .8rem !important; font-weight: 700 !important; color: #23140b !important; -webkit-text-fill-color: #23140b !important;
+}
+
+.page-rate-widget-box .rateup a::before,
+.creditRate .rateup a::before {
+  content: "+" !important; font-family: Arial, sans-serif !important; color: #23140b !important;
+}
+
+.page-rate-widget-box .ratedown a::before,
+.creditRate .ratedown a::before {
+  content: "−" !important; font-family: Arial, sans-serif !important; color: #23140b !important;
+}
+
+.page-rate-widget-box .cancel a::before,
+.creditRate .cancel a::before {
+  content: "×" !important; font-family: Arial, sans-serif !important; color: #23140b !important;
+}
+
+.page-rate-widget-box .cancel a::after,
+.creditRate .cancel a::after {
+  content: none !important; display: none !important;
+}
+
+/* The current 320px other-license image shows only a sliver of the return control at the modal's lower edge. Keep the existing scrollable modal, but return the back affordance to normal flow as a full-width-readable button. */
+@media (max-width: 600px) {
+  #u-credit-otherwise .modalbox a[href="#u-credit-view"] {
+    position: static !important; float: none !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; min-width: 4.5rem !important; min-height: 2.4rem !important; margin: .75rem auto .35rem !important; padding: .35rem .55rem !important; line-height: 1.3 !important; white-space: nowrap !important; clear: both !important;
+  }
+
+  #u-credit-otherwise .modalbox {
+    padding-bottom: 1rem !important;
+  }
+}
+
+/* The frozen back link lives inside .credit-back, which SCP-JP's shared credit style hides for credit:view but theme CSS also suppresses in otherwise mode. Re-expose the existing parent and link only in the other-license dialog. */
+#u-credit-otherwise .credit-back {
+  display: block !important; height: auto !important; position: static !important; margin: .65rem auto !important;
+}
+
+#u-credit-otherwise .credit-back a[href="#u-credit-view"] {
+  display: inline-flex !important; position: static !important; float: none !important; min-width: 4.5rem !important; min-height: 2.25rem !important; white-space: nowrap !important; align-items: center !important; justify-content: center !important;
+}
+
+/* The current runtime shows the transparent footer's inherited tertiary gray made the runtime attribution almost disappear on white. Keep the transparent paper surface and use its existing dark body ink for the text. */
+#footer {
+  color: #333 !important;
+}
+
+/* SCP-JP mobile compatibility: Inkblot keeps #top-bar absolutely positioned while its imported mobile menu button is returned to flow. Reserve that menu row in the theme header so it cannot paint over the localized page title, preserving the collage and centered identity. */
+@media (max-width: 767px) {
+  #header {
+    position: relative !important; height: auto !important; min-height: 0 !important;
+  }
+
+  #top-bar {
+    position: relative !important; inset: auto !important; display: flow-root !important; width: 100% !important; height: 74px !important; min-height: 74px !important; margin-top: .25rem !important;
+  }
+
+  #top-bar .mobile-top-bar {
+    position: static !important; float: none !important; width: 100% !important; min-height: 66px !important;
+  }
+}
+
+/* SCP-JP compatibility: use a readable monospace face in source editors. */
+#action-area .page-source,
+#action-area textarea.editor-wikitext {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}

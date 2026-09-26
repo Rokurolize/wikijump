@@ -276,50 +276,144 @@
       "source_url": "https://api.fonts.coollabs.io/css2?family=Anonymous+Pro:wght@400;700&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "e27ea1b7a049ec4aabc42b820745e606136144e00bb20f252772c4e19ffc262e",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as ff207ba7270e877548be37146d22b50a05510d5d803f67d778eb2bed5cdbf8ba.css with SHA-256 ff207ba7270e877548be37146d22b50a05510d5d803f67d778eb2bed5cdbf8ba; the flattened final candidate was replayed offline.",
+      "final_url": "https://api.fonts.coollabs.io/css2?family=Anonymous+Pro:wght@400;700&display=swap",
+      "sha256": "ff207ba7270e877548be37146d22b50a05510d5d803f67d778eb2bed5cdbf8ba",
+      "asset_file": "ff207ba7270e877548be37146d22b50a05510d5d803f67d778eb2bed5cdbf8ba.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://api.fonts.coollabs.io/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "e27ea1b7a049ec4aabc42b820745e606136144e00bb20f252772c4e19ffc262e",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 13434753806b206d0deebe8c418af17d7ec23fd4e13067be15b63bf685467406.css with SHA-256 13434753806b206d0deebe8c418af17d7ec23fd4e13067be15b63bf685467406; the flattened final candidate was replayed offline.",
+      "final_url": "https://api.fonts.coollabs.io/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap",
+      "sha256": "13434753806b206d0deebe8c418af17d7ec23fd4e13067be15b63bf685467406",
+      "asset_file": "13434753806b206d0deebe8c418af17d7ec23fd4e13067be15b63bf685467406.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://api.fonts.coollabs.io/css2?family=Berkshire+Swash&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "e27ea1b7a049ec4aabc42b820745e606136144e00bb20f252772c4e19ffc262e",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 1f2281205b9cfe892d6621165c30c6c4f52d5c1bc5804e70c4834a3c3106c244.css with SHA-256 1f2281205b9cfe892d6621165c30c6c4f52d5c1bc5804e70c4834a3c3106c244; the flattened final candidate was replayed offline.",
+      "final_url": "https://api.fonts.coollabs.io/css2?family=Berkshire+Swash&display=swap",
+      "sha256": "1f2281205b9cfe892d6621165c30c6c4f52d5c1bc5804e70c4834a3c3106c244",
+      "asset_file": "1f2281205b9cfe892d6621165c30c6c4f52d5c1bc5804e70c4834a3c3106c244.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Kaisei+Opti:wght@700&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "e27ea1b7a049ec4aabc42b820745e606136144e00bb20f252772c4e19ffc262e",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 0a0b5662553b0f2c89cdb20d3e2014e1377724c041f1dcbfff547bbb73b934c7.css with SHA-256 0a0b5662553b0f2c89cdb20d3e2014e1377724c041f1dcbfff547bbb73b934c7; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=Kaisei+Opti:wght@700&display=swap",
+      "sha256": "0a0b5662553b0f2c89cdb20d3e2014e1377724c041f1dcbfff547bbb73b934c7",
+      "asset_file": "0a0b5662553b0f2c89cdb20d3e2014e1377724c041f1dcbfff547bbb73b934c7.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-75-r6x7/particles.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "e27ea1b7a049ec4aabc42b820745e606136144e00bb20f252772c4e19ffc262e",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 1bbdda2c2da47561890c737c5ec742fc14cde846120000e611bc640810c184c5.css with SHA-256 1bbdda2c2da47561890c737c5ec742fc14cde846120000e611bc640810c184c5; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-75-r6x7/particles.css",
+      "sha256": "1bbdda2c2da47561890c737c5ec742fc14cde846120000e611bc640810c184c5",
+      "asset_file": "1bbdda2c2da47561890c737c5ec742fc14cde846120000e611bc640810c184c5.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/1",
       "decision": "localize-into-package",
       "candidate_css_sha256": "e27ea1b7a049ec4aabc42b820745e606136144e00bb20f252772c4e19ffc262e",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 007314ecf9c9d48022ce23525392f2f6ab14f1fd44dff04317fe7881fff40f0e.css with SHA-256 007314ecf9c9d48022ce23525392f2f6ab14f1fd44dff04317fe7881fff40f0e; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/1",
+      "sha256": "007314ecf9c9d48022ce23525392f2f6ab14f1fd44dff04317fe7881fff40f0e",
+      "asset_file": "007314ecf9c9d48022ce23525392f2f6ab14f1fd44dff04317fe7881fff40f0e.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/2",
       "decision": "localize-into-package",
       "candidate_css_sha256": "e27ea1b7a049ec4aabc42b820745e606136144e00bb20f252772c4e19ffc262e",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as ef7ed75a859917e0114079200360694f8cd60bc1be3cd9074c46555f97966c00.css with SHA-256 ef7ed75a859917e0114079200360694f8cd60bc1be3cd9074c46555f97966c00; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/2",
+      "sha256": "ef7ed75a859917e0114079200360694f8cd60bc1be3cd9074c46555f97966c00",
+      "asset_file": "ef7ed75a859917e0114079200360694f8cd60bc1be3cd9074c46555f97966c00.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://api.fonts.coollabs.io/css2?family=Anonymous+Pro:wght@400;700&display=swap",
+      "final_url": "https://api.fonts.coollabs.io/css2?family=Anonymous+Pro:wght@400;700&display=swap",
+      "sha256": "ff207ba7270e877548be37146d22b50a05510d5d803f67d778eb2bed5cdbf8ba",
+      "normalized_text_sha256": "ff207ba7270e877548be37146d22b50a05510d5d803f67d778eb2bed5cdbf8ba",
+      "bytes": 3090,
+      "content_type": "text/css",
+      "asset_file": "ff207ba7270e877548be37146d22b50a05510d5d803f67d778eb2bed5cdbf8ba.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://api.fonts.coollabs.io/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap",
+      "final_url": "https://api.fonts.coollabs.io/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap",
+      "sha256": "13434753806b206d0deebe8c418af17d7ec23fd4e13067be15b63bf685467406",
+      "normalized_text_sha256": "13434753806b206d0deebe8c418af17d7ec23fd4e13067be15b63bf685467406",
+      "bytes": 1850,
+      "content_type": "text/css",
+      "asset_file": "13434753806b206d0deebe8c418af17d7ec23fd4e13067be15b63bf685467406.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://api.fonts.coollabs.io/css2?family=Berkshire+Swash&display=swap",
+      "final_url": "https://api.fonts.coollabs.io/css2?family=Berkshire+Swash&display=swap",
+      "sha256": "1f2281205b9cfe892d6621165c30c6c4f52d5c1bc5804e70c4834a3c3106c244",
+      "normalized_text_sha256": "1f2281205b9cfe892d6621165c30c6c4f52d5c1bc5804e70c4834a3c3106c244",
+      "bytes": 900,
+      "content_type": "text/css",
+      "asset_file": "1f2281205b9cfe892d6621165c30c6c4f52d5c1bc5804e70c4834a3c3106c244.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Kaisei+Opti:wght@700&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Kaisei+Opti:wght@700&display=swap",
+      "sha256": "0a0b5662553b0f2c89cdb20d3e2014e1377724c041f1dcbfff547bbb73b934c7",
+      "normalized_text_sha256": "0a0b5662553b0f2c89cdb20d3e2014e1377724c041f1dcbfff547bbb73b934c7",
+      "bytes": 217,
+      "content_type": "text/css",
+      "asset_file": "0a0b5662553b0f2c89cdb20d3e2014e1377724c041f1dcbfff547bbb73b934c7.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-75-r6x7/particles.css",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-75-r6x7/particles.css",
+      "sha256": "1bbdda2c2da47561890c737c5ec742fc14cde846120000e611bc640810c184c5",
+      "normalized_text_sha256": "e93010c9f9c6a166123bc29fb651c51d54643e1d14353688613db66126a37d11",
+      "bytes": 78353,
+      "content_type": "text/css",
+      "asset_file": "1bbdda2c2da47561890c737c5ec742fc14cde846120000e611bc640810c184c5.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/1",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/1",
+      "sha256": "007314ecf9c9d48022ce23525392f2f6ab14f1fd44dff04317fe7881fff40f0e",
+      "normalized_text_sha256": "007314ecf9c9d48022ce23525392f2f6ab14f1fd44dff04317fe7881fff40f0e",
+      "bytes": 88415,
+      "content_type": "text/css",
+      "asset_file": "007314ecf9c9d48022ce23525392f2f6ab14f1fd44dff04317fe7881fff40f0e.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/2",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/2",
+      "sha256": "ef7ed75a859917e0114079200360694f8cd60bc1be3cd9074c46555f97966c00",
+      "normalized_text_sha256": "ef7ed75a859917e0114079200360694f8cd60bc1be3cd9074c46555f97966c00",
+      "bytes": 8646,
+      "content_type": "text/css",
+      "asset_file": "ef7ed75a859917e0114079200360694f8cd60bc1be3cd9074c46555f97966c00.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }

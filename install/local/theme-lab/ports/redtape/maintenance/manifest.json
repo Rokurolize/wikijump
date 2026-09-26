@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "12c6c0bbac19f85ff7ce012332aa052aa764204c95213473cf360a242d483c7e",
+  "base_source_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
+  "raw_jp_overrides_sha256": "67cb76c41595f4ee51d661e667f5a95909e86ce844bbbffa4b6a99be24c15e12",
+  "jp_overrides_sha256": "eb31691a8f58b601ae009fad50a8b85d1bb806741d87fd7924b44893b2fa802d",
+  "semantic_css_sha256": "e418e17ade61e35fb534789f127337c229ca2d58db9457749a97818ab6b1cec9",
+  "canonical_override_sha256": "1d476dde1ff04d3d6689a9d2bd12dd8e6081ed350e83a4f1fbea25c115c84e8e",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "b222bfacf2dbb805624518bf120ac0987e79c64de7f8d3a5b04e6e207a91d9fa",
+  "final_source_inputs": {
+    "base_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
+    "jp_overrides_sha256": "eb31691a8f58b601ae009fad50a8b85d1bb806741d87fd7924b44893b2fa802d"
+  },
+  "ordered_include_sha256": "225db8ab14b085d9e4b79edcbad105a5a26c4813233687bf7202035ebfc348a4",
+  "declaration_reviews": {},
+  "adaptation_block_count": 6,
+  "raw_override_rule_count": 20,
+  "canonical_override_rule_count": 15,
+  "exact_duplicate_rules_removed": 5,
+  "redundant_same_value_declarations_removed": 0,
+  "empty_rules_removed": 0,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: redtape error dialog text contrast",
+      "rationale": "The source theme intentionally uses a white Wikidot error pane. Its bright theme accent is also used for dark-shell text and fails contrast on that white pane.",
+      "sha256": "3e5fe6ab91b41aed6b78bb0a614db38bf0aa35d97f4b10a762b45d18442a9beb",
+      "selectors": [
+        "#odialog-container .owindow.error",
+        "#odialog-container .owindow.error #modal-title",
+        "#odialog-container .owindow.error .button-close-message",
+        "#odialog-container .owindow.error .modal-body",
+        "#odialog-container .owindow.error .modal-message-extra"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up: redtape",
+      "rationale": "SCP-JP navigation contrast: the expanded red tape submenu needs light text over the theme's red panel.",
+      "sha256": "62d097a7bb14dd692d166a63a726a6b50a4f5b7a81012a215a8c14c3e7c30ee9",
+      "selectors": [
+        "#side-bar .collapsible-block-unfolded",
+        "#side-bar .collapsible-block-unfolded a",
+        "#side-bar .collapsible-block-unfolded a:hover",
+        "#side-bar .collapsible-block-unfolded-link",
+        "#side-bar .collapsible-block-unfolded-link:hover"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up v2: redtape",
+      "rationale": "SCP-JP navigation contrast: the expanded red tape submenu needs light text over the theme's red panel.",
+      "sha256": "049f2ae3a74ead922331b9747a87bdd0b57d6bb7de3d0a30d106b0c872feb090",
+      "selectors": [
+        "#side-bar .collapsible-block-unfolded",
+        "#side-bar .collapsible-block-unfolded a",
+        "#side-bar .collapsible-block-unfolded a:hover",
+        "#side-bar .collapsible-block-unfolded-link",
+        "#side-bar .collapsible-block-unfolded-link:hover"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v2: redtape",
+      "rationale": "The reviewed 390px other-license modal squeezed its Japanese back link into a vertical label. Preserve the red-tape button palette and reserve one readable line for the control.",
+      "sha256": "7b6fa7b060c9f44f4dc542800861317aa3188985dc44253086ce7a6e6f125756",
+      "selectors": [
+        "#u-credit-otherwise .modalbox a[href=\"#u-credit-view\"]"
+      ],
+      "at_contexts": [
+        "@media (max-width: 600px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header refinement v5: redtape",
+      "rationale": "Keep the localized credit return label on one usable control at phone widths while retaining Redtape's red treatment.",
+      "sha256": "942abce393f99481b492c6fbd32e52237569de89b164784ccd092220d6b051a9",
+      "selectors": [
+        "#u-credit-otherwise .modalbox > a[href=\"#u-credit-view\"]",
+        "#u-credit-otherwise a[href=\"#u-credit-view\"]"
+      ],
+      "at_contexts": [
+        "@media (max-width: 600px)"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,517 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "7b9050dee6c61604132d3a3d208f73ab4c889bf74f7f2f38f733f0057500b2c0",
+  "base_source_sha256": "de3113777c594f85a686e5cff3a31f22252448db1a5fc70f980bbcce0bf263a1",
+  "raw_jp_overrides_sha256": "2dd226df022338310bcc1685eea51af1b44e251f24ecc68e73144a284f283b29",
+  "jp_overrides_sha256": "7589f281cf457d039246086abea24c731ab51fc16f572ccb5c6330f6db36194b",
+  "semantic_css_sha256": "0f7240b7364c7ff7b10889fd94b1907dbc458cdc60b0a5b6341fcd8b67797c3c",
+  "canonical_override_sha256": "3cdc8550d7185763d8c541dd463b6c4f3a0a50e06dac5b770d8f90ab02366f33",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "b364ff45f0accb0dab50276df45eda75cffe57de1f5a7dac6d4548d4e886ccd4",
+  "final_source_inputs": {
+    "base_sha256": "de3113777c594f85a686e5cff3a31f22252448db1a5fc70f980bbcce0bf263a1",
+    "jp_overrides_sha256": "7589f281cf457d039246086abea24c731ab51fc16f572ccb5c6330f6db36194b"
+  },
+  "ordered_include_sha256": "607e1ae1fcdb25ff85a2e3035ef0ac3eb9aa8b47ae2da0cedf2f8e5a52de0925",
+  "declaration_reviews": {
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a > span\",\"height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep auto before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a > span\",\"min-height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep 1.2em before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep auto before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"min-height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep 1.2em before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep auto before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"max-width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 2 obsolete conflicting declaration(s) and 2 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 2,
+      "same_value_declarations_removed": 2,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"min-height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep 1.2em before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2 > span\",\"height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep auto before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2 > span\",\"min-height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep 1.2em before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep auto before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"max-width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 2 obsolete conflicting declaration(s) and 2 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 2,
+      "same_value_declarations_removed": 2,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"min-height\"]": {
+      "status": "intentional-fallback",
+      "rationale": "Keep 1.2em before max-content so engines that reject the intrinsic sizing keyword retain the established header sizing.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 1
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 2 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 2,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a > span\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"margin-right\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2 > span\",\"font-size\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2 > span\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"margin-right\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a > span\",\"display\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a > span\",\"overflow-wrap\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a > span\",\"position\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a > span\",\"white-space\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"box-sizing\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"display\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"overflow-wrap\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"white-space\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"max-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"overflow-wrap\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"white-space\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2 > span\",\"display\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2 > span\",\"overflow-wrap\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2 > span\",\"position\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2 > span\",\"white-space\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"max-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"overflow-wrap\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"white-space\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header\",\"height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header\",\"min-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#top-bar\",\"block-size\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    }
+  },
+  "adaptation_block_count": 12,
+  "raw_override_rule_count": 66,
+  "canonical_override_rule_count": 61,
+  "exact_duplicate_rules_removed": 5,
+  "redundant_same_value_declarations_removed": 37,
+  "empty_rules_removed": 3,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up: y2k",
+      "rationale": "SCP-JP mobile header adaptation: keep the localized identity and search within independent rows at the 320px policy boundary.",
+      "sha256": "62b19898850630fc7ea4675f2d4a375b8054abdd725b45e5e98754933a17650c",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up v2: y2k",
+      "rationale": "Keep the theme's square rating buttons while exposing their symbol text with a contrasting ink and minimum touch size.",
+      "sha256": "908888aa4adec7016037e3ac23472b523700157c858eea2be2184c69277a8009",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form",
+        "#top-bar",
+        ".creditRate .cancel a",
+        ".creditRate .ratedown a",
+        ".creditRate .rateup a",
+        ".page-rate-widget-box .cancel a",
+        ".page-rate-widget-box .ratedown a",
+        ".page-rate-widget-box .rateup a"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v1: y2k",
+      "rationale": "Use readable text signs for Rate actions; the imported widget's empty legacy slots have no visible glyph in the current SCP-JP shell.",
+      "sha256": "de42e9a6836b89341aea595b62e3b94039ab9c88e258b12c4bfb635c5253a1b6",
+      "selectors": [
+        ".creditRate .cancel a::before",
+        ".creditRate .ratedown a::before",
+        ".creditRate .rateup a::before",
+        ".page-rate-widget-box .cancel a::before",
+        ".page-rate-widget-box .ratedown a::before",
+        ".page-rate-widget-box .rateup a::before"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v3: y2k",
+      "rationale": "These captured JP theme headers share the legacy zero-line-height title recipe: the anchor reserves 80px/25px and the subtitle span reserves 19px with line-height 0, so real SCP-JP title text overlaps despite its headings being in document flow. Keep the logo's inline offset and theme colors while restoring natural wrapped line boxes.",
+      "sha256": "750a5e954030a5bd886b0177dd55553844a133e46ae8c4aa9d6643b918d6f2e3",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v4: y2k",
+      "rationale": "Image review plus DOM evidence: the imported stylesheet sets logical block-size:0 on heading spans, so text paints outside a zero-height flow box and the following Search/mobile navigation overlaps it. Reset the logical constraint as well as physical height.",
+      "sha256": "0314f76cb08864472fa221db78ecc61578542e7856300c01c838a5b53d104197",
+      "selectors": [
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span",
+        "#search-top-box",
+        "#search-top-box-form",
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v5: y2k",
+      "rationale": "Follow-up to the visual defect: the same imported header positions .mobile-top-bar above the zero-height #top-bar. Return the responsive navigation list to flow after Search while its round open-menu button keeps its fixed touch target.",
+      "sha256": "8379162191debc3fe5f3907264aeaf8d7965005afc9360ee661d262575c183c8",
+      "selectors": [
+        "#top-bar",
+        ".mobile-top-bar",
+        ".mobile-top-bar > ul"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v6: y2k",
+      "rationale": "The inherited 76px logo gutter was added to a full-width heading, clipping the SCP-JP site title at the right edge. Let both localized heading blocks consume only their remaining inline space.",
+      "sha256": "260f4417811c6cc2d132c09df6da4e410120a86317243b7ac5d8d461b1e95312",
+      "selectors": [
+        "#header h1",
+        "#header h1 > a",
+        "#header h2"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance header/navigation repair v3: y2k",
+      "rationale": "Y2K's 390px screenshot shows the two localized labels sharing the logo's legacy fixed header stack. Give both headings real line boxes and reduce only the mobile subtitle scale to keep the shield and article boundary clear.",
+      "sha256": "30a65e05d39b21f2c88147182c747a3798db5cf92d3af3b5b8d544c16c4d9879",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance header layering repair v4: y2k",
+      "rationale": "Y2K uses a pseudo-element as its themed subtitle. Hide the local-site description text without hiding that pseudo-element, and reserve its full wrapped height above the shield.",
+      "sha256": "fb1a385de0d877397a02002e9fab1f1f7d7a57ca3a9f79f4b4e5ce26316cd12f",
+      "selectors": [
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span",
+        "#header h2 > span::before"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v7: y2k",
+      "rationale": "Y2K's original pixel emblem is centered under the localized heading and obscures the motto. Retain the emblem as a right-side masthead mark and reserve its width while keeping both text rows readable.",
+      "sha256": "bbb5d6d6ad497ed349fa77cc3dca9bf55a45870a60e90dd1b50e4713e37aa124",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v22: y2k",
+      "rationale": "Image review: the pixel emblem on the right shares the same top band as the logged-in SCP-JP account links. Reserve a clear account lane between the mobile menu and emblem; keep the art and account controls visible.",
+      "sha256": "2ccf6f40cef226d1900ba77b861d40347b45d0c78e2b7e0ade6249254e40323f",
+      "selectors": [
+        "#login-status"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    }
+  ]
+}

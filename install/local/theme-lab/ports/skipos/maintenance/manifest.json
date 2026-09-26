@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "a9a86fc0dc7e97062220e342a6f5e82c326891e8de0f07d42d9ba03195d4ad19",
+  "base_source_sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507",
+  "raw_jp_overrides_sha256": "a4f3b610d49d3c9248ea2e19d0d9dd6e77f66da673aa4a04b4a9c7362c9d94af",
+  "jp_overrides_sha256": "808ce05b25e4c0826a9ffce754bb237c93057937c2033a837a29d3ddaa122e7d",
+  "semantic_css_sha256": "ad02deabef0ee4acb963c5574aff2fca9f80e2c3f4056b3df4d0c7624d486ee8",
+  "canonical_override_sha256": "42b5f5864de5cfddd5eb51e6061b84dab493560a552b2879be597294f017c0d5",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "f777faaf1ec43df7c7638a157985eda2a8d8d1666a536a5c37ca84a6209c21c5",
+  "final_source_inputs": {
+    "base_sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507",
+    "jp_overrides_sha256": "808ce05b25e4c0826a9ffce754bb237c93057937c2033a837a29d3ddaa122e7d"
+  },
+  "ordered_include_sha256": "b8f825e6db56e3bc095ebe4de9794f552f55a84afc2749d8b4eca6cdcc77a6a4",
+  "declaration_reviews": {
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"font-size\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"font-size\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"max-width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"min-width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"max-width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"min-width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    }
+  },
+  "adaptation_block_count": 13,
+  "raw_override_rule_count": 41,
+  "canonical_override_rule_count": 34,
+  "exact_duplicate_rules_removed": 7,
+  "redundant_same_value_declarations_removed": 3,
+  "empty_rules_removed": 0,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up: skipos",
+      "rationale": "SCP-JP mobile header adaptation: keep the localized identity and search within independent rows at the 320px policy boundary.",
+      "sha256": "7da7d9a96e8f74cd451dd771db71013a79054823addfaf9cf3cafe2506cb5668",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up v2: skipos",
+      "rationale": "SCP-JP mobile header adaptation: keep the localized identity and search within independent rows at the 320px policy boundary.",
+      "sha256": "93753ad5782123fbabd5b5f8ab6f06148ed7a53d00c92648eb943c6f70082083",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form",
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header refinement v5: skipos",
+      "rationale": "Skipos' white-header wordmark has a near-white fill and disappears against SCP-JP's white mobile shell. Preserve its display face and assign the theme's deep blue ink.",
+      "sha256": "2137bb21e6c3a4e309b88ab5ba48519ecb98df80bd0ec9b45c468784d99c54fa",
+      "selectors": [
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2 > span",
+        "#login-status"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: skipos account and navigation behavior",
+      "rationale": "The imported Basalt mobile grid intentionally hides the secondary subtitle. The generic JP wrap rule had forced that absent grid item back on in a 48px implicit column, clipping text and intercepting navigation. Keep the mobile grid's authored hierarchy and make its compact search control a real touch target.",
+      "sha256": "f84477f100a3d27ed89816b97a7824f16e3b3f0952b5217c0fa59fd070048206",
+      "selectors": [
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form input[type=submit]",
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#top-bar div.mobile-top-bar > .open-menu",
+        "#top-bar div.mobile-top-bar > ul"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header correction v10: skipos",
+      "rationale": "The 390px screenshot showed the circular SkipOS mark covering the end of its wordmark. Keep the authored mark and fit the short identity label in the grid cell beside it.",
+      "sha256": "5181b3e358277f89850e793543ef57212d505d538f45dfd57796f9c21d82202b",
+      "selectors": [
+        "#header h1",
+        "#header h1 > a"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header correction v11: skipos",
+      "rationale": "The 390px screenshot showed the authored SkipOS logo rendered at desktop scale over its wordmark. Keep the OS mark and theme label, sized to the mobile header row.",
+      "sha256": "43b07969a32c46fb14055580359fbd61f8168793741eaa7fe8a2ded9b259a1e1",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span::before",
+        "#header h1 > a::before"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance header/navigation repair v3: skipos",
+      "rationale": "The Basalt-derived header logo selector has two IDs; the earlier one-ID size rule did not win. Keep the SkipOS symbol but use the mobile header's actual logo pseudo-element size.",
+      "sha256": "90d200733e1992f067f82e3458fba5e5d04bd5168711f2c0dde9ca898445a75e",
+      "selectors": [
+        "#header#header h1 a",
+        "#header#header h1 a::before"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP mobile search fix v11: retain the search control as its own positioned box so Basalt-derived masked pseudo-art scales to the control, not the full header.",
+      "rationale": "SCP-JP mobile search fix v11: retain the search control as its own positioned box so Basalt-derived masked pseudo-art scales to the control, not the full header.",
+      "sha256": "a076e125c465db3ab515db186e5615aa6b90c5ed1268d48afea6f2a1880bf51c",
+      "selectors": [
+        "#search-top-box"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v8: skipos",
+      "rationale": "The circular artwork did not respond to the suspected body wallpaper sizing rule; restore the source wallpaper geometry while the true painted element is investigated.",
+      "sha256": "2cd00561fe018b5cfc8a2b80d563358a28f72b68a4552bb0af438111085b0cdf",
+      "selectors": [
+        "body:not(#interwiki body)::before"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v9: skipos",
+      "rationale": "Restore the actual 32px SkipOS logo token; hiding this pseudo-element removed its wordmark icon but did not affect the unidentified large cyan mark.",
+      "sha256": "f5b5df9f587056a188b08f554a842ac17521d9db4c374b477386b10e0dd37d1d",
+      "selectors": [
+        "#header h1 a::before"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v10: skipos",
+      "rationale": "Restore only the source-size logo and wallpaper after the earlier experiments failed to affect the large cyan mark. These are confirmed source tokens and this rule must not conceal any other artwork.",
+      "sha256": "f8e94d74e6fac0c6a7540ca2ba1b5969a3a2188572ad1ff7bef7c365669158e6",
+      "selectors": [
+        "#header h1 a::before",
+        "body:not(#interwiki body)::before"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v23: skipos",
+      "rationale": "Image review found the Source and revision-diff headings nearly disappear on SkipOS's light diagonal panel. Preserve the geometry and make only those action-pane labels use the theme's dark-ink token.",
+      "sha256": "161173c3278d0da0314647c5ff2fc7b061ad5d56be8ada9375d63f6b5c11acf1",
+      "selectors": [
+        "#action-area .page-source-header",
+        "#action-area .revision-diff-title",
+        "#action-area > h1",
+        "#action-area > h2"
+      ],
+      "at_contexts": []
+    }
+  ]
+}

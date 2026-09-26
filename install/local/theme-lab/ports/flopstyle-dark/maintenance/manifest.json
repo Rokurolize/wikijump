@@ -1,0 +1,232 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "70b9947896e9c24a399b2082129cca671e72b302283fbd305693869c8d49bb22",
+  "base_source_sha256": "77a303e9d2dc6e64c5332492fd979a8aced278ac199348cf9e7d0ba5fd66e6c5",
+  "raw_jp_overrides_sha256": "3640ba07e08ff942b2e5464e05e3ba96c34b378c11fc41a5498d79aa6200440f",
+  "jp_overrides_sha256": "5afd01af65564f5de14434aa99748646ef11080c25dd2e8c5fd4923ff6dec043",
+  "semantic_css_sha256": "5f51c05303b691597ea695bf53fc59701b06df082e32a6495c7481c438a767ef",
+  "canonical_override_sha256": "69db8df7a34f696f3cae5481d8e61848f98743b89089a77e0106c9af5adcef99",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "31795d5709993c5787cbdf3590173fa6964cba0dcc4a6fb826c4b3e6ce000690",
+  "final_source_inputs": {
+    "base_sha256": "77a303e9d2dc6e64c5332492fd979a8aced278ac199348cf9e7d0ba5fd66e6c5",
+    "jp_overrides_sha256": "5afd01af65564f5de14434aa99748646ef11080c25dd2e8c5fd4923ff6dec043"
+  },
+  "ordered_include_sha256": "213b6eb3f09e9dfee8dd10a57bde6f81756a57dea0015a1ce87e425cce404c2d",
+  "declaration_reviews": {
+    "[[],\"#side-bar .collapsible-block-link\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .collapsible-block-unfolded a\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .collapsible-block-unfolded-link\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .side-block .heading\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .side-block a\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .collapsible-block-link:hover\",\"background\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .collapsible-block-link:hover\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .collapsible-block-unfolded a:hover\",\"background\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .collapsible-block-unfolded a:hover\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .side-block a:hover\",\"background\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .side-block a:hover\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    }
+  },
+  "adaptation_block_count": 10,
+  "raw_override_rule_count": 42,
+  "canonical_override_rule_count": 39,
+  "exact_duplicate_rules_removed": 3,
+  "redundant_same_value_declarations_removed": 4,
+  "empty_rules_removed": 3,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: flopstyle-dark account and navigation behavior",
+      "rationale": "SCP-JP readability adaptation: retain the yellow header palette while making the account name readable on its bright header.",
+      "sha256": "ee79d7502c3cf7f00935c991dd5b3edf82dd54c3f83f4cb5b5234af18f5a31f3",
+      "selectors": [
+        "#login-status"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP readability adaptation: retain the yellow header palette while making the account name readable on its bright header.",
+      "rationale": "SCP-JP interactive acceptance: flopstyle-dark mobile navigation readability revision 2",
+      "sha256": "443649d62d9ad883a007a55e2def0f8c9b4cc79236cb3dbc51c67ae6094f4c72",
+      "selectors": [
+        "#login-status",
+        "#side-bar .side-block .collapsible-block-link",
+        "#side-bar .side-block .collapsible-block-unfolded-link",
+        "#side-bar .side-block .heading",
+        "#side-bar .side-block > a"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up: flopstyle-dark",
+      "rationale": "Visual follow-up: the expanded submenu surface is yellow, so the earlier white label adjustment reduced readability.",
+      "sha256": "d6427a64ffe9232c38ca8ac8bcddf4efd806530fcc49af169d1a85fc5e8bce2c",
+      "selectors": [
+        "#side-bar .collapsible-block-link",
+        "#side-bar .collapsible-block-unfolded-link"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up v2: flopstyle-dark",
+      "rationale": "Visual follow-up: the expanded submenu surface is yellow, so all labels on that panel need dark ink.",
+      "sha256": "ff8362eb6ff488d3dc1c1a6a32f2276c8c6b8fa7084370a4ee360363bad22036",
+      "selectors": [
+        "#side-bar .collapsible-block-link",
+        "#side-bar .collapsible-block-link:hover",
+        "#side-bar .collapsible-block-unfolded a",
+        "#side-bar .collapsible-block-unfolded a:hover",
+        "#side-bar .collapsible-block-unfolded-link",
+        "#side-bar .side-block a",
+        "#side-bar .side-block a:hover"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance header/navigation repair v3: flopstyle-dark",
+      "rationale": "The opened slate drawer has dark inherited links on a dark panel. Use the theme's warm light text for navigation only and keep its yellow hover state.",
+      "sha256": "eba882f638efbf564d2cfb35f5594d4a3f1107d13cedeac2031112062c03158a",
+      "selectors": [
+        "#side-bar .collapsible-block-link",
+        "#side-bar .collapsible-block-link:hover",
+        "#side-bar .collapsible-block-unfolded a",
+        "#side-bar .collapsible-block-unfolded a:hover",
+        "#side-bar .collapsible-block-unfolded-link",
+        "#side-bar .side-block .heading",
+        "#side-bar .side-block a",
+        "#side-bar .side-block a:hover"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v23: flopstyle-dark",
+      "rationale": "At SCP-JP's 320px boundary the compact credit view uses a static inherited offset, placing its modal below the viewport. Center the actual credit dialog in the viewport and keep its own content scrollable.",
+      "sha256": "2f70e4efec331c923752067e023cf1f3e3b915fa0efc609a0aa28feb087eee6e",
+      "selectors": [
+        "#u-credit-view:target",
+        "#u-credit-view:target .modalbox",
+        "#u-credit-view:target .modalcontainer"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v24: flopstyle-dark",
+      "rationale": "The live hash-target credit modal uses SCP-JP's neutral #ccc title strip outside #page-content. The inherited Flopstyle accent pink is too light there; use the theme's near-black key ink only on this neutral title strip, retaining pink accents on the dark credit card.",
+      "sha256": "57f024be2415dd1537476ed58cbaa6eefbe37df979f6a40c27f4540852c376f2",
+      "selectors": [
+        "#u-credit-otherwise .modalbox .modalbox-title",
+        "#u-credit-otherwise .modalbox .modalbox-title h2",
+        "#u-credit-view .modalbox .modalbox-title",
+        "#u-credit-view .modalbox .modalbox-title h2"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v25: flopstyle-dark",
+      "rationale": "The heritage credit variant replaces the neutral strip with its dark red heritage panel; keep that semantic surface and switch its title ink to Flopstyle's light theme text token.",
+      "sha256": "d5c556490ae4e2afdf9d99eb79cb4579bad55cfd0fd384d34a1a9582f0c716f0",
+      "selectors": [
+        "#u-credit-view .modalbox .modalbox-title.heritage",
+        "#u-credit-view .modalbox .modalbox-title.heritage h2"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP viewport adaptation: sidebox examples keep their side-gutter placement when room permits, and enter article flow before the remaining gutter becomes narrower than readable Japanese text.",
+      "rationale": "SCP-JP viewport adaptation: sidebox examples keep their side-gutter placement when room permits, and enter article flow before the remaining gutter becomes narrower than readable Japanese text.",
+      "sha256": "7a827688e66475fc2173e8d68b07d289171ef919f1bcf1663797899f2bfd4a45",
+      "selectors": [
+        ".sidebox",
+        ".sidebox .wiki-content-table",
+        ".sidebox .wiki-content-table td",
+        ".sidebox .wiki-content-table th"
+      ],
+      "at_contexts": [
+        "@media (min-width: 1200px) and (max-width: 1399.98px)",
+        "@media (min-width: 1400px)"
+      ]
+    }
+  ]
+}

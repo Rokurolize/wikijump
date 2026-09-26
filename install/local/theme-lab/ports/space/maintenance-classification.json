@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "unmarked_adaptation_modules": [
+    {
+      "id": "jp-mobile-header-grid-columns",
+      "reason": "Legacy campaign output added this final mobile header grid rule for the localized SCP-JP title but did not give the module an SCP-JP provenance comment. Treat it as a JP localization/compatibility layer rather than as upstream CSS.",
+      "css_sha256": "a7718a48b073816cd0319dd73fb3435f718e6c39b2c8c51d7586f9e24f586e29"
+    }
+  ]
+}

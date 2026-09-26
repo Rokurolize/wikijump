@@ -429,50 +429,144 @@
       "source_url": "https://fonts.bunny.net/css2?family=Comic+Neue&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 969131113dbed9e6b06675ee289e7f51e44df81816d51f6b46871090c3f2ffe5.css with SHA-256 969131113dbed9e6b06675ee289e7f51e44df81816d51f6b46871090c3f2ffe5; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.bunny.net/css2?family=Comic+Neue&display=swap",
+      "sha256": "969131113dbed9e6b06675ee289e7f51e44df81816d51f6b46871090c3f2ffe5",
+      "asset_file": "969131113dbed9e6b06675ee289e7f51e44df81816d51f6b46871090c3f2ffe5.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Montserrat:wght@800&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 94d644cf707265fb6aaa71c53b3b5c91fc7b4f6c298dc5120b178d0f188565d7.css with SHA-256 94d644cf707265fb6aaa71c53b3b5c91fc7b4f6c298dc5120b178d0f188565d7; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.bunny.net/css2?family=Montserrat:wght@800&display=swap",
+      "sha256": "94d644cf707265fb6aaa71c53b3b5c91fc7b4f6c298dc5120b178d0f188565d7",
+      "asset_file": "94d644cf707265fb6aaa71c53b3b5c91fc7b4f6c298dc5120b178d0f188565d7.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/1",
       "decision": "localize-into-package",
       "candidate_css_sha256": "034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 8cf06073da2e0980bf4226b1d5e6916133b63d2a6ce243a76d39df1e6d3f7f6c.css with SHA-256 8cf06073da2e0980bf4226b1d5e6916133b63d2a6ce243a76d39df1e6d3f7f6c; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/1",
+      "sha256": "8cf06073da2e0980bf4226b1d5e6916133b63d2a6ce243a76d39df1e6d3f7f6c",
+      "asset_file": "8cf06073da2e0980bf4226b1d5e6916133b63d2a6ce243a76d39df1e6d3f7f6c.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/2",
       "decision": "localize-into-package",
       "candidate_css_sha256": "034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as c6d34160c1a607c5b96b7a574854dfde35467e2b5a26fd9a7588b5a419c22592.css with SHA-256 c6d34160c1a607c5b96b7a574854dfde35467e2b5a26fd9a7588b5a419c22592; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/2",
+      "sha256": "c6d34160c1a607c5b96b7a574854dfde35467e2b5a26fd9a7588b5a419c22592",
+      "asset_file": "c6d34160c1a607c5b96b7a574854dfde35467e2b5a26fd9a7588b5a419c22592.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/3",
       "decision": "localize-into-package",
       "candidate_css_sha256": "034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as d5b4c4dbe64e06c60590785c7797d1dd8ccca1b822b4c7dce8f048af1d1997e8.css with SHA-256 d5b4c4dbe64e06c60590785c7797d1dd8ccca1b822b4c7dce8f048af1d1997e8; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/3",
+      "sha256": "d5b4c4dbe64e06c60590785c7797d1dd8ccca1b822b4c7dce8f048af1d1997e8",
+      "asset_file": "d5b4c4dbe64e06c60590785c7797d1dd8ccca1b822b4c7dce8f048af1d1997e8.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/tabview.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as ffbd600548cdc73701d60c84766746224b3abacafd2397a2830242b3451876a0.css with SHA-256 ffbd600548cdc73701d60c84766746224b3abacafd2397a2830242b3451876a0; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/tabview.css",
+      "sha256": "ffbd600548cdc73701d60c84766746224b3abacafd2397a2830242b3451876a0",
+      "asset_file": "ffbd600548cdc73701d60c84766746224b3abacafd2397a2830242b3451876a0.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wikidot.com/local--files/theme%3Aflopstyle-dark/backend.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "034a2b014117e7f7b383cd53900a1ceb2bdbf97106522602719d2772c9709d37",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 88e08cff5396971983867d39a616dbf09ce80e48d9c675efe7e4d531d0fcc1f0.css with SHA-256 88e08cff5396971983867d39a616dbf09ce80e48d9c675efe7e4d531d0fcc1f0; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/backend.css",
+      "sha256": "88e08cff5396971983867d39a616dbf09ce80e48d9c675efe7e4d531d0fcc1f0",
+      "asset_file": "88e08cff5396971983867d39a616dbf09ce80e48d9c675efe7e4d531d0fcc1f0.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://fonts.bunny.net/css2?family=Comic+Neue&display=swap",
+      "final_url": "https://fonts.bunny.net/css2?family=Comic+Neue&display=swap",
+      "sha256": "969131113dbed9e6b06675ee289e7f51e44df81816d51f6b46871090c3f2ffe5",
+      "normalized_text_sha256": "969131113dbed9e6b06675ee289e7f51e44df81816d51f6b46871090c3f2ffe5",
+      "bytes": 492,
+      "content_type": "text/css",
+      "asset_file": "969131113dbed9e6b06675ee289e7f51e44df81816d51f6b46871090c3f2ffe5.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.bunny.net/css2?family=Montserrat:wght@800&display=swap",
+      "final_url": "https://fonts.bunny.net/css2?family=Montserrat:wght@800&display=swap",
+      "sha256": "94d644cf707265fb6aaa71c53b3b5c91fc7b4f6c298dc5120b178d0f188565d7",
+      "normalized_text_sha256": "94d644cf707265fb6aaa71c53b3b5c91fc7b4f6c298dc5120b178d0f188565d7",
+      "bytes": 2452,
+      "content_type": "text/css",
+      "asset_file": "94d644cf707265fb6aaa71c53b3b5c91fc7b4f6c298dc5120b178d0f188565d7.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/1",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/1",
+      "sha256": "8cf06073da2e0980bf4226b1d5e6916133b63d2a6ce243a76d39df1e6d3f7f6c",
+      "normalized_text_sha256": "8cf06073da2e0980bf4226b1d5e6916133b63d2a6ce243a76d39df1e6d3f7f6c",
+      "bytes": 687,
+      "content_type": "text/css",
+      "asset_file": "8cf06073da2e0980bf4226b1d5e6916133b63d2a6ce243a76d39df1e6d3f7f6c.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/2",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/2",
+      "sha256": "c6d34160c1a607c5b96b7a574854dfde35467e2b5a26fd9a7588b5a419c22592",
+      "normalized_text_sha256": "c6d34160c1a607c5b96b7a574854dfde35467e2b5a26fd9a7588b5a419c22592",
+      "bytes": 68501,
+      "content_type": "text/css",
+      "asset_file": "c6d34160c1a607c5b96b7a574854dfde35467e2b5a26fd9a7588b5a419c22592.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/3",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/3",
+      "sha256": "d5b4c4dbe64e06c60590785c7797d1dd8ccca1b822b4c7dce8f048af1d1997e8",
+      "normalized_text_sha256": "d5b4c4dbe64e06c60590785c7797d1dd8ccca1b822b4c7dce8f048af1d1997e8",
+      "bytes": 117,
+      "content_type": "text/css",
+      "asset_file": "d5b4c4dbe64e06c60590785c7797d1dd8ccca1b822b4c7dce8f048af1d1997e8.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/tabview.css",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/tabview.css",
+      "sha256": "ffbd600548cdc73701d60c84766746224b3abacafd2397a2830242b3451876a0",
+      "normalized_text_sha256": "ffbd600548cdc73701d60c84766746224b3abacafd2397a2830242b3451876a0",
+      "bytes": 471,
+      "content_type": "text/css",
+      "asset_file": "ffbd600548cdc73701d60c84766746224b3abacafd2397a2830242b3451876a0.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-wiki.wikidot.com/local--files/theme%3Aflopstyle-dark/backend.css",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/backend.css",
+      "sha256": "88e08cff5396971983867d39a616dbf09ce80e48d9c675efe7e4d531d0fcc1f0",
+      "normalized_text_sha256": "67c17a11002f4d83be046e2cc070bc4b7fd7926adba26abfdec50cff8f1b464b",
+      "bytes": 6836,
+      "content_type": "text/css",
+      "asset_file": "88e08cff5396971983867d39a616dbf09ce80e48d9c675efe7e4d531d0fcc1f0.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }

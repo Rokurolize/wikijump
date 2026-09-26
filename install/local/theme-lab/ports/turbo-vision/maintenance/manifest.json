@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "2eb8a67aa819a58e0da88dfeecd991eba03a1b3a117aac84c6e7e9b42b3daa10",
+  "base_source_sha256": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
+  "raw_jp_overrides_sha256": "d7b42bc882e29842dbebfe9e6f405d6e2c77ae2a70248ad380336978d1b5c172",
+  "jp_overrides_sha256": "fe51a69c9f09b13d517579b941179b8290a8d2a06a670a6195817920fae7c797",
+  "semantic_css_sha256": "33856599ccb2752f820b2bc35ad8af8c91bb5e9a59dd899b7648c78ad08d3742",
+  "canonical_override_sha256": "8502894d69a9d0fe80cce18b2fdca2956ba839b712951b54d8d022c093f61672",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "6351e8eb9e336cada8be1e930ca40d0c41378277b441eb56a0e9671c58db524b",
+  "final_source_inputs": {
+    "base_sha256": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
+    "jp_overrides_sha256": "fe51a69c9f09b13d517579b941179b8290a8d2a06a670a6195817920fae7c797"
+  },
+  "ordered_include_sha256": "2d9da036cfae7fd12cfc6366c1e5bafaaf37105d3e5a19172b72a4a4bc3763e8",
+  "declaration_reviews": {},
+  "adaptation_block_count": 7,
+  "raw_override_rule_count": 34,
+  "canonical_override_rule_count": 34,
+  "exact_duplicate_rules_removed": 0,
+  "redundant_same_value_declarations_removed": 0,
+  "empty_rules_removed": 0,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: turbo-vision account and navigation behavior",
+      "rationale": "Keep the cyan Turbo-Vision menu surface and use a dark ink for the red text links whose foreground blends into it.",
+      "sha256": "25f41f0d132bebc7ec1df745f69bbebeabc53abefa2d75ca0f3683c222fc1447",
+      "selectors": [
+        "#side-bar .collapsible-block-unfolded a",
+        "#side-bar .collapsible-block-unfolded a:hover",
+        "#side-bar .side-block a",
+        "#side-bar .side-block a:hover"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v1: turbo-vision",
+      "rationale": "FontAwesome is not a required SCP-JP runtime dependency; provide visible rate actions with theme-colored text glyphs.",
+      "sha256": "3e26c686abba891442bdb86fea671d298042284faa70175f209e737e84211f21",
+      "selectors": [
+        ".creditRate .cancel a::before",
+        ".creditRate .ratedown a::before",
+        ".creditRate .rateup a::before",
+        ".page-rate-widget-box .cancel a::before",
+        ".page-rate-widget-box .ratedown a::before",
+        ".page-rate-widget-box .rateup a::before"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v2: turbo-vision",
+      "rationale": "The theme's pixel display font lacks Japanese vertical metrics; retain its face and palette but provide enough line box for translated headings and dialog messages.",
+      "sha256": "f017f4de3e014ce4a45f2f6048469d1caf007eaf458cd7582a230466e21e765e",
+      "selectors": [
+        "#main-content #page-content h1",
+        "#main-content #page-content h2",
+        "#main-content #page-content h3",
+        "#main-content #page-title",
+        "#odialog-container .owindow.error #modal-title",
+        "#odialog-container .owindow.error .modal-body"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header refinement v5: turbo-vision",
+      "rationale": "The pixel theme's fixed narrow return button turns the Japanese credit label into stacked fragments; let it wrap as a normal compact control.",
+      "sha256": "bdb980da59f3e93953351990153f5561ebffe77e2157f6143e714fce185a76c0",
+      "selectors": [
+        "#u-credit-otherwise .modalbox > a[href=\"#u-credit-view\"]",
+        "#u-credit-otherwise a[href=\"#u-credit-view\"]"
+      ],
+      "at_contexts": [
+        "@media (max-width: 600px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance header/navigation repair v3: turbo-vision",
+      "rationale": "Keep the Turbo-Vision cyan drawer and prevent its small Japanese labels from inheriting the upstream pale foreground on that light surface.",
+      "sha256": "d5dc771bc79eb9d19a5e5022f8f68936674baa31f07f4af89560f75b0bad504d",
+      "selectors": [
+        "#side-bar .collapsible-block-link",
+        "#side-bar .collapsible-block-link:focus-visible",
+        "#side-bar .collapsible-block-unfolded a",
+        "#side-bar .side-block .heading",
+        "#side-bar .side-block a",
+        "#side-bar .side-block a:hover"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
+      "rationale": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
+      "sha256": "a7d08f5e3645665482f335e0cfe80954a4da6781e0bbe546dc2f31f9383b6b82",
+      "selectors": [
+        "#top-bar .mobile-top-bar ul li ul",
+        "#top-bar .mobile-top-bar ul li ul li",
+        "#top-bar .mobile-top-bar ul li ul li a",
+        "#top-bar .top-bar ul li ul",
+        "#top-bar .top-bar ul li ul li",
+        "#top-bar .top-bar ul li ul li a"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    }
+  ]
+}

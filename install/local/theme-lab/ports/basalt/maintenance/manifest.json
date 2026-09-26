@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "709badff7dcb9d0a384a7a7cf557df8e1c16c9b9860deef2ace04932f120fa28",
+  "base_source_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
+  "raw_jp_overrides_sha256": "1003d3c21d6778e9aedccb679a98dda3f5a4218427254d0d33f6ea0521eb96cb",
+  "jp_overrides_sha256": "4e99a0af6ab9cc97d67b4e9ab437689b736c84fc92de1c6e54fb2b82b2ab6479",
+  "semantic_css_sha256": "49da89aec7eb8b10f9a17dac68235e0dd22c46b17d780004878786ce53166cf8",
+  "canonical_override_sha256": "d991bfb3d6381236fe9a71b5c5e4dc2d65b9e50c80333779a0fd0f320de96941",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "3b4fe277e2ef491d17e55c2d0aad45509ff5df037f3d4385f278f5d49f58dce8",
+  "final_source_inputs": {
+    "base_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
+    "jp_overrides_sha256": "4e99a0af6ab9cc97d67b4e9ab437689b736c84fc92de1c6e54fb2b82b2ab6479"
+  },
+  "ordered_include_sha256": "e481fd6b41fabf39136bde8435cff32e1239066debc874c22160b3c9a215985e",
+  "declaration_reviews": {},
+  "adaptation_block_count": 7,
+  "raw_override_rule_count": 12,
+  "canonical_override_rule_count": 12,
+  "exact_duplicate_rules_removed": 0,
+  "redundant_same_value_declarations_removed": 0,
+  "empty_rules_removed": 0,
+  "active_tags": [],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: basalt account and navigation behavior",
+      "rationale": "SCP-JP interaction adaptation: the inherited Basalt header disabled pointer events on the account control and menu.",
+      "sha256": "696c5791e16eb9d5f7df6863c8a799792bb4546a558de0eef348420899678d5a",
+      "selectors": [
+        "#login-status",
+        "#login-status #account-options"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v1: basalt",
+      "rationale": "Opaque the open desktop dropdown while retaining the Basalt menu palette.",
+      "sha256": "de711d65a9ffdbeda8040e76f8215275ba84213ec9a9e3da646ef4465bb17eba",
+      "selectors": [
+        "#top-bar .top-bar li ul"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header refinement v5: basalt",
+      "rationale": "Keep the drawer close label inside the viewport while the full-screen close anchor continues to dim the page.",
+      "sha256": "98c7377bd054141a08327473e06283c6d8df8315dcf8002ae40546633508084e",
+      "selectors": [
+        "#side-bar a.close-menu"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v23: basalt",
+      "rationale": "Heritage screenshot exposed malformed nested [[iftags]] residue in the shared credit fixture and left Rate detached. Candidate typography retains the Basalt layout while the corrected fixture source is regenerated.",
+      "sha256": "490f48187c151c2209669c8209e3b569748c9ba78d1e361e2c0b1b469ff112f0",
+      "selectors": [
+        "#u-credit-view .modalbox .credit"
+      ],
+      "at_contexts": [
+        "@media (max-width: 600px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v31: basalt",
+      "rationale": "The inherited Basalt base reset SCP-JP's fixed credit dialog container to normal flow, leaving the mobile modal at the top-left. Center both real credit-dialog states in the viewport while retaining the theme's own panel and fader colors.",
+      "sha256": "21fd0058e1435e4a78442d70164931108b3a735f510cf476ba9d8450f89792c2",
+      "selectors": [
+        "#u-credit-otherwise:target .modalbox",
+        "#u-credit-otherwise:target .modalcontainer",
+        "#u-credit-view:target .modalbox",
+        "#u-credit-view:target .modalcontainer"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v35: basalt",
+      "rationale": "At SCP-JP's 320px boundary, the imported Basalt masthead subtitle ran beneath the search/account controls. Keep the identity text, wrap it into the available title column, and leave the controls in their authored row.",
+      "sha256": "06629baf8707b39c5c70e2f774eec13d5af2801b66cc2fbbbe4bae527eeb65e0",
+      "selectors": [
+        "#header h2"
+      ],
+      "at_contexts": [
+        "@media (max-width: 340px)"
+      ]
+    }
+  ]
+}

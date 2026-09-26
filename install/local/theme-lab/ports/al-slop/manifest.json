@@ -17,7 +17,7 @@
     "slug": "theme:al-slop",
     "title": "Al Slop Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:al-slop/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "47f14e891d323bcdad5b9223e59fe1474004a0d8d4d642f6f6d8378bf6178485",
       "updated_at": "2026-04-24T22:59:38+00:00",
       "entity_uuid": "be7b893d-3452-4141-bf78-28ece91b581b",
@@ -28,7 +28,12 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 26
+      "revisions": 26,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:al-slop"
+      }
     },
     "jp": {
       "status": "confirmed-absent-by-targeted-xmlrpc",
@@ -94,7 +99,7 @@
     "base_family": "sigma"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_al-slop/theme_al-slop_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "human-port-candidate.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -102,5 +107,19 @@
   "final_verdict": "warn",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/al-slop/assets.json",
-  "asset_dependency_decision_count": 18
+  "asset_dependency_decision_count": 18,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
+    "jp_overrides_sha256": "20d812b6ca6b036be1d91330521e2e680e54385475aa2d3ecc6881a0adafb273",
+    "semantic_css_sha256": "c99e35f88b951880ce82a307a2ae53e5a94e408d9a32fcbe99716dee76a42ebb",
+    "canonical_override_sha256": "beef86485ae760f6dffd728c0a9f8de9255589561d0f9e9280229173478e6e90",
+    "final_source": "maintenance/final.wikidot.txt",
+    "final_source_sha256": "fb9f657cc61eb797051a090178a5417bc9202159f054e53315fd0a5905718010",
+    "exact_duplicate_rules_removed": 0,
+    "redundant_same_value_declarations_removed": 13,
+    "empty_rules_removed": 3
+  }
 }

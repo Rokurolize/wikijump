@@ -17,7 +17,7 @@
     "slug": "theme:monotypical",
     "title": "Monotypical Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:monotypical/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "7584ab59275e4e7300966646f2f8b42a2833e3087fa8353c508f26c2a8f89bc4",
       "updated_at": "2026-04-12T05:12:14+00:00",
       "entity_uuid": "80ec8e62-0af1-493f-9e95-4e4592ae94ba",
@@ -25,11 +25,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 142
+      "revisions": 142,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:monotypical"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:monotypical/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "f9e1ea2563ba3963770c899068d58fd175d58824f0d3ffd4436ec8db5a60c156",
       "updated_at": "2024-10-18T09:04:38+00:00",
       "entity_uuid": "5c1fba7f-1159-4c39-87ab-db5165c7aab3",
@@ -37,7 +42,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:monotypical"
+      }
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
@@ -90,7 +100,7 @@
     "base_family": "basalt"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_monotypical/theme_monotypical_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -137,5 +147,19 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/monotypical/assets.json",
-  "asset_dependency_decision_count": 40
+  "asset_dependency_decision_count": 40,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "9293fdfd3ee9faf3b644dc690c9abe8c2ce71f49d08fff711446edae8d45035a",
+    "jp_overrides_sha256": "4503c651d5f37448a94744b1d0a19b331ad26b3c08912a32e911af5ca5cfdadf",
+    "semantic_css_sha256": "10101ba2b75e912822d629f24936306e544e234b6567a8ed2a8cd910781422d3",
+    "canonical_override_sha256": "93ab7e6cb6cf364d34e8d5d0b77c86af0cc309f7945d8c572b22a9863f862543",
+    "final_source": "maintenance/final.wikidot.txt",
+    "final_source_sha256": "5f79b659c578c34c8009d8715028d1973d0a26e70871005e10c03bbd064c24a3",
+    "exact_duplicate_rules_removed": 12,
+    "redundant_same_value_declarations_removed": 7,
+    "empty_rules_removed": 1
+  }
 }

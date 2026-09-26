@@ -1683,43 +1683,124 @@
       "source_url": "https://cdn.scpwiki.com/theme/en/basalt/basalt-bedrock-min.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "73755801789f0c324bc96fa179ff28bed7fd25a75424dabeb6e4a7a025ea2e3f",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 41cee2998f70df05991e72afce7bdee25f83273a917eda59c4f19231631c9e97.css with SHA-256 41cee2998f70df05991e72afce7bdee25f83273a917eda59c4f19231631c9e97; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/basalt-bedrock-min.css",
+      "sha256": "41cee2998f70df05991e72afce7bdee25f83273a917eda59c4f19231631c9e97",
+      "asset_file": "41cee2998f70df05991e72afce7bdee25f83273a917eda59c4f19231631c9e97.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "73755801789f0c324bc96fa179ff28bed7fd25a75424dabeb6e4a7a025ea2e3f",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9.css with SHA-256 6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/normalize-min.css",
+      "sha256": "6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9",
+      "asset_file": "6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Fira+Code:wght@400;700&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "73755801789f0c324bc96fa179ff28bed7fd25a75424dabeb6e4a7a025ea2e3f",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as dcca1f7826e592d35062e7e6163b71f8e23667840bdb14f9e28547b01d9bce15.css with SHA-256 dcca1f7826e592d35062e7e6163b71f8e23667840bdb14f9e28547b01d9bce15; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.bunny.net/css2?family=Fira+Code:wght@400;700&display=swap",
+      "sha256": "dcca1f7826e592d35062e7e6163b71f8e23667840bdb14f9e28547b01d9bce15",
+      "asset_file": "dcca1f7826e592d35062e7e6163b71f8e23667840bdb14f9e28547b01d9bce15.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Red+Hat+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "73755801789f0c324bc96fa179ff28bed7fd25a75424dabeb6e4a7a025ea2e3f",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 86ac3c3a3a1db650bd8def34d6537fe62d52fdaf04d339302244d66b57339fce.css with SHA-256 86ac3c3a3a1db650bd8def34d6537fe62d52fdaf04d339302244d66b57339fce; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.bunny.net/css2?family=Red+Hat+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+      "sha256": "86ac3c3a3a1db650bd8def34d6537fe62d52fdaf04d339302244d66b57339fce",
+      "asset_file": "86ac3c3a3a1db650bd8def34d6537fe62d52fdaf04d339302244d66b57339fce.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://rsms.me/inter/inter.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "73755801789f0c324bc96fa179ff28bed7fd25a75424dabeb6e4a7a025ea2e3f",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 46d01c7807f64a24c1b2853b756ef15f3a2facdf4a9f066eaf5d39c0c9935441.css with SHA-256 46d01c7807f64a24c1b2853b756ef15f3a2facdf4a9f066eaf5d39c0c9935441; the flattened final candidate was replayed offline.",
+      "final_url": "https://rsms.me/inter/inter.css",
+      "sha256": "46d01c7807f64a24c1b2853b756ef15f3a2facdf4a9f066eaf5d39c0c9935441",
+      "asset_file": "46d01c7807f64a24c1b2853b756ef15f3a2facdf4a9f066eaf5d39c0c9935441.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Askipos/1",
       "decision": "localize-into-package",
       "candidate_css_sha256": "73755801789f0c324bc96fa179ff28bed7fd25a75424dabeb6e4a7a025ea2e3f",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 32a88579e000948aea145758e0d8b2b3638be575e18caedba34fcab25ada2c80.css with SHA-256 32a88579e000948aea145758e0d8b2b3638be575e18caedba34fcab25ada2c80; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Askipos/1",
+      "sha256": "32a88579e000948aea145758e0d8b2b3638be575e18caedba34fcab25ada2c80",
+      "asset_file": "32a88579e000948aea145758e0d8b2b3638be575e18caedba34fcab25ada2c80.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://cdn.scpwiki.com/theme/en/basalt/basalt-bedrock-min.css",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/basalt-bedrock-min.css",
+      "sha256": "41cee2998f70df05991e72afce7bdee25f83273a917eda59c4f19231631c9e97",
+      "normalized_text_sha256": "41cee2998f70df05991e72afce7bdee25f83273a917eda59c4f19231631c9e97",
+      "bytes": 174493,
+      "content_type": "text/css",
+      "asset_file": "41cee2998f70df05991e72afce7bdee25f83273a917eda59c4f19231631c9e97.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css",
+      "final_url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/normalize-min.css",
+      "sha256": "6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9",
+      "normalized_text_sha256": "6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9",
+      "bytes": 14695,
+      "content_type": "text/css",
+      "asset_file": "6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.bunny.net/css2?family=Fira+Code:wght@400;700&display=swap",
+      "final_url": "https://fonts.bunny.net/css2?family=Fira+Code:wght@400;700&display=swap",
+      "sha256": "dcca1f7826e592d35062e7e6163b71f8e23667840bdb14f9e28547b01d9bce15",
+      "normalized_text_sha256": "dcca1f7826e592d35062e7e6163b71f8e23667840bdb14f9e28547b01d9bce15",
+      "bytes": 6276,
+      "content_type": "text/css",
+      "asset_file": "dcca1f7826e592d35062e7e6163b71f8e23667840bdb14f9e28547b01d9bce15.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.bunny.net/css2?family=Red+Hat+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+      "final_url": "https://fonts.bunny.net/css2?family=Red+Hat+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+      "sha256": "86ac3c3a3a1db650bd8def34d6537fe62d52fdaf04d339302244d66b57339fce",
+      "normalized_text_sha256": "86ac3c3a3a1db650bd8def34d6537fe62d52fdaf04d339302244d66b57339fce",
+      "bytes": 4464,
+      "content_type": "text/css",
+      "asset_file": "86ac3c3a3a1db650bd8def34d6537fe62d52fdaf04d339302244d66b57339fce.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://rsms.me/inter/inter.css",
+      "final_url": "https://rsms.me/inter/inter.css",
+      "sha256": "46d01c7807f64a24c1b2853b756ef15f3a2facdf4a9f066eaf5d39c0c9935441",
+      "normalized_text_sha256": "46d01c7807f64a24c1b2853b756ef15f3a2facdf4a9f066eaf5d39c0c9935441",
+      "bytes": 11497,
+      "content_type": "text/css",
+      "asset_file": "46d01c7807f64a24c1b2853b756ef15f3a2facdf4a9f066eaf5d39c0c9935441.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Askipos/1",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Askipos/1",
+      "sha256": "32a88579e000948aea145758e0d8b2b3638be575e18caedba34fcab25ada2c80",
+      "normalized_text_sha256": "32a88579e000948aea145758e0d8b2b3638be575e18caedba34fcab25ada2c80",
+      "bytes": 19216,
+      "content_type": "text/css",
+      "asset_file": "32a88579e000948aea145758e0d8b2b3638be575e18caedba34fcab25ada2c80.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }

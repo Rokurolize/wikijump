@@ -291,36 +291,124 @@
       "source_url": "https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "5745eb9224451358eaca498d6072f3a34128b2e1c2f8d757be2d5f8ab34a8680",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as a0898c871cc48ce79a7fcfd8de8e1afd5415ba6d51acaceade45abc635d646bf.css with SHA-256 a0898c871cc48ce79a7fcfd8de8e1afd5415ba6d51acaceade45abc635d646bf; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+      "sha256": "a0898c871cc48ce79a7fcfd8de8e1afd5415ba6d51acaceade45abc635d646bf",
+      "asset_file": "a0898c871cc48ce79a7fcfd8de8e1afd5415ba6d51acaceade45abc635d646bf.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "5745eb9224451358eaca498d6072f3a34128b2e1c2f8d757be2d5f8ab34a8680",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 61e692a7e8e2267e6c38661a8109884858562b4d534ee689ae1b822b4d92f4e1.css with SHA-256 61e692a7e8e2267e6c38661a8109884858562b4d534ee689ae1b822b4d92f4e1; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p&display=swap",
+      "sha256": "61e692a7e8e2267e6c38661a8109884858562b4d534ee689ae1b822b4d92f4e1",
+      "asset_file": "61e692a7e8e2267e6c38661a8109884858562b4d534ee689ae1b822b4d92f4e1.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;700&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "5745eb9224451358eaca498d6072f3a34128b2e1c2f8d757be2d5f8ab34a8680",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 27f54ec5ceac770d2004440a752cab2e6eb588630cca1bac084c6272be24e760.css with SHA-256 27f54ec5ceac770d2004440a752cab2e6eb588630cca1bac084c6272be24e760; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;700&display=swap",
+      "sha256": "27f54ec5ceac770d2004440a752cab2e6eb588630cca1bac084c6272be24e760",
+      "asset_file": "27f54ec5ceac770d2004440a752cab2e6eb588630cca1bac084c6272be24e760.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,400;0,700;1,400;1,700&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "5745eb9224451358eaca498d6072f3a34128b2e1c2f8d757be2d5f8ab34a8680",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as a7855c10e377c361d5198132f90c8c34525d51cc57626ab7133b6441fee25964.css with SHA-256 a7855c10e377c361d5198132f90c8c34525d51cc57626ab7133b6441fee25964; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+      "sha256": "a7855c10e377c361d5198132f90c8c34525d51cc57626ab7133b6441fee25964",
+      "asset_file": "a7855c10e377c361d5198132f90c8c34525d51cc57626ab7133b6441fee25964.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Aspace/1",
       "decision": "localize-into-package",
       "candidate_css_sha256": "5745eb9224451358eaca498d6072f3a34128b2e1c2f8d757be2d5f8ab34a8680",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 0898d2ae7b1cc53f44259719dd803230d924fd4f86e973ea2565a2b389f5344f.css with SHA-256 0898d2ae7b1cc53f44259719dd803230d924fd4f86e973ea2565a2b389f5344f; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme%3Aspace/1",
+      "sha256": "0898d2ae7b1cc53f44259719dd803230d924fd4f86e973ea2565a2b389f5344f",
+      "asset_file": "0898d2ae7b1cc53f44259719dd803230d924fd4f86e973ea2565a2b389f5344f.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+      "sha256": "a0898c871cc48ce79a7fcfd8de8e1afd5415ba6d51acaceade45abc635d646bf",
+      "normalized_text_sha256": "a0898c871cc48ce79a7fcfd8de8e1afd5415ba6d51acaceade45abc635d646bf",
+      "bytes": 944,
+      "content_type": "text/css",
+      "asset_file": "a0898c871cc48ce79a7fcfd8de8e1afd5415ba6d51acaceade45abc635d646bf.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p&display=swap",
+      "sha256": "61e692a7e8e2267e6c38661a8109884858562b4d534ee689ae1b822b4d92f4e1",
+      "normalized_text_sha256": "61e692a7e8e2267e6c38661a8109884858562b4d534ee689ae1b822b4d92f4e1",
+      "bytes": 206,
+      "content_type": "text/css",
+      "asset_file": "61e692a7e8e2267e6c38661a8109884858562b4d534ee689ae1b822b4d92f4e1.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;700&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;700&display=swap",
+      "sha256": "27f54ec5ceac770d2004440a752cab2e6eb588630cca1bac084c6272be24e760",
+      "normalized_text_sha256": "27f54ec5ceac770d2004440a752cab2e6eb588630cca1bac084c6272be24e760",
+      "bytes": 548,
+      "content_type": "text/css",
+      "asset_file": "27f54ec5ceac770d2004440a752cab2e6eb588630cca1bac084c6272be24e760.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+      "sha256": "a7855c10e377c361d5198132f90c8c34525d51cc57626ab7133b6441fee25964",
+      "normalized_text_sha256": "a7855c10e377c361d5198132f90c8c34525d51cc57626ab7133b6441fee25964",
+      "bytes": 892,
+      "content_type": "text/css",
+      "asset_file": "a7855c10e377c361d5198132f90c8c34525d51cc57626ab7133b6441fee25964.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Aspace/1",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme%3Aspace/1",
+      "sha256": "0898d2ae7b1cc53f44259719dd803230d924fd4f86e973ea2565a2b389f5344f",
+      "normalized_text_sha256": "0898d2ae7b1cc53f44259719dd803230d924fd4f86e973ea2565a2b389f5344f",
+      "bytes": 25406,
+      "content_type": "text/css",
+      "asset_file": "0898d2ae7b1cc53f44259719dd803230d924fd4f86e973ea2565a2b389f5344f.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ],
+  "localization_transforms": [
+    {
+      "id": "jp-mobile-header-title-sizing",
+      "reason": "The localized SCP-JP Space title/subtitle are longer than the EN showcase labels. Preserve the accepted sizing inside the imported mobile grid while keeping the upstream stylesheet bytes immutable.",
+      "matches": 1,
+      "before_sha256": "1705ce7e941e9ae511120ac1285f305804c99128db4f7f2e7dec17b48d693799",
+      "after_sha256": "adfbd5d904d5929599967843bf704250ceef731da9cee8d8544b7c0a6860adf5"
+    },
+    {
+      "id": "sigma-search-adaptation-owned-by-acceptance-layer",
+      "reason": "The canonical JP override owns the shared Sigma search interaction. Remove its generated base copy so the final source has one owner and stable cascade order. This transform requires the exact generated rule exactly once and fails closed if that source changes; on an upstream update, review whether the search behavior remains necessary and keep the rule in one layer.",
+      "matches": 1,
+      "before_sha256": "140deef2808d582934db550930b142190fa448660083e7e344149de3e7f20dc1",
+      "after_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    }
+  ],
+  "localization_transform_manifest": {
+    "path": "localization-transforms.json",
+    "sha256": "bcd77fa80f58e4c41e8f36e177923abeacd4c06c9b92a8f9818eb254040381b3"
+  }
 }

@@ -17,7 +17,7 @@
     "slug": "theme:pataphysics",
     "title": "'Pataphysics Department Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:pataphysics/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "b4961dbb0f02d987d5084bc0803f7c4a000cc03843c623f454b213ca69d852a8",
       "updated_at": "2026-04-12T05:16:06+00:00",
       "entity_uuid": "6bad84b5-57d2-4951-8613-01e988f258e6",
@@ -27,11 +27,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 253
+      "revisions": 253,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:pataphysics"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:pataphysics/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "c2de53df254304f9cc88cb9955003855ecaafb336b24a11355dbd51ae832796b",
       "updated_at": "2024-03-06T17:53:58+00:00",
       "entity_uuid": "8112e551-59c5-459c-9bbd-f324f880b922",
@@ -39,7 +44,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:pataphysics"
+      }
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
@@ -81,7 +91,7 @@
     "base_family": "independent"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_pataphysics/theme_pataphysics_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -89,5 +99,19 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/pataphysics/assets.json",
-  "asset_dependency_decision_count": 5
+  "asset_dependency_decision_count": 5,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b",
+    "jp_overrides_sha256": "e35c423cefdeaf95753d5880d83ac21ecf59a530bb8925f5773c119acc3c4b26",
+    "semantic_css_sha256": "e38dd25c4049e1db647287481ad69abc569ef8812fcfd4c67aba3bb7f28f1773",
+    "canonical_override_sha256": "1ee935aaa439a7f656ced8e7f1f3b2f37301529ac90babd631bb4f77aac677d8",
+    "final_source": "maintenance/final.wikidot.txt",
+    "final_source_sha256": "cdacff0515bfae5299a72b1f2d023f4f917c218c3d8dc6d1dec8ce2dd8f3ce16",
+    "exact_duplicate_rules_removed": 0,
+    "redundant_same_value_declarations_removed": 0,
+    "empty_rules_removed": 0
+  }
 }

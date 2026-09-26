@@ -370,13 +370,29 @@ def main() -> int:
             for path in matches:
                 asset_users.setdefault(path.name, set()).add(name)
         imports = asset_manifest.get("imports", [])
+        import_provenance = {row["source_url"]: row for row in asset_manifest.get("import_provenance", [])}
         for url in imports:
+            provenance = import_provenance.get(url)
+            if provenance:
+                import_asset = asset_root / provenance["asset_file"]
+                if not import_asset.is_file() or digest(import_asset) != provenance["sha256"]:
+                    raise SystemExit(f"frozen CSS import missing or corrupt: {theme['slug']} {url}")
+                asset_users.setdefault(import_asset.name, set()).add(name)
             decisions.append({
                 "resource_type": "candidate-css-import",
                 "source_url": url,
                 "decision": "localize-into-package",
                 "candidate_css_sha256": digest(package / "candidate.css"),
-                "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool.",
+                **({
+                    "final_url": provenance.get("final_url"),
+                    "sha256": provenance["sha256"],
+                    "asset_file": provenance["asset_file"],
+                } if provenance else {}),
+                "evidence": (
+                    f"The imported stylesheet bytes are preserved as {provenance['asset_file']} with SHA-256 {provenance['sha256']}; the flattened final candidate was replayed offline."
+                    if provenance else
+                    "The fetched import chain was included in the final candidate stylesheet and replayed offline; byte-level import provenance has not yet been backfilled."
+                ),
             })
         base_css_assets = []
         for filename in content_addressed_css_assets(package / "candidate-base.css"):

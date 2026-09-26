@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "71ddfe6a1048d9945eb5dca19af0b6d01dae21f59b93080adfb6b7075334d2a3",
+  "base_source_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b",
+  "raw_jp_overrides_sha256": "fc5b2b38a5e63efad9e7d2e6d7d31538909d20e1305bd8d0b25ff860be60d131",
+  "jp_overrides_sha256": "e35c423cefdeaf95753d5880d83ac21ecf59a530bb8925f5773c119acc3c4b26",
+  "semantic_css_sha256": "e38dd25c4049e1db647287481ad69abc569ef8812fcfd4c67aba3bb7f28f1773",
+  "canonical_override_sha256": "1ee935aaa439a7f656ced8e7f1f3b2f37301529ac90babd631bb4f77aac677d8",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "cdacff0515bfae5299a72b1f2d023f4f917c218c3d8dc6d1dec8ce2dd8f3ce16",
+  "final_source_inputs": {
+    "base_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b",
+    "jp_overrides_sha256": "e35c423cefdeaf95753d5880d83ac21ecf59a530bb8925f5773c119acc3c4b26"
+  },
+  "ordered_include_sha256": "6ad251acc7c0c26d408ed2658a13c2bdc8fa9f2edc913af8a2815315b5894abd",
+  "declaration_reviews": {},
+  "adaptation_block_count": 3,
+  "raw_override_rule_count": 10,
+  "canonical_override_rule_count": 10,
+  "exact_duplicate_rules_removed": 0,
+  "redundant_same_value_declarations_removed": 0,
+  "empty_rules_removed": 0,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: pataphysics account and navigation behavior",
+      "rationale": "SCP-JP credit acceptance: the upstream port hides the current SCP-JP heritage Rate wrapper with !important, although credit:start/end render a tagged heritage state.",
+      "sha256": "34190c94f04dcdcfda4a207d491a8dbcd812f7e016cced9bfb9c6cc4c99f8bf3",
+      "selectors": [
+        ".creditRate .rateBox.heritage-wrap"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
+      "rationale": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
+      "sha256": "a7d08f5e3645665482f335e0cfe80954a4da6781e0bbe546dc2f31f9383b6b82",
+      "selectors": [
+        "#top-bar .mobile-top-bar ul li ul",
+        "#top-bar .mobile-top-bar ul li ul li",
+        "#top-bar .mobile-top-bar ul li ul li a",
+        "#top-bar .top-bar ul li ul",
+        "#top-bar .top-bar ul li ul li",
+        "#top-bar .top-bar ul li ul li a"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    }
+  ]
+}

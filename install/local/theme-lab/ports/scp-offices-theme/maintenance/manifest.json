@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "645ad8f6c1cbc5b3fc4a23dee7fe21df3f3172e241207513094912401eefbebe",
+  "base_source_sha256": "1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8",
+  "raw_jp_overrides_sha256": "6f85c6fd89c08f2deb142ba09c8ebad82a71c564289742cd7d5763a61969b25f",
+  "jp_overrides_sha256": "87d30ff4eaced6ab78e82ff412e89e2babaacb8a29d8327a191f9892110bdef2",
+  "semantic_css_sha256": "005fff8d149739e7d4c84372bedb5d38a16de20b6635419cfa8c6a9cf571d243",
+  "canonical_override_sha256": "0b4b4f4517dade0ccedd0ace6440c67bcfc94ce2d0910e27da01e020af5dfb06",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "680694b0f728d94e1a1b687aaf6d99434c4a711a7c45adbac38282da84dd864e",
+  "final_source_inputs": {
+    "base_sha256": "1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8",
+    "jp_overrides_sha256": "87d30ff4eaced6ab78e82ff412e89e2babaacb8a29d8327a191f9892110bdef2"
+  },
+  "ordered_include_sha256": "cb24090a5dda190cf917b8ed20d027cb92abbd6f706e6c0e4505dd41a8958515",
+  "declaration_reviews": {
+    "[[],\"#side-bar .collapsible-block-link\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .collapsible-block-unfolded-link\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .collapsible-block-link\",\"overflow-wrap\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .collapsible-block-link\",\"white-space\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .collapsible-block-unfolded-link\",\"overflow-wrap\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#side-bar .collapsible-block-unfolded-link\",\"white-space\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#top-bar .top-bar ul a\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[],\"#top-bar .top-bar ul\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    }
+  },
+  "adaptation_block_count": 8,
+  "raw_override_rule_count": 33,
+  "canonical_override_rule_count": 31,
+  "exact_duplicate_rules_removed": 2,
+  "redundant_same_value_declarations_removed": 7,
+  "empty_rules_removed": 0,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: scp-offices-theme account and navigation behavior",
+      "rationale": "Keep SCP Offices navigation proportions while allowing long localized labels to wrap.",
+      "sha256": "2620ad1dcfc0317d9f2554a3fcef2fa3463890566ee08ce624816972dc31b9bd",
+      "selectors": [
+        "#side-bar .collapsible-block-link",
+        "#side-bar .collapsible-block-unfolded-link",
+        "#side-bar .side-block a"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up: scp-offices-theme",
+      "rationale": "The pale office menu needs its theme's dark ink on the collapsed submenu; localized labels can wrap without clipping.",
+      "sha256": "3c1c1d21cdfa6be3d181234492ee55e884d6d557a75d857e69cb13cd04166f03",
+      "selectors": [
+        "#side-bar .collapsible-block-link",
+        "#side-bar .collapsible-block-unfolded-link"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up v2: scp-offices-theme",
+      "rationale": "The pale office menu needs its theme's dark ink on the collapsed submenu; localized labels can wrap without clipping.",
+      "sha256": "853a413e55488db2ee1460715fe568a7953556104f48f5f43a5cf94cd30d9d9c",
+      "selectors": [
+        "#side-bar .collapsible-block-link",
+        "#side-bar .collapsible-block-unfolded-link"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v1: scp-offices-theme",
+      "rationale": "Office-theme submenu labels need the same dark ink as the pale gray-green panel behind them.",
+      "sha256": "63ab3bfeeb2a70089b668c8bbc18ffb39363ea0b5751f21db0f121010be71e9e",
+      "selectors": [
+        "#top-bar .top-bar ul",
+        "#top-bar .top-bar ul a"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v2: scp-offices-theme",
+      "rationale": "Keep the dropdown paper-gray treatment while assigning a dark green-gray foreground with readable contrast.",
+      "sha256": "7a9da548f16c0221f0768c6504d3281da13a50d2923aa0e7ee80e344fe38e2b1",
+      "selectors": [
+        "#top-bar .top-bar ul",
+        "#top-bar .top-bar ul a"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header refinement v5: scp-offices-theme",
+      "rationale": "Fit the Japanese credit-view return affordance inside the existing SCP Offices card without changing its office-panel colors.",
+      "sha256": "2444a2bd586a9d4462e7f654da6c71d6c27d187e5e7b0185c5528c3e8e49c607",
+      "selectors": [
+        "#u-credit-otherwise .modalbox > a[href=\"#u-credit-view\"]",
+        "#u-credit-otherwise .modalbox a",
+        "#u-credit-otherwise .modalbox-title",
+        "#u-credit-otherwise a[href=\"#u-credit-view\"]",
+        "#u-credit-view .credit a",
+        "#u-credit-view .modalbox-title"
+      ],
+      "at_contexts": [
+        "@media (max-width: 600px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v41: scp-offices-theme",
+      "rationale": "Direct Files and policy-surface image review: the theme's pale mint foreground disappears on its cream/pale-gray panels. Keep the office palette and panel fills, but use its established deep green ink for links on these light reading/control surfaces.",
+      "sha256": "328c5e09ecc365223b530613946b9ebe2e2c9f0feca338ddf583d5ce8419528b",
+      "selectors": [
+        "#action-area .file-attribute",
+        "#action-area .file-attribute a",
+        "#action-area .file-name",
+        "#action-area .file-name a",
+        "#interwiki a",
+        "#page-content a",
+        "#page-content a:visited",
+        "#page-options-bottom a",
+        "#page-options-bottom-2 a",
+        "#side-bar a"
+      ],
+      "at_contexts": []
+    }
+  ]
+}

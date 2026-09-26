@@ -32,8 +32,24 @@
       "source_url": "https://scp-jp.github.io/files/theme/classic/style0.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "c81ade95a7062dfdc11ba46cddf9784832902d8027c7e539f34a972890226611",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as bb93646fe7c324e9804f754c6d05e4ca56544e466fa5bcd0585d25c197d21f5a.css with SHA-256 bb93646fe7c324e9804f754c6d05e4ca56544e466fa5bcd0585d25c197d21f5a; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.github.io/files/theme/classic/style0.css",
+      "sha256": "bb93646fe7c324e9804f754c6d05e4ca56544e466fa5bcd0585d25c197d21f5a",
+      "asset_file": "bb93646fe7c324e9804f754c6d05e4ca56544e466fa5bcd0585d25c197d21f5a.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://scp-jp.github.io/files/theme/classic/style0.css",
+      "final_url": "https://scp-jp.github.io/files/theme/classic/style0.css",
+      "sha256": "bb93646fe7c324e9804f754c6d05e4ca56544e466fa5bcd0585d25c197d21f5a",
+      "normalized_text_sha256": "bb93646fe7c324e9804f754c6d05e4ca56544e466fa5bcd0585d25c197d21f5a",
+      "bytes": 7195,
+      "content_type": "text/css",
+      "asset_file": "bb93646fe7c324e9804f754c6d05e4ca56544e466fa5bcd0585d25c197d21f5a.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }

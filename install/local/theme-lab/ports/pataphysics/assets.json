@@ -67,15 +67,44 @@
       "source_url": "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "7510083ee6ded5991dcb3eeaca7346ff79beab7ed2947a5ded67cca65bcc01a4",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df.css with SHA-256 1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap",
+      "sha256": "1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df",
+      "asset_file": "1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1",
       "decision": "localize-into-package",
       "candidate_css_sha256": "7510083ee6ded5991dcb3eeaca7346ff79beab7ed2947a5ded67cca65bcc01a4",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922.css with SHA-256 96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1",
+      "sha256": "96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922",
+      "asset_file": "96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap",
+      "sha256": "1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df",
+      "normalized_text_sha256": "1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df",
+      "bytes": 223,
+      "content_type": "text/css",
+      "asset_file": "1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1",
+      "final_url": "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1",
+      "sha256": "96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922",
+      "normalized_text_sha256": "96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922",
+      "bytes": 15970,
+      "content_type": "text/css",
+      "asset_file": "96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }

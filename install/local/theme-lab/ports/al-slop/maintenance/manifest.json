@@ -1,0 +1,288 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "21b14b3fbf8cda7a7f3ace8a191f3642f743a36372b5992ba05a56a601fd9a04",
+  "base_source_sha256": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
+  "raw_jp_overrides_sha256": "d5ea4f4cd51dd2d6aa4b31967b61d55460b1d1bc1d103e5ea961d2a0ed87fdc6",
+  "jp_overrides_sha256": "20d812b6ca6b036be1d91330521e2e680e54385475aa2d3ecc6881a0adafb273",
+  "semantic_css_sha256": "c99e35f88b951880ce82a307a2ae53e5a94e408d9a32fcbe99716dee76a42ebb",
+  "canonical_override_sha256": "beef86485ae760f6dffd728c0a9f8de9255589561d0f9e9280229173478e6e90",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "fb9f657cc61eb797051a090178a5417bc9202159f054e53315fd0a5905718010",
+  "final_source_inputs": {
+    "base_sha256": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
+    "jp_overrides_sha256": "20d812b6ca6b036be1d91330521e2e680e54385475aa2d3ecc6881a0adafb273"
+  },
+  "ordered_include_sha256": "abea77fe1e3eb18a7c60405c937cd50fa1c2d1cf76913372673a979ed6ebcd2b",
+  "declaration_reviews": {
+    "[[\"@media (max-width: 767px)\"],\"#header\",\"min-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 2 obsolete conflicting declaration(s) and 2 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 2,
+      "same_value_declarations_removed": 2,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header\",\"padding-bottom\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header\",\"height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 2 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 2,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"display\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"float\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"max-width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"overflow-wrap\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"position\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"display\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"float\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"max-width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"overflow-wrap\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"position\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"width\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    }
+  },
+  "adaptation_block_count": 10,
+  "raw_override_rule_count": 28,
+  "canonical_override_rule_count": 28,
+  "exact_duplicate_rules_removed": 0,
+  "redundant_same_value_declarations_removed": 13,
+  "empty_rules_removed": 3,
+  "active_tags": [],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v1: al-slop",
+      "rationale": "The mobile theme title and localized site title occupy separate header rows; keep the long page title in the article column.",
+      "sha256": "25ec036c2cd06931a0ca652331d940c8529a29eba5e9d14686e28f1c6df53c6f",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v2: al-slop",
+      "rationale": "The collage is the theme identity; place the localized header labels and search in flow over it so they do not cover the article title.",
+      "sha256": "eb2bb13322799aee543c16c291ed05d7b3eb8913690755451b0041c87a9c23ed",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header fix v3: al-slop",
+      "rationale": "Keep the poster header's authored vertical space on phones: its logo and search are in flow, while the original top bar and account box are positioned over the banner. Reserve that header area before the article title begins.",
+      "sha256": "770a3319cde859bee95a0390b282f22f903c4aa792df8d663b73a21d56d6241f",
+      "selectors": [
+        "#header",
+        "#login-status",
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header refinement v5: al-slop",
+      "rationale": "The close label is painted against the left viewport edge by the banner theme's mobile drawer; inset its text without suppressing the overlay.",
+      "sha256": "f8bd6895bfdd7ad5928849841f4a261284885be73941773dacbc93a25ad09e10",
+      "selectors": [
+        "#license-area",
+        "#license-area a",
+        "#side-bar a.close-menu"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v13: al-slop",
+      "rationale": "Image-reviewed narrow-header repair: the absolute collage masthead lets the logged-in account chip cover the localized site-name line. Keep the meme collage and account control, but anchor that control in the masthead's free upper-right corner at the SCP-JP 320px boundary.",
+      "sha256": "1900e44ccf8ea53ebbbed839285a3f003409bb3d445da41bc8cd46f2b02afca1",
+      "selectors": [
+        "#header",
+        "#login-status"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v18: al-slop",
+      "rationale": "Direct image + overlap diagnostics: SCP-JP's Local Translation Corpus masthead title descends to y232 while #page-title begins at y198. Reserve the full masthead title band in desktop flow; preserve the collage and both labels instead of hiding either one.",
+      "sha256": "8edf8634ef8165ea6032da0fc82be95dba34fecce8ee251399be97460c83d84f",
+      "selectors": [
+        "#header"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v19: al-slop",
+      "rationale": "Direct after-image review: the localized SCP-JP label is white over pale collage panels at the masthead's upper-right edge. Keep its white type and poster contrast, adding the theme's charcoal outline for legibility across variable imagery.",
+      "sha256": "3da795775f378ffb5a4d40640dc674e63a13af41da11cbf2ea18bccb195b5f74",
+      "selectors": [
+        "#header h2",
+        "#header h2 > span"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v20: al-slop",
+      "rationale": "DOM review identified the white localized navigation as #top-bar links on pale image panels, not the masthead subtitle. Preserve the poster nav and make white labels readable over light collage areas with the same charcoal outline.",
+      "sha256": "f89212a320cede4a12e80c811b6f2620416507376e305945c9edd9e926b59e6e",
+      "selectors": [
+        "#top-bar .top-bar a"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
+      "rationale": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
+      "sha256": "a7d08f5e3645665482f335e0cfe80954a4da6781e0bbe546dc2f31f9383b6b82",
+      "selectors": [
+        "#top-bar .mobile-top-bar ul li ul",
+        "#top-bar .mobile-top-bar ul li ul li",
+        "#top-bar .mobile-top-bar ul li ul li a",
+        "#top-bar .top-bar ul li ul",
+        "#top-bar .top-bar ul li ul li",
+        "#top-bar .top-bar ul li ul li a"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    }
+  ]
+}

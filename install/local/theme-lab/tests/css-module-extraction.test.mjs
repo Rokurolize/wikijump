@@ -50,3 +50,22 @@ test('evaluates iftags against the frozen source page tags',()=>{
   assert.doesNotMatch(css,/archive\.css/u);
   assert.throws(()=>extractUnconditionalCssModules(source),/No unconditional CSS modules/u);
 });
+
+test('ignores Wikidot-looking tokens inside CSS comments and strings',()=>{
+  const source=`[[module CSS]]
+/* Historical note mentions [[iftags]] but must not open a Wikidot condition. */
+.a::before { content: "[[/module]] [[iftags +archive]]"; }
+[[/module]]
+[[module CSS]].later { color: green; }[[/module]]`;
+  const css=extractUnconditionalCssModules(source);
+  assert.match(css,/Historical note mentions \[\[iftags\]\]/u);
+  assert.match(css,/content: "\[\[\/module\]\] \[\[iftags \+archive\]\]"/u);
+  assert.match(css,/\.later/u);
+});
+
+test('ignores escaped Wikidot CSS-module examples in localized documentation',()=>{
+  const source=`Use {{[[module CSS]]}} in a copied example.\n[[module CSS]].live { color: navy; }[[/module]]`;
+  const css=extractUnconditionalCssModules(source);
+  assert.match(css,/\.live/u);
+  assert.doesNotMatch(css,/copied example/u);
+});

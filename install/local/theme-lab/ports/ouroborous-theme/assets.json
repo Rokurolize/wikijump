@@ -736,57 +736,177 @@
       "source_url": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "1e1a4fe14f80aa1c81fcf07c2279b61482c83e5b67ea73f5c53f9a51ccd19e21",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b.css with SHA-256 872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+      "sha256": "872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b",
+      "asset_file": "872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "1e1a4fe14f80aa1c81fcf07c2279b61482c83e5b67ea73f5c53f9a51ccd19e21",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa.css with SHA-256 0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+      "sha256": "0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa",
+      "asset_file": "0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "1e1a4fe14f80aa1c81fcf07c2279b61482c83e5b67ea73f5c53f9a51ccd19e21",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99.css with SHA-256 e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
+      "sha256": "e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99",
+      "asset_file": "e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://p.typekit.net/p.css?s=1&k=mst2dnj&ht=tk&f=27920.27954.28025&a=85898075&app=typekit&e=css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "1e1a4fe14f80aa1c81fcf07c2279b61482c83e5b67ea73f5c53f9a51ccd19e21",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 1c0ff118a4290c99f39c90abb38703a866e47251b23cca20266c69c812ccafeb.css with SHA-256 1c0ff118a4290c99f39c90abb38703a866e47251b23cca20266c69c812ccafeb; the flattened final candidate was replayed offline.",
+      "final_url": "https://p.typekit.net/p.css?s=1&k=mst2dnj&ht=tk&f=27920.27954.28025&a=85898075&app=typekit&e=css",
+      "sha256": "1c0ff118a4290c99f39c90abb38703a866e47251b23cca20266c69c812ccafeb",
+      "asset_file": "1c0ff118a4290c99f39c90abb38703a866e47251b23cca20266c69c812ccafeb.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://pseudo-scp-jp.wdfiles.com/local--code/theme%3Aouroborous-theme/1",
       "decision": "localize-into-package",
       "candidate_css_sha256": "1e1a4fe14f80aa1c81fcf07c2279b61482c83e5b67ea73f5c53f9a51ccd19e21",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as c8082b272b3d39b9cecf3cadc28fb9ddc9a6349abfd21180b4446e479e74f7e0.css with SHA-256 c8082b272b3d39b9cecf3cadc28fb9ddc9a6349abfd21180b4446e479e74f7e0; the flattened final candidate was replayed offline.",
+      "final_url": "https://pseudo-scp-jp.wdfiles.com/local--code/theme%3Aouroborous-theme/1",
+      "sha256": "c8082b272b3d39b9cecf3cadc28fb9ddc9a6349abfd21180b4446e479e74f7e0",
+      "asset_file": "c8082b272b3d39b9cecf3cadc28fb9ddc9a6349abfd21180b4446e479e74f7e0.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "1e1a4fe14f80aa1c81fcf07c2279b61482c83e5b67ea73f5c53f9a51ccd19e21",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d.css with SHA-256 0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "sha256": "0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d",
+      "asset_file": "0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "1e1a4fe14f80aa1c81fcf07c2279b61482c83e5b67ea73f5c53f9a51ccd19e21",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6.css with SHA-256 125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "sha256": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6",
+      "asset_file": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://use.typekit.net/mst2dnj.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "1e1a4fe14f80aa1c81fcf07c2279b61482c83e5b67ea73f5c53f9a51ccd19e21",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 511b044b15640a706488c9667994ca5d1e9f2041067809c8b4d9c320dbf32fb3.css with SHA-256 511b044b15640a706488c9667994ca5d1e9f2041067809c8b4d9c320dbf32fb3; the flattened final candidate was replayed offline.",
+      "final_url": "https://use.typekit.net/mst2dnj.css",
+      "sha256": "511b044b15640a706488c9667994ca5d1e9f2041067809c8b4d9c320dbf32fb3",
+      "asset_file": "511b044b15640a706488c9667994ca5d1e9f2041067809c8b4d9c320dbf32fb3.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+      "sha256": "872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b",
+      "normalized_text_sha256": "872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b",
+      "bytes": 4149,
+      "content_type": "text/css",
+      "asset_file": "872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+      "sha256": "0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa",
+      "normalized_text_sha256": "0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa",
+      "bytes": 836,
+      "content_type": "text/css",
+      "asset_file": "0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
+      "sha256": "e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99",
+      "normalized_text_sha256": "e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99",
+      "bytes": 2058,
+      "content_type": "text/css",
+      "asset_file": "e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://p.typekit.net/p.css?s=1&k=mst2dnj&ht=tk&f=27920.27954.28025&a=85898075&app=typekit&e=css",
+      "final_url": "https://p.typekit.net/p.css?s=1&k=mst2dnj&ht=tk&f=27920.27954.28025&a=85898075&app=typekit&e=css",
+      "sha256": "1c0ff118a4290c99f39c90abb38703a866e47251b23cca20266c69c812ccafeb",
+      "normalized_text_sha256": "1c0ff118a4290c99f39c90abb38703a866e47251b23cca20266c69c812ccafeb",
+      "bytes": 5,
+      "content_type": "text/css",
+      "asset_file": "1c0ff118a4290c99f39c90abb38703a866e47251b23cca20266c69c812ccafeb.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://pseudo-scp-jp.wdfiles.com/local--code/theme%3Aouroborous-theme/1",
+      "final_url": "https://pseudo-scp-jp.wdfiles.com/local--code/theme%3Aouroborous-theme/1",
+      "sha256": "c8082b272b3d39b9cecf3cadc28fb9ddc9a6349abfd21180b4446e479e74f7e0",
+      "normalized_text_sha256": "c8082b272b3d39b9cecf3cadc28fb9ddc9a6349abfd21180b4446e479e74f7e0",
+      "bytes": 26743,
+      "content_type": "text/css",
+      "asset_file": "c8082b272b3d39b9cecf3cadc28fb9ddc9a6349abfd21180b4446e479e74f7e0.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "sha256": "0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d",
+      "normalized_text_sha256": "0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d",
+      "bytes": 487467,
+      "content_type": "text/css",
+      "asset_file": "0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "sha256": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6",
+      "normalized_text_sha256": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6",
+      "bytes": 62636,
+      "content_type": "text/css",
+      "asset_file": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://use.typekit.net/mst2dnj.css",
+      "final_url": "https://use.typekit.net/mst2dnj.css",
+      "sha256": "511b044b15640a706488c9667994ca5d1e9f2041067809c8b4d9c320dbf32fb3",
+      "normalized_text_sha256": "511b044b15640a706488c9667994ca5d1e9f2041067809c8b4d9c320dbf32fb3",
+      "bytes": 2720,
+      "content_type": "text/css",
+      "asset_file": "511b044b15640a706488c9667994ca5d1e9f2041067809c8b4d9c320dbf32fb3.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ],
+  "localization_transforms": [
+    {
+      "id": "jp-page-title-contrast",
+      "reason": "The imported Ouroborous mobile rule paints the SCP-JP article title with the dark menu token on the near-black body panel. Preserve the accepted light title and inherited link color without modifying the frozen upstream CSS object.",
+      "matches": 1,
+      "before_sha256": "8a05091cb2d51ea3281a5fb1bd2951a3f9b57463f2473e0fa3c2a1944f2a603d",
+      "after_sha256": "0a7868fb1baa16e2a4ac0140dcdd46642936922461cff118b54228261cb3b593"
+    }
+  ],
+  "localization_transform_manifest": {
+    "path": "localization-transforms.json",
+    "sha256": "fa0ee3061aded3b0aa13270a6436d110a99dcf5915dc0c892ddd9efef3f1fd59"
+  }
 }

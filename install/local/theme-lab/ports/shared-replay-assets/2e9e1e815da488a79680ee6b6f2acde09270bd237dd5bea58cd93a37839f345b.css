@@ -1,0 +1,14 @@
+@font-face {
+  font-family: 'Mali';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/mali/v13/N0ba2SRONuN4eCo.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Mali';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/mali/v13/N0bV2SRONuN4QJbhKlQ.ttf) format('truetype');
+}

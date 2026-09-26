@@ -17,7 +17,7 @@
     "slug": "theme:night-rush-theme",
     "title": "Night Rush Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:night-rush-theme/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "2d1fe57ae48528ada48c2f177e2b9db9d3b83b825233e3bd105cc38931cd69ef",
       "updated_at": "2022-12-20T21:40:07+00:00",
       "entity_uuid": "c5b815e1-97fc-40c4-b411-a9448612a00d",
@@ -26,11 +26,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 31
+      "revisions": 31,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:night-rush-theme"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:night-rush-theme/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "05a20d5b6e1534554099e014972271405efabf5a119d6c84b8a3b2b021922453",
       "updated_at": "2023-01-05T16:09:54+00:00",
       "entity_uuid": "11b60ef5-308f-470c-9850-f42fcb81fa1e",
@@ -38,7 +43,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:night-rush-theme"
+      }
     },
     "existing_jp_audit": "existing-jp-current-and-valid",
     "technical_spec_version": "1.4",
@@ -76,7 +86,7 @@
     "base_family": "independent"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_night-rush-theme/theme_night-rush-theme_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -84,5 +94,19 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-current-and-valid",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/night-rush-theme/assets.json",
-  "asset_dependency_decision_count": 3
+  "asset_dependency_decision_count": 3,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "5d0cc657cd638addbb28f8278832126dc863b1ae0ae339f216dceff45ef2f98c",
+    "jp_overrides_sha256": "d4b1cdf04c852a346af359e71a3a9f20ca4d897b963c83b8a6c9285fc1c189dc",
+    "semantic_css_sha256": "809f865dbf31cf59fb489d16decff42469e7776a183359d1f527501cc4a6d14a",
+    "canonical_override_sha256": "4df0265cdf0759610f995644321c9ad4264b1e406861594581c477becd15b2dd",
+    "final_source": "maintenance/final.wikidot.txt",
+    "final_source_sha256": "208c7b9596b67ef0e84449a0c760113bc4dddb6b90f0cdfb3c55c4a00ecb8405",
+    "exact_duplicate_rules_removed": 5,
+    "redundant_same_value_declarations_removed": 9,
+    "empty_rules_removed": 0
+  }
 }

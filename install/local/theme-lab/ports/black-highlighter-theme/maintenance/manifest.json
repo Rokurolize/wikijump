@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "4d58de367c9e56fdf2b3a29bad656ee6894b9e1796ac56e3a8ff78813d84689a",
+  "base_source_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
+  "raw_jp_overrides_sha256": "365738160f5cd944e59e45e86fdca1e7f5f4e3f2e49c72d691e13dcc5fc6c5da",
+  "jp_overrides_sha256": "a3689191d39ca1e5d8667feecea6c72b9b4aa6eec416c1cf225aad2d3677d9b6",
+  "semantic_css_sha256": "b114c5bf6564ed95e1302a75b633082409856b319ec46265abf53950ee6e92b3",
+  "canonical_override_sha256": "09c6fc30af9f1f9f1a078a2a80ca7effe808625823a721533eee8c000cfd2c2f",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "9f316f2970fa2d3eabedd40b2c2bb3d5acde506ecf1d552d5602b73b2abb099a",
+  "final_source_inputs": {
+    "base_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
+    "jp_overrides_sha256": "a3689191d39ca1e5d8667feecea6c72b9b4aa6eec416c1cf225aad2d3677d9b6"
+  },
+  "ordered_include_sha256": "fbad8289236d21fd1d646475a52ad2ea45516a31b7229049b59d5b070ce72eb6",
+  "declaration_reviews": {},
+  "adaptation_block_count": 3,
+  "raw_override_rule_count": 4,
+  "canonical_override_rule_count": 4,
+  "exact_duplicate_rules_removed": 0,
+  "redundant_same_value_declarations_removed": 0,
+  "empty_rules_removed": 0,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header refinement v5: black-highlighter-theme",
+      "rationale": "The inherited mobile drawer clips its close label against the screen edge; reserve a small inner text inset while retaining the full-screen dimmer anchor.",
+      "sha256": "425a3cd86b4b0bba14c87ab1e51eb266e0906309fe1a6eea8a293f64fa9bfa77",
+      "selectors": [
+        "#side-bar a.close-menu"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance interaction repair v1: black-highlighter-theme",
+      "rationale": "Keep BHL's credit return action as one compact Japanese control instead of splitting it across vertical lines at phone widths.",
+      "sha256": "f1cb88b987b12e5dc50b300e32edae50f7c9b1030eeb002d96bfdb9bad124ceb",
+      "selectors": [
+        "#u-credit-otherwise .modalbox a[href=\"#u-credit-view\"]"
+      ],
+      "at_contexts": [
+        "@media (max-width: 600px)"
+      ]
+    }
+  ]
+}

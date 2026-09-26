@@ -17,7 +17,7 @@
     "slug": "theme:scpedia",
     "title": "SCPedia Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:scpedia/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "195a9d70bbfed2cf6cb177aec6b7f8f236c7ca161af19b040d1a653f8da16284",
       "updated_at": "2026-04-12T05:22:44+00:00",
       "entity_uuid": "21c70fb8-b04e-46ad-82e2-e19887bb15ad",
@@ -26,7 +26,12 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 58
+      "revisions": 58,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:scpedia"
+      }
     },
     "jp": {
       "status": "confirmed-absent-by-targeted-xmlrpc",
@@ -61,7 +66,7 @@
     "base_family": "independent"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_scpedia/theme_scpedia_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "human-port-candidate.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -84,5 +89,19 @@
   "final_verdict": "warn",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/scpedia/assets.json",
-  "asset_dependency_decision_count": 22
+  "asset_dependency_decision_count": 22,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "c72a8efe05d1b61db6186108038dbfaca435d076a00f78319464deed5cfbb7c5",
+    "jp_overrides_sha256": "82e27f49330c674c960bd03d8e2c3d9194d41c1a8e87d085c38331faa02e8e24",
+    "semantic_css_sha256": "d2610c4c864644aea53275c9c2a39b2917ffbe2703a0af01dd062d58edf82c44",
+    "canonical_override_sha256": "05c65f588206070143d60ff21f9040d39f8ba02c90fe806351ea297d829690cf",
+    "final_source": "maintenance/final.wikidot.txt",
+    "final_source_sha256": "b19bcb0abb7c198f766b7b3d06f257dc4425a5373a91eb41b2577be95251d5a7",
+    "exact_duplicate_rules_removed": 5,
+    "redundant_same_value_declarations_removed": 18,
+    "empty_rules_removed": 0
+  }
 }

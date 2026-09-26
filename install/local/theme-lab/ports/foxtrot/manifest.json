@@ -17,7 +17,7 @@
     "slug": "theme:foxtrot",
     "title": "Foxtrot Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:foxtrot/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "04407aa0cfb8cf27b6066cd994b7b1ae7d2c867f187aacbd90639423f7c78b5d",
       "updated_at": "2026-03-26T17:29:48+00:00",
       "entity_uuid": "7fd79b9e-99cb-4840-8eba-ae7b1765fe6e",
@@ -25,11 +25,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 171
+      "revisions": 171,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:foxtrot"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:foxtrot/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "93f5876476041e7bc3f28e52fc7da233f1f78733f1ff687157086a64b05eb925",
       "updated_at": "2024-08-16T17:44:19+00:00",
       "entity_uuid": "30ba8be2-1dab-4b61-9232-01ff1334a5e3",
@@ -37,7 +42,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:foxtrot"
+      }
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
@@ -220,7 +230,7 @@
     "base_family": "basalt"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_foxtrot/theme_foxtrot_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -519,5 +529,19 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/foxtrot/assets.json",
-  "asset_dependency_decision_count": 47
+  "asset_dependency_decision_count": 47,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
+    "jp_overrides_sha256": "31d88a12238b6b3a59ea1c2631c2ee7ff82885512082655ebf3d6d0a6066afc9",
+    "semantic_css_sha256": "40cbbaa1233e8ad1850ddfb8a7d856f4db6004b99db00d254e6c1925b1c3274f",
+    "canonical_override_sha256": "6e52929045b4a33e7a35cb5d3915613291434a918f4f743637da49eb1166fd67",
+    "final_source": "maintenance/final.wikidot.txt",
+    "final_source_sha256": "32970fd851e87f4a986236b522a0e7157312d493a46f73052bb3eafd1c79b6b8",
+    "exact_duplicate_rules_removed": 15,
+    "redundant_same_value_declarations_removed": 53,
+    "empty_rules_removed": 7
+  }
 }

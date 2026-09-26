@@ -17,7 +17,7 @@
     "slug": "theme:much-cool",
     "title": "Much Cool CSS Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:much-cool/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "e2e876a82210ed12ecbe3f0fa37f4ae084ebafa21b3fd50366ab154de244c88a",
       "updated_at": "2026-04-12T05:13:12+00:00",
       "entity_uuid": "6020a376-6735-4d65-8010-217e35135a87",
@@ -27,11 +27,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 22
+      "revisions": 22,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:much-cool"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:much-cool/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "0305019f63ac920a0451b2fe9c17aa8c84992d86ae8b2243692e3d29c7354833",
       "updated_at": "2024-07-04T11:44:02+00:00",
       "entity_uuid": "4e8ae45c-5b2f-4a66-b87d-915964dfe094",
@@ -39,7 +44,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:much-cool"
+      }
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
@@ -85,7 +95,7 @@
     "base_family": "independent"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_much-cool/theme_much-cool_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -93,5 +103,19 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/much-cool/assets.json",
-  "asset_dependency_decision_count": 5
+  "asset_dependency_decision_count": 5,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "125e50c40b0349ef982256b192fa88f713db3ab7127efbacc9c1b65288304bd4",
+    "jp_overrides_sha256": "05b8c63ab9886f67fd9702798caa4b655d300ef9881aecb606de3a457a0d242c",
+    "semantic_css_sha256": "8eeb5587edb75fdb82055a1621ef8038c79da382e8354c112d536346e166323c",
+    "canonical_override_sha256": "afd8daab350a682d5f7f21d40547d4925d5631d24d45b7c4cfa59afce4fbe238",
+    "final_source": "maintenance/final.wikidot.txt",
+    "final_source_sha256": "50e1632d136b16753ece335f2eec90a97f575355f77a250f0fe473c53ad612ba",
+    "exact_duplicate_rules_removed": 0,
+    "redundant_same_value_declarations_removed": 0,
+    "empty_rules_removed": 0
+  }
 }

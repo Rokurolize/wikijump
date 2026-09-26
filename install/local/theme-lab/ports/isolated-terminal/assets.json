@@ -722,78 +722,224 @@
       "source_url": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "896f768887a6a20768c84ad4b9a10917df38146b72ec1192fe8c7c9cf492d699",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b.css with SHA-256 872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+      "sha256": "872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b",
+      "asset_file": "872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "896f768887a6a20768c84ad4b9a10917df38146b72ec1192fe8c7c9cf492d699",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa.css with SHA-256 0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+      "sha256": "0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa",
+      "asset_file": "0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "896f768887a6a20768c84ad4b9a10917df38146b72ec1192fe8c7c9cf492d699",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as a87945c5e921deccd12513e296ba25f49aa6a93c9468492888b9324410baeede.css with SHA-256 a87945c5e921deccd12513e296ba25f49aa6a93c9468492888b9324410baeede; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap",
+      "sha256": "a87945c5e921deccd12513e296ba25f49aa6a93c9468492888b9324410baeede",
+      "asset_file": "a87945c5e921deccd12513e296ba25f49aa6a93c9468492888b9324410baeede.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "896f768887a6a20768c84ad4b9a10917df38146b72ec1192fe8c7c9cf492d699",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99.css with SHA-256 e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
+      "sha256": "e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99",
+      "asset_file": "e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-2-mfzo/JFDotShinonomeMing16.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "896f768887a6a20768c84ad4b9a10917df38146b72ec1192fe8c7c9cf492d699",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 15e03687e060d9e5f045b756763dfac1d1476e5a7c46170a25fe053568e042c9.css with SHA-256 15e03687e060d9e5f045b756763dfac1d1476e5a7c46170a25fe053568e042c9; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-2-mfzo/JFDotShinonomeMing16.css",
+      "sha256": "15e03687e060d9e5f045b756763dfac1d1476e5a7c46170a25fe053568e042c9",
+      "asset_file": "15e03687e060d9e5f045b756763dfac1d1476e5a7c46170a25fe053568e042c9.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-3-ci8u/profontwindows.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "896f768887a6a20768c84ad4b9a10917df38146b72ec1192fe8c7c9cf492d699",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 107f028a3a04f40a58061a0c131ba7498d6a553f6cb633e00747552f49612b30.css with SHA-256 107f028a3a04f40a58061a0c131ba7498d6a553f6cb633e00747552f49612b30; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-3-ci8u/profontwindows.css",
+      "sha256": "107f028a3a04f40a58061a0c131ba7498d6a553f6cb633e00747552f49612b30",
+      "asset_file": "107f028a3a04f40a58061a0c131ba7498d6a553f6cb633e00747552f49612b30.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-5-t5lr/terminus.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "896f768887a6a20768c84ad4b9a10917df38146b72ec1192fe8c7c9cf492d699",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 161769240d1222ac41b703074d694085504ad49376851ebc6f9e185efaa3e126.css with SHA-256 161769240d1222ac41b703074d694085504ad49376851ebc6f9e185efaa3e126; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-5-t5lr/terminus.css",
+      "sha256": "161769240d1222ac41b703074d694085504ad49376851ebc6f9e185efaa3e126",
+      "asset_file": "161769240d1222ac41b703074d694085504ad49376851ebc6f9e185efaa3e126.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-6-aeo3/jiskan24.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "896f768887a6a20768c84ad4b9a10917df38146b72ec1192fe8c7c9cf492d699",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 018de3d1ce2b196714b0e1551210710762f7f977d2d46293be634d0d90dd77f6.css with SHA-256 018de3d1ce2b196714b0e1551210710762f7f977d2d46293be634d0d90dd77f6; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-6-aeo3/jiskan24.css",
+      "sha256": "018de3d1ce2b196714b0e1551210710762f7f977d2d46293be634d0d90dd77f6",
+      "asset_file": "018de3d1ce2b196714b0e1551210710762f7f977d2d46293be634d0d90dd77f6.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "896f768887a6a20768c84ad4b9a10917df38146b72ec1192fe8c7c9cf492d699",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d.css with SHA-256 0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "sha256": "0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d",
+      "asset_file": "0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "896f768887a6a20768c84ad4b9a10917df38146b72ec1192fe8c7c9cf492d699",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6.css with SHA-256 125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "sha256": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6",
+      "asset_file": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Aisolated-terminal/1",
       "decision": "localize-into-package",
       "candidate_css_sha256": "896f768887a6a20768c84ad4b9a10917df38146b72ec1192fe8c7c9cf492d699",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 336506e9aded81c52bd59633cd2085902925b0421827b17d118780e10cf3712d.css with SHA-256 336506e9aded81c52bd59633cd2085902925b0421827b17d118780e10cf3712d; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme%3Aisolated-terminal/1",
+      "sha256": "336506e9aded81c52bd59633cd2085902925b0421827b17d118780e10cf3712d",
+      "asset_file": "336506e9aded81c52bd59633cd2085902925b0421827b17d118780e10cf3712d.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+      "sha256": "872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b",
+      "normalized_text_sha256": "872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b",
+      "bytes": 4149,
+      "content_type": "text/css",
+      "asset_file": "872307b319ba82444e9a03c22bc17ad5972c58c089a13749f7c985dbdd476f7b.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+      "sha256": "0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa",
+      "normalized_text_sha256": "0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa",
+      "bytes": 836,
+      "content_type": "text/css",
+      "asset_file": "0aa596f335a40731e5c88382bfcc34d11b3e87bc80c7a83ae44a9d8efd6f7ffa.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap",
+      "sha256": "a87945c5e921deccd12513e296ba25f49aa6a93c9468492888b9324410baeede",
+      "normalized_text_sha256": "a87945c5e921deccd12513e296ba25f49aa6a93c9468492888b9324410baeede",
+      "bytes": 2097,
+      "content_type": "text/css",
+      "asset_file": "a87945c5e921deccd12513e296ba25f49aa6a93c9468492888b9324410baeede.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
+      "sha256": "e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99",
+      "normalized_text_sha256": "e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99",
+      "bytes": 2058,
+      "content_type": "text/css",
+      "asset_file": "e2039c5fd608dd7d78f59a472bf943d04657e58d2847f25a2a2b06e33fb1fc99.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-2-mfzo/JFDotShinonomeMing16.css",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-2-mfzo/JFDotShinonomeMing16.css",
+      "sha256": "15e03687e060d9e5f045b756763dfac1d1476e5a7c46170a25fe053568e042c9",
+      "normalized_text_sha256": "9f0cb69ad41f7b3aec38e16788980f6aa1422afcd40e15b934128a915a955344",
+      "bytes": 1289511,
+      "content_type": "text/css",
+      "asset_file": "15e03687e060d9e5f045b756763dfac1d1476e5a7c46170a25fe053568e042c9.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-3-ci8u/profontwindows.css",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-3-ci8u/profontwindows.css",
+      "sha256": "107f028a3a04f40a58061a0c131ba7498d6a553f6cb633e00747552f49612b30",
+      "normalized_text_sha256": "b2c7920d0be7fe43aaa2f11d6cc89d507d2729cf612c4742e81243c3e173241e",
+      "bytes": 16634,
+      "content_type": "text/css",
+      "asset_file": "107f028a3a04f40a58061a0c131ba7498d6a553f6cb633e00747552f49612b30.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-5-t5lr/terminus.css",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-5-t5lr/terminus.css",
+      "sha256": "161769240d1222ac41b703074d694085504ad49376851ebc6f9e185efaa3e126",
+      "normalized_text_sha256": "2b917984b44749ce8dc393649b22bb569d3e61aeb80fd8010ecef006e5e2e4e7",
+      "bytes": 16703,
+      "content_type": "text/css",
+      "asset_file": "161769240d1222ac41b703074d694085504ad49376851ebc6f9e185efaa3e126.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-6-aeo3/jiskan24.css",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-6-aeo3/jiskan24.css",
+      "sha256": "018de3d1ce2b196714b0e1551210710762f7f977d2d46293be634d0d90dd77f6",
+      "normalized_text_sha256": "6fa60b4aad5757c45f623ec3e924afc0387076f546416906cd510b02e271500f",
+      "bytes": 1559440,
+      "content_type": "text/css",
+      "asset_file": "018de3d1ce2b196714b0e1551210710762f7f977d2d46293be634d0d90dd77f6.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
+      "sha256": "0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d",
+      "normalized_text_sha256": "0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d",
+      "bytes": 487467,
+      "content_type": "text/css",
+      "asset_file": "0f739579cd2a2dc899bdff7d5b0568cdd35696172fe759109adf40afdd22193d.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "final_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
+      "sha256": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6",
+      "normalized_text_sha256": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6",
+      "bytes": 62636,
+      "content_type": "text/css",
+      "asset_file": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Aisolated-terminal/1",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme%3Aisolated-terminal/1",
+      "sha256": "336506e9aded81c52bd59633cd2085902925b0421827b17d118780e10cf3712d",
+      "normalized_text_sha256": "336506e9aded81c52bd59633cd2085902925b0421827b17d118780e10cf3712d",
+      "bytes": 16117,
+      "content_type": "text/css",
+      "asset_file": "336506e9aded81c52bd59633cd2085902925b0421827b17d118780e10cf3712d.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }

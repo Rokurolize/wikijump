@@ -17,7 +17,7 @@
     "slug": "theme:bedrock",
     "title": "Bedrock Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:bedrock/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "7f62a64c055d179d4b51746812fc8f288fd479661219bc3e607036c69dc86da5",
       "updated_at": "2024-01-08T13:14:12+00:00",
       "entity_uuid": "65b58d51-e8e2-416f-9628-123d90baaea6",
@@ -26,7 +26,12 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 21
+      "revisions": 21,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:bedrock"
+      }
     },
     "jp": {
       "status": "confirmed-absent-by-targeted-xmlrpc",
@@ -63,7 +68,7 @@
     "base_family": "basalt"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_bedrock/theme_bedrock_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "human-port-candidate.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -71,5 +76,19 @@
   "final_verdict": "warn",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/bedrock/assets.json",
-  "asset_dependency_decision_count": 52
+  "asset_dependency_decision_count": 52,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423",
+    "jp_overrides_sha256": "346927b49b6a932ba27b815cdc559b64d48cea24d627a9b941189c4d1fe7ba71",
+    "semantic_css_sha256": "05cedc4be56f61a12e26aaab038d21e8654fc772f2b57185638c1fb36ce1f712",
+    "canonical_override_sha256": "7aabeed89ad2ebb86205fbf2df1abaadc6a1880c8269918c941b9700b7ef58de",
+    "final_source": "maintenance/final.wikidot.txt",
+    "final_source_sha256": "2d2c50bafc5fe1e78d1f244ea11cf750f155518855512dc9ba48743e2fc6176c",
+    "exact_duplicate_rules_removed": 4,
+    "redundant_same_value_declarations_removed": 0,
+    "empty_rules_removed": 0
+  }
 }

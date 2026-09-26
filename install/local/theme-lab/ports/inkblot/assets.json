@@ -732,29 +732,97 @@
       "source_url": "https://fonts.bunny.net/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "12e6972e14518e7ca1a9bc1c27867ab36097ca579f73f6ed3fdf3b340b32d0f5",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 0ff5bb17d792da9ab84e42984b99f59499e956aaf33c867cd1ef1f1f09dcc00d.css with SHA-256 0ff5bb17d792da9ab84e42984b99f59499e956aaf33c867cd1ef1f1f09dcc00d; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.bunny.net/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap",
+      "sha256": "0ff5bb17d792da9ab84e42984b99f59499e956aaf33c867cd1ef1f1f09dcc00d",
+      "asset_file": "0ff5bb17d792da9ab84e42984b99f59499e956aaf33c867cd1ef1f1f09dcc00d.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Montserrat:wght@300;600&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "12e6972e14518e7ca1a9bc1c27867ab36097ca579f73f6ed3fdf3b340b32d0f5",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as a5feb0d0d55f997a5df3ecd42ac703b6502e95d01fdfb03989619e74be3578b0.css with SHA-256 a5feb0d0d55f997a5df3ecd42ac703b6502e95d01fdfb03989619e74be3578b0; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.bunny.net/css2?family=Montserrat:wght@300;600&display=swap",
+      "sha256": "a5feb0d0d55f997a5df3ecd42ac703b6502e95d01fdfb03989619e74be3578b0",
+      "asset_file": "a5feb0d0d55f997a5df3ecd42ac703b6502e95d01fdfb03989619e74be3578b0.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://fonts.bunny.net/css2?family=Prata&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "12e6972e14518e7ca1a9bc1c27867ab36097ca579f73f6ed3fdf3b340b32d0f5",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 8de67d5577ad65ee98406a90907da64b00d9482a16b122703848196748b937c9.css with SHA-256 8de67d5577ad65ee98406a90907da64b00d9482a16b122703848196748b937c9; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.bunny.net/css2?family=Prata&display=swap",
+      "sha256": "8de67d5577ad65ee98406a90907da64b00d9482a16b122703848196748b937c9",
+      "asset_file": "8de67d5577ad65ee98406a90907da64b00d9482a16b122703848196748b937c9.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Ainkblot/1",
       "decision": "localize-into-package",
       "candidate_css_sha256": "12e6972e14518e7ca1a9bc1c27867ab36097ca579f73f6ed3fdf3b340b32d0f5",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 0c5f859d310209b6afbddce79b75ad716918a7bd19e6ba935749925a6d1f3129.css with SHA-256 0c5f859d310209b6afbddce79b75ad716918a7bd19e6ba935749925a6d1f3129; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Ainkblot/1",
+      "sha256": "0c5f859d310209b6afbddce79b75ad716918a7bd19e6ba935749925a6d1f3129",
+      "asset_file": "0c5f859d310209b6afbddce79b75ad716918a7bd19e6ba935749925a6d1f3129.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://fonts.bunny.net/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap",
+      "final_url": "https://fonts.bunny.net/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap",
+      "sha256": "0ff5bb17d792da9ab84e42984b99f59499e956aaf33c867cd1ef1f1f09dcc00d",
+      "normalized_text_sha256": "0ff5bb17d792da9ab84e42984b99f59499e956aaf33c867cd1ef1f1f09dcc00d",
+      "bytes": 3408,
+      "content_type": "text/css",
+      "asset_file": "0ff5bb17d792da9ab84e42984b99f59499e956aaf33c867cd1ef1f1f09dcc00d.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.bunny.net/css2?family=Montserrat:wght@300;600&display=swap",
+      "final_url": "https://fonts.bunny.net/css2?family=Montserrat:wght@300;600&display=swap",
+      "sha256": "a5feb0d0d55f997a5df3ecd42ac703b6502e95d01fdfb03989619e74be3578b0",
+      "normalized_text_sha256": "a5feb0d0d55f997a5df3ecd42ac703b6502e95d01fdfb03989619e74be3578b0",
+      "bytes": 4904,
+      "content_type": "text/css",
+      "asset_file": "a5feb0d0d55f997a5df3ecd42ac703b6502e95d01fdfb03989619e74be3578b0.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://fonts.bunny.net/css2?family=Prata&display=swap",
+      "final_url": "https://fonts.bunny.net/css2?family=Prata&display=swap",
+      "sha256": "8de67d5577ad65ee98406a90907da64b00d9482a16b122703848196748b937c9",
+      "normalized_text_sha256": "8de67d5577ad65ee98406a90907da64b00d9482a16b122703848196748b937c9",
+      "bytes": 1712,
+      "content_type": "text/css",
+      "asset_file": "8de67d5577ad65ee98406a90907da64b00d9482a16b122703848196748b937c9.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Ainkblot/1",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Ainkblot/1",
+      "sha256": "0c5f859d310209b6afbddce79b75ad716918a7bd19e6ba935749925a6d1f3129",
+      "normalized_text_sha256": "0c5f859d310209b6afbddce79b75ad716918a7bd19e6ba935749925a6d1f3129",
+      "bytes": 16214,
+      "content_type": "text/css",
+      "asset_file": "0c5f859d310209b6afbddce79b75ad716918a7bd19e6ba935749925a6d1f3129.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ],
+  "localization_transforms": [
+    {
+      "id": "source-pane-rule-owned-by-marked-jp-layer",
+      "reason": "The flattened imported stylesheet contains this source-pane rule as well as the canonical JP override. Remove the imported copy so the JP compatibility layer owns the rule in one place. The transform requires this exact upstream text exactly once and fails closed if the imported bytes change; on an upstream update, review the source-pane rule and either refresh the anchor or move the adaptation into the updated upstream layer.",
+      "matches": 1,
+      "before_sha256": "df11fd2b50c3285d2474dc22fbda2d7f1473e533b0d6937d2e9f3124667c363c",
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "localization_transform_manifest": {
+    "path": "localization-transforms.json",
+    "sha256": "b152f8008e75376054578fc1361b0af13a7fe6d23171706e7626a99d14e166f2"
+  }
 }

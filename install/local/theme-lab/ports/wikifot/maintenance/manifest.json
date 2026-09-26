@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "c3c9d779e3654fc68cc06a364d42a75d7e188b931af95f1532ed23026fa09567",
+  "base_source_sha256": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45",
+  "raw_jp_overrides_sha256": "e76e9ff200667d57e8cb9466f96356864bfe891a2acb204bc9feb9b89cfe905a",
+  "jp_overrides_sha256": "a89a55ca5e23608bd8a90d3e4d78201d053b7fa394324c090ea2bc203e1a2b43",
+  "semantic_css_sha256": "81d7ca1b3ebd64621c609652565d488c0bc6f97c5db5bf32791166ffec05aec1",
+  "canonical_override_sha256": "19f74683fb57517707e6db557f820a5903674c0a780dfe8fb07208b2e4ab2f1c",
+  "final_source": "maintenance/final.wikidot.txt",
+  "final_source_sha256": "fffca60f7dba70b19aae14e08e26fcdecdf0a9738051d5c1be38495fc53a30d4",
+  "final_source_inputs": {
+    "base_sha256": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45",
+    "jp_overrides_sha256": "a89a55ca5e23608bd8a90d3e4d78201d053b7fa394324c090ea2bc203e1a2b43"
+  },
+  "ordered_include_sha256": "dfb56b2fba2d3bfa788617312a8e573cdf5dade711874e653f86a2085690997b",
+  "declaration_reviews": {
+    "[[\"@media (max-width: 767px)\"],\"#header h1 > a\",\"padding-top\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h1\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header h2\",\"line-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#login-status\",\"color\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 1,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header\",\"height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#header\",\"min-height\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    },
+    "[[\"@media (max-width: 767px)\"],\"#top-bar\",\"block-size\"]": {
+      "status": "resolved-canonical",
+      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
+      "conflicting_declarations_consolidated": 0,
+      "same_value_declarations_removed": 1,
+      "fallback_declarations_retained": 0
+    }
+  },
+  "adaptation_block_count": 9,
+  "raw_override_rule_count": 43,
+  "canonical_override_rule_count": 37,
+  "exact_duplicate_rules_removed": 6,
+  "redundant_same_value_declarations_removed": 6,
+  "empty_rules_removed": 0,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP mobile-header adaptation revision 2: keep the search wrapper itself in flow; changing only its form leaves the theme's absolutely positioned parent overlaying the Japanese title.",
+      "rationale": "SCP-JP mobile-header adaptation revision 2: keep the search wrapper itself in flow; changing only its form leaves the theme's absolutely positioned parent overlaying the Japanese title.",
+      "sha256": "362f68b16cf6d0f480e773ab8993b033c5f913bb1cf89b4fe22e9e8800c4b2e5",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form",
+        "#search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP mobile-header adaptation revision 3",
+      "rationale": "SCP-JP mobile-header adaptation revision 2: keep the search wrapper itself in flow; changing only its form leaves the theme's absolutely positioned parent overlaying the Japanese title.",
+      "sha256": "97154a86c225d0243ac76b4b92ad2e9dfb39f611313875e144d21aa58a43427e",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form",
+        "#search-top-box-input",
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v1: wikifot",
+      "rationale": "The source moves the mobile drawer left by a fixed em value, leaving a visible strip when the live drawer exceeds that width. Use its own rendered width as the closed offset.",
+      "sha256": "1a72ff5598b6da92d9f8aad7466300a8ac65acaa3274cdc6df538a2113916fda",
+      "selectors": [
+        "#side-bar",
+        "#side-bar:target"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v3: wikifot",
+      "rationale": "These captured JP theme headers share the legacy zero-line-height title recipe: the anchor reserves 80px/25px and the subtitle span reserves 19px with line-height 0, so real SCP-JP title text overlaps despite its headings being in document flow. Keep the logo's inline offset and theme colors while restoring natural wrapped line boxes.",
+      "sha256": "dbc19f26a2df43c17491e0df4da7396e7d5d51652a17a3591fd0d398f7ac098b",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v4: wikifot",
+      "rationale": "Image review plus DOM evidence: the imported stylesheet sets logical block-size:0 on heading spans, so text paints outside a zero-height flow box and the following Search/mobile navigation overlaps it. Reset the logical constraint as well as physical height.",
+      "sha256": "bb7600d493ff4e63fa856aff866d1428fe5f60a48de3d2f6f37dc6c29f1e7713",
+      "selectors": [
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2",
+        "#header h2 > span",
+        "#search-top-box",
+        "#search-top-box-form",
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v5: wikifot",
+      "rationale": "Follow-up to the visual defect: the same imported header positions .mobile-top-bar above the zero-height #top-bar. Return the responsive navigation list to flow after Search while its round open-menu button keeps its fixed touch target.",
+      "sha256": "1ef2e37e3e317df1a14df1230f9fb01aa3db97adc5ca11c8662a05729b889db5",
+      "selectors": [
+        "#top-bar",
+        ".mobile-top-bar",
+        ".mobile-top-bar > ul"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v6: wikifot",
+      "rationale": "The fixed hamburger occupied the first title line on the fresh mobile screenshot; start the wordmark below its 42px control and retain its upper-right account text.",
+      "sha256": "e3d6901061323617b38fb673acd628d791a56734bcfd550a212167be83d29cb3",
+      "selectors": [
+        "#header h1 > a",
+        "#login-status",
+        "#login-status *"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header refinement v5: wikifot",
+      "rationale": "The source's pale display lettering loses contrast on the SCP-JP white header. Preserve the outlined Wikifot typography but give the Japanese runtime labels a visible slate fill.",
+      "sha256": "3a5a32952c34681d2fc2b730a86d6693de755cd4a8bfca44a7267dec4cb9672b",
+      "selectors": [
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h2 > span",
+        "#login-status"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    }
+  ]
+}
