@@ -116,6 +116,26 @@ controlled comparison.
 * The per-theme delta table is in `findings.json` under
   `theme_sigma10_vs_sigma9_mobile_page_normal`.
 
+## Semantic review performed
+
+Reviewed screenshots (records remain `UNCONFIRMED`; a rendered page is not
+converted to PASS merely because it renders):
+
+* Desktop `page.normal`: Sigma-10 header logo, SCP-JP desktop top bar, SCP-JP
+  sidebar, and the SCP-173 content render; the credit preview notice is visible
+  and contained at 1440 px.
+* Mobile `page.normal`: content column is narrowed by the document overflow
+  (SIGMA10-MOB-001); the notice line runs off the right edge.
+* Mobile `nav.mobile-top.submenu-expanded`: the Sigma-10 series submenu renders
+  and is contained.
+* Mobile `nav.sidebar.open`: the Sigma-10 SCP-JP sidebar renders and is readable.
+* Mobile `credit.view.open`: the credit modal renders over the dimmed page.
+* Desktop `page.history.list`: page options, revision table, and "Compare
+  revisions" controls render and are reachable; no overflow.
+
+Keyboard/focus-order, pointer/hover reachability, and modal focus trapping were
+not systematically exercised, and unreviewed states stay `UNCONFIRMED`.
+
 ## Intentional differences (no action)
 
 * Sigma-10 header hides the configured site title text (`#header h1 a`
