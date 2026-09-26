@@ -8,6 +8,26 @@ import {
 } from "../src/postgres-published-readiness.mjs";
 
 const SSL_REQUEST = Buffer.from([0x00, 0x00, 0x00, 0x08, 0x04, 0xd2, 0x16, 0x2f]);
+const AUTH_REQUEST = Buffer.from([0x52, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00]);
+const isSslRequest = (chunk) => chunk.length === 8 && chunk[4] === 0x04;
+
+function errorResponse(message) {
+  const fields = [["S", "FATAL"], ["C", "57P03"], ["M", message]];
+  const body = Buffer.concat([
+    ...fields.flatMap(([code, text]) => [Buffer.from(code), Buffer.from(text), Buffer.from([0])]),
+    Buffer.from([0]),
+  ]);
+  const header = Buffer.alloc(5);
+  header[0] = 0x45;
+  header.writeInt32BE(body.length + 4, 1);
+  return Buffer.concat([header, body]);
+}
+
+function startupProtocol(message) {
+  assert.ok(message.length >= 8);
+  assert.equal(message.readInt32BE(0), message.length);
+  return message.readInt32BE(4);
+}
 
 async function listen(handler) {
   const server = net.createServer(handler);
@@ -24,17 +44,86 @@ async function close(server) {
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 }
 
-test("published PostgreSQL probe verifies the SSLRequest protocol response", async () => {
-  let request;
+test("published PostgreSQL probe waits for a query-ready startup response", async () => {
+  const requests = [];
   const {server, port} = await listen((socket) => {
-    socket.once("data", (chunk) => {
-      request = chunk;
-      socket.end(Buffer.from("N"));
+    socket.on("data", (chunk) => {
+      requests.push(chunk);
+      if (isSslRequest(chunk)) {
+        socket.write(Buffer.from("N"));
+        return;
+      }
+      socket.end(AUTH_REQUEST);
     });
   });
   try {
-    assert.equal(await probePublishedPostgres({port, timeoutMs: 100}), "N");
-    assert.deepEqual(request, SSL_REQUEST);
+    assert.equal(await probePublishedPostgres({port, timeoutMs: 200}), "N");
+    assert.deepEqual(requests[0], SSL_REQUEST);
+    assert.equal(startupProtocol(requests[1]), 196608);
+    assert.match(requests[1].toString("utf8"), /user\0wikijump\0database\0wikijump\0\0$/u);
+  } finally {
+    await close(server);
+  }
+});
+
+test("published PostgreSQL probe assembles a fragmented startup response", async () => {
+  const {server, port} = await listen((socket) => {
+    socket.on("data", (chunk) => {
+      if (!isSslRequest(chunk)) return;
+      socket.write(Buffer.from("N"));
+      socket.write(AUTH_REQUEST.subarray(0, 3));
+      setTimeout(() => socket.end(AUTH_REQUEST.subarray(3)), 5);
+    });
+  });
+  try {
+    assert.equal(await probePublishedPostgres({port, timeoutMs: 200}), "N");
+  } finally {
+    await close(server);
+  }
+});
+
+test("published PostgreSQL readiness retries a still-recovering database", async () => {
+  let connections = 0;
+  const {server, port} = await listen((socket) => {
+    connections += 1;
+    const connection = connections;
+    let responded = false;
+    socket.on("data", (chunk) => {
+      if (isSslRequest(chunk)) {
+        if (connection === 1) {
+          responded = true;
+          socket.end(Buffer.concat([Buffer.from("N"), errorResponse("the database system is starting up")]));
+          return;
+        }
+        socket.write(Buffer.from("N"));
+        return;
+      }
+      if (!responded) {
+        responded = true;
+        socket.end(AUTH_REQUEST);
+      }
+    });
+  });
+  try {
+    assert.equal(await waitForPublishedPostgres({port, attempts: 3, intervalMs: 1, timeoutMs: 200}), "N");
+    assert.equal(connections, 2);
+  } finally {
+    await close(server);
+  }
+});
+
+test("published PostgreSQL probe surfaces the recovery error", async () => {
+  const {server, port} = await listen((socket) => {
+    socket.on("data", (chunk) => {
+      if (!isSslRequest(chunk)) return;
+      socket.end(Buffer.concat([Buffer.from("N"), errorResponse("the database system is starting up")]));
+    });
+  });
+  try {
+    await assert.rejects(
+      probePublishedPostgres({port, timeoutMs: 200}),
+      /PostgreSQL is not ready: the database system is starting up/u,
+    );
   } finally {
     await close(server);
   }
@@ -44,10 +133,26 @@ test("published PostgreSQL readiness retries an invalid first protocol response"
   let connections = 0;
   const {server, port} = await listen((socket) => {
     connections += 1;
-    socket.once("data", () => socket.end(Buffer.from([connections === 1 ? 0x00 : 0x4e])));
+    const connection = connections;
+    let responded = false;
+    socket.on("data", (chunk) => {
+      if (isSslRequest(chunk)) {
+        if (connection === 1) {
+          responded = true;
+          socket.end(Buffer.from([0x00]));
+          return;
+        }
+        socket.write(Buffer.from("N"));
+        return;
+      }
+      if (!responded) {
+        responded = true;
+        socket.end(AUTH_REQUEST);
+      }
+    });
   });
   try {
-    assert.equal(await waitForPublishedPostgres({port, attempts: 3, intervalMs: 1, timeoutMs: 100}), "N");
+    assert.equal(await waitForPublishedPostgres({port, attempts: 3, intervalMs: 1, timeoutMs: 200}), "N");
     assert.equal(connections, 2);
   } finally {
     await close(server);
@@ -59,10 +164,19 @@ test("published PostgreSQL readiness retries a host-path timeout", async () => {
   const sockets = new Set();
   const {server, port} = await listen((socket) => {
     connections += 1;
+    const connection = connections;
+    let responded = false;
     sockets.add(socket);
     socket.on("close", () => sockets.delete(socket));
-    socket.once("data", () => {
-      if (connections > 1) socket.end(Buffer.from("N"));
+    socket.on("data", (chunk) => {
+      if (isSslRequest(chunk)) {
+        if (connection > 1) socket.write(Buffer.from("N"));
+        return;
+      }
+      if (connection > 1 && !responded) {
+        responded = true;
+        socket.end(AUTH_REQUEST);
+      }
     });
   });
   try {
