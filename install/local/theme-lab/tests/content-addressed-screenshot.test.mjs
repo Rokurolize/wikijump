@@ -29,6 +29,23 @@ test('content-addressed screenshot identity rejects path components', async t =>
   const portsDir = await fs.mkdtemp(path.join(os.tmpdir(), 'theme-lab-shots-'));
   t.after(() => fs.rm(portsDir, {recursive: true, force: true}));
   await assert.rejects(storeContentAddressedScreenshot({portsDir, theme: '../escape', engine: 'chromium', viewport: 'mobile', stateKey: 'normal', bytes: Buffer.from('x')}), /invalid screenshot artifact identity/);
+  await assert.rejects(storeContentAddressedScreenshot({portsDir, theme: 'example', engine: 'chromium', viewport: 'mobile', stateKey: 'normal', artifactNamespace: '../escape', bytes: Buffer.from('x')}), /invalid screenshot artifact namespace/);
+});
+
+test('migration screenshots can use an isolated artifact namespace', async t => {
+  const portsDir = await fs.mkdtemp(path.join(os.tmpdir(), 'theme-lab-shots-'));
+  t.after(() => fs.rm(portsDir, {recursive: true, force: true}));
+  const shot = await storeContentAddressedScreenshot({
+    portsDir,
+    theme: 'example',
+    engine: 'firefox',
+    viewport: 'desktop',
+    stateKey: 'normal',
+    artifactNamespace: 'migration/sigma10',
+    bytes: Buffer.from('sigma10 evidence'),
+  });
+  assert.match(shot.path, /^migration\/sigma10\/example\/artifacts\/interactive\/firefox\/desktop\//u);
+  assert.equal((await fs.readFile(path.join(portsDir, shot.path))).toString(), 'sigma10 evidence');
 });
 
 test('concurrent identical screenshots publish once without partial bytes or temp files', async t => {

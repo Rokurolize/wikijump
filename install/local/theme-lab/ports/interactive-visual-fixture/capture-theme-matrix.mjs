@@ -9,11 +9,13 @@ import {withAuditLock} from '../scripts/audit-lock.mjs';
 
 const scriptDir=path.dirname(fileURLToPath(import.meta.url));
 const portsDir=path.resolve(scriptDir,'..');
+const themeLabDir=path.resolve(portsDir,'..');
 const captureScript=path.join(scriptDir,'capture-interactive.mjs');
 const ensureBuiltScript=path.join(scriptDir,'ensure-built-framerail.mjs');
 const themeArg=process.argv.find(value=>value.startsWith('--theme='))?.slice(8);
 const themesArg=process.argv.find(value=>value.startsWith('--themes='))?.slice(9);
 const stateArg=process.argv.find(value=>value.startsWith('--state='))?.slice(8);
+const runContractArg=process.argv.find(value=>value.startsWith('--run-contract='))?.slice(15);
 // Built transport, 4 themes x 9 engine/viewports x 4 core states (120
 // requested rows) against a shadow copy of the full 4,947-row audit: jobs
 // 3/4/5/6/7 took 82.9/78.7/75.6/75.1/75.0 s with zero failed, retried,
@@ -31,8 +33,8 @@ for(const argument of process.argv.slice(2)){
  seenOptions.add(name);
 }
 const accepted=new Set(['--force','--anonymous','--help']);
-for(const arg of process.argv.slice(2)){if(accepted.has(arg)||/^--(?:theme|themes|state|jobs|transport)=/u.test(arg))continue;throw new Error(`unknown argument: ${arg}`)}
-if(process.argv.includes('--help')){console.log('Usage: capture-theme-matrix.mjs (--theme=slug|--themes=a,b) [--state=surface.state,...] [--jobs=1..9] [--transport=built|dev] [--anonymous] [--force]');console.log('--anonymous only captures states that work without the authenticated administrator; admin-only states (page.edit, page.rename, page.delete) fail closed. Pass --state for a public subset.');process.exit(0)}
+for(const arg of process.argv.slice(2)){if(accepted.has(arg)||/^--(?:theme|themes|state|jobs|transport|run-contract)=/u.test(arg))continue;throw new Error(`unknown argument: ${arg}`)}
+if(process.argv.includes('--help')){console.log('Usage: capture-theme-matrix.mjs (--theme=slug|--themes=a,b) [--state=surface.state,...] [--jobs=1..9] [--transport=built|dev] [--run-contract=/path/to/contract.json] [--anonymous] [--force]');console.log('--anonymous only captures states that work without the authenticated administrator; admin-only states (page.edit, page.rename, page.delete) fail closed. Pass --state for a public subset.');process.exit(0)}
 if((!themeArg&&!themesArg)||(themeArg&&themesArg))throw new Error('exactly one of --theme or --themes is required');
 if(!Number.isInteger(jobsArg)||jobsArg<1||jobsArg>9)throw new Error('--jobs must be an integer from 1 to 9');
 if(!['built','dev'].includes(transportArg))throw new Error('--transport must be built or dev');
@@ -41,14 +43,26 @@ if(themes.some(theme=>!theme.trim())||new Set(themes).size!==themes.length)throw
 if(stateArg!==undefined&&stateArg.split(',').some(state=>!state.trim()))throw new Error('states must be non-empty');
 const manifest=JSON.parse(await fs.readFile(path.join(portsDir,'en-theme-campaign.json'),'utf8'));
 const registered=new Set(['dear-dictator',...manifest.themes.map(theme=>theme.slug.replace(/^theme:/u,''))]);
-if(themes.some(theme=>!registered.has(theme)))throw new Error('requested theme is not registered in the campaign manifest');
+const runContractPath=runContractArg?path.resolve(runContractArg):null;
+const runContract=runContractPath?JSON.parse(await fs.readFile(runContractPath,'utf8')):null;
+for(const name of Object.keys(runContract?.additional_candidates??{})){
+ if(!/^[a-z0-9-]+$/u.test(name)||registered.has(name))throw new Error(`invalid or colliding additional candidate: ${name}`);
+ registered.add(name);
+}
+if(runContract&&!runContract.artifact_namespace?.split('/').every(segment=>/^[a-z0-9-]+$/u.test(segment)))throw new Error('custom run contract needs a valid isolated artifact namespace');
+if(themes.some(theme=>!registered.has(theme)))throw new Error('requested theme is not registered in the campaign or run contract');
 const matrix=[
  ['chromium','desktop'],['chromium','laptop'],['chromium','tablet'],['chromium','mobile'],['chromium','narrow-mobile'],
  ['firefox','desktop'],['firefox','mobile'],['webkit','desktop'],['webkit','mobile']
 ];
 const auditPath=process.env.THEME_LAB_INTERACTIVE_AUDIT_PATH
  ? path.resolve(process.env.THEME_LAB_INTERACTIVE_AUDIT_PATH)
- : path.join(portsDir,'interactive-visual-audit.json');
+ : runContract?.audit_path
+   ? path.resolve(path.dirname(runContractPath),runContract.audit_path)
+   : path.join(portsDir,'interactive-visual-audit.json');
+await fs.mkdir(path.dirname(auditPath),{recursive:true});
+if(runContract?.audit_path&&auditPath!==themeLabDir&&!auditPath.startsWith(themeLabDir+path.sep))throw new Error('interactive audit path escapes Theme Lab');
+if(runContract&&(auditPath===path.join(portsDir,'interactive-visual-audit.json')||!auditPath.startsWith(path.dirname(runContractPath)+path.sep)))throw new Error('custom run contract audit must stay below its contract directory and separate from accepted evidence');
 if(anonymous&&!stateArg)process.stderr.write('warning: --anonymous cannot capture states that require the authenticated administrator (page.edit, page.rename, page.delete); targeted retries cannot fix them, so pass --state for a public subset or run authenticated\n');
 
 const children=new Set();
@@ -121,6 +135,7 @@ async function commitAuditShards(){
 }
 
 const common=[themes.length===1?`--theme=${themes[0]}`:`--themes=${themes.join(',')}`];
+if(runContractPath)common.push(`--run-contract=${runContractPath}`);
 if(stateArg)common.push(`--state=${stateArg}`);
 if(force)common.push('--force');
 if(anonymous)common.push('--anonymous');
@@ -169,6 +184,7 @@ for(let pass=0;pass<2;pass++){
  for(const group of groups.values()){
   retries+=group.states.size;
   const args=[captureScript,`--engine=${group.engine}`,`--viewport=${group.viewport}`,`--theme=${group.theme}`,`--state=${[...group.states].join(',')}`,'--concurrency=2','--force'];
+  if(runContractPath)args.push(`--run-contract=${runContractPath}`);
   if(anonymous)args.push('--anonymous');
   if(transportOrigin)args.push(`--transport-origin=${transportOrigin}`);
   await run(process.execPath,args,{env:captureEnv});

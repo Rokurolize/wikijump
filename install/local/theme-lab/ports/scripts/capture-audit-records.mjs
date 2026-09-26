@@ -6,7 +6,12 @@ export function compactAuditRecord(record){
  const sequence=[];const seen=new Set();for(const event of record.action_sequence??[]){const compact={type:event.type,target:event.target};const key=JSON.stringify(compact);if(!seen.has(key)){seen.add(key);sequence.push(compact)}if(sequence.length>=16)break}
  const {asset_dependencies:assetDependencies,visual_diagnostics:_,action_sequence:__,...rest}=record;
  const viewport=diagnostics?.viewport?{width:diagnostics.viewport.width,height:diagnostics.viewport.height,documentWidth:diagnostics.viewport.document_width,scrollX:diagnostics.viewport.scroll_x,scrollY:diagnostics.viewport.scroll_y}:undefined;
- return{...rest,asset_dependency_count:assetDependencies?.length??record.asset_dependency_count??0,visual_diagnostics:diagnostics?{viewport,top_fixed_navigation_inset:diagnostics.topFixedNavigationInset,elements,history,title_overlaps:diagnostics.titleOverlaps??[],header_text:diagnostics.headerText??[],header_children:diagnostics.headerChildren??[]}:null,action_sequence:sequence};
+ // Horizontal-overflow evidence is small when present and absent for the
+ // overwhelming majority of states, so retain it only when a state actually
+ // overflows. This keeps the accepted Sigma-9 campaign compact while making the
+ // migration overflow evidence auditable.
+ const horizontalOverflow=(diagnostics?.horizontalOverflow?.length??0)>0?diagnostics.horizontalOverflow:undefined;
+ return{...rest,asset_dependency_count:assetDependencies?.length??record.asset_dependency_count??0,visual_diagnostics:diagnostics?{viewport,top_fixed_navigation_inset:diagnostics.topFixedNavigationInset,elements,history,title_overlaps:diagnostics.titleOverlaps??[],header_text:diagnostics.headerText??[],header_children:diagnostics.headerChildren??[],...(horizontalOverflow?{horizontal_overflow:horizontalOverflow}:{})}:null,action_sequence:sequence};
 }
 function failureCount(count, failures){
  if(failures!=null&&!Array.isArray(failures))return null;
@@ -26,6 +31,8 @@ export function compactSupersededRecord(record){
  return{
   theme:record.theme,browser_engine:record.browser_engine,browser_version:record.browser_version,viewport:record.viewport,surface:record.surface,state:record.state,
   screenshot:record.screenshot,screenshot_sha256:record.screenshot_sha256,candidate_sha256:record.candidate_sha256,candidate_source_sha256:record.candidate_source_sha256,
+  baseline_theme:record.baseline_theme,baseline_theme_css_href:record.baseline_theme_css_href,baseline_theme_css_sha256:record.baseline_theme_css_sha256,
+  runtime_baseline_theme_css_href:record.runtime_baseline_theme_css_href,baseline_theme_mode:record.baseline_theme_mode,
   base_css_sha256:record.base_css_sha256,asset_dependency_sha256:record.asset_dependency_sha256,fixture_contract_sha256:record.fixture_contract_sha256,
   run_contract_sha256:record.run_contract_sha256,environment_contract_sha256:record.environment_contract_sha256,
    capture_state_action_contract_sha256:record.capture_state_action_contract_sha256,runtime_surface_contract_sha256:record.runtime_surface_contract_sha256,

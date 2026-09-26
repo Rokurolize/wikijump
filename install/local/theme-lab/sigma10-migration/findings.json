@@ -1,0 +1,425 @@
+{
+  "schema": "scp_jp_sigma10_migration_findings.v1",
+  "authority": {
+    "sigma_repository": "https://github.com/KanekoLiku/sigma",
+    "sigma_commit": "2bfcb97451695d99e8d056c3ac40ec954e005636",
+    "upstream_sigma_repository": "https://github.com/scpwiki/sigma",
+    "upstream_sigma_commit": "84d8171abbeb5cc0b4e6c2f80ef553e08a053359",
+    "hashes": {
+      "run_contract_sha256": "7d2313c1d42f010bd3a893e1364ba56931b56044ba1f782ed0ee887fde6deba9",
+      "comparison_run_contract_sha256": "5b665c1a478432bf4453639b987ebaa312bd4e406519626cbb4589c71dc3c4b2",
+      "baseline_replacement_css_sha256": "08b5e63699eae178f35fc1958560d4c794a3dd5078bbf5f6f9e72906ac34f87e",
+      "source_manifest_sha256": "08e654327ddef813c9fe4a11bc0b0486c17fba9c61ba9ff42d544301ef284622",
+      "dependency_manifest_sha256": "5fb69e0ca6189a51d5d83a8714abf44932650cd29b8fa486ce60578725f68115",
+      "fixture_manifest_sha256": "e8163e2af057628f61b3238e63c0db812749afff4ab75e2dc9e6c8fa9c1c0ab9",
+      "en_sigma_css_sha256": "fa5a62082d48c54c807a2060efb3e34a383b3e87de5060d648f9550dc12351c1",
+      "jp_localization_css_sha256": "cf4ea3edd7a619cb0a581c4d4f7e9e3cb3668b243c9646759072ecf56f242e9d"
+    }
+  },
+  "coverage": {
+    "current_records": 213,
+    "superseded_records": 96,
+    "comparison_records": 36,
+    "baseline_theme_records": 73,
+    "baseline_engines": {
+      "chromium": 53,
+      "firefox": 10,
+      "webkit": 10
+    },
+    "baseline_viewports": {
+      "desktop": 32,
+      "narrow-mobile": 4,
+      "mobile": 37
+    },
+    "baseline_distinct_surfaces": 24,
+    "field_themes_tested_on_sigma10": 35,
+    "theme_page_normal_engines": [
+      "chromium",
+      "firefox",
+      "webkit"
+    ],
+    "theme_page_normal_viewports": [
+      "desktop",
+      "mobile"
+    ],
+    "theme_records": 140
+  },
+  "findings": [
+    {
+      "id": "SIGMA10-MOB-001",
+      "severity": "medium",
+      "owner": "sigma10-staff-source",
+      "blocker": false,
+      "title": "Sigma-10 JP credit preview notice forces mobile horizontal document overflow",
+      "affected_surface": [
+        "page.normal",
+        "nav.mobile-top",
+        "nav.sidebar",
+        "shell.search",
+        "shell.footer-license",
+        "shell.interwiki"
+      ],
+      "browser": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ],
+      "viewport": [
+        "mobile",
+        "narrow-mobile"
+      ],
+      "interaction_state": "settled (unmodified page load)",
+      "technical_staff_source_revision": "2bfcb97451695d99e8d056c3ac40ec954e005636",
+      "source_file": "sources/jp-localization.css (compiled into sigma10-offline.css, sha256 08b5e63699eae178f35fc1958560d4c794a3dd5078bbf5f6f9e72906ac34f87e)",
+      "selector": " .creditRate::before  (with .creditRate > li { display: none })",
+      "source_fragment": ".creditRate::before { content: '\\30d7\\30ec\\30d3\\30e5\\30fc\\6642...'; display: list-item; font-weight: bold; margin: 1.5em 0; white-space: pre; }",
+      "observed_behavior": "At 390px the document scrollWidth is 503 (chromium and firefox) / 492 (webkit); at 320px it is 500. The ~478px single-line ::before content cannot wrap because white-space:pre, so ul.creditRate overflows and expands the document. Sigma-9 runtime baseline on the identical page and shell keeps documentWidth at 390.",
+      "expected_behavior": "The credit notice should wrap (or be scoped to preview) so no document-level horizontal overflow occurs at supported narrow widths.",
+      "why_sigma10_not_wikijump": "The overflow appears only when the Sigma-10 replacement CSS is applied; the identical DOM under the runtime Sigma-9 baseline measures 390. Removing ul.creditRate from the same Sigma-10 DOM drops documentWidth 511->390 (isolated probe). The rule and its white-space:pre are Sigma-10 JP localization source.",
+      "minimal_recommended_change": "Change the notice to white-space: pre-wrap (or normal), and scope the notice+'.creditRate > li{display:none}' rule to the preview context only if that was the intent.",
+      "evidence": {
+        "chromium_mobile_screenshot": "migration/sigma10/sigma10-baseline/artifacts/interactive/chromium/mobile/page-normal-settled-mobile-fbdd47e2c8bcff2aee696d3ef1983e7d7b7e50d06940fd06db763e4ce9f0ecf4.png",
+        "chromium_mobile_screenshot_sha256": "fbdd47e2c8bcff2aee696d3ef1983e7d7b7e50d06940fd06db763e4ce9f0ecf4",
+        "chromium_narrow_mobile_screenshot_sha256": "d8fee227b2044ea475cc9c8ee38bec57f64430da6eb3b54f3a41ad4c24f16362",
+        "firefox_mobile_screenshot_sha256": "c9d81dae380eb50d8ba66d3b5f544a382ab320dd5cf4d26ac3ccd84b82a22752",
+        "webkit_mobile_screenshot_sha256": "770eb55d62806087a1069d00cc158b38ad30aa5453385cd97c3f453ae517996a",
+        "sigma9_comparison_chromium_mobile_screenshot_sha256": "599705025594ce7b19325ced374cf83be3f3b922424886ea2c341104b0e9a8db",
+        "sigma9_comparison_chromium_mobile_document_width": 390,
+        "sigma10_chromium_mobile_document_width": 503
+      },
+      "theme_impact": {
+        "field_themes_tested": 35,
+        "field_themes_with_added_mobile_overflow": 30,
+        "field_themes_containing_it": 4,
+        "baseline_probe_also_adds_overflow": true,
+        "note": "Document width equals ul.creditRate reachable_right for every theme that overflows; contained themes clip it and keep documentWidth 390."
+      }
+    },
+    {
+      "id": "SIGMA10-SEARCH-002",
+      "severity": "low",
+      "owner": "sigma10-staff-source",
+      "blocker": false,
+      "secondary_owner": "wikijump-runtime",
+      "title": "Sigma-10 hides the desktop search input, removing a working Wikijump search entry",
+      "affected_surface": [
+        "shell.search"
+      ],
+      "browser": [
+        "chromium"
+      ],
+      "viewport": [
+        "desktop"
+      ],
+      "interaction_state": "typed-focused",
+      "technical_staff_source_revision": "2bfcb97451695d99e8d056c3ac40ec954e005636",
+      "source_file": "sources/en-sigma.css (upstream scpwiki/sigma 84d8171abbeb5cc0b4e6c2f80ef553e08a053359)",
+      "selector": "#search-top-box-input",
+      "source_fragment": "#search-top-box-input { display: none; }  /* comment: 'Commenting out the search box at the top while native Wikidot search remains non-functional.' */",
+      "observed_behavior": "The desktop shell.search.typed-focused state fails closed because #search-top-box-input is not visible. The submit button remains.",
+      "expected_behavior": "Wikidot parity: hidden (native Wikidot search is non-functional). Wikijump consequence: Wikijump search is functional, so hiding the input removes the primary search entry on Wikijump.",
+      "why_sigma10_not_wikijump": "The hiding rule is Sigma-10 baseline CSS, inherited from upstream. Wikijump exposes a working search (submitWikidotTopSearch).",
+      "minimal_recommended_change": "Decide whether SCP-JP wants a search entry on Wikijump; if so, re-enable #search-top-box-input for the Wikijump environment or override it in the SCP-JP shell.",
+      "evidence": {
+        "audit_record": "sigma10-baseline / chromium / desktop / shell.search.typed-focused (UNCONFIRMED, action/capture failed: #search-top-box-input not visible)"
+      }
+    },
+    {
+      "id": "THEMELAB-SIM-001",
+      "severity": "high",
+      "owner": "theme-lab-fixture",
+      "blocker": false,
+      "status": "fixed-in-branch",
+      "title": "Migration shell injection was silently reverted by Svelte hydration",
+      "description": "The source-derived #top-bar/#side-bar substitution ran immediately after DOMContentLoaded, but the Svelte shell hydrates ~1.3 s later and re-rendered the stale Theme Lab acceptance navigation over it. Until fixed, every migration nav/shell state measured the retired Sigma-9 acceptance shell rather than the Sigma-10 SCP-JP shell.",
+      "evidence": "Captured DOM before the fix contained Theme Lab navigation; after the fix #side-bar contains the Sigma-10 nav-side (初めての方へ) and #top-bar contains the Sigma-10 nav-top ([# SCPデータベース]).",
+      "fix": "capture-interactive.mjs injectMigrationShell() now waits for a delegated Svelte handler as a hydration barrier and re-applies the substitution until it survives a 400 ms quiet window, failing hard if it never stabilises."
+    },
+    {
+      "id": "EXT-INTERWIKI-001",
+      "severity": "info",
+      "owner": "external-runtime-contract",
+      "blocker": false,
+      "title": "Interwiki visible contract depends on external crom/Interwiki services not available offline",
+      "description": "Wikijump's local interwikiFrame route emits style=\"display:none\" when the external crom GraphQL fetch (api.crom.avn.sh) is blocked, so .scpnet-interwiki-frame has no links/height. The state fails closed (UNCONFIRMED) instead of producing a false PASS. The Sigma-10 nav-side/nav-interwiki/styleFrame includes also reference external scp-jp.org frames.",
+      "evidence": "chromium desktop+mobile shell.interwiki.visible: action/capture failed: .scpnet-interwiki-frame not visible."
+    },
+    {
+      "id": "THEMELAB-FIXTURE-002",
+      "severity": "low",
+      "owner": "theme-lab-fixture",
+      "blocker": false,
+      "title": "Migration content/shell state fixture binding",
+      "description": "nav.* and shell.* states now bind to the migration-owned run-owned:sigma10-main page (Sigma-10 SCP-JP shell) rather than the retired acceptance page. Content-component states (content.tabview, content.collapsible), credit.*, and page history/source/files/tags/edit states keep the Theme Lab acceptance fixture because the frozen Sigma-10 example main page does not contain those components; the Sigma-10 baseline CSS is still applied to them.",
+      "evidence": "See audit records: nav.* / shell.* fixture = run-owned:sigma10-main; content/credit/page.* fixture = run-owned:theme-lab-visual-acceptance-imported-20260924."
+    }
+  ],
+  "theme_sigma10_vs_sigma9_mobile_page_normal": [
+    {
+      "theme": "aesthetic-theme",
+      "sigma9_document_width": 456,
+      "sigma10_document_width": 428,
+      "credit_rate_reachable_right": 428,
+      "status": "sigma10_reduces_overflow"
+    },
+    {
+      "theme": "al-slop",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 504,
+      "credit_rate_reachable_right": 504,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "basalt",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 458,
+      "credit_rate_reachable_right": 458,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "bedrock",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 463,
+      "credit_rate_reachable_right": 463,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "black-highlighter-theme",
+      "sigma9_document_width": 446,
+      "sigma10_document_width": 493,
+      "credit_rate_reachable_right": 493,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "classic",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 503,
+      "credit_rate_reachable_right": 504,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "cosmonaut",
+      "sigma9_document_width": 416,
+      "sigma10_document_width": 512,
+      "credit_rate_reachable_right": 512,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "dear-dictator",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 390,
+      "credit_rate_reachable_right": 488,
+      "status": "contained_by_theme"
+    },
+    {
+      "theme": "extra-black-highlighter-theme",
+      "sigma9_document_width": 446,
+      "sigma10_document_width": 493,
+      "credit_rate_reachable_right": 493,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "flopstyle-dark",
+      "sigma9_document_width": 400,
+      "sigma10_document_width": 504,
+      "credit_rate_reachable_right": 504,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "foxtrot",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 503,
+      "credit_rate_reachable_right": 504,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "hansarp",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 390,
+      "credit_rate_reachable_right": 434,
+      "status": "contained_by_theme"
+    },
+    {
+      "theme": "inkblot",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 390,
+      "credit_rate_reachable_right": 570,
+      "status": "contained_by_theme"
+    },
+    {
+      "theme": "isolated-terminal",
+      "sigma9_document_width": 431,
+      "sigma10_document_width": 678,
+      "credit_rate_reachable_right": 678,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "jakstyle",
+      "sigma9_document_width": 441,
+      "sigma10_document_width": 493,
+      "credit_rate_reachable_right": 493,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "minimalist-bhl",
+      "sigma9_document_width": 446,
+      "sigma10_document_width": 493,
+      "credit_rate_reachable_right": 493,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "monotypical",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 390,
+      "credit_rate_reachable_right": 532,
+      "status": "contained_by_theme"
+    },
+    {
+      "theme": "much-cool",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 503,
+      "credit_rate_reachable_right": 504,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "night-rush-theme",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 503,
+      "credit_rate_reachable_right": 504,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "ouroborous-theme",
+      "sigma9_document_width": 446,
+      "sigma10_document_width": 493,
+      "credit_rate_reachable_right": 493,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "paperstack",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 475,
+      "credit_rate_reachable_right": 475,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "pataphysics",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 503,
+      "credit_rate_reachable_right": 504,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "penumbra",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 504,
+      "credit_rate_reachable_right": 505,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "redtape",
+      "sigma9_document_width": 446,
+      "sigma10_document_width": 493,
+      "credit_rate_reachable_right": 493,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "scheme",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 503,
+      "credit_rate_reachable_right": 504,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "scp-offices-theme",
+      "sigma9_document_width": 444,
+      "sigma10_document_width": 500,
+      "credit_rate_reachable_right": 500,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "scpedia",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 500,
+      "credit_rate_reachable_right": 500,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "sigma",
+      "sigma9_document_width": 446,
+      "sigma10_document_width": 493,
+      "credit_rate_reachable_right": 493,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "sigma10-baseline",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 503,
+      "credit_rate_reachable_right": 504,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "site",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 510,
+      "credit_rate_reachable_right": 510,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "skipos",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 497,
+      "credit_rate_reachable_right": 497,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "space",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 539,
+      "credit_rate_reachable_right": 539,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "turbo-vision",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 597,
+      "credit_rate_reachable_right": 598,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "wikifot",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 484,
+      "credit_rate_reachable_right": 484,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "y2k",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 471,
+      "credit_rate_reachable_right": 471,
+      "status": "sigma10_adds_overflow"
+    },
+    {
+      "theme": "yossistyle",
+      "sigma9_document_width": 390,
+      "sigma10_document_width": 503,
+      "credit_rate_reachable_right": 504,
+      "status": "sigma10_adds_overflow"
+    }
+  ],
+  "unresolved_simulator_limitations": [
+    "Firefox/WebKit theme matrix now covers chromium/firefox/webkit mobile page.normal only; desktop/narrow-mobile theme matrices are chromium-only (narrow-mobile theme matrix not run).",
+    "Interwiki visible/style contract cannot be evaluated offline (external crom + scp-jp.org frames); shell.interwiki.visible fails closed.",
+    "Narrow-mobile (320px) theme matrix not run; narrow-mobile covered for the baseline shell states.",
+    "Semantic/visual review (readability, keyboard/focus order, pointer/hover, modal reachability) is not complete for every state; geometry and overflow are captured but classification remains UNCONFIRMED where not reviewed.",
+    "Local development runtime is shared with a concurrent deepwell mutation-testing session and recompiled repeatedly during this run; captures that caught a restart window were retried.",
+    "Authenticated admin surfaces captured on chromium desktop+mobile only.",
+    "WebKit theme runs report one missing decorative external asset (scp-jp.github.io/.../nav/side/black.png from the Sigma-10 nav-side close-menu overlay); it is blocked by network policy, is not in the frozen dependency snapshot, and does not change the close-menu geometry. Chromium/Firefox block it silently."
+  ],
+  "intentional_differences": [
+    "Sigma-10 header hides the configured site title/tagline text (max-height:0; line-height:0). The visible \"Local Translation Corpus\" text is the local test site configuration, not SCP-JP source; production SCP-JP would supply its own title/tagline.",
+    "Sigma-10 baseline intentionally hides #search-top-box-input for Wikidot parity (see SIGMA10-SEARCH-002 for the Wikijump consequence).",
+    "Theme overlays change document typography, so the credit notice width (and therefore overflow magnitude) differs per theme; this is a consequence of SIGMA10-MOB-001, not a separate theme defect."
+  ]
+}

@@ -1,0 +1,224 @@
+/*
+	Sigma-10 (Localization for JP)
+	[2025 Wikidot Theme]
+	Maintained by the JP SCP Wiki Technical Team, based on:
+
+	Sigma-10
+	[2023 Wikidot Theme]
+	Maintained by the EN SCP Wiki Technical Team
+*/
+
+/* サイドバーの長さに合わせて延長 */
+#content-wrap {
+	min-height: 120rem;
+}
+
+#header {
+	background-image: url('https://scp-jp.github.io/sigma/images/header-logo.svg');
+}
+
+/* ヘッダータイトルの文字の高さの違いによるずれを修正 */
+#header h1 a {
+	font-family: 'Sans Normalcy', Arial, sans-serif;
+}
+
+#header h1 a::before {
+	content: 'SCP';
+}
+
+#header h1 a::after {
+	content: '財団';
+	font-size: 0.95em;
+	vertical-align: -0.07em;
+}
+
+#header h1 a span {
+	font-size: 0;
+	letter-spacing: 0;
+}
+
+#side-bar .menu-item img,
+#interwiki .menu-item img {
+	display: none;
+}
+
+/* サイドバーを開くボタンを下に配置 */
+@media (max-width: 767px) {
+	#top-bar .open-menu a {
+		top: auto;
+		bottom: 1rem;
+	}
+}
+
+.content-panel .panel-body {
+	background-image: url('https://scp-jp.github.io/files/util/common/media/component/theme/panel-bg-gradient-reverse.png');
+}
+
+.page-rate-widget-box {
+	line-height: 1;
+}
+
+/* 画像ブロックにclear機能を追加 */
+@media (max-width: 767px) {
+	.scp-clear-true.scp-image-block {
+		clear: both;
+		float: none;
+		margin-inline: auto;
+	}
+}
+
+/* printuser avaterhover非選択 */
+.printuser.avatarhover > a > img {
+	user-select: none;
+}
+
+.forum-category-box .title a:empty::after {
+	content: '\3000';
+}
+
+/* nav:topでPageOptionsが操作できない問題の修正 */
+#page-content .top-bar,
+#page-content .mobile-top-bar {
+	position: static;
+}
+
+/* stylelint-disable selector-class-pattern */
+
+/* プレビュー時のクレジット/Infoモジュールの表示崩れを修正 */
+.creditRate::before {
+	content: 'プレビュー時、クレジットモジュール・Infoモジュールは非表示となっています。\A表示を確認するには、一度保存してください。';
+	display: list-item;
+	font-weight: bold;
+	margin: 1.5em 0;
+	white-space: pre;
+}
+
+.creditRate > li {
+	display: none;
+}
+
+/* stylelint-enable */
+
+/* stylelint-disable selector-class-pattern */
+
+/* _404, _template用CommonCSS */
+#page-content .wikisys--template-dialog {
+	width: 90%;
+	max-width: 32rem;
+	margin: 1.5rem auto;
+	padding: 1.5rem;
+	background: #f9f9f9;
+	border-radius: 1.5rem;
+	color: #301;
+	border: solid 1px #b7b7b7;
+}
+
+#page-content .wikisys--template-dialog > .wikisys--template-dialog-header {
+	position: relative;
+	line-height: 1.5;
+	font-size: 1.3rem;
+	font-weight: bold;
+	padding: 5px 0 5px 12px;
+}
+
+#page-content
+	.wikisys--template-dialog
+	> .wikisys--template-dialog-header::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 6px;
+	height: 100%;
+	opacity: 0.2;
+	border-radius: 3px;
+	background: #aaa;
+}
+
+#page-content .wikisys--template-dialog > .wikisys--template-dialog-content {
+	line-height: 1.75;
+	margin: 1rem 0;
+}
+
+#page-content .wikisys--template-dialog > .wikisys--template-dialog-footer {
+	font-size: 0.9rem;
+	margin-top: 1.5em;
+}
+
+#page-content .wikisys--template-dialog > .wikisys--template-dialog-infoarea {
+	margin-top: 1.5rem;
+}
+
+/* stylelint-enable */
+
+/* メタタイトル折りたたみ用CSS */
+.content-panel.scp ul {
+	padding: 0 0 0 25px;
+}
+
+.content-panel.scp ul li {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 1;
+	overflow: hidden;
+	padding: 0 0 0 15px;
+	cursor: pointer;
+	-webkit-touch-callout: none; /* iOS  3D touch 不具合修正 */
+}
+
+.content-panel.scp ul li:hover {
+	-webkit-line-clamp: unset;
+	overflow: visible;
+}
+
+.content-panel.scp ul li::before {
+	background: #333;
+	content: '';
+	display: inline-block;
+	height: 5px;
+	margin: 0 10px 0 -15px;
+	vertical-align: middle;
+	width: 5px;
+}
+
+@media (max-width: 767px) {
+	.content-panel.scp .content-toc {
+		float: unset;
+	}
+}
+
+/* Show-Changes Highlights from SCP-CN  */
+.inline-diff ins:first-of-type::before,
+.inline-diff del:first-of-type::before,
+.inline-diff br + ins::before,
+.inline-diff br + del::before {
+	display: inline-block;
+	font: normal normal normal 1lh FontAwesome, sans-serif;
+	text-rendering: auto;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	content: '\f111';
+	position: absolute;
+	left: 1.5rem;
+}
+
+.inline-diff ins::before {
+	color: #ddf;
+}
+
+.inline-diff del::before {
+	color: #fcc;
+}
+
+.inline-diff ins + del::before,
+.inline-diff del + ins::before {
+	color: transparent;
+}
+
+.ins {
+	background-color: #ddf;
+}
+
+.del {
+	background-color: #fcc;
+}
