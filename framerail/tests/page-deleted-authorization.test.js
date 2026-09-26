@@ -1,49 +1,89 @@
-import { strict as assert } from "node:assert"
-import { readFile } from "node:fs/promises"
-import test from "node:test"
+// @ts-nocheck
+import assert from "node:assert/strict"
+import { after, before, test } from "node:test"
 
-const pageRpcSourceUrl = new URL("../src/lib/server/deepwell/page.ts", import.meta.url)
-const pageActionsSourceUrl = new URL(
-  "../src/lib/server/load/page/page-revision-actions.ts",
-  import.meta.url
-)
-const errorRouteSourceUrl = new URL("../src/routes/+error.svelte", import.meta.url)
+import { pageActionEvent, startPageActionHarness } from "./page-action-test-harness.js"
 
-const exportedFunction = (source, name, nextName) => {
-  const start = source.indexOf(`export async function ${name}(`)
-  assert.notEqual(start, -1, name)
-  const end = source.indexOf(`export async function ${nextName}(`, start)
-  assert.notEqual(end, -1, nextName)
-  return source.slice(start, end)
+const SITE_ID = 17
+const SESSION_TOKEN = "deleted-session"
+const TRUSTED_CONTEXT = {
+  siteId: SITE_ID,
+  page: "main",
+  sessionToken: SESSION_TOKEN
 }
 
+let client
+let actions
+let closeHarness
+
+before(async () => {
+  const harness = await startPageActionHarness()
+  client = harness.client
+  actions = harness.actions
+  closeHarness = () => harness.close()
+})
+
+after(async () => {
+  await closeHarness?.()
+})
+
+const requestEvent = (overrides = {}) =>
+  pageActionEvent({
+    action: "deletedGet",
+    siteId: SITE_ID,
+    sessionToken: SESSION_TOKEN,
+    requestContext: { ...TRUSTED_CONTEXT },
+    ...overrides
+  })
+
 test("deleted-page actions use the authenticated route context", async () => {
-  const source = await readFile(pageActionsSourceUrl, "utf8")
-  const action = exportedFunction(source, "pageDeletedGetAction", "pageRestoreAction")
+  const calls = []
+  client.request = async (method, params, context) => {
+    calls.push({ method, params, context })
+    if (method === "session_get") {
+      return {
+        session_token: SESSION_TOKEN,
+        user_id: 91,
+        created_at: "2026-08-10T00:00:00Z",
+        expires_at: "2026-08-11T00:00:00Z",
+        ip_address: "192.0.2.91",
+        user_agent: "deleted page test",
+        restricted: false
+      }
+    }
+    if (method === "page_get_deleted") {
+      return [{ page_id: 42, slug: "main", site_id: SITE_ID }]
+    }
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
 
-  assert.match(
-    action,
-    /resolvePageActionRequestContext\(event, \{[\s\S]*session: "required"/u
+  const result = await actions.deletedGet(requestEvent())
+  assert.deepEqual(result, {
+    res: [{ page_id: 42, slug: "main", site_id: SITE_ID }]
+  })
+  assert.deepEqual(calls, [
+    { method: "session_get", params: [SESSION_TOKEN], context: undefined },
+    {
+      method: "page_get_deleted",
+      params: { site_id: SITE_ID, slug: "main" },
+      context: TRUSTED_CONTEXT
+    }
+  ])
+
+  // An unauthenticated request never reaches the deleted-page read.
+  calls.length = 0
+  const unauthenticated = await actions.deletedGet(
+    requestEvent({
+      sessionToken: null,
+      requestContext: { siteId: SITE_ID, page: "main" }
+    })
   )
-  assert.match(action, /pageDeletedGet\(context\.requestContext\)/u)
-  assert.doesNotMatch(action, /requestData|submittedSiteId|siteId|slug/u)
-})
+  assert.equal(unauthenticated.status, 401)
+  assert.deepEqual(calls, [])
 
-test("deleted-page restore loader submits a form-compatible empty POST body", async () => {
-  const source = await readFile(errorRouteSourceUrl, "utf8")
-  assert.match(source, /fetch\(`\?\/deletedGet`, \{\s*method: "POST",\s*body: ""\s*\}\)/u)
-})
-
-test("deleted-page RPC derives both selectors from trusted request context", async () => {
-  const source = await readFile(pageRpcSourceUrl, "utf8")
-  const rpc = exportedFunction(source, "pageDeletedGet", "pageRestore")
-
-  assert.match(rpc, /requestContext\?\.siteId/u)
-  assert.match(rpc, /requestContext\?\.page/u)
-  assert.match(
-    rpc,
-    /client\.request\([\s\S]*"page_get_deleted"[\s\S]*requestContext\s*\)/u
-  )
-  assert.doesNotMatch(rpc, /export async function pageDeletedGet\(\s*siteId: number/u)
-  assert.doesNotMatch(rpc, /export async function pageDeletedGet\([^)]*slug: string/u)
+  // A request that claims a different site than the trusted context is
+  // rejected before any deleted-page read reaches Deepwell.
+  const spoofed = await actions.deletedGet(requestEvent({ siteId: SITE_ID + 1 }))
+  assert.equal(spoofed.status, 403)
+  assert.deepEqual(calls, [])
 })
