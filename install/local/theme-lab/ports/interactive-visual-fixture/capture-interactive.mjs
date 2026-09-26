@@ -250,6 +250,9 @@ if(!anonymousArg){const authStartedAt=performance.now();if(engineArg==='webkit')
 const auditPath=process.env.THEME_LAB_INTERACTIVE_AUDIT_PATH
  ? path.resolve(process.env.THEME_LAB_INTERACTIVE_AUDIT_PATH)
  : path.join(portsDir,'interactive-visual-audit.json');
+const auditShardDir=process.env.THEME_LAB_AUDIT_SHARD_DIR
+ ? path.resolve(process.env.THEME_LAB_AUDIT_SHARD_DIR)
+ : null;
 const repoRoot=path.resolve(packageDir,'../../../../../');
 const runtimeFilesForSurface=surface=>surface==='dialog.generic'?['framerail/src/lib/popup/error.svelte','framerail/src/routes/[slug]/[...extra]/PageView.svelte','framerail/src/lib/wikidot/wikidot-locale.js']:surface.startsWith('page.history')?['framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte']:surface.startsWith('page.files')?['framerail/src/routes/[slug]/[...extra]/FileList.svelte']:surface.startsWith('nav.')||surface.startsWith('shell.')?['framerail/src/lib/sigma-esque/wikidot.svelte','framerail/src/routes/+layout.svelte']:['framerail/src/routes/[slug]/[...extra]/PageView.svelte'];
 const runtimeSurfaceContracts={};for(const surface of new Set(engineStates.map(spec=>spec.surface))){const files=runtimeFilesForSurface(surface);if(viewportArg==='mobile'||viewportArg==='narrow-mobile')files.push('framerail/src/lib/sigma-esque/wikidot.svelte');const chunks=await Promise.all([...new Set(files)].map(async file=>[file,await fs.readFile(path.join(repoRoot,file))]));const hash=crypto.createHash('sha256');for(const [file,content] of chunks){hash.update(file);hash.update('\0');hash.update(content)}runtimeSurfaceContracts[surface]=hash.digest('hex')}
@@ -285,9 +288,76 @@ function actionContractFor(spec){
 }
 if(process.argv.includes('--dump-contracts')){console.log(JSON.stringify({schema:'scp_jp_interactive_capture_contracts.v2',browser_engine:engineArg,browser_version:browser.version(),run_contract_sha256:runContractSha,runtime_surface_contracts:runtimeSurfaceContracts,states:await Promise.all(states.map(async spec=>({surface:spec.surface,state:spec.state,fixture_slug:spec.fixtureSlug??null,fixture_contract_sha256:await fixtureContractSha(spec),guest:!!spec.guest,applicable_viewports:spec.viewports??defaultInteractionViewports,action_contract_sha256:actionContractFor(spec),action_contract_dependencies:actionContractDependencies(spec)})))},null,2));await browser.close();if(authBrowser)await authBrowser.close();process.exit(0)}
 async function mapLimit(items,limit,mapper){let next=0;const workers=Array.from({length:Math.min(limit,items.length)},(_,workerIndex)=>async()=>{while(true){const index=next++;if(index>=items.length)return;await mapper(items[index],index,workerIndex)}});await Promise.all(workers.map(worker=>worker()))}
-let priorRows=[];try{priorRows=JSON.parse(await fs.readFile(auditPath,'utf8')).records??[]}catch{}
+let initialAuditDocument={};try{initialAuditDocument=JSON.parse(await fs.readFile(auditPath,'utf8'))}catch{}
+const priorRows=initialAuditDocument.records??[];
 const priorRowsByKey=new Map(priorRows.map(row=>[`${row.theme}|${row.browser_engine}|${row.viewport}|${row.surface}|${row.state}`,row]));
+const priorRowsByTheme=new Map();
+const priorRowsByScope=new Map();
+for(const row of priorRows){
+ const byTheme=priorRowsByTheme.get(row.theme)??[];byTheme.push(row);priorRowsByTheme.set(row.theme,byTheme);
+ const scope=`${row.theme}|${row.browser_engine}|${row.viewport}`;
+ const rows=priorRowsByScope.get(scope)??[];rows.push(row);priorRowsByScope.set(scope,rows);
+}
+const priorReviewRows=[...(initialAuditDocument.superseded_records??[]),...priorRows];
+const priorReviewRowsByTheme=new Map();
+for(const row of priorReviewRows){const rows=priorReviewRowsByTheme.get(row.theme)??[];rows.push(row);priorReviewRowsByTheme.set(row.theme,rows)}
+const rowKey=row=>`${row.theme}|${row.browser_engine}|${row.viewport}|${row.surface}|${row.state}`;
+async function writeAuditShard(batch,theme){
+ const reviewReuseCount=applyExactVisualReviewReuseToRows(batch,await verifyExactReviewSources(priorReviewRowsByTheme.get(theme)??[],batch,portsDir));
+ const validStates=new Set(
+  engineStates
+   .filter(spec=>(spec.viewports??defaultInteractionViewports).includes(viewportArg))
+   .map(spec=>`${spec.surface}|${spec.state}`)
+ );
+ const removeKeys=new Set(batch.map(rowKey));
+ if(!stateArgs){
+  for(const row of priorRowsByScope.get(`${theme}|${engineArg}|${viewportArg}`)??[]){
+   if(!validStates.has(`${row.surface}|${row.state}`))removeKeys.add(rowKey(row));
+  }
+ }
+ const superseded=[];
+ for(const next of batch){
+  const row=priorRowsByKey.get(rowKey(next));
+  if(!row)continue;
+  if(
+   row.screenshot_sha256===next.screenshot_sha256&&
+   row.candidate_sha256===next.candidate_sha256&&
+   row.candidate_source_sha256===next.candidate_source_sha256&&
+   row.environment_contract_sha256===next.environment_contract_sha256&&
+   row.capture_state_action_contract_sha256===next.capture_state_action_contract_sha256
+  )continue;
+  let historicalScreenshotStatus='no-path';
+  if(row.screenshot){
+   try{
+    const bytes=await fs.readFile(path.join(portsDir,row.screenshot));
+    historicalScreenshotStatus=crypto.createHash('sha256').update(bytes).digest('hex')===row.screenshot_sha256?'valid':'hash-mismatch';
+   }catch(error){historicalScreenshotStatus=error.code==='ENOENT'?'missing':'unreadable'}
+  }
+  superseded.push(compactSupersededRecord({...row,superseded_at:new Date().toISOString(),historical_screenshot_valid:historicalScreenshotStatus==='valid',historical_screenshot_status:historicalScreenshotStatus}));
+ }
+ const shard={
+  schema:'theme_lab_interactive_audit_delta.v1',
+  theme,engine:engineArg,viewport:viewportArg,
+  remove_keys:[...removeKeys],
+  records:batch.map(compactAuditRecord),
+  superseded_records:superseded,
+  visual_review_reuse_updates:reviewReuseCount,
+  document_patch:{
+   schema:'scp_jp_interactive_visual_audit.v1',fixture_url:base,viewport:viewports[viewportArg],
+   auth_bootstrap_blocked:authBootstrapBlocked,
+   engine_scope:{chromium:'full interaction state inventory',firefox:'core states: normal page, credit view, History list, Source, and mobile sidebar open/expanded',webkit:'core states: normal page, credit view, History list, Source, and mobile sidebar open/expanded; Safari compatibility proxy, not Safari'},
+   state_applicability:applicabilityContract
+  }
+ };
+ await fs.mkdir(auditShardDir,{recursive:true});
+ const safeTheme=theme.replace(/[^a-z0-9_-]+/giu,'_');
+ const destination=path.join(auditShardDir,`${safeTheme}__${engineArg}__${viewportArg}.json`);
+ const temporary=`${destination}.${process.pid}.tmp`;
+ await fs.writeFile(temporary,JSON.stringify(shard)+'\n');await fs.rename(temporary,destination);
+ return {reviewReuseCount,auditLockWaitMs:0};
+}
 async function persistBatch(batch,theme){
+ if(auditShardDir)return writeAuditShard(batch,theme);
  const lockStarted=performance.now();
  return withAuditLock(auditPath,async()=>{
   const auditLockWaitMs=Math.round(performance.now()-lockStarted);
@@ -378,6 +448,7 @@ async function persistBatch(batch,theme){
 }
  const localAssetPathCache=new Map();const fileShaCache=new Map();const dataUrlCache=new Map();
  for(const theme of themes){
+  const themeRecords=[];
   const dir=path.join(portsDir,theme);const cssPath=path.join(dir,'candidate.css');
   let css;try{css=await fs.readFile(cssPath,'utf8')}catch(error){throw new Error(`cannot read candidate.css for ${theme}`,{cause:error})}
   const baseCss=await fs.readFile(path.join(dir,'candidate-base.css'),'utf8').catch(()=> '');
@@ -387,7 +458,7 @@ async function persistBatch(batch,theme){
   // with an additional frozen base stylesheet bind both inputs into the key.
   // This avoids invalidating every pre-base capture merely because the key
   // representation changed, while still invalidating the Site base replay.
-  const knownThemeIdentities=new Set(priorRows.filter(row=>row.theme===theme).map(row=>row.candidate_sha256));
+  const knownThemeIdentities=new Set((priorRowsByTheme.get(theme)??[]).map(row=>row.candidate_sha256));
   const {candidateSha}=candidateIdentity(css,baseCss,knownThemeIdentities);
   const candidateSourceBytes=await fs.readFile(path.join(dir,'candidate.wikidot.source.txt')).catch(()=>fs.readFile(path.join(dir,'candidate.wikidot.txt')).catch(()=>Buffer.alloc(0)));
   const candidateSourceSha=crypto.createHash('sha256').update(candidateSourceBytes).digest('hex');
@@ -407,7 +478,7 @@ async function persistBatch(batch,theme){
    preflight.set(`${spec.surface}|${spec.state}`,{old,reusable,fixtureSha,stateActionContract,environmentContractSha});
   }
   const freshStates=applicable.filter(spec=>!preflight.get(`${spec.surface}|${spec.state}`).reusable);
-  if(freshStates.length===0){for(const spec of applicable)records.push(preflight.get(`${spec.surface}|${spec.state}`).old);const themeRecords=records.filter(r=>r.theme===theme);console.log(JSON.stringify({progress:`${themes.indexOf(theme)+1}/${themes.length}`,theme,records:themeRecords.length,captured:themeRecords.filter(r=>r.screenshot).length,reused:themeRecords.length,failed_actions:0,asset_setup:'skipped-all-states-reused',audit_write:'skipped-no-changes'}));continue}
+  if(freshStates.length===0){for(const spec of applicable){const old=preflight.get(`${spec.surface}|${spec.state}`).old;records.push(old);themeRecords.push(old)}console.log(JSON.stringify({progress:`${themes.indexOf(theme)+1}/${themes.length}`,theme,records:themeRecords.length,captured:themeRecords.filter(r=>r.screenshot).length,reused:themeRecords.length,failed_actions:0,asset_setup:'skipped-all-states-reused',audit_write:'skipped-no-changes'}));continue}
   const externalPageAssetData=new Map();
   if(engineArg==='webkit')for(const manifestName of ['assets.json','page-assets.json']){
    let manifest;try{manifest=JSON.parse(await fs.readFile(path.join(dir,manifestName),'utf8'))}catch{continue}
@@ -431,7 +502,7 @@ async function persistBatch(batch,theme){
   
   const captureState=async(spec,_index,workerIndex)=>{
    const {old,reusable,fixtureSha,stateActionContract,environmentContractSha}=preflight.get(`${spec.surface}|${spec.state}`);
-   if(reusable){records.push(old);return}
+   if(reusable){records.push(old);themeRecords.push(old);return}
    const externalBefore=engineArg==='webkit'?webkitProxyBlocked:externalCount;const page=await workerPage(workerIndex,!!spec.guest);const stateStartedAt=performance.now();const phaseDurations={navigation:0,hydration:0,action:0,visual_settle:0,paint_and_capture:0};const errors=[];const pageErrorHandler=e=>errors.push(e.message);page.on('pageerror',pageErrorHandler);
    let shot=null,actionError=null,settledAnimationsFinished=0,baselineThemeHref=null;const actionResponses=[];const responseHandler=async response=>{if(response.url().includes('?/revisionDiff')){let body='';try{body=await response.text()}catch{}let type='unknown',errorMessage=null;try{const envelope=JSON.parse(body);type=envelope.type??type;if(type==='failure'){const detail=JSON.parse(envelope.data);errorMessage=Array.isArray(detail)?detail[1]??null:null}}catch{}actionResponses.push({status:response.status(),type,error_message:errorMessage})}};page.on('response',responseHandler);
    try{
@@ -460,12 +531,11 @@ async function persistBatch(batch,theme){
    }
    const actionSequence=await page.evaluate(()=>window.__themeLabActionTrace??[]).catch(()=>[]);const diagnostics=await visualDiagnostics(page,spec.surface).catch(()=>null);
    if(!actionError&&actionResponses.some(response=>response.type==='failure'||response.status>=400||response.error_message))actionError='action response reported failure';
-   records.push({theme,session_state:anonymousArg||spec.guest?'logged_out':'administrator',target_site:runContract.target_site.slug,transport_origin:origin,locale:runContract.target_site.locale,baseline_theme:runContract.baseline_theme.name,baseline_theme_css_href:baselineThemeHref,browser_engine:engineArg,browser_version:browser.version(),viewport:viewportArg,viewport_size:viewports[viewportArg],surface:spec.surface,state:spec.state,fixture:spec.fixtureSlug??'run-owned:theme-lab-visual-acceptance-imported-20260924',candidate_source_sha256:candidateSourceSha,base_css_path:baseCss?'candidate-base.css':null,base_css_sha256:baseCssSha,asset_dependency_sha256:assetDependencySha,asset_dependencies:assetDependencies,fixture_contract_sha256:fixtureSha,run_contract_sha256:runContractSha,environment_contract_sha256:environmentContractSha,capture_state_action_contract_sha256:stateActionContract,settled_animations_finished:settledAnimationsFinished,runtime_surface_contract_sha256:runtimeSurfaceContracts[spec.surface],duration_ms:Math.round(performance.now()-stateStartedAt),phase_durations_ms:phaseDurations,action_sequence:actionSequence,screenshot:shot?.path??null,screenshot_sha256:shot?.sha256??null,candidate_sha256:candidateSha,visual_diagnostics:diagnostics,classification:'UNCONFIRMED',visual_findings:[],intentional_differences:[],unconfirmed_items:actionError?[`action/capture failed: ${actionError}`]:['screenshot captured but awaiting image review'],reviewed_after_last_change:false,external_requests_sent:0,external_requests_blocked:(engineArg==='webkit'?webkitProxyBlocked:externalCount)-externalBefore,asset_failures:assetRequests.filter(x=>['missing','decode-failed'].includes(x.status)),page_errors:errors,action_responses:actionResponses});
+   const record={theme,session_state:anonymousArg||spec.guest?'logged_out':'administrator',target_site:runContract.target_site.slug,transport_origin:origin,locale:runContract.target_site.locale,baseline_theme:runContract.baseline_theme.name,baseline_theme_css_href:baselineThemeHref,browser_engine:engineArg,browser_version:browser.version(),viewport:viewportArg,viewport_size:viewports[viewportArg],surface:spec.surface,state:spec.state,fixture:spec.fixtureSlug??'run-owned:theme-lab-visual-acceptance-imported-20260924',candidate_source_sha256:candidateSourceSha,base_css_path:baseCss?'candidate-base.css':null,base_css_sha256:baseCssSha,asset_dependency_sha256:assetDependencySha,asset_dependencies:assetDependencies,fixture_contract_sha256:fixtureSha,run_contract_sha256:runContractSha,environment_contract_sha256:environmentContractSha,capture_state_action_contract_sha256:stateActionContract,settled_animations_finished:settledAnimationsFinished,runtime_surface_contract_sha256:runtimeSurfaceContracts[spec.surface],duration_ms:Math.round(performance.now()-stateStartedAt),phase_durations_ms:phaseDurations,action_sequence:actionSequence,screenshot:shot?.path??null,screenshot_sha256:shot?.sha256??null,candidate_sha256:candidateSha,visual_diagnostics:diagnostics,classification:'UNCONFIRMED',visual_findings:[],intentional_differences:[],unconfirmed_items:actionError?[`action/capture failed: ${actionError}`]:['screenshot captured but awaiting image review'],reviewed_after_last_change:false,external_requests_sent:0,external_requests_blocked:(engineArg==='webkit'?webkitProxyBlocked:externalCount)-externalBefore,asset_failures:assetRequests.filter(x=>['missing','decode-failed'].includes(x.status)),page_errors:errors,action_responses:actionResponses};records.push(record);themeRecords.push(record);
    page.off('pageerror',pageErrorHandler);page.off('response',responseHandler);if(!reuseWorkerPages)await page.close();
   };
   await mapLimit(applicable,concurrencyArg,captureState);
   await context.close();if(guestContextPromise)await (await guestContextPromise).close();
-  const themeRecords=records.filter(r=>r.theme===theme);
   // Cached rows are an unlocked startup snapshot. Only newly captured rows
   // may replace the latest audit; a concurrent reviewer owns cached rows.
   const freshKeys=new Set(freshStates.map(spec=>`${spec.surface}|${spec.state}`));

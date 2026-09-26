@@ -135,31 +135,36 @@ export async function captureTortureState(
         };
         const root = document.documentElement;
         const content = document.querySelector("#page-content");
-        const overflowSources = [...document.body.querySelectorAll("*")]
-          .map((element) => {
-            const rect = element.getBoundingClientRect();
-            if (rect.right <= viewportSpec.width + 2) return null;
-            let ancestor = element.parentElement;
-            while (ancestor && ancestor !== document.body) {
-              const ancestorStyle = getComputedStyle(ancestor);
-              const ancestorRect = ancestor.getBoundingClientRect();
-              if (
-                ["auto", "scroll", "hidden", "clip"].includes(ancestorStyle.overflowX) &&
-                ancestorRect.right <= viewportSpec.width + 2 &&
-                rect.right > ancestorRect.right + 2
-              ) return null;
-              ancestor = ancestor.parentElement;
-            }
-            return {
+        const overflowSources = [];
+        const keepTopFive = (row) => {
+          let index = 0;
+          while (index < overflowSources.length && overflowSources[index].overflow_px >= row.overflow_px) index += 1;
+          overflowSources.splice(index, 0, row);
+          if (overflowSources.length > 5) overflowSources.pop();
+        };
+        const stack = [...document.body.children].reverse().map((element) => ({element, clippingRight: null}));
+        while (stack.length) {
+          const {element, clippingRight} = stack.pop();
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          const clipped = clippingRight !== null && rect.right > clippingRight + 2;
+          if (rect.right > viewportSpec.width + 2 && !clipped) {
+            keepTopFive({
               selector: element.id ? `#${CSS.escape(element.id)}` :
                 `${element.tagName.toLowerCase()}${[...element.classList].slice(0, 3).map((part) => `.${CSS.escape(part)}`).join("")}`,
               right: Math.round(rect.right * 10) / 10,
               overflow_px: Math.round((rect.right - viewportSpec.width) * 10) / 10,
-            };
-          })
-          .filter(Boolean)
-          .sort((a, b) => b.overflow_px - a.overflow_px)
-          .slice(0, 5);
+            });
+          }
+          let childClippingRight = clippingRight;
+          if (["auto", "scroll", "hidden", "clip"].includes(style.overflowX) && rect.right <= viewportSpec.width + 2) {
+            childClippingRight = childClippingRight === null ? rect.right : Math.min(childClippingRight, rect.right);
+          }
+          const children = element.children;
+          for (let index = children.length - 1; index >= 0; index -= 1) {
+            stack.push({element: children[index], clippingRight: childClippingRight});
+          }
+        }
         const measurement = {
           viewport: viewportSpec,
           page: {

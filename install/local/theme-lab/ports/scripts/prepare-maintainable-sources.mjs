@@ -156,6 +156,7 @@ function declarationParts(body){
 export function canonicalizeShadowedDeclarations(css){
   const rules=parseStyleSheet(css),ranges=locateRuleBodies(css),audit=analyzeOverrideCascade(css),eligible=new Map(),decisions=[],fallbackComments=new Map();
   if(ranges.length!==rules.length||ranges.some((range,index)=>JSON.stringify(range.contexts)!==JSON.stringify(rules[index].atContext??[])))throw new Error('CSS source ranges do not align with parsed selector and at-rule contexts');
+  const declarationRowsByRule=rules.map(rule=>declarationParts(rule.body??'').flatMap(part=>parseCssDeclarations(part.raw).map(declaration=>({part,declaration}))));
   for(const conflict of audit.conflicts){
     const winnerOccurrence=[...conflict.occurrences].reverse().find(row=>row.rule_index===conflict.winner.rule_index&&row.value===conflict.winner.value&&row.important===conflict.winner.important);
     const intrinsicFallback=/^(?:height|min-height|max-height|block-size|min-block-size|max-block-size)$/iu.test(conflict.property)&&/^(?:max-content|fit-content(?:\(.+\))?)$/iu.test(conflict.winner.value);
@@ -175,8 +176,7 @@ export function canonicalizeShadowedDeclarations(css){
     for(const occurrence of conflict.occurrences){
       if(occurrence===winnerOccurrence)continue;
       if(occurrence===fallbackOccurrence)continue;
-      const rule=rules[occurrence.rule_index],range=ranges[occurrence.rule_index],parts=declarationParts(rule.body??'');
-      const declarationRows=parts.flatMap(part=>parseCssDeclarations(part.raw).map(declaration=>({part,declaration})));
+      const range=ranges[occurrence.rule_index],declarationRows=declarationRowsByRule[occurrence.rule_index];
       const part=declarationRows[occurrence.declaration_index]?.part;
       if(!part||part.raw.includes('/*'))continue;
       const declaration=parseCssDeclarations(part.raw)[0];
@@ -195,7 +195,7 @@ export function canonicalizeShadowedDeclarations(css){
     const range=ranges[indexes[0]],rawPrelude=css.slice(range.ruleStart,range.start),cleanPrelude=stripCssComments(rawPrelude).trim(),allSelectors=parseStyleSheet(`${cleanPrelude} {}`).map(rule=>rule.selector);
     if(allSelectors.length!==indexes.length)throw new Error('selector-list source split disagrees with stylesheet parser');
     if(serialized.every(value=>value===serialized[0])){
-      const parts=declarationParts(rules[indexes[0]].body??''),declarationRows=parts.flatMap(part=>parseCssDeclarations(part.raw).map(declaration=>({part,declaration})));
+      const declarationRows=declarationRowsByRule[indexes[0]];
       const removals=[...sets[0]].map(declarationIndex=>declarationRows[declarationIndex]?.part).filter(Boolean);
       const body=rules[indexes[0]].body??'';
       let nextBody=body;
@@ -212,7 +212,7 @@ export function canonicalizeShadowedDeclarations(css){
       const prefix=[...annotations,...comments].length?`${[...annotations,...comments].join('\n')}\n`:'';
       const rendered=[];
       for(const [position,index] of indexes.entries()){
-        const body=rules[index].body??'',parts=declarationParts(body),declarationRows=parts.flatMap(part=>parseCssDeclarations(part.raw).map(declaration=>({part,declaration})));
+        const body=rules[index].body??'',declarationRows=declarationRowsByRule[index];
         const removals=[...(sets[position]??[])].map(declarationIndex=>declarationRows[declarationIndex]?.part).filter(Boolean);
         let nextBody=body;
         for(const part of removals.sort((a,b)=>b.start-a.start)){
@@ -504,10 +504,11 @@ export async function preparePackage(name,{write=false,check=false}={}){
   const finalSourceSha256=sha256(finalSource);
   const history=extractSCPJPAdaptationBlocks(original);
   const beforeDeclarationFindings=analyzeOverrideCascade(exactCompacted.css).conflicts;
+  const beforeDeclarationFindingsByKey=new Map(beforeDeclarationFindings.map(finding=>[JSON.stringify([finding.at_context,finding.selector,finding.property]),finding]));
   const afterDeclarationFindings=new Map(analyzeOverrideCascade(overlayCss).conflicts.map(finding=>[JSON.stringify([finding.at_context,finding.selector,finding.property]),finding]));
   const declarationReviews={};
   for(const decision of declarationCompacted.decisions){
-    const before=beforeDeclarationFindings.find(finding=>JSON.stringify([finding.at_context,finding.selector,finding.property])===decision.key);
+    const before=beforeDeclarationFindingsByKey.get(decision.key);
     const remaining=afterDeclarationFindings.get(decision.key);
     const removedConflicts=(before?.shadowed_conflicting_count??0)-(remaining?.shadowed_conflicting_count??0);
     const status=remaining?(decision.status==='intentional-fallback'?'intentional-fallback':'unresolved'):'resolved-canonical';

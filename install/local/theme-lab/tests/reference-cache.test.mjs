@@ -97,6 +97,10 @@ async function fixtureServer() {
       body: `<html><head><link rel="stylesheet" href="/style.css"><style>@import url('/inline.css'); .x{background:url('/inline-bg.png')}</style></head><body><img src="/img.png"></body></html>`,
     },
     "/with-missing.html": {type: "text/html", body: `<html><head><link rel="icon" href="/missing.png"></head></html>`},
+    "/budget.html": {type: "text/html", body: `<html><head><link rel="stylesheet" href="/budget-a.css"></head></html>`},
+    "/budget-a.css": {type: "text/css", body: `@import "budget-b.css"; @import "budget-c.css";`},
+    "/budget-b.css": {type: "text/css", body: `b { color: blue; }`},
+    "/budget-c.css": {type: "text/css", body: `i { color: green; }`},
     "/style.css": {type: "text/css", body: `@import "nested.css"; body { background: url("/bg.png"); }`},
     "/inline.css": {type: "text/css", body: `h1 { color: red; }`},
     "/nested.css": {type: "text/css", body: `p { color: red; }`},
@@ -183,6 +187,21 @@ test("failed optional assets retain their cause and are not fetched again", asyn
   assert.equal(second.external_requests, 0);
   assert.deepEqual(second.failed_assets, first.failed_assets);
   assert.equal(fixture.hits.length, hits);
+});
+
+test("maxAssets applies to the full recursive CSS dependency graph", async (t) => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "theme-lab-ref-budget-"));
+  const fixture = await fixtureServer();
+  t.after(async () => {
+    await fixture.close();
+    await fs.rm(dir, {recursive: true, force: true});
+  });
+  const cache = new ReferenceCache({cacheDir: dir, allowPrivate: true, limits: {maxAssets: 2}});
+  const result = await cache.acquire(`${fixture.origin}/budget.html`);
+  assert.equal(result.failed_asset_count, 1);
+  assert.equal(result.failed_assets[0].code, "reference_asset_limit");
+  assert.equal(result.failed_assets[0].url, `${fixture.origin}/budget-c.css`);
+  assert.deepEqual(fixture.hits, ["/budget.html", "/budget-a.css", "/budget-b.css"]);
 });
 
 test("offline acquire fails closed on an empty cache", async (t) => {
