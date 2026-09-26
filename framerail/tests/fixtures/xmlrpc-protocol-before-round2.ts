@@ -127,36 +127,19 @@ function parseXmlRpcValue(
     return decodeXmlText(valueContent)
   }
 
-  // A value is exactly one element, so its root tag name alone selects the
-  // parser. Reading it once keeps the per-value cost proportional to that
-  // value's own bytes, instead of re-scanning the whole subtree once per
-  // candidate type and re-doing that at every enclosing level.
-  const tagName = rootTagName(text)
-  if (tagName === null || !XML_RPC_VALUE_TYPE_NAMES.has(tagName)) {
-    throw new XmlRpcFault(-32602, "Unsupported XML-RPC value type")
+  if (isSelfClosingElement(text, "nil")) {
+    return null
   }
 
-  // Only the named element is extracted, and only when it spans the whole
-  // value. A name that does not span the whole value remains unsupported,
-  // which is exactly what the previous ordered probe chain produced.
-  const element = extractFirstDirectElement(text, tagName)
-  if (element === null) {
-    throw new XmlRpcFault(-32602, "Unsupported XML-RPC value type")
+  const stringElement = extractFirstDirectElement(text, "string")
+  if (stringElement) {
+    return decodeXmlText(stringElement.content)
   }
 
-  if (tagName === "nil") {
-    if (element.selfClosing) {
-      return null
-    }
-    throw new XmlRpcFault(-32602, "Unsupported XML-RPC value type")
-  }
-
-  if (tagName === "string") {
-    return decodeXmlText(element.content)
-  }
-
-  if (tagName === "int" || tagName === "i4") {
-    const token = trimXmlWhitespace(decodeXmlText(element.content))
+  const intElement =
+    extractFirstDirectElement(text, "int") ?? extractFirstDirectElement(text, "i4")
+  if (intElement) {
+    const token = trimXmlWhitespace(decodeXmlText(intElement.content))
     if (!/^[+-]?\d+$/.test(token)) {
       throw new XmlRpcFault(-32602, "Invalid XML-RPC integer value")
     }
@@ -167,15 +150,17 @@ function parseXmlRpcValue(
     return value
   }
 
-  if (tagName === "boolean") {
-    const value = trimXmlWhitespace(decodeXmlText(element.content))
+  const booleanElement = extractFirstDirectElement(text, "boolean")
+  if (booleanElement) {
+    const value = trimXmlWhitespace(decodeXmlText(booleanElement.content))
     if (value === "1") return true
     if (value === "0") return false
     throw new XmlRpcFault(-32602, "Invalid XML-RPC boolean value")
   }
 
-  if (tagName === "double") {
-    const token = trimXmlWhitespace(decodeXmlText(element.content))
+  const doubleElement = extractFirstDirectElement(text, "double")
+  if (doubleElement) {
+    const token = trimXmlWhitespace(decodeXmlText(doubleElement.content))
     if (!/^[+-]?(?:\d+\.\d*|\.\d+)$/.test(token)) {
       throw new XmlRpcFault(-32602, "Invalid XML-RPC double value")
     }
@@ -186,17 +171,24 @@ function parseXmlRpcValue(
     return value
   }
 
-  if (tagName === "base64" || tagName === "dateTime.iso8601") {
+  const base64Element = extractFirstDirectElement(text, "base64")
+  if (base64Element) {
     throw new XmlRpcFault(-32602, "Unsupported XML-RPC value type")
   }
 
-  if (tagName === "array") {
-    const dataElement = extractRequiredElement(element.content, "data")
-    rejectSkippedXmlContent(element.content, 0, dataElement.start, "array")
+  const dateElement = extractFirstDirectElement(text, "dateTime.iso8601")
+  if (dateElement) {
+    throw new XmlRpcFault(-32602, "Unsupported XML-RPC value type")
+  }
+
+  const arrayElement = extractFirstDirectElement(text, "array")
+  if (arrayElement) {
+    const dataElement = extractRequiredElement(arrayElement.content, "data")
+    rejectSkippedXmlContent(arrayElement.content, 0, dataElement.start, "array")
     rejectSkippedXmlContent(
-      element.content,
+      arrayElement.content,
       dataElement.end,
-      element.content.length,
+      arrayElement.content.length,
       "array"
     )
     const values: XmlRpcValue[] = []
@@ -219,16 +211,17 @@ function parseXmlRpcValue(
     return values
   }
 
-  if (tagName === "struct") {
+  const structElement = extractFirstDirectElement(text, "struct")
+  if (structElement) {
     const values: Record<string, XmlRpcValue> = Object.create(null)
     let offset = 0
     while (true) {
-      const member = extractOptionalElement(element.content, "member", offset)
+      const member = extractOptionalElement(structElement.content, "member", offset)
       if (!member) {
         break
       }
 
-      rejectSkippedXmlContent(element.content, offset, member.start, "struct")
+      rejectSkippedXmlContent(structElement.content, offset, member.start, "struct")
       const nameElement = extractRequiredElement(member.content, "name")
       rejectSkippedXmlContent(member.content, 0, nameElement.start, "member")
       const name = decodeXmlText(nameElement.content)
@@ -241,67 +234,16 @@ function parseXmlRpcValue(
       values[name] = parseXmlRpcValue(value.content, budget, depth + 1)
       offset = member.end
     }
-    rejectSkippedXmlContent(element.content, offset, element.content.length, "struct")
+    rejectSkippedXmlContent(
+      structElement.content,
+      offset,
+      structElement.content.length,
+      "struct"
+    )
     return values
   }
 
   throw new XmlRpcFault(-32602, "Unsupported XML-RPC value type")
-}
-
-// Every tag name this parser looks for is a literal at a call site or drawn from
-// the fixed XML-RPC value-type set below, so these compiled-pattern caches are
-// bounded by construction and cannot be grown by request input.
-const OPEN_TAG_PATTERN_CACHE = new Map<string, RegExp>()
-const TAG_PATTERN_CACHE = new Map<string, RegExp>()
-
-// The opening tag name at the start of a value. A value must consist of exactly
-// one element, so its root tag name alone decides how it is parsed; no further
-// candidate names need to be probed for.
-const ROOT_TAG_NAME_PATTERN = /^<([A-Za-z][\w.:-]*)/
-
-const XML_RPC_VALUE_TYPE_NAMES: ReadonlySet<string> = new Set([
-  "nil",
-  "string",
-  "int",
-  "i4",
-  "boolean",
-  "double",
-  "base64",
-  "dateTime.iso8601",
-  "array",
-  "struct"
-])
-
-function openTagPattern(tagName: string): RegExp {
-  let pattern = OPEN_TAG_PATTERN_CACHE.get(tagName)
-  if (!pattern) {
-    const escaped = escapeRegExp(tagName)
-    pattern = new RegExp(
-      `<${escaped}(?:${XML_WHITESPACE}[^>]*)?>|<${escaped}${XML_WHITESPACE}*/>`,
-      "g"
-    )
-    OPEN_TAG_PATTERN_CACHE.set(tagName, pattern)
-  }
-  return pattern
-}
-
-function closingTagPattern(tagName: string): RegExp {
-  let pattern = TAG_PATTERN_CACHE.get(tagName)
-  if (!pattern) {
-    const escaped = escapeRegExp(tagName)
-    pattern = new RegExp(
-      `</?${escaped}(?:${XML_WHITESPACE}[^>]*)?>|<${escaped}${XML_WHITESPACE}*/>`,
-      "g"
-    )
-    TAG_PATTERN_CACHE.set(tagName, pattern)
-  }
-  return pattern
-}
-
-/** Tag name of the element opening `text`, or null when there is none. */
-function rootTagName(text: string): string | null {
-  const match = ROOT_TAG_NAME_PATTERN.exec(text)
-  return match ? match[1] : null
 }
 
 function extractFirstDirectElement(text: string, tagName: string): XmlElement | null {
@@ -329,7 +271,12 @@ function extractOptionalElement(
   tagName: string,
   offset = 0
 ): XmlElement | null {
-  const openPattern = openTagPattern(tagName)
+  const openPattern = new RegExp(
+    `<${escapeRegExp(tagName)}(?:${XML_WHITESPACE}[^>]*)?>|<${escapeRegExp(
+      tagName
+    )}${XML_WHITESPACE}*/>`,
+    "g"
+  )
   openPattern.lastIndex = offset
   const match = openPattern.exec(text)
   if (!match) {
@@ -342,12 +289,17 @@ function extractOptionalElement(
     return { content: "", end: contentStart, selfClosing: true, start: match.index }
   }
 
-  const anyTagPattern = closingTagPattern(tagName)
-  anyTagPattern.lastIndex = contentStart
+  const tagPattern = new RegExp(
+    `</?${escapeRegExp(tagName)}(?:${XML_WHITESPACE}[^>]*)?>|<${escapeRegExp(
+      tagName
+    )}${XML_WHITESPACE}*/>`,
+    "g"
+  )
+  tagPattern.lastIndex = contentStart
   let depth = 1
 
   while (true) {
-    const tagMatch = anyTagPattern.exec(text)
+    const tagMatch = tagPattern.exec(text)
     if (!tagMatch) {
       throw new XmlRpcFault(-32600, `Unclosed XML-RPC <${tagName}> element`)
     }
@@ -358,7 +310,7 @@ function extractOptionalElement(
       if (depth === 0) {
         return {
           content: text.slice(contentStart, tagMatch.index),
-          end: anyTagPattern.lastIndex,
+          end: tagPattern.lastIndex,
           selfClosing: false,
           start: match.index
         }
@@ -381,6 +333,10 @@ function rejectSkippedXmlContent(
       `Unexpected XML-RPC content in <${containerName}> element`
     )
   }
+}
+
+function isSelfClosingElement(text: string, tagName: string): boolean {
+  return new RegExp(`^<${escapeRegExp(tagName)}${XML_WHITESPACE}*/>$`).test(text)
 }
 
 function stripIgnorableXml(xml: string): string {
