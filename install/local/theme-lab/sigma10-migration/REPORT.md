@@ -67,6 +67,7 @@ the accepted Sigma-9 audit; the accepted audit at
 * Control: the identical DOM/shell under the runtime Sigma-9 baseline measures 390 (no overflow). Removing `ul.creditRate` from the same Sigma-10 DOM drops `documentWidth` 511 → 390 in an isolated probe.
 * Expected: no document-level horizontal overflow at supported narrow widths.
 * Recommended minimal change: `white-space: pre-wrap` (or `normal`); and scope the notice + `.creditRate > li{display:none}` to the preview context if that was the intent.
+* Fix verified: in an isolated browser load of the captured Sigma-10 mobile DOM, adding `.creditRate::before{white-space:pre-wrap !important}` reduced document `scrollWidth` from 511 to 390.
 * Evidence: `migration/sigma10/sigma10-baseline/artifacts/interactive/chromium/mobile/page-normal-settled-mobile-fbdd47e2…png` (sha256 `fbdd47e2…`), narrow-mobile `d8fee227…`, firefox `c9d81dae…`, webkit `770eb55d…`; Sigma-9 comparison `59970502…`.
 
 ### SIGMA10-SEARCH-002 — Sigma-10 hides the desktop search input
