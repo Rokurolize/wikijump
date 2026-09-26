@@ -9,7 +9,7 @@ import {fileURLToPath} from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const runner = path.join(here, "run-deepwell-integration-validation.mjs");
 const args = process.argv.slice(2);
-const rawShards = process.env.WIKIJUMP_DEEPWELL_TEST_SHARDS?.trim() || "6";
+const rawShards = process.env.WIKIJUMP_DEEPWELL_TEST_SHARDS?.trim() || "8";
 const shards = Number(rawShards);
 if (!Number.isInteger(shards) || shards < 1 || shards > 8) {
   throw new Error("WIKIJUMP_DEEPWELL_TEST_SHARDS must be an integer from 1 through 8");
@@ -22,7 +22,7 @@ if (args.some((argument) => argument === "--help" || argument === "-h")) {
       "",
       "Runs Deepwell integration tests across independent task-owned PostgreSQL/Valkey/MinIO",
       "stacks. Each shard stays single-test-threaded; the test set is partitioned with nextest.",
-      "Set WIKIJUMP_DEEPWELL_TEST_SHARDS to 1..8 (default 6).",
+      "Set WIKIJUMP_DEEPWELL_TEST_SHARDS to 1..8 (default 8; lower it on smaller hosts).",
       "",
     ].join("\n"),
   );

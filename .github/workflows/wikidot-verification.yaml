@@ -107,6 +107,10 @@ jobs:
           WIKIDOT_PY_CHECKOUT: ${{ runner.temp }}/wikidot.py
           WIKIDOT_PY_TEST_PYTHON: ${{ runner.temp }}/wikidot-py-test-venv/bin/python
           WIKIJUMP_FTML_CHECKOUT: ${{ runner.temp }}/ftml
+          # GitHub-hosted runners have four vCPUs; the maintained WSL host
+          # measured eight shards as the optimum (see the offline:products
+          # script). Keep CI at the conservative previous value.
+          WIKIJUMP_DEEPWELL_TEST_SHARDS: "6"
         run: pnpm --dir install/local/wikidot-verification run offline:portable
 
       - name: Explain live-acquisition boundary
