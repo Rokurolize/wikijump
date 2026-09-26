@@ -82,6 +82,25 @@ test("published PostgreSQL probe assembles a fragmented startup response", async
   }
 });
 
+test("published PostgreSQL probe rejects an SSL-enabled server without sending plaintext startup", async () => {
+  const requests = [];
+  const {server, port} = await listen((socket) => {
+    socket.on("data", (chunk) => {
+      requests.push(chunk);
+      if (isSslRequest(chunk)) socket.end(Buffer.from("S"));
+    });
+  });
+  try {
+    await assert.rejects(
+      probePublishedPostgres({port, timeoutMs: 200}),
+      /offered SSL.*requires a plaintext task-owned database/u,
+    );
+    assert.deepEqual(requests, [SSL_REQUEST]);
+  } finally {
+    await close(server);
+  }
+});
+
 test("published PostgreSQL readiness retries a still-recovering database", async () => {
   let connections = 0;
   const {server, port} = await listen((socket) => {

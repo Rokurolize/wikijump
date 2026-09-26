@@ -92,10 +92,13 @@ export function probePublishedPostgres({
         if (buffered.length < 1) return;
         const response = buffered[0];
         buffered = buffered.subarray(1);
-        // "S" would require negotiating TLS before startup; the task-owned
-        // stacks do not enable SSL, so keep the protocol-level response.
+        // "S" selects TLS. It does not prove query readiness, and sending the
+        // plaintext StartupMessage after it would violate the wire protocol.
+        // This probe intentionally supports only plaintext task-owned stacks.
         if (response === 0x53) {
-          finish(undefined, "S");
+          finish(new Error(
+            "PostgreSQL offered SSL, but this readiness probe requires a plaintext task-owned database",
+          ));
           return;
         }
         if (response !== 0x4e) {
