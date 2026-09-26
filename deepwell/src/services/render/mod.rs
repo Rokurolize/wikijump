@@ -108,6 +108,7 @@ pub(crate) use self::replay::{
     RenderReplayService, RenderReplaySettings, run_worker_action,
 };
 pub(crate) use self::runtime_modules::has_theme_previewer_no_ui;
+pub use self::runtime_page_queries::{ViewablePageRef, view_decisions_for_scanned_pages};
 pub use self::service::RenderService;
 pub(crate) use self::service::{
     CorpusReplayExpandedWikitext, CorpusReplayPreparationStage,

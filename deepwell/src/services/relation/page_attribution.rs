@@ -224,6 +224,56 @@ impl RelationService {
         Ok(attributions)
     }
 
+    /// The subset of `page_ids` on which `user_id` holds a live page
+    /// attribution.
+    ///
+    /// This answers, for many pages at once, the question that
+    /// `get_page_attributions` answers for one page: does the attribution list
+    /// contain this user? Callers use it to avoid one page lookup plus one
+    /// relation query per page when they only need the membership answer.
+    ///
+    /// `page_ids` must already be scoped to the site being checked; the
+    /// attribution rows are keyed by page ID, which is globally unique, so no
+    /// further site filter is applied — matching `page_attributions_condition`.
+    pub async fn filter_attributed_page_ids(
+        ctx: &ServiceContext<'_>,
+        user_id: i64,
+        page_ids: &[i64],
+    ) -> Result<BTreeSet<i64>> {
+        if page_ids.is_empty() {
+            return Ok(BTreeSet::new());
+        }
+
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to query page attributions for user ID {} across {} pages",
+                    user_id,
+                    page_ids.len()
+                ),
+                ErrorType::PageAttributionRelation,
+            )
+        };
+
+        let txn = ctx.transaction();
+        let models = Relation::find()
+            .filter(
+                Condition::all()
+                    .add(relation::Column::RelationType.eq(RelationType::PageAttribution))
+                    .add(relation::Column::DestType.eq(RelationObjectType::Page))
+                    .add(relation::Column::FromType.eq(RelationObjectType::User))
+                    .add(relation::Column::FromId.eq(user_id))
+                    .add(relation::Column::DestId.is_in(page_ids.to_vec()))
+                    .add(relation::Column::OverwrittenAt.is_null())
+                    .add(relation::Column::DeletedAt.is_null()),
+            )
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+
+        Ok(models.into_iter().map(|model| model.dest_id).collect())
+    }
+
     pub async fn set_page_attributions(
         ctx: &ServiceContext<'_>,
         SetPageAttributions {
