@@ -679,6 +679,7 @@ async fn page_move_render_failure_rolls_back_destination_identity() {
                     "last_revision_id": join_action["revision_id"],
                     "action_index": join_action["index"],
                     "action_fingerprint": join_action["fingerprint"],
+                    "ip_address": common::IP_ADDRESS,
                 }),
             )
             .await,

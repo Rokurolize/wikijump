@@ -24,9 +24,11 @@ use super::structs::{RelationDirection, RelationObject, RelationReference};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::relation::Model as RelationModel;
 use crate::services::ServiceContext;
+use crate::services::audit::{AuditEvent, AuditService};
 use crate::types::RelationType;
-use paste::paste;
+use deepwell_relation_impl_derive::impl_relation;
 use serde::Serialize;
+use std::net::IpAddr;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "snake_case", tag = "cause", content = "user_id")]
@@ -43,15 +45,14 @@ pub struct SiteMemberData {
     pub accepted: SiteMemberAccepted,
 }
 
-impl_relation!(
-    SiteMember,
-    Site,
-    site_id,
-    User,
-    user_id,
-    SiteMemberData,
-    NO_CREATE_IMPL,
-);
+impl_relation! {
+    name => SiteMember,
+    dest => site_id: Site,
+    from => user_id: User,
+    data => SiteMemberData,
+    create_fn => private,
+    remove_fn => private,
+}
 
 impl RelationService {
     pub async fn create_site_member(
@@ -62,6 +63,7 @@ impl RelationService {
             metadata,
             created_by,
         }: CreateSiteMember,
+        ip_address: IpAddr,
     ) -> Result<()> {
         let make_error = || {
             Error::new(
@@ -78,9 +80,77 @@ impl RelationService {
             .await
             .or_raise(make_error)?;
 
-        create_operation!(
-            ctx, SiteMember, Site, site_id, User, user_id, created_by, &metadata,
-            make_error,
+        Self::create_site_member_inner(
+            ctx,
+            CreateSiteMemberInner {
+                site_id,
+                user_id,
+                created_by,
+                metadata: &metadata,
+            },
         )
+        .await
+        .or_raise(make_error)?;
+
+        AuditService::log(
+            ctx,
+            ip_address,
+            AuditEvent::JoinSiteMember {
+                user_id,
+                site_id,
+                joining_user_id: created_by,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+
+        Ok(())
+    }
+
+    pub async fn remove_site_member(
+        ctx: &ServiceContext<'_>,
+        RemoveSiteMember {
+            site_id,
+            user_id,
+            removed_by,
+        }: RemoveSiteMember,
+        ip_address: IpAddr,
+        reason: &str,
+    ) -> Result<RelationModel> {
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to remove user ID {} as member of site ID {}, removed by user ID {}",
+                    user_id, site_id, removed_by,
+                ),
+                ErrorType::SiteMemberRelation,
+            )
+        };
+
+        let model = Self::remove_site_member_inner(
+            ctx,
+            RemoveSiteMember {
+                site_id,
+                user_id,
+                removed_by,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+
+        AuditService::log(
+            ctx,
+            ip_address,
+            AuditEvent::RemoveSiteMember {
+                user_id,
+                site_id,
+                removing_user_id: removed_by,
+                reason,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+
+        Ok(model)
     }
 }

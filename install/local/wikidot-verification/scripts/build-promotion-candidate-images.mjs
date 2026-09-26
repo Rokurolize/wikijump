@@ -31,7 +31,7 @@ const BUILD_DEFINITIONS = Object.freeze({
   caddy: {dockerfile: "install/prod/caddy/Dockerfile", context: "."},
   database: {dockerfile: "install/local/postgres/Dockerfile", context: "."},
   deepwell: {dockerfile: "install/prod/deepwell/Dockerfile", context: "."},
-  files: {dockerfile: "Dockerfile", context: "install/local/minio"},
+  files: {dockerfile: "Dockerfile", context: "install/local/silo"},
   framerail: {
     dockerfile: "install/prod/framerail/Dockerfile",
     context: ".",
@@ -98,7 +98,7 @@ export async function promotionSourceIdentity(sourceRoot) {
     "assets/",
     "deepwell/",
     "framerail/",
-    "install/local/minio/",
+    "install/local/silo/",
     "install/local/postgres/",
     "install/local/valkey/",
     "install/prod/",

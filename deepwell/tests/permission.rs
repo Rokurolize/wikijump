@@ -341,6 +341,7 @@ async fn create_site_member(ctx: &ServiceContext<'_>, site_id: i64, user_id: i64
             },
             created_by: SYSTEM_USER_ID,
         },
+        common::IP_ADDRESS,
     )
     .await
     .expect("Failed to create site member");
@@ -354,6 +355,8 @@ async fn remove_site_member(ctx: &ServiceContext<'_>, site_id: i64, user_id: i64
             user_id,
             removed_by: SYSTEM_USER_ID,
         },
+        common::IP_ADDRESS,
+        "test membership removal",
     )
     .await
     .expect("Failed to remove site member");

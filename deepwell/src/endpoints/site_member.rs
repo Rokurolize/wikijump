@@ -30,6 +30,22 @@ use crate::services::membership::{
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::{CreateSiteMember, GetSiteMember, RemoveSiteMember};
 use crate::types::{Action, Permission, Resource};
+use std::net::IpAddr;
+
+#[derive(Deserialize, Debug)]
+struct CreateSiteMemberInput {
+    #[serde(flatten)]
+    input: CreateSiteMember,
+    ip_address: IpAddr,
+}
+
+#[derive(Deserialize, Debug)]
+struct RemoveSiteMemberInput {
+    #[serde(flatten)]
+    input: RemoveSiteMember,
+    ip_address: IpAddr,
+    reason: String,
+}
 
 pub async fn membership_join(
     ctx: &ServiceContext<'_>,
@@ -148,12 +164,15 @@ pub async fn membership_set(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<()> {
-    let mut input: CreateSiteMember = parse!(params, SiteMembership);
+    let CreateSiteMemberInput {
+        mut input,
+        ip_address,
+    } = parse!(params, SiteMembership);
     let user_id = input.user_id;
     let site_id = input.site_id;
     input.created_by = require_role_assign_permission(ctx, site_id).await?;
 
-    RelationService::create_site_member(ctx, input)
+    RelationService::create_site_member(ctx, input, ip_address)
         .await
         .or_raise(|| {
             Error::new(
@@ -170,12 +189,16 @@ pub async fn membership_remove(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<RelationModel> {
-    let mut input: RemoveSiteMember = parse!(params, SiteMembership);
+    let RemoveSiteMemberInput {
+        mut input,
+        ip_address,
+        reason,
+    } = parse!(params, SiteMembership);
     let user_id = input.user_id;
     let site_id = input.site_id;
     input.removed_by = require_role_assign_permission(ctx, site_id).await?;
 
-    RelationService::remove_site_member(ctx, input)
+    RelationService::remove_site_member(ctx, input, ip_address, &reason)
         .await
         .or_raise(|| {
             Error::new(

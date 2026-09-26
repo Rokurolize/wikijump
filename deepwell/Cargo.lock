@@ -1148,11 +1148,11 @@ dependencies = [
  "askama",
  "built",
  "bytes",
- "cfg-if",
  "clap",
  "color-backtrace",
  "cuid2",
  "data-encoding",
+ "deepwell-relation-impl-derive",
  "diff",
  "dotenvy",
  "exn",
@@ -1204,6 +1204,15 @@ dependencies = [
  "uuid",
  "wikidot-normalize",
  "wikidot-path",
+]
+
+[[package]]
+name = "deepwell-relation-impl-derive"
+version = "1.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.3",
 ]
 
 [[package]]

@@ -35,8 +35,8 @@ Playwright in GitHub Actions. Browser validation is local WSL work.
 
 `docker-build-*.yaml` build the container images per service and environment,
 all delegating to `docker-build-template.yaml` so the build logic exists once.
-`docker-push-minio.yaml` publishes the MinIO image, and is path-filtered to
-`install/local/minio/*` because nothing else can change it.
+`docker-push-silo.yaml` publishes the Silo-compatible object-storage image, and
+is path-filtered to `install/local/silo/*` because nothing else can change it.
 
 `komodo-deploy.dev.yaml` and `komodo-deploy.prod.yaml` deploy on pushes to
 `develop` and `prod` respectively.

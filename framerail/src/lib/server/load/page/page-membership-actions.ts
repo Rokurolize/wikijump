@@ -67,6 +67,7 @@ export function membershipJoinAction(event: RequestEvent) {
       lastRevisionId,
       actionIndex,
       actionFingerprint,
+      event.getClientAddress(),
       context.requestContext
     )
   }, failForActionError)
@@ -85,6 +86,7 @@ export function membershipPasswordAction(event: RequestEvent) {
       actionIndex,
       actionFingerprint,
       password,
+      event.getClientAddress(),
       context.requestContext
     )
   }, failForActionError)
@@ -121,6 +123,7 @@ export function membershipEmailInvitationAction(event: RequestEvent) {
       actionIndex,
       actionFingerprint,
       routeArgument(event.params.extra, "hash"),
+      event.getClientAddress(),
       context.requestContext
     )
   }, failForActionError)

@@ -248,6 +248,7 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
         "site_id": mirror.site_id,
         "policy": "closed",
         "token": "not-authority",
+        "ip_address": common::IP_ADDRESS,
     });
     let forged = run_endpoint_err!(
         runner,
@@ -257,6 +258,7 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
             "last_revision_id": join_action["revision_id"],
             "action_index": join_action["index"],
             "action_fingerprint": "00000000000000000000000000000000",
+            "ip_address": common::IP_ADDRESS,
         }),
     );
     assert_contains_error!(forged, ErrorType::PermissionDenied);
@@ -993,6 +995,8 @@ async fn role_assignment_and_membership_require_role_assign() {
             "user_id": f.target_user_id,
             "metadata": membership_metadata.clone(),
             "created_by": SYSTEM_USER_ID,
+
+            "ip_address": common::IP_ADDRESS,
         }),
     );
     assert_contains_error!(err, ErrorType::PermissionDenied);
@@ -1026,6 +1030,8 @@ async fn role_assignment_and_membership_require_role_assign() {
             "user_id": f.target_user_id,
             "metadata": membership_metadata.clone(),
             "created_by": SYSTEM_USER_ID,
+
+            "ip_address": common::IP_ADDRESS,
         }),
     );
     assert_contains_error!(err, ErrorType::PermissionDenied);
@@ -1057,6 +1063,8 @@ async fn role_assignment_and_membership_require_role_assign() {
             "user_id": f.target_user_id,
             "metadata": membership_metadata.clone(),
             "created_by": SYSTEM_USER_ID,
+
+            "ip_address": common::IP_ADDRESS,
         }),
     );
 
@@ -1093,6 +1101,9 @@ async fn role_assignment_and_membership_require_role_assign() {
             "site_id": f.site_id,
             "user_id": f.target_user_id,
             "removed_by": SYSTEM_USER_ID,
+
+            "ip_address": common::IP_ADDRESS,
+            "reason": "test membership removal",
         }),
     );
     assert_contains_error!(err, ErrorType::PermissionDenied);
@@ -1122,6 +1133,9 @@ async fn role_assignment_and_membership_require_role_assign() {
             "site_id": f.site_id,
             "user_id": f.target_user_id,
             "removed_by": SYSTEM_USER_ID,
+
+            "ip_address": common::IP_ADDRESS,
+            "reason": "test membership removal",
         }),
     );
     assert_contains_error!(err, ErrorType::PermissionDenied);
@@ -1166,6 +1180,9 @@ async fn role_assignment_and_membership_require_role_assign() {
             "site_id": f.site_id,
             "user_id": f.target_user_id,
             "removed_by": SYSTEM_USER_ID,
+
+            "ip_address": common::IP_ADDRESS,
+            "reason": "test membership removal",
         }),
     );
     assert_eq!(removed.deleted_by, Some(f.user_id));

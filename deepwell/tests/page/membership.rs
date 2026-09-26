@@ -115,6 +115,7 @@ async fn public_membership_module_states_are_distinct_and_opaque() {
             },
             created_by: SYSTEM_USER_ID,
         },
+        common::IP_ADDRESS,
     )
     .await
     .expect("membership preview fixture actor should become a member");
@@ -191,6 +192,7 @@ async fn membership_by_password_module_matches_live_anonymous_and_member_output(
             },
             created_by: SYSTEM_USER_ID,
         },
+        common::IP_ADDRESS,
     )
     .await
     .expect("sample user should become a site member for MembershipByPassword");
@@ -526,6 +528,7 @@ async fn membership_application_and_password_mutations_match_disposable_live_con
                 "action_index": password.2,
                 "action_fingerprint": password.3,
                 "password": wrong,
+                "ip_address": common::IP_ADDRESS,
             }),
         );
         assert_eq!(
@@ -554,6 +557,7 @@ async fn membership_application_and_password_mutations_match_disposable_live_con
             "action_index": password.2,
             "action_fingerprint": password.3,
             "password": membership_password,
+            "ip_address": common::IP_ADDRESS,
         }),
     );
     assert_eq!(
@@ -569,6 +573,7 @@ async fn membership_application_and_password_mutations_match_disposable_live_con
             "action_index": password.2,
             "action_fingerprint": password.3,
             "password": membership_password,
+            "ip_address": common::IP_ADDRESS,
         }),
     );
     assert_eq!(
@@ -627,6 +632,7 @@ async fn membership_application_and_password_mutations_match_disposable_live_con
             "user_id": accept_user_id,
             "decision": "accept",
             "reply": "accepted",
+            "ip_address": common::IP_ADDRESS,
         }),
     );
     assert_eq!(
@@ -704,6 +710,7 @@ async fn membership_application_and_password_mutations_match_disposable_live_con
                 "user_id": decline_user_id,
                 "decision": "decline",
                 "reply": "declined",
+                "ip_address": common::IP_ADDRESS,
             }),
         ),
         deepwell::services::membership::MembershipApplicationStatus::Declined,
@@ -973,6 +980,7 @@ async fn membership_email_invitation_matches_hash_one_use_and_cancel_contract() 
             "action_index": invitation_action.2,
             "action_fingerprint": invitation_action.3,
             "hash": token,
+            "ip_address": common::IP_ADDRESS,
         }),
     );
     assert_eq!(

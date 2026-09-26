@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Build the three disposable backing-service images used by
-# run-deepwell-integration-validation.mjs. Base images are digest-pinned by the
-# Dockerfiles; this setup step may pull them, but the subsequent test runner
-# refuses to pull or substitute images.
+# run-deepwell-integration-validation.mjs. This setup step may pull the base
+# images declared by the Dockerfiles, but the subsequent test runner refuses
+# to pull or substitute images.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -18,7 +18,7 @@ docker build \
 
 docker build \
   --tag wikijump-local-development-files \
-  "${ROOT}/install/local/minio"
+  "${ROOT}/install/local/silo"
 
 for image in \
   wikijump-local-development-database \

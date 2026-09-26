@@ -26,14 +26,18 @@ use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::relation::{self, Entity as Relation, Model as RelationModel};
 use crate::services::ServiceContext;
 use crate::types::{RelationObjectType, RelationType};
-use paste::paste;
+use deepwell_relation_impl_derive::impl_relation;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
 use std::collections::BTreeSet;
 
 const MAX_PAGE_WATCHER_ROWS: usize = 500;
 const PAGE_WATCHER_QUERY_LIMIT: u64 = MAX_PAGE_WATCHER_ROWS as u64 + 1;
 
-impl_relation!(PageWatch, Page, page_id, User, user_id, ());
+impl_relation! {
+    name => PageWatch,
+    dest => page_id: Page,
+    from => user_id: User,
+}
 
 impl RelationService {
     pub async fn get_active_page_watcher_ids(

@@ -27,7 +27,7 @@ use crate::services::ServiceContext;
 use crate::types::UserType;
 use crate::types::{RelationObjectType, RelationType};
 use crate::utils::trim_spaces_in_place;
-use paste::paste;
+use deepwell_relation_impl_derive::impl_relation;
 use serde::Serialize;
 use time::OffsetDateTime;
 
@@ -66,15 +66,13 @@ pub struct UserBotMetadata {
     pub approval_url: Option<String>,
 }
 
-impl_relation!(
-    UserBotOwner,
-    User,
-    bot_user,
-    User,
-    owner_user,
-    UserBotMetadata,
-    NO_CREATE_IMPL_OR_STRUCT,
-);
+impl_relation! {
+    name => UserBotOwner,
+    dest => bot_user: User,
+    from => owner_user: User,
+    data => UserBotMetadata,
+    create_fn => private_only,
+}
 
 impl RelationService {
     pub fn normalize_user_bot_metadata(metadata: &mut UserBotMetadata) {
@@ -146,17 +144,19 @@ impl RelationService {
             ));
         }
 
-        create_operation!(
+        Self::create_user_bot_owner_inner(
             ctx,
-            UserBotOwner,
-            User,
-            bot_user_id,
-            User,
-            owner_user_id,
-            created_by,
-            metadata,
-            make_error,
+            CreateUserBotOwnerInner {
+                bot_user: bot_user_id,
+                owner_user: owner_user_id,
+                metadata,
+                created_by,
+            },
         )
+        .await
+        .or_raise(make_error)?;
+
+        Ok(())
     }
 
     #[inline]

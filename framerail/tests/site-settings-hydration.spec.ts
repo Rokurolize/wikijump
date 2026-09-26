@@ -22,7 +22,8 @@ const STALE_FAILURE = JSON.stringify({
     { message: 1, code: 2, data: 3 },
     STALE_MESSAGE,
     4000,
-    { current_settings_revision: 5 }
+    { current_settings_revision: 4 },
+    5
   ])
 })
 

@@ -23,6 +23,7 @@ use crate::constants::ADMIN_USER_ID;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::models::site::{Entity as Site, Model as SiteModel};
 use crate::services::action_throttle::MEMBERSHIP_SELF_JOIN_THROTTLE;
+use crate::services::audit::{AuditEvent, AuditService};
 use crate::services::relation::{
     CreateSiteMember, GetSiteBan, GetSiteMember, RelationDirection, RelationObject,
     RelationReference, SiteMemberAccepted, SiteMemberData,
@@ -245,6 +246,17 @@ RETURNING invitation_id
             invitation.sender_user_id,
             &SiteMemberData {
                 accepted: SiteMemberAccepted::Invitation(invitation.sender_user_id),
+            },
+        )
+        .await
+        .or_raise(Self::denied)?;
+        AuditService::log(
+            ctx,
+            input.ip_address,
+            AuditEvent::JoinSiteMember {
+                user_id: actor_user_id,
+                site_id: invitation.site_id,
+                joining_user_id: invitation.sender_user_id,
             },
         )
         .await
@@ -521,6 +533,7 @@ WHERE invitation_id = $1 AND accepted = FALSE
                 },
                 created_by: actor_user_id,
             },
+            input.ip_address,
         )
         .await
         .or_raise(Self::denied)?;
@@ -586,6 +599,7 @@ WHERE invitation_id = $1 AND accepted = FALSE
                 },
                 created_by: actor_user_id,
             },
+            input.ip_address,
         )
         .await
         .or_raise(Self::denied)?;
@@ -722,6 +736,7 @@ WHERE invitation_id = $1 AND accepted = FALSE
                             },
                             created_by: reviewer_user_id,
                         },
+                        input.ip_address,
                     )
                     .await?;
                 }

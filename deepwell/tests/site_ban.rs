@@ -89,6 +89,9 @@ async fn clear_site_membership(runner: &TestRunner, site_id: i64, user_id: i64) 
                 "site_id": site_id,
                 "user_id": user_id,
                 "removed_by": ADMIN_USER_ID,
+
+                "ip_address": common::IP_ADDRESS,
+                "reason": "test membership removal",
             }),
         );
     }
@@ -267,6 +270,8 @@ async fn lifecycle_membership_blocking_and_audit() {
                 },
             },
             "created_by": ADMIN_USER_ID,
+
+            "ip_address": common::IP_ADDRESS,
         }),
     );
 
@@ -453,6 +458,8 @@ async fn lifecycle_membership_blocking_and_audit() {
                 },
             },
             "created_by": ADMIN_USER_ID,
+
+            "ip_address": common::IP_ADDRESS,
         }),
     );
 
