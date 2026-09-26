@@ -163,6 +163,14 @@ export function collectSelectorTexts(rules) {
   return selectors;
 }
 
+export function firstRulesForSelectors(rules, selectors) {
+  const firstBySelector = new Map();
+  for (const rule of rules) {
+    if (!firstBySelector.has(rule.selector)) firstBySelector.set(rule.selector, rule);
+  }
+  return selectors.map((selector) => firstBySelector.get(selector) ?? {selector, atContext: []});
+}
+
 // Rank reference selectors by how badly they are represented in the candidate.
 export function rankSelectorDiffs({referenceRules, referenceCounts, candidateCounts}) {
   const referenceSelectors = collectSelectorTexts(referenceRules);

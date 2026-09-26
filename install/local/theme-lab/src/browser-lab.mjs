@@ -666,27 +666,36 @@ export async function collectViewportOverflow(page, viewports) {
       void getComputedStyle(document.body).width;
       const root = document.documentElement;
       const content = document.querySelector("#page-content");
-      const offenders = [...document.querySelectorAll("body *")]
-        .map((element) => {
-          const rect = element.getBoundingClientRect();
-          const right = Math.max(0, rect.right - root.clientWidth);
-          let ancestor = element.parentElement;
-          let clipped = false;
-          while (ancestor && ancestor !== document.body) {
-            const ancestorStyle = getComputedStyle(ancestor);
-            const ancestorRect = ancestor.getBoundingClientRect();
-            if (
-              ["auto", "scroll", "hidden", "clip"].includes(ancestorStyle.overflowX) &&
-              ancestorRect.right <= root.clientWidth + 2 &&
-              rect.right > ancestorRect.right + 2
-            ) {
-              clipped = true;
-              break;
-            }
-            ancestor = ancestor.parentElement;
+      // Single document-order pass. Each element inherits the tightest clipping
+      // right-edge from its ancestors instead of re-walking the full ancestor
+      // chain (and forcing layout with getComputedStyle/getBoundingClientRect
+      // per ancestor) for every element. `querySelectorAll("body *")` yields
+      // document order, so a parent is always resolved before its children.
+      // The clip test is existential over ancestors, so the minimum qualifying
+      // right-edge is exactly equivalent to testing each ancestor in turn.
+      const clipOverflows = new Set(["auto", "scroll", "hidden", "clip"]);
+      const clipBound = new Map([[document.body, null]]);
+      const rows = [];
+      for (const element of document.querySelectorAll("body *")) {
+        const parent = element.parentElement;
+        let bound = clipBound.get(parent) ?? null;
+        if (parent && parent !== document.body) {
+          const parentRect = parent.getBoundingClientRect();
+          const parentStyle = getComputedStyle(parent);
+          if (
+            clipOverflows.has(parentStyle.overflowX) &&
+            parentRect.right <= root.clientWidth + 2
+          ) {
+            bound = bound === null ? parentRect.right : Math.min(bound, parentRect.right);
           }
-          return {element, rect, overflow_px: right, clipped};
-        })
+        }
+        clipBound.set(element, bound);
+        const rect = element.getBoundingClientRect();
+        const overflow_px = Math.max(0, rect.right - root.clientWidth);
+        const clipped = bound !== null && rect.right > bound + 2;
+        rows.push({element, rect, overflow_px, clipped});
+      }
+      const offenders = rows
         .filter((row) => row.overflow_px > 0.5 && !row.clipped)
         .sort((a, b) => b.overflow_px - a.overflow_px)
         .slice(0, 5)
