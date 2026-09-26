@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "0d56ad5dd3c63efd80fe31ac2761839a523131cb052a0452113d789c2823d300",
+  "base_source_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
+  "raw_jp_overrides_sha256": "312b8bb6ad2092f90fb129866a9670af165fcf2e9ecc7cf56f04bbcdb0fa205b",
+  "jp_overrides_sha256": "6a0cc52d1af1d403bc1f92cfff6691b79611506a37936fcc89822ce9a9c1ebb6",
+  "semantic_css_sha256": "9ffe2b4c8fd8c0f7108acacb07fd5f1ef1046e88d69df44a2690fc1ae9551989",
+  "canonical_override_sha256": "13af09935c4dc012c8dbd6ea06ea8d2083006ad3d4029e15c864c48420304b94",
+  "adaptation_block_count": 14,
+  "raw_override_rule_count": 71,
+  "canonical_override_rule_count": 54,
+  "exact_duplicate_rules_removed": 17,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: ouroborous sidebar long-label rhythm",
+      "rationale": "Keep the Ouroborous neon sidebar treatment while preventing the JP long-label and toggle line boxes from colliding.",
+      "sha256": "97b2652e48e6eda8290d1e040fecdf214ab25fa8cd83ee4f5218f0643aa4c6b0",
+      "selectors": [
+        "#side-bar .collapsible-block-link",
+        "#side-bar .collapsible-block-unfolded-link"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: ouroborous sidebar long-label rhythm revision 2",
+      "rationale": "Keep the Ouroborous neon sidebar treatment while preventing the JP long-label and toggle line boxes from colliding.",
+      "sha256": "8e41b6e0e85b711d7cf922738f681cc48045628b2851fe5a51133ccf1b7513e3",
+      "selectors": [
+        "#side-bar .collapsible-block-link",
+        "#side-bar .collapsible-block-unfolded-link",
+        "#side-bar .side-block .collapsible-block .collapsible-block-link"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: Ouroborous small-text link contrast",
+      "rationale": "SCP-JP interactive acceptance: Ouroborous small-text link contrast",
+      "sha256": "504f9746383357af8ab221ec632213ca9883699728b8ad3df6b5340eb1c99c5b",
+      "selectors": [
+        "#action-area a",
+        "#action-area a:focus-visible",
+        "#action-area a:hover",
+        "#main-content a",
+        "#main-content a:focus-visible",
+        "#main-content a:hover",
+        "#side-bar .collapsible-block-link",
+        "#side-bar .collapsible-block-unfolded-link",
+        "#side-bar .side-block .collapsible-block .collapsible-block-link",
+        "#side-bar .side-block a",
+        "#side-bar .side-block a:focus-visible",
+        "#side-bar .side-block a:hover"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up: ouroborous-theme",
+      "rationale": "Bound every sidebar child link to the usable neon panel width so long Japanese labels wrap rather than disappear beyond its edge.",
+      "sha256": "2019edd1a44d45128cef246b9772a3f17d98e158aac09c515d496bea1f7923a6",
+      "selectors": [
+        "#side-bar .collapsible-block-unfolded a",
+        "#side-bar .side-block a"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up v2: ouroborous-theme",
+      "rationale": "Keep the Ouroborous neon sidebar treatment while preventing the JP long-label and toggle line boxes from colliding.",
+      "sha256": "a028f62d0f09a2e569b7b958a9aaa6b349c504815959ec3b9d5c8c5bf523b2d9",
+      "selectors": [
+        "#action-area a",
+        "#action-area a:focus-visible",
+        "#action-area a:hover",
+        "#main-content a",
+        "#main-content a:focus-visible",
+        "#main-content a:hover",
+        "#side-bar .collapsible-block-link",
+        "#side-bar .collapsible-block-unfolded-link",
+        "#side-bar .side-block .collapsible-block .collapsible-block-link",
+        "#side-bar .side-block a",
+        "#side-bar .side-block a:focus-visible",
+        "#side-bar .side-block a:hover",
+        "#u-credit-otherwise .creditRate",
+        "#u-credit-otherwise .modalbox",
+        "#u-credit-view .creditRate",
+        "#u-credit-view .modalbox"
+      ],
+      "at_contexts": [
+        "@media (max-width: 600px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v1: ouroborous-theme",
+      "rationale": "Keep the submenu toggle below its section heading so the neon divider and Japanese text do not collide at 320px.",
+      "sha256": "8cc9ee43c76ac8f9f3413b63ba11d8fe5649f98d6a5583f7252e12cb9ce6a0f5",
+      "selectors": [
+        "#side-bar .side-block .collapsible-block-link",
+        "#side-bar .side-block .heading"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v2: ouroborous-theme",
+      "rationale": "Error text must read against Ouroborous's charcoal dialog while retaining the red warning frame.",
+      "sha256": "c3138c42ae9961023afd1caf267ed460c99f4f8143b1895ebaf580207e3fe6f3",
+      "selectors": [
+        "#odialog-container .owindow.error #modal-title",
+        "#odialog-container .owindow.error .modal-body",
+        "#odialog-container .owindow.error .modal-message-extra"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive image-review repair v1: ouroborous-theme",
+      "rationale": "The other-license modal's return affordance collapsed into a narrow vertical button at 320px; reserve enough inline space for the Japanese label.",
+      "sha256": "3a1cfa5493e0d3647d4f4c3f839bccc6b60ddf51288533fde014e4b1c6f4c980",
+      "selectors": [
+        "#u-credit-otherwise .modalbox a[href=\"#u-credit-view\"]"
+      ],
+      "at_contexts": [
+        "@media (max-width: 600px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header refinement v5: ouroborous-theme",
+      "rationale": "Preserve the near-black action panel while making its dark red action labels identifiable.",
+      "sha256": "f89ac58790be560abceffc7f61d9311c7497c58241b2e2526f0a271f4641e999",
+      "selectors": [
+        "#page-options-bottom a",
+        "#page-options-bottom a:hover",
+        "#page-options-bottom-2 a",
+        "#page-options-bottom-2 a:hover"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v21: ouroborous-theme",
+      "rationale": "Direct mobile image review: Ouroborous' active red tab keeps the browser-default black label, which disappears against the saturated fill. Preserve the red tab and use the theme's high-contrast light ink.",
+      "sha256": "e36f755e8464e619855ff61556c9e44a8878cb9e9164a7da7b210671913a51dd",
+      "selectors": [
+        "#page-content .yui-navset .yui-nav a",
+        "#page-content .yui-navset .yui-nav a em",
+        "#page-content .yui-navset .yui-nav a:focus-visible",
+        "#page-content .yui-navset .yui-nav a:focus-visible em",
+        "#page-content .yui-navset .yui-nav a:hover",
+        "#page-content .yui-navset .yui-nav a:hover em"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v23: ouroborous-theme",
+      "rationale": "The tab text is painted by nested YUI list/label layers; make every visible label layer inherit the pale identity ink against the active red strip.",
+      "sha256": "3234e499e28ba37e3c83bc02bef27078292f72618fbfe08f44c6f9abf5e75e13",
+      "selectors": [
+        "#page-content .yui-navset .yui-nav li a",
+        "#page-content .yui-navset .yui-nav li a *",
+        "#page-content .yui-navset .yui-nav li a::after",
+        "#page-content .yui-navset .yui-nav li a::before",
+        "#page-content .yui-navset .yui-nav li a:focus-visible",
+        "#page-content .yui-navset .yui-nav li a:focus-visible *",
+        "#page-content .yui-navset .yui-nav li a:hover",
+        "#page-content .yui-navset .yui-nav li a:hover *"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v24: ouroborous-theme",
+      "rationale": "The article table header uses default black ink over Ouroborous' saturated red cell. Preserve the red treatment with readable pale labels.",
+      "sha256": "93ef64757d38c14a27258df95aa1b7368646810827e22c16c9ea61d19e982a2f",
+      "selectors": [
+        "#page-content table.wiki-content-table th",
+        "#page-content table.wiki-content-table th *",
+        "#page-content table.wiki-content-table th::after",
+        "#page-content table.wiki-content-table th::before",
+        "#u-credit-view .modalbox .modalbox-title",
+        "#u-credit-view .modalbox .modalbox-title *",
+        "#u-credit-view .modalbox .modalbox-title::after",
+        "#u-credit-view .modalbox .modalbox-title::before"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v28: ouroborous-theme",
+      "rationale": "The otherwise-credit modal back control inherited a narrow theme action width, wrapping the Japanese label vertically. Keep its red modal styling and provide a content-sized, non-wrapping target at every viewport.",
+      "sha256": "0b33bc9aac860fea31555c2b4f14d05800454749dcf8c273290538aa0e74ab14",
+      "selectors": [
+        "#u-credit-otherwise .modalbox .credit-back",
+        "#u-credit-otherwise .modalbox .credit-back a[href=\"#u-credit-view\"]"
+      ],
+      "at_contexts": []
+    }
+  ]
+}

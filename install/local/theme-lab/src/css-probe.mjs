@@ -141,7 +141,7 @@ export function parseStyleSheet(cssText) {
       } else {
         for (const selector of splitTopLevel(prelude, ",")) {
           const trimmed = selector.trim();
-          if (trimmed) rules.push({selector: trimmed, atContext: [...atContext], prelude});
+          if (trimmed) rules.push({selector: trimmed, atContext: [...atContext], prelude, body});
         }
       }
       index = close + 1;

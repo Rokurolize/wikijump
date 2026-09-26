@@ -17,7 +17,7 @@
     "slug": "theme:hansarp",
     "title": "HANSARP Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:hansarp/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "d8484393306d5ae7ded365f3a0a611258213a0dc9cb011829015802bbfbaa01e",
       "updated_at": "2026-09-03T13:21:03+00:00",
       "entity_uuid": "656941e4-01cc-474a-bc40-ea9c09b84741",
@@ -26,11 +26,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 14
+      "revisions": 14,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:hansarp"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:hansarp/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "f398f2ab409800a156552d37382cbd396a6745d6bbdd794f3f39ab17c5fa78dd",
       "updated_at": "2024-09-06T10:28:57+00:00",
       "entity_uuid": "b14f758e-8b4b-4b6e-a0df-ea3414df9f8b",
@@ -38,7 +43,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:hansarp"
+      }
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
@@ -88,7 +98,7 @@
     "base_family": "black-highlighter"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_hansarp/theme_hansarp_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -111,5 +121,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/hansarp/assets.json",
-  "asset_dependency_decision_count": 49
+  "asset_dependency_decision_count": 49,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
+    "jp_overrides_sha256": "e75a54a30d029247f39bd328695edd3d5408d50a9013b1c9e792022a0f37f40c",
+    "semantic_css_sha256": "dc02be0110236c51e6790f00f8bf54758606925c5ab18124cd785803f90e3a52",
+    "canonical_override_sha256": "26b1d1bf88b4da6459ab1a6a199291caeb7966403c813ebad2b4a0a70632253f",
+    "exact_duplicate_rules_removed": 0
+  }
 }

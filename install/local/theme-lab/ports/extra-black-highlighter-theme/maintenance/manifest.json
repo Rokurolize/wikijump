@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "19896ae34d3300789fa3c22063352a88d48547ef5abd6ac62cf1abb685f18ae4",
+  "base_source_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
+  "raw_jp_overrides_sha256": "65d20eadc45baaad41412ec5f933bd10edfd2af42c529d1caa85d51721f987c2",
+  "jp_overrides_sha256": "9a3037a767f06a018e02a1923de3205d18706fab5610f3d1751eec05fbcb5c95",
+  "semantic_css_sha256": "e9f0a4f35f57accf016ff5884aa272496de63d2eab5bb166c915a2f39a1ca87b",
+  "canonical_override_sha256": "46f944510c4205588ae0b4d79161d35af7bf213c88fe74115a9b1356c9decc95",
+  "adaptation_block_count": 3,
+  "raw_override_rule_count": 7,
+  "canonical_override_rule_count": 6,
+  "exact_duplicate_rules_removed": 1,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: extra-black-highlighter-theme account and navigation behavior",
+      "rationale": "BHL-derived sidebar uses the declared light menu-text token on its dark expanded section.",
+      "sha256": "c1e79f9a309a9a5db750adf7716c56494da901c7e46de43adf71ebddce9f42c9",
+      "selectors": [
+        "#side-bar .collapsible-block-unfolded",
+        "#side-bar .collapsible-block-unfolded a",
+        "#side-bar .collapsible-block-unfolded-link"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v1: extra-black-highlighter-theme",
+      "rationale": "Keep the collapsed submenu affordance legible on the BHL-derived dark sidebar panel.",
+      "sha256": "209dfb82ace0b643f4b8612462e111c4ee5edb985d2d0d18e0df5c838a66e6f1",
+      "selectors": [
+        "#side-bar .collapsible-block-link",
+        "#side-bar .collapsible-block-unfolded-link"
+      ],
+      "at_contexts": []
+    }
+  ]
+}

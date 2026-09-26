@@ -17,7 +17,7 @@
     "slug": "theme:minimalist-bhl",
     "title": "Minimalist BHL Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:minimalist-bhl/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "d076f29e54167c0adc56808ccce19a17511162997bd4816470cb34812a7e282a",
       "updated_at": "2026-04-12T05:12:17+00:00",
       "entity_uuid": "47a8ad2e-f1ec-4031-ae3c-852b87dd1cfa",
@@ -26,11 +26,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 107
+      "revisions": 107,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:minimalist-bhl"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:minimalist-bhl/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "6e5daba96afeb10ce3e4f49bc436920f6c0ba2ac4937c072030c59e43e80f3a0",
       "updated_at": "2023-10-23T11:53:19+00:00",
       "entity_uuid": "398bad62-9c4b-460b-90ca-1bd483ed636a",
@@ -38,7 +43,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:minimalist-bhl"
+      }
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
@@ -100,7 +110,7 @@
     "base_family": "black-highlighter"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_minimalist-bhl/theme_minimalist-bhl_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -108,5 +118,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/minimalist-bhl/assets.json",
-  "asset_dependency_decision_count": 39
+  "asset_dependency_decision_count": 39,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
+    "jp_overrides_sha256": "3485e93b644e336787140a58ab8c177d38c6680ed0f3382f008d96b9b1b854f6",
+    "semantic_css_sha256": "e51bec70c76fde9bb969bbc90daf0a7f31fecd3cfc778e926398850fbb7eb4ce",
+    "canonical_override_sha256": "3bf430555784a16f0df9d4f219d8a9344490ed2befe42d73265e5e297660dfd1",
+    "exact_duplicate_rules_removed": 13
+  }
 }

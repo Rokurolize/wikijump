@@ -53,8 +53,24 @@
       "source_url": "https://scp-jp.github.io/files/theme/night-rush-theme/style0.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "64d2cc1f38ac04402e0ab6f6ace602e7a684ba2a27dca665b006677dfb803505",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as e70df47be73e7572ae4d1597226cf06ad86eba650a511a51e689749a3a24f658.css with SHA-256 e70df47be73e7572ae4d1597226cf06ad86eba650a511a51e689749a3a24f658; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.github.io/files/theme/night-rush-theme/style0.css",
+      "sha256": "e70df47be73e7572ae4d1597226cf06ad86eba650a511a51e689749a3a24f658",
+      "asset_file": "e70df47be73e7572ae4d1597226cf06ad86eba650a511a51e689749a3a24f658.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://scp-jp.github.io/files/theme/night-rush-theme/style0.css",
+      "final_url": "https://scp-jp.github.io/files/theme/night-rush-theme/style0.css",
+      "sha256": "e70df47be73e7572ae4d1597226cf06ad86eba650a511a51e689749a3a24f658",
+      "normalized_text_sha256": "e70df47be73e7572ae4d1597226cf06ad86eba650a511a51e689749a3a24f658",
+      "bytes": 15841,
+      "content_type": "text/css",
+      "asset_file": "e70df47be73e7572ae4d1597226cf06ad86eba650a511a51e689749a3a24f658.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }

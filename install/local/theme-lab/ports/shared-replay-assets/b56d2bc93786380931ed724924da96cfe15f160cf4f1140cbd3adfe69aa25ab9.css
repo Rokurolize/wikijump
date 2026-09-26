@@ -1,0 +1,220 @@
+@supports(display:grid) {
+    :root {
+     /* S-CSS-P Integration */
+     /* If you're making a new CSS theme, please include the following three variables at minimum. */
+     --theme-base: "black-highlighte";
+     /* must be either "nuscp" or "sigma9" */
+     --theme-id: "Extra-BHL-theme";
+     /* set this to the URL of your theme's page - eg for "component:ar-theme", set it to "ar-theme" */
+     --theme-name: "Extra Black Highlighter Theme";
+     /* set this to your theme's full name */
+     /* New Vars */
+     --swatch-menubg-extra-dark-color: 30, 30, 32;
+
+     /* Old Vars */
+     --black-monochrome: 20, 22, 24;
+     --light-pale-gray-monochrome: 250, 250, 250;
+     --bright-accent: var(--pale-accent);
+     /* Primary Theme Colors */
+     --swatch-background: var(--swatch-menubg-black-color);
+     /* Background and Header Colors */
+     --background-gradient-color: 10, 10, 10;
+     --header-gradient-color-bottom: var(--medium-accent);
+     --header-gradient-color-middle: var(--swatch-menubg-black-color);
+     --header-gradient-color-top: var(--swatch-menubg-black-color);
+     /* Primary Text Colors */
+     --swatch-text-light: var(--light-pale-gray-monochrome);
+     --swatch-text-general: var(--swatch-text-light);
+     /* Primary Menu Colors */
+     --swatch-menubg-color: var(--swatch-menubg-black-color);
+     --swatch-menutxt-general-color: var(--swatch-menutxt-light-color);
+     /* Colors for Secondary & Tertiary items like Blockquote and YUI Tabs */
+     --swatch-secondary-color: var(--swatch-menubg-dark-color);
+     --swatch-tertiary-color: var(--swatch-menubg-medium-dark-color);
+     --swatch-alternate-color: var(--swatch-primary);
+
+     /* Text Colors for Secondary & Tertiary items like Sidebar Headers and Top-Bar Menu Text */
+     --swatch-text-secondary-color: var(--swatch-menutxt-light-color);
+     --swatch-text-tertiary-color: var(--swatch-menutxt-light-color);
+
+     /* Primary Header Colors */
+     --swatch-topmenu-border-color: var(--swatch-menubg-black-color);
+     --swatch-topmenu-bg-color: var(--swatch-menubg-extra-dark-color);
+
+     --rating-module-text-color: var(--swatch-text-general);
+     --rating-module-button-color: var(--swatch-text-general);
+     --rating-module-button-cancel-color: 100, 100, 100;
+
+     --ui-wght: 500;
+     --ui-hvr-wght: 600;
+
+     --gradient-header: linear-gradient(to bottom,
+     rgb(var(--header-gradient-color-bottom)) 0%,
+     rgb(var(--header-gradient-color-middle)) 90%,
+     rgb(var(--header-gradient-color-top)) 100%);
+
+     --diagonal-stripes: repeating-linear-gradient(45deg,
+     hsla(0, 0%, 100%, 0),
+     hsla(0, 0%, 100%, 0) 0.25vh,
+     rgba(var(--swatch-menubg-extra-dark-color), 0.1) 0.35vh,
+     rgba(var(--swatch-menubg-extra-dark-color), 0.2) 0.5vh);
+    }
+
+    #main-content {
+     --pagetags-title-text: var(--swatch-text-secondary-color);
+    }
+
+    #header {
+     --search-icon-color: var(--swatch-text-tertiary-color);
+    }
+
+    #top-bar {
+     /* ===DROPDOWN MENU=== */
+     --dropdown-bg-color: var(--swatch-menubg-extra-dark-color), 0.9;
+    }
+
+    ::-moz-selection {
+     background: rgb(var(--swatch-primary-darkest));
+    }
+
+    ::selection {
+     background: rgb(var(--swatch-primary-darkest));
+    }
+
+    body {
+     -webkit-font-smoothing: subpixel-antialiased;
+     -moz-osx-font-smoothing: auto;
+    }
+
+    #search-top-box-input {
+     background-color: rgb(var(--swatch-menubg-extra-dark-color));
+    }
+
+    #account-options {
+     background: var(--gradient-header);
+    }
+
+    #login-status {
+     color: rgba(var(--swatch-menutxt-light-color), 0.5);
+    }
+
+    #login-status ul a {
+     color: rgb(var(--swatch-menutxt-light-color));
+    }
+
+    span.printuser {
+     color: rgb(var(--swatch-menutxt-light-color));
+    }
+
+    .page-rate-widget-box {
+     background: linear-gradient(to bottom,
+     rgba(var(--header-gradient-color-bottom), 0.5) 0%,
+     rgba(var(--header-gradient-color-middle), 0.15) 90%,
+     rgba(var(--header-gradient-color-top), 0.15) 100%);
+     border: 0.0625rem solid rgba(var(--swatch-menubg-medium-color), 0.25);
+    }
+
+    #top-bar div.mobile-top-bar>ul>li>ul>li>a,
+    #top-bar div.top-bar>ul>li>ul>li>a {
+     box-shadow: inset 0 0 0 0.0625rem rgba(var(--swatch-menubg-medium-color), 0.15);
+    }
+
+    #interwiki {
+     background-color: transparent;
+    }
+
+    #interwiki .heading p,
+    #side-bar .heading p,
+    #side-bar .collapsible-block .collapsible-block-link {
+     color: rgb(var(--swatch-menutxt-light-color));
+    }
+
+    blockquote,
+    .blockquote,
+    .code {
+     --swatch-border-color: var(--swatch-menubg-light-color);
+     border-color: rgba(var(--swatch-border-color), 0.25);
+    }
+
+    .yui-navset .yui-nav,
+    .yui-navset .yui-navset-top .yui-nav {
+     --box-shadow: rgb(var(--swatch-primary-darkest));
+     border-color: rgb(var(--swatch-primary-darkest));
+    }
+
+    .yui-navset .yui-nav li,
+    .yui-navset .yui-navset-top .yui-nav li {
+     --box-shadow: rgb(var(--swatch-primary-darkest));
+    }
+
+    .yui-navset .yui-nav a,
+    .yui-navset .yui-navset-top .yui-nav a {
+     background-color: rgb(var(--swatch-menubg-extra-dark-color));
+     color: rgb(var(--swatch-text-general));
+    }
+
+    .yui-navset .yui-nav .selected,
+    .yui-navset .yui-navset-top .yui-nav .selected {
+     background-color: rgb(var(--swatch-primary-darkest));
+    }
+
+    table.wiki-content-table th {
+     background: rgb(var(--swatch-secondary-color));
+    }
+
+    table.wiki-content-table th,
+    table.wiki-content-table tr {
+     border: 0.0625rem solid rgba(var(--swatch-menubg-medium-color), 0.25) !important;
+    }
+
+    table.wiki-content-table td {
+     border: 0.0625rem solid rgba(var(--swatch-menubg-light-color), 0.25) !important;
+    }
+
+    textarea,
+    input.text,
+    input.checkbox,
+    div.note,
+    #lock-info {
+     border: 0.0625rem solid rgba(var(--swatch-menubg-light-color), 0.25);
+     background-color: rgb(var(--swatch-menubg-extra-dark-color));
+     color: rgb(var(--swatch-text-light));
+    }
+
+    .code pre span[class*="hl-"] {
+     -webkit-filter: invert(1) hue-rotate(180deg);
+     filter: invert(1) hue-rotate(180deg);
+    }
+
+    .owindow .modal-body img {
+     background-color: transparent !important;
+    }
+
+    .hovertip {
+     border: 0.0625rem solid rgba(var(--swatch-menubg-light-color), 0.25);
+     background-color: rgb(var(--swatch-menubg-extra-dark-color)) !important;
+     color: rgb(var(--swatch-text-light)) !important;
+    }
+
+    #main-content .page-tags span a:not([href^="/system:page-tags/tag/_"]),
+    #main-content .page-tags span a:visited:not([href^="/system:page-tags/tag/_"]) {
+     color: rgb(var(--swatch-primary-secondary-color));
+    }
+
+    #footer,
+    #license-area {
+     --link-color: var(--swatch-text-tertiary-color);
+     --hover-link-color: var(--swatch-text-tertiary-color);
+     --visited-link-color: var(--swatch-text-tertiary-color);
+     color: rgb(var(--swatch-text-general));
+    }
+
+    div[id*="page-options-bottom"]>a::after {
+     background-color: rgb(var(--swatch-text-secondary-color));
+    }
+
+    /* ===BUTTONS=== */
+    div[id*="page-options-bottom"]>a::after {
+     background-color: rgb(var(--swatch-text-tertiary-color));
+    }
+}

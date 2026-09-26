@@ -17,7 +17,7 @@
     "slug": "theme:skipos",
     "title": "SkipOS Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:skipos/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "846904b0214ea2a126cccdd984834608efc30236df82ebd3b1b86da36c8969dd",
       "updated_at": "2026-04-12T05:29:02+00:00",
       "entity_uuid": "95a8834f-21e7-42ca-9a81-131fb839f6ba",
@@ -26,7 +26,12 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 27
+      "revisions": 27,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:skipos"
+      }
     },
     "jp": {
       "status": "confirmed-absent-by-targeted-xmlrpc",
@@ -64,7 +69,7 @@
     "base_family": "basalt"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_skipos/theme_skipos_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "human-port-candidate.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -104,5 +109,15 @@
       "missing": 0,
       "external_requests_during_build": 0
     }
+  },
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507",
+    "jp_overrides_sha256": "baf293342ddeb81d32b3865a64394f60c28d888f97b461bf397f6dfe9727d6d8",
+    "semantic_css_sha256": "ad02deabef0ee4acb963c5574aff2fca9f80e2c3f4056b3df4d0c7624d486ee8",
+    "canonical_override_sha256": "5a8993fbae5938659f7ce8d340f8ecf5baf49bb99d99b252b097ad5cfc0416df",
+    "exact_duplicate_rules_removed": 7
   }
 }

@@ -17,7 +17,7 @@
     "slug": "theme:ouroborous-theme",
     "title": "Ouroborous Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:ouroborous-theme/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "b172231574fa6f71b41be2fb5065293aafc9c772d808a268009798e7aba4ab4f",
       "updated_at": "2023-05-05T17:15:28+00:00",
       "entity_uuid": "a6f68a47-ca92-445f-8eb1-f1d3749e9747",
@@ -26,11 +26,16 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 41
+      "revisions": 41,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:ouroborous-theme"
+      }
     },
     "jp": {
       "status": "present",
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:ouroborous-theme/source.wikidot.txt",
+      "source_path": "existing-jp.wikidot.txt",
       "sha256": "154b816e5c5de3fef3ea3fa0f0b9dbe5688cbd936d8ba60eeb60fb8eb5d35b58",
       "updated_at": "2025-01-19T12:38:49+00:00",
       "entity_uuid": "dd9291fc-8ec5-4c66-9cb8-3e8b0b926e87",
@@ -38,7 +43,12 @@
         "en",
         "テーマ"
       ],
-      "absence_run": null
+      "absence_run": null,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "jp",
+        "slug": "theme:ouroborous-theme"
+      }
     },
     "existing_jp_audit": "existing-jp-current-and-valid",
     "technical_spec_version": "1.4",
@@ -86,10 +96,11 @@
     "base_family": "black-highlighter"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_ouroborous-theme/theme_ouroborous-theme_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
+  "flattened_css_transforms": "localization-transforms.json",
   "candidate_origin": "current official SCP-JP page source",
   "candidate_source_hash": "7df28edb8551211e95ca844f819148a0d7de77561b0ef28baca38bec39e0bed9",
   "page_assets": [
@@ -121,5 +132,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-current-and-valid",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/ouroborous-theme/assets.json",
-  "asset_dependency_decision_count": 52
+  "asset_dependency_decision_count": 52,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
+    "jp_overrides_sha256": "6a0cc52d1af1d403bc1f92cfff6691b79611506a37936fcc89822ce9a9c1ebb6",
+    "semantic_css_sha256": "9ffe2b4c8fd8c0f7108acacb07fd5f1ef1046e88d69df44a2690fc1ae9551989",
+    "canonical_override_sha256": "13af09935c4dc012c8dbd6ea06ea8d2083006ad3d4029e15c864c48420304b94",
+    "exact_duplicate_rules_removed": 17
+  }
 }

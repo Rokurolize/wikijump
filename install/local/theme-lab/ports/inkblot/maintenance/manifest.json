@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "cd23181e4484790b7f5ced563c672496f1466699effa0f1eae8deb2dd03b5110",
+  "base_source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
+  "raw_jp_overrides_sha256": "9d862d91c8c5ff94943ab7199e5afb4c3070e8861ae63b3a3163ce12b0db3ccd",
+  "jp_overrides_sha256": "19531838f8221b4c4bc9cfa0f8102f32c0c5a17b4c918a77ce3517add0d4ce04",
+  "semantic_css_sha256": "c344fe092573dd00c53b9142c67a79df33fd8e52f53864ccbb22183e7ee12084",
+  "canonical_override_sha256": "903eac17f74642a33b188ee1b52bca4cd793125ea93d6df0cb7b00e88b710067",
+  "adaptation_block_count": 9,
+  "raw_override_rule_count": 35,
+  "canonical_override_rule_count": 35,
+  "exact_duplicate_rules_removed": 0,
+  "active_tags": [],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up v2: inkblot",
+      "rationale": "Keep the other-license modal's final link and back control inside the 320px viewport and allow the modal itself to scroll.",
+      "sha256": "4697c50a96936e0a19fd480f520e465fed39aa71194352bff49e1c9618ad8cf6",
+      "selectors": [
+        "#u-credit-otherwise .modalbox",
+        "#u-credit-otherwise .modalbox a[href=\"#u-credit-view\"]",
+        "#u-credit-otherwise .modalcontainer"
+      ],
+      "at_contexts": [
+        "@media (max-width: 600px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v1: inkblot",
+      "rationale": "Keep the circular inkblot Rate controls visibly distinguishable as increase/decrease actions.",
+      "sha256": "ddc29576a760d73465c709394f1e3f7f60288ee98102fd8684a6d6ec366d7252",
+      "selectors": [
+        ".creditRate .cancel a::before",
+        ".creditRate .ratedown a::before",
+        ".creditRate .rateup a::before",
+        ".page-rate-widget-box .cancel a::before",
+        ".page-rate-widget-box .ratedown a::before",
+        ".page-rate-widget-box .rateup a::before"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive image-review repair v1: inkblot",
+      "rationale": "Give the decorative Inkblot rating dots semantic text marks in a known glyph font; the preceding icon-font override renders an empty circle for these characters.",
+      "sha256": "ed9bc073a77c8dc04b06dc891a2420ee1e50ee325e522fc06d53a97cdfae797b",
+      "selectors": [
+        ".creditRate .cancel a",
+        ".creditRate .cancel a::after",
+        ".creditRate .cancel a::before",
+        ".creditRate .ratedown a",
+        ".creditRate .ratedown a::before",
+        ".creditRate .rateup a",
+        ".creditRate .rateup a::before",
+        ".page-rate-widget-box .cancel a",
+        ".page-rate-widget-box .cancel a::after",
+        ".page-rate-widget-box .cancel a::before",
+        ".page-rate-widget-box .ratedown a",
+        ".page-rate-widget-box .ratedown a::before",
+        ".page-rate-widget-box .rateup a",
+        ".page-rate-widget-box .rateup a::before"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header fix v3: inkblot",
+      "rationale": "The current 320px other-license image shows only a sliver of the return control at the modal's lower edge. Keep the existing scrollable modal, but return the back affordance to normal flow as a full-width-readable button.",
+      "sha256": "2888b2c42d7ed0503fb1bd4bddb434c0c13d302e60d354630fd8d9c9fca0d5f4",
+      "selectors": [
+        "#u-credit-otherwise .modalbox",
+        "#u-credit-otherwise .modalbox a[href=\"#u-credit-view\"]"
+      ],
+      "at_contexts": [
+        "@media (max-width: 600px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v23: inkblot",
+      "rationale": "The frozen back link lives inside .credit-back, which SCP-JP's shared credit style hides for credit:view but theme CSS also suppresses in otherwise mode. Re-expose the existing parent and link only in the other-license dialog.",
+      "sha256": "640720084196d231f1ffe1d1786c55f7bd6852039c83db73dfd7dd43efc11b05",
+      "selectors": [
+        "#u-credit-otherwise .credit-back",
+        "#u-credit-otherwise .credit-back a[href=\"#u-credit-view\"]"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v33: inkblot",
+      "rationale": "Image review found the transparent footer's inherited tertiary gray made the runtime attribution almost disappear on white. Keep the transparent paper surface and use its existing dark body ink for the text.",
+      "sha256": "4fa240cd5bd0146c1a684ad70e9fbe7621b26c04412f111991fb7b9b032557c3",
+      "selectors": [
+        "#footer"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v46: inkblot",
+      "rationale": "Full-resolution post-shell review: Inkblot keeps #top-bar absolutely positioned while its imported mobile menu button is returned to flow. Reserve that menu row in the theme header so it cannot paint over the localized page title, preserving the collage and centered identity.",
+      "sha256": "26843db2d69de00ad606fefca44c053b37d587093f80e2d4d2d52b6ce7139da9",
+      "selectors": [
+        "#header",
+        "#top-bar",
+        "#top-bar .mobile-top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual review repair v1: inkblot source panes",
+      "rationale": "SCP-JP interactive visual review repair v1: inkblot source panes",
+      "sha256": "75df95189f95df32ade455d42aa85a43d95f1614b0e80e3d1b13c76197375fee",
+      "selectors": [
+        "#action-area .page-source",
+        "#action-area textarea.editor-wikitext"
+      ],
+      "at_contexts": []
+    }
+  ]
+}

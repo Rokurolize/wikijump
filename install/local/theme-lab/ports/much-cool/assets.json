@@ -67,15 +67,44 @@
       "source_url": "https://fonts.googleapis.com/css2?family=Vollkorn+SC&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "15ac495d64b799f2f4bbea4b309d1592d8305f298601b1e343b4ed14e50dd0e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 888795d810a02d2330547b09d17078fdd0111f72594b8373dd1ec9fbd5e408d6.css with SHA-256 888795d810a02d2330547b09d17078fdd0111f72594b8373dd1ec9fbd5e408d6; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.googleapis.com/css2?family=Vollkorn+SC&display=swap",
+      "sha256": "888795d810a02d2330547b09d17078fdd0111f72594b8373dd1ec9fbd5e408d6",
+      "asset_file": "888795d810a02d2330547b09d17078fdd0111f72594b8373dd1ec9fbd5e408d6.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Amuch-cool/1",
       "decision": "localize-into-package",
       "candidate_css_sha256": "15ac495d64b799f2f4bbea4b309d1592d8305f298601b1e343b4ed14e50dd0e2",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as f911fa26eda01ef225b3478c626610fdd81f74454cd588fc657fd9cf00f64aee.css with SHA-256 f911fa26eda01ef225b3478c626610fdd81f74454cd588fc657fd9cf00f64aee; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme%3Amuch-cool/1",
+      "sha256": "f911fa26eda01ef225b3478c626610fdd81f74454cd588fc657fd9cf00f64aee",
+      "asset_file": "f911fa26eda01ef225b3478c626610fdd81f74454cd588fc657fd9cf00f64aee.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Vollkorn+SC&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Vollkorn+SC&display=swap",
+      "sha256": "888795d810a02d2330547b09d17078fdd0111f72594b8373dd1ec9fbd5e408d6",
+      "normalized_text_sha256": "888795d810a02d2330547b09d17078fdd0111f72594b8373dd1ec9fbd5e408d6",
+      "bytes": 213,
+      "content_type": "text/css",
+      "asset_file": "888795d810a02d2330547b09d17078fdd0111f72594b8373dd1ec9fbd5e408d6.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Amuch-cool/1",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme%3Amuch-cool/1",
+      "sha256": "f911fa26eda01ef225b3478c626610fdd81f74454cd588fc657fd9cf00f64aee",
+      "normalized_text_sha256": "f911fa26eda01ef225b3478c626610fdd81f74454cd588fc657fd9cf00f64aee",
+      "bytes": 10121,
+      "content_type": "text/css",
+      "asset_file": "f911fa26eda01ef225b3478c626610fdd81f74454cd588fc657fd9cf00f64aee.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }

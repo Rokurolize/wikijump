@@ -49,8 +49,24 @@
       "source_url": "https://scp-jp.wdfiles.com/local--code/theme:y2k/1",
       "decision": "localize-into-package",
       "candidate_css_sha256": "80d2b3b875f0891e2f82855372cdb23b3a19d3a81db4c17dcfb9f9ca68134f62",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4.css with SHA-256 0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme:y2k/1",
+      "sha256": "0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4",
+      "asset_file": "0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://scp-jp.wdfiles.com/local--code/theme:y2k/1",
+      "final_url": "https://scp-jp.wdfiles.com/local--code/theme:y2k/1",
+      "sha256": "0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4",
+      "normalized_text_sha256": "0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4",
+      "bytes": 7372,
+      "content_type": "text/css",
+      "asset_file": "0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }

@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "0f94026cb973ca4de41bd5e5b579a5242f24ec6a5cdeb7e3f27953c21c557ae1",
+  "base_source_sha256": "e2a79c2965b4558f59b4a0884fc18563a7ee8c6ad17d27d6e5f219856044459c",
+  "raw_jp_overrides_sha256": "d24f6f4ba8a27c0d3bd8d69de2823a05413545c658044f4cf4123dd12f3aa6ea",
+  "jp_overrides_sha256": "e672d11abc8953d2ded7dad5b06cd4751398cb08edf6e0d1ff4912e7fd59408c",
+  "semantic_css_sha256": "6eafdb12b0dd4892adc031022c8633ca0cea55229ebf2c70aa1d45d93207d7dc",
+  "canonical_override_sha256": "0e900aac25db070867bf4041b43ebc434ff20dd0c74db6e79376fec959959d6a",
+  "adaptation_block_count": 5,
+  "raw_override_rule_count": 20,
+  "canonical_override_rule_count": 20,
+  "exact_duplicate_rules_removed": 0,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: isolated-terminal account and navigation behavior",
+      "rationale": "Japanese navigation labels must wrap inside the terminal menu instead of being cut off by its fixed row sizing.",
+      "sha256": "3abf4d7f16d169a9dda7d8f6ee6a2bb6759f843f79bfc7c7d74f335b1c650c14",
+      "selectors": [
+        "#side-bar .collapsible-block-link",
+        "#side-bar .collapsible-block-unfolded-link",
+        "#side-bar .side-block a",
+        "#top-bar .top-bar li a",
+        "#top-bar .top-bar li ul"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v1: isolated-terminal",
+      "rationale": "Keep the mobile drawer close control on one line and separate its Japanese label from the terminal section heading.",
+      "sha256": "fb6e03f990dd9dbfc23c7b2b17903a0ff08a5f6527553b5f7ed1931aae6ea084",
+      "selectors": [
+        "#side-bar .close-menu",
+        "#side-bar .side-block .collapsible-block-link",
+        "#side-bar .side-block .heading",
+        "#side-bar:target"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive image-review repair v1: isolated-terminal",
+      "rationale": "The mobile drawer places its collapsed toggle at zero-width absolute coordinates; restore the real label to flow so it cannot collide with the next section heading.",
+      "sha256": "5e74cb82616d08c5f0053489ffb68e8678e3e475c781e726bf7d7e974c468496",
+      "selectors": [
+        "#side-bar:target .side-block .collapsible-block",
+        "#side-bar:target .side-block .collapsible-block-link",
+        "#side-bar:target .side-block .collapsible-block-unfolded",
+        "#side-bar:target .side-block .heading"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v22: isolated-terminal",
+      "rationale": "Cross-engine mobile image review: the long Japanese collapsible label wraps into the following sidebar heading. Give each live sidebar row an intrinsic block size and explicit separation while preserving the terminal palette.",
+      "sha256": "dd1d810716f66c6b996a01289476170c3eb892de411f3a44943031d39e976a99",
+      "selectors": [
+        "#side-bar .side-block .collapsible-block",
+        "#side-bar .side-block .collapsible-block-link",
+        "#side-bar .side-block .collapsible-block-unfolded",
+        "#side-bar .side-block .collapsible-block-unfolded-link",
+        "#side-bar .side-block .heading"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    }
+  ]
+}

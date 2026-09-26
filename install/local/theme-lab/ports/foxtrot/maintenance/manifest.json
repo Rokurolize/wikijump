@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "f14d6c66818c37030344c147fd839db970b5ecce26bdfbe66d130a86df1f71ab",
+  "base_source_sha256": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
+  "raw_jp_overrides_sha256": "43f5fd47631b688c2961eab33272479683231d93988f6d97936438ab69dd7ee9",
+  "jp_overrides_sha256": "f5bd46b89765aa6a74615a56954af0e19102a32d1e7ab7ace9c23d9324274689",
+  "semantic_css_sha256": "40cbbaa1233e8ad1850ddfb8a7d856f4db6004b99db00d254e6c1925b1c3274f",
+  "canonical_override_sha256": "dda6d690c980706c7036ae0bb390a2d2736673f6368d8c08e159ec9e58d680e8",
+  "adaptation_block_count": 17,
+  "raw_override_rule_count": 92,
+  "canonical_override_rule_count": 77,
+  "exact_duplicate_rules_removed": 15,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: foxtrot account and navigation behavior",
+      "rationale": "SCP-JP interaction adaptation: place the account menu below Foxtrot's header instead of clipping it above the viewport.",
+      "sha256": "00ec9520d4bd6d1c1953511ecd9b8db882a2cb4c7d156aa0dea7945491d8411a",
+      "selectors": [
+        "#login-status #account-options"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive acceptance: foxtrot page and sidebar link contrast",
+      "rationale": "SCP-JP interaction adaptation: place the account menu below Foxtrot's header instead of clipping it above the viewport.",
+      "sha256": "46a2d4f767aaf4720edf1a787226ef0c944edc842a176540294c24d0f8e4b59d",
+      "selectors": [
+        "#action-area a",
+        "#action-area a:focus-visible",
+        "#action-area a:hover",
+        "#login-status #account-options",
+        "#main-content a",
+        "#main-content a:focus-visible",
+        "#main-content a:hover",
+        "#side-bar a",
+        "#side-bar a:focus-visible",
+        "#side-bar a:hover",
+        "#side-bar a:visited",
+        ".modalbox .credit a",
+        ".modalbox .credit a:focus-visible",
+        ".modalbox .credit a:hover"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up: foxtrot",
+      "rationale": "SCP-JP mobile header adaptation: keep the localized identity and search within independent rows at the 320px policy boundary.",
+      "sha256": "dc63df532de05338d49b50297efea3e8a2987ab97d3d720c02091ef1564c0542",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual follow-up v2: foxtrot",
+      "rationale": "SCP-JP mobile header adaptation: keep the localized identity and search within independent rows at the 320px policy boundary.",
+      "sha256": "d57f4e77c3d2adc6d63e22a843de058bc30ea8f1aa679fccef8c90bc08513800",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box",
+        "#search-top-box-form",
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance evidence fix v2: foxtrot",
+      "rationale": "Fit Foxtrot's localized site identity beside its circular logo on phone widths; the source gives the live site headings a desktop-sized left offset.",
+      "sha256": "172d8cc5ed62c553d6857aabe4f3e7238c13721dc97c82532211ee88891bfe93",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h2",
+        "#search-top-box"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header fix v3: foxtrot",
+      "rationale": "The source's zero-line-height header spans collapse the localized site title into the subtitle at phone widths. Keep both real SCP-JP labels readable in compact rows and retain Foxtrot's circular mark and TETON WY USA identity label.",
+      "sha256": "06fc18da41f159f8250d941e3df391d73f7c1746f537a274b42a2b612aa4e868",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h1 > a::after",
+        "#header h1 > a::before",
+        "#header h2",
+        "#header h2 > span",
+        "#header h2::before",
+        "#search-top-box"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header refinement v4: foxtrot",
+      "rationale": "Keep the Foxtrot type label between the site's title and subtitle instead of painting over either localized line.",
+      "sha256": "f8153d51281c288332e2265661537037f5b600b36bb187934b02361ad7497be4",
+      "selectors": [
+        "#header h1 > a::after"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header refinement v5: foxtrot",
+      "rationale": "Keep the Foxtrot type label between the site's title and subtitle instead of painting over either localized line.",
+      "sha256": "472b1d5343b6f6d9128e741fa6a2caf10c7e92ee7d1d9eb59806f096b43ddc65",
+      "selectors": [
+        "#header h1 > a::after",
+        "#header::after"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header layout correction v6: foxtrot",
+      "rationale": "Reflow the real localized site name and subtitle above the Foxtrot label; the source positioned its generated label twice and reserved desktop-sized anchor height.",
+      "sha256": "496c58dc3df73ecf2be1ab40b7b431b0ab21012d8fea7e1ef4b5af5a8424655b",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h1 > a::after",
+        "#header h2",
+        "#header h2 > span",
+        "#header h2::before",
+        "#header::after",
+        "#search-top-box"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header layout correction v7: foxtrot",
+      "rationale": "Reflow the real localized site name and subtitle above the Foxtrot label; the source positioned its generated label twice and reserved desktop-sized anchor height.",
+      "sha256": "59699ee531a5aac35180c13d03aea575bb5716976eea07dd9de9c20785093050",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 > a",
+        "#header h1 > a > span",
+        "#header h1 > a::after",
+        "#header h2",
+        "#header h2 > span",
+        "#header h2::before",
+        "#header::after",
+        "#search-top-box"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header flow repair v8: foxtrot",
+      "rationale": "The legacy logo anchor keeps a 142px inner line box despite a short heading. Position the actual site name in its semantic heading row and return the account controls to document flow so neither overlays the title.",
+      "sha256": "20a8bcc9ff0aad6e8b7c59fe7350716ddc5d39969c2cacc457e2e1e6354c8db2",
+      "selectors": [
+        "#header h1",
+        "#header h1 > a > span",
+        "#login-status"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance narrow header repair v9: foxtrot",
+      "rationale": "At the policy boundary the long subtitle wraps under the fixed hamburger. Put that subtitle below the logo's touch target and move its theme label with it.",
+      "sha256": "8fa6f5921f9704c6ce8248343dc4c7a41c8505738261afd5e04cb0dacb960b15",
+      "selectors": [
+        "#header",
+        "#header h2",
+        "#header::after"
+      ],
+      "at_contexts": [
+        "@media (max-width: 360px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v15: foxtrot",
+      "rationale": "Image-reviewed tabview repair: Foxtrot's dark-plum page inherited a white YUI tab panel with pale text, washing out the tab content. Keep its native plum surface and readable light copy inside the existing panel.",
+      "sha256": "f4128dda761329ad0bb9ccc911c80e4b7535962d0c40e354a3ad9cb79d59fdc4",
+      "selectors": [
+        "#page-content .yui-navset .yui-content",
+        "#page-content .yui-navset .yui-content a",
+        "#page-content .yui-navset .yui-content a:focus-visible",
+        "#page-content .yui-navset .yui-content a:hover"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v16: foxtrot",
+      "rationale": "Direct image + computed-style finding: the light surface was #toc inside the YUI tab's folded content, not the tab panel. Match the TOC to Foxtrot's dark-plum body and retain a readable lilac border/link treatment.",
+      "sha256": "53f8ea64b8fde6e1cd0e1dafb95ad0eeff5b31f8b66d2dd5bde1c9c60ade97f2",
+      "selectors": [
+        "#page-content #toc",
+        "#page-content #toc a",
+        "#page-content #toc a:focus-visible",
+        "#page-content #toc a:hover"
+      ],
+      "at_contexts": []
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v23: foxtrot",
+      "rationale": "At 320px Foxtrot's fixed credit-view panel is offset below the viewport, and its file rows exceed the phone width. Center only the JP credit modal; let the established file-list scroller expose full metadata/actions without clipping filenames.",
+      "sha256": "aa0d1932f86001295f4b7f564b7abbb80b09d77ec1b503c0a38bf537d11c41c5",
+      "selectors": [
+        "#action-area .file-list",
+        "#action-area .file-list-scroll",
+        "#u-credit-view:target",
+        "#u-credit-view:target .modalbox",
+        "#u-credit-view:target .modalcontainer"
+      ],
+      "at_contexts": [
+        "@media (max-width: 400px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
+      "rationale": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
+      "sha256": "a7d08f5e3645665482f335e0cfe80954a4da6781e0bbe546dc2f31f9383b6b82",
+      "selectors": [
+        "#top-bar .mobile-top-bar ul li ul",
+        "#top-bar .mobile-top-bar ul li ul li",
+        "#top-bar .mobile-top-bar ul li ul li a",
+        "#top-bar .top-bar ul li ul",
+        "#top-bar .top-bar ul li ul li",
+        "#top-bar .top-bar ul li ul li a"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    }
+  ]
+}

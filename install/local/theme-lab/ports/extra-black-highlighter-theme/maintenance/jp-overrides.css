@@ -1,0 +1,19 @@
+/* SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused. */
+@media (min-width: 768px) {
+  #search-top-box-form:hover #search-top-box-input,
+  #search-top-box-form:focus-within #search-top-box-input {
+    display: inline-block !important;
+  }
+}
+
+/* BHL-derived sidebar uses the declared light menu-text token on its dark expanded section. */
+#side-bar .collapsible-block-unfolded,
+#side-bar .collapsible-block-unfolded a {
+  color: rgb(var(--swatch-menutxt-light-color)) !important;
+}
+
+/* Keep the collapsed submenu affordance legible on the BHL-derived dark sidebar panel. */
+#side-bar .collapsible-block-link,
+#side-bar .collapsible-block-unfolded-link {
+  color: rgb(var(--swatch-menutxt-light-color)) !important;
+}

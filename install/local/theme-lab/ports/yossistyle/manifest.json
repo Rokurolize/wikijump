@@ -17,7 +17,7 @@
     "slug": "theme:yossistyle",
     "title": "YOSSISTYLE CSS THEME",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:yossistyle/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "561228038e46e76ab45e61d95570e82519bceea1aa5233addbbec324601ca4d4",
       "updated_at": "2021-09-11T01:27:54+00:00",
       "entity_uuid": "34a1dfa4-f157-4b33-a460-a93686a61da4",
@@ -26,7 +26,12 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 9
+      "revisions": 9,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:yossistyle"
+      }
     },
     "jp": {
       "status": "confirmed-absent-by-targeted-xmlrpc",
@@ -61,7 +66,7 @@
     "base_family": "black-highlighter"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_yossistyle/theme_yossistyle_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "human-port-candidate.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -69,5 +74,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/yossistyle/assets.json",
-  "asset_dependency_decision_count": 0
+  "asset_dependency_decision_count": 0,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "c9987477d0e9079b7b15c55ac608b853e69c970484dc2b5b0e6f3cd6565c442c",
+    "jp_overrides_sha256": "f0243e43ffc0e71eeaca892497eeaf378e6b4610e1459433781901be7e29b730",
+    "semantic_css_sha256": "cb48d673d08b772280e985d616003a5a97f5521058ff4467c786f0c7a5b428cb",
+    "canonical_override_sha256": "d00e71dd8f7eb85f556cf3feaa8a253b3c33cc0a39e566a6d63223703078ffc1",
+    "exact_duplicate_rules_removed": 5
+  }
 }

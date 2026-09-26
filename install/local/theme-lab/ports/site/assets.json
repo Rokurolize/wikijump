@@ -723,5 +723,7 @@
       "decision": "localize-into-package",
       "decision_evidence": "The active candidate-base.css references this local content-addressed file; bytes are SHA-256 verified and replayed without a remote fetch."
     }
-  ]
+  ],
+  "import_provenance_status": "complete",
+  "import_provenance": []
 }

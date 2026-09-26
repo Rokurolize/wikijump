@@ -17,7 +17,7 @@
     "slug": "theme:flopstyle-dark",
     "title": "Flopstyle: DARK",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:flopstyle-dark/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "31af257ac4fde398b560f6106ee4f1e916291c40141938a9fcc5b6ef95335c46",
       "updated_at": "2026-09-02T02:33:56+00:00",
       "entity_uuid": "a94d09cc-880c-4a54-a06a-bb9f68c3cab8",
@@ -27,7 +27,12 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 397
+      "revisions": 397,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:flopstyle-dark"
+      }
     },
     "jp": {
       "status": "confirmed-absent-by-targeted-xmlrpc",
@@ -184,7 +189,7 @@
     "base_family": "independent"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_flopstyle-dark/theme_flopstyle-dark_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "human-port-candidate.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -220,5 +225,15 @@
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/flopstyle-dark/assets.json",
   "asset_dependency_decision_count": 33,
-  "candidate_css_sha256": "560912abe069b287d25546ce77410dab1b83cdeac90fa5e2e0c8f7f5bbfe7cd1"
+  "candidate_css_sha256": "560912abe069b287d25546ce77410dab1b83cdeac90fa5e2e0c8f7f5bbfe7cd1",
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "77a303e9d2dc6e64c5332492fd979a8aced278ac199348cf9e7d0ba5fd66e6c5",
+    "jp_overrides_sha256": "aa39007d877704f3ac8de79d6921ad0f844532be16f89832041f86c3bed326f9",
+    "semantic_css_sha256": "d985d74abc54edfc9427d5682758ac89702b686b286abff34da4f2113a37d8a7",
+    "canonical_override_sha256": "f09a0d02f895544439ba8f0f967cb38a3f31cc66b34a8df3947372d0d0c59703",
+    "exact_duplicate_rules_removed": 3
+  }
 }

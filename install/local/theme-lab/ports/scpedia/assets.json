@@ -346,22 +346,64 @@
       "source_url": "https://fonts.bunny.net/css2?family=Roboto&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "4c1828e8284c3bf286f4a4be11a1c7b0662d752b49bef29dbe5dd80894004949",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as b8c971a4d2b2aabc20daba560481733a8147d4546ebe650e34ca0053a8621f9e.css with SHA-256 b8c971a4d2b2aabc20daba560481733a8147d4546ebe650e34ca0053a8621f9e; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.bunny.net/css2?family=Roboto&display=swap",
+      "sha256": "b8c971a4d2b2aabc20daba560481733a8147d4546ebe650e34ca0053a8621f9e",
+      "asset_file": "b8c971a4d2b2aabc20daba560481733a8147d4546ebe650e34ca0053a8621f9e.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Ascpedia/1",
       "decision": "localize-into-package",
       "candidate_css_sha256": "4c1828e8284c3bf286f4a4be11a1c7b0662d752b49bef29dbe5dd80894004949",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 72ffa51351643e80591e461928775f3e0424f10774a80786d30dafe1feb1f3a2.css with SHA-256 72ffa51351643e80591e461928775f3e0424f10774a80786d30dafe1feb1f3a2; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Ascpedia/1",
+      "sha256": "72ffa51351643e80591e461928775f3e0424f10774a80786d30dafe1feb1f3a2",
+      "asset_file": "72ffa51351643e80591e461928775f3e0424f10774a80786d30dafe1feb1f3a2.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ascpedia/linuxlibertine.css",
       "decision": "localize-into-package",
       "candidate_css_sha256": "4c1828e8284c3bf286f4a4be11a1c7b0662d752b49bef29dbe5dd80894004949",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 7d3f1d2ba2fb24624f5d144cab12cef19a220584b23d6a735622f1e1147687f1.css with SHA-256 7d3f1d2ba2fb24624f5d144cab12cef19a220584b23d6a735622f1e1147687f1; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ascpedia/linuxlibertine.css",
+      "sha256": "7d3f1d2ba2fb24624f5d144cab12cef19a220584b23d6a735622f1e1147687f1",
+      "asset_file": "7d3f1d2ba2fb24624f5d144cab12cef19a220584b23d6a735622f1e1147687f1.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://fonts.bunny.net/css2?family=Roboto&display=swap",
+      "final_url": "https://fonts.bunny.net/css2?family=Roboto&display=swap",
+      "sha256": "b8c971a4d2b2aabc20daba560481733a8147d4546ebe650e34ca0053a8621f9e",
+      "normalized_text_sha256": "b8c971a4d2b2aabc20daba560481733a8147d4546ebe650e34ca0053a8621f9e",
+      "bytes": 6000,
+      "content_type": "text/css",
+      "asset_file": "b8c971a4d2b2aabc20daba560481733a8147d4546ebe650e34ca0053a8621f9e.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Ascpedia/1",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Ascpedia/1",
+      "sha256": "72ffa51351643e80591e461928775f3e0424f10774a80786d30dafe1feb1f3a2",
+      "normalized_text_sha256": "72ffa51351643e80591e461928775f3e0424f10774a80786d30dafe1feb1f3a2",
+      "bytes": 20106,
+      "content_type": "text/css",
+      "asset_file": "72ffa51351643e80591e461928775f3e0424f10774a80786d30dafe1feb1f3a2.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ascpedia/linuxlibertine.css",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Ascpedia/linuxlibertine.css",
+      "sha256": "7d3f1d2ba2fb24624f5d144cab12cef19a220584b23d6a735622f1e1147687f1",
+      "normalized_text_sha256": "7d3f1d2ba2fb24624f5d144cab12cef19a220584b23d6a735622f1e1147687f1",
+      "bytes": 84278,
+      "content_type": "text/css",
+      "asset_file": "7d3f1d2ba2fb24624f5d144cab12cef19a220584b23d6a735622f1e1147687f1.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }

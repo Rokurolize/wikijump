@@ -1,0 +1,14 @@
+/* SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused. */
+@media (min-width: 768px) {
+  #search-top-box-form:hover #search-top-box-input,
+  #search-top-box-form:focus-within #search-top-box-input {
+    display: inline-block !important;
+  }
+}
+
+/* Keep Sigma's credit return action as one readable Japanese control at phone widths. */
+@media (max-width: 600px) {
+  #u-credit-otherwise .modalbox a[href="#u-credit-view"] {
+    display: inline-flex !important; width: max-content !important; min-width: 0 !important; max-width: 100% !important; white-space: nowrap !important; word-break: keep-all !important; overflow-wrap: normal !important; line-height: 1.25 !important;
+  }
+}

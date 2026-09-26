@@ -7,5 +7,7 @@
   "asset_replacements": {},
   "omitted_assets": [],
   "dependency_decisions": [],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": []
 }

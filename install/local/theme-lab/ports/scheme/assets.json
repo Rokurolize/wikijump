@@ -3285,15 +3285,44 @@
       "source_url": "https://fonts.bunny.net/css2?family=Song+Myung&display=swap",
       "decision": "localize-into-package",
       "candidate_css_sha256": "6fd9f0e8f88f486c138b53aa560bd29b939fc5183756f3e21cc8503f6b892d71",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as 08ba99797ae7f5d1ab7ee377a774dc37a95a426299ce51b1684c66b5904b8765.css with SHA-256 08ba99797ae7f5d1ab7ee377a774dc37a95a426299ce51b1684c66b5904b8765; the flattened final candidate was replayed offline.",
+      "final_url": "https://fonts.bunny.net/css2?family=Song+Myung&display=swap",
+      "sha256": "08ba99797ae7f5d1ab7ee377a774dc37a95a426299ce51b1684c66b5904b8765",
+      "asset_file": "08ba99797ae7f5d1ab7ee377a774dc37a95a426299ce51b1684c66b5904b8765.css"
     },
     {
       "resource_type": "candidate-css-import",
       "source_url": "https://scp-wiki.wikidot.com/theme:scheme/code/2",
       "decision": "localize-into-package",
       "candidate_css_sha256": "6fd9f0e8f88f486c138b53aa560bd29b939fc5183756f3e21cc8503f6b892d71",
-      "evidence": "The fetched import chain was included in the final candidate stylesheet and replayed offline; candidate CSS dependencies are content-addressed in the shared asset pool."
+      "evidence": "The imported stylesheet bytes are preserved as f5944c41d092fd0429d5e0d5e7600b6c3150057847295c4c7a464d268da21d6f.css with SHA-256 f5944c41d092fd0429d5e0d5e7600b6c3150057847295c4c7a464d268da21d6f; the flattened final candidate was replayed offline.",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Ascheme/2",
+      "sha256": "f5944c41d092fd0429d5e0d5e7600b6c3150057847295c4c7a464d268da21d6f",
+      "asset_file": "f5944c41d092fd0429d5e0d5e7600b6c3150057847295c4c7a464d268da21d6f.css"
     }
   ],
-  "candidate_base_css_assets": []
+  "candidate_base_css_assets": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [
+    {
+      "source_url": "https://fonts.bunny.net/css2?family=Song+Myung&display=swap",
+      "final_url": "https://fonts.bunny.net/css2?family=Song+Myung&display=swap",
+      "sha256": "08ba99797ae7f5d1ab7ee377a774dc37a95a426299ce51b1684c66b5904b8765",
+      "normalized_text_sha256": "08ba99797ae7f5d1ab7ee377a774dc37a95a426299ce51b1684c66b5904b8765",
+      "bytes": 28308,
+      "content_type": "text/css",
+      "asset_file": "08ba99797ae7f5d1ab7ee377a774dc37a95a426299ce51b1684c66b5904b8765.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    },
+    {
+      "source_url": "https://scp-wiki.wikidot.com/theme:scheme/code/2",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Ascheme/2",
+      "sha256": "f5944c41d092fd0429d5e0d5e7600b6c3150057847295c4c7a464d268da21d6f",
+      "normalized_text_sha256": "f5944c41d092fd0429d5e0d5e7600b6c3150057847295c4c7a464d268da21d6f",
+      "bytes": 25286,
+      "content_type": "text/css",
+      "asset_file": "f5944c41d092fd0429d5e0d5e7600b6c3150057847295c4c7a464d268da21d6f.css",
+      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+    }
+  ]
 }

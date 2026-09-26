@@ -17,7 +17,7 @@
     "slug": "theme:scpedia",
     "title": "SCPedia Theme",
     "en": {
-      "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:scpedia/source.wikidot.txt",
+      "source_path": "upstream-en.wikidot.txt",
       "sha256": "195a9d70bbfed2cf6cb177aec6b7f8f236c7ca161af19b040d1a653f8da16284",
       "updated_at": "2026-04-12T05:22:44+00:00",
       "entity_uuid": "21c70fb8-b04e-46ad-82e2-e19887bb15ad",
@@ -26,7 +26,12 @@
         "theme"
       ],
       "attached_files": [],
-      "revisions": 58
+      "revisions": 58,
+      "source_locator": {
+        "kind": "scp-corpus-page",
+        "branch": "en",
+        "slug": "theme:scpedia"
+      }
     },
     "jp": {
       "status": "confirmed-absent-by-targeted-xmlrpc",
@@ -61,7 +66,7 @@
     "base_family": "independent"
   },
   "human_port_candidate": "human-port-candidate.wikidot.txt",
-  "human_port_candidate_path": "/home/roku/src/Rokurolize/scp-wiki-translation/workspace/theme_scpedia/theme_scpedia_Japanese.wikidot.txt",
+  "human_port_candidate_path": "human-port-candidate.wikidot.txt",
   "acceptance_selectors": "../shared-acceptance-selectors.txt",
   "candidate_input": "human-port-candidate.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
@@ -84,5 +89,15 @@
   "final_verdict": "warn",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/scpedia/assets.json",
-  "asset_dependency_decision_count": 22
+  "asset_dependency_decision_count": 22,
+  "maintenance_source": {
+    "base": "maintenance/base.wikidot.txt",
+    "jp_overrides": "maintenance/jp-overrides.css",
+    "manifest": "maintenance/manifest.json",
+    "base_sha256": "c72a8efe05d1b61db6186108038dbfaca435d076a00f78319464deed5cfbb7c5",
+    "jp_overrides_sha256": "314fd648cdff13b215eee64d975cd20b75d6ebeadfafa96948c4094ed998caaa",
+    "semantic_css_sha256": "d2610c4c864644aea53275c9c2a39b2917ffbe2703a0af01dd062d58edf82c44",
+    "canonical_override_sha256": "1155d7c7ea26df45fd237b5ef562a88296b7849db704574fb7e652427a65bffc",
+    "exact_duplicate_rules_removed": 5
+  }
 }

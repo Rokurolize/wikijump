@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "transforms": [
+    {
+      "id": "source-pane-rule-owned-by-marked-jp-layer",
+      "reason": "The accepted Inkblot candidate moved this source-pane monospace rule into the later SCP-JP-marked acceptance layer. Remove the earlier unmarked copy so the flattened base plus marked insertions reproduces the accepted candidate without ambiguous ownership.",
+      "expected_matches": 1,
+      "before": "/* Preserve code-reading affordances when the theme's serif body face reaches page action panes. */\n#action-area .page-source,\n#action-area textarea.editor-wikitext { font-family: \"SFMono-Regular\", Consolas, \"Liberation Mono\", monospace; }\n\n",
+      "after": ""
+    }
+  ]
+}

@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "9750acfd8d50ab08c43ba68495219538be5741f334909277b6e1a3ab4074fcad",
+  "base_source_sha256": "c38af875eb8a1b8a78d4cac779af3c56ebf2641a193410a7a81e019a6c7f46f0",
+  "raw_jp_overrides_sha256": "465b053b933b324ba5103724098c1b375d5cd701e465f3d97c81630c992a7d6f",
+  "jp_overrides_sha256": "8dd2fd23f2898d7212600df82cf96de253bdadf2f7c96fb92249d86beedaad38",
+  "semantic_css_sha256": "4a01c126d5f2ea8b92331488b22443e1767468ddc66f8e934d6b4f3ad8e2c46f",
+  "canonical_override_sha256": "f7024ce9e61cea4db22f6f425c783b5bc6f0f1b6541f4ff119d8c07af2df8c96",
+  "adaptation_block_count": 9,
+  "raw_override_rule_count": 28,
+  "canonical_override_rule_count": 28,
+  "exact_duplicate_rules_removed": 0,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile header refinement v5: scheme",
+      "rationale": "The decorative gear overlaps the live site wordmark on narrow screens. Reserve the logo band, then lay the localized identity below it while preserving the original masthead art.",
+      "sha256": "c4deb0f34a10bd09bf1f563cf5e3a79a9555ee1750aa5320731f2efe485716ca",
+      "selectors": [
+        "#header",
+        "#header h1",
+        "#header h1 a",
+        "#header h1 a:before",
+        "#header h2",
+        "#header h2 span",
+        "#header h2:after"
+      ],
+      "at_contexts": [
+        "@media (max-width: 600px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile navigation repair v1: scheme",
+      "rationale": "The positioned gear decoration (div#extra-div-2, z-index 20) intercepted the mobile menu touch target. Raise the responsive navigation layer above its decorative header sibling without changing the artwork.",
+      "sha256": "4cbd83a86bf5973f6337bc4c3d4fca0df5f7a3a5adbec8a4c75985b5c61fb45e",
+      "selectors": [
+        "#top-bar",
+        "#top-bar .mobile-top-bar",
+        "#top-bar .mobile-top-bar .open-menu"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance mobile navigation repair v2: scheme",
+      "rationale": "After the tap-test fix, the screenshot showed the static trigger at the top-bar's inherited top:179px position, where it overlaid the first article heading. Return the theme's mobile top bar to normal document flow so it reserves its own navigation row before the page title.",
+      "sha256": "45428b12f646416eb3202b20cc6805c34e5e75ff3a1cdd46dccc9e51c25dce57",
+      "selectors": [
+        "#top-bar",
+        "#top-bar .mobile-top-bar",
+        "#top-bar .mobile-top-bar .open-menu"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v41: scheme",
+      "rationale": "Current mobile submenu screenshot showed the longest Japanese navigation label clipped at the viewport edge. Keep the gear artwork and menu colors; anchor the opened list to the right edge with a viewport-bounded width and allow labels to wrap.",
+      "sha256": "141b1cbca32ed6ae3e7de88b76f5ee7097f8a98bd379aa5593c7b64b491babac",
+      "selectors": [
+        ".mobile-top-bar > ul",
+        ".mobile-top-bar > ul a"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v42: scheme",
+      "rationale": "Re-review showed the right-anchored submenu still covered the article title. Keep the expanded mobile links in normal flow so they wrap within the nav row and push article content down.",
+      "sha256": "8c6d1e81906269c4aae00626ac47b943af609045e5d739a7e6ec21985a2ad67e",
+      "selectors": [
+        ".mobile-top-bar > ul",
+        ".mobile-top-bar > ul a"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v43: scheme",
+      "rationale": "The 390px and 320px after-images confirmed the list wrapped but the topbar retained a fixed-height box, leaving its open menu over the page heading. Let the actual expanded list contribute its intrinsic height in normal flow.",
+      "sha256": "a1eb463cf35e22b07a079a5eb71781ca48d74a06fc5e3d15ccbf6c1468c67d47",
+      "selectors": [
+        ".mobile-top-bar",
+        ".mobile-top-bar .open-menu",
+        ".mobile-top-bar > ul"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v44: scheme",
+      "rationale": "Browser diagnostics showed the outer nav row was static but its nested expanded submenu remained a positioned child, so the article title still painted behind it. Put only the open nested list back in flow and let long localized labels wrap.",
+      "sha256": "9791955b2df21b0b4c9b0c45fba342ccbc74d62885150217eaef48e00beae03f",
+      "selectors": [
+        ".mobile-top-bar > ul",
+        ".mobile-top-bar > ul > li",
+        ".mobile-top-bar > ul > li > ul",
+        ".mobile-top-bar > ul > li > ul a"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance image review repair v45: scheme",
+      "rationale": "Measured runtime geometry shows the floated mobile navigation is 231px tall while its #top-bar parent collapses to 21px. Make the actual parent establish a formatting context so the localized, expanded submenu reserves its full height before the article.",
+      "sha256": "2575230af78e106a6644254d3470188d56a7f8438a17b45f104f80564d082a99",
+      "selectors": [
+        "#top-bar",
+        "#top-bar .mobile-top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ]
+    }
+  ]
+}

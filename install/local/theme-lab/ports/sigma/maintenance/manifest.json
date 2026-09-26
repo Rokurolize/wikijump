@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "frozen_candidate_source_sha256": "8df3a5dbae531dc1d8a873b39fbfedd6eb5fe6c7d81bdbdde6a886acc8b0948d",
+  "base_source_sha256": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23",
+  "raw_jp_overrides_sha256": "7aa2ab6de4a5836b34a22de8a3b8fab790b7377a069f5566fa79fb9d82a24a19",
+  "jp_overrides_sha256": "cb195992c9aa1776e4ca7d813fa294cfb97584215e977bee30e30b51cd0c3feb",
+  "semantic_css_sha256": "fa963ae568228b05ad40136e1834c09b6a7a751e0f546fe4f0b915e3fbf7dbb0",
+  "canonical_override_sha256": "b707502ff1463532a28832458824f8f6b9a098d0e2a4eaa698cf9b2058e98886",
+  "adaptation_block_count": 2,
+  "raw_override_rule_count": 3,
+  "canonical_override_rule_count": 3,
+  "exact_duplicate_rules_removed": 0,
+  "active_tags": [
+    "テーマ"
+  ],
+  "equivalence": "base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; jp-overrides.css then removes only earlier exact-duplicate selector/context/body rules and has the same canonical rule cascade",
+  "historical_adaptations": [
+    {
+      "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
+      "selectors": [
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover #search-top-box-input"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
+      ]
+    },
+    {
+      "marker": "SCP-JP interactive visual acceptance interaction repair v1: sigma",
+      "rationale": "Keep Sigma's credit return action as one readable Japanese control at phone widths.",
+      "sha256": "466ab7d26bd0ec93822cf3da0fccee692ac02d24422110246b2ece1b7d5d7c45",
+      "selectors": [
+        "#u-credit-otherwise .modalbox a[href=\"#u-credit-view\"]"
+      ],
+      "at_contexts": [
+        "@media (max-width: 600px)"
+      ]
+    }
+  ]
+}
