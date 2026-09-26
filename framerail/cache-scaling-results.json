@@ -1,0 +1,304 @@
+{
+  "baseline": "e0e40e49d146f5d71c463f8e15fd3ddb616b0f18",
+  "node": "v24.21.0",
+  "samples": 5,
+  "statistic": "median",
+  "records": [
+    {
+      "path": "cache-fill",
+      "Q": 2000,
+      "R_max": 2000,
+      "before_ms": 37.11,
+      "after_ms": 1.068,
+      "before_expiry_visits": 1999000
+    },
+    {
+      "path": "cache-fill",
+      "Q": 4000,
+      "R_max": 4000,
+      "before_ms": 110.235,
+      "after_ms": 1.356,
+      "before_expiry_visits": 7998000
+    },
+    {
+      "path": "cache-fill",
+      "Q": 8000,
+      "R_max": 8000,
+      "before_ms": 431.56,
+      "after_ms": 3.747,
+      "before_expiry_visits": 31996000
+    },
+    {
+      "path": "cache-fill",
+      "Q": 16000,
+      "R_max": 16000,
+      "before_ms": 1645.789,
+      "after_ms": 4.338,
+      "before_expiry_visits": 127992000
+    },
+    {
+      "path": "pending-drain",
+      "Q": 16000,
+      "before_ms": 1.711,
+      "after_ms": 0.601
+    },
+    {
+      "path": "pending-drain",
+      "Q": 32000,
+      "before_ms": 64.606,
+      "after_ms": 1.06
+    },
+    {
+      "path": "pending-drain",
+      "Q": 64000,
+      "before_ms": 312.707,
+      "after_ms": 1.111
+    },
+    {
+      "path": "pending-drain",
+      "Q": 128000,
+      "before_ms": 1393.821,
+      "after_ms": 3.914
+    },
+    {
+      "path": "pending-cancel",
+      "Q": 1000,
+      "before_ms": 6.523,
+      "after_ms": 0.075
+    },
+    {
+      "path": "pending-cancel",
+      "Q": 2000,
+      "before_ms": 25.685,
+      "after_ms": 0.084
+    },
+    {
+      "path": "pending-cancel",
+      "Q": 4000,
+      "before_ms": 100.445,
+      "after_ms": 0.121
+    },
+    {
+      "path": "pending-cancel",
+      "Q": 8000,
+      "before_ms": 201.531,
+      "after_ms": 0.216
+    },
+    {
+      "path": "fragmented-array",
+      "B": 9007,
+      "K": 141,
+      "R": 1000,
+      "before_ms": 24.334,
+      "after_ms": 0.894,
+      "before_work": {
+        "copied_bytes": 640687,
+        "decoded_bytes": 284703,
+        "decode_calls": 142250
+      },
+      "after_work": {
+        "copied_bytes": 9100,
+        "decoded_bytes": 4004,
+        "decode_calls": 2001
+      }
+    },
+    {
+      "path": "fragmented-array",
+      "B": 18007,
+      "K": 282,
+      "R": 2000,
+      "before_ms": 97.193,
+      "after_ms": 1.451,
+      "before_work": {
+        "copied_bytes": 2553751,
+        "decoded_bytes": 1134908,
+        "decode_calls": 567250
+      },
+      "after_work": {
+        "copied_bytes": 18193,
+        "decoded_bytes": 8004,
+        "decode_calls": 4001
+      }
+    },
+    {
+      "path": "fragmented-array",
+      "B": 36007,
+      "K": 563,
+      "R": 4000,
+      "before_ms": 387.251,
+      "after_ms": 1.956,
+      "before_work": {
+        "copied_bytes": 10160999,
+        "decoded_bytes": 4515813,
+        "decode_calls": 2257500
+      },
+      "after_work": {
+        "copied_bytes": 36379,
+        "decoded_bytes": 16004,
+        "decode_calls": 8001
+      }
+    },
+    {
+      "path": "fragmented-array",
+      "B": 72007,
+      "K": 1126,
+      "R": 8000,
+      "before_ms": 1540.381,
+      "after_ms": 3.569,
+      "before_work": {
+        "copied_bytes": 40608007,
+        "decoded_bytes": 18047629,
+        "decode_calls": 9023001
+      },
+      "after_work": {
+        "copied_bytes": 72754,
+        "decoded_bytes": 32004,
+        "decode_calls": 16001
+      }
+    },
+    {
+      "path": "fragmented-bulk",
+      "B": 256011,
+      "K": 251,
+      "R": 1,
+      "before_ms": 6.814,
+      "after_ms": 0.184,
+      "before_work": {
+        "copied_bytes": 32384011,
+        "decoded_bytes": 257506,
+        "decode_calls": 252
+      },
+      "after_work": {
+        "copied_bytes": 517131,
+        "decoded_bytes": 256006,
+        "decode_calls": 2
+      }
+    },
+    {
+      "path": "fragmented-bulk",
+      "B": 512011,
+      "K": 501,
+      "R": 1,
+      "before_ms": 19.202,
+      "after_ms": 0.372,
+      "before_work": {
+        "copied_bytes": 128768011,
+        "decoded_bytes": 515006,
+        "decode_calls": 502
+      },
+      "after_work": {
+        "copied_bytes": 1035275,
+        "decoded_bytes": 512006,
+        "decode_calls": 2
+      }
+    },
+    {
+      "path": "fragmented-bulk",
+      "B": 1024012,
+      "K": 1001,
+      "R": 1,
+      "before_ms": 72.996,
+      "after_ms": 0.756,
+      "before_work": {
+        "copied_bytes": 513536012,
+        "decoded_bytes": 1031007,
+        "decode_calls": 1002
+      },
+      "after_work": {
+        "copied_bytes": 2071564,
+        "decoded_bytes": 1024007,
+        "decode_calls": 2
+      }
+    },
+    {
+      "path": "fragmented-bulk",
+      "B": 2048012,
+      "K": 2001,
+      "R": 1,
+      "before_ms": 311.682,
+      "after_ms": 0.861,
+      "before_work": {
+        "copied_bytes": 2051072012,
+        "decoded_bytes": 2062007,
+        "decode_calls": 2002
+      },
+      "after_work": {
+        "copied_bytes": 4144140,
+        "decoded_bytes": 2048007,
+        "decode_calls": 2
+      }
+    },
+    {
+      "path": "fragmented-line",
+      "B": 16003,
+      "K": 251,
+      "R": 1,
+      "before_ms": 0.298,
+      "after_ms": 0.138,
+      "before_work": {
+        "copied_bytes": 2024003,
+        "decoded_bytes": 16000,
+        "decode_calls": 1
+      },
+      "after_work": {
+        "copied_bytes": 32131,
+        "decoded_bytes": 16000,
+        "decode_calls": 1
+      }
+    },
+    {
+      "path": "fragmented-line",
+      "B": 32003,
+      "K": 501,
+      "R": 1,
+      "before_ms": 1.148,
+      "after_ms": 0.139,
+      "before_work": {
+        "copied_bytes": 8048003,
+        "decoded_bytes": 32000,
+        "decode_calls": 1
+      },
+      "after_work": {
+        "copied_bytes": 64515,
+        "decoded_bytes": 32000,
+        "decode_calls": 1
+      }
+    },
+    {
+      "path": "fragmented-line",
+      "B": 64003,
+      "K": 1001,
+      "R": 1,
+      "before_ms": 3.505,
+      "after_ms": 0.204,
+      "before_work": {
+        "copied_bytes": 32096003,
+        "decoded_bytes": 64000,
+        "decode_calls": 1
+      },
+      "after_work": {
+        "copied_bytes": 129283,
+        "decoded_bytes": 64000,
+        "decode_calls": 1
+      }
+    },
+    {
+      "path": "fragmented-line",
+      "B": 128003,
+      "K": 2001,
+      "R": 1,
+      "before_ms": 20.235,
+      "after_ms": 0.478,
+      "before_work": {
+        "copied_bytes": 128192003,
+        "decoded_bytes": 128000,
+        "decode_calls": 1
+      },
+      "after_work": {
+        "copied_bytes": 258819,
+        "decoded_bytes": 128000,
+        "decode_calls": 1
+      }
+    }
+  ]
+}
