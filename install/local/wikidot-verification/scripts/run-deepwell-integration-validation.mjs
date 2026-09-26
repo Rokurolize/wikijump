@@ -178,6 +178,9 @@ async function run() {
     ], {capture: true});
     await command("docker", [
       "run", "-d", "--name", containers.files,
+      // This fixture is deleted after the run. A private tmpfs avoids MinIO's
+      // host-disk free-space floor on workstations with large build caches.
+      "--tmpfs", "/data:rw,size=1g",
       "-e", "MINIO_ROOT_USER=minio",
       "-e", "MINIO_ROOT_PASSWORD=defaultpassword",
       "-e", "MINIO_REGION_NAME=local",
