@@ -17,7 +17,7 @@
     }
   },
   "coverage": {
-    "current_records": 213,
+    "current_records": 248,
     "superseded_records": 96,
     "comparison_records": 36,
     "baseline_theme_records": 73,
@@ -40,9 +40,10 @@
     ],
     "theme_page_normal_viewports": [
       "desktop",
-      "mobile"
+      "mobile",
+      "narrow-mobile"
     ],
-    "theme_records": 140
+    "theme_records": 175
   },
   "findings": [
     {
@@ -409,13 +410,12 @@
     }
   ],
   "unresolved_simulator_limitations": [
-    "Firefox/WebKit theme matrix now covers chromium/firefox/webkit mobile page.normal only; desktop/narrow-mobile theme matrices are chromium-only (narrow-mobile theme matrix not run).",
     "Interwiki visible/style contract cannot be evaluated offline (external crom + scp-jp.org frames); shell.interwiki.visible fails closed.",
-    "Narrow-mobile (320px) theme matrix not run; narrow-mobile covered for the baseline shell states.",
     "Semantic/visual review (readability, keyboard/focus order, pointer/hover, modal reachability) is not complete for every state; geometry and overflow are captured but classification remains UNCONFIRMED where not reviewed.",
     "Local development runtime is shared with a concurrent deepwell mutation-testing session and recompiled repeatedly during this run; captures that caught a restart window were retried.",
     "Authenticated admin surfaces captured on chromium desktop+mobile only.",
-    "WebKit theme runs report one missing decorative external asset (scp-jp.github.io/.../nav/side/black.png from the Sigma-10 nav-side close-menu overlay); it is blocked by network policy, is not in the frozen dependency snapshot, and does not change the close-menu geometry. Chromium/Firefox block it silently."
+    "WebKit theme runs report one missing decorative external asset (scp-jp.github.io/.../nav/side/black.png from the Sigma-10 nav-side close-menu overlay); it is blocked by network policy, is not in the frozen dependency snapshot, and does not change the close-menu geometry. Chromium/Firefox block it silently.",
+    "Theme matrices cover chromium desktop + chromium/firefox/webkit mobile + chromium narrow-mobile; firefox/webkit desktop and narrow-mobile theme matrices are not run."
   ],
   "intentional_differences": [
     "Sigma-10 header hides the configured site title/tagline text (max-height:0; line-height:0). The visible \"Local Translation Corpus\" text is the local test site configuration, not SCP-JP source; production SCP-JP would supply its own title/tagline.",

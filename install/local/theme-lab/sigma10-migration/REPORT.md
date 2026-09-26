@@ -48,7 +48,7 @@ is requested.
 | --- | --- |
 | Baseline theme surfaces | 24 distinct surfaces (`page.normal`, `nav.*`, `shell.*`, `credit.*`, `content.*`, `page.history/source/files/tags/options/backlinks/edit/delete/rename/parent`, `dialog.*`) |
 | Engines / viewports (baseline) | chromium desktop/mobile/narrow-mobile; firefox desktop/mobile; webkit desktop/mobile |
-| Theme ports on Sigma-10 | all 35 ports at chromium desktop + chromium/firefox/webkit mobile `page.normal` |
+| Theme ports on Sigma-10 | all 35 ports at chromium desktop + chromium/firefox/webkit mobile + chromium narrow-mobile `page.normal` |
 | Controlled Sigma-9 comparison | same Sigma-10 page/shell with the runtime Sigma-9 baseline, all 35 ports + baseline, chromium mobile |
 | Authenticated (administrator) baseline surfaces | chromium desktop + mobile (`page.edit`, `page.delete`, `page.rename`, `page.parent`, `page.options`, `page.backlinks`, `page.tags`, `shell.login`) |
 
@@ -104,8 +104,9 @@ controlled comparison.
 * Every overflowing theme's document width equals `ul.creditRate`'s reachable
   right edge → the credit notice (SIGMA10-MOB-001) is the single driver.
 * The same themes overflow in chromium, firefox, and webkit mobile, and the same
-  four contain it; magnitudes differ slightly by engine (font metrics). No
-  engine-specific theme blocker was found.
+  four contain it; magnitudes differ slightly by engine (font metrics). At
+  chromium narrow-mobile (320 px) the same 31 overflow and the same four
+  contain it. No engine- or viewport-specific theme blocker was found.
 * 30 of 35 field themes gain mobile document overflow under Sigma-10 relative to
   Sigma-9; 4 themes contain it (`dear-dictator`, `hansarp`, `inkblot`,
   `monotypical` keep 390 by clipping); `aesthetic-theme` reduces.
@@ -135,7 +136,7 @@ controlled comparison.
 ## Unresolved simulator limitations
 
 1. Interwiki visible/style contract cannot be evaluated offline (EXT-INTERWIKI-001).
-2. Theme matrix cross-engine coverage is mobile `page.normal` (chromium desktop, chromium/firefox/webkit mobile); the desktop and narrow-mobile theme matrices are chromium-only, and the narrow-mobile theme matrix was not run.
+2. Theme matrices cover chromium desktop, chromium/firefox/webkit mobile, and chromium narrow-mobile; firefox/webkit desktop and narrow-mobile theme matrices are not run.
 3. WebKit theme runs report one missing decorative external asset (`scp-jp.github.io/.../nav/side/black.png`, the Sigma-10 nav-side close-menu overlay). It is blocked by network policy, was not in the frozen dependency snapshot, and does not change the close-menu geometry; chromium/firefox block it silently.
 4. Semantic/visual review (readability, keyboard/focus order, pointer/hover, modal reachability) is not complete for every state; geometry/overflow are captured, and unreviewed records remain UNCONFIRMED.
 5. The local development runtime was shared with a concurrent deepwell mutation-testing session and recompiled repeatedly; captures hitting a restart window were retried, not recorded as migration findings.
