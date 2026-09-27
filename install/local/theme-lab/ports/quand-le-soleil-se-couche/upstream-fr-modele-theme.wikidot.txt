@@ -1,0 +1,62 @@
+[[iftags +modèle -thème]]
+
+Ce modèle sert à inclure plus facilement les éléments nécessaires sur la page d'un thème.
+
++ Instructions d'utilisation
+
+Les variables suivantes servent à afficher ou non des éléments si votre thème les modifie pour qu'on puisse voir leur nouvelle apparence. Ils sont tous désactivés par défaut, supprimez du copié-collé ci-dessous ceux que le thème ne touche pas ; pour les autres, conservez l'attribut "block".
+* **notation** : Module de notation et de crédit.
+* **liens** : Liens non visités, visités et inexistants dans le texte.
+* **footnote** : Note de bas de page.
+* **image** : [[[component:image-block|Bloc d'image]]] utilisé dans les rapports.
+* **titres1/2/3/4/5/6** : Titres de niveau 1, 2, etc (correspondant au nombre de symboles "+" utilisés avant). Faites suivre la variable "titres" du nombre exact de titres que votre thème modifie. **N'en utilisez pas plusieurs.**
+* **onglets** : Tableau à onglets.
+* **citations** : Bloc de citation, souvent utilisé notamment pour les entretiens et journaux d'exploration.
+* **tableau** : Tableaux à cases.
+Vous pouvez bien sûr ajouter sous le code de ce module tous les autres éléments modifiés par votre thème qui ne s'y trouveraient pas.
+
+//Note : Contrairement à l'usage le plus répandu sur le site, le préfixe **:fondationscp:** est important sur les thèmes originaux car il permet d'éviter des bugs lors de réutilisations des thèmes par d'autres branches. Pour les thèmes importés d'autres branches, il n'est pas nécessaire.//
+
+[[div class="blockquote"]]
+@@[[include :fondationscp:component:modele-theme@@
+|**notation**=block
+|**liens**=block
+|**footnote**=block
+|**image**=block
+|**titres1/titres2/titres3/titres4/titres5/titres6**=block
+|**onglets**=block
+|**citations**=block
+|**tableau**=block
+@@]]@@
+[[/div]]
+
+[[/iftags]]
+
+[[include :fondationscp:component:modele-theme-base
+|notation={$notation}
+|notation=none
+|liens={$liens}
+|liens=none
+|footnote={$footnote}
+|footnote=none
+|image={$image}
+|image=none
+|titres1={$titres1}
+|titres1=none
+|titres2={$titres2}
+|titres2=none
+|titres3={$titres3}
+|titres3=none
+|titres4={$titres4}
+|titres4=none
+|titres5={$titres5}
+|titres5=none
+|titres6={$titres6}
+|titres6=none
+|onglets={$onglets}
+|onglets=none
+|citations={$citations}
+|citations=none
+|tableau={$tableau}
+|tableau=none
+]]

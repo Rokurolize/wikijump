@@ -1,5 +1,10 @@
 # SCP-EN theme ports for SCP-JP
 
+For a new SCP-FR/SCP-KO/SCP-CN/etc. theme that is not already an accepted
+package, read `NEW-FOREIGN-THEME-PORT.md` first. This file primarily documents
+the completed SCP-EN campaign and its offline replay/maintenance state; it is
+not the bootstrap procedure for a new foreign-branch port.
+
 `en-theme-campaign.json` is the campaign authority. It binds all 34 refreshed SCP-EN source revisions to one local candidate package, previous JP status/source, technical-spec version, final offline Theme Lab verdict, viewport and interaction results, warnings, and receipt for each theme. `TECHNICAL-LOCALIZATION-SPEC.md` states the acceptance requirements. `en-theme-dependency-graph.json` records shared BHL/Sigma/theme/include/asset dependencies.
 
 Each package PORT.md explains the port, and its receipt preserves source identities, dependency decisions, first-to-final Theme Lab findings, initial image defects and final status, productivity counts, verdicts, and screenshot paths. Preview-only include omissions are listed with their fixture limitation; the candidate source snapshot remains untouched. The upstream EN and, where present, previous JP sources are frozen in each package. New SCP-JP candidates and adapted CSS remain local review artifacts; this repository campaign does not publish or mutate public Wikidot theme pages.

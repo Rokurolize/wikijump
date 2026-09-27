@@ -5,6 +5,11 @@ SCP-JP. The objective is not Wikijump startup time; it is **edit → actionable
 verdict latency** and **information per trial**. A theme port should not require
 a save, a page rerender, a cache invalidation, or a browser launch per attempt.
 
+For a **new** foreign-branch port, start with
+`ports/NEW-FOREIGN-THEME-PORT.md`; do not infer the source-acquisition and
+package workflow from an old completed campaign. Agent routing starts at
+`docs/agents/theme-lab.md`.
+
 This is a development tool, intentionally separate from
 `install/local/wikidot-verification` (whose offline suites forbid external
 network access and whose theme-localization runner is a hand-authored,
@@ -132,6 +137,15 @@ reference tab loads the replay, so iteration is fully local.
 Pass `--asset-dir` to `serve` when CSS uses `url("./assets/name.png")` or a font file in the same form. Theme Lab validates regular files and replaces those URLs with `data:` bytes only in the injected copy. This preserves readable candidate CSS and works with the local Wikijump page's CSP. Missing names appear as `candidate_asset_missing` in the verdict. `--sidebar-html` fills an empty local authoring-site `#side-bar` with a task-owned DOM fixture so foreign sidebar selectors can be assessed without saving global site navigation.
 
 The completed SCP-KO Dear Dictator → SCP-JP run is in `ports/dear-dictator/`. Its `PORT.md` records the reference, decisions, exact offline command, and self-contained Wikidot source builder.
+
+The generic new-foreign-port workflow is in
+`ports/NEW-FOREIGN-THEME-PORT.md`, with the completed SCP-FR
+`theme:quand-le-soleil-se-couche` → SCP-JP package in
+`ports/quand-le-soleil-se-couche/`. That package demonstrates exact anonymous
+Wikidot source acquisition, include/dependency inspection, third-branch and
+existing-JP evidence, include-variable handling, local-vs-public asset
+materialization, an evidence-driven JP navigation repair, offline acceptance,
+paired visual review, and a deterministic publishable source.
 
 The current SCP-EN 34-theme campaign uses `ports/en-theme-campaign.json`, individual port receipts, a committed deduplicated `ports/shared-replay-assets/` pool, and the sequential 35-port runner `node scripts/real-port-regression.mjs`. The runner verifies frozen EN/JP source hashes and pooled asset digests before checking each candidate. Its candidate daemon uses the shared pool; the Dear Dictator daemon uses its packaged assets/sidebar fixture. Set `THEME_LAB_SOCKET`, `THEME_LAB_DEAR_SOCKET`, and `THEME_LAB_ASSET_DIR` to their sockets/pool. It performs offline visual checks and records warning-only cases separately from errors and actionable failures. Use `--iteration` only for the normal edit loop; it is not a final acceptance run. See `ports/README.md` for replay setup.
 

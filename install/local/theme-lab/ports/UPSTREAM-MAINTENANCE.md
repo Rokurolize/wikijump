@@ -1,5 +1,11 @@
 # Maintaining SCP-JP theme ports after upstream changes
 
+This document and its maintenance scripts describe the completed SCP-EN
+campaign packages (identified by the `en_source_sha256` manifest contract).
+New standalone SCP-FR/SCP-KO/etc. packages start with
+`NEW-FOREIGN-THEME-PORT.md` and do not enter this EN maintenance pipeline
+merely because they also contain a `manifest.json`.
+
 Theme Lab's completed visual campaign proves one frozen set of candidates. It does not make future SCP-EN changes safe to copy blindly. The maintained port has several independently owned layers, and an upstream refresh must preserve their provenance.
 
 ## Source layers

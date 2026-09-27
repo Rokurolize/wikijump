@@ -4,3 +4,7 @@
 
 # Preserve byte-for-byte anonymous Wikidot captures, including original whitespace.
 install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/** -whitespace
+
+# Theme Lab source-authority snapshots preserve exact public Wikidot bytes.
+install/local/theme-lab/ports/quand-le-soleil-se-couche/upstream-*.wikidot.txt -whitespace
+install/local/theme-lab/ports/quand-le-soleil-se-couche/current-jp-hub.wikidot.txt -whitespace

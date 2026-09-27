@@ -1,12 +1,34 @@
-# SCP-EN theme to SCP-JP technical localization specification
+# Foreign SCP branch theme to SCP-JP technical localization specification
 
 Version: 1.4 (2026-09-23)
 
-This specification governs all 34 SCP-EN sources listed in `en-theme-campaign.json` and the retained Dear Dictator port. Current EN sources and current public JP sources are bound by SHA-256 in the campaign manifest; a previous JP implementation is evidence to inspect, never a correctness authority. A requirement is accepted only when its current DOM/CSS evidence is recorded in the theme receipt.
+The normative requirement classes and surface requirements in this document
+apply to foreign-branch theme ports generally. The original 1.4 campaign
+covered all 34 SCP-EN sources listed in `en-theme-campaign.json` plus the
+retained SCP-KO Dear Dictator port; those historical receipts continue to bind
+that campaign version. New SCP-FR/SCP-KO/SCP-CN/etc. ports bind their own
+source authority, dependencies, existing-JP evidence and final acceptance in
+their package manifest/receipt. A previous JP or third-branch implementation
+is evidence to inspect, never automatically the correctness authority. A
+requirement is accepted only when its current DOM/CSS evidence is recorded in
+the theme receipt.
 
 ## Evidence and authority
 
-- Current theme source, update metadata, tags, UUIDs, and attachments come from the refreshed shared corpus at `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/{en,jp}/pages/`. The EN refresh was targeted to the 34 explicit slugs. JP existing counterparts were refreshed separately; the remaining 12 slugs returned the XML-RPC page-does-not-exist fault and were kept in the corpus pending area because no prior entity exists.
+- For the historical EN34 campaign, current theme source, update metadata,
+  tags, UUIDs, and attachments come from the refreshed shared corpus at
+  `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/{en,jp}/pages/`. The
+  EN refresh was targeted to the 34 explicit slugs. JP existing counterparts
+  were refreshed separately; the remaining 12 slugs returned the XML-RPC
+  page-does-not-exist fault and were kept in the corpus pending area because
+  no prior entity exists.
+- For a new foreign-branch port, acquire the exact public Wikidot source and
+  freeze it in the package before adapting it. Follow
+  `NEW-FOREIGN-THEME-PORT.md` and use
+  `install/local/theme-lab/scripts/acquire_wikidot_source.py` (or an
+  equivalently retained source artifact) rather than reconstructing source
+  from rendered HTML. Freeze material include/dependency source identities as
+  well. After the explicit refresh, normal Theme Lab iteration is offline.
 - The existing translation campaign's `worklists/theme/technical_surface_matrix_summary.md`, `technical_requirement_matrix_summary.md`, and `sigma10/static_dependency_matrix_summary.md` establish useful review classes and known risks across earlier human ports. They are screening evidence only: their page CSS extraction does not prove the current JP DOM or current EN revision.
 - Its `theme_jp_available_review.py`, `theme_en_asset_review.py`, `theme_bhl_base_review.py`, `theme_static_dependency_matrix.py`, `theme_selector_reachability.py`, and `theme_network_audit.py` are retained as the classification method. Their outputs require page-level review; they do not authorize string-for-string replacement.
 - Current local JP runtime evidence is a live page at `https://scpaiueouiuiuiui.wikijump.localhost:18443/boundary-check` plus Deepwell preview of candidate Wikidot sources. On 2026-09-23 the page exposed one each of `#header`, `#top-bar`, `#side-bar`, `#main-content`, `#page-title`, `#page-content`, `#page-info`, and `#page-options-container`. A plain boundary page had no rating widget or article components. A normal (non-syntax-only) preview of Bedrock source rendered `.page-rate-widget-box`; `--syntax-only` omitted that runtime module surface. The checks and screenshots in each port package preserve the actual per-theme evidence.
