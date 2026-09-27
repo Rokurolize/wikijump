@@ -626,6 +626,28 @@ data structure / algorithm change:
 - Theme Lab: 160/160 pass。
 - repository generated-contract verification: pass（surface_count 954）。
 
+### develop 統合後（post-integration, 2026-09-27）
+
+feature branch を `origin/develop`（`ad6a27f630`、base `6112a90d88` から
+9 commit 先）へ通常 merge commit で統合した。競合は
+`run-deepwell-integration-validation.mjs` の tmpfs 行のみで、develop の
+`size=2g` と本 branch の説明コメントを両方残して解決した（tmpfs 修正自体は
+両側に存在し、重複していた）。統合後の検証:
+
+- Deepwell integration: 8/8 shards pass、**2189 tests**、`failed:false`
+  （develop の追加テストにより 2188 から +1）。
+- hermetic verification suite: **2045/2045 pass**（develop の追加テストで +1）。
+- Framerail unit: **655/655 pass**（XML-RPC 差分テストを含む）。
+- Framerail `pnpm check`: 0 errors。
+- Theme Lab: 160/160 pass。
+- repository generated-contract verification: pass。
+- `cargo fmt --all -- --check` / `git diff --check`: clean。
+
+sharded runner の初回統合実行は、8 並列ビルド下で sccache が
+`Compile terminated by signal 15` を受けて 6 shard がビルド失敗した
+（コード起因ではない）。テストバイナリを単一プロセスで
+`cargo test --no-run` により事前ビルドしてから再実行し、8/8 pass を確認した。
+
 ### 性能測定について
 
 6〜9 節の新規修正はクエリ数／I/O 回数の削減として構成上明確であり、
