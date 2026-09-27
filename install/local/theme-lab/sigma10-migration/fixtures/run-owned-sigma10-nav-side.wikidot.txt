@@ -186,7 +186,7 @@ SCPライブラリ
 [[/div]]
 
 [[a href="##" class="close-menu"]]
-[[image https://scp-jp.github.io/files/util/common/media/nav/side/black.png style="z-index:-1; opacity: 0.3;"]]
+[[image /4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7.png style="z-index:-1; opacity: 0.3;"]]
 [[/a]]
 
 [[include run-owned:sigma10-nav-interwiki

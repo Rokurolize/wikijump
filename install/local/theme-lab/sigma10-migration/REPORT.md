@@ -1,186 +1,88 @@
-# SCP-JP Sigma-9 → Sigma-10 migration simulation report
+# SCP-JP Sigma-9 → Sigma-10 Theme Lab migration simulation
 
-Theme Lab simulation of a real SCP-JP site-baseline change from Sigma-9 to the
-frozen current Technical Staff Sigma-10 work. The purpose is to discover what
-would need to change, not to make Sigma-10 "pass".
+## Final result
 
-Machine-readable companion: `findings.json` (same directory).
+The migration simulation is closed against frozen Technical Staff Sigma-10 authority. The full 36-candidate × 9-cell `page.normal` matrix is captured and reviewed (324/324); the Sigma-9 comparison also covers 324 matching cells, with two additional history-state probes. No current screenshot is left unclassified or unexplained. Findings and row-level evidence are in [findings.json](findings.json) and the isolated audits under `evidence/`.
 
-## Authority (frozen, not refreshed during this simulation)
+**Migration decision:** do not promote the Sigma-10 JP localization unchanged. Resolve `SIGMA10-MOB-001` (medium, owner `sigma10-staff-source`) before migration; the controlled test verified that `white-space: pre-wrap !important` removes the credit notice's horizontal document overflow at 390px. `SIGMA10-SEARCH-002` is an explicit upstream policy decision: Sigma hides native Wikidot search intentionally, while Wikijump search works. The migration owner must decide whether to retain that parity choice on Wikijump. Neither is an unowned blocker. There are no per-theme adaptations required across the 35 maintained theme packages.
 
-| Item | Value |
-| --- | --- |
-| Sigma repository | https://github.com/KanekoLiku/sigma |
-| Sigma commit | `2bfcb97451695d99e8d056c3ac40ec954e005636` |
-| Upstream Sigma repository | https://github.com/scpwiki/sigma |
-| Upstream Sigma commit | `84d8171abbeb5cc0b4e6c2f80ef553e08a053359` |
-| Run contract sha256 | `7d2313c1d42f010bd3a893e1364ba56931b56044ba1f782ed0ee887fde6deba9` |
-| Comparison run contract sha256 | `5b665c1a478432bf4453639b987ebaa312bd4e406519626cbb4589c71dc3c4b2` |
-| Baseline replacement CSS sha256 | `08b5e63699eae178f35fc1958560d4c794a3dd5078bbf5f6f9e72906ac34f87e` |
-| Source manifest sha256 | `08e654327ddef813c9fe4a11bc0b0486c17fba9c61ba9ff42d544301ef284622` |
-| Dependency manifest sha256 | `5fb69e0ca6189a51d5d83a8714abf44932650cd29b8fa486ce60578725f68115` |
-| Fixture manifest sha256 | `e8163e2af057628f61b3238e63c0db812749afff4ab75e2dc9e6c8fa9c1c0ab9` |
-| `sources/en-sigma.css` sha256 | `fa5a62082d48c54c807a2060efb3e34a383b3e87de5060d648f9550dc12351c1` |
-| `sources/jp-localization.css` sha256 | `cf4ea3edd7a619cb0a581c4d4f7e9e3cb3668b243c9646759072ecf56f242e9d` |
+## Authority and fixture provenance
 
-Frozen dependency snapshot: 52 external entries + 7 repository assets, offline
-root CSS hash `08b5e636…`. Frozen Wikidot source closure: 10 public pages.
-Focused/frozen-authority checks (`check-sources.mjs`,
-`snapshot-dependencies.mjs --check`, `materialize-fixtures.mjs`) pass.
+The authority is frozen: [Technical Staff Sigma](https://github.com/KanekoLiku/sigma) commit `2bfcb97451695d99e8d056c3ac40ec954e005636`, upstream Sigma commit `84d8171abbeb5cc0b4e6c2f80ef553e08a053359`. Source, dependency, and fixture checkers pass: 10 public pages, 52 dependency entries, 9 run-owned fixtures and 13 recorded transformations. Fixture manifest SHA-256: `7f5dfcb5f61ee6f2593b7bd407575d1d7b0977faafca8a93ac9c653a5810b6da`.
 
-## Runtime model exercised
+The offline fixture maps public cross-site includes to run-owned local pages, omits the inaccessible private pseudo-site include, uses empty local Interwiki data documents, and binds the 1×1 nav decoration to content-addressed asset SHA-256 `4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7`. It does not invent unavailable page/link data. The migration capture is isolated from the accepted Sigma-9 campaign audit.
 
-```
-Wikijump runtime / DOM / interactions
-+ Sigma-10 baseline (sigma10-offline.css replaces /wikidot/styles/sigma-fe5388a32e12.css)
-+ SCP-JP shell (run-owned:sigma10-nav-top / run-owned:sigma10-nav-side)
-+ optional per-theme overlay (the 35 maintained theme ports)
-```
+## Coverage and review
 
-The Theme Lab capture disables the runtime Sigma stylesheet link and injects the
-frozen Sigma-10 offline CSS in its place, then injects the source-derived
-top/sidebar fixtures, and finally applies the per-theme candidate CSS if a theme
-is requested.
+- Candidates: 35 maintained theme packages plus `sigma10-baseline`.
+- Both baselines: Chromium desktop, laptop, tablet, mobile, narrow-mobile; Firefox desktop/mobile; WebKit desktop/mobile. Each has 324 `page.normal` rows.
+- Sigma-10 audit: 460 current rows, including 145 baseline-theme rows (9 normal states and 136 interaction/admin rows); 850 superseded captures retained in the audit history.
+- Sigma-9 comparison: 326 current rows (324 matrix cells plus Chromium desktop/mobile `page.history.historical-source`).
+- All 35 maintained packages pass the real-port regression verification. All current rows have direct-image review metadata bound to their screenshot digest. No unexplained `UNCONFIRMED` rows, sent external requests, asset failures, or page errors remain.
 
-## Coverage produced
+| Final row classification | Sigma-10 | Sigma-9 control |
+| --- | ---: | ---: |
+| `PASS_NATURAL` | 288 | 0 |
+| `PASS_INTENTIONAL_DIVERGENCE` | 3 | 325 |
+| `NEEDS_FIX` | 162 | 1 |
+| `EXTERNAL_CONTRACT_UNVERIFIABLE` | 7 | 0 |
+| `NOT_APPLICABLE` | 0 | 0 |
 
-| Dimension | Covered |
-| --- | --- |
-| Baseline theme surfaces | 24 distinct surfaces (`page.normal`, `nav.*`, `shell.*`, `credit.*`, `content.*`, `page.history/source/files/tags/options/backlinks/edit/delete/rename/parent`, `dialog.*`) |
-| Engines / viewports (baseline) | chromium desktop/mobile/narrow-mobile; firefox desktop/mobile; webkit desktop/mobile |
-| Theme ports on Sigma-10 | all 35 ports at chromium desktop + chromium/firefox/webkit mobile + chromium narrow-mobile `page.normal` |
-| Controlled Sigma-9 comparison | same Sigma-10 page/shell with the runtime Sigma-9 baseline, all 35 ports + baseline, chromium mobile |
-| Authenticated (administrator) baseline surfaces | chromium desktop + mobile (`page.edit`, `page.delete`, `page.rename`, `page.parent`, `page.options`, `page.backlinks`, `page.tags`, `shell.login`) |
+The repeated `NEEDS_FIX` rows aggregate to two confirmed issues: credit-notice overflow (`SIGMA10-MOB-001`) across affected theme/viewport compositions and the paired runtime history textarea issue (`WIKIJUMP-HIST-001`). Sigma-9 control rows are intentionally classified as divergence because Sigma-9 does not style the Sigma-10 credit module; they serve for paired geometry/attribution, not as the visual target.
 
-Current migration audit: `evidence/interactive-visual-audit.json` (isolated from
-the accepted Sigma-9 audit; the accepted audit at
-`ports/interactive-visual-audit.json` was not modified).
+Interaction review inspected action traces, target state, visibility/focus/hover where applicable, geometry and screenshots for navigation focus/hover, content link/rating focus, tags, credit/modal states, history/source transitions, dialogs, sidebar, login, footer, search, and Interwiki. Search's source-hidden control is recorded as an intentional upstream state, not an action failure. The Interwiki wrapper and iframe attach in all seven sampled engine/viewport cases; the default frame is zero-height because remote Crom data is unavailable.
 
-## Findings
+## Confirmed Technical Staff findings
 
-### SIGMA10-MOB-001 — Sigma-10 credit preview notice forces mobile horizontal overflow
+### SIGMA10-MOB-001 — JP credit preview notice causes horizontal overflow
 
-* Owner: **sigma10-staff-source** · severity: medium · blocker: no
-* Source: `sources/jp-localization.css` (compiled into `sigma10-offline.css`)
-* Rule: `.creditRate::before { content: 'プレビュー時、クレジットモジュール・Infoモジュールは非表示となっています。\A表示を確認するには、一度保存してください。'; display: list-item; white-space: pre; }` plus `.creditRate > li { display: none; }`
-* Observed: document `scrollWidth` 503 at a 390 px viewport (chromium, firefox), 492 (webkit), and 500 at a 320 px viewport. `white-space: pre` prevents the ~478 px single line from wrapping, so `ul.creditRate` overflows and expands the document.
-* Control: the identical DOM/shell under the runtime Sigma-9 baseline measures 390 (no overflow). Removing `ul.creditRate` from the same Sigma-10 DOM drops `documentWidth` 511 → 390 in an isolated probe.
-* Expected: no document-level horizontal overflow at supported narrow widths.
-* Recommended minimal change: `white-space: pre-wrap` (or `normal`); and scope the notice + `.creditRate > li{display:none}` to the preview context if that was the intent.
-* Fix verified: in an isolated browser load of the captured Sigma-10 mobile DOM, adding `.creditRate::before{white-space:pre-wrap !important}` reduced document `scrollWidth` from 511 to 390.
-* Evidence: `migration/sigma10/sigma10-baseline/artifacts/interactive/chromium/mobile/page-normal-settled-mobile-fbdd47e2…png` (sha256 `fbdd47e2…`), narrow-mobile `d8fee227…`, firefox `c9d81dae…`, webkit `770eb55d…`; Sigma-9 comparison `59970502…`.
+- **Owner/severity:** `sigma10-staff-source`, medium; migration blocker until resolved.
+- **Source:** frozen `sources/jp-localization.css`, selector `.creditRate::before` with `white-space: pre` and `.creditRate > li { display:none }`.
+- **Evidence:** the unwrapped Japanese notice extends the document to about 503px at a 390px Chromium viewport, 504px Firefox, 492px WebKit, and about 500px at 320px. At 768px Chromium reaches 806px. On every affected theme, the notice's `ul.creditRate` is the root/reachable edge. The matching Sigma-9 baseline does not add the same width. Thirty of 35 maintained themes gain mobile overflow; four clip/contain it (`dear-dictator`, `hansarp`, `inkblot`, `monotypical`), and `aesthetic-theme` reduces pre-existing overflow. The same four contain at 320px. No theme-specific repair is indicated.
+- **Minimal fix/proof:** allow wrapping (`pre-wrap` or `normal`), and scope the hidden-credit preview rule to preview context if intended. An isolated browser probe using `.creditRate::before { white-space: pre-wrap !important; }` returned the 390px document to 390px.
+- **Evidence references:** current screenshot hashes and per-theme paired measurements are recorded in `findings.json`; all 324 current matrix rows are in the migration audit.
 
-### SIGMA10-SEARCH-002 — Sigma-10 hides the desktop search input
+### SIGMA10-SEARCH-002 — upstream Sigma hides the search input
 
-* Owner: **sigma10-staff-source** (inherited from upstream) · secondary: wikijump-runtime · severity: low · blocker: no
-* Source: `sources/en-sigma.css` → `#search-top-box-input { display: none; }` ("Commenting out the search box at the top while native Wikidot search remains non-functional.")
-* Observed: desktop `shell.search.typed-focused` fails closed; the input is not visible.
-* Wikidot parity: intentional (native Wikidot search is non-functional). Wikijump consequence: Wikijump search *is* functional, so the primary search entry disappears on Wikijump.
-* Recommended: SCP-JP/Wikijump decision on whether to re-enable `#search-top-box-input` on Wikijump.
+- **Owner:** primary `sigma10-staff-source` / migration policy; secondary `wikijump-runtime`.
+- **Source/state:** `#search-top-box-input { display:none }` in frozen `sources/en-sigma.css`; three Chromium desktop/laptop/tablet `shell.search.typed-focused` rows directly verify computed `display:none` and zero-size bounds.
+- **Meaning:** intentional Wikidot parity, since native Wikidot search is non-functional. Wikijump search is functional, so the migration decision removes a working entry point. Decide explicitly whether Wikijump should preserve the hide rule; do not alter it silently.
 
-### THEMELAB-SIM-001 — migration shell injection was reverted by hydration (fixed)
+## Confirmed Wikijump finding
 
-* Owner: **theme-lab-fixture** · severity: high · status: **fixed in branch**
-* The source-derived `#top-bar`/`#side-bar` substitution ran right after DOMContentLoaded, but the Svelte shell hydrates ~1.3 s later and re-rendered the stale Theme Lab acceptance navigation over it. Before the fix, migration nav/shell states measured the retired Sigma-9 acceptance shell.
-* Fix: `injectMigrationShell()` waits for a delegated Svelte handler (hydration barrier) and re-applies the substitution until it survives a 400 ms quiet window, failing hard otherwise. Verified in the captured DOM (`#side-bar` = Sigma-10 nav-side, `#top-bar` = Sigma-10 nav-top).
+### WIKIJUMP-HIST-001 — mobile history source textarea overflows
 
-### EXT-INTERWIKI-001 — Interwiki visible contract needs external services
+At a 390px Chromium mobile viewport, `page.history.historical-source` measures 433px under both the Sigma-9 control and Sigma-10. The source textarea is the overflow contributor. Owner: `wikijump-runtime`; low severity and non-blocking for Sigma migration because the behavior is pre-existing and unchanged. Constrain the textarea to its pane while preserving usable source inspection. Both paired screenshot digests and widths are in `findings.json`.
 
-* Owner: **external-runtime-contract** · severity: info · blocker: no
-* Wikijump's local `/-/wikidot-interwiki/interwikiFrame.html` route emits `style="display:none"` when the external crom GraphQL fetch (`api.crom.avn.sh`) is blocked, so `.scpnet-interwiki-frame` has no links/height. The state fails closed (UNCONFIRMED) rather than reporting a false PASS.
-* The frozen Sigma-10 `nav-side`/`nav-interwiki`/`styleFrame` includes also reference external `interwiki.scp-jp.org` frames. Exact public authority is insufficient offline; the limitation is recorded rather than invented.
+## Theme Lab defects found and fixed
 
-### THEMELAB-FIXTURE-002 — fixture binding for migration states
+- `THEMELAB-SIM-001`: shell substitution previously ran before Svelte hydration, allowing the stale acceptance navigation to return. Capture now waits for hydration and verifies stable source-derived Sigma-10 navigation.
+- `THEMELAB-SIM-003`: WebKit image replay previously misreported locally fulfilled or blocked images as missing. Replay now respects the local route; the frozen nav-side pixel asset is verified and all 36 candidates have zero page-normal asset failures.
+- `THEMELAB-FIXTURE-002`: fixture-to-surface mapping is documented and bound to the manifest; navigation/shell states use the run-owned Sigma-10 shell, while acceptance content/admin states retain their appropriate fixture.
 
-* Owner: **theme-lab-fixture** · severity: low
-* `nav.*` and `shell.*` states now use `run-owned:sigma10-main` (the Sigma-10 SCP-JP shell). `content.tabview`/`content.collapsible`, `credit.*`, and the page history/source/files/tags/edit states keep the Theme Lab acceptance fixture because the frozen Sigma-10 example main page does not contain those components; Sigma-10 baseline CSS is still applied to them.
+## Bounded external contract
 
-## Theme ports on the Sigma-10 baseline
+`EXT-INTERWIKI-001` is owned by `external-runtime-contract`. The local wrapper/iframe attachment and measured placement are verified; frame height remains zero when external Crom data is blocked. Empty local Interwiki data keeps the run deterministic and all external requests were blocked. This evidence does **not** claim remote frame content, links, style propagation, resize messaging, or live Crom behavior. The frozen nav references `interwiki.scp-jp.org` and the local runtime's Crom integration; enabling arbitrary network access was not part of verification.
 
-All 35 maintained ports were captured over the Sigma-10 baseline (chromium
-desktop + mobile `page.normal`), and the same 35 + the baseline probe were
-captured over the runtime Sigma-9 baseline on the identical page/shell for a
-controlled comparison.
+## Intentional differences
 
-* Every overflowing theme's document width equals `ul.creditRate`'s reachable
-  right edge → the credit notice (SIGMA10-MOB-001) is the single driver.
-* The same themes overflow in chromium, firefox, and webkit mobile, and the same
-  four contain it; magnitudes differ slightly by engine (font metrics). At
-  chromium narrow-mobile (320 px) the same 31 overflow and the same four
-  contain it. No engine- or viewport-specific theme blocker was found.
-* 30 of 35 field themes gain mobile document overflow under Sigma-10 relative to
-  Sigma-9; 4 themes contain it (`dear-dictator`, `hansarp`, `inkblot`,
-  `monotypical` keep 390 by clipping); `aesthetic-theme` reduces.
-* No theme required an individual adaptation for this overflow: fixing
-  SIGMA10-MOB-001 fixes all of them. No theme-specific Sigma-10 blocker was
-  identified in the desktop or mobile `page.normal` composition.
-* The per-theme delta table is in `findings.json` under
-  `theme_sigma10_vs_sigma9_mobile_page_normal`.
+- Sigma-9 control screenshots contain the Sigma-10 credit markup without Sigma-10 styling; comparison is limited to geometry and attribution.
+- The upstream search input is intentionally hidden for Wikidot parity; Wikijump product impact remains an explicit decision (`SIGMA10-SEARCH-002`).
+- Source-derived page title/tagline text comes from the local authoring site's test configuration and is not SCP-JP production identity.
+- Browser matrix contracts use Firefox/WebKit desktop and mobile; Chromium additionally covers laptop, tablet, and 320px narrow-mobile.
 
-## Semantic review performed
+## Action list
 
-Reviewed screenshots (records remain `UNCONFIRMED`; a rendered page is not
-converted to PASS merely because it renders):
+**Technical Staff / migration policy:** resolve credit notice wrapping before migration; decide explicitly whether to retain the hidden search input on Wikijump.
 
-* Desktop `page.normal`: Sigma-10 header logo, SCP-JP desktop top bar, SCP-JP
-  sidebar, and the SCP-173 content render; the credit preview notice is visible
-  and contained at 1440 px.
-* Mobile `page.normal`: content column is narrowed by the document overflow
-  (SIGMA10-MOB-001); the notice line runs off the right edge.
-* Mobile `nav.mobile-top.submenu-expanded`: the Sigma-10 series submenu renders
-  and is contained.
-* Mobile `nav.sidebar.open`: the Sigma-10 SCP-JP sidebar renders and is readable.
-* Mobile `credit.view.open`: the credit modal renders over the dimmed page.
-* Desktop `page.history.list`: page options, revision table, and "Compare
-  revisions" controls render and are reachable; no overflow.
+**Wikijump runtime:** track the pre-existing history textarea width issue as low-priority runtime work. It is not a Sigma migration blocker.
 
-Keyboard/focus-order, pointer/hover reachability, and modal focus trapping were
-not systematically exercised, and unreviewed states stay `UNCONFIRMED`.
+**External runtime owner:** no migration action; retain the bounded Interwiki contract unless external service authority and deterministic fixtures are supplied.
 
-## Intentional differences (no action)
+## Final readiness statement
 
-* Sigma-10 header hides the configured site title text (`#header h1 a`
-  `max-height:0; line-height:0`). The visible "Editable local translation
-  corpus" tagline is the local test site configuration, not SCP-JP source.
-  Wikijump wraps the title/tagline in `<h1><a><span>` / `<h2><span>` while
-  Wikidot's header has no span wrapper, so Sigma-10's `#header h2 span` rule only
-  matches on Wikijump; `line-height:0` does not hide glyphs either way, so the
-  tagline shows on both platforms. Production SCP-JP would supply its own
-  title/tagline; no migration action is required for the test site's text.
-* Desktop search input hidden for Wikidot parity (see SIGMA10-SEARCH-002 for the
-  Wikijump decision).
-* Theme typography changes the credit notice width, so overflow magnitude differs
-  per theme; that is a consequence of SIGMA10-MOB-001, not a separate defect.
-* The `.close-menu` sidebar overlay anchor extends past the viewport interior but
-  is contained by `#side-bar` (document width unaffected) in both baselines.
+The simulator is closed: actionable simulator gaps 0; required matrix holes 0; stale current evidence 0; unexplained `UNCONFIRMED` records 0; ownerless blockers 0; fixture-owned defects 0. The Sigma-10 migration result is reviewable and owner-assigned. Promotion remains contingent on the Technical Staff credit-rule change and the explicit search policy decision; these are identified migration findings, not unfinished simulator work.
 
-## Unresolved simulator limitations
+## Validation
 
-1. Interwiki visible/style contract cannot be evaluated offline (EXT-INTERWIKI-001).
-2. Theme matrices cover chromium desktop, chromium/firefox/webkit mobile, and chromium narrow-mobile; firefox/webkit desktop and narrow-mobile theme matrices are not run.
-3. WebKit theme runs report one missing decorative external asset (`scp-jp.github.io/.../nav/side/black.png`, the Sigma-10 nav-side close-menu overlay). It is blocked by network policy, was not in the frozen dependency snapshot, and does not change the close-menu geometry; chromium/firefox block it silently.
-4. Semantic/visual review (readability, keyboard/focus order, pointer/hover, modal reachability) is not complete for every state; geometry/overflow are captured, and unreviewed records remain UNCONFIRMED.
-5. The local development runtime was shared with a concurrent deepwell mutation-testing session and recompiled repeatedly; captures hitting a restart window were retried, not recorded as migration findings.
-6. Authenticated administrator surfaces were captured on chromium desktop + mobile only.
-
-## Required validation (run on this branch)
-
-* `node --test install/local/theme-lab/tests/*.test.mjs` — 165/165 PASS
-* `python3 -m unittest discover -s install/local/theme-lab/tests -p 'test_*.py'` — 7/7 PASS
-* `node install/local/theme-lab/ports/scripts/prepare-maintainable-sources.mjs --check` — PASS
-* `node install/local/theme-lab/scripts/real-port-regression.mjs --verify-only` — 35/35 verified
-* `node install/local/theme-lab/sigma10-migration/check-sources.mjs` — 10 pages
-* `node install/local/theme-lab/sigma10-migration/snapshot-dependencies.mjs --check` — 52 entries
-* `node install/local/theme-lab/sigma10-migration/materialize-fixtures.mjs` — 9 fixtures / 7 transformations
-* `git diff --check` — PASS
-
-## Bottom line
-
-If SCP-JP changes its site baseline from Sigma-9 to the frozen current Sigma-10
-work, the single confirmed cross-cutting migration blocker is
-**SIGMA10-MOB-001** (the unconditional, non-wrapping JP credit preview notice),
-which alone causes mobile horizontal overflow on the baseline and on 30 of 35
-maintained theme ports. **SIGMA10-SEARCH-002** is a lower-severity Wikidot-parity
-choice with a Wikijump consequence. One Theme Lab simulation defect
-(**THEMELAB-SIM-001**) was found and fixed before conclusions were drawn.
-Interwiki remains an external contract and is reported, not invented.
+Source closure, dependency snapshot, deterministic fixture materialization, maintainable source check (34/34), real-port verification (35/35), Theme Lab Node tests (165/165), Python tests (7/7), final evidence checker, and the local Wikidot-identifier leak scan (40 constructs) pass. `pnpm --dir install/local/wikidot-verification offline` was also attempted; compatibility tests that require the pinned FTML commit stop before their assertions because this checkout has no FTML submodule/object for `bf49d32fe980611fed368661396a3d6c1f02c51f`. The migration branch does not modify FTML. `corpus-pinned-literals` was not applicable: no captured live-reference JSONL inputs are present in the checkout, and this work does not add source-matching logic.

@@ -16,7 +16,7 @@
       "source_identity": "pseudo-scp-jp:sigma-10:nav:side",
       "source_sha256": "d18bac7f763ccffc82dc251538660144404152310b9b029557a04d373f3b473f",
       "file": "fixtures/run-owned-sigma10-nav-side.wikidot.txt",
-      "sha256": "6a45d033c124abbef63eed7346c129c3088c565729e86ccc957fa9a19a838f8c"
+      "sha256": "910efd9b937f00eacc363cc70e3dd5574b23a6fc681806cdc0712a5c2fa60940"
     },
     {
       "slug": "run-owned:sigma10-nav-top",
@@ -32,7 +32,7 @@
       "source_identity": "pseudo-scp-jp:sigma-10:nav:interwiki",
       "source_sha256": "f53a2757204bc581471cc7a3eb400457fbc673fa9168f0e7da4bbe7c469d7ccd",
       "file": "fixtures/run-owned-sigma10-nav-interwiki.wikidot.txt",
-      "sha256": "f53a2757204bc581471cc7a3eb400457fbc673fa9168f0e7da4bbe7c469d7ccd"
+      "sha256": "0ed22bd0938b87ecdb8ff11897772aacfef830a00481f90430940cbda90e95ff"
     },
     {
       "slug": "run-owned:sigma10-credit-start",
@@ -72,7 +72,7 @@
       "source_identity": "scp-jp:component:interwiki-style",
       "source_sha256": "51ad052297c3ea8bf38549b93154eebb20995448b316458911f97677b9cee2dd",
       "file": "fixtures/run-owned-sigma10-interwiki-style.wikidot.txt",
-      "sha256": "51ad052297c3ea8bf38549b93154eebb20995448b316458911f97677b9cee2dd"
+      "sha256": "301143afee0523bfc684d68e8e9e6ef4f3732c545973f54af5b10ed3b9f95ba3"
     }
   ],
   "transformations": [
@@ -113,11 +113,59 @@
       "replacement": "run-owned:sigma10-interwiki-style"
     },
     {
+      "fixture": "run-owned:sigma10-nav-side",
+      "kind": "local-static-asset",
+      "source_url": "https://scp-jp.github.io/files/util/common/media/nav/side/black.png",
+      "asset_file": "4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7.png",
+      "sha256": "4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7"
+    },
+    {
       "fixture": "run-owned:sigma10-nav-top",
       "kind": "private-include-omitted",
       "source_identity": "mkn:secret:top"
+    },
+    {
+      "fixture": "run-owned:sigma10-nav-interwiki",
+      "kind": "bounded-runtime-stub",
+      "authority": "interwiki.scp-jp.org/interwikiFrame.html?lang={$lang}&community={$community}&pagename=%%name%%",
+      "role": "visible interwiki frame",
+      "data_url": "data:text/html,%3C!doctype%20html%3E%3Chtml%20lang=ja%3E%3Cbody%3E%3C/body%3E%3C/html%3E",
+      "content_data": "empty document; no live links or CSS are fabricated"
+    },
+    {
+      "fixture": "run-owned:sigma10-nav-interwiki",
+      "kind": "local-isolated-html-block",
+      "source_identity": "pseudo-scp-jp:sigma-10:nav:interwiki",
+      "reason": "Replace the deprecated remote embed wrapper with Wikidot HTML-block syntax for the empty local contract document; preserve the frozen public source separately."
+    },
+    {
+      "fixture": "run-owned:sigma10-nav-interwiki",
+      "kind": "local-interwiki-frame-contract",
+      "source_identity": "pseudo-scp-jp:sigma-10:nav:interwiki",
+      "reason": "The frozen ListPages range expansion has no local page match; omit only that data lookup and retain the frame wrapper/placement. Remote page-name link data remains external."
+    },
+    {
+      "fixture": "run-owned:sigma10-interwiki-style",
+      "kind": "bounded-runtime-stub",
+      "authority": "interwiki.scp-jp.org/styleFrame.html?priority={$priority}&theme={$theme}&css={$css}",
+      "role": "hidden style propagation frame",
+      "data_url": "data:text/html,%3C!doctype%20html%3E%3Chtml%20lang=ja%3E%3Cbody%3E%3C/body%3E%3C/html%3E",
+      "content_data": "empty document; no live links or CSS are fabricated"
+    },
+    {
+      "fixture": "run-owned:sigma10-interwiki-style",
+      "kind": "local-isolated-html-block",
+      "source_identity": "scp-jp:component:interwiki-style",
+      "reason": "Replace the deprecated remote embed wrapper with Wikidot HTML-block syntax for the empty local contract document; preserve the frozen public source separately."
     }
   ],
+  "static_assets": {
+    "https://scp-jp.github.io/files/util/common/media/nav/side/black.png": {
+      "sha256": "4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7",
+      "asset_file": "4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7.png",
+      "source_identity": "pseudo-scp-jp:sigma-10:nav:side"
+    }
+  },
   "external_runtime_contracts": [
     {
       "source": "pseudo-scp-jp:sigma-10:nav:interwiki",
@@ -129,5 +177,17 @@
       "url_template": "https://interwiki.scp-jp.org/styleFrame.html?priority={$priority}&theme={$theme}&css={$css}",
       "role": "hidden style propagation iframe"
     }
-  ]
+  ],
+  "interwiki_stubs": {
+    "interwiki.scp-jp.org/interwikiFrame.html?lang={$lang}&community={$community}&pagename=%%name%%": {
+      "source_identity": "pseudo-scp-jp:sigma-10:nav:interwiki",
+      "role": "visible interwiki frame",
+      "data_url": "data:text/html,%3C!doctype%20html%3E%3Chtml%20lang=ja%3E%3Cbody%3E%3C/body%3E%3C/html%3E"
+    },
+    "interwiki.scp-jp.org/styleFrame.html?priority={$priority}&theme={$theme}&css={$css}": {
+      "source_identity": "scp-jp:component:interwiki-style",
+      "role": "hidden style propagation frame",
+      "data_url": "data:text/html,%3C!doctype%20html%3E%3Chtml%20lang=ja%3E%3Cbody%3E%3C/body%3E%3C/html%3E"
+    }
+  }
 }
