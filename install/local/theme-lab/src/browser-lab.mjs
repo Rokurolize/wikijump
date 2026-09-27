@@ -666,39 +666,34 @@ export async function collectViewportOverflow(page, viewports) {
       void getComputedStyle(document.body).width;
       const root = document.documentElement;
       const content = document.querySelector("#page-content");
-      // Single document-order pass. Each element inherits the tightest clipping
-      // right-edge from its ancestors instead of re-walking the full ancestor
-      // chain (and forcing layout with getComputedStyle/getBoundingClientRect
-      // per ancestor) for every element. `querySelectorAll("body *")` yields
-      // document order, so a parent is always resolved before its children.
-      // The clip test is existential over ancestors, so the minimum qualifying
-      // right-edge is exactly equivalent to testing each ancestor in turn.
-      const clipOverflows = new Set(["auto", "scroll", "hidden", "clip"]);
-      const clipBound = new Map([[document.body, null]]);
-      const rows = [];
-      for (const element of document.querySelectorAll("body *")) {
-        const parent = element.parentElement;
-        let bound = clipBound.get(parent) ?? null;
-        if (parent && parent !== document.body) {
-          const parentRect = parent.getBoundingClientRect();
-          const parentStyle = getComputedStyle(parent);
-          if (
-            clipOverflows.has(parentStyle.overflowX) &&
-            parentRect.right <= root.clientWidth + 2
-          ) {
-            bound = bound === null ? parentRect.right : Math.min(bound, parentRect.right);
-          }
-        }
-        clipBound.set(element, bound);
+      const offenders = [];
+      const keepTopFive = (row) => {
+        let index = 0;
+        while (index < offenders.length && offenders[index].overflow_px >= row.overflow_px) index += 1;
+        offenders.splice(index, 0, row);
+        if (offenders.length > 5) offenders.pop();
+      };
+      const stack = [...document.body.children].reverse().map((element) => ({element, clippingRight: null}));
+      while (stack.length) {
+        const {element, clippingRight} = stack.pop();
         const rect = element.getBoundingClientRect();
-        const overflow_px = Math.max(0, rect.right - root.clientWidth);
-        const clipped = bound !== null && rect.right > bound + 2;
-        rows.push({element, rect, overflow_px, clipped});
+        const style = getComputedStyle(element);
+        const overflowPx = Math.max(0, rect.right - root.clientWidth);
+        const clipped = clippingRight !== null && rect.right > clippingRight + 2;
+        if (overflowPx > 0.5 && !clipped) keepTopFive({element, rect, style, overflow_px: overflowPx});
+        let childClippingRight = clippingRight;
+        if (
+          ["auto", "scroll", "hidden", "clip"].includes(style.overflowX) &&
+          rect.right <= root.clientWidth + 2
+        ) {
+          childClippingRight = childClippingRight === null ? rect.right : Math.min(childClippingRight, rect.right);
+        }
+        const children = element.children;
+        for (let index = children.length - 1; index >= 0; index -= 1) {
+          stack.push({element: children[index], clippingRight: childClippingRight});
+        }
       }
-      const offenders = rows
-        .filter((row) => row.overflow_px > 0.5 && !row.clipped)
-        .sort((a, b) => b.overflow_px - a.overflow_px)
-        .slice(0, 5)
+      const overflowSources = offenders
         .map(({element, rect, overflow_px}) => {
           const style = getComputedStyle(element);
           const selector = element.id ? `#${CSS.escape(element.id)}` :
@@ -725,7 +720,7 @@ export async function collectViewportOverflow(page, viewports) {
       const measurement = {
         document_overflow_px: Math.max(0, root.scrollWidth - root.clientWidth),
         content_overflow_px: content ? Math.max(0, content.scrollWidth - content.clientWidth) : null,
-        overflow_sources: offenders,
+        overflow_sources: overflowSources,
       };
       stabilityStyle.remove();
       return measurement;

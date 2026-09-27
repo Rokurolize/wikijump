@@ -19,10 +19,20 @@ const sharedSelectors = path.join(ports, "shared-acceptance-selectors.txt");
 const lab = path.join(root, "install/local/theme-lab/scripts/theme-lab.mjs");
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 const assetRoot = path.resolve(process.env.THEME_LAB_ASSET_DIR ?? path.join(ports, "shared-replay-assets"));
-const assetNames = new Set(fs.readdirSync(assetRoot));
+const assetByDigest = new Map();
+for (const name of fs.readdirSync(assetRoot)) {
+  const digest = name.match(/^([0-9a-f]{64})\./u)?.[1];
+  if (digest && !assetByDigest.has(digest)) assetByDigest.set(digest, name);
+}
+const shaCache = new Map();
 
 function sha256(file) {
-  return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+  let digest = shaCache.get(file);
+  if (!digest) {
+    digest = crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+    shaCache.set(file, digest);
+  }
+  return digest;
 }
 
 function verifyFrozenPackage(item) {
@@ -48,7 +58,7 @@ function verifyFrozenPackage(item) {
   }
   const assetManifest = JSON.parse(fs.readFileSync(path.join(item.directory, "assets.json"), "utf8"));
   for (const asset of assetManifest.assets ?? []) {
-    const filename = [...assetNames].find((name) => name.startsWith(`${asset.sha256}.`));
+    const filename = assetByDigest.get(asset.sha256);
     if (!filename || sha256(path.join(assetRoot, filename)) !== asset.sha256) {
       throw new Error(`${item.slug}: frozen CSS asset missing or corrupt: ${asset.sha256}`);
     }
