@@ -35,7 +35,14 @@ for(const contract of manifest.external_runtime_contracts??[]){
   if(!entry)throw new Error(`external runtime contract has no frozen source: ${contract.source}`);
   const source=await fs.readFile(path.join(here,entry.file),'utf8');
   const authority=new URL(contract.url_template.replaceAll('{$lang}','jp').replaceAll('{$community}','scp').replaceAll('%%name%%','fixture').replaceAll('{$priority}','0').replaceAll('{$theme}','https://example.invalid/theme.css').replaceAll('{$css}',''));
-  if(authority.protocol!=='https:'||!source.includes('interwiki.scp-jp.org/'))throw new Error(`external runtime contract changed: ${contract.source}`);
+  const embeddedUrls=[...source.matchAll(/\b(?:src|href)\s*=\s*["']([^"']+)["']/giu)].map(match=>match[1]);
+  const referencesAuthority=embeddedUrls.some(value=>{
+    try{
+      const parsed=new URL(value,'https://fixture.invalid');
+      return parsed.hostname===authority.hostname&&parsed.pathname===authority.pathname;
+    }catch{return false}
+  });
+  if(authority.protocol!=='https:'||authority.hostname!=='interwiki.scp-jp.org'||authority.username||authority.password||authority.port||!referencesAuthority)throw new Error(`external runtime contract changed: ${contract.source}`);
 }
 
 console.log(JSON.stringify({
