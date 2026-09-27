@@ -24,6 +24,20 @@ import { escapeMarkdownTableCell } from "./lib/markdown.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptDirectory, "..");
+
+// Per-run memoization of evidence bytes. The same evidence file is referenced
+// by many observations, contracts, and aliases; reading and re-hashing it once
+// per reference is avoidable I/O. Scoped to this process only, and every
+// reference still re-verifies its own expected SHA-256 against the bytes.
+const evidenceFileBytes = new Map();
+function readEvidenceFile(path) {
+  let bytes = evidenceFileBytes.get(path);
+  if (bytes === undefined) {
+    bytes = readFileSync(path);
+    evidenceFileBytes.set(path, bytes);
+  }
+  return bytes;
+}
 const outputRoot = join(repositoryRoot, "docs", "wikidot-specifications");
 const specificationsRoot = join(outputRoot, "specifications");
 const liveObservationsSourcePath = join(
@@ -182,13 +196,13 @@ for (const observation of liveObservations.observations) {
       `Live raw capture must use an absolute path for ${observation.id}`,
     );
     invariant(
-      sha256(readFileSync(rawCapture.path)) === rawCapture.sha256,
+      sha256(readEvidenceFile(rawCapture.path)) === rawCapture.sha256,
       `Live raw capture hash drifted for ${observation.id}: ${rawCapture.path}`,
     );
   }
   for (const evidence of observation.evidence) {
     const evidencePath = resolve(repositoryRoot, evidence.path);
-    const rawEvidence = readFileSync(evidencePath, "utf8");
+    const rawEvidence = readEvidenceFile(evidencePath).toString("utf8");
     invariant(
       sha256(rawEvidence) === evidence.sha256,
       `Live evidence hash drifted for ${observation.id}: ${evidence.path}`,
@@ -199,7 +213,7 @@ for (const observation of liveObservations.observations) {
     );
     const externalCaseIds = new Set();
     for (const row of evidenceRows) {
-      for (const caseId of verifiedExternalEvidenceCaseIds(row)) {
+      for (const caseId of verifiedExternalEvidenceCaseIds(row, evidenceFileBytes)) {
         externalCaseIds.add(caseId);
       }
     }
@@ -1424,7 +1438,7 @@ function validateDetailedContracts() {
       const evidencePath = evidence.path.startsWith("/")
         ? evidence.path
         : join(repositoryRoot, evidence.path);
-      const actual = readFileSync(evidencePath);
+      const actual = readEvidenceFile(evidencePath);
       invariant(
         sha256(actual) === evidence.sha256,
         `Detailed evidence ${alias} hash drifted: ${evidence.path}`,

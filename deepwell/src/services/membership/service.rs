@@ -773,7 +773,11 @@ WHERE invitation_id = $1 AND accepted = FALSE
             RelationDirection::Dest,
         )
         .await?;
-        let mut applications = Vec::new();
+        // Resolve every pending applicant name in one batched lookup rather
+        // than one `UserService::get` per relation. The order of the returned
+        // applications still follows the relation order.
+        let mut pending = Vec::new();
+        let mut applicant_ids = std::collections::BTreeSet::new();
         for relation in relations {
             let metadata: MembershipApplicationData =
                 serde_json::from_value(relation.metadata).or_raise(|| {
@@ -785,19 +789,23 @@ WHERE invitation_id = $1 AND accepted = FALSE
             if metadata.status != MembershipApplicationStatus::Pending {
                 continue;
             }
-            let identity = UserService::get(ctx, Reference::Id(relation.from_id))
-                .await?
-                .into_public_identity()
-                .ok_or_raise(|| {
-                    Error::new(
-                        "membership application user is unavailable",
-                        ErrorType::SiteMembership,
-                    )
-                })?;
+            applicant_ids.insert(relation.from_id);
+            pending.push((relation.from_id, metadata.comment));
+        }
+
+        let identities = UserService::get_public_identities(ctx, &applicant_ids).await?;
+        let mut applications = Vec::with_capacity(pending.len());
+        for (user_id, comment) in pending {
+            let identity = identities.get(&user_id).ok_or_raise(|| {
+                Error::new(
+                    "membership application user is unavailable",
+                    ErrorType::SiteMembership,
+                )
+            })?;
             applications.push(MembershipApplicationView {
-                user_id: relation.from_id,
-                user_name: identity.user_name.into_owned(),
-                comment: metadata.comment,
+                user_id,
+                user_name: identity.user_name.to_string(),
+                comment,
             });
         }
         Ok(applications)
