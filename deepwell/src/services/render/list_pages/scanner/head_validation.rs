@@ -798,3 +798,107 @@ pub(super) fn quote_follows_argument_equals(
     }
     cursor > lower_bound && bytes[cursor - 1] == b'='
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quote_balance_counts_only_unescaped_quotes() {
+        for balanced in [r#"abc"#, r#""a""#, r#""a\\""#, r#"'a'"#, r#""""#] {
+            let (head, quote) = if balanced.contains('\'') {
+                (balanced, b'\'')
+            } else {
+                (balanced, b'"')
+            };
+            assert!(
+                list_pages_head_quotes_are_balanced(head, quote),
+                "{balanced:?}"
+            );
+        }
+
+        // An odd quote, or a quote escaped by an odd run of backslashes, is
+        // unbalanced.
+        assert!(!list_pages_head_quotes_are_balanced(r#""a"#, b'"'));
+        assert!(!list_pages_head_quotes_are_balanced(r#""a\""#, b'"'));
+        assert!(!list_pages_head_quotes_are_balanced(r#"'a"#, b'\''));
+        assert!(list_pages_head_quotes_are_balanced(r#""a""#, b'"'));
+        assert!(!list_pages_head_double_quotes_are_balanced(r#""a"#));
+        assert!(list_pages_head_double_quotes_are_balanced(r#""a""#));
+    }
+
+    #[test]
+    fn nested_module_tokens_are_detected_through_whitespace_and_closing_markers() {
+        for module in [
+            "[[module ListPages]]",
+            "[[ module ListPages]]",
+            "[[/module]]",
+            "[[module_ ListPages]]",
+            "[[MoDuLe ListPages]]",
+        ] {
+            assert!(
+                list_pages_head_contains_nested_module_token(module),
+                "{module}"
+            );
+        }
+        for not_module in ["[[a]]", "[[moduleX]]", "no brackets", ""] {
+            assert!(
+                !list_pages_head_contains_nested_module_token(not_module),
+                "{not_module}"
+            );
+        }
+    }
+
+    #[test]
+    fn bracket_tokens_require_a_closed_pair_and_reject_nested_modules() {
+        for supported in ["", "[[a]]", "[[a]] [[b]]", "plain"] {
+            assert!(
+                list_pages_head_bracket_tokens_are_supported(supported),
+                "{supported}"
+            );
+        }
+        for unsupported in [
+            "[a]",
+            "[a]]",
+            "x [ y",
+            "a ]] b",
+            "[[a]",
+            "[[module x]]",
+            "[[/module]]",
+        ] {
+            assert!(
+                !list_pages_head_bracket_tokens_are_supported(unsupported),
+                "{unsupported}"
+            );
+        }
+    }
+
+    #[test]
+    fn definite_invalid_heads_do_not_execute() {
+        for invalid in [
+            "a\u{000b}b",
+            "a\u{000c}b",
+            "a\u{00a0}b",
+            "[[!-- comment --]]",
+            "x --] y",
+            "[[a]",
+            "]",
+            "tags='unbalanced",
+        ] {
+            assert!(
+                !list_pages_definite_invalid_head_can_execute(invalid),
+                "{invalid:?}"
+            );
+        }
+
+        // A plain head and an argument head with no nested module execute.
+        assert!(list_pages_definite_invalid_head_can_execute("ListPages"));
+        assert!(list_pages_definite_invalid_head_can_execute(
+            r#"ListPages tags="a""#
+        ));
+        // A nested module token inside the arguments does not.
+        assert!(!list_pages_definite_invalid_head_can_execute(
+            r#"ListPages tags="[[module x]]""#
+        ));
+    }
+}
