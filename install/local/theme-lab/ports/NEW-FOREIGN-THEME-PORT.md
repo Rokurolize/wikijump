@@ -34,8 +34,14 @@ The helper:
 4. POSTs `viewsource/ViewSourceModule` with the page ID and token;
 5. writes source text plus page/site/revision/update/hash metadata.
 
-This is a **live refresh command**, not a regression command. Freeze the
-acquired source in the package and use that frozen copy thereafter.
+This is an explicit evidence acquisition helper, not a regression command.
+The output and metadata pair are cache-first: rerunning the same command
+validates and reuses those retained bytes without a network request. Use
+`--refresh` only when you intentionally need a new live source revision. A
+live acquisition writes a durable `.acquiring` barrier first; if acquisition
+fails, later runs fail closed until that barrier is inspected rather than
+silently refetching. Freeze the acquired source in the package and use that
+frozen copy thereafter.
 
 Record at least:
 
