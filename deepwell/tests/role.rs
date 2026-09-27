@@ -23,7 +23,7 @@ mod common;
 
 use deepwell::services::RequestContext;
 use deepwell::services::membership::{
-    JoinActorState, MembershipJoinOutcome, MembershipService,
+    JoinActorState, MembershipJoinOutcome, MembershipPolicy, MembershipService,
 };
 use deepwell::services::permission::PermissionService;
 use deepwell::services::relation::{RelationObject, RelationService, SiteBanData};
@@ -262,6 +262,42 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
         }),
     );
     assert_contains_error!(forged, ErrorType::PermissionDenied);
+
+    // A renderer binding whose page differs from the trusted route must be
+    // denied even when that page carries an identical Join action, so the
+    // site/page/revision binding cannot be relaxed.
+    let decoy_slug = format!("system:join-decoy-{n}");
+    let decoy = PageService::create(
+        runner.context(),
+        CreatePage {
+            site_id: editable.site_id,
+            wikitext: "[[module Join]]".to_owned(),
+            title: "Decoy join page".to_owned(),
+            alt_title: None,
+            tags: Vec::new(),
+            slug: decoy_slug,
+            layout: None,
+            revision_comments: "Create self-join decoy fixture".to_owned(),
+            user_id: SYSTEM_USER_ID,
+            bypass_filter: true,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("decoy join fixture should be created");
+    let cross_page = run_endpoint_err!(
+        runner,
+        membership_join,
+        json!({
+            "page_id": decoy.page_id,
+            "last_revision_id": decoy.revision_id,
+            "action_index": join_action["index"],
+            "action_fingerprint": join_action["fingerprint"],
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(cross_page, ErrorType::PermissionDenied);
+
     let joined = run_endpoint!(runner, membership_join, join_request.clone(),);
     assert_eq!(joined, MembershipJoinOutcome::Joined);
     assert_eq!(
@@ -363,6 +399,19 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
     });
     let mirror_error = run_endpoint_err!(runner, membership_join, join_request,);
     assert_contains_error!(mirror_error, ErrorType::PermissionDenied);
+
+    // Only the editable local-authoring site is open; a non-deleted imported
+    // site with a different slug must remain closed.
+    assert_eq!(
+        MembershipService::policy(&editable),
+        MembershipPolicy::Open,
+        "the editable local-authoring site is the only open membership policy",
+    );
+    assert_eq!(
+        MembershipService::policy(&mirror),
+        MembershipPolicy::Closed,
+        "imported mirror sites must remain closed",
+    );
 }
 
 fn next_n() -> u64 {

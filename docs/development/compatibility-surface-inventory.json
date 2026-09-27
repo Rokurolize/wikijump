@@ -11385,7 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "57e1e64142462d50c423bbda1775a0da54043670f6f43be0bc59651dfabcaeb4"
+      "source_input_set_sha256": "5196767c1e4680dd6cb82e1114587d47a2bdbd2cc807c7549bb9e5c26e4619ac"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11402,7 +11402,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "391a60a3f9eaf669b35cfbda082d865f11e8b1a4a4ea37090c6e108f66f61b72"
+        "sha256": "9431415dcfdfcf63eb35c27af0c1c63459f6550cc1ecd1c771fa05e5bed8983a"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11546,7 +11546,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "6d9de595b13ba7c08359726971f91b566d599714fdec515a0531d86932b76f51"
+        "sha256": "7c65d3d3951ce4ece2449840315ffe71edd9c0ed32d46872fc14dcd5ec6a64cd"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11554,7 +11554,7 @@
       },
       {
         "path": "docs/development/framerail-route-action-evidence.json",
-        "sha256": "a2ad92385a039a3be3aa82cbd85184827315c6179389554436ee2871ba19a10e"
+        "sha256": "e3ad2d5fbe22695ebf0756bf247ee7626a361fc74a50e2396c33f255a3862e0e"
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
@@ -11610,7 +11610,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "ec930acdf034ec10a3e1015563858d0e5e846dee9983ba4ea46ada3b6f1095a4"
+        "sha256": "7d4915e482f7c82cc7e64441f4aa66290ec2d74d59661d1be241fd19048e05d9"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -23981,7 +23981,7 @@
         ],
         "cases": [],
         "tests": [
-          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+          "deepwell/tests/email.rs#email_validation_classifies_the_mock_mailcheck_contract"
         ]
       },
       "evidence": {
@@ -25016,7 +25016,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/auth.rs#mfa_setup_reset_disable_and_totp_login_flow"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
         ]
       },
       "evidence": {
@@ -25781,7 +25781,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/auth.rs#mfa_setup_reset_disable_and_totp_login_flow"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
         ]
       },
       "evidence": {
@@ -25826,7 +25826,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/auth.rs#mfa_setup_reset_disable_and_totp_login_flow"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
         ]
       },
       "evidence": {
@@ -29246,7 +29246,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/import.rs#import_user_creates_known_user_and_can_be_reclaimed"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
         ]
       },
       "evidence": {
@@ -34215,7 +34215,7 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+          "framerail/tests/page-file-client-ip.test.js#file delete and move actions bind the actor and routed page context"
         ]
       },
       "evidence": {
@@ -34256,7 +34256,7 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+          "framerail/tests/page-file-client-ip.test.js#file edit, restore, and rollback actions forward getClientAddress through Deepwell"
         ]
       },
       "evidence": {
@@ -34379,7 +34379,7 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+          "framerail/tests/page-file-client-ip.test.js#file delete and move actions bind the actor and routed page context"
         ]
       },
       "evidence": {
@@ -34420,7 +34420,7 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+          "framerail/tests/page-file-client-ip.test.js#file edit, restore, and rollback actions forward getClientAddress through Deepwell"
         ]
       },
       "evidence": {
@@ -34461,7 +34461,7 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+          "framerail/tests/page-file-client-ip.test.js#file edit, restore, and rollback actions forward getClientAddress through Deepwell"
         ]
       },
       "evidence": {
@@ -35691,7 +35691,7 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+          "framerail/tests/page-file-client-ip.test.js#file delete and move actions bind the actor and routed page context"
         ]
       },
       "evidence": {
@@ -35732,7 +35732,7 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+          "framerail/tests/page-file-client-ip.test.js#file edit, restore, and rollback actions forward getClientAddress through Deepwell"
         ]
       },
       "evidence": {
@@ -35855,7 +35855,7 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+          "framerail/tests/page-file-client-ip.test.js#file delete and move actions bind the actor and routed page context"
         ]
       },
       "evidence": {
@@ -35896,7 +35896,7 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+          "framerail/tests/page-file-client-ip.test.js#file edit, restore, and rollback actions forward getClientAddress through Deepwell"
         ]
       },
       "evidence": {
@@ -35937,7 +35937,7 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+          "framerail/tests/page-file-client-ip.test.js#file edit, restore, and rollback actions forward getClientAddress through Deepwell"
         ]
       },
       "evidence": {

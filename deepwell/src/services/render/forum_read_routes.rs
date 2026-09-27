@@ -1033,4 +1033,11 @@ mod tests {
             ),
         );
     }
+
+    #[test]
+    fn category_pager_is_absent_for_a_single_page() {
+        let mut output = String::new();
+        push_forum_category_pager(&mut output, 1_113_520, 1, 1);
+        assert_eq!(output, "", "a single-page category must not render a pager",);
+    }
 }

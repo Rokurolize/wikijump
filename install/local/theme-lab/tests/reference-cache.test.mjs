@@ -214,6 +214,26 @@ test("offline acquire fails closed on an empty cache", async (t) => {
   );
 });
 
+test("content-addressed object retains first-seen original URLs in order", async (t) => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "theme-lab-ref-urls-"));
+  t.after(() => fs.rm(dir, {recursive: true, force: true}));
+  const cache = new ReferenceCache({cacheDir: dir, allowPrivate: true});
+  await cache.load();
+  const body = Buffer.from("shared object");
+  const urls = Array.from({length: 64}, (_, i) => `https://example.com/asset-${i}`);
+  for (const url of [...urls, ...urls.slice(0, 16)]) {
+    await cache.storeObject(body, "text/css", {originalUrl: url});
+  }
+  const digest = sha256Hex(body);
+  assert.deepEqual(cache.manifest.objects[digest].original_urls, urls);
+  await cache.save();
+  const reloaded = new ReferenceCache({cacheDir: dir, allowPrivate: true});
+  await reloaded.load();
+  await reloaded.storeObject(body, "text/css", {originalUrl: urls[0]});
+  await reloaded.storeObject(body, "text/css", {originalUrl: "https://example.com/final"});
+  assert.deepEqual(reloaded.manifest.objects[digest].original_urls, [...urls, "https://example.com/final"]);
+});
+
 test("redirects are followed and recorded", async (t) => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "theme-lab-ref-redir-"));
   const fixture = await fixtureServer();

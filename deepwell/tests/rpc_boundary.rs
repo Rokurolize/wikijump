@@ -18,12 +18,21 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use data_encoding::BASE32_NOPAD;
 use deepwell::api::{build_server_at, build_server_state_without_workers};
 use deepwell::config::{Config, Secrets};
+use deepwell::constants::ADMIN_USER_ID;
 use deepwell::error::ErrorType;
+use deepwell::models::known_user::Entity as KnownUser;
+use deepwell::models::session::Entity as SessionTable;
+use deepwell::services::session::CreateSession;
+use deepwell::services::{ServiceContext, SessionService};
+use rust_otp::{Algorithm as TotpAlgorithm, TOTP};
+use sea_orm::{ConnectionTrait, EntityTrait, TransactionTrait};
 use serde_json::{Value, json};
 use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 async fn rpc_request(method: &str, params: Value) -> Value {
     let state = build_server_state_without_workers(
@@ -104,4 +113,323 @@ async fn production_rpc_stack_registers_page_who_rated() {
         ErrorType::PermissionDenied.code()
     );
     assert_ne!(response["error"]["code"], -32601);
+}
+
+async fn rpc_request_with_session(
+    session_token: &str,
+    method: &str,
+    params: Value,
+) -> Value {
+    let state = build_server_state_without_workers(
+        Config::integration_testing(),
+        Secrets::load(),
+    )
+    .await
+    .expect("Unable to set up server state");
+    let (address, handle) =
+        build_server_at(state, SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0))
+            .await
+            .expect("Unable to start RPC server");
+
+    let response = reqwest::Client::new()
+        .post(format!("http://{address}"))
+        .bearer_auth(
+            env::var("DEEPWELL_RPC_TOKEN").expect("test RPC token must be configured"),
+        )
+        .header("X-Deepwell-Site-Id", "42")
+        .header("X-Deepwell-Page", "category:page")
+        .header("X-Deepwell-Session-Token", session_token)
+        .json(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": method,
+            "params": params,
+        }))
+        .send()
+        .await
+        .expect("RPC request should complete")
+        .json()
+        .await
+        .expect("RPC response should be JSON");
+
+    handle.stop().expect("RPC server should stop");
+    handle.stopped().await;
+    response
+}
+
+/// A request that fails for an internal reason must roll back every write it
+/// performed, even though a terminal MFA rejection is allowed to commit. The
+/// production RPC wrapper owns that decision, so the boundary is proved here
+/// rather than through a direct endpoint call.
+#[tokio::test]
+async fn production_rpc_stack_rolls_back_internal_failure_writes() {
+    let state = build_server_state_without_workers(
+        Config::integration_testing(),
+        Secrets::load(),
+    )
+    .await
+    .expect("Unable to set up server state");
+
+    // A platform-staff session authorizes the privileged creation path that
+    // inserts a known_user placeholder before its remaining validation runs.
+    let session_token = {
+        let txn = state
+            .database
+            .begin()
+            .await
+            .expect("Unable to start session transaction");
+        let ctx = ServiceContext::new(&state, &txn);
+        let token = SessionService::create(
+            &ctx,
+            CreateSession {
+                user_id: ADMIN_USER_ID,
+                ip_address: IpAddr::V4(Ipv4Addr::LOCALHOST),
+                user_agent: "rpc-boundary-rollback-probe".to_owned(),
+                restricted: false,
+            },
+        )
+        .await
+        .expect("admin session should be created");
+        txn.commit()
+            .await
+            .expect("session transaction should commit");
+        token
+    };
+
+    // Unique per run so a committed placeholder from a previous run cannot make
+    // the probe take the "already exists" branch before its validation.
+    let probe_id = 1_000_000_000_i64
+        + (SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock should be after the Unix epoch")
+            .subsec_nanos() as i64)
+            .rem_euclid(500_000_000);
+
+    let response = rpc_request_with_session(
+        &session_token,
+        "user_create",
+        json!({
+            "user_type": "regular",
+            "name": "rpc-boundary-rollback-probe",
+            "email": "rpc-boundary-rollback-probe@example.com",
+            "locales": ["en", "en"],
+            "password": "password",
+            "bypass_filter": true,
+            "bypass_email_verification": true,
+            "override_user_id": probe_id,
+            "ip_address": "192.0.2.1",
+        }),
+    )
+    .await;
+
+    assert!(
+        response.get("result").is_none(),
+        "duplicate locales must be rejected: {response}",
+    );
+    assert_eq!(
+        response["error"]["code"],
+        ErrorType::BadRequest.code(),
+        "the probe must reach locale validation after its placeholder write: {response}",
+    );
+
+    let txn = state
+        .database
+        .begin()
+        .await
+        .expect("Unable to start verification transaction");
+    let placeholder = KnownUser::find_by_id(probe_id)
+        .one(&txn)
+        .await
+        .expect("known_user lookup should succeed");
+    txn.rollback()
+        .await
+        .expect("verification transaction should roll back");
+
+    assert!(
+        placeholder.is_none(),
+        "an internal failure must roll back the known_user placeholder insert",
+    );
+
+    // Best-effort cleanup so repeated runs in the shared task-owned database
+    // never observe a leftover placeholder or probe session.
+    state
+        .database
+        .execute_unprepared(&format!(
+            "DELETE FROM known_user WHERE user_id = {probe_id}"
+        ))
+        .await
+        .ok();
+    state
+        .database
+        .execute_unprepared(&format!(
+            "DELETE FROM session WHERE session_token = '{}'",
+            session_token.replace('\'', "''"),
+        ))
+        .await
+        .ok();
+}
+
+/// The terminal MFA rejection is the one error path that must commit: the
+/// restricted session's failed-attempt counter has to survive the rejected
+/// request. The production RPC wrapper owns that decision, so the boundary is
+/// proved here rather than through a direct endpoint call.
+#[tokio::test]
+async fn production_rpc_stack_commits_terminal_mfa_rejection_state() {
+    let state = build_server_state_without_workers(
+        Config::integration_testing(),
+        Secrets::load(),
+    )
+    .await
+    .expect("Unable to set up server state");
+
+    let suffix = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system clock should be after the Unix epoch")
+        .as_nanos();
+    let name = format!("Rpc Boundary Mfa {suffix}");
+    let email = format!("rpc-boundary-mfa-{suffix}@example.com");
+    let password = "rpc-boundary-mfa-password";
+
+    let created = rpc_request(
+        "user_create",
+        json!({
+            "user_type": "regular",
+            "name": name,
+            "email": email,
+            "locales": ["en"],
+            "password": password,
+            "ip_address": "192.0.2.1",
+        }),
+    )
+    .await;
+    let user_id = created["result"]["user_id"]
+        .as_i64()
+        .unwrap_or_else(|| panic!("user_create should return a user id: {created}"));
+
+    let login = rpc_request(
+        "login",
+        json!({
+            "name_or_email": name,
+            "password": password,
+            "ip_address": "192.0.2.1",
+            "user_agent": "rpc-boundary-mfa",
+        }),
+    )
+    .await;
+    assert_eq!(
+        login["result"]["needs_mfa"],
+        json!(false),
+        "first login should not require MFA: {login}",
+    );
+    let session_token = login["result"]["session_token"]
+        .as_str()
+        .expect("login should return a session token")
+        .to_owned();
+
+    let setup = rpc_request(
+        "mfa_setup",
+        json!({
+            "user_id": user_id,
+            "session_token": session_token,
+            "ip_address": "192.0.2.1",
+        }),
+    )
+    .await;
+    let secret = setup["result"]["totp_secret"]
+        .as_str()
+        .unwrap_or_else(|| panic!("mfa_setup should return a TOTP secret: {setup}"))
+        .to_owned();
+
+    let mfa_login = rpc_request(
+        "login",
+        json!({
+            "name_or_email": name,
+            "password": password,
+            "ip_address": "192.0.2.1",
+            "user_agent": "rpc-boundary-mfa",
+        }),
+    )
+    .await;
+    assert_eq!(
+        mfa_login["result"]["needs_mfa"],
+        json!(true),
+        "second login should require MFA: {mfa_login}",
+    );
+    let restricted_token = mfa_login["result"]["session_token"]
+        .as_str()
+        .expect("MFA login should return a restricted session token")
+        .to_owned();
+
+    // Build a code that is certainly wrong for the current time step.
+    let secret_bytes = BASE32_NOPAD
+        .decode(secret.as_bytes())
+        .expect("generated TOTP secret should be valid base32");
+    let totp = TOTP::builder()
+        .secret(secret_bytes)
+        .algorithm(TotpAlgorithm::SHA256)
+        .digits(state.config.totp_digits)
+        .time_step(state.config.totp_time_step)
+        .build()
+        .expect("TOTP builder should accept Deepwell configuration");
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system clock should be after the Unix epoch")
+        .as_secs()
+        .checked_add_signed(state.config.totp_time_skew)
+        .expect("configured TOTP time offset should produce a valid timestamp");
+    let valid_code = totp.generate_at(timestamp).to_string();
+    let modulus = 10_u32.pow(state.config.totp_digits);
+    let wrong_code = (valid_code
+        .parse::<u32>()
+        .expect("TOTP code should be numeric")
+        + 1)
+    .checked_rem(modulus)
+    .expect("TOTP modulus should be nonzero")
+    .to_string();
+
+    let rejected = rpc_request(
+        "mfa_verify",
+        json!({
+            "session_token": restricted_token,
+            "totp_or_code": wrong_code,
+            "ip_address": "192.0.2.1",
+            "user_agent": "rpc-boundary-mfa",
+        }),
+    )
+    .await;
+    assert_eq!(
+        rejected["error"]["code"],
+        ErrorType::InvalidAuthentication.code(),
+        "a wrong TOTP must be rejected: {rejected}",
+    );
+
+    let txn = state
+        .database
+        .begin()
+        .await
+        .expect("Unable to start verification transaction");
+    let session = SessionTable::find_by_id(restricted_token.clone())
+        .one(&txn)
+        .await
+        .expect("session lookup should succeed");
+    txn.rollback()
+        .await
+        .expect("verification transaction should roll back");
+
+    assert_eq!(
+        session
+            .expect("restricted session should exist")
+            .mfa_failed_attempts,
+        1,
+        "a terminal MFA rejection must persist the failed-attempt counter",
+    );
+
+    // Best-effort cleanup for repeated runs in the shared task-owned database.
+    for statement in [
+        format!("DELETE FROM session WHERE user_id = {user_id}"),
+        format!("DELETE FROM \"user\" WHERE user_id = {user_id}"),
+        format!("DELETE FROM known_user WHERE user_id = {user_id}"),
+    ] {
+        state.database.execute_unprepared(&statement).await.ok();
+    }
 }

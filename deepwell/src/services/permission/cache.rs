@@ -412,3 +412,38 @@ impl PermissionCache {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Distinct fence versions must produce distinct key fragments, otherwise
+    /// the article-view cache key would not change when a permission fence is
+    /// bumped and stale content could be served.
+    #[test]
+    fn permission_cache_fence_fragment_distinguishes_versions() {
+        let baseline = PermissionCacheFence {
+            site_version: "1".to_owned(),
+            user_version: "2".to_owned(),
+        };
+        let other_user = PermissionCacheFence {
+            site_version: "1".to_owned(),
+            user_version: "3".to_owned(),
+        };
+        let other_site = PermissionCacheFence {
+            site_version: "9".to_owned(),
+            user_version: "2".to_owned(),
+        };
+
+        assert_ne!(
+            baseline.cache_key_fragment(),
+            other_user.cache_key_fragment(),
+            "a changed user fence version must change the key fragment"
+        );
+        assert_ne!(
+            baseline.cache_key_fragment(),
+            other_site.cache_key_fragment(),
+            "a changed site fence version must change the key fragment"
+        );
+    }
+}

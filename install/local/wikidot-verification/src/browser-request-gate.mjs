@@ -1,4 +1,4 @@
-import {randomUUID} from "node:crypto";
+import {createHash, randomUUID} from "node:crypto";
 import fs from "node:fs/promises";
 import {constants as fsConstants} from "node:fs";
 import os from "node:os";
@@ -293,9 +293,8 @@ async function syncDirectory(directory) {
   }
 }
 
-async function withPrivateCacheManifestLock(filePath, operation) {
+async function withPrivateCacheManifestLock(filePath, operation, {lockPath = `${filePath}.lock`} = {}) {
   const directory = path.dirname(filePath);
-  const lockPath = `${filePath}.lock`;
   await ensurePrivateCacheDirectory(directory);
   const startTicks = await currentProcessStartTicks(process.pid);
   if (!startTicks) throw new Error("cannot bind browser response cache manifest lock to this process");
@@ -486,6 +485,10 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
   }
 
   function matchingRetainedEntry(baseKey, requestHeaders, {count = true} = {}) {
+    if (acquisitionBarriers.has(baseKey)) {
+      if (count) throw new Error(`browser response cache refuses to reacquire an identity with uncertain prior acquisition: ${baseKey}`);
+      return null;
+    }
     const normalizedRequestHeaders = requestHeaders === null ? null : normalizedHeaderRecord(requestHeaders);
     let retained304 = false;
     for (const candidateKey of [baseKey, unconditionalResponseCacheKey(baseKey)].filter((key, index, keys) => key !== null && keys.indexOf(key) === index)) {
@@ -616,8 +619,10 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
       const fill = persistentPath === null
         ? Promise.resolve().then(() => producer({deferFlush: false, markAcquisitionStarted: async () => {}}))
         : withPrivateCacheManifestLock(persistentPath, async () => {
-            await mergeCurrentManifest();
-            const diskRetained = matchingRetainedEntry(cacheKey, requestHeaders, {count: false});
+            const diskRetained = await withPrivateCacheManifestLock(persistentPath, async () => {
+              await mergeCurrentManifest();
+              return matchingRetainedEntry(cacheKey, requestHeaders, {count: false});
+            });
             if (diskRetained) {
               hits += 1;
               if (varyHeaderNames(diskRetained.headers).length > 0) exactVariantHits += 1;
@@ -629,20 +634,28 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
             let acquisitionStarted = false;
             const markAcquisitionStarted = async () => {
               if (acquisitionStarted) return;
-              acquisitionBarriers.add(cacheKey);
-              mutationGeneration += 1;
-              await writeCurrentManifest();
-              persistedGeneration = mutationGeneration;
+              await withPrivateCacheManifestLock(persistentPath, async () => {
+                await mergeCurrentManifest();
+                acquisitionBarriers.add(cacheKey);
+                mutationGeneration += 1;
+                await writeCurrentManifest();
+                persistedGeneration = mutationGeneration;
+              });
               acquisitionStarted = true;
             };
             const value = await producer({deferFlush: true, markAcquisitionStarted});
-            if (acquisitionStarted) {
-              acquisitionBarriers.delete(cacheKey);
-              mutationGeneration += 1;
-            }
-            await writeCurrentManifest();
-            persistedGeneration = mutationGeneration;
+            await withPrivateCacheManifestLock(persistentPath, async () => {
+              await mergeCurrentManifest();
+              if (acquisitionStarted) {
+                acquisitionBarriers.delete(cacheKey);
+                mutationGeneration += 1;
+              }
+              await writeCurrentManifest();
+              persistedGeneration = mutationGeneration;
+            });
             return value;
+          }, {
+            lockPath: `${persistentPath}.fill-${createHash("sha256").update(cacheKey).digest("hex")}.lock`,
           });
       fills.set(fillIdentity, fill);
       try {
