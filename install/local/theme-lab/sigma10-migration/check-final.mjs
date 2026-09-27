@@ -80,6 +80,16 @@ for(const r of audit.records){
 }
 for(const f of findings.findings??[])if(f.blocker===true&&!String(f.owner??'').trim())fail.push(`ownerless blocker ${f.id}`);
 for(const f of findings.findings??[])if(f.actionable===true&&!String(f.classification??'').trim())fail.push(`unclassified actionable finding ${f.id}`);
+if((findings.findings??[]).some(f=>f.id==='SIGMA10-SEARCH-002'))fail.push('obsolete SIGMA10-SEARCH-002 finding remains; hidden search is expected Wikidot unavailable-search parity');
+const searchParityRows=audit.records.filter(r=>r.surface==='shell.search'&&r.state==='typed-focused');
+if(searchParityRows.length!==3)fail.push(`expected 3 desktop/laptop/tablet search parity rows, got ${searchParityRows.length}`);
+for(const r of searchParityRows){
+ if(r.classification!=='PASS_INTENTIONAL_DIVERGENCE')fail.push(`search parity row is not intentional divergence: ${r.browser_engine}/${r.viewport}`);
+ if(r.migration_review?.owner!=null)fail.push(`search parity row incorrectly has an owner: ${r.browser_engine}/${r.viewport}`);
+ if(r.migration_review?.confirmed_finding_ids?.length)fail.push(`search parity row incorrectly references a migration finding: ${r.browser_engine}/${r.viewport}`);
+ if(r.action_contract_observation?.control!=='#search-top-box-input'||r.action_contract_observation?.display!=='none')fail.push(`search parity observation changed: ${r.browser_engine}/${r.viewport}`);
+ if(!r.migration_review?.intentional_difference?.includes('Wikijump deliberately reproduces that unavailable search contract'))fail.push(`search parity rationale is missing the Wikidot-unavailable contract: ${r.browser_engine}/${r.viewport}`);
+}
 const expectedCoverage=findings.coverage?.current_records;
 if(expectedCoverage!=null&&expectedCoverage!==audit.records.length)fail.push(`findings current record count ${expectedCoverage} != audit ${audit.records.length}`);
 if(findings.coverage?.comparison_records!=null&&findings.coverage.comparison_records!==comparison.records.length)fail.push(`findings comparison count ${findings.coverage.comparison_records} != audit ${comparison.records.length}`);

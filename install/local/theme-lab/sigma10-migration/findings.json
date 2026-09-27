@@ -59,7 +59,6 @@
     "theme_page_normal_external_requests_sent": 0,
     "representative_keyboard_focus_pointer_modal_states_exercised": true,
     "classified_baseline_action_failures": {
-      "SIGMA10-SEARCH-002": 3,
       "EXT-INTERWIKI-001": 3
     },
     "comparison_superseded_records": 36,
@@ -128,85 +127,6 @@
       },
       "fix_verification": "In an isolated browser load of the captured Sigma-10 mobile DOM, adding .creditRate::before{white-space:pre-wrap !important} reduced document scrollWidth from 511 to 390.",
       "classification": "CONFIRMED",
-      "actionable": true
-    },
-    {
-      "id": "SIGMA10-SEARCH-002",
-      "severity": "low",
-      "owner": "sigma10-staff-source",
-      "blocker": false,
-      "secondary_owner": "wikijump-runtime",
-      "title": "Sigma-10 hides the desktop search input, removing a working Wikijump search entry",
-      "affected_surface": [
-        "shell.search"
-      ],
-      "browser": [
-        "chromium"
-      ],
-      "viewport": [
-        "desktop",
-        "laptop",
-        "tablet"
-      ],
-      "interaction_state": "typed-focused",
-      "technical_staff_source_revision": "2bfcb97451695d99e8d056c3ac40ec954e005636",
-      "source_file": "sources/en-sigma.css (upstream scpwiki/sigma 84d8171abbeb5cc0b4e6c2f80ef553e08a053359)",
-      "selector": "#search-top-box-input",
-      "source_fragment": "#search-top-box-input { display: none; }  /* comment: 'Commenting out the search box at the top while native Wikidot search remains non-functional.' */",
-      "observed_behavior": "The shell.search.typed-focused state fails closed at Chromium desktop, laptop, and tablet because #search-top-box-input is display:none. The submit button remains.",
-      "expected_behavior": "Wikidot parity: hidden (native Wikidot search is non-functional). Wikijump consequence: Wikijump search is functional, so hiding the input removes the primary search entry on Wikijump.",
-      "why_sigma10_not_wikijump": "The hiding rule is Sigma-10 baseline CSS, inherited from upstream. Wikijump exposes a working search (submitWikidotTopSearch).",
-      "minimal_recommended_change": "Decide whether SCP-JP wants a search entry on Wikijump; if so, re-enable #search-top-box-input for the Wikijump environment or override it in the SCP-JP shell.",
-      "evidence": {
-        "records": [
-          {
-            "engine": "chromium",
-            "viewport": "desktop",
-            "sha256": "ed313f6c523728e52f6673362657acd804b11628095edf06f9d6740e4e84c963",
-            "observation": {
-              "control": "#search-top-box-input",
-              "display": "none",
-              "visibility": "visible",
-              "rect": {
-                "width": 0,
-                "height": 0
-              }
-            },
-            "review": "PASS_INTENTIONAL_DIVERGENCE"
-          },
-          {
-            "engine": "chromium",
-            "viewport": "laptop",
-            "sha256": "e038acd215d160b32e465a478bc5971870d9ce3ab81fa0b5ffeb734f168bd6d0",
-            "observation": {
-              "control": "#search-top-box-input",
-              "display": "none",
-              "visibility": "visible",
-              "rect": {
-                "width": 0,
-                "height": 0
-              }
-            },
-            "review": "PASS_INTENTIONAL_DIVERGENCE"
-          },
-          {
-            "engine": "chromium",
-            "viewport": "tablet",
-            "sha256": "2f9dbc4f49256ca91c242c552ad273633b0787631aafcc4e1566374a117f8695",
-            "observation": {
-              "control": "#search-top-box-input",
-              "display": "none",
-              "visibility": "visible",
-              "rect": {
-                "width": 0,
-                "height": 0
-              }
-            },
-            "review": "PASS_INTENTIONAL_DIVERGENCE"
-          }
-        ]
-      },
-      "classification": "CONFIRMED_INTENTIONAL_UPSTREAM",
       "actionable": true
     },
     {
@@ -728,7 +648,7 @@
   "unresolved_simulator_limitations": [],
   "intentional_differences": [
     "Sigma-10 header hides the configured site title/tagline text (max-height:0; line-height:0). The visible \"Local Translation Corpus\" text is the local test site configuration, not SCP-JP source; production SCP-JP would supply its own title/tagline.",
-    "Sigma-10 baseline intentionally hides #search-top-box-input for Wikidot parity (see SIGMA10-SEARCH-002 for the Wikijump consequence).",
+    "Sigma-10 baseline intentionally hides #search-top-box-input because current Wikidot search is unavailable. Wikijump deliberately reproduces that unavailable search contract, so this is expected Wikidot parity and requires no migration action.",
     "Theme overlays change document typography, so the credit notice width (and therefore overflow magnitude) differs per theme; this is a consequence of SIGMA10-MOB-001, not a separate theme defect."
   ],
   "completion": {
