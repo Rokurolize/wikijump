@@ -776,4 +776,54 @@ mod tests {
         assert_ne!(base, wikidot_social_nonce("source", 1));
         assert_ne!(base, wikidot_social_nonce("other", 0));
     }
+
+    #[test]
+    fn selected_content_protects_only_include_and_image_openings() {
+        let source = concat!(
+            "a [[include component:x]] b [[image foo.png]] ",
+            "c [[span]]d[[/span]] e [[includex]] f [[imagefoo]]",
+        );
+        let mut fragments = CompatTextFragments::new(source);
+        let protected = protect_selected_content_includes(source, &mut fragments);
+
+        assert!(
+            !protected.contains("[[include component:x]]"),
+            "{protected}"
+        );
+        assert!(!protected.contains("[[image foo.png]]"), "{protected}");
+        assert!(protected.contains("[[span]]"), "{protected}");
+        assert!(protected.contains("[[includex]]"), "{protected}");
+        assert!(protected.contains("[[imagefoo]]"), "{protected}");
+        assert_eq!(fragments.restore(&protected), source);
+    }
+
+    #[test]
+    fn selected_content_leaves_includes_inside_literal_regions() {
+        let source = "before @@[[include component:x]]@@ after";
+        let mut fragments = CompatTextFragments::new(source);
+        let protected = protect_selected_content_includes(source, &mut fragments);
+
+        assert!(protected.contains("[[include component:x]]"), "{protected}");
+        assert_eq!(protected, source);
+    }
+
+    #[test]
+    fn selected_content_protects_spaced_and_leading_include_openings() {
+        // Whitespace between `[[` and the keyword is allowed.
+        let spaced = "x [[ include component:y]] z";
+        let mut fragments = CompatTextFragments::new(spaced);
+        let protected = protect_selected_content_includes(spaced, &mut fragments);
+        assert!(
+            !protected.contains("[[ include component:y]]"),
+            "{protected}"
+        );
+        assert_eq!(fragments.restore(&protected), spaced);
+
+        // An opening at index 0 is protected without underflowing.
+        let leading = "[[include a]] tail";
+        let mut fragments = CompatTextFragments::new(leading);
+        let protected = protect_selected_content_includes(leading, &mut fragments);
+        assert!(!protected.contains("[[include a]]"), "{protected}");
+        assert_eq!(fragments.restore(&protected), leading);
+    }
 }

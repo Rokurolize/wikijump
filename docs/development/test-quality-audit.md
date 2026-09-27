@@ -71,7 +71,7 @@ low-signal.
 cargo mutants --in-place --manifest-path deepwell/Cargo.toml \
   -f src/services/context.rs \
   -F 'should_commit_authentication_rejection' \
-  --baseline run --timeout 600 --build-timeout 900 \
+  --baseline run \
   -C --test -C rpc_boundary
 ```
 
@@ -84,9 +84,69 @@ Outcome meanings:
 
 - `caught` — a test killed the mutant.
 - `unviable` — the mutated source does not compile; not a test gap.
+- `timeout` — the mutant made the test phase nonterminating, or at least far
+  slower than the baseline. Inspect it: a mutant-induced infinite loop is a
+  useful detection, not a missing test. Record it separately from `missed`.
 - `missed` — a survivor. It is a real gap only if the mutation changes an
   observable contract. Otherwise record it as equivalent/non-actionable with
   the specific consumer that makes it unobservable.
+
+### Timeouts
+
+Let cargo-mutants derive the test timeout from the unmutated baseline
+(`--baseline run`). Do not pass a fixed `--timeout` by default: a mutant that
+creates an infinite loop is then detected after a baseline-relative bound
+instead of after an arbitrary long wait. If an override is genuinely needed,
+prefer `--timeout-multiplier` over an absolute value, and record the measured
+baseline test duration first. cargo-mutants does not impose a build timeout by
+default; add `--build-timeout` only when a build hang has actually been
+observed.
+
+For the Deepwell lib suite (baseline test phase of a few seconds), a mutant
+test should not receive a minutes-long budget without a specific reason.
+
+If an in-place run must be interrupted, signal cargo-mutants itself (SIGINT),
+then verify the mutated source was restored before doing anything else. Do not
+kill the compiler/test children directly.
+
+## Test layer
+
+Match the test layer to the contract:
+
+- `src/**` unit tests own small, pure, or implementation-local behavior:
+  parsing primitives, selectors, normalization, encoding helpers, and
+  deterministic transformations.
+- `deepwell/tests/**` integration tests own behavior observable through the
+  service boundary: JSON-RPC, authorization, persistence, transactions, cache
+  invalidation, membership/forum behavior, and externally visible ListPages
+  semantics.
+
+A mutant is not adequately owned merely because a `--lib` run kills it when the
+contract belongs at an integration boundary; conversely, do not build an
+expensive service-backed test for a pure helper whose strongest independent
+contract is a unit-level invariant. Identify the strongest existing owner
+first, then run the test target that owns that behavior.
+
+Do not add automatic retries to make a test green. If retries are used to
+diagnose nondeterminism, record the test as flaky and treat it as a defect.
+Prefer deterministic synchronization, isolated resources, bounded explicit
+waits, and observable readiness conditions over sleeps.
+
+Cargo builds each top-level `tests/*.rs` file as its own crate. Add a coherent
+case to an existing behavioral integration target rather than creating a new
+file for every small regression, unless measurement shows the layout is a real
+bottleneck.
+
+## Property-based testing
+
+For a pure parser/scanner/selector/encoding component with a genuine general
+invariant (round-trip, idempotence, no-panic, delimiter preservation,
+normalization), `proptest` can add value over hand-picked cases because it
+shrinks failures and persists seeds. Do not use it where the expected result
+would be generated from the implementation under test, and do not replace
+exact Wikijump compatibility fixtures with generated properties: observed
+compatibility remains an independent oracle. Introduce the dependency only
+after demonstrating the concrete gap it covers.
 
 ## Ownership vocabulary
 
