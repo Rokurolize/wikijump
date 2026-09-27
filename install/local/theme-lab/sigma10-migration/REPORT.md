@@ -4,7 +4,7 @@
 
 The migration simulation is closed against frozen Technical Staff Sigma-10 authority. The full 36-candidate × 9-cell `page.normal` matrix is captured and reviewed (324/324); the Sigma-9 comparison also covers 324 matching cells, with two additional history-state probes. No current screenshot is left unclassified or unexplained. Findings and row-level evidence are in [findings.json](findings.json) and the isolated audits under `evidence/`.
 
-**Migration decision:** do not promote the Sigma-10 JP localization unchanged. Resolve `SIGMA10-MOB-001` (medium, owner `sigma10-staff-source`) before migration; the controlled test verified that `white-space: pre-wrap !important` removes the credit notice's horizontal document overflow at 390px. `SIGMA10-SEARCH-002` is an explicit upstream policy decision: Sigma hides native Wikidot search intentionally, while Wikijump search works. The migration owner must decide whether to retain that parity choice on Wikijump. Neither is an unowned blocker. There are no per-theme adaptations required across the 35 maintained theme packages.
+**Migration decision:** do not promote the Sigma-10 JP localization unchanged. Resolve `SIGMA10-MOB-001` (medium, owner `sigma10-staff-source`) before migration; the controlled test verified that `white-space: pre-wrap !important` removes the credit notice's horizontal document overflow at 390px. Sigma's hidden desktop search input is expected Wikidot parity: current Wikidot search is unavailable, and Wikijump deliberately reproduces that unavailable-result contract rather than providing a successful search backend. It is not a Sigma-10 migration finding. There are no per-theme adaptations required across the 35 maintained theme packages.
 
 ## Authority and fixture provenance
 
@@ -42,12 +42,6 @@ Interaction review inspected action traces, target state, visibility/focus/hover
 - **Minimal fix/proof:** allow wrapping (`pre-wrap` or `normal`), and scope the hidden-credit preview rule to preview context if intended. An isolated browser probe using `.creditRate::before { white-space: pre-wrap !important; }` returned the 390px document to 390px.
 - **Evidence references:** current screenshot hashes and per-theme paired measurements are recorded in `findings.json`; all 324 current matrix rows are in the migration audit.
 
-### SIGMA10-SEARCH-002 — upstream Sigma hides the search input
-
-- **Owner:** primary `sigma10-staff-source` / migration policy; secondary `wikijump-runtime`.
-- **Source/state:** `#search-top-box-input { display:none }` in frozen `sources/en-sigma.css`; three Chromium desktop/laptop/tablet `shell.search.typed-focused` rows directly verify computed `display:none` and zero-size bounds.
-- **Meaning:** intentional Wikidot parity, since native Wikidot search is non-functional. Wikijump search is functional, so the migration decision removes a working entry point. Decide explicitly whether Wikijump should preserve the hide rule; do not alter it silently.
-
 ## Confirmed Wikijump finding
 
 ### WIKIJUMP-HIST-001 — mobile history source textarea overflows
@@ -67,13 +61,13 @@ At a 390px Chromium mobile viewport, `page.history.historical-source` measures 4
 ## Intentional differences
 
 - Sigma-9 control screenshots contain the Sigma-10 credit markup without Sigma-10 styling; comparison is limited to geometry and attribution.
-- The upstream search input is intentionally hidden for Wikidot parity; Wikijump product impact remains an explicit decision (`SIGMA10-SEARCH-002`).
+- The upstream search input is intentionally hidden because current Wikidot search is unavailable. Wikijump reproduces the same unavailable search contract, so the hidden input is expected parity and requires no migration action.
 - Source-derived page title/tagline text comes from the local authoring site's test configuration and is not SCP-JP production identity.
 - Browser matrix contracts use Firefox/WebKit desktop and mobile; Chromium additionally covers laptop, tablet, and 320px narrow-mobile.
 
 ## Action list
 
-**Technical Staff / migration policy:** resolve credit notice wrapping before migration; decide explicitly whether to retain the hidden search input on Wikijump.
+**Technical Staff / migration policy:** resolve credit notice wrapping before migration. No search-specific Sigma-10 change is required for Wikijump parity.
 
 **Wikijump runtime:** track the pre-existing history textarea width issue as low-priority runtime work. It is not a Sigma migration blocker.
 
@@ -81,7 +75,7 @@ At a 390px Chromium mobile viewport, `page.history.historical-source` measures 4
 
 ## Final readiness statement
 
-The simulator is closed: actionable simulator gaps 0; required matrix holes 0; stale current evidence 0; unexplained `UNCONFIRMED` records 0; ownerless blockers 0; fixture-owned defects 0. The Sigma-10 migration result is reviewable and owner-assigned. Promotion remains contingent on the Technical Staff credit-rule change and the explicit search policy decision; these are identified migration findings, not unfinished simulator work.
+The simulator is closed: actionable simulator gaps 0; required matrix holes 0; stale current evidence 0; unexplained `UNCONFIRMED` records 0; ownerless blockers 0; fixture-owned defects 0. The Sigma-10 migration result is reviewable and owner-assigned. Promotion remains contingent on the Technical Staff credit-rule change. The hidden search input is an expected consequence of the current Wikidot-compatible unavailable-search contract, not an additional migration decision.
 
 ## Validation
 

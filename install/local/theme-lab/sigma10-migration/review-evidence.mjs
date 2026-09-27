@@ -33,10 +33,10 @@ const apply=async(rows,kind)=>{
    if(!row.action_contract_observation?.wrapper_present||!row.action_contract_observation?.frame_present||row.action_contract_observation.frame_rect?.height!==0)throw new Error(`Interwiki local frame contract observation missing or changed: ${row.browser_engine}/${row.viewport}`);
    note=`Direct screenshot review and action measurement confirm the local wrapper/frame placement. ${externalReason}`;
   }else if(row.surface==='shell.search'&&row.state==='typed-focused'){
-   classification='PASS_INTENTIONAL_DIVERGENCE';owner='sigma10-staff-source';findingIds=['SIGMA10-SEARCH-002'];
+   classification='PASS_INTENTIONAL_DIVERGENCE';owner=null;findingIds=[];
    if(row.action_contract_observation?.control!=='#search-top-box-input'||row.action_contract_observation?.display!=='none'||!row.action_sequence?.some(x=>x.type==='source-hidden-search-control'))throw new Error(`search source-hidden observation missing: ${row.browser_engine}/${row.viewport}`);
-   intentional_difference='Frozen Sigma source intentionally sets #search-top-box-input to display:none because native Wikidot search is non-functional; Wikijump search works, so the migration consequence remains assigned to SIGMA10-SEARCH-002.';
-   note='The exact screenshot was reviewed with the recorded computed-style probe confirming the source-hidden search input; this is intentional upstream behavior with a documented Wikijump policy consequence.';
+   intentional_difference='Frozen Sigma source intentionally sets #search-top-box-input to display:none because current Wikidot search is unavailable. Wikijump deliberately reproduces that unavailable search contract, so the hidden input is expected Wikidot parity and requires no Sigma-10 migration action.';
+   note='The exact screenshot was reviewed with the recorded computed-style probe confirming the source-hidden search input. The compatibility runtime preserves Wikidot\'s unavailable search result contract, so this is expected parity rather than a migration finding.';
   }else{
    const width=row.viewport_size?.width;const observed=row.visual_diagnostics?.viewport?.documentWidth??row.visual_diagnostics?.viewport?.document_width;
    const baseline=pairedControl(row);
