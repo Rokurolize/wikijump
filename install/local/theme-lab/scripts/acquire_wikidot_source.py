@@ -15,6 +15,7 @@ import hashlib
 import html.parser
 import http.cookiejar
 import json
+import os
 import re
 import urllib.parse
 import urllib.request
@@ -147,6 +148,9 @@ def acquire(url: str) -> tuple[str, dict[str, object]]:
     with opener.open(request, timeout=20) as response:
         page_html = response.read().decode("utf-8", errors="strict")
         final_url = response.geturl()
+    final_parsed = validate_public_wikidot_url(final_url)
+    if final_parsed.hostname != parsed.hostname:
+        raise RuntimeError("source acquisition redirected to a different Wikidot site")
     metadata = parse_page_metadata(page_html)
     page_id = metadata["page_id"]
     if page_id is None:
@@ -190,21 +194,89 @@ def acquire(url: str) -> tuple[str, dict[str, object]]:
     return source, metadata
 
 
+def retained_source(output: Path, metadata_path: Path, url: str) -> tuple[str, dict[str, object]]:
+    if not output.exists() and not metadata_path.exists():
+        raise FileNotFoundError
+    if not output.exists() or not metadata_path.exists():
+        raise RuntimeError("retained source is partial; refuse implicit reacquisition")
+    source = output.read_text(encoding="utf-8")
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    if metadata.get("requested_url") != url:
+        raise RuntimeError("retained source URL does not match the requested URL")
+    digest = hashlib.sha256(source.encode()).hexdigest()
+    if metadata.get("source_sha256") != digest:
+        raise RuntimeError("retained source hash does not match metadata")
+    if metadata.get("source_bytes") != len(source.encode()):
+        raise RuntimeError("retained source byte count does not match metadata")
+    return source, metadata
+
+
+def atomic_write(path: Path, data: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    with temporary.open("w", encoding="utf-8") as handle:
+        handle.write(data)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(temporary, path)
+    fsync_directory(path.parent)
+
+
+def fsync_directory(path: Path) -> None:
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", required=True)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--metadata")
+    parser.add_argument("--metadata", required=True)
+    parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help="perform an explicit live refresh even when retained source evidence exists",
+    )
     args = parser.parse_args()
-    source, metadata = acquire(args.url)
+    validate_public_wikidot_url(args.url)
     output = Path(args.output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(source, encoding="utf-8")
-    if args.metadata:
-        metadata_path = Path(args.metadata)
-        metadata_path.parent.mkdir(parents=True, exist_ok=True)
-        metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps(metadata, ensure_ascii=False))
+    metadata_path = Path(args.metadata)
+    barrier = metadata_path.with_name(f"{metadata_path.name}.acquiring")
+    if barrier.exists():
+        raise RuntimeError(
+            f"unfinished acquisition barrier exists: {barrier}; inspect the prior failure before retrying"
+        )
+    if not args.refresh:
+        try:
+            _, metadata = retained_source(output, metadata_path, args.url)
+        except FileNotFoundError:
+            pass
+        else:
+            print(json.dumps({**metadata, "acquisition_mode": "retained"}, ensure_ascii=False))
+            return
+
+    barrier.parent.mkdir(parents=True, exist_ok=True)
+    with barrier.open("x", encoding="utf-8") as handle:
+        handle.write(json.dumps({"requested_url": args.url}, ensure_ascii=False) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    fsync_directory(barrier.parent)
+    try:
+        source, metadata = acquire(args.url)
+        atomic_write(output, source)
+        atomic_write(metadata_path, json.dumps(metadata, ensure_ascii=False, indent=2) + "\n")
+    except Exception:
+        # Leave the durable barrier in place. A later run fails closed until a
+        # human/agent inspects the partial acquisition instead of guessing that
+        # another network request is safe.
+        raise
+    else:
+        barrier.unlink()
+        fsync_directory(barrier.parent)
+    print(json.dumps({**metadata, "acquisition_mode": "live-refresh"}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

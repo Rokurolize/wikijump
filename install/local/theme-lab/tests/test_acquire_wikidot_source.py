@@ -1,5 +1,8 @@
 import importlib.util
+import hashlib
+import json
 import pathlib
+import tempfile
 import unittest
 
 
@@ -55,6 +58,29 @@ class AcquireWikidotSourceTests(unittest.TestCase):
         self.assertEqual(metadata["slug"], "theme:quand-le-soleil-se-couche")
         self.assertEqual(metadata["revision"], 13)
         self.assertEqual(metadata["updated_at"], "2025-08-12T09:09:31Z")
+
+    def test_retained_source_is_cache_first_and_hash_bound(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = pathlib.Path(temp_dir)
+            source_path = root / "source.wikidot.txt"
+            metadata_path = root / "source.json"
+            source = "[[module CSS]]\n.example { color: red; }\n[[/module]]"
+            source_path.write_text(source, encoding="utf-8")
+            metadata = {
+                "requested_url": "https://fondationscp.wikidot.com/theme:test",
+                "source_sha256": hashlib.sha256(source.encode()).hexdigest(),
+                "source_bytes": len(source.encode()),
+            }
+            metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+            retained, retained_metadata = MODULE.retained_source(
+                source_path, metadata_path, metadata["requested_url"]
+            )
+            self.assertEqual(retained, source)
+            self.assertEqual(retained_metadata, metadata)
+
+            source_path.write_text(source + "\nchanged", encoding="utf-8")
+            with self.assertRaises(RuntimeError):
+                MODULE.retained_source(source_path, metadata_path, metadata["requested_url"])
 
 
 if __name__ == "__main__":
