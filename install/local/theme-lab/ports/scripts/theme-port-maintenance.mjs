@@ -3,7 +3,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 
-import {buildPortMaintenanceAudit, buildUpstreamUpdatePlan} from "../../src/port-maintenance.mjs";
+import {
+  buildPortMaintenanceAudit,
+  buildUpstreamUpdatePlan,
+  isEnCampaignMaintenanceManifest,
+} from "../../src/port-maintenance.mjs";
 
 const portsDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 let maintenanceExceptions = {};
@@ -26,6 +30,9 @@ const full = args.includes("--json-full") || command === "plan" || Boolean(theme
 async function loadTheme(name) {
   const dir = path.join(portsDir, name);
   const manifest = JSON.parse(await fs.readFile(path.join(dir, "manifest.json"), "utf8"));
+  if (!isEnCampaignMaintenanceManifest(manifest)) {
+    throw new Error(`${name}: not an SCP-EN campaign maintenance package`);
+  }
   const upstreamSource = await fs.readFile(path.join(dir, manifest.source_file ?? "upstream-en.wikidot.txt"), "utf8");
   const humanPortSource = await fs.readFile(path.join(dir, manifest.human_port_candidate ?? "human-port-candidate.wikidot.txt"), "utf8");
   let candidatePath = path.join(dir, "candidate.wikidot.source.txt");
@@ -61,8 +68,12 @@ async function themeNames() {
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     try {
-      await fs.access(path.join(portsDir, entry.name, "manifest.json"));
-      names.push(entry.name);
+      const manifest = JSON.parse(
+        await fs.readFile(path.join(portsDir, entry.name, "manifest.json"), "utf8"),
+      );
+      if (isEnCampaignMaintenanceManifest(manifest)) {
+        names.push(entry.name);
+      }
     } catch {}
   }
   return names.sort();

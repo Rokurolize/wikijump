@@ -4,8 +4,9 @@
 
 1. Recover current truth from the checkout, Git/GitHub, maintained receipts, and the active runtime before acting on a handoff or old plan. A handoff is navigation, not authority.
 2. Wikidot compatibility work: read `docs/agents/compatibility/README.md`. The historical campaign is retired; routine compatibility maintenance is repository-owned hermetic regression work, not resumption of WJLab campaign state.
-3. Read the exact Wikidot specification for the behavior you are changing before designing against it. `docs/wikidot-specifications/` is the specification universe; live Wikidot evidence and provenance-backed corpus observations override local Wikijump output.
-4. Finish the branch you enter. A source change is complete only after focused validation, coherent commit/push, normal PR delivery, required acceptance, and any required standing proof or cleanup for that branch.
+3. Foreign SCP theme localization/porting: read `docs/agents/theme-lab.md` before acquiring a source, creating a Theme Lab package, adapting a theme for SCP-JP, or refreshing an existing port. That document routes new ports, accepted-port maintenance, and site-baseline migration work to their separate procedures.
+4. Read the exact Wikidot specification for the behavior you are changing before designing against it. `docs/wikidot-specifications/` is the specification universe; live Wikidot evidence and provenance-backed corpus observations override local Wikijump output.
+5. Finish the branch you enter. A source change is complete only after focused validation, coherent commit/push, normal PR delivery, required acceptance, and any required standing proof or cleanup for that branch.
 
 ## Core invariants
 
@@ -42,6 +43,7 @@
 - **Imported IDs:** `docs/compatibility-ids.md` — read when touching imported identifier ranges.
 - **Trusted Deepwell API:** `deepwell/README.md` — read when crossing the internal API boundary.
 - **Verification tools:** `install/local/wikidot-verification/README.md` — read before running/changing compatibility checkers, changing a compatibility scanner or rendered construct, executing candidate cases, replaying retained responses, capturing browsers, or invoking completion controllers.
+- **Theme localization / Theme Lab:** `docs/agents/theme-lab.md` — read when porting a foreign-branch theme to SCP-JP, refreshing an accepted theme port, running Theme Lab reference/candidate comparisons, or simulating a site-theme migration.
 - **Runtime identity:** `docs/deployment/runtime-drift-policy.md` — read before candidate retention, promotion, standing measurements, or drift repair.
 - **Cargo build storage:** `docs/development/cargo-target-policy.md` — read before candidate builds or target cleanup.
 - **Issues and PRs:** `docs/agents/issue-tracker.md` — read for GitHub issue/dependency/frontier operations.

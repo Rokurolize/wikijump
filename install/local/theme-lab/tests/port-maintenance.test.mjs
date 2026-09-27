@@ -7,9 +7,17 @@ import {
   analyzeOverrideCascade,
   diffCssRules,
   extractSCPJPAdaptationBlocks,
+  isEnCampaignMaintenanceManifest,
   parseCssDeclarations,
   sha256Text,
 } from "../src/port-maintenance.mjs";
+
+test("EN maintenance discovery requires the EN campaign manifest contract", () => {
+  assert.equal(isEnCampaignMaintenanceManifest({en_source_sha256: "abc"}), true);
+  assert.equal(isEnCampaignMaintenanceManifest({en_source_sha256: ""}), false);
+  assert.equal(isEnCampaignMaintenanceManifest({schema: "theme_lab_foreign_port.v1"}), false);
+  assert.equal(isEnCampaignMaintenanceManifest(null), false);
+});
 
 test("parseCssDeclarations preserves semicolons inside functions and strings", () => {
   assert.deepEqual(parseCssDeclarations('color: red; background: url("data:image/svg+xml;a:b"); content: "x;y" !important;'), [

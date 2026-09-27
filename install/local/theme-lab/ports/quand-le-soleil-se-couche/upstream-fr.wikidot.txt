@@ -1,0 +1,141 @@
+[[iftags +thème]]
+Ceci est le thème du canon « [[[centre-quand-le-soleil-se-couche|Quand le Soleil se Couche]]] ». Pour utiliser ce thème sur votre article, copiez le code suivant en haut du code de votre page :
+[[/iftags]]
+
+[[include :fondationscp:component:modele-theme
+|notation=block
+|liens=block
+|footnote=block
+|titres6=block
+|onglets=block
+]]
+
+[[div [[iftags -thème]]style="display: none"[[/iftags]]]]
+[[module CSS show="true"]]
+/*
+    Thème de Quand le Soleil se Couche (Sigma-9)
+    Thème Wikidot 2024
+    Créé par Cauchynambour, adapté pour le wiki international et anglais par Cyrielle Centori
+    Image logo créée par Cauchynambour
+    Image header tirée du thème http://scp-int.wikidot.com/poor-foundation-hub
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono&display=swap');
+
+
+:root {
+--ct_cnt_alt-header-txt: "Fondation";
+--ct_fns_alt-header-txt : var(--step-2, clamp(2.72rem, calc(1.77rem + 2.47vw), 3.53rem));
+--ct_fns_header-txt: 0;
+--ct_fns_slogan-txt: 0;
+--ct_fns_alt-slogan-txt: var(--step--1, clamp(0.88rem, calc(1.02rem + -0.20vw), 0.98rem));
+--ct_cnt_alt-slogan-txt: "{$sous-titre}";
+--ct_bg_header-logo: url(http://fondationscp.wdfiles.com/local--files/theme:quand-le-soleil-se-couche/header-logo.png);
+--ct_col_link: black;
+--ct_col_link-visited: black;
+}
+
+
+#header h1 a::after, .flickering {
+content : 'SCP';
+animation : flicker 3s linear infinite;
+font-size : var(--ct_fns_alt-header-txt);
+}
+
+@keyframes flicker {
+    0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% {
+     //text-shadow: none;
+    opacity: .99;
+    
+    }
+    20%, 21.999%, 63%, 63.999%, 65%, 69.999% {
+     opacity: 0.4;
+    }
+}
+
+/* from : http://scp-int.wikidot.com/poor-foundation-hub/ */
+div#container-wrap {
+  background-image: url(http://fondationscp.wdfiles.com/local--files/theme:quand-le-soleil-se-couche/body_bg_grey.png);
+  background-repeat: repeat-x;
+}
+
+#header, #side-bar {
+  -webkit-filter: grayscale(100%);
+  filter: grayscale(100%);
+}
+
+/* / from : http://scp-int.wikidot.com/poor-foundation-hub/ */
+.page-rate-widget-box, .creditButton, .yui-navset {
+  -webkit-filter: grayscale(100%);
+  filter: grayscale(100%);
+}
+
+#page-title {
+   color : black;
+}
+
+#header h2 {
+   transform : rotate(2deg);
+}
+
+div.img {
+   filter : grayscale(0);
+}
+
+[[/module]]
+
+[!-- Version anglaise --]
+[[iftags +sun-down]]
+[[module css]]
+:root {
+  --ct_cnt_alt-header-txt: "Foundation";
+}
+
+#header h1 a::before {
+content : 'SCP';
+animation : flicker 3s linear infinite;
+font-size : var(--ct_fns_alt-header-txt);
+}
+
+#header h1 a::after {
+content : ' Foundation';
+animation: none;
+}
+
+#header h1 a span {
+    display: inline-block;
+    width: 0.5em;
+    color: transparent;
+    text-shadow: none;
+}
+[[/module]]
+[[/iftags]]
+
+[!-- Adaptation du thème pour le wiki anglais impossible à inclure directement sur cette page en raison de l'impossibilité à différencier le wiki anglais du wiki international par les tags seuls. Sera peut-être ajouté à une version du thème publiée directement sur le wiki anglais. --]
+[!--
+[[module CSS]]
+#header h2 span {
+  display: inline;
+  color:transparent;
+  text-shadow: none;
+}
+
+#header h2 span::before {
+  content: "When the Sun goes Down";
+  color: #f0f0c0;
+  text-shadow: 1px 1px 1px rgba(0,0,0,.8);
+  display: block;
+  padding: 19px 0;
+}
+
+#header h1 a::before, #header h1 a::after {
+  font-size: inherit;
+}
+
+#header h1 a span {
+  width: 0em;
+}
+[[/module]] 
+--]
+
+[[/div]]

@@ -1,0 +1,217 @@
+[[include credit:start]]
+**タイトル:** 太陽が沈む時 ハブ
+**翻訳責任者:** [[*user Poliknown2]]
+**翻訳年:** 2026
+**原題:** Centre de Quand le Soleil se Couche
+**著作権者:** [[*user Cyrielle Centori]] & [[*user Cauchynambour]]
+**作成年:** 2024
+**初訳時参照リビジョン:** 27
+**元記事リンク:** https://fondationscp.wikidot.com/centre-quand-le-soleil-se-couche
+**重訳元の翻訳者:** [[*user Cyrielle Centori]]
+**重訳元の記事の作成年:** 2024
+**重訳元の記事の参照リビジョン:** 32
+[[include credit:end]]
+
+[[include :scpko:theme:quand-le-soleil-se-couche]]
+[[module CSS]]
+sup {
+vertical-align: top; position: relative; top: -0.5em;
+}
+[[/module]]
+
+[[include :scp-jp-sandbox2:inc:changepagetitle |
+TITLE=財団|
+COLOR=#EEE]]
+
+[[include :scp-jp-sandbox2:inc:headsubtitle | title=陽が落ちるときに…]]
+
+
+[[module css]]
+/* Code for the list */
+.liste-ecrits {
+   display: flex;
+   flex-direction: column;
+   justify-content: space-around;
+   align-items: center;
+}
+
+.head {
+background: linear-gradient(to right,#eee,#eeecec);
+  border-radius: 5px 5px 0 0;
+  box-shadow: inset 2px 3px 6px rgba(0 0 0 / 15%);
+  padding-inline: 1em;
+  margin-block: 1em;
+  width: 100%;
+  width: -moz-available;
+  width: -webkit-fill-available;
+}
+.options {
+  float: right;
+  margin: 0;
+  padding: 0;
+}
+
+.options a {
+  margin: 0;
+  padding: 0;
+  color: #77A;
+}
+[[/module]]
+
+太陽が沈む時、人々は異常を前にして孤独だ。それは夜の間だけ、誰の目にも見えるようになり、最善の場合でも人々を恐怖に陥れるためだけに存在している。最悪の場合は殺されたり、拷問を受けたりする羽目になるが。夜、出かけた人が戻ってこないこともあるだろう。夜間の運転は、しばしば事故を招く。寝室の快適ささえ、安全さを保証はしてくれない。しかし、夜が明けて太陽が再び地平線から顔を出せば、それら恐ろしいものは沈黙し、隠れ、どこへともなく消え去ってしまう。人々の記憶と共に。全ての人は、自身が何を恐れていたのかも忘却するのである。夜間の死は失踪として扱われるか、雑多なニュースとして扱われるだけだ。恐ろしい夜の記憶は時と共に悪夢として忘れられ、皆日常へと戻ってゆく。
+
+ほとんどの人はそうだ。しかし時として、トラウマを負うような出来事の後に記憶を保持できるようになる者もいる。親しい友人や家族の死、四肢や身体の欠損、感覚の喪失... 理由は様々だ。そのような人々は忘れない。助けを求め、それに行きつくのだ。
+
+SCP財団は、社会から狂人と思われているような個人の集まりである。世界中に散らばった彼らは、誰もが孤独に夜の異常と戦い、そしてそれを研究している。地域レベルでは、幾千もの地下室、ガレージ、納屋がサイトとして活用され、恐るべき怪物や超常現象を封じ込めている。この世界には、博士もエージェントも存在しない。あらゆる人生を歩み、みな異なる職を持つ普通の人たちが、人類を夜の恐怖から解放するために戦っているのだ。
+
+[[tabview]]
+[[tab 記事一覧]]
+
+[[=]]
+++ [[span class="flickering"]]Tales[[/span]]
+[[/=]]
+
+[[div class="liste-ecrits"]]
+
+[[div class="head" style="rotate: 1deg;"]]
+[[size 120%]]**[https://scp-int.wikidot.com/appel-nocturne Night Call]**[[/size]] [[span class="options"]][# Fold][[/span]]
+[[*user Cauchynambour]] 13 Feb 2024, 22:06
+[[/div]]
+
+[[div class="head" style="rotate: -0.3deg;"]]
+[[size 120%]]**[https://scp-int.wikidot.com/je-viens-pour-aider I'm coming to help]**[[/size]] [[span class="options"]][# Fold][[/span]]
+[[*user Cyrielle Centori]] 4 Mar 2024, 20:51
+[[/div]]
+
+[[div class="head" style="rotate: 0.8deg;"]]
+[[size 120%]]**[[[un-nouveau-depart|A new beginning]]]**[[/size]] [[span class="options"]][# Fold][[/span]]
+[[*user Hufor]] 12 Mar 2024, 22:11
+[[/div]]
+
+[[div class="head" style="rotate: -0.5deg;"]]
+[[size 120%]]**[[[la-bebete-dans-mes-toilettes|The beastie in my bathroom]]]**[[/size]] [[span class="options"]][# Fold][[/span]]
+[[*user Agent Koop]] 20 Apr 2024, 17:32
+[[/div]]
+
+[[div class="head" style="rotate: 0.5deg;"]]
+[[size 120%]]**[[[lesetoiles | On The Star's Road]]]**[[/size]] [[span class="options"]][# Fold][[/span]]
+[[*user Thalita472]] 04 Jan 2025, 13:39
+[[/div]]
+
+[[div class="head" style="rotate: -0.8deg;"]]
+[[size 120%]]**[[[pas-envie-de-realiser| I don't want to realize...]]]**[[/size]] [[span class="options"]][# Fold][[/span]]
+[[*user Googoo]] 20 Fév 2025, 18:41
+[[/div]]
+
+[[div class="head" style="rotate: 0.6deg;"]]
+[[size 120%]]**[[[chat|Cat ♥]]]**[[/size]] [[span class="options"]][# Fold][[/span]]
+[[*user Honamii]] 17 Jun 2025, 22:02
+[[/div]]
+
+[[/div]]
+
+[[=]]
+++ [[span class="flickering"]]SCP[[/span]]
+[[/=]]
+
+[[div class="liste-ecrits"]]
+
+[[div class="head" style="rotate: 0.7deg;"]]
+[[size 120%]]**[https://scp-int.wikidot.com/scp-fra93-062 SCP-FRA93-062]**[[/size]] [[span class="options"]][# Fold][[/span]]
+[[*user Cauchynambour]] 4 Mar 2024, 17:34
+[[/div]]
+
+[[div class="head" style="rotate: -0.4deg;"]]
+[[size 120%]]**[https://scp-wiki.wikidot.com/scp-fra31-236 SCP-FRA31-236]**[[/size]] [[span class="options"]][# Fold][[/span]]
+[[*user Cauchynambour]] 22 Sep 2024, 17:09
+[[/div]]
+
+[[div class="head" style="rotate: 0.7deg;"]]
+[[size 120%]]**[https://scp-wiki.wikidot.com/scp-que13-126 SCP-QUE13-126]**[[/size]] [[span class="options"]][# Fold][[/span]]
+[[*user felixou]] 13 Oct 2024, 16:30
+[[/div]]
+
+[[div class="head" style="rotate: -0.6deg;"]]
+[[size 120%]]**[[[SCP-FRA94-255]]]**[[/size]] [[span class="options"]][# Fold][[/span]]
+[[*user Aloices]] 28 Nov 2024, 20:26
+[[/div]]
+
+[[div class="head" style="rotate: 0.3deg;"]]
+[[size 120%]]**[https://scp-wiki.wikidot.com/scp-ukg07-511 SCP-UKG07-511: The Fog]**[[/size]] [[span class="options"]][# Fold][[/span]]
+[[*user Ethagon]] 31 Dec 2024, 14:19
+[[/div]]
+
+[[div class="head" style="rotate: -0.2deg;"]]
+[[size 120%]]**[https://scp-wiki.wikidot.com/scp-356 SCP-USA64-356]**[[/size]] [[span class="options"]][# Fold][[/span]]
+[[*user SynthPanda_]] 09 Jan 2025, 09:08
+[[/div]]
+**日本支部の記事(自動収集):**
+[[module ListPages tags="+太陽が沈む時 +jp" limit="20" separate="no" order="rating desc"]]
+# %%title_linked%% ( %%created_by%% 作 )
+[[/module]]
+[[/div]]
+
+[[/tab]]
+[[tab カノンルール]]
+以下は、当カノン所属記事と従来のSCP財団記事の世界観を異なったものとするための4つの柱です。
+* 異常存在は夜間にのみ現れ、昼間には消える。
+* ほとんどの人の持つ夜の記憶は昼になると消え去るが、例外的に夜間にトラウマを負った一部の人々は記憶を保持できる。
+* 異常存在は、その形状や行動様式に関係なく、人々に害をなすことが可能なよう設計する必要がある。
+* SCP財団は、夜を覚えていられる人々の独立的な集団が集まって構成される分散的な組織である。
+
+これさえ守れば、あとは非常に流動的に描けます。　このカノンに所属する記事の間でさえ、ルールの解釈は分かれています！その上、世界に分散しているという財団の性質により、複数の視点の共存が許されています。SCP財団を構成する集団らは、それぞれ完全に異なる活動理念を掲げられます。あるグループは研究に集中し、またある集団は自衛に重点を置いているでしょう。どんな犠牲を払ってでも破壊を拒否する集団も、破壊を視野に入れているグループも共存できるのです…
+
+ですから、ルールの誤解を恐れる必要はないでしょう。全ての解釈が正しいのです。それでもまだ怖いのであれば、既存の記事から既存の解釈を学んでみましょう！
+
+執筆を楽しむことをお忘れなく！
+
+------
+
+このカノンのカスタムテーマは、サブタイトルを各々が設定できるよう設計されています。これにより、このカノンの財団の分散的な側面をよりよく表現できるでしょう。あなたの記事にテーマをincludeするときは、オリジナルのサブタイトルを付けてみましょう！[[footnote]]**訳注:** FRとJPのサイト環境の違いにより、以下のコードは正常に動作しません。[[/footnote]]
+
+> [[include :fondationscp:theme:quand-le-soleil-se-couche
+> | sous-titre = Your subtitle]]
+
+[[/tab]]
+[[tab SCPフォーマット]]
+「太陽が沈む時」カノンに所属するSCP記事は、クラシックなSCPのそれを思わせる独自のフォーマットを持ちます。フォーマットの特徴は以下の通りです。
+
+* 独自のタグを持ちます。//scp//でも//tale//でもなく、//太陽が沈む時-scp//です。[[footnote]]**訳注:** JPではデリバティブタグと同等の扱いであるため、goi-formatタグと併用されます。[https://scp-jp.wikidot.com/tag-list タグリスト]の翻訳に関するFAQを参照してください。[[/footnote]]
+* クラシックなそれよりも意図的に冷淡さが少なく、より不確実さを孕んでいます。報告書は異常存在の説明と情報共有を目的に書かれますが、これはごく少数のアマチュア、しばしばたった一人の人間によるものです。報告書中の能動態、ちょっとしたアドバイス、失敗報告などの特徴からこれを感じ取れるでしょう。
+* "特別"収容プロトコルという言葉は使われません。全てのアノマリーが特別であり、どれか一つを他より特別に扱う理由はありません。その代わり、ローカルプロトコルが存在します。これは収容プロトコルというよりは、それをどう実行するかを記述する項目であり、読者を導き、必要な時にプロトコルを実行するための手助けをします。
+* オブジェクトには、従来のものと異なる識別子が割り当てられます。国を表す3文字のアルファベット、グループを表す2桁の数字、そしてアイテム番号に当たる3桁の数字です。(なお、「SCPオブジェクト」と呼ばれることは決してないでしょう。)フランスなら、2桁のナンバーは県番号になります。この箇所の扱いは、各国で初めて記事を書いた人が自由に決める権利を持ちます。例えば、フランスのセーヌ＝サン＝ドニ県(93番)のSCPならナンバーはSCP-FRA93-062などになるでしょう。
+* ナンバーは順番に埋められているわけではありません。報告書を番号順に作成しようとする人達はいますが、まったく気にしない人も、それが良くない考えだと思う人たちもいます。
+* 001のスロットは特別なものではありません。このカノンの提言に当たるナンバーは、000です。
+* 3文字のアルファベットは、何も国だけを示すものではありません。EUR、AME、AFRといった大陸識別子も指定可能です。更に、世界全体を表す識別子WLDも利用可能です。
+* その上、このフォーマットの自由度は非常に高いです。脅威タイプや脅威レベルを絶対に設定しなければならないというようなことはありませんし、他の項目を追加してもいいでしょう… 充分に、かつ素早く理解できる形式なら、ですが。
+[[/tab]]
+
+[[tab ハブへの追加]]
+以下のコードを適切に改変し、あなたの作品をハブに追加してください。[[footnote]]**訳注:** この投稿ガイドは、フランス語版Wikiでのものです。日本語版記事のリストはlistpagesモジュールにより自動収集されるため、ハブへの追記の必要はありません。[[/footnote]][[footnote]]**訳注:** INT版及びEN版では独自の追記ルールが設定されており、そのまま翻訳した場合混乱を招きかねないため、この箇所に限りCN版を参照して原語版の表記に合わせています。CN版の重訳時参照リビジョンは20、重訳元翻訳者は[[*user LeeBr]]、翻訳年は2024です。[[/footnote]]
+
+[[code]]
+[[div class="head" style="rotate: Xdeg;"]]
+[[size 120%]]**[url Page Title]**[[/size]] [[span class="options"]][# Fold][[/span]]
+[[*user Your Username]] DD Mmm YYYY, hh:mm
+[[/div]]
+[[/code]]
+
+[[code]]
+[[div class="head" style="rotate: Xdeg;"]]
+[[size 120%]]**[url タイトル]**[[/size]] [[span class="options"]][# Fold][[/span]]
+[[*user あなたのユーザー名]] DD Mmm YYYY, hh:mm
+[[/div]]
+[[/code]]
+
+以下の項目を設定してください:
+* Xdegの部分は、-1degから1degの間で自由にカスタムできます。符号は前の記事と逆になるようにしてください。この数値は、記事情報ボックスの傾きを設定するものです。
+* urlの部分には、あなたの記事のurlを入力してください。("https://nantokakantoka.wikidot.com/page-link"みたいなやつです。)
+* タイトルの部分には、あなたの記事のタイトルを入力してください。
+* あなたのユーザー名の部分には、あなたのWikidotユーザーネームを入力してください。
+* DD Mmm YYYY, hh:mmの部分には、記事を投稿した年月日及び時刻を入力してください。このフォーマットをフォーラムポストに似せるためです。
+
+[[/tab]]
+
+[[/tabview]]
+
+[[footnoteblock]]

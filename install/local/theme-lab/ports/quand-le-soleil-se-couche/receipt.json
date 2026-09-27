@@ -1,0 +1,265 @@
+{
+  "schema": "theme_lab_foreign_port_receipt.v1",
+  "verified_at": "2026-09-27T19:35:35Z",
+  "package": "quand-le-soleil-se-couche",
+  "state": "verified-local-candidate-not-published",
+  "source": {
+    "branch": "SCP-FR",
+    "url": "https://fondationscp.wikidot.com/theme:quand-le-soleil-se-couche",
+    "page_id": 1453535015,
+    "revision": 13,
+    "updated_at": "2025-08-12T09:09:31Z",
+    "sha256": "eebdb3d7e620550d2921ff5814fa44df29a98ecc96e953ba29423ad525ec281d",
+    "acquisition_record": "source-acquisition.json"
+  },
+  "cross_branch_evidence": {
+    "scp_ko": {
+      "branch": "SCP-KO",
+      "url": "https://scpko.wikidot.com/theme:quand-le-soleil-se-couche",
+      "page_id": 1453993867,
+      "revision": 4,
+      "updated_at": "2024-06-08T02:14:57Z",
+      "source_sha256": "a7dac1e183074b01d4aa246e8ee1e60f56618ea2dc4a7222ab7717baa49ed497"
+    },
+    "current_scp_jp_usage": {
+      "url": "https://scp-jp.wikidot.com/centre-quand-le-soleil-se-couche",
+      "page_id": 1468170722,
+      "revision": 5,
+      "updated_at": "2026-09-25T07:59:26Z",
+      "source_sha256": "ad58489823ebe90644008ddb2df87c794c71e0eced39fc0762d5f31cd6fedf5d",
+      "local_theme_page": {
+        "url": "https://scp-jp.wikidot.com/theme:quand-le-soleil-se-couche",
+        "http_status": 404
+      },
+      "active_theme_include": ":scpko:theme:quand-le-soleil-se-couche",
+      "documented_foreign_include": ":fondationscp:theme:quand-le-soleil-se-couche",
+      "documented_foreign_include_status": "translation note says FR/JP site differences prevent normal operation"
+    },
+    "current_jp_theme_page": {
+      "url": "https://scp-jp.wikidot.com/theme:quand-le-soleil-se-couche",
+      "status": "absent",
+      "http_status": 404,
+      "observed_at": "2026-09-27T19:40:09.311127Z"
+    }
+  },
+  "candidate": {
+    "template_css_sha256": "ccd5139d270cf9be610d99a47eea373f8f904806b9770c801ef98d24b3150d6e",
+    "validation_css_sha256": "252e565996c396f8f3284e0b8201ba319b1b2b6a3e5a319dd043268b147d381c",
+    "fixture_wikitext_sha256": "aff694e0f7ad09395e7fd350c0fac6f15977ff511e66d1a6c71d236d2416237a",
+    "theme_shell_sha256": "2b718af8d304565de49494ce3477d3844931c1907846455ff4596d3bf6bf677c",
+    "publishable_theme_sha256": "79f930bd79d12a870a933761cd1144387e7fa817a4996f1600e596e7a5519c37",
+    "publishable_theme_bytes": 4324,
+    "representative_sous_titre": "夜明けまで忘れるな"
+  },
+  "assets": [
+    {
+      "name": "header-logo.png",
+      "source_url": "https://fondationscp.wdfiles.com/local--files/theme:quand-le-soleil-se-couche/header-logo.png",
+      "sha256": "e242245d05519a8b2b8d672837f580ce483ded9691f8f14c1c7653fc4c2a336a",
+      "bytes": 368742,
+      "decision": "localize-into-package",
+      "publish_attachment": "header-logo.png"
+    },
+    {
+      "name": "body_bg_grey.png",
+      "source_url": "https://fondationscp.wdfiles.com/local--files/theme:quand-le-soleil-se-couche/body_bg_grey.png",
+      "sha256": "bec371b36d3f250ca4b45a03ab46d6a31a5536481ba334cd4ec06eb985db7b0a",
+      "bytes": 4099,
+      "decision": "localize-into-package",
+      "publish_attachment": "body_bg_grey.png"
+    }
+  ],
+  "initial_actionable_finding": {
+    "kind": "viewport_overflow",
+    "viewport": "mobile",
+    "document_overflow_px": 13,
+    "source": "expanded SCP-JP mobile navigation submenu with longer localized labels",
+    "repair": "viewport-bound nested menu/list/link widths and allow Japanese labels to wrap",
+    "evidence_file": "initial-verdict.json",
+    "evidence_sha256": "b1cc9577db50193db23db56473aca691d0d22943d3822da88e32e5b4c9775dbc",
+    "recorded_overflow_sources": [
+      "ul",
+      "li",
+      "a.newpage",
+      "li",
+      "a.newpage"
+    ]
+  },
+  "final_check": {
+    "mode": "full-offline",
+    "verdict": "warn",
+    "issue_count": 1,
+    "next_actions": [],
+    "viewport_status": {
+      "desktop": {
+        "status": "pass",
+        "document_overflow_px": 0
+      },
+      "laptop": {
+        "status": "pass",
+        "document_overflow_px": 0
+      },
+      "tablet": {
+        "status": "pass",
+        "document_overflow_px": 0
+      },
+      "mobile": {
+        "status": "pass",
+        "document_overflow_px": 0
+      }
+    },
+    "torture": {
+      "verdict": "pass",
+      "issue_count": 0,
+      "changed_component_count": 0
+    },
+    "interaction_diagnostics": {
+      "tabs": {
+        "status": "pass",
+        "tab_count": 2,
+        "original_index": 0,
+        "activated_index": 1,
+        "restored_index": 0
+      },
+      "collapsible": {
+        "status": "not-applicable"
+      },
+      "scroll": {
+        "status": "not-applicable",
+        "position": "relative"
+      },
+      "pointer_focus": {
+        "status": "pass",
+        "focused": true,
+        "tag": "a",
+        "href": "javascript:;",
+        "tab_index": 0,
+        "active_tag": "a",
+        "hovered": true,
+        "control_count": 9,
+        "visible_control_count": 9,
+        "skipped_controls": 0
+      }
+    },
+    "font_diagnostics": {
+      "status": "measured",
+      "selector": "#page-content",
+      "requested_font_family": "InterVariable, RedactRect, Inter, BlinkMacSystemFont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, \"Fira Sans\", \"Droid Sans\", \"Helvetica Neue\", sans-serif",
+      "fonts": [
+        {
+          "family_name": "IPAPGothic",
+          "postscript_name": "IPAPGothic",
+          "custom": false,
+          "glyph_count": 29
+        }
+      ],
+      "evidence": "candidate-japanese-article-content"
+    },
+    "assets": {
+      "external_requests": 0,
+      "candidate": {
+        "referenced": 2,
+        "missing": []
+      },
+      "candidate_request_failures": [],
+      "reference_optional_failures": [
+        {
+          "url": "https://fondationscp.wikidot.com/local--favicon/favicon.gif",
+          "code": "reference_http_error"
+        },
+        {
+          "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+          "code": "reference_http_error"
+        },
+        {
+          "url": "https://grombald.github.io/Common-Theme/font/fontawesome-webfont.svg#fontawesomeregular",
+          "code": "reference_http_error"
+        }
+      ],
+      "browser_blocked_external_attempts": 19
+    },
+    "warning_rationale": {
+      "collapsed_selector:#page-content a": "FR and JP are different-language showcase documents; both contain the selector, so the 21-to-9 occurrence difference is non-defect content variation.",
+      "full_page_visual_rmse": "FR and JP use different-language showcase text and different native site chrome. Paired screenshots were manually reviewed for theme identity, responsive structure, overflow and broken layout; raw full-page RMSE is diagnostic only."
+    },
+    "visual_diagnostic": {
+      "status": "fail",
+      "viewports": {
+        "desktop": {
+          "status": "fail",
+          "normalized_rmse": 0.246809
+        },
+        "laptop": {
+          "status": "fail",
+          "normalized_rmse": 0.302017
+        },
+        "tablet": {
+          "status": "fail",
+          "normalized_rmse": 0.307138
+        },
+        "mobile": {
+          "status": "fail",
+          "normalized_rmse": 0.378423
+        }
+      }
+    },
+    "acceptance_verdict_file": "acceptance-verdict.json",
+    "raw_result_sha256": "12ba06df73e79158f7e0f76bfae0e546040a650e5c40522814062e4415a22755"
+  },
+  "screenshots": {
+    "candidate-desktop.png": "ff49f534d6a407145b6af8057b3d6c36e5e0b4d1f6482881df583449fb5f5adc",
+    "candidate-laptop.png": "d4a8a952de61e84304f6a9bd4bffd36f1da96da83ff187d3b4551c1bf365ecfc",
+    "candidate-mobile.png": "b01ae3fda69d6aa248f35dcff8ffe4b020abe7e3d6594413010361a25ef30063",
+    "candidate-tablet.png": "795746fd767d1a0e43ca3c374c4cd28a9170428b6d02492a685011ff1b53f044",
+    "reference-desktop.png": "da2cba86ceeffa765940a6c35c22fb387055df22b9c1dbd7d501d77908625b8b",
+    "reference-laptop.png": "cb2bf593f48010c7f4c7a42aac717286b1ae58559985a8cb0560d3399968563c",
+    "reference-mobile.png": "f3701112078412a1ce82568c8fd3e5699091640ef4bbe492b4a4be21854c200d",
+    "reference-tablet.png": "277d164f80874f3ece209fdefde36feb33c52521339ef22ddc4e7cdfab6c01d8"
+  },
+  "publication": {
+    "performed": false,
+    "planned_page": "theme:quand-le-soleil-se-couche",
+    "required_attachments": [
+      "header-logo.png",
+      "body_bg_grey.png"
+    ],
+    "publishable_source": "publishable-theme.wikidot.txt"
+  },
+  "showcase_dependency_evidence": [
+    {
+      "source_page": "component:modele-theme",
+      "file": "upstream-fr-modele-theme.wikidot.txt",
+      "sha256": "3804af17413af9704a50ed07b6c49c31b004d44ffc1a0dcda156d04f57325a20",
+      "classification": "documentation-showcase-only",
+      "page_id": 1308466157,
+      "role": "source showcase/documentation include; not shipped as a JP runtime dependency"
+    },
+    {
+      "source_page": "component:modele-theme-base",
+      "file": "upstream-fr-modele-theme-base.wikidot.txt",
+      "sha256": "cf17b935e9f84cce50d077f86987c6391c139635848512cd21ff6ceaf2e4dfa1",
+      "classification": "documentation-showcase-only",
+      "page_id": 1308466139,
+      "role": "transitive showcase body; +thème-gated documentation evidence"
+    }
+  ],
+  "manual_visual_review": {
+    "viewports": [
+      "desktop",
+      "laptop",
+      "tablet",
+      "mobile"
+    ],
+    "status": "pass-non-pixel-identical-localized-showcases",
+    "evidence": "paired reference/candidate screenshots under artifacts/",
+    "observations": [
+      "black diagonal-gradient header and distressed circular logo identity preserved",
+      "FR Fondation identity localized to SCP 財団 and representative JP subtitle",
+      "grayscale presentation and dark link/title treatment preserved",
+      "mobile candidate remains within the viewport and exposes the mobile menu control",
+      "content/count differences are localized showcase differences, not missing theme structure"
+    ]
+  },
+  "technical_spec_version": "1.4",
+  "final_status": "warn-no-actionable-issues"
+}

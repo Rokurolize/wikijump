@@ -1,0 +1,352 @@
+# New foreign SCP theme → SCP-JP
+
+This is the generic procedure for starting a Theme Lab port from a foreign SCP
+branch. It exists so a coding agent can execute a request such as:
+
+> Port SCP-FR `theme:quand-le-soleil-se-couche` for SCP-JP.
+
+without relying on prior-session memory.
+
+The worked repository example is
+`ports/quand-le-soleil-se-couche/`. The procedure is deliberately separate
+from `UPSTREAM-MAINTENANCE.md`, which owns later upstream refreshes of an
+already accepted package.
+
+## 1. Establish source authority
+
+Read `docs/agents/compatibility/evidence.md` before live acquisition.
+
+Do not reconstruct the theme source from rendered HTML. Fetch the public page
+source through Wikidot's observed anonymous ViewSource boundary:
+
+```sh
+python3 install/local/theme-lab/scripts/acquire_wikidot_source.py \
+  --url 'https://<branch>.wikidot.com/theme:<slug>' \
+  --output /tmp/<slug>.wikidot.txt \
+  --metadata /tmp/<slug>.source.json
+```
+
+The helper:
+
+1. GETs the explicit public `*.wikidot.com` page;
+2. reads `WIKIREQUEST.info.pageId`;
+3. retains the anonymous `wikidot_token7` cookie;
+4. POSTs `viewsource/ViewSourceModule` with the page ID and token;
+5. writes source text plus page/site/revision/update/hash metadata.
+
+This is an explicit evidence acquisition helper, not a regression command.
+The output and metadata pair are cache-first: rerunning the same command
+validates and reuses those retained bytes without a network request. Use
+`--refresh` only when you intentionally need a new live source revision. A
+live acquisition writes a durable `.acquiring` barrier first; if acquisition
+fails, later runs fail closed until that barrier is inspected rather than
+silently refetching. Freeze the acquired source in the package and use that
+frozen copy thereafter.
+
+Record at least:
+
+- branch/site and canonical URL;
+- page ID;
+- source revision/update time when exposed;
+- exact source SHA-256;
+- acquisition date/intent.
+
+If source acquisition is unavailable, do not substitute current rendered HTML
+and call it source provenance.
+
+## 2. Inspect existing JP and other-branch implementations
+
+Before inventing compatibility CSS:
+
+- search for an existing SCP-JP theme or article already using the theme;
+- inspect its exact source when public;
+- inspect another branch's port when one is relevant.
+
+These are **evidence, not authority**. Classify each difference:
+
+- source-language/site identity;
+- cross-branch DOM/theme-framework compatibility;
+- branch-local component/include replacement;
+- asset hosting;
+- typography/local-language adaptation;
+- actual bug repair.
+
+Worked example: the FR “Quand le Soleil se Couche” source defines `ct_*`
+variables that the FR site framework consumes. SCP-KO already demonstrated a
+cross-branch Sigma-9 mapping from those variables to stock header/link DOM.
+The JP port reuses that evidenced structural mapping, but replaces Korean
+`재단` with JP `財団`. The current SCP-JP hub is also important evidence: it
+currently includes the KO theme and explicitly notes that the raw FR include
+does not work normally under the JP site environment.
+
+## 3. Walk includes and dependencies before editing
+
+Inventory:
+
+- `[[include]]` edges;
+- `[[module CSS]]` and imported CSS;
+- fonts;
+- images/backgrounds/icons;
+- `local--files` and `local--code`;
+- variables supplied through `[[include ... |name=value]]`;
+- branch-specific components used only to render the theme's documentation
+  page.
+
+Do not assume every include is a runtime dependency.
+
+For an include guarded so it renders only on the theme/showcase page, replace
+it with a local JP demonstration fixture instead of shipping a foreign
+showcase framework in the reusable theme. In the worked FR case,
+`component:modele-theme` delegates to `component:modele-theme-base`, whose
+showcase body is inside `[[iftags +thème]]`; it is therefore evidence for what
+the source page demonstrates, not a dependency required by an article using
+the theme.
+
+Classify every runtime external resource with the same vocabulary used by
+`TECHNICAL-LOCALIZATION-SPEC.md`: retain shared upstream, replace with a
+public JP counterpart, localize into the package, replace with JP-owned asset,
+or remove as obsolete. Record exact digests.
+
+## 4. Separate publish template from injected validation CSS
+
+Wikidot include variables such as `{$sous-titre}` are substituted by the
+Wikidot include renderer. Theme Lab's direct stylesheet injection is not that
+renderer.
+
+Therefore a variable-bearing theme SHOULD keep two explicit forms:
+
+- a **publish template**, preserving the actual include parameter contract;
+- a **validation CSS** copy where each required include variable has a
+  representative concrete value.
+
+Never conclude that a theme variable is broken merely because raw
+`{$variable}` was injected as ordinary CSS.
+
+The worked FR package uses:
+
+- `candidate-template.css` — preserves `{$sous-titre}`;
+- `candidate.css` — substitutes `夜明けまで忘れるな` for deterministic
+  Theme Lab validation.
+
+Keep the parameter name compatible with already published JP documentation
+unless there is evidence to migrate callers.
+
+## 5. Keep local verification assets local; make publication assets explicit
+
+For the edit loop, keep candidate assets under the package and pass
+`--asset-dir`. Theme Lab injects verified local bytes into the browser copy.
+
+Do not confuse that with the eventual Wikidot publication layout. A
+publishable theme should normally reference named attachments on its planned
+JP theme page rather than embedding hundreds of kilobytes of data URIs.
+
+The package build may therefore emit:
+
+- a self-contained local/demo source for deterministic verification;
+- a publishable theme source referencing the exact named attachments that
+  must be uploaded alongside it.
+
+The attachment files and SHA-256 values remain part of the package.
+
+## 6. Build a representative JP fixture
+
+Do not compare only an empty page. Exercise every source-specific surface the
+theme modifies. Typical fixture content includes:
+
+- rating/credit where applicable;
+- links and visited/new link behavior;
+- all heading levels the source touches;
+- tabs and collapsibles;
+- tables/blockquote/code;
+- image blocks;
+- footnotes;
+- Japanese text long enough to expose wrapping/font fallback;
+- source-specific classes and pseudo-elements.
+
+Add source-specific selectors to `acceptance-selectors.txt`. The shared
+runtime selectors are not proof that a theme's own rules survived.
+
+## 7. Start one persistent Theme Lab session
+
+Recover the actual local runtime/credential state first; do not invent a new
+credential contract.
+
+Example:
+
+```sh
+export DEEPWELL_RPC_TOKEN=...   # recover privately from the authorized local runtime
+
+node install/local/theme-lab/scripts/theme-lab.mjs serve \
+  --socket /tmp/theme-lab-<slug>.sock \
+  --candidate-url https://scpaiueouiuiuiui.wikijump.localhost:18443/boundary-check \
+  --asset-dir install/local/theme-lab/ports/<slug>/assets \
+  --sidebar-html install/local/theme-lab/ports/<slug>/sidebar-preview.html \
+  --browser-root framerail \
+  --browser-executable /usr/bin/google-chrome
+```
+
+Use the same daemon while iterating.
+
+## 8. Acquire the rendered reference once
+
+The first reference check may perform the explicit external acquisition:
+
+```sh
+node install/local/theme-lab/scripts/theme-lab.mjs check \
+  --socket /tmp/theme-lab-<slug>.sock \
+  --site-id 6000003 \
+  --wikitext install/local/theme-lab/ports/<slug>/candidate.wikidot.txt \
+  --css install/local/theme-lab/ports/<slug>/candidate.css \
+  --reference https://<branch>.wikidot.com/theme:<slug> \
+  --selectors install/local/theme-lab/ports/<slug>/acceptance-selectors.txt \
+  --compact
+```
+
+Theme Lab stores the reference and its dependencies content-addressed. After
+that successful acquisition, normal edits use `--offline`.
+
+Third-party requests made by the reference page itself may be unavailable or
+blocked; distinguish optional reference failures from resources required by
+the candidate.
+
+## 9. Iterate on evidence, not visual guesswork
+
+Use:
+
+```sh
+node install/local/theme-lab/scripts/theme-lab.mjs check ... --offline --iteration
+```
+
+for the fast loop. Fix only evidence-backed issues:
+
+- missing selectors/components;
+- new horizontal overflow;
+- inactive media rules;
+- wrong cascade winner;
+- missing candidate asset;
+- unreadable/fallback Japanese typography;
+- failed interaction states.
+
+For SCP-JP navigation, longer Japanese labels frequently expose submenu
+min-content/positioning problems that do not appear on the source branch.
+`TECHNICAL-LOCALIZATION-SPEC.md` defines expanded navigation geometry as an
+adaptation surface. Constrain menu/list/link widths and allow wrapping rather
+than hiding or clipping the menu.
+
+Do not chase raw full-page RMSE between two different-language theme showcase
+documents. It is diagnostic evidence. Browser geometry, source-specific
+selectors, component identity, interactions, assets/fonts, and manual paired
+visual review establish acceptance.
+
+## 10. Run the full offline acceptance
+
+Before calling the port complete, run the ordinary full check (not
+`--iteration`) in offline mode with visual artifacts:
+
+```sh
+node install/local/theme-lab/scripts/theme-lab.mjs check \
+  --socket /tmp/theme-lab-<slug>.sock \
+  --site-id 6000003 \
+  --wikitext install/local/theme-lab/ports/<slug>/candidate.wikidot.txt \
+  --css install/local/theme-lab/ports/<slug>/candidate.css \
+  --reference https://<branch>.wikidot.com/theme:<slug> \
+  --offline \
+  --selectors install/local/theme-lab/ports/<slug>/acceptance-selectors.txt \
+  --visual \
+  --artifact-dir install/local/theme-lab/ports/<slug>/artifacts \
+  --compact
+```
+
+Acceptance requires:
+
+- no evidence-backed errors or unexplained `next_actions`;
+- all required viewport overflow checks pass;
+- torture corpus passes;
+- relevant interactions pass;
+- required candidate assets present;
+- no external acquisition during the offline run;
+- Japanese font/wrapping behavior recorded;
+- every warning explained as a concrete non-defect or repaired.
+
+Stop the daemon after the run.
+
+## 11. Preserve the package as reproducible evidence
+
+At minimum keep:
+
+```text
+ports/<slug>/
+  PORT.md
+  manifest.json
+  receipt.json
+  upstream-<branch>.wikidot.txt
+  candidate-template.css       # when include variables exist
+  candidate.css                # concrete validation CSS
+  candidate.wikidot.txt        # representative JP fixture
+  theme-shell.wikidot.txt      # reusable/publishable source wrapper
+  acceptance-selectors.txt
+  build.mjs                    # when build/materialization is required
+  assets/
+  artifacts/
+```
+
+Additional source/include/cross-branch snapshots belong in the package when
+they materially explain a decision.
+
+Standalone foreign-port manifests use their own schema and are intentionally
+not auto-discovered by the completed SCP-EN campaign's
+`prepare-maintainable-sources.mjs` / `theme-port-maintenance.mjs` commands.
+Those commands select manifests carrying the EN campaign's
+`en_source_sha256` contract. If a standalone port later adopts that
+maintenance model, migrate it deliberately rather than making a generic
+`manifest.json` silently enter the EN campaign.
+
+`PORT.md` must explain:
+
+- source identity and credits;
+- existing JP/cross-branch evidence;
+- every material JP adaptation and why it exists;
+- dependency/asset decisions;
+- first actionable Theme Lab finding and its repair, when any;
+- final viewport/torture/interaction/font/asset result;
+- warnings/non-defects;
+- how to build the publishable source and which attachments it requires.
+
+`receipt.json` should carry the machine-readable hashes and final check
+summary.
+
+## 12. Publication is a separate authority boundary
+
+Creating and validating a JP port in this repository does not authorize
+editing `scp-jp.wikidot.com`. Keep real branch sites read-only unless the user
+explicitly requests and authorizes publication.
+
+If publication is later authorized, publish exactly the reviewed source and
+named attachments, then capture the resulting public identity as a new
+receipt. Do not silently substitute a newly fetched upstream revision.
+
+## 13. Refresh a standalone foreign-port package later
+
+`theme_lab_foreign_port.v1` packages are deliberately not discovered by the
+historical SCP-EN maintenance generator. That generator owns the EN34
+`en_source_sha256` / `maintenance/` contract and must not reinterpret a
+standalone FR/KO/CN package merely because it also contains `manifest.json`.
+
+For a later upstream refresh:
+
+1. acquire the new upstream source into a staging file with
+   `acquire_wikidot_source.py`; do not overwrite the frozen source first;
+2. compare its source hash and source text with the package's frozen upstream
+   snapshot;
+3. refresh material include/dependency source snapshots and named assets
+   separately, because an unchanged page can still reference changed bytes;
+4. review each existing JP adaptation against the changed upstream rules and
+   preserve/remove it only with evidence;
+5. update the package manifest/source snapshot only after that review;
+6. rebuild the publishable source and prove it is deterministic;
+7. run focused Theme Lab checks for changed surfaces, then the complete
+   offline acceptance and manual paired visual review;
+8. replace receipt/screenshot evidence only with the newly accepted identity.
+
+If this workflow becomes common enough to automate, add a standalone-port
+planner rather than weakening the EN maintenance manifest guard.

@@ -7,6 +7,14 @@ export function sha256Text(text) {
   return crypto.createHash("sha256").update(text).digest("hex");
 }
 
+export function isEnCampaignMaintenanceManifest(manifest) {
+  return Boolean(
+    manifest &&
+      typeof manifest.en_source_sha256 === "string" &&
+      manifest.en_source_sha256.length > 0,
+  );
+}
+
 function unique(values) {
   return [...new Set(values)];
 }
