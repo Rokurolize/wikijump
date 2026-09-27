@@ -1,0 +1,17 @@
+[[iftags +テーマ]]
+このテーマは「[[[centre-quand-le-soleil-se-couche|太陽が沈む時]]]」カノン向けのSCP-JP移植候補です。
+
+記事で使用する場合の引数契約:
+
+[[div class="code"]]
+@@[[include :scp-jp:theme:quand-le-soleil-se-couche
+|sous-titre=ここにサブタイトル
+]]@@
+[[/div]]
+
+原版および現在のSCP-JPハブとの互換のため、include引数名 `sous-titre` は変更しません。
+[[/iftags]]
+
+[[div [[iftags -テーマ]]style="display: none"[[/iftags]]]]
+__THEME_CSS_MODULE__
+[[/div]]

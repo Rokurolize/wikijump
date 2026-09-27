@@ -1,0 +1,146 @@
+[[iftags +thème]]
+[[module css]]
+.heritage-rating-module{display:none!important}
+[[/module]]
+
+[[module ListPages name="="]]
+> @@[[include@@ %%fullname%%@@]]@@
+
+Tous les articles postés sur le site doivent utiliser le code du dessus, mais il ne marchera pas sur votre page sandbox ! Pour cela, il vous faudra utiliser celui-ci :
+
+> @@[[include :fondationscp:@@%%fullname%%@@]]@@
+[[/module]]
+------
+
+[[div class="exemples"]]
+
+[[div style="display:{$notation}"]]
+[[include credit:start]]
+**Titre :** Un article quelconque
+**Auteur :** [[user random]]
+**Date :** JJ mois AAAA
+**Image :** Crédits
+[[include credit:end]]
+[[/div]]
+
+[[div style="display:{$image}"]]
+[[include component:image-block name=http://fondationscp.wdfiles.com/local--files/host/logo-scp.svg|caption=Image d'exemple.|width=200px]]
+[[/div]]
+
+[[div style="display:{$liens}"]]
+[# Ceci est un lien]
+[[module ListPages name="="]]
+[[[%%fullname%%|Ceci est un lien déjà visité]]]
+[[/module]]
+[[[404|Ceci est un lien inexistant]]]
+[[/div]]
+
+[[div style="display:{$footnote}"]]
+Texte avec une note de bas de page[[footnote]] Texte de la note de bas de page [[/footnote]]
+[[/div]]
+
+[[div style="display:{$titres1}"]]
++ Premier Titre
+[[/div]]
+[[div style="display:{$titres2}"]]
++ Premier Titre
+++ Second Titre
+[[/div]]
+[[div style="display:{$titres3}"]]
++ Premier Titre
+++ Second Titre
++++ Troisième Titre
+[[/div]]
+[[div style="display:{$titres4}"]]
++ Premier Titre
+++ Second Titre
++++ Troisième Titre
+++++ Quatrième Titre
+[[/div]]
+[[div style="display:{$titres5}"]]
++ Premier Titre
+++ Second Titre
++++ Troisième Titre
+++++ Quatrième Titre
++++++ Cinquième Titre
+[[/div]]
+[[div style="display:{$titres6}"]]
++ Premier Titre
+++ Second Titre
++++ Troisième Titre
+++++ Quatrième Titre
++++++ Cinquième Titre
+++++++ Sixième Titre
+[[/div]]
+
+[[div style="display:{$onglets}"]]
+~~~~
+@@@@
+[[tabview]]
+[[tab Un onglet]]
+Ceci est un onglet.
+[[/tab]]
+[[tab Un autre onglet]]
+Hé regarde, il y a plus de texte ici.
+
+Surprenant.
+[[/tab]]
+[[tab Onglet long]]
+C'est un onglet long. Il contient beaucoup de texte.
+
+C'est un onglet long. Il contient beaucoup de texte.
+
+C'est un onglet long. Il contient beaucoup de texte.
+
+C'est un onglet long. Il contient beaucoup de texte.
+
+C'est un onglet long. Il contient beaucoup de texte.
+
+C'est un onglet long. Il contient beaucoup de texte.
+
+C'est un onglet long. Il contient beaucoup de texte.
+
+C'est un onglet long. Il contient beaucoup de texte.
+
+C'est un onglet long. Il contient beaucoup de texte.
+
+C'est un onglet long. Il contient beaucoup de texte.
+[[/tab]]
+[[tab Onglet vide]]
+[[/tab]]
+[[tab Onglet vide]]
+[[/tab]]
+[[tab Onglet vide]]
+[[/tab]]
+[[tab Onglet vide]]
+[[/tab]]
+[[tab Onglet vide]]
+[[/tab]]
+[[/tabview]]
+[[/div]]
+
+[[div style="display:{$citations}"]]
+> Ceci est un bloc de citation faisable en mettant un chevron ">" suivi d'un espace au début de chaque ligne.
+>
+> Plus de texte
+> -----
+> C'est un trait horizontal
+>
+>> Blocs de citation imbriqués
+[[/div]]
+
+[[div style="display:{$tableau}"]]
+||~ Titre ||~ Titre ||~ Titre ||
+|| Contenu || Contenu || Contenu ||
+|| Contenu |||| Longue cellule ||
+|||||| Très longue cellule ||
+[[/div]]
+
+[[div style="display:{$footnote}"]]
+[[footnoteblock title="Bloc des notes de bas de page"]]
+[[/div]]
+
+------
+[[/div]]
+
+[[/iftags]]

@@ -5,7 +5,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import {parseStyleSheet,stripCssComments} from '../../src/css-probe.mjs';
-import {analyzeOverrideCascade,extractSCPJPAdaptationBlocks,parseCssDeclarations} from '../../src/port-maintenance.mjs';
+import {analyzeOverrideCascade,extractSCPJPAdaptationBlocks,isEnCampaignMaintenanceManifest,parseCssDeclarations} from '../../src/port-maintenance.mjs';
 import {extractUnconditionalCssModules} from './extract-css-modules.mjs';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
@@ -477,7 +477,18 @@ async function packageNames(selected){
   if(selected.length)return [...new Set(selected)].sort();
   const entries=await fs.readdir(portsDir,{withFileTypes:true});
   const names=[];
-  for(const entry of entries)if(entry.isDirectory()&&await exists(path.join(portsDir,entry.name,'manifest.json')))names.push(entry.name);
+  for(const entry of entries){
+    if(!entry.isDirectory())continue;
+    const manifestPath=path.join(portsDir,entry.name,'manifest.json');
+    if(!await exists(manifestPath))continue;
+    const manifest=JSON.parse(await fs.readFile(manifestPath,'utf8'));
+    // This maintenance generator owns the completed SCP-EN campaign model.
+    // Standalone foreign-branch ports may also have a manifest.json, but they
+    // are not part of this source-layer migration until explicitly converted
+    // to the EN maintenance contract.
+    if(!isEnCampaignMaintenanceManifest(manifest))continue;
+    names.push(entry.name);
+  }
   return names.sort();
 }
 
@@ -485,6 +496,9 @@ export async function preparePackage(name,{write=false,check=false}={}){
   const dir=path.join(portsDir,name);
   const manifestPath=path.join(dir,'manifest.json');
   const manifest=JSON.parse(await fs.readFile(manifestPath,'utf8'));
+  if(!isEnCampaignMaintenanceManifest(manifest)){
+    throw new Error(`${name}: not an SCP-EN campaign maintenance package`);
+  }
   const candidatePath=path.join(dir,'candidate.wikidot.source.txt');
   const original=await fs.readFile(candidatePath,'utf8');
   const activeTags=inferCandidateTags(original,manifest);
