@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   collectSelectorTexts,
   diffComputedStyles,
+  firstRulesForSelectors,
   parseStyleSheet,
   rankSelectorDiffs,
   selectorDiagnosis,
@@ -44,6 +45,18 @@ test("collectSelectorTexts de-duplicates while preserving order", () => {
     collectSelectorTexts([{selector: "a"}, {selector: "b"}, {selector: "a"}]),
     ["a", "b"],
   );
+});
+
+test("firstRulesForSelectors preserves first match, context, requested order and fallback", () => {
+  const first = {selector: "a", atContext: ["@media screen"], body: "color:red"};
+  const later = {selector: "a", atContext: ["@media print"], body: "color:blue"};
+  const other = {selector: "b", atContext: []};
+  assert.deepEqual(firstRulesForSelectors([first, later, other], ["b", "a", "missing", "a"]), [
+    other,
+    first,
+    {selector: "missing", atContext: []},
+    first,
+  ]);
 });
 
 test("rankSelectorDiffs puts missing selectors first", () => {

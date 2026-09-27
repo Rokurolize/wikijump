@@ -26,6 +26,7 @@ use deepwell::constants::SYSTEM_USER_ID;
 use deepwell::error::ErrorType;
 use deepwell::license::License;
 use deepwell::services::category::CategoryService;
+use deepwell::services::forum::{CreateForumCategory, CreateForumGroup, ForumService};
 use deepwell::services::permission::{
     CheckPermissionContext, DecoratedPermission, PERMISSION_CACHE_FENCE_TTL_SECONDS,
     PERMISSION_CACHE_INVALIDATION_CHANNEL, PERMISSION_CACHE_TTL_SECONDS, PermissionCache,
@@ -835,12 +836,14 @@ async fn permission_cache_version_keys_expire_after_invalidation() {
         .expect("Failed to read site permission fence TTL");
 
     assert!(
-        (1..=PERMISSION_CACHE_FENCE_TTL_SECONDS).contains(&user_ttl),
-        "user permission fence TTL should be bounded, but was {user_ttl}"
+        PERMISSION_CACHE_TTL_SECONDS < user_ttl
+            && user_ttl <= PERMISSION_CACHE_FENCE_TTL_SECONDS,
+        "user permission fence must outlive the permission cache TTL, but was {user_ttl}"
     );
     assert!(
-        (1..=PERMISSION_CACHE_FENCE_TTL_SECONDS).contains(&site_ttl),
-        "site permission fence TTL should be bounded, but was {site_ttl}"
+        PERMISSION_CACHE_TTL_SECONDS < site_ttl
+            && site_ttl <= PERMISSION_CACHE_FENCE_TTL_SECONDS,
+        "site permission fence must outlive the permission cache TTL, but was {site_ttl}"
     );
 }
 
@@ -849,6 +852,10 @@ async fn role_permission_updates_invalidate_cached_view_permissions() {
     let runner = TestRunner::setup().await;
     let f = PermissionFixture::setup(&runner).await;
     let ctx = runner.context();
+
+    // Flush the invalidations queued by fixture role creation so the assertion
+    // below can only pass because of the invalidation queued by this update.
+    run_queued_cache_invalidations(ctx).await;
 
     assert!(
         check(
@@ -925,6 +932,10 @@ async fn role_revocation_invalidates_cached_view_permissions() {
     let f = PermissionFixture::setup(&runner).await;
     let ctx = runner.context();
 
+    // Flush fixture-queued invalidations so the assertion below can only pass
+    // because of the invalidation queued by the revocation.
+    run_queued_cache_invalidations(ctx).await;
+
     assert!(
         check(
             &runner,
@@ -970,6 +981,10 @@ async fn site_membership_changes_invalidate_cached_view_permissions() {
     let runner = TestRunner::setup().await;
     let f = PermissionFixture::setup(&runner).await;
     let ctx = runner.context();
+
+    // Flush fixture-queued invalidations so each assertion below can only pass
+    // because of the invalidation queued by the membership change it follows.
+    run_queued_cache_invalidations(ctx).await;
 
     assert!(
         check(
@@ -1188,6 +1203,106 @@ async fn active_timed_site_ban_does_not_cache_denied_view_permission() {
         cached_page_view(ctx, f.site_id, f.user_a).await,
         None,
         "active timed site ban should not recreate page:view cache with a denial"
+    );
+}
+
+/// A page-scoped decision must not use the category-wide cache key, because
+/// `page_reference` can add page-specific virtual roles (for example,
+/// PageAuthor) whose view result need not hold for other pages.
+#[tokio::test]
+async fn page_scoped_view_check_does_not_populate_the_category_cache() {
+    let runner = TestRunner::setup().await;
+    let f = PermissionFixture::setup(&runner).await;
+    let ctx = runner.context();
+
+    let allowed = PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: Some(f.user_a),
+            site_id: f.site_id,
+            page_reference: Some(Reference::Id(1)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: None,
+            action: Action::View,
+        },
+    )
+    .await
+    .expect("page-scoped view check should succeed");
+    assert!(allowed, "user_a has unscoped RoleA page:view");
+
+    assert_eq!(
+        cached_page_view(ctx, f.site_id, f.user_a).await,
+        None,
+        "a page-scoped view decision must not be written to the category-wide cache",
+    );
+}
+
+/// While a site ban is active, view decisions must bypass the category-wide
+/// cache: bans are time-dependent and a cached denial would otherwise outlive
+/// the ban. The ban suppresses explicit roles, so give the retained virtual
+/// `registered` role a non-view permission to keep the permission set
+/// non-empty and force the view decision to be computed.
+#[tokio::test]
+async fn active_site_ban_suppresses_view_permission_caching() {
+    let runner = TestRunner::setup().await;
+    let f = PermissionFixture::setup(&runner).await;
+    let ctx = runner.context();
+
+    let registered = RoleService::create(
+        ctx,
+        InternalCreateRoleInput {
+            site_id: f.site_id,
+            name: "registered".to_owned(),
+            description: Some("virtual registered role".to_owned()),
+            is_virtual: true,
+            parent_role_id: None,
+            creating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("registered virtual role should be created")
+    .role_id;
+    add_perms_to_role(
+        ctx,
+        f.site_id,
+        registered,
+        vec![Permission {
+            resource_type: Resource::Page,
+            resource_category: None,
+            action: Action::Edit,
+        }],
+    )
+    .await;
+
+    create_site_member(ctx, f.site_id, f.user_a).await;
+    ban_site_user_until(
+        ctx,
+        f.site_id,
+        f.user_a,
+        Some(Date::from_calendar_date(9999, Month::January, 1).unwrap()),
+    )
+    .await;
+    run_queued_cache_invalidations(ctx).await;
+
+    assert!(
+        !check(
+            &runner,
+            Some(f.user_a),
+            f.site_id,
+            Resource::Page,
+            None,
+            Action::View,
+        )
+        .await,
+        "a banned user without page:view should be denied"
+    );
+    assert_eq!(
+        cached_page_view(ctx, f.site_id, f.user_a).await,
+        None,
+        "an active site ban must suppress caching of the view decision",
     );
 }
 
@@ -1827,6 +1942,80 @@ async fn role_update_permissions_and_get() {
     assert_eq!(
         edit_perm.resource_category,
         Some(Reference::Slug(OTHER_CATEGORY_NAME.into()))
+    );
+}
+
+/// A human-readable role permission listing must resolve a forum-category
+/// scoped permission back to the forum category name rather than silently
+/// dropping the scope.
+#[tokio::test]
+async fn role_permissions_resolve_human_readable_forum_category_names() {
+    const FORUM_CATEGORY_NAME: &str = "Permission Forum Category";
+
+    let runner = TestRunner::setup().await;
+    let f = PermissionFixture::setup(&runner).await;
+    let ctx = runner.context();
+
+    let group = ForumService::create_group(
+        ctx,
+        CreateForumGroup {
+            site_id: f.site_id,
+            user_id: SYSTEM_USER_ID,
+            name: "Permission forum group".to_owned(),
+            description: "Permission forum group".to_owned(),
+            visible: true,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("forum group should be created");
+    let category = ForumService::create_category(
+        ctx,
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: SYSTEM_USER_ID,
+            name: FORUM_CATEGORY_NAME.to_owned(),
+            description: "Permission forum category".to_owned(),
+            sort_index: None,
+            max_nest_level: None,
+            per_page_discussion: None,
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("forum category should be created");
+
+    let role = create_role(ctx, f.site_id, "Forum Scoped Role", None).await;
+    add_perms_to_role(
+        ctx,
+        f.site_id,
+        role,
+        vec![Permission {
+            resource_type: Resource::ForumCategory,
+            resource_category: Some(Reference::Id(category.forum_category_id)),
+            action: Action::View,
+        }],
+    )
+    .await;
+
+    let perms = PermissionService::get_permissions_for_role(
+        ctx,
+        GetRolePermissionsInput {
+            site_id: f.site_id,
+            role_reference: Reference::Id(role),
+            human_readable_categories: true,
+        },
+    )
+    .await
+    .expect("role permissions should resolve");
+
+    assert_eq!(perms.len(), 1);
+    assert_eq!(
+        perms[0].resource_category,
+        Some(Reference::Slug(FORUM_CATEGORY_NAME.into())),
+        "a forum-category-scoped permission must resolve to its category name",
     );
 }
 

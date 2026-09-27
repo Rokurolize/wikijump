@@ -187,20 +187,10 @@ impl<'txn> ServiceContext<'txn> {
     }
 
     #[inline]
-    pub fn with_request(self, request_ctx: RequestContext) -> Self {
-        Self {
-            request_ctx,
-            ..self
-        }
-    }
-
-    #[inline]
-    /// Internal method to update the request context, for use in testing only.
-    pub fn set_request_for_test(&mut self, request_ctx: RequestContext) {
+    pub fn with_request(mut self, request_ctx: RequestContext) -> Self {
         self.request_ctx = request_ctx;
-
-        // Clear cached permissions since the user context has changed.
         self.user_permissions = OnceCell::new();
+        self
     }
 
     // Getters

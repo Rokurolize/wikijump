@@ -8290,7 +8290,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js#file delete and move actions bind the actor and routed page context"
       ],
       "migrated_from_campaign_only": false
     },
@@ -8308,7 +8308,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js#file edit, restore, and rollback actions forward getClientAddress through Deepwell"
       ],
       "migrated_from_campaign_only": false
     },
@@ -8362,7 +8362,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js#file delete and move actions bind the actor and routed page context"
       ],
       "migrated_from_campaign_only": false
     },
@@ -8380,7 +8380,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js#file edit, restore, and rollback actions forward getClientAddress through Deepwell"
       ],
       "migrated_from_campaign_only": false
     },
@@ -8398,7 +8398,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js#file edit, restore, and rollback actions forward getClientAddress through Deepwell"
       ],
       "migrated_from_campaign_only": false
     },
@@ -9118,7 +9118,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js#file delete and move actions bind the actor and routed page context"
       ],
       "migrated_from_campaign_only": false
     },
@@ -9136,7 +9136,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js#file edit, restore, and rollback actions forward getClientAddress through Deepwell"
       ],
       "migrated_from_campaign_only": false
     },
@@ -9190,7 +9190,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js#file delete and move actions bind the actor and routed page context"
       ],
       "migrated_from_campaign_only": false
     },
@@ -9208,7 +9208,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js#file edit, restore, and rollback actions forward getClientAddress through Deepwell"
       ],
       "migrated_from_campaign_only": false
     },
@@ -9226,7 +9226,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-client-ip.test.js#file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js#file edit, restore, and rollback actions forward getClientAddress through Deepwell"
       ],
       "migrated_from_campaign_only": false
     },

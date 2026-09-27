@@ -362,20 +362,110 @@ async function seedDocQueue(docsRoot, allFullnames) {
   return reasonsByFullname;
 }
 
+/**
+ * Lexicographic min-heap over strings.
+ *
+ * The traversal order is part of this tool's output, because a page's
+ * `relevance_reasons` keeps insertion order, so the queue must pop the smallest
+ * pending name first. Re-sorting the whole queue on every discovery costs
+ * O(M log M) per accepted reason, and `Array.shift` costs O(M) per pop, where
+ * M is the pending queue length. Heap push and pop cost O(log V).
+ * Sequence numbers preserve the old stable-sort order when localeCompare
+ * considers two different spellings equal.
+ *
+ * Pushes are not deduplicated here. Callers suppress pushes with their own
+ * membership set, which keeps the pop order identical to the previous
+ * push-then-sort-then-shift behavior: the first pop of a name is the same
+ * either way, and any later duplicate would have been skipped anyway.
+ */
+class LexicographicMinHeap {
+  #items = [];
+  #nextSequence = 0;
+
+  get size() {
+    return this.#items.length;
+  }
+
+  #less(left, right) {
+    const compared = left.value.localeCompare(right.value);
+    return compared < 0 || (compared === 0 && left.sequence < right.sequence);
+  }
+
+  #swap(a, b) {
+    const held = this.#items[a];
+    this.#items[a] = this.#items[b];
+    this.#items[b] = held;
+  }
+
+  push(value) {
+    const items = this.#items;
+    items.push({value, sequence: this.#nextSequence++});
+    let index = items.length - 1;
+    while (index > 0) {
+      const parent = (index - 1) >> 1;
+      if (!this.#less(items[index], items[parent])) break;
+      this.#swap(index, parent);
+      index = parent;
+    }
+  }
+
+  pop() {
+    const items = this.#items;
+    if (items.length === 0) return undefined;
+    const smallest = items[0];
+    const last = items.pop();
+    if (items.length > 0) {
+      items[0] = last;
+      let index = 0;
+      for (;;) {
+        const left = index * 2 + 1;
+        const right = left + 1;
+        let smallestChild = left;
+        if (right < items.length && this.#less(items[right], items[left])) {
+          smallestChild = right;
+        }
+        if (smallestChild >= items.length) break;
+        if (!this.#less(items[smallestChild], items[index])) break;
+        this.#swap(index, smallestChild);
+        index = smallestChild;
+      }
+    }
+    return smallest.value;
+  }
+}
+
 export async function buildDocumentationInventory({
   docsRoot = DEFAULT_DOCS_ROOT,
 } = {}) {
   const allFullnames = new Set(await listDocFullnames(docsRoot));
   const reasonsByFullname = await seedDocQueue(docsRoot, allFullnames);
-  const queue = [...reasonsByFullname.keys()].sort();
+  // The old queue's initial `.sort()` used code-unit order. Its first accepted
+  // reason changed the comparator to localeCompare for all later pops. Keep
+  // that transition, including when the target was already pending.
+  const initialQueue = [...reasonsByFullname.keys()].sort();
+  let initialIndex = 0;
+  let queue = null;
+  const queued = new Set();
+  for (const fullname of reasonsByFullname.keys()) {
+    queued.add(fullname);
+  }
   const documents = [];
   const claims = [];
   const references = [];
   const missingReferences = [];
   const inspected = new Set();
+  // Mirrors reasonsByFullname for O(1) membership. The array still holds the
+  // reasons in insertion order, so the emitted `relevance_reasons` is unchanged.
+  const reasonIndex = new Map();
+  for (const [fullname, reasons] of reasonsByFullname) {
+    reasonIndex.set(fullname, new Set(reasons));
+  }
+  // A name is pushed at most once, so the queue holds O(V) pending names rather
+  // than one entry per incoming edge. The first push of a name still happens
+  // before any later edge could add it, so pop order is unaffected.
 
-  while (queue.length > 0) {
-    const fullname = queue.shift();
+  while (queue === null ? initialIndex < initialQueue.length : queue.size > 0) {
+    const fullname = queue === null ? initialQueue[initialIndex++] : queue.pop();
     if (inspected.has(fullname)) continue;
     inspected.add(fullname);
     const page = await readDocPage(docsRoot, fullname);
@@ -398,12 +488,26 @@ export async function buildDocumentationInventory({
       if (allFullnames.has(ref.target_fullname)) {
         if (ref.kind === "include" || shouldFollowDocLink(ref.target_fullname)) {
           const reason = `${ref.kind}:${fullname}`;
-          const existing = reasonsByFullname.get(ref.target_fullname) ?? [];
-          if (!existing.includes(reason)) {
-            existing.push(reason);
-            reasonsByFullname.set(ref.target_fullname, existing);
-            queue.push(ref.target_fullname);
-            queue.sort((left, right) => left.localeCompare(right));
+          let existing = reasonIndex.get(ref.target_fullname);
+          if (existing === undefined) {
+            existing = new Set(reasonsByFullname.get(ref.target_fullname) ?? []);
+            reasonIndex.set(ref.target_fullname, existing);
+          }
+          if (!existing.has(reason)) {
+            if (queue === null) {
+              queue = new LexicographicMinHeap();
+              for (let i = initialIndex; i < initialQueue.length; i += 1) {
+                queue.push(initialQueue[i]);
+              }
+            }
+            const list = reasonsByFullname.get(ref.target_fullname) ?? [];
+            list.push(reason);
+            reasonsByFullname.set(ref.target_fullname, list);
+            existing.add(reason);
+            if (!queued.has(ref.target_fullname) && !inspected.has(ref.target_fullname)) {
+              queued.add(ref.target_fullname);
+              queue.push(ref.target_fullname);
+            }
           }
         }
       } else if (ref.kind === "include" || shouldFollowDocLink(ref.target_fullname)) {

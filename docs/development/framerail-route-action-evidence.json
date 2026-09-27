@@ -1059,7 +1059,7 @@
     {
       "surface_id": "framerail-server-action:/?/fileDelete",
       "tests": [
-        "framerail/tests/page-file-client-ip.test.js::file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js::file delete and move actions bind the actor and routed page context"
       ],
       "tracking": [
         {
@@ -1071,7 +1071,7 @@
     {
       "surface_id": "framerail-server-action:/?/fileEdit",
       "tests": [
-        "framerail/tests/page-file-client-ip.test.js::file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js::file edit, restore, and rollback actions forward getClientAddress through Deepwell"
       ],
       "tracking": [
         {
@@ -1107,7 +1107,7 @@
     {
       "surface_id": "framerail-server-action:/?/fileMove",
       "tests": [
-        "framerail/tests/page-file-client-ip.test.js::file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js::file delete and move actions bind the actor and routed page context"
       ],
       "tracking": [
         {
@@ -1119,7 +1119,7 @@
     {
       "surface_id": "framerail-server-action:/?/fileRestore",
       "tests": [
-        "framerail/tests/page-file-client-ip.test.js::file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js::file edit, restore, and rollback actions forward getClientAddress through Deepwell"
       ],
       "tracking": [
         {
@@ -1131,7 +1131,7 @@
     {
       "surface_id": "framerail-server-action:/?/fileRollback",
       "tests": [
-        "framerail/tests/page-file-client-ip.test.js::file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js::file edit, restore, and rollback actions forward getClientAddress through Deepwell"
       ],
       "tracking": [
         {
@@ -1491,7 +1491,7 @@
     {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/fileDelete",
       "tests": [
-        "framerail/tests/page-file-client-ip.test.js::file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js::file delete and move actions bind the actor and routed page context"
       ],
       "tracking": [
         {
@@ -1503,7 +1503,7 @@
     {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/fileEdit",
       "tests": [
-        "framerail/tests/page-file-client-ip.test.js::file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js::file edit, restore, and rollback actions forward getClientAddress through Deepwell"
       ],
       "tracking": [
         {
@@ -1539,7 +1539,7 @@
     {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/fileMove",
       "tests": [
-        "framerail/tests/page-file-client-ip.test.js::file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js::file delete and move actions bind the actor and routed page context"
       ],
       "tracking": [
         {
@@ -1551,7 +1551,7 @@
     {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/fileRestore",
       "tests": [
-        "framerail/tests/page-file-client-ip.test.js::file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js::file edit, restore, and rollback actions forward getClientAddress through Deepwell"
       ],
       "tracking": [
         {
@@ -1563,7 +1563,7 @@
     {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/fileRollback",
       "tests": [
-        "framerail/tests/page-file-client-ip.test.js::file mutation actions forward getClientAddress through the Deepwell transport"
+        "framerail/tests/page-file-client-ip.test.js::file edit, restore, and rollback actions forward getClientAddress through Deepwell"
       ],
       "tracking": [
         {

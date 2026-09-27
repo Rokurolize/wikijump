@@ -518,6 +518,21 @@ async fn membership_application_and_password_mutations_match_disposable_live_con
         deepwell::services::membership::MembershipApplicationOutcome::AlreadyApplied
     );
 
+    let pending =
+        deepwell::services::membership::MembershipService::pending_applications(
+            runner.context(),
+            site_id,
+        )
+        .await
+        .expect("pending applications should resolve");
+    assert!(
+        pending.iter().any(|application| {
+            application.user_id == accept_user_id
+                && application.comment == "A1033 live-compatible application"
+        }),
+        "a submitted pending application must be listed for reviewers: {pending:?}",
+    );
+
     for wrong in ["wrong-one", "wrong-two", "wrong-three"] {
         let outcome = run_endpoint!(
             runner,
@@ -590,6 +605,19 @@ async fn membership_application_and_password_mutations_match_disposable_live_con
             .await
             .expect("application relation lookup should succeed"),
         "password join should remove an existing application like Wikidot",
+    );
+    let pending_after =
+        deepwell::services::membership::MembershipService::pending_applications(
+            runner.context(),
+            site_id,
+        )
+        .await
+        .expect("pending applications should resolve");
+    assert!(
+        !pending_after
+            .iter()
+            .any(|application| application.user_id == accept_user_id),
+        "a consumed application must not remain in the reviewer list: {pending_after:?}",
     );
 
     RelationService::remove(
@@ -786,6 +814,28 @@ async fn membership_email_invitation_matches_hash_one_use_and_cancel_contract() 
     )
     .await
     .expect("invitation actor should be created");
+
+    // An invitation must carry both a recipient email and a recipient name.
+    for (email, recipient_name) in [
+        ("", "Intended Recipient"),
+        ("intended-recipient@example.invalid", ""),
+    ] {
+        let error =
+            deepwell::services::membership::MembershipService::create_email_invitation(
+                runner.context(),
+                CreateMembershipEmailInvitation {
+                    site_id,
+                    sender_user_id: ADMIN_USER_ID,
+                    email,
+                    recipient_name,
+                    message: "A1033 invitation fixture",
+                    to_contacts: false,
+                },
+            )
+            .await
+            .expect_err("an invitation without a recipient identity must be rejected");
+        assert_contains_error!(error, ErrorType::BadRequest);
+    }
 
     let (invitation_id, token) =
         deepwell::services::membership::MembershipService::create_email_invitation(
