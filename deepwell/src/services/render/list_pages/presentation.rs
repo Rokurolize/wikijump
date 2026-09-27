@@ -401,10 +401,15 @@ pub(in crate::services::render) fn protect_list_pages_generated_html(
 #[cfg(test)]
 mod tests {
     use super::{
-        WikidotUserDisplay, list_pages_tag_target_prefix, render_list_pages_tags,
+        FoundPageRow, ListPagesSnapshotDisplay, WikidotUserDisplay,
+        is_list_pages_hidden_tag, is_list_pages_visible_tag, list_pages_created_by_slug,
+        list_pages_tag_link_href, list_pages_tag_target_prefix,
+        percent_encode_list_pages_href_prefix, percent_encode_list_pages_path_segment,
+        protect_list_pages_generated_html, render_list_pages_tags,
         render_list_pages_wikidot_feed_user, render_list_pages_wikidot_user,
     };
     use crate::services::render::compat::CompatHtmlFragments;
+    use std::collections::BTreeMap;
 
     #[test]
     fn tag_target_builds_live_paths_without_admitting_protocol_relative_urls() {
@@ -471,5 +476,164 @@ mod tests {
             "unexpected feed user markup: {feed_html}"
         );
         assert!(!feed_html.contains(r#"alt="quoted" onload="alert(1)""#));
+    }
+
+    #[test]
+    fn percent_encoding_keeps_only_unreserved_and_selected_reserved_bytes() {
+        // Path segments keep only unreserved bytes.
+        assert_eq!(
+            percent_encode_list_pages_path_segment("a-b.c_d~e"),
+            "a-b.c_d~e"
+        );
+        assert_eq!(percent_encode_list_pages_path_segment("a b/c"), "a%20b%2Fc");
+        assert_eq!(percent_encode_list_pages_path_segment("é"), "%C3%A9");
+
+        // Href prefixes keep the reserved bytes Wikidot preserves.
+        assert_eq!(
+            percent_encode_list_pages_href_prefix("/landing/tag/?a=b&c,d@e%f+g;h"),
+            "/landing/tag/?a=b&c,d@e%f+g;h"
+        );
+        assert_eq!(percent_encode_list_pages_href_prefix("a b"), "a%20b");
+    }
+
+    #[test]
+    fn tag_link_href_keeps_absolute_prefixes_and_encodes_the_tag() {
+        assert_eq!(
+            list_pages_tag_link_href("/landing/tag/", "my tag"),
+            "/landing/tag/my%20tag"
+        );
+        assert_eq!(
+            list_pages_tag_link_href("https://example.com/tag/", "foo"),
+            "https://example.com/tag/foo"
+        );
+        assert_eq!(
+            list_pages_tag_link_href("http://example.com/tag/", "foo"),
+            "http://example.com/tag/foo"
+        );
+        assert_eq!(
+            list_pages_tag_link_href("landing/tag/", "foo"),
+            "/landing/tag/foo"
+        );
+    }
+
+    #[test]
+    fn visible_and_hidden_tag_predicates_partition_trimmed_tags() {
+        for visible in ["alpha", "Alpha", "a-b"] {
+            assert!(is_list_pages_visible_tag(visible), "{visible}");
+            assert!(!is_list_pages_hidden_tag(visible), "{visible}");
+        }
+        for hidden in ["_hidden", " _x "] {
+            assert!(!is_list_pages_visible_tag(hidden), "{hidden}");
+            assert!(is_list_pages_hidden_tag(hidden), "{hidden}");
+        }
+        for blank in ["", "   "] {
+            assert!(!is_list_pages_visible_tag(blank), "{blank:?}");
+            assert!(!is_list_pages_hidden_tag(blank), "{blank:?}");
+        }
+    }
+
+    #[test]
+    fn generated_html_is_protected_only_outside_generated_html() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let protected = protect_list_pages_generated_html(
+            "<b>row</b>".to_owned(),
+            false,
+            &mut fragments,
+        );
+        assert_ne!(protected, "<b>row</b>");
+        assert_eq!(fragments.restore(&protected), "<b>row</b>");
+
+        let mut fragments = CompatHtmlFragments::new("");
+        assert_eq!(
+            protect_list_pages_generated_html(
+                "<b>row</b>".to_owned(),
+                true,
+                &mut fragments,
+            ),
+            "<b>row</b>"
+        );
+        assert_eq!(
+            protect_list_pages_generated_html(String::new(), false, &mut fragments),
+            ""
+        );
+    }
+
+    fn row(page_id: i64, created_by: Option<i64>) -> FoundPageRow {
+        FoundPageRow {
+            page_id,
+            site_id: 1,
+            title: None,
+            alt_title: None,
+            slug: None,
+            page_category_id: None,
+            page_revision_id: None,
+            tags: None,
+            created_at: None,
+            created_by,
+            updated_at: None,
+            updated_by: None,
+            score: None,
+            revision_count: None,
+        }
+    }
+
+    fn snapshot(
+        created_by_name: Option<&str>,
+        created_by_slug: Option<&str>,
+    ) -> ListPagesSnapshotDisplay {
+        ListPagesSnapshotDisplay {
+            title_shown: None,
+            created_at: time::OffsetDateTime::UNIX_EPOCH,
+            updated_at: time::OffsetDateTime::UNIX_EPOCH,
+            created_by_user_id: None,
+            created_by_name: created_by_name.map(str::to_owned),
+            created_by_slug: created_by_slug.map(str::to_owned),
+            updated_by_user_id: None,
+            updated_by_name: None,
+            updated_by_slug: None,
+            comments: 0,
+            commented_at: None,
+            commented_by_name: None,
+            rating_votes: None,
+            parent_fullname: None,
+            source_revision_count: 0,
+        }
+    }
+
+    #[test]
+    fn created_by_slug_prefers_a_snapshot_then_falls_back_to_the_user_display() {
+        let page = row(1, Some(42));
+        let mut users = BTreeMap::new();
+        users.insert(
+            42,
+            WikidotUserDisplay {
+                user_id: 42,
+                name: "Alice".to_owned(),
+                slug: Some("alice-user".to_owned()),
+                wikidot_profile: false,
+            },
+        );
+
+        // A snapshot with a non-empty name wins and uses its own slug.
+        let mut snapshots = BTreeMap::new();
+        snapshots.insert(1, snapshot(Some("Alice"), Some("alice")));
+        assert_eq!(
+            list_pages_created_by_slug(&page, &users, &snapshots),
+            Some("alice".to_owned()),
+        );
+
+        // A snapshot without a name falls back to the user display slug.
+        let mut snapshots = BTreeMap::new();
+        snapshots.insert(1, snapshot(None, Some("alice")));
+        assert_eq!(
+            list_pages_created_by_slug(&page, &users, &snapshots),
+            Some("alice-user".to_owned()),
+        );
+
+        // No snapshot and no user display resolves to no slug.
+        assert_eq!(
+            list_pages_created_by_slug(&page, &BTreeMap::new(), &BTreeMap::new()),
+            None,
+        );
     }
 }
