@@ -108,8 +108,10 @@ function excerptAround(html, index, radius = 80) {
   return html.slice(start, end).replace(/\s+/g, ' ').trim();
 }
 
-export function findRawSyntaxLeaks({ html = '', source = '' } = {}) {
-  const content = stripNonContent(html);
+export function findRawSyntaxLeaks({ html = '', source = '', content: precomputedContent } = {}) {
+  // `content` may be supplied by a caller that already stripped the same HTML,
+  // avoiding a second fixed-point strip over the whole page.
+  const content = precomputedContent ?? stripNonContent(html);
   const findings = [];
   const renderedLiteralsIdentified = RENDERED_LITERAL_PATTERNS.some((pattern) => new RegExp(pattern.source, pattern.flags).test(html));
 
@@ -169,7 +171,7 @@ export function classifyRenderedPage(input) {
       findings.push({ category: 'empty-render', detail: 'rendered body empty for non-empty source' });
     }
 
-    findings.push(...findRawSyntaxLeaks({ html, source: input.source }).map((finding) => ({
+    findings.push(...findRawSyntaxLeaks({ html, source: input.source, content }).map((finding) => ({
       category: finding.category,
       marker: finding.marker,
       count: finding.count,

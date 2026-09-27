@@ -1062,6 +1062,93 @@ test("separate persistent cache instances coalesce the same exact miss before ex
   ]);
 });
 
+test("distinct persistent misses can acquire concurrently without losing evidence", async (t) => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-parallel-fill-"));
+  t.after(() => fs.rm(cacheDir, {recursive: true, force: true}));
+  const options = {persistentDir: cacheDir, persistentIdentity: "evidence:parallel-fill", evidenceReplay: true};
+  const caches = [createBrowserResponseCache(options), createBrowserResponseCache(options)];
+  await Promise.all(caches.map((cache) => cache.load()));
+  let release;
+  const waitForRelease = new Promise((resolve) => { release = resolve; });
+  let bothStarted;
+  const waitForBoth = new Promise((resolve) => { bothStarted = resolve; });
+  let active = 0;
+  let peakActive = 0;
+  const fills = caches.map((cache, index) => {
+    const key = `https://cdn.example.test/parallel-${index}.css`;
+    return cache.withFill(key, {requestHeaders: {}}, async ({markAcquisitionStarted}) => {
+      await markAcquisitionStarted();
+      active += 1;
+      peakActive = Math.max(peakActive, active);
+      if (active === 2) bothStarted();
+      await waitForRelease;
+      active -= 1;
+      const entry = {status: 200, headers: {}, body: Buffer.from(`response-${index}`)};
+      assert.equal(cache.store(key, entry, {requestHeaders: {}}), true);
+      return entry;
+    });
+  });
+  let timeout;
+  try {
+    await Promise.race([
+      waitForBoth,
+      new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error("distinct fills serialized through acquisition")), 1_000); }),
+    ]);
+    assert.equal(peakActive, 2);
+  } finally {
+    clearTimeout(timeout);
+    release();
+    await Promise.allSettled(fills);
+  }
+  const reloaded = createBrowserResponseCache(options);
+  await reloaded.load();
+  for (let index = 0; index < 2; index += 1) {
+    assert.equal(reloaded.get(`https://cdn.example.test/parallel-${index}.css`)?.body.toString(), `response-${index}`);
+  }
+  assert.equal(reloaded.snapshot().acquisition_barriers, 0);
+});
+
+test("a concurrent manifest write cannot replay another fill before it seals", async (t) => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-unsealed-fill-"));
+  t.after(() => fs.rm(cacheDir, {recursive: true, force: true}));
+  const options = {persistentDir: cacheDir, persistentIdentity: "evidence:unsealed-fill", evidenceReplay: true};
+  const first = createBrowserResponseCache(options);
+  await first.load();
+  const firstKey = "https://cdn.example.test/unsealed.css";
+  const secondKey = "https://cdn.example.test/sealed.css";
+  let stored;
+  const firstStored = new Promise((resolve) => { stored = resolve; });
+  let release;
+  const waitForRelease = new Promise((resolve) => { release = resolve; });
+  const firstFill = first.withFill(firstKey, {requestHeaders: {}}, async ({markAcquisitionStarted}) => {
+    await markAcquisitionStarted();
+    const entry = {status: 200, headers: {}, body: Buffer.from("unsealed")};
+    assert.equal(first.store(firstKey, entry, {requestHeaders: {}}), true);
+    stored();
+    await waitForRelease;
+    return entry;
+  });
+  try {
+    await firstStored;
+    await first.withFill(secondKey, {requestHeaders: {}}, async ({markAcquisitionStarted}) => {
+      await markAcquisitionStarted();
+      const entry = {status: 200, headers: {}, body: Buffer.from("sealed")};
+      assert.equal(first.store(secondKey, entry, {requestHeaders: {}}), true);
+      return entry;
+    });
+    const observer = createBrowserResponseCache(options);
+    await observer.load();
+    assert.throws(() => observer.get(firstKey), /refuses to reacquire an identity with uncertain prior acquisition/u);
+    assert.equal(observer.get(secondKey)?.body.toString(), "sealed");
+  } finally {
+    release();
+    await firstFill;
+  }
+  const observer = createBrowserResponseCache(options);
+  await observer.load();
+  assert.equal(observer.get(firstKey)?.body.toString(), "unsealed");
+});
+
 test("separate Node processes coalesce one persistent exact fill before its producer runs", async (t) => {
   const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-cross-process-fill-"));
   t.after(() => fs.rm(cacheDir, {recursive: true, force: true}));

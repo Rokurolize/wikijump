@@ -33,6 +33,7 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, DeleteResult, EntityTrait, QueryFilter,
     QuerySelect, Set,
 };
+use std::collections::BTreeMap;
 
 #[derive(Debug)]
 pub struct ParentService;
@@ -283,6 +284,45 @@ impl ParentService {
                 ErrorType::PageParent,
             )
         })
+    }
+
+    /// Gets all parents of several child pages in one query.
+    ///
+    /// Results are grouped by child page ID, in the same shape
+    /// [`Self::get_parents`] returns per page. Pages with no parents are still
+    /// present with an empty vector.
+    pub async fn get_parents_batch(
+        ctx: &ServiceContext<'_>,
+        page_ids: &[i64],
+    ) -> Result<BTreeMap<i64, Vec<PageParentModel>>> {
+        if page_ids.is_empty() {
+            return Ok(BTreeMap::new());
+        }
+
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to get page parent relations for {} pages in batch",
+                    page_ids.len(),
+                ),
+                ErrorType::PageParent,
+            )
+        };
+        let models = PageParent::find()
+            .filter(page_parent::Column::ChildPageId.is_in(page_ids.iter().copied()))
+            .all(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+
+        let mut grouped = page_ids
+            .iter()
+            .copied()
+            .map(|page_id| (page_id, Vec::new()))
+            .collect::<BTreeMap<_, _>>();
+        for model in models {
+            grouped.entry(model.child_page_id).or_default().push(model);
+        }
+        Ok(grouped)
     }
 
     /// Removes all parent relationships involving this page.

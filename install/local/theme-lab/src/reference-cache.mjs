@@ -252,6 +252,7 @@ export function contentTypeIsHtml(contentType) {
 export class ReferenceCache {
   #fetchImpl;
   #lookup;
+  #originalUrlIndex = new WeakMap();
 
   constructor({
     cacheDir = defaultCacheDir(),
@@ -317,7 +318,17 @@ export class ReferenceCache {
       };
     }
     const record = this.manifest.objects[digest];
-    if (originalUrl && !record.original_urls.includes(originalUrl)) record.original_urls.push(originalUrl);
+    if (originalUrl) {
+      let urls = this.#originalUrlIndex.get(record);
+      if (urls === undefined) {
+        urls = new Set(record.original_urls);
+        this.#originalUrlIndex.set(record, urls);
+      }
+      if (!urls.has(originalUrl)) {
+        urls.add(originalUrl);
+        record.original_urls.push(originalUrl);
+      }
+    }
     return {digest, content_type: contentType, bytes: bytes.length, final_url: finalUrl ?? originalUrl};
   }
 

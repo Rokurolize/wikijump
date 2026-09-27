@@ -19,15 +19,16 @@
  */
 
 use super::service::{MAX_LISTPAGES_RENDER_LIMIT, MAX_LISTPAGES_RENDER_SCAN_ROWS};
-use crate::error::Result;
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::page_query::{
     FoundPageRow, FoundPages, OrderBySelector, OrderProperty, PageQuery,
     PageQueryResultMetadata, PageQueryScoreFilterCache, PageQueryScoreFilterSession,
 };
 use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::relation::RelationService;
 use crate::services::{PageQueryService, ServiceContext};
 use crate::types::{Action, Permission, Reference, Resource};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug)]
 pub(in crate::services::render) struct ViewableCountPagesRows {
@@ -241,38 +242,145 @@ async fn find_viewable_render_page_rows(
     })
 }
 
-async fn filter_viewable_rows(
+/// A page as the ListPages view filter sees it: the identity it is checked by,
+/// the site that owns it, and the category the check is scoped to.
+#[derive(Debug, Clone, Copy)]
+pub struct ViewablePageRef {
+    pub page_id: i64,
+    pub site_id: i64,
+    pub page_category_id: Option<i64>,
+}
+
+/// Resolves whether a viewer may view each scanned page.
+///
+/// Results are returned in the same order as `pages`.
+///
+/// A page reference can grant page-specific virtual roles such as PageAuthor, so
+/// its decision must not be reused for another page in the same category.
+/// PageAuthor is the only such role and it requires a live page attribution, so
+/// the pages the viewer has authored are identified for the whole batch in one
+/// query and then checked individually.
+///
+/// Every other input to the decision -- the site ban probe, the explicit site
+/// roles, the virtual roles and the membership check -- depends only on
+/// `(user_id, site_id)`. The remaining pages therefore share one permission
+/// derivation per site and one category probe per distinct category instead of
+/// repeating the whole derivation for every row. A scan of `R` rows costs a
+/// constant number of queries plus one per distinct `(site, category)` and per
+/// authored page, rather than a fixed handful per row.
+pub async fn view_decisions_for_scanned_pages(
     ctx: &ServiceContext<'_>,
     viewer_user_id: Option<i64>,
-    pages: Vec<FoundPageRow>,
-    _category_permissions: &mut BTreeMap<(i64, Option<i64>), bool>,
-) -> Result<Vec<FoundPageRow>> {
-    let mut viewable = Vec::with_capacity(pages.len());
-    for page in pages {
-        // A page reference can grant page-specific virtual roles such as
-        // PageAuthor, so its decision must not be reused for another page in
-        // the same category. PermissionService still applies its own safe
-        // caching rules for checks that do not depend on page-scoped roles.
-        let can_view = PermissionService::check_user_can(
+    pages: &[ViewablePageRef],
+    category_permissions: &mut BTreeMap<(i64, Option<i64>), bool>,
+) -> Result<Vec<bool>> {
+    let make_error =
+        || Error::new("failed to filter viewable pages", ErrorType::Permission);
+
+    if pages.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let page_ids = pages.iter().map(|page| page.page_id).collect::<Vec<_>>();
+
+    let attributed_page_ids = match viewer_user_id {
+        Some(user_id) => {
+            RelationService::filter_attributed_page_ids(ctx, user_id, &page_ids)
+                .await
+                .or_raise(make_error)?
+        }
+        // Anonymous viewers can never hold a page attribution.
+        None => BTreeSet::new(),
+    };
+
+    // Grouped by site so a single permission derivation serves every page of a
+    // site. The site is carried by the row, so a cross-site scan stays correct.
+    let mut unattributed_by_site: BTreeMap<i64, Vec<(usize, Option<i64>)>> =
+        BTreeMap::new();
+    let mut viewable = vec![false; pages.len()];
+
+    for (index, page) in pages.iter().enumerate() {
+        if attributed_page_ids.contains(&page.page_id) {
+            let can_view = PermissionService::check_user_can(
+                ctx,
+                &CheckPermissionContext {
+                    user_id: viewer_user_id,
+                    site_id: page.site_id,
+                    page_reference: Some(Reference::Id(page.page_id)),
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: page.page_category_id.map(Reference::Id),
+                    action: Action::View,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+            viewable[index] = can_view;
+        } else {
+            unattributed_by_site
+                .entry(page.site_id)
+                .or_default()
+                .push((index, page.page_category_id));
+        }
+    }
+
+    for (site_id, entries) in unattributed_by_site {
+        let category_ids = entries
+            .iter()
+            .map(|(_, category_id)| *category_id)
+            .collect::<Vec<_>>();
+
+        let decisions = PermissionService::batch_check_page_view_without_page_roles(
             ctx,
-            &CheckPermissionContext {
-                user_id: viewer_user_id,
-                site_id: page.site_id,
-                page_reference: Some(Reference::Id(page.page_id)),
-            },
-            Permission {
-                resource_type: Resource::Page,
-                resource_category: page.page_category_id.map(Reference::Id),
-                action: Action::View,
-            },
+            viewer_user_id,
+            site_id,
+            &category_ids,
+            category_permissions,
         )
-        .await?;
-        if can_view {
-            viewable.push(page);
+        .await
+        .or_raise(make_error)?;
+
+        for ((index, _), can_view) in entries.into_iter().zip(decisions) {
+            viewable[index] = can_view;
         }
     }
 
     Ok(viewable)
+}
+
+async fn filter_viewable_rows(
+    ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
+    pages: Vec<FoundPageRow>,
+    category_permissions: &mut BTreeMap<(i64, Option<i64>), bool>,
+) -> Result<Vec<FoundPageRow>> {
+    let make_error =
+        || Error::new("failed to filter viewable pages", ErrorType::Permission);
+
+    let scanned = pages
+        .iter()
+        .map(|page| ViewablePageRef {
+            page_id: page.page_id,
+            site_id: page.site_id,
+            page_category_id: page.page_category_id,
+        })
+        .collect::<Vec<_>>();
+
+    let viewable = view_decisions_for_scanned_pages(
+        ctx,
+        viewer_user_id,
+        &scanned,
+        category_permissions,
+    )
+    .await
+    .or_raise(make_error)?;
+
+    Ok(pages
+        .into_iter()
+        .zip(viewable)
+        .filter_map(|(page, can_view)| if can_view { Some(page) } else { None })
+        .collect())
 }
 
 pub(in crate::services::render) fn count_pages_raw_scan_completion(

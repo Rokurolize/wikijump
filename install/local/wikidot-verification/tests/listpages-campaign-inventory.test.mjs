@@ -85,6 +85,32 @@ test("documentation inventory follows module docs, includes, and records missing
   );
 });
 
+test("documentation inventory retains the initial and post-discovery queue orders", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-order-"));
+  const docsRoot = path.join(root, "pages");
+  await fs.mkdir(docsRoot, { recursive: true });
+  try {
+    const names = ["a-", "a.b", "a1", "a:", "a_", "e\u0301", "é"];
+    for (const name of names) {
+      await writePage(
+        docsRoot,
+        `doc-modules:${name}`,
+        name === "a-"
+          ? "[[include doc-include:target]]\n"
+          : `[[include doc-include:missing-${name}]]\n`,
+      );
+    }
+    await writePage(docsRoot, "doc-include:target", "Target.\n");
+    const inventory = await buildDocumentationInventory({ docsRoot });
+    assert.deepEqual(
+      inventory.references.map((reference) => reference.source.page_fullname),
+      ["doc-modules:a-", "doc-modules:a_", "doc-modules:a:", "doc-modules:a.b", "doc-modules:a1", "doc-modules:e\u0301", "doc-modules:é"],
+    );
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
 test("ListPages extraction preserves duplicates, URL attributes, body sections, and malformed modules", () => {
   const source = [
     '[[module ListPages tags="@URL|scp" tags="+featured" perPage="2"]]',

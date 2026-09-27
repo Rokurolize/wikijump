@@ -44,6 +44,7 @@ import {cascadeDiagnosis} from "./cascade.mjs";
 import {
   collectSelectorTexts,
   diffComputedStyles,
+  firstRulesForSelectors,
   rankSelectorDiffs,
   selectorDiagnosis,
   summarizeComputedStyleDiffs,
@@ -309,7 +310,7 @@ export function createSession({
       const candidateMatches = (await collectSelectorMatches(pages.candidate, list)).counts;
       const selectorRows = rankSelectorDiffs({
         referenceRules: selectors?.length
-          ? list.map((selector) => referenceCache.rules.find((rule) => rule.selector === selector) ?? {selector, atContext: []})
+          ? firstRulesForSelectors(referenceCache.rules, list)
           : referenceCache.rules,
         referenceCounts: referenceMatches,
         candidateCounts: candidateMatches,

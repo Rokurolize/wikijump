@@ -37,7 +37,7 @@ use crate::services::role::{
 use crate::types::{Action, Permission, Reference, Resource};
 use futures::future::try_join_all;
 use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder, Set};
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 #[derive(Debug)]
 pub struct PermissionService;
@@ -525,20 +525,13 @@ impl PermissionService {
             None => false,
         };
 
-        let has_permission = if has_scoped_permissions {
-            user_permissions.contains(&Permission {
-                resource_type: resource,
-                resource_category: resource_category_id.map(Reference::Id),
-                action,
-            })
-        } else {
-            // If category does not have scoped permissions, fallback to _default
-            user_permissions.contains(&Permission {
-                resource_type: resource,
-                resource_category: None,
-                action,
-            })
-        };
+        let has_permission = Self::evaluate_in_permission_set(
+            user_permissions,
+            resource,
+            resource_category_id,
+            action,
+            has_scoped_permissions,
+        );
 
         // Cache result if cacheable
         if let Some(cache_fence) = cache_fence {
@@ -559,6 +552,116 @@ impl PermissionService {
         }
 
         Ok(has_permission)
+    }
+
+    /// The in-memory half of a permission decision.
+    ///
+    /// The single-check and batched paths both call this, so sharing a decision
+    /// across a batch cannot drift from single-check semantics.
+    fn evaluate_in_permission_set(
+        user_permissions: &HashSet<Permission<'static>>,
+        resource: Resource,
+        resource_category_id: Option<i64>,
+        action: Action,
+        has_scoped_permissions: bool,
+    ) -> bool {
+        if has_scoped_permissions {
+            user_permissions.contains(&Permission {
+                resource_type: resource,
+                resource_category: resource_category_id.map(Reference::Id),
+                action,
+            })
+        } else {
+            // If category does not have scoped permissions, fallback to _default
+            user_permissions.contains(&Permission {
+                resource_type: resource,
+                resource_category: None,
+                action,
+            })
+        }
+    }
+
+    /// Whether a viewer may view each listed page, given that the viewer holds
+    /// no page attribution on any of them.
+    ///
+    /// This is the batched form of `check_user_can` for a page reference. It is
+    /// valid only when no listed page can gain a page-scoped virtual role: a page
+    /// reference can add `PageAuthor`, and such a decision must never be reused
+    /// for a different page. `PageAuthor` requires a live page attribution, so
+    /// callers must exclude attributed pages, and `check_user_can` stays the
+    /// fallback for those.
+    ///
+    /// Everything else the reference influences — the site ban probe, the
+    /// explicit site roles, the virtual roles and the membership check — depends
+    /// only on `(user_id, site_id)` and is therefore derived once for the whole
+    /// batch. The category probe depends only on the resource category, so it is
+    /// resolved once per distinct category rather than once per page. As with a
+    /// page-scoped single check the permission cache is not consulted, so a batch
+    /// cannot publish an entry that a page-scoped check would later read back.
+    ///
+    /// Results are returned in the same order as `page_category_ids`.
+    pub async fn batch_check_page_view_without_page_roles(
+        ctx: &ServiceContext<'_>,
+        user_id: Option<i64>,
+        site_id: i64,
+        page_category_ids: &[Option<i64>],
+        category_scoped_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
+    ) -> Result<Vec<bool>> {
+        let make_error =
+            || Error::new("failed to check permissions", ErrorType::Permission);
+
+        if page_category_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        // The same derivation a page-scoped check performs, minus the page
+        // reference that provably contributes no virtual role for these pages.
+        let user_permissions =
+            Self::get_permissions_for_user(ctx, user_id, site_id, None)
+                .await
+                .or_raise(make_error)?;
+
+        if user_permissions.is_empty() {
+            return Ok(vec![false; page_category_ids.len()]);
+        }
+
+        let mut results = Vec::with_capacity(page_category_ids.len());
+        for category_id in page_category_ids {
+            let category_id = *category_id;
+            let has_scoped_permissions = match category_id {
+                Some(id) => {
+                    // Keyed by (site, category): the resource type and action are
+                    // fixed to (Page, View) for this entry point.
+                    let key = (site_id, Some(id));
+                    if let Some(cached) = category_scoped_cache.get(&key) {
+                        *cached
+                    } else {
+                        let scoped = Self::check_category_scoped(
+                            ctx,
+                            site_id,
+                            Resource::Page,
+                            id,
+                            Action::View,
+                        )
+                        .await
+                        .or_raise(make_error)?;
+                        category_scoped_cache.insert(key, scoped);
+                        scoped
+                    }
+                }
+                None => false,
+            };
+
+            results.push(Self::evaluate_in_permission_set(
+                &user_permissions,
+                Resource::Page,
+                category_id,
+                Action::View,
+                has_scoped_permissions,
+            ));
+        }
+
+        Ok(results)
     }
 
     async fn active_site_ban_suppresses_cache(

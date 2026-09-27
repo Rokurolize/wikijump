@@ -1713,6 +1713,55 @@ impl PageRevisionService {
         Ok(wikitext)
     }
 
+    /// Gets the latest revision title and wikitext for several page IDs in one
+    /// query. Prefer this over calling [`Self::get_latest`] plus
+    /// [`TextService::get`] once per page inside a loop.
+    pub async fn get_latest_title_and_wikitext_batch(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        page_ids: &[i64],
+    ) -> Result<BTreeMap<i64, Option<(String, String)>>> {
+        if page_ids.is_empty() {
+            return Ok(BTreeMap::new());
+        }
+
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to get latest revision summaries for {} pages in site ID {}",
+                    page_ids.len(),
+                    site_id,
+                ),
+                ErrorType::PageRevision,
+            )
+        };
+        let rows = Page::find()
+            .select_only()
+            .column(page::Column::PageId)
+            .column(page_revision::Column::Title)
+            .column(text::Column::Contents)
+            .join(JoinType::LeftJoin, page::Relation::PageRevision.def())
+            .join(JoinType::LeftJoin, page_revision::Relation::Text1.def())
+            .filter(page::Column::SiteId.eq(site_id))
+            .filter(page::Column::PageId.is_in(page_ids.iter().copied()))
+            .into_tuple::<(i64, Option<String>, Option<String>)>()
+            .all(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+
+        let mut summaries = page_ids
+            .iter()
+            .copied()
+            .map(|page_id| (page_id, None))
+            .collect::<BTreeMap<_, _>>();
+        for (page_id, title, contents) in rows {
+            if let (Some(title), Some(contents)) = (title, contents) {
+                summaries.insert(page_id, Some((title, contents)));
+            }
+        }
+        Ok(summaries)
+    }
+
     /// Gets the latest compiled body HTML for several page IDs in one query.
     pub async fn get_compiled_body_html_optional_batch(
         ctx: &ServiceContext<'_>,

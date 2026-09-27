@@ -22,6 +22,7 @@ use crate::services::page::PageService;
 use crate::services::page_revision::PageRevisionService;
 use crate::services::parent::ParentService;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::render::{ViewablePageRef, view_decisions_for_scanned_pages};
 use crate::types::{Action, PageOrder, Permission, Reference, Resource};
 use crate::utils::split_category;
 use std::borrow::Cow;
@@ -178,21 +179,45 @@ pub async fn load_wikidot_data_form_pagepaths(
             PageOrder::default(),
         )
         .await?;
-        let mut visible_pages = Vec::new();
-        for page in pages {
-            if wikidot_data_form_page_is_viewable(ctx, viewer_user_id, &page).await? {
-                visible_pages.push(page);
-            }
-        }
+        // One batched, attribution-safe access decision for the whole category
+        // and one batched parent lookup replace a permission derivation and a
+        // parents query per page.
+        let scanned = pages
+            .iter()
+            .map(|page| ViewablePageRef {
+                page_id: page.page_id,
+                site_id: page.site_id,
+                page_category_id: Some(page.page_category_id),
+            })
+            .collect::<Vec<_>>();
+        let viewable = view_decisions_for_scanned_pages(
+            ctx,
+            viewer_user_id,
+            &scanned,
+            &mut BTreeMap::new(),
+        )
+        .await?;
+        let visible_pages = pages
+            .into_iter()
+            .zip(viewable)
+            .filter_map(|(page, can_view)| can_view.then_some(page))
+            .collect::<Vec<_>>();
+
         let slug_by_id = visible_pages
             .iter()
             .map(|page| (page.page_id, page.slug.clone()))
             .collect::<BTreeMap<_, _>>();
+        let visible_page_ids = visible_pages
+            .iter()
+            .map(|page| page.page_id)
+            .collect::<Vec<_>>();
+        let mut parents_by_child =
+            ParentService::get_parents_batch(ctx, &visible_page_ids).await?;
+
         let mut nodes = Vec::with_capacity(visible_pages.len());
         for page in visible_pages {
             let relationships =
-                ParentService::get_parents(ctx, site_id, Reference::Id(page.page_id))
-                    .await?;
+                parents_by_child.remove(&page.page_id).unwrap_or_default();
             let parent = match relationships.as_slice() {
                 [relationship] => slug_by_id.get(&relationship.parent_page_id).cloned(),
                 _ => None,
