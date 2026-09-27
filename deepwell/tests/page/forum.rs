@@ -4003,3 +4003,242 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
     );
     assert_contains_error!(mismatched_site, ErrorType::PermissionDenied);
 }
+
+/// The AMC forum-module dispatcher must fail closed: only the exact evidenced
+/// parameter shapes dispatch, and `hidden` must be the literal "true" to opt
+/// into hidden groups.
+#[tokio::test]
+async fn forum_module_dispatch_is_fail_closed_on_unexpected_parameters() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Dispatch Boundary Group".to_owned(),
+            description: "Dispatch boundary group".to_owned(),
+            visible: true,
+            sort_index: Some(20_000),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("dispatch boundary group should be created");
+    let category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Dispatch Boundary Category".to_owned(),
+            description: "Dispatch boundary category".to_owned(),
+            sort_index: Some(10),
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("dispatch boundary category should be created");
+    let category_id = category.forum_category_id;
+    let thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: None,
+            title: "Dispatch Boundary Thread".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("dispatch boundary thread should be created");
+    let _hidden_group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Dispatch Hidden Group".to_owned(),
+            description: "Dispatch hidden group".to_owned(),
+            visible: false,
+            sort_index: Some(20_001),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("dispatch hidden group should be created");
+
+    async fn module_status(
+        runner: &TestRunner,
+        site_id: i64,
+        module_name: &str,
+        parameters: serde_json::Value,
+    ) -> String {
+        run_endpoint!(
+            runner,
+            wikidot_forum_module,
+            json!({
+                "site_id": site_id,
+                "module_name": module_name,
+                "parameters": parameters,
+            }),
+        )
+        .status
+    }
+
+    // The evidenced parameter shapes dispatch.
+    assert_eq!(
+        module_status(&runner, site_id, "forum/ForumStartModule", json!({})).await,
+        "ok",
+    );
+    assert_eq!(
+        module_status(
+            &runner,
+            site_id,
+            "forum/ForumViewCategoryModule",
+            json!({"c": category_id.to_string(), "p": "1"}),
+        )
+        .await,
+        "ok",
+    );
+
+    // An unexpected extra parameter must fail closed rather than dispatch.
+    assert_eq!(
+        module_status(
+            &runner,
+            site_id,
+            "forum/ForumStartModule",
+            json!({"unexpected": "1"}),
+        )
+        .await,
+        "not_ok",
+    );
+    assert_eq!(
+        module_status(
+            &runner,
+            site_id,
+            "forum/ForumViewCategoryModule",
+            json!({"c": category_id.to_string(), "p": "1", "unexpected": "1"}),
+        )
+        .await,
+        "not_ok",
+    );
+    assert_eq!(
+        module_status(
+            &runner,
+            site_id,
+            "forum/ForumCommentsListModule",
+            json!({"pageId": "1", "unexpected": "1"}),
+        )
+        .await,
+        "not_ok",
+    );
+
+    // `hidden` must be the literal "true" to opt in.
+    assert_eq!(
+        module_status(
+            &runner,
+            site_id,
+            "forum/ForumStartModule",
+            json!({"hidden": "true"}),
+        )
+        .await,
+        "ok",
+    );
+    assert_eq!(
+        module_status(
+            &runner,
+            site_id,
+            "forum/ForumStartModule",
+            json!({"hidden": "false"}),
+        )
+        .await,
+        "not_ok",
+    );
+
+    // `hidden=true` must actually include hidden groups.
+    assert!(
+        run_endpoint!(
+            runner,
+            wikidot_forum_module,
+            json!({
+                "site_id": site_id,
+                "module_name": "forum/ForumStartModule",
+                "parameters": {"hidden": "true"},
+            }),
+        )
+        .body
+        .contains("Dispatch Hidden Group"),
+        "hidden=true must render hidden groups",
+    );
+
+    // Thread module shapes fail closed on an extra parameter.
+    let thread_id = thread.forum_thread_id.to_string();
+    assert_eq!(
+        module_status(
+            &runner,
+            site_id,
+            "forum/ForumViewThreadModule",
+            json!({"t": thread_id}),
+        )
+        .await,
+        "ok",
+    );
+    assert_eq!(
+        module_status(
+            &runner,
+            site_id,
+            "forum/ForumViewThreadModule",
+            json!({"t": thread_id, "unexpected": "1"}),
+        )
+        .await,
+        "not_ok",
+    );
+    assert_eq!(
+        module_status(
+            &runner,
+            site_id,
+            "forum/ForumViewThreadPostsModule",
+            json!({"t": thread_id, "pageNo": "1"}),
+        )
+        .await,
+        "ok",
+    );
+    assert_eq!(
+        module_status(
+            &runner,
+            site_id,
+            "forum/ForumViewThreadPostsModule",
+            json!({"t": thread_id, "pageNo": "1", "unexpected": "1"}),
+        )
+        .await,
+        "not_ok",
+    );
+
+    // The category page cap is inclusive of the maximum page.
+    assert_eq!(
+        module_status(
+            &runner,
+            site_id,
+            "forum/ForumViewCategoryModule",
+            json!({"c": category_id.to_string(), "p": "50"}),
+        )
+        .await,
+        "ok",
+    );
+    assert_eq!(
+        module_status(
+            &runner,
+            site_id,
+            "forum/ForumViewCategoryModule",
+            json!({"c": category_id.to_string(), "p": "51"}),
+        )
+        .await,
+        "not_ok",
+    );
+}
