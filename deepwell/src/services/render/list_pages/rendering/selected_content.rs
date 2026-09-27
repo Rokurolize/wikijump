@@ -658,4 +658,122 @@ mod tests {
             r#"<p>before <span class="bi-y">body</span> after [[/span]]</p>"#,
         );
     }
+
+    fn row(page_id: i64, tags: Option<&[&str]>) -> FoundPageRow {
+        FoundPageRow {
+            page_id,
+            site_id: 1,
+            title: None,
+            alt_title: None,
+            slug: None,
+            page_category_id: None,
+            page_revision_id: None,
+            tags: tags.map(|tags| tags.iter().map(|tag| (*tag).to_owned()).collect()),
+            created_at: None,
+            created_by: None,
+            updated_at: None,
+            updated_by: None,
+            score: None,
+            revision_count: None,
+        }
+    }
+
+    fn ids(rows: &[FoundPageRow]) -> Vec<i64> {
+        rows.iter().map(|row| row.page_id).collect()
+    }
+
+    #[test]
+    fn row_selection_applies_offset_and_current_page_exclusion() {
+        let pages = vec![row(1, None), row(2, None), row(3, None)];
+        let tags = BTreeSet::new();
+
+        let all = select_list_pages_rows(pages.clone(), false, &tags, None, 2, false, 0);
+        assert_eq!(ids(&all), vec![1, 2, 3]);
+
+        let offset =
+            select_list_pages_rows(pages.clone(), false, &tags, None, 2, false, 1);
+        assert_eq!(ids(&offset), vec![2, 3]);
+
+        let excluded =
+            select_list_pages_rows(pages.clone(), false, &tags, None, 2, true, 0);
+        assert_eq!(ids(&excluded), vec![1, 3]);
+    }
+
+    #[test]
+    fn row_selection_filters_exact_visible_tags() {
+        let pages = vec![
+            row(1, Some(&["alpha", "_hidden"])),
+            row(2, Some(&["alpha"])),
+            row(3, Some(&["beta"])),
+        ];
+        let mut current = BTreeSet::new();
+        current.insert("alpha".to_owned());
+
+        let selected = select_list_pages_rows(pages, true, &current, None, 1, false, 0);
+        assert_eq!(
+            ids(&selected),
+            vec![1, 2],
+            "only rows whose visible tags match are kept",
+        );
+    }
+
+    #[test]
+    fn relative_range_selects_before_and_after_the_current_page() {
+        let pages = vec![row(1, None), row(2, None), row(3, None)];
+        let tags = BTreeSet::new();
+
+        let before = select_list_pages_rows(
+            pages.clone(),
+            false,
+            &tags,
+            Some(RangeSelector::Before),
+            2,
+            false,
+            0,
+        );
+        assert_eq!(ids(&before), vec![1]);
+
+        let after = select_list_pages_rows(
+            pages.clone(),
+            false,
+            &tags,
+            Some(RangeSelector::After),
+            2,
+            false,
+            0,
+        );
+        assert_eq!(ids(&after), vec![3]);
+
+        let missing = select_list_pages_rows(
+            pages,
+            false,
+            &tags,
+            Some(RangeSelector::Before),
+            99,
+            false,
+            0,
+        );
+        assert!(missing.is_empty(), "a missing current page selects nothing");
+    }
+
+    #[test]
+    fn social_percent_encoding_matches_the_form_contract() {
+        assert_eq!(wikidot_social_percent_encode("a b", false), "a%20b");
+        assert_eq!(wikidot_social_percent_encode("a b", true), "a+b");
+        assert_eq!(
+            wikidot_social_percent_encode("A/B?c=d", false),
+            "A%2FB%3Fc%3Dd"
+        );
+        assert_eq!(wikidot_social_percent_encode("~._-", false), "~._-");
+        assert_eq!(wikidot_social_percent_encode("é", false), "%C3%A9");
+    }
+
+    #[test]
+    fn social_nonce_is_bounded_and_offset_sensitive() {
+        let base = wikidot_social_nonce("source", 0);
+        assert!((10_000..100_000).contains(&base));
+        assert_eq!(base, wikidot_social_nonce("source", 0));
+        assert_ne!(base, wikidot_social_nonce("source", 1));
+        assert_ne!(base, wikidot_social_nonce("other", 0));
+    }
 }
