@@ -28,18 +28,20 @@ async function fixture(operation) {
     import {withAuditLock} from ${JSON.stringify(lock)};
     const arg = name => process.argv.find(v=>v.startsWith('--'+name+'='))?.split('=')[1];
     const engine=arg('engine'), viewport=arg('viewport');
+    const theme=arg('theme')??arg('themes')?.split(',')[0]??'test';
     const auditPath=process.env.THEME_LAB_INTERACTIVE_AUDIT_PATH;
     if(!process.argv.includes('--anonymous'))throw new Error('anonymous not forwarded');
     if(arg('transport-origin')!=='https://fixture.localhost:3395')throw new Error('transport not forwarded');
+    if(process.env.EXPECT_RUN_CONTRACT && arg('run-contract')!==process.env.EXPECT_RUN_CONTRACT)throw new Error('run contract not forwarded');
     if(process.env.SCENARIO==='child-failure' && engine==='chromium' && viewport==='desktop')throw new Error('child failed');
     const retry=arg('concurrency')==='2';
     const failed=process.env.SCENARIO==='exhausted'||(process.env.SCENARIO==='retry'&&!retry);
     if(process.env.CALLS_PATH)await fs.appendFile(process.env.CALLS_PATH,JSON.stringify({engine,viewport,retry,states:arg('state')})+'\\n');
-    const row={theme:'test',browser_engine:engine,viewport,surface:'page.normal',state:'settled',screenshot:'x.png',
+    const row={theme,browser_engine:engine,viewport,surface:'page.normal',state:'settled',screenshot:'x.png',
       unconfirmed_items:failed?['action/capture failed: test']:[],asset_failures:[],page_errors:[],external_requests_sent:0};
     if(process.env.THEME_LAB_AUDIT_SHARD_DIR){
       await fs.mkdir(process.env.THEME_LAB_AUDIT_SHARD_DIR,{recursive:true});
-      const key='test|'+engine+'|'+viewport+'|page.normal|settled';
+      const key=theme+'|'+engine+'|'+viewport+'|page.normal|settled';
       const shard={schema:'theme_lab_interactive_audit_delta.v1',remove_keys:[key],records:[row],superseded_records:[],visual_review_reuse_updates:0,document_patch:{}};
       await fs.writeFile(path.join(process.env.THEME_LAB_AUDIT_SHARD_DIR,engine+'__'+viewport+'.json'),JSON.stringify(shard));
       process.exit(0);
@@ -102,6 +104,39 @@ test('matrix warns when anonymous capture omits a public state subset',async()=>
  assert.match(result.stderr,/--anonymous cannot capture states/);
  const summary=JSON.parse(result.stdout.trim().split('\n').at(-1));
  assert.equal(summary.successful_states,9);
+}));
+
+test('matrix isolates a run-contract campaign and forwards its additional candidate',async()=>fixture(async({dir,script})=>{
+ const campaignDir=path.join(dir,'sigma10-migration');
+ const runContractPath=path.join(campaignDir,'run-contract.json');
+ const auditPath=path.join(campaignDir,'evidence','interactive-visual-audit.json');
+ await fs.mkdir(campaignDir,{recursive:true});
+ await fs.writeFile(runContractPath,JSON.stringify({
+  artifact_namespace:'migration/sigma10',
+  audit_path:'evidence/interactive-visual-audit.json',
+  additional_candidates:{'sigma10-baseline':{directory:'baseline-probe'}},
+ }));
+ const result=spawnSync(process.execPath,[script,'--theme=sigma10-baseline','--jobs=3','--anonymous','--state=page.normal.settled',`--run-contract=${runContractPath}`],{
+  cwd:os.tmpdir(),encoding:'utf8',timeout:15000,
+  env:{...process.env,SCENARIO:'success',EXPECT_RUN_CONTRACT:runContractPath}
+ });
+ assert.equal(result.status,0,result.stderr);
+ const audit=JSON.parse(await fs.readFile(auditPath));
+ assert.equal(audit.records.length,9);
+ assert.ok(audit.records.every(row=>row.theme==='sigma10-baseline'));
+ const summary=JSON.parse(result.stdout.trim().split('\n').at(-1));
+ assert.equal(summary.successful_states,9);
+}));
+
+test('matrix rejects a custom contract targeting accepted audit evidence',async()=>fixture(async({dir,script})=>{
+ const campaignDir=path.join(dir,'sigma10-migration');
+ await fs.mkdir(campaignDir,{recursive:true});
+ const runContractPath=path.join(campaignDir,'run-contract.json');
+ await fs.writeFile(runContractPath,JSON.stringify({artifact_namespace:'migration/sigma10',audit_path:'../interactive-visual-audit.json'}));
+ const result=spawnSync(process.execPath,[script,'--theme=test','--anonymous',`--run-contract=${runContractPath}`],{encoding:'utf8',timeout:10000});
+ assert.notEqual(result.status,0);
+ assert.match(result.stderr,/custom run contract audit/);
+ assert.equal(await fs.readFile(path.join(dir,'interactive-visual-audit.json'),'utf8').catch(()=>null),null);
 }));
 
 test('matrix interruption terminates and reaps active captures',async()=>fixture(async({dir,script})=>{

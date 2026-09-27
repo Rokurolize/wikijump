@@ -1,0 +1,10 @@
+[[div class="scpnet-interwiki-wrapper interwiki-stylable"]]
+
+[[html]]
+
+<iframe src="data:text/html,%3C!doctype%20html%3E%3Chtml%20lang=ja%3E%3Cbody%3E%3C/body%3E%3C/html%3E" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>
+
+[[/html]]
+
+
+[[/div]]

@@ -4,12 +4,14 @@ import path from 'node:path';
 
 const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 
-export async function storeContentAddressedScreenshot({portsDir, theme, engine, viewport, stateKey, bytes}) {
+export async function storeContentAddressedScreenshot({portsDir, theme, engine, viewport, stateKey, bytes, artifactNamespace = ''}) {
   if (!/^[a-z0-9-]+$/u.test(theme) || !/^(?:chromium|firefox|webkit)$/u.test(engine) || !/^[a-z-]+$/u.test(viewport) || !/^[a-z0-9-]+$/u.test(stateKey)) {
     throw new Error('invalid screenshot artifact identity');
   }
+  const namespaceSegments = artifactNamespace ? artifactNamespace.split('/') : [];
+  if (namespaceSegments.some(segment => !/^[a-z0-9-]+$/u.test(segment))) throw new Error('invalid screenshot artifact namespace');
   const digest = sha256(bytes);
-  const relativePath = path.join(theme, 'artifacts', 'interactive', engine, viewport, `${stateKey}-${digest}.png`);
+  const relativePath = path.join(...namespaceSegments, theme, 'artifacts', 'interactive', engine, viewport, `${stateKey}-${digest}.png`);
   const destination = path.join(portsDir, relativePath);
   await fs.mkdir(path.dirname(destination), {recursive: true});
   try {
