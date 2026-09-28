@@ -1019,6 +1019,39 @@ fn parses_relative_and_comparison_date_selectors() {
         parse_list_pages_date_selector("last 9223372036854775807 days"),
         None,
     );
+
+    // A bare keyword or an incomplete phrase is not a selector.
+    for value in ["older", "newer", "last", "older than", "newer than"] {
+        assert_eq!(
+            parse_list_pages_date_selector(value),
+            None,
+            "{value:?} is not a complete relative selector",
+        );
+    }
+
+    // The relative unit defaults to one day and the direction is preserved.
+    for (value, comparison) in [
+        ("older than 5", ComparisonOperation::LessThan),
+        ("newer than 5", ComparisonOperation::GreaterThan),
+        ("older than 2 month", ComparisonOperation::LessThan),
+        ("newer than 2 days", ComparisonOperation::GreaterThan),
+    ] {
+        assert!(
+            matches!(
+                parse_list_pages_date_selector(value),
+                Some(DateSelector::Span {
+                    resolution: DateTimeResolution::Second,
+                    comparison: actual,
+                    ..
+                }) if actual == comparison
+            ),
+            "{value:?} should parse with {comparison:?}",
+        );
+    }
+    assert!(matches!(
+        parse_list_pages_date_selector("last 5 days"),
+        Some(DateSelector::FromPresent { .. })
+    ));
 }
 
 #[test]
