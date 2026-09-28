@@ -901,4 +901,44 @@ mod tests {
             r#"ListPages tags="[[module x]]""#
         ));
     }
+
+    #[test]
+    fn backslash_escaping_depends_on_parity() {
+        for (source, start, expected) in [
+            ("[[a]]", 0, false),
+            (r"\[[a]]", 1, true),
+            (r"\\[[a]]", 2, false),
+            (r"x\[[a]]", 2, true),
+            (r"x\\[[a]]", 3, false),
+            (r"x\\\[[a]]", 4, true),
+        ] {
+            assert_eq!(
+                source_block_open_is_backslash_escaped(source, start),
+                expected,
+                "{source:?} at {start}",
+            );
+        }
+    }
+
+    #[test]
+    fn url_value_quote_recognition_requires_the_at_url_prefix() {
+        let starts = |value: &str, quote: usize| {
+            list_pages_url_value_quote_starts_at(value.as_bytes(), quote)
+        };
+        assert!(starts(r#""@URL""#, 0));
+        assert!(starts(r#""@url|""#, 0));
+        assert!(!starts(r#""@URL ""#, 0));
+        assert!(!starts(r#""@URL""#, 5));
+        assert!(!starts(r#""other""#, 0));
+
+        let ends = |value: &str, quote: usize, lower_bound: usize| {
+            list_pages_url_value_quote_ends_at(value.as_bytes(), quote, lower_bound)
+        };
+        assert!(ends(r#""@URL""#, 5, 0));
+        assert!(!ends(r#""other""#, 5, 0));
+        assert!(!ends(r#""@URL"x""#, 7, 0));
+        assert!(!ends("abc", 3, 0));
+        // A non-zero lower bound must still resolve the opening quote.
+        assert!(ends(r#"xx"@URL""#, 7, 2));
+    }
 }
