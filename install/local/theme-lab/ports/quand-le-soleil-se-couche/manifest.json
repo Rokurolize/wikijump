@@ -9,6 +9,7 @@
   "source_updated_at": "2025-08-12T09:09:31Z",
   "source_sha256": "eebdb3d7e620550d2921ff5814fa44df29a98ecc96e953ba29423ad525ec281d",
   "planned_jp_theme_page": "theme:quand-le-soleil-se-couche",
+  "surface_contract": "surface-contract.json",
   "cross_branch_reference": {
     "branch": "SCP-KO",
     "url": "https://scpko.wikidot.com/theme:quand-le-soleil-se-couche",
@@ -74,7 +75,9 @@
     "replace Korean header text with Japanese 財団",
     "localize both required runtime images into the package",
     "remove the upstream Space Mono import because neither the FR source nor the evidenced KO compatibility layer references that font family",
-    "remove the FR/INT/EN tag-conditional adaptation blocks from the JP candidate"
+    "remove the FR/INT/EN tag-conditional adaptation blocks from the JP candidate",
+    "preserve the SCP-JP Sigma-9 responsive header sizing instead of flattening its desktop/mobile logo geometry",
+    "bind the source-hub .flickering heading and touched SCP-JP runtime surfaces to surface-contract.json"
   ],
   "technical_spec_version": "1.4",
   "current_jp_theme_page": {

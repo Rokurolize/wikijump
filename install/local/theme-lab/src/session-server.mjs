@@ -59,6 +59,17 @@ import {TORTURE_VIEWPORTS, runTortureCorpus} from "./torture-corpus.mjs";
 import {buildVerdict, expandVerdict} from "./verdict.mjs";
 import {captureVisualPair} from "./visual-diff.mjs";
 import {inspectCandidateAssets, materializeCandidateCssAssets, materializeCandidatePageImages} from "./local-assets.mjs";
+import {
+  captureCustomSelectorCoverage,
+  issuesFromCustomSelectorCoverage,
+  normalizeSurfaceContract,
+  runKnownSurfaceContract,
+} from "./theme-surface-contract.mjs";
+
+const SURFACE_CONTRACT_FIXTURE = new URL(
+  "../ports/interactive-visual-fixture/fixture.wikidot.txt",
+  import.meta.url,
+);
 
 const DEFAULT_PROPERTIES = [
   "display",
@@ -424,6 +435,7 @@ export function createSession({
       visual = false,
       iteration = false,
       artifactDir = null,
+      surfaceContract = null,
       properties = DEFAULT_PROPERTIES,
       max = 60,
       verbose = false,
@@ -442,6 +454,8 @@ export function createSession({
       let imageDiagnostics = null;
       let pageImageAssets = null;
       let interactionDiagnostics = null;
+      let effectiveCss = typeof css === "string" ? css : null;
+      let surfaceContractDiagnostics = null;
 
       // Undo any destructive operation (torture fixture, previous preview)
       // before measuring, so the reference comparison sees the real page.
@@ -466,7 +480,7 @@ export function createSession({
       if (typeof css === "string") {
         const step = performance.now();
         candidateAssets = localAssets ? await inspectCandidateAssets(css, localAssets.root) : null;
-        const effectiveCss = localAssets ? await materializeCandidateCssAssets(css, localAssets.root) : css;
+        effectiveCss = localAssets ? await materializeCandidateCssAssets(css, localAssets.root) : css;
         await applyStylesheet(candidate, effectiveCss, session.cssId);
         timing.css_ms = Number((performance.now() - step).toFixed(1));
       }
@@ -521,6 +535,50 @@ export function createSession({
         full.interaction_diagnostics = interactionDiagnostics;
       }
 
+      if (surfaceContract !== null && !iteration) {
+        if (typeof css !== "string" || typeof effectiveCss !== "string") {
+          fail("surface_contract_requires_css", "surface contract requires candidate CSS");
+        }
+        if (!Number.isSafeInteger(siteId) || !session.previewClient) {
+          fail("surface_contract_requires_preview", "surface contract requires a Deepwell preview client and --site-id");
+        }
+        const contract = normalizeSurfaceContract(surfaceContract);
+        const step = performance.now();
+        const customSelectors = await captureCustomSelectorCoverage(candidate, contract);
+        const surfaceFixture = await fs.readFile(SURFACE_CONTRACT_FIXTURE, "utf8");
+        const rendered = await session.previewClient.preview({
+          siteId,
+          title: "Theme Lab SCP-JP Surface Contract",
+          wikitext: surfaceFixture,
+          syntaxOnly: false,
+        });
+        await applyPreview(candidate, {
+          body: rendered.body,
+          styles: rendered.styles,
+          title: "Theme Lab SCP-JP Surface Contract",
+          containerSelector: "#page-content",
+          styleId: "theme-lab-surface-contract-fixture-styles",
+        });
+        const known = await runKnownSurfaceContract(candidate, {
+          css,
+          effectiveCss,
+          styleId: session.cssId,
+          contractValue: contract,
+        });
+        const customIssues = issuesFromCustomSelectorCoverage(customSelectors, contract.strict);
+        surfaceContractDiagnostics = {
+          schema: known.schema,
+          strict: contract.strict,
+          usage: known.usage,
+          custom_selectors: customSelectors,
+          captures: known.captures,
+          reviewed_findings: known.reviewed_findings,
+          issues: [...known.issues, ...customIssues],
+        };
+        full.surface_contract = surfaceContractDiagnostics;
+        timing.surface_contract_ms = Number((performance.now() - step).toFixed(1));
+      }
+
       // Torture mutates the article content, so it runs last.
       let tortureResult = null;
       if (torture && !iteration) {
@@ -562,8 +620,20 @@ export function createSession({
                 ) ?? [],
               }
             : null,
-        extraIssues: candidateAssets?.missing.map((name) => ({severity: "error", kind: "candidate_asset_missing", asset: name})) ?? [],
+        extraIssues: [
+          ...(candidateAssets?.missing.map((name) => ({severity: "error", kind: "candidate_asset_missing", asset: name})) ?? []),
+          ...(surfaceContractDiagnostics?.issues ?? []),
+        ],
       });
+      if (surfaceContractDiagnostics) {
+        verdict.surface_contract = {
+          strict: surfaceContractDiagnostics.strict,
+          touched_surfaces: surfaceContractDiagnostics.usage.surfaces.map((surface) => surface.id),
+          custom_selectors: surfaceContractDiagnostics.custom_selectors,
+          reviewed_findings: surfaceContractDiagnostics.reviewed_findings,
+          issue_count: surfaceContractDiagnostics.issues.length,
+        };
+      }
       verdict.verification_scope = iteration
         ? {mode: "iteration", completed: ["reference comparison", "candidate stylesheet", "preview", "assets", "Japanese fonts", "page images"], deferred: ["all viewports", "torture", "widget interactions", "visual screenshots"]}
         : {mode: "full", completed: ["reference comparison", "candidate stylesheet", "preview", "assets", "Japanese fonts", "page images", "all viewports", "torture", "widget interactions", ...(visual ? ["visual screenshots"] : [])], deferred: []};

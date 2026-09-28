@@ -28,21 +28,29 @@
  * Sigma-9 DOM used by SCP-JP instead of depending on fondationscp components. */
 #header {
   background-image: var(--ct_bg_header-logo);
-  background-size: 100px 100px;
 }
 
-#header h1 a {
-  font-size: var(--ct_fns_header-txt);
+@media (min-width: 980px) {
+  #header {
+    background-size: 100px;
+  }
 }
 
 #header h1 a::after {
   content: var(--ct_cnt_alt-header-txt);
-  font-size: var(--ct_fns_alt-header-txt);
 }
 
-#header h1 a::before,
-.flickering {
+#header h1 a::before {
   content: "SCP";
+  animation: flicker 3s linear infinite;
+}
+
+#header h1 a span {
+  font-size: 0;
+  letter-spacing: 0;
+}
+
+.flickering {
   animation: flicker 3s linear infinite;
   font-size: var(--ct_fns_alt-header-txt);
 }

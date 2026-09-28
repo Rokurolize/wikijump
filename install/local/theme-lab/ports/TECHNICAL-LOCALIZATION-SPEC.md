@@ -42,7 +42,7 @@ the theme receipt.
 | `MUST_ADAPT_FOR_JP` | Adapt selectors coupled to EN-only header, sidebar, interwiki, mobile-navigation, rating, file, or component DOM when the current JP runtime differs. Render Japanese content and verify glyph coverage, actual fallback, line-height, and resulting wrapping. Keep a JP-appropriate page width and readable mobile layout. |
 | `MAY_DIFFER` | Reader-facing prose, page-specific demo contents, and structural wrappers may differ where localization or the current JP runtime requires it. Record each material difference and its evidence. A count-only difference between unrelated demo articles is not an automatic defect. |
 | `FORBIDDEN_STALE_DEPENDENCY` | Do not leave an obsolete, accidental SCP-EN page, component, or asset URL in the delivered candidate. Do not use an EN-only DOM include when a verified JP runtime component is required. Any retained shared upstream CDN must be intentional, reachable, and recorded with URL, owner, reason, and acquisition status. |
-| `MUST_VERIFY` | No horizontal overflow or obscured content at desktop 1440×1000, laptop 1024×900, tablet 768×1024, and mobile 390×844. Run the component torture corpus; exercise menu, tabs, collapsibles, hover/focus/active states, and fixed/sticky/scroll behavior when the theme uses them. |
+| `MUST_VERIFY` | No horizontal overflow or obscured content at desktop 1440×1000, laptop 1024×900, tablet 768×1024, and mobile 390×844. Run the component torture corpus; exercise menu, tabs, collapsibles, hover/focus/active states, and fixed/sticky/scroll behavior when the theme uses them. Full Theme Lab acceptance must run the CSS-derived SCP-JP surface contract; source-specific active selectors not represented by a known runtime surface belong in the package `surface-contract.json`. |
 
 ## Surface requirements
 
@@ -57,18 +57,40 @@ Page-level `[[image]]` assets and browser `<img>` elements are part of candidate
 ### JP runtime and content surfaces
 
 - `#header`, title/subtitle, logo, search, account/navigation, `#top-bar`, `#side-bar`, mobile sidebar controls, and `#main-content` must be mapped against the current JP runtime. Do not depend on EN-only IDs or `nth-child` menu order without direct DOM evidence.
+- Do not flatten responsive behavior merely because a cross-branch port uses a
+  fixed value. Where the current JP baseline changes header/logo/title size,
+  positioning, width or other geometry across desktop/mobile, record the
+  baseline computed values and preserve that responsive contract unless the
+  source theme has evidence for deliberately replacing it. Theme Lab reports
+  `baseline_responsive_behavior_flattened` when a property that varies in the
+  JP baseline becomes the same value at both canonical viewports.
 - Preserve the source theme's article width and title behavior where compatible. Audit fixed/sticky elements while scrolling and during viewport transitions, not only after layout settles.
 - The standard Wikidot `[[module Rate]]` is mandatory in each theme fixture when the theme can style a page. Compare the source module and resulting EN rating selector assumptions with the normal SCP-JP Deepwell preview. On current JP the tested preview exposes `.page-rate-widget-box`; the runtime may not render rating markup on a page lacking the module. A syntax-only preview is insufficient for rating acceptance.
 - Wikidot `[[*user NAME]]` links resolve in the current site's account namespace. Preserve those links only when the referenced identity is confirmed on SCP-JP. For an SCP-EN-only/unconfirmed author, preserve the credited visible name as text in the JP candidate; do not publish a broken JP user link. The source EN and human-port snapshots retain the original identity markup for provenance.
 - Current SCP-JP BHL-based headers synthesize the site wordmark through `#header h1 a::before`; the runtime's mobile rule sets that anchor to `3rem` (48px at the tested 390px viewport). If a localized two-word theme title wraps into or overlaps its subtitle, compare the computed `font-size`, pseudo-element content, and mobile width before changing structure. Ouroborous evidence required a 390px-only `clamp(1rem, 5vw, 1.4rem)` title size and `white-space: nowrap`; the existing subtitle positioning then remained intact. Preserve EN desktop/tablet sizing and record the theme-specific override.
 - Exercise tables, blockquotes, code, tabs, collapsibles, footnotes, TOC, and image blocks when the source styles them. An include that Deepwell preview does not expand must be represented by an equivalent JP-runtime fixture and called out; zero matches are not evidence of compatibility.
 - Where themes touch page options, credits/license components, or action controls, record their live JP selector mapping and check focus/hover/active states.
+- A simplified hand-written DOM is not sufficient evidence for an existing
+  SCP-JP component. Use the repository-owned current component fixture when
+  available. The surface contract deliberately renders the real credit/rating
+  fixture before evaluating selectors so cascade/specificity from the component
+  itself is part of the result.
 
 ### CSS behavior and Japanese text
 
 Record custom properties and their defaults/overrides, selector specificity, `!important`, cascade winner, inactive media rules, pseudo-elements, `nth-child` assumptions, transitions/animations, and all breakpoints that affect the four required viewports. The final candidate must have no unexplained next actions, selector reachability errors, unresolved cascade errors, or torture regressions.
 
-The shared runtime selector list checks common SCP-JP surfaces only. A theme with source-specific active component selectors must add representative selectors to its package `acceptance-selectors.txt` and run them in the final Theme Lab verdict. This campaign caught the Sigma candidate's omitted `.color`, `.blink`, and `.footnotes-footer` rules when the selectors were added; the rules are now preserved from current EN CSS in the JP candidate, and the fixture exercises them. A common rating/table fixture alone cannot establish that a theme's own CSS module survived localization.
+The shared runtime selector list checks common SCP-JP surfaces only. Full
+Theme Lab acceptance additionally derives a surface inventory from the
+candidate CSS and exercises every known runtime surface that the theme touches.
+A theme with source-specific active component selectors must add them to its
+package `surface-contract.json` (and may also retain them in
+`acceptance-selectors.txt` for reference/candidate count comparison). This
+campaign caught the Sigma candidate's omitted `.color`, `.blink`, and
+`.footnotes-footer` rules when the selectors were added; the rules are now
+preserved from current EN CSS in the JP candidate, and the fixture exercises
+them. A common rating/table fixture alone cannot establish that a theme's own
+CSS module survived localization.
 
 Font acceptance requires real Japanese text, not just a `font-family` declaration. The local fixture includes a Japanese glyph specimen, and Theme Lab queries Chromium `CSS.getPlatformFontsForNode` for its rendered node. Record the requested CSS stack, the actual platform font family or families, custom-font status and glyph counts, and line-height/wrapping consequences. A foreign font with incomplete Japanese glyph coverage must receive a suitable JP font stack or packaged font whose license/source is documented. A screenshot alone is insufficient when the actual platform font can be queried.
 

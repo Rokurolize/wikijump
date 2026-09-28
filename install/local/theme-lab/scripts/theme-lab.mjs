@@ -51,6 +51,13 @@ function readSelectors(filePath) {
   return text.split("\n").map((line) => line.trim()).filter(Boolean);
 }
 
+function readSurfaceContract(value) {
+  if (value === undefined || value === null || value === false) return null;
+  if (["off", "none", "false"].includes(String(value).toLowerCase())) return null;
+  if (value === true || value === "auto") return "auto";
+  return JSON.parse(fs.readFileSync(path.resolve(String(value)), "utf8"));
+}
+
 function sendRequest(socketPath, request) {
   return new Promise((resolve, reject) => {
     const socket = net.connect(socketPath);
@@ -200,6 +207,11 @@ async function main() {
     const wikitext =
       args["wikitext-text"] ?? (args.wikitext ? fs.readFileSync(path.resolve(args.wikitext), "utf8") : null);
     const siteId = args["site-id"] !== undefined ? parseSiteId(args["site-id"]) : null;
+    const surfaceContract = args.iteration === true
+      ? null
+      : readSurfaceContract(
+          args["surface-contract"] ?? (siteId !== null && typeof css === "string" ? "auto" : null),
+        );
     request = {
       op: "check",
       css,
@@ -216,6 +228,7 @@ async function main() {
       viewports: args["no-viewports"] !== true,
       visual: args.visual === true,
       artifactDir: args["artifact-dir"] ? path.resolve(args["artifact-dir"]) : null,
+      surfaceContract,
       verbose: args.verbose === true || args["json-full"] === true,
     };
   } else if (command === "reference") {

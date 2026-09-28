@@ -77,6 +77,29 @@ class ForeignThemePortExampleTests(unittest.TestCase):
                 published,
             )
 
+    def test_surface_contract_binds_runtime_and_theme_specific_coverage(self):
+        contract_path = PORT / self.manifest["surface_contract"]
+        contract = json.loads(contract_path.read_text())
+        self.assertEqual(contract["schema"], "theme_lab_surface_contract.v1")
+        self.assertTrue(contract["strict"])
+        self.assertIn(
+            "h2 .flickering",
+            [row["selector"] for row in contract["custom_selectors"]],
+        )
+        self.assertTrue(contract["reviewed_exceptions"])
+        self.assertEqual(
+            self.receipt["candidate"]["surface_contract_sha256"],
+            sha256(contract_path),
+        )
+        self.assertEqual(self.receipt["surface_contract"]["issue_count"], 0)
+        self.assertEqual(
+            {(row["id"], row["viewport"], row["count"]) for row in self.receipt["surface_contract"]["custom_selectors"]},
+            {
+                ("theme.flickering-heading", "desktop", 1),
+                ("theme.flickering-heading", "mobile", 1),
+            },
+        )
+
     def test_retained_acceptance_closes_the_initial_actionable_failure(self):
         initial = json.loads((PORT / "initial-verdict.json").read_text())["result"]
         final = json.loads((PORT / "acceptance-verdict.json").read_text())["result"]
@@ -92,10 +115,15 @@ class ForeignThemePortExampleTests(unittest.TestCase):
         for viewport in ("desktop", "laptop", "tablet", "mobile"):
             self.assertEqual(final["viewport_status"][viewport], {"status": "pass", "document_overflow_px": 0})
         self.assertEqual(final["torture"]["verdict"], "pass")
+        self.assertEqual(final["surface_contract"]["issue_count"], 0)
         self.assertEqual(final["assets"]["external_requests"], 0)
         self.assertEqual(final["assets"]["candidate"]["missing"], [])
         self.assertEqual(self.receipt["state"], "verified-local-candidate-not-published")
         self.assertEqual(self.receipt["final_check"]["verdict"], "warn")
+        self.assertEqual(
+            self.receipt["final_check"]["raw_result_sha256"],
+            sha256(PORT / "acceptance-verdict.json"),
+        )
         self.assertEqual(
             self.receipt["cross_branch_evidence"]["current_scp_jp_usage"]["local_theme_page"]["http_status"],
             404,

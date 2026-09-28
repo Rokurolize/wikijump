@@ -56,6 +56,25 @@ node scripts/theme-lab.mjs check --socket /tmp/theme-lab.sock \
 `check` returns the compact verdict; `--verbose` adds raw selector rows,
 computed-style rows, and the full torture result.
 
+For a normal full check with both `--site-id` and candidate CSS, Theme Lab also
+runs the SCP-JP runtime **surface contract** by default. It parses the
+candidate CSS, discovers the known runtime surfaces actually touched by its
+selectors, renders the repository-owned high-fidelity JP component fixture,
+and checks only the relevant states. Examples include desktop/mobile header
+geometry, an expanded mobile top-menu, an open mobile sidebar, rating focus,
+credit normal/open states, tab selection and collapsibles. Each surface is
+measured once with the JP baseline and once with the candidate CSS so a theme
+cannot accidentally flatten a responsive baseline rule without producing
+evidence. State-specific horizontal overflow is attributed to the surface that
+owns the offender rather than to every component on the page.
+
+The default contract is equivalent to `--surface-contract auto`. A port may
+pass `--surface-contract ports/<slug>/surface-contract.json` to add active
+theme-specific selectors and evidence-backed reviewed exceptions. Use
+`--surface-contract off` only for a deliberately scoped diagnostic; it is not a
+valid final acceptance shortcut. `--iteration` omits the surface contract,
+along with the other expensive final-acceptance checks, for edit-loop speed.
+
 For repeated edits after opening/capturing the reference, use `check --iteration`
 to get the selector, cascade, candidate-asset, and preview verdict without
 rerunning viewport, torture, interaction, or screenshot acceptance. The JSON
@@ -110,6 +129,13 @@ are not inherently wrong are reported as `style_changes`, not as errors.
 
 Compact check results include per-viewport overflow status, the Chromium platform font(s) used to draw the Japanese glyph specimen, and interaction observations for tabs, collapsibles, hover/focus, and fixed/sticky header scrolling. The interaction probe restores the original tab, collapsible, and scroll state before torture runs. `--verbose` includes source geometry for any viewport failure.
 
+`surface_contract` in the compact verdict lists the touched runtime surfaces,
+theme-specific selectors, reviewed findings and remaining issue count.
+`--json-full` additionally exposes baseline/theme computed-style captures for
+each state. A candidate that styles a real component is tested against the
+real repository-owned component fixture; do not replace a missing component
+with an ad-hoc approximation merely to make a CSS selector match.
+
 `next_actions` contains only steps grounded in a missing selector, overflow measurement, missing candidate asset, or inactive media query with a measured cascade winner. An intentional font or color change alone does not create a repair action. A provided selector list is measured directly even when its entries do not appear as exact CSS rule selectors. Count changes where both pages still contain the element are warnings because two real theme articles can repeat the same component a different number of times.
 
 ## Reference acquisition (once) and local replay
@@ -145,7 +171,8 @@ The generic new-foreign-port workflow is in
 Wikidot source acquisition, include/dependency inspection, third-branch and
 existing-JP evidence, include-variable handling, local-vs-public asset
 materialization, an evidence-driven JP navigation repair, offline acceptance,
-paired visual review, and a deterministic publishable source.
+paired visual review, a package-specific surface contract, preservation of the
+JP responsive header baseline, and a deterministic publishable source.
 
 The current SCP-EN 34-theme campaign uses `ports/en-theme-campaign.json`, individual port receipts, a committed deduplicated `ports/shared-replay-assets/` pool, and the sequential 35-port runner `node scripts/real-port-regression.mjs`. The runner verifies frozen EN/JP source hashes and pooled asset digests before checking each candidate. Its candidate daemon uses the shared pool; the Dear Dictator daemon uses its packaged assets/sidebar fixture. Set `THEME_LAB_SOCKET`, `THEME_LAB_DEAR_SOCKET`, and `THEME_LAB_ASSET_DIR` to their sockets/pool. It performs offline visual checks and records warning-only cases separately from errors and actionable failures. Use `--iteration` only for the normal edit loop; it is not a final acceptance run. See `ports/README.md` for replay setup.
 
@@ -159,8 +186,9 @@ The current SCP-EN 34-theme campaign uses `ports/en-theme-campaign.json`, indivi
 | 11-component × 4-viewport torture corpus | **~123 ms** median |
 | 4-viewport layout probe | **~32 ms** |
 | desktop screenshot | **~51 ms** median |
-| `check` (reference + torture + 4 viewports) | **~170 ms** median warm |
-| `check --visual` (+ 8 screenshots + RMSE) | **~660–810 ms** |
+| legacy core check before surface-contract phase | **~170 ms** median warm |
+| surface-contract phase, representative accepted themes | **~4.2–7.6 s** |
+| full FR acceptance with surface contract + 8 visual screenshots | **~7.2 s** |
 
 The EN34 campaign's heavy full acceptance check is profiled separately from
 the edit loop; its showcase previews, reference DOM reads, four viewports,
@@ -169,6 +197,14 @@ and torture run are not repeated for every CSS change. After one warm preview,
 local reference/cascade verdict. The campaign measured 102 changed-CSS checks
 across 34 themes; see `ports/warm-edit-verdict-benchmark.json` for the exact
 median, maximum, and per-theme timings.
+
+The surface-contract phase is intentionally a final-acceptance cost, not part
+of the hot edit loop. Its first implementation repeated the same normal-state
+desktop/mobile measurement once per touched surface (~25.4 s on Black
+Highlighter); the current implementation measures the union once per
+viewport/baseline/theme mode and fans the evidence back out to each surface
+(~7.6 s on Black Highlighter, ~4.3 s on Penumbra, ~4.2 s on Classic in the
+same local stack).
 
 ## Reuse
 

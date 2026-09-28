@@ -36,6 +36,21 @@ The completed SCP-FR example
 workflow. The older SCP-KO Dear Dictator package remains useful as a
 self-contained non-EN example, but it predates the generic new-port procedure.
 
+Full Theme Lab acceptance automatically derives an **SCP-JP surface contract**
+from the candidate CSS. If the theme touches the header, navigation, sidebar,
+rating, credit, article, tabs, collapsibles, Interwiki or other known runtime
+surface, Theme Lab exercises the corresponding real JP fixture/state instead
+of assuming that a normal article screenshot covers it. It compares the same
+runtime both without and with the candidate theme so responsive baseline
+behavior, state-specific overflow and component interactions are attributable.
+Do not hand-wave a missing surface as “probably equivalent”.
+
+For source-specific active selectors that cannot be inferred as a standard
+runtime surface, add a package `surface-contract.json`. A reviewed exception is
+allowed only for a concrete, evidence-backed intentional difference and must
+carry its rationale in that file. See the FR example for a theme-specific
+`.flickering` heading and a reviewed source-palette difference.
+
 ### Refresh an already accepted port
 
 Do **not** re-run the new-port workflow as if no provenance exists.
@@ -92,7 +107,8 @@ Do not infer a site migration procedure from one theme package.
 A new port is not complete when “the CSS looks approximately right.” Complete
 the source/dependency package, a representative JP fixture, the offline Theme
 Lab full check, required viewport/torture/interaction evidence, asset/font
-proof, a documented explanation for every warning, and the package
+proof, the automatically derived surface contract, any required package-owned
+theme-specific selectors, a documented explanation for every warning, and the package
 `PORT.md`/receipt. Keep public Wikidot sites read-only unless the user
 explicitly authorizes publication.
 
