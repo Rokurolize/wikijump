@@ -1352,6 +1352,80 @@ fn malformed_generic_heads_roll_back_to_the_first_nested_block() {
 }
 
 #[test]
+fn pinned_generic_quote_lookahead_counts_its_examined_suffix() {
+    // `data-*` attributes are documented for span blocks. When one quoted
+    // value is followed by another attribute, the lookahead ends at that
+    // assignment's equals sign and reports precisely the bytes it inspected.
+    let source = r#"[[span data-first="x" data-second="y"]]"#;
+    let quote = source.find("\" data-second").unwrap();
+    let head_end = source.rfind("]]").unwrap();
+    let equals = source.find("data-second=").unwrap() + "data-second".len();
+    let (ends_argument, inspected) = pinned_double_quote_ends_generic_argument(
+        source.as_bytes(),
+        quote,
+        head_end,
+        &TextTokenCursor::new(source),
+    );
+
+    assert!(ends_argument);
+    assert_eq!(inspected, equals - quote);
+
+    let newline_source = "[[span data-first=\"x\"\n]]";
+    let quote = newline_source.find("\"\n").unwrap();
+    let head_end = newline_source.rfind("]]").unwrap();
+    let (ends_argument, inspected) = pinned_double_quote_ends_generic_argument(
+        newline_source.as_bytes(),
+        quote,
+        head_end,
+        &TextTokenCursor::new(newline_source),
+    );
+    assert!(ends_argument);
+    assert_eq!(inspected, 1);
+
+    let spaced_newline_source = "[[span data-first=\"x\" \n]]";
+    let quote = spaced_newline_source.find("\" \n").unwrap();
+    let head_end = spaced_newline_source.rfind("]]").unwrap();
+    let (ends_argument, inspected) = pinned_double_quote_ends_generic_argument(
+        spaced_newline_source.as_bytes(),
+        quote,
+        head_end,
+        &TextTokenCursor::new(spaced_newline_source),
+    );
+    assert!(!ends_argument);
+    assert_eq!(inspected, 2);
+
+    let close_source = r#"[[span data-first="x"]]"#;
+    let quote = close_source.find("\"]]").unwrap();
+    let head_end = close_source.rfind("]]").unwrap();
+    let (ends_argument, inspected) = pinned_double_quote_ends_generic_argument(
+        close_source.as_bytes(),
+        quote,
+        head_end,
+        &TextTokenCursor::new(close_source),
+    );
+    assert!(ends_argument);
+    assert_eq!(inspected, 0);
+}
+
+#[test]
+fn pinned_generic_quote_lookahead_rejects_an_empty_next_attribute_key() {
+    // The punctuation after the quoted value cannot begin a supported
+    // `key="value"` attribute and must terminate the lookahead promptly.
+    let source = r#"[[span data-first="x" ?]]"#;
+    let quote = source.find("\" ?").unwrap();
+    let head_end = source.rfind("]]").unwrap();
+    let (ends_argument, inspected) = pinned_double_quote_ends_generic_argument(
+        source.as_bytes(),
+        quote,
+        head_end,
+        &TextTokenCursor::new(source),
+    );
+
+    assert!(!ends_argument);
+    assert_eq!(inspected, 2);
+}
+
+#[test]
 fn rolled_back_competing_parser_function_runs_fail_closed() {
     let live = "[[module ListPages name=\"live\"]]Y[[/module]]";
     for malformed in [
