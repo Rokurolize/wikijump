@@ -7357,6 +7357,44 @@ async fn listpages_legacy_comparisons_and_unresolved_url_selectors_execute_in_pr
 }
 
 #[tokio::test]
+async fn listpages_empty_assignment_keeps_later_arguments_and_executes_in_preview() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site.site.site_id,
+        "ListPages empty assignment preview",
+        concat!(
+            "[[module ListPages category=\"*\" limit=\"1\" order=\"name\" prependLine=]]\n",
+            "EMPTY-ASSIGNMENT-ROW|%%fullname%%\n",
+            "[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("the live-evidenced empty assignment should execute")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains(r#"<div class="list-pages-box">"#),
+        "the ListPages wrapper should render:\n{preview}",
+    );
+    assert_eq!(
+        preview.matches("EMPTY-ASSIGNMENT-ROW|").count(),
+        1,
+        "recognized limit and the custom row should still apply:\n{preview}",
+    );
+    assert!(
+        !preview.contains("[[module ListPages")
+            && !preview.contains("TODO: module ListPages")
+            && !preview.contains("prependLine="),
+        "the inert assignment must not leak into rendered output:\n{preview}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_date_html_keeps_surrounding_inline_wikidot_markup() {
     const TARGET_SLUG: &str = "listpages-inline-date-markup-target";
 

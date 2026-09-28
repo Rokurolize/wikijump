@@ -138,3 +138,33 @@ fn url_value_quote_recognition_requires_the_at_url_prefix() {
     // A non-zero lower bound must still resolve the opening quote.
     assert!(ends(r#"xx"@URL""#, 7, 2));
 }
+
+#[test]
+fn empty_list_pages_assignment_leaves_later_arguments_and_body_available() {
+    // Frozen Wikidot oracle: listpages-head-boundary-live.jsonl,
+    // case listpages-head-boundary-empty-prepend-assignment.
+    let source = concat!(
+        "[[module ListPages category=\"*\" limit=\"1\" order=\"name\" prependLine=]]\n",
+        "ROW|%%fullname%%\n",
+        "[[/module]]",
+    );
+    let modules = find_list_pages_module_matches(source);
+
+    assert_eq!(modules.len(), 1, "{modules:#?}");
+    assert!(list_pages_runtime_head_can_execute(modules[0].head));
+    assert!(!modules[0].preserve_original, "{modules:#?}");
+    assert_eq!(modules[0].body, "\nROW|%%fullname%%\n");
+
+    let arguments = wikidot_list_pages_arguments(&modules[0].head);
+    assert_eq!(
+        arguments
+            .iter()
+            .map(|argument| (argument.key, argument.op, argument.value))
+            .collect::<Vec<_>>(),
+        vec![
+            ("category", "=", "*"),
+            ("limit", "=", "1"),
+            ("order", "=", "name")
+        ],
+    );
+}
