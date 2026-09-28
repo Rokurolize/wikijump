@@ -41,7 +41,28 @@ test("every frozen surface anchor resolves inside the repository", async () => {
   assert.deepEqual(result.unresolvedCommands, []);
   assert.deepEqual(result.unresolvedAnchors, []);
   assert.deepEqual(result.rowsWithoutExecutableOwner, []);
+  assert.deepEqual(result.rowsWithoutNamedTestOwner, []);
   assert.ok(result.checked > 100, `expected broad executable coverage, got ${result.checked}`);
+});
+
+test("a row owned only by a bare test file must name a specific test", async () => {
+  const result = await verifyCoverageAnchorFiles(
+    {
+      rows: [
+        {
+          surface_id: "surface:99999996",
+          anchors: ["deepwell/tests/page.rs"],
+        },
+      ],
+    },
+    repositoryRoot,
+  );
+  assert.equal(result.status, "fail");
+  assert.deepEqual(result.rowsWithoutExecutableOwner, []);
+  assert.deepEqual(
+    result.rowsWithoutNamedTestOwner.map((row) => row.surface_id),
+    ["surface:99999996"],
+  );
 });
 
 test("a named test anchor resolves against declared tests, including Rust submodules", async () => {

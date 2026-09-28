@@ -2113,7 +2113,8 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/page.rs"
+        "deepwell/tests/page/page_modules.rs#pages_module_renders_the_site_index_and_clamps_pagination",
+        "deepwell/tests/page/page_modules.rs#pages_module_renders_documented_arguments_and_live_fallbacks"
       ],
       "migrated_from_campaign_only": false
     },
@@ -2131,7 +2132,8 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/page.rs"
+        "deepwell/tests/page/page_modules.rs#pages_by_tag_module_renders_tagged_pages_ordered_by_title",
+        "deepwell/tests/page/page_modules.rs#pages_by_tag_module_reads_the_url_tag_argument"
       ],
       "migrated_from_campaign_only": false
     },
@@ -9623,8 +9625,8 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/data-form-create-flow.spec.ts",
-        "framerail/tests/new-page-helper.spec.ts"
+        "framerail/tests/data-form-create-flow.spec.ts::data-form create flow renders controls and stores Wikidot source",
+        "framerail/tests/new-page-helper.spec.ts::NewPage default submit posts Wikidot helper action and navigates to edit URL"
       ],
       "migrated_from_campaign_only": false
     },
@@ -9643,7 +9645,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-deleted-authorization.test.js"
+        "framerail/tests/page-deleted-authorization.test.js::deleted-page actions use the authenticated route context"
       ],
       "migrated_from_campaign_only": false
     },
@@ -10527,7 +10529,7 @@
         "verification"
       ],
       "anchors": [
-        "install/local/wikidot-verification/tests/open43-a1038-clone-action-evidence.test.mjs"
+        "install/local/wikidot-verification/tests/open43-a1038-clone-action-evidence.test.mjs::A1038 Clone action evidence is fail-closed and authority-bound"
       ],
       "migrated_from_campaign_only": false
     },
@@ -10628,7 +10630,7 @@
         "verification"
       ],
       "anchors": [
-        "install/local/wikidot-verification/tests/open43-a1038-sitegrid-populated-evidence-v2.test.mjs"
+        "install/local/wikidot-verification/tests/open43-a1038-sitegrid-populated-evidence-v2.test.mjs::frozen SiteGrid evidence obeys the bounded public-read contract"
       ],
       "migrated_from_campaign_only": false
     },
@@ -10762,8 +10764,8 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/wikidot-legacy-action-request.test.js",
-        "framerail/tests/wikidot-legacy-actions.test.js"
+        "framerail/tests/wikidot-legacy-action-request.test.js::server action failures remain observable to the action state machine",
+        "framerail/tests/wikidot-legacy-actions.test.js::typed standalone actions call only their fixed browser behavior"
       ],
       "migrated_from_campaign_only": false
     },
@@ -11594,7 +11596,7 @@
         "verification"
       ],
       "anchors": [
-        "install/local/wikidot-verification/tests/standing-browser-parity-observation.test.mjs"
+        "install/local/wikidot-verification/tests/standing-browser-parity-observation.test.mjs::immediate and settled browser artifacts have deterministic, distinct safe names"
       ],
       "migrated_from_campaign_only": false
     },
@@ -11612,7 +11614,7 @@
         "verification"
       ],
       "anchors": [
-        "install/local/wikidot-verification/tests/standing-browser-parity-contract.test.mjs"
+        "install/local/wikidot-verification/tests/standing-browser-parity-contract.test.mjs::standing chrome scope delegates page-body geometry and DOM distance"
       ],
       "migrated_from_campaign_only": false
     },
@@ -11781,8 +11783,8 @@
         "verification"
       ],
       "anchors": [
-        "install/local/wikidot-verification/tests/open43-browser-689-candidate-case-set.test.mjs",
-        "install/local/wikidot-verification/tests/standing-browser-canaries.test.mjs"
+        "install/local/wikidot-verification/tests/open43-browser-689-candidate-case-set.test.mjs::B689 initial verification rejects geometry drift, duplicate rows, and tabview mismatch",
+        "install/local/wikidot-verification/tests/standing-browser-canaries.test.mjs::standing canaries cover each production theme family and the owner-observed SCP-9506 defects"
       ],
       "migrated_from_campaign_only": false
     },
@@ -11800,8 +11802,8 @@
         "verification"
       ],
       "anchors": [
-        "install/local/wikidot-verification/tests/open43-browser-689-candidate-case-set.test.mjs",
-        "install/local/wikidot-verification/tests/standing-browser-parity-contract.test.mjs"
+        "install/local/wikidot-verification/tests/open43-browser-689-candidate-case-set.test.mjs::B689 settled verification binds the frozen settled geometry and interaction contract",
+        "install/local/wikidot-verification/tests/standing-browser-parity-contract.test.mjs::standing chrome scope delegates page-body geometry and DOM distance"
       ],
       "migrated_from_campaign_only": false
     },
@@ -11886,7 +11888,7 @@
         "verification"
       ],
       "anchors": [
-        "install/local/wikidot-verification/tests/first-divergent-element.test.mjs"
+        "install/local/wikidot-verification/tests/first-divergent-element.test.mjs::identical ordered traces report no first divergence"
       ],
       "migrated_from_campaign_only": false
     },
@@ -11904,8 +11906,8 @@
         "verification"
       ],
       "anchors": [
-        "install/local/wikidot-verification/tests/open43-browser-690-candidate-case-set.test.mjs",
-        "install/local/wikidot-verification/tests/standing-browser-canaries.test.mjs"
+        "install/local/wikidot-verification/tests/open43-browser-690-candidate-case-set.test.mjs::B690 verifies the ordered initial traces and fails on the first causal divergence",
+        "install/local/wikidot-verification/tests/standing-browser-canaries.test.mjs::standing canaries cover each production theme family and the owner-observed SCP-9506 defects"
       ],
       "migrated_from_campaign_only": false
     },
@@ -11923,8 +11925,8 @@
         "verification"
       ],
       "anchors": [
-        "install/local/wikidot-verification/tests/open43-browser-690-candidate-case-set.test.mjs",
-        "install/local/wikidot-verification/tests/standing-browser-parity-observation.test.mjs"
+        "install/local/wikidot-verification/tests/open43-browser-690-candidate-case-set.test.mjs::B690 verifies settled resource completion before the total-height boundary",
+        "install/local/wikidot-verification/tests/standing-browser-parity-observation.test.mjs::immediate and settled browser artifacts have deterministic, distinct safe names"
       ],
       "migrated_from_campaign_only": false
     },
@@ -12421,7 +12423,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/wikidot-csp-config.test.js"
+        "framerail/tests/wikidot-csp-config.test.js::allows captured Wikidot legacy asset origins in local CSP"
       ],
       "migrated_from_campaign_only": false
     },
@@ -12835,10 +12837,8 @@
         "verification"
       ],
       "anchors": [
-        "framerail/tests/page-file-client-ip.test.js",
-        "framerail/tests/page-file-upload-lifecycle.test.js",
-        "framerail/tests/presigned-upload.test.js",
-        "install/local/wikidot-verification/tests/open43-media-candidate-case-set.test.mjs"
+        "framerail/tests/page-file-upload-lifecycle.test.js::page file create cancels its page-scoped pending blob when commit fails",
+        "framerail/tests/page-file-upload-lifecycle.test.js::page file create preserves the commit error when pending cleanup also fails"
       ],
       "migrated_from_campaign_only": false
     },
@@ -12882,7 +12882,8 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/site-icons.test.js"
+        "framerail/tests/site-icons.test.js::favicon declaration keeps Wikidot's local route rather than the configured source",
+        "framerail/tests/site-icons.test.js::iOS touch icons reproduce the three filenames and sizes Wikidot declares"
       ],
       "migrated_from_campaign_only": false
     },
@@ -12901,8 +12902,8 @@
         "verification"
       ],
       "anchors": [
-        "framerail/tests/site-icons.test.js",
-        "install/local/wikidot-verification/tests/open43-media-candidate-case-set.test.mjs"
+        "framerail/tests/site-icons.test.js::favicon declaration keeps Wikidot's local route rather than the configured source",
+        "framerail/tests/site-icons.test.js::Windows 8 tile declaration keeps Wikidot's local route rather than the configured source"
       ],
       "migrated_from_campaign_only": false
     },
@@ -15147,8 +15148,8 @@
         "verification"
       ],
       "anchors": [
-        "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs",
-        "install/local/wikidot-verification/tests/site-content-backup.test.mjs"
+        "install/local/wikidot-verification/tests/site-content-backup.test.mjs::writeSiteContentBackup emits a deterministic pages-and-attachments source bundle",
+        "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs::buildCorpusImportManifest emits deterministic rows and summary"
       ],
       "migrated_from_campaign_only": false
     },
@@ -15354,8 +15355,8 @@
         "verification"
       ],
       "anchors": [
-        "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs",
-        "install/local/wikidot-verification/tests/site-content-backup.test.mjs"
+        "install/local/wikidot-verification/tests/site-content-backup.test.mjs::writeSiteContentBackup emits a deterministic pages-and-attachments source bundle",
+        "install/local/wikidot-verification/tests/corpus-import-manifest.test.mjs::buildCorpusImportManifest emits deterministic rows and summary"
       ],
       "migrated_from_campaign_only": false
     },
@@ -15391,7 +15392,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/external-integration-policy.test.js"
+        "framerail/tests/external-integration-policy.test.js::external theme resources use browser-direct failure ownership"
       ],
       "migrated_from_campaign_only": false
     },
@@ -15862,7 +15863,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-delete-action-boundary.test.js"
+        "framerail/tests/page-delete-action-boundary.test.js::native Wikidot delete accepts an omitted comment"
       ],
       "migrated_from_campaign_only": false
     },
@@ -15880,7 +15881,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/wikidot-page-actions.test.js"
+        "framerail/tests/wikidot-page-actions.test.js::discussion action uses the frozen Wikidot DOM marker and escapes its label"
       ],
       "migrated_from_campaign_only": false
     },
@@ -15923,7 +15924,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-append-backlinks-public-boundary.test.js"
+        "framerail/tests/page-append-backlinks-public-boundary.test.js::Append submission preserves metadata and commits only the appended source at the revision-bound edit action"
       ],
       "migrated_from_campaign_only": false
     },
@@ -15941,8 +15942,8 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/ajax-module-connector-edit-meta.test.js",
-        "framerail/tests/page-edit-meta-public-boundary.test.js"
+        "framerail/tests/ajax-module-connector-edit-meta.test.js::dispatches the canonical EditMeta read and action bodies",
+        "framerail/tests/page-edit-meta-public-boundary.test.js::the public AMC route maps Edit Meta to the fixed Deepwell RPC boundary"
       ],
       "migrated_from_campaign_only": false
     },
@@ -15960,7 +15961,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/wikidot-edit-sections.test.js"
+        "framerail/tests/wikidot-edit-sections.test.js::section edit submission replaces only its revision-bound source range"
       ],
       "migrated_from_campaign_only": false
     },
@@ -15978,8 +15979,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-client-ip.test.js",
-        "framerail/tests/page-file-list-public-boundary.test.js"
+        "framerail/tests/page-file-client-ip.test.js::file delete and move actions bind the actor and routed page context"
       ],
       "migrated_from_campaign_only": false
     },
@@ -15997,8 +15997,8 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-client-ip.test.js",
-        "framerail/tests/page-file-upload-lifecycle.test.js"
+        "framerail/tests/page-file-client-ip.test.js::file edit, restore, and rollback actions forward getClientAddress through Deepwell",
+        "framerail/tests/page-file-upload-lifecycle.test.js::page file edit uses the same cleanup lifecycle for replacement content"
       ],
       "migrated_from_campaign_only": false
     },
@@ -16016,7 +16016,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-client-ip.test.js"
+        "framerail/tests/page-file-client-ip.test.js::file revision reads forward the routed request context to Deepwell"
       ],
       "migrated_from_campaign_only": false
     },
@@ -16034,7 +16034,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-list-public-boundary.test.js"
+        "framerail/tests/page-file-list-public-boundary.test.js::Files SSR isolates filename cells from imported themes that style .name"
       ],
       "migrated_from_campaign_only": false
     },
@@ -16052,7 +16052,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-list-public-boundary.test.js"
+        "framerail/tests/page-file-client-ip.test.js::file delete and move actions bind the actor and routed page context"
       ],
       "migrated_from_campaign_only": false
     },
@@ -16070,7 +16070,8 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-upload-lifecycle.test.js"
+        "framerail/tests/page-file-upload-lifecycle.test.js::page file create leaves a successful committed upload alone",
+        "framerail/tests/page-file-upload-lifecycle.test.js::page file create cancels its page-scoped pending blob when commit fails"
       ],
       "migrated_from_campaign_only": false
     },
@@ -16088,7 +16089,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-file-list-public-boundary.test.js"
+        "framerail/tests/page-file-list-public-boundary.test.js::Files SSR isolates filename cells from imported themes that style .name"
       ],
       "migrated_from_campaign_only": false
     },
@@ -16106,9 +16107,8 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/page.rs",
-        "framerail/tests/authoring-workflows.test.js",
-        "framerail/tests/page-history-author-public-boundary.test.js"
+        "framerail/tests/page-history-author-public-boundary.test.js::History renders the resolved author name without exposing its numeric ID",
+        "framerail/tests/authoring-workflows.test.js::connects a typed revision diff to the history pane without raw HTML"
       ],
       "migrated_from_campaign_only": false
     },
@@ -16126,7 +16126,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/release-route-action-boundaries.test.js"
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
       ],
       "migrated_from_campaign_only": false
     },
@@ -16144,7 +16144,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-append-backlinks-public-boundary.test.js"
+        "framerail/tests/page-append-backlinks-public-boundary.test.js::saved Wikidot options expose More Options and View Source controls"
       ],
       "migrated_from_campaign_only": false
     },
@@ -16162,8 +16162,8 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-parent-action-boundary.test.js",
-        "framerail/tests/page-parent-authorization.test.js"
+        "framerail/tests/page-parent-action-boundary.test.js::root and slug parentSet actions accept the parent pane JSON payload",
+        "framerail/tests/page-parent-authorization.test.js::parent lookup forwards only the trusted site and page selector"
       ],
       "migrated_from_campaign_only": false
     },
@@ -16181,7 +16181,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/wikidot-page-actions.test.js"
+        "framerail/tests/wikidot-page-actions.test.js::Print opens the live printer-friendly child window without printing the opener"
       ],
       "migrated_from_campaign_only": false
     },
@@ -16233,7 +16233,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-move-action-boundary.test.js"
+        "framerail/tests/page-move-action-boundary.test.js::native page move resolves the routed page before moving it"
       ],
       "migrated_from_campaign_only": false
     },
@@ -16251,8 +16251,7 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/page.rs",
-        "framerail/tests/site-tools-read-actions.test.js"
+        "framerail/tests/site-tools-read-actions.test.js::saved Wikidot Site tools action lazily activates the compatibility pane"
       ],
       "migrated_from_campaign_only": false
     },
@@ -16270,7 +16269,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/page-tags-public-boundary.test.js"
+        "framerail/tests/page-tags-public-boundary.test.js::Tags submission preserves page content and changes tags at the authenticated page action"
       ],
       "migrated_from_campaign_only": false
     },
@@ -16288,8 +16287,7 @@
         "products"
       ],
       "anchors": [
-        "framerail/tests/ajax-module-connector.test.js",
-        "framerail/tests/page-append-backlinks-public-boundary.test.js"
+        "framerail/tests/page-append-backlinks-public-boundary.test.js::saved Wikidot options expose More Options and View Source controls"
       ],
       "migrated_from_campaign_only": false
     },
@@ -16307,8 +16305,7 @@
         "products"
       ],
       "anchors": [
-        "deepwell/tests/page.rs",
-        "framerail/tests/page-watchers-public-boundary.test.js"
+        "framerail/tests/page-watchers-public-boundary.test.js::Watchers action derives the site from trusted context and remains anonymous"
       ],
       "migrated_from_campaign_only": false
     },

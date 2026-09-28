@@ -402,17 +402,23 @@ export async function loadOfflineSurfaceCoverage(filePath) {
 // non-test/evidence files additionally accept an exact source-anchor match.
 // Named anchors that resolve to none of these are reported, and a row is
 // rejected when no anchor owns it.
+//
+// Every row must also name at least one specific test: a named anchor or a
+// command that selects a single test. A bare test file with unrelated declared
+// tests must not be able to stand in for named execution.
 export async function verifyCoverageAnchorFiles(fixture, repositoryRoot) {
   const missing = [];
   const unresolvedNamedTests = [];
   const unresolvedCommands = [];
   const unresolvedAnchors = [];
   const rowsWithoutExecutableOwner = [];
+  const rowsWithoutNamedTestOwner = [];
   const checked = new Set();
   const cache = createDeclaredTestCache();
 
   for (const [index, row] of fixture.rows.entries()) {
     let owned = false;
+    let namedOwner = false;
     for (const anchor of row.anchors ?? []) {
       const target = parseCoverageAnchor(anchor);
       if (!target) {
@@ -440,6 +446,7 @@ export async function verifyCoverageAnchorFiles(fixture, repositoryRoot) {
       if (target.kind === "command") {
         if (await commandHasExecutableOwner(target, repositoryRoot, cache)) {
           owned = true;
+          if (target.rust?.selector != null) namedOwner = true;
         } else {
           unresolvedCommands.push({anchor, reason: "no-runnable-test-selected"});
         }
@@ -475,6 +482,7 @@ export async function verifyCoverageAnchorFiles(fixture, repositoryRoot) {
         names.every((name) => declared.has(name))
       ) {
         owned = true;
+        namedOwner = true;
         continue;
       }
       unresolvedNamedTests.push({
@@ -491,6 +499,13 @@ export async function verifyCoverageAnchorFiles(fixture, repositoryRoot) {
         anchors: [...(row.anchors ?? [])],
       });
     }
+    if (!namedOwner) {
+      rowsWithoutNamedTestOwner.push({
+        surface_id: row.surface_id ?? null,
+        index,
+        anchors: [...(row.anchors ?? [])],
+      });
+    }
   }
 
   const status =
@@ -498,7 +513,8 @@ export async function verifyCoverageAnchorFiles(fixture, repositoryRoot) {
     unresolvedNamedTests.length === 0 &&
     unresolvedCommands.length === 0 &&
     unresolvedAnchors.length === 0 &&
-    rowsWithoutExecutableOwner.length === 0
+    rowsWithoutExecutableOwner.length === 0 &&
+    rowsWithoutNamedTestOwner.length === 0
       ? "pass"
       : "fail";
   return {
@@ -509,5 +525,6 @@ export async function verifyCoverageAnchorFiles(fixture, repositoryRoot) {
     unresolvedCommands,
     unresolvedAnchors,
     rowsWithoutExecutableOwner,
+    rowsWithoutNamedTestOwner,
   };
 }
