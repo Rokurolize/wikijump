@@ -86,9 +86,9 @@ export async function navigate(page, url) {
   return page.url();
 }
 
-export async function applyStylesheet(page, css, id = "theme-lab-live-css") {
+export async function applyStylesheet(page, css, id = "theme-lab-live-css", {moveToEnd = false} = {}) {
   await page.evaluate(
-    ({id: styleId, text}) => {
+    ({id: styleId, text, moveToEnd: shouldMoveToEnd}) => {
       let element = document.getElementById(styleId);
       if (!element) {
         element = document.createElement("style");
@@ -96,8 +96,9 @@ export async function applyStylesheet(page, css, id = "theme-lab-live-css") {
         document.head.appendChild(element);
       }
       element.textContent = text;
+      if (shouldMoveToEnd && element.parentElement === document.head) document.head.appendChild(element);
     },
-    {id, text: css},
+    {id, text: css, moveToEnd},
   );
 }
 

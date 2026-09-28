@@ -168,6 +168,49 @@ test("interaction failures produce an evidence-backed repair action", () => {
   }]);
 });
 
+test("surface-contract findings produce specific evidence-backed actions", () => {
+  const verdict = buildVerdict({extraIssues: [
+    {
+      severity: "warn",
+      kind: "baseline_responsive_behavior_flattened",
+      surface: "shell.header",
+      selector: "#header",
+      property: "background-size",
+      baseline: {desktop: "100px auto", mobile: "calc(5% + 48px) auto"},
+      theme: {desktop: "100px 100px", mobile: "100px 100px"},
+    },
+    {
+      severity: "error",
+      kind: "surface_viewport_overflow",
+      surface: "nav.mobile-top",
+      state: "submenu-expanded",
+      viewport: "mobile",
+      before_px: 0,
+      after_px: 13,
+      overflow_sources: [{selector: "ul", overflow_px: 13}],
+    },
+  ]});
+  assert.equal(verdict.verdict, "fail");
+  assert.deepEqual(verdict.next_actions, [
+    {
+      kind: "reduce_overflow",
+      viewport: "mobile",
+      evidence: {before_px: 0, after_px: 13},
+      overflow_sources: [{selector: "ul", overflow_px: 13}],
+    },
+    {
+      kind: "review_responsive_baseline_override",
+      surface: "shell.header",
+      selector: "#header",
+      property: "background-size",
+      evidence: {
+        baseline: {desktop: "100px auto", mobile: "calc(5% + 48px) auto"},
+        theme: {desktop: "100px 100px", mobile: "100px 100px"},
+      },
+    },
+  ]);
+});
+
 test("broken candidate page images fail with an asset-backed repair action", () => {
   const verdict = buildVerdict({imageDiagnostics: {
     status: "fail",
@@ -186,8 +229,9 @@ test("broken candidate page images fail with an asset-backed repair action", () 
 
 test("expandVerdict restores full detail", () => {
   const compact = buildVerdict({});
-  const expanded = expandVerdict(compact, {issues: [{kind: "x"}], selector_rows: [{selector: "a"}], viewports: {mobile: {overflow_sources: [{selector: ".x"}]}}});
+  const expanded = expandVerdict(compact, {issues: [{kind: "x"}], selector_rows: [{selector: "a"}], viewports: {mobile: {overflow_sources: [{selector: ".x"}]}}, surface_contract: {schema: "theme_lab_surface_contract.v1"}});
   assert.equal(expanded.top_issues.length, 1);
   assert.deepEqual(expanded.selector_rows, [{selector: "a"}]);
   assert.equal(expanded.viewport_diagnostics.mobile.overflow_sources[0].selector, ".x");
+  assert.equal(expanded.surface_contract_full.schema, "theme_lab_surface_contract.v1");
 });

@@ -147,10 +147,57 @@ export function nextActions(issues, styleChanges = [], limit = 5) {
       });
     } else if (issue.kind === "interaction_failure") {
       actions.push({kind: "repair_interaction", interaction: issue.interaction, evidence: issue.evidence});
+    } else if (issue.kind === "surface_state_action_failed") {
+      actions.push({
+        kind: "repair_surface_contract_fixture",
+        surface: issue.surface,
+        state: issue.state,
+        viewport: issue.viewport,
+        evidence: issue.evidence,
+      });
+    } else if (issue.kind === "surface_fixture_missing") {
+      actions.push({
+        kind: "cover_theme_surface",
+        surface: issue.surface,
+        state: issue.state,
+        viewport: issue.viewport,
+        selector: issue.selector,
+      });
+    } else if (issue.kind === "custom_surface_selector_missing") {
+      actions.push({
+        kind: "exercise_theme_specific_selector",
+        surface: issue.surface,
+        viewport: issue.viewport,
+        selector: issue.selector,
+        evidence: issue.evidence,
+      });
+    } else if (issue.kind === "baseline_responsive_behavior_flattened") {
+      actions.push({
+        kind: "review_responsive_baseline_override",
+        surface: issue.surface,
+        selector: issue.selector,
+        property: issue.property,
+        evidence: {baseline: issue.baseline, theme: issue.theme},
+      });
+    } else if (issue.kind === "surface_low_text_contrast") {
+      actions.push({
+        kind: "review_surface_contrast",
+        surface: issue.surface,
+        state: issue.state,
+        viewport: issue.viewport,
+        selector: issue.selector,
+        evidence: {
+          contrast_ratio: issue.contrast_ratio ?? null,
+          foreground: issue.foreground ?? issue.theme_color ?? null,
+          background: issue.background ?? null,
+          background_image: issue.background_image ?? null,
+          baseline_color: issue.baseline_color ?? null,
+        },
+      });
     } else if (issue.kind?.includes("overflow")) {
       actions.push({
         kind: "reduce_overflow",
-        component: issue.component,
+        ...(issue.component ? {component: issue.component} : {}),
         viewport: issue.viewport,
         ...(issue.selector ? {selector: issue.selector} : {}),
         evidence: {before_px: issue.before_px ?? 0, after_px: issue.after_px ?? issue.overflow_px ?? 0},
@@ -305,5 +352,6 @@ export function expandVerdict(verdict, full) {
     computed_style_rows: full?.computed_style_rows ?? undefined,
     viewport_diagnostics: full?.viewports ?? undefined,
     torture_full: full?.torture ?? undefined,
+    surface_contract_full: full?.surface_contract ?? undefined,
   };
 }

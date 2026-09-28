@@ -233,6 +233,40 @@ min-content/positioning problems that do not appear on the source branch.
 adaptation surface. Constrain menu/list/link widths and allow wrapping rather
 than hiding or clipping the menu.
 
+Do not assume that a selector seen in the candidate CSS is covered merely
+because the ordinary fixture renders without obvious damage. Full `check`
+automatically maps known selectors onto the SCP-JP surface contract and uses
+the repository-owned JP component fixture to exercise the applicable state.
+This is intentionally independent of palette and branch: a theme that touches
+`.creditButton`, for example, is checked against the real credit component;
+one that touches `.mobile-top-bar` is checked with the submenu expanded.
+
+If the source theme has an active selector that is not a standard runtime
+surface, add `surface-contract.json` to the package. Example:
+
+```json
+{
+  "schema": "theme_lab_surface_contract.v1",
+  "strict": true,
+  "custom_selectors": [
+    {
+      "id": "theme.special-heading",
+      "selector": "h2 .special-heading",
+      "viewports": ["desktop", "mobile"],
+      "reason": "The source showcase uses this class as an active themed heading."
+    }
+  ]
+}
+```
+
+Every listed selector must actually exist at each requested viewport in the
+candidate fixture or final acceptance fails. If automation intentionally
+surfaces a difference it cannot decide (for example text color over a source
+theme image), bind the exact `kind`/surface/selector to
+`reviewed_exceptions` with an evidence-backed rationale. Do not use reviewed
+exceptions to suppress an interaction, overflow, missing fixture, or otherwise
+actionable defect.
+
 Do not chase raw full-page RMSE between two different-language theme showcase
 documents. It is diagnostic evidence. Browser geometry, source-specific
 selectors, component identity, interactions, assets/fonts, and manual paired
@@ -254,8 +288,12 @@ node install/local/theme-lab/scripts/theme-lab.mjs check \
   --selectors install/local/theme-lab/ports/<slug>/acceptance-selectors.txt \
   --visual \
   --artifact-dir install/local/theme-lab/ports/<slug>/artifacts \
+  --surface-contract install/local/theme-lab/ports/<slug>/surface-contract.json \
   --compact
 ```
+
+Omit the last option when the package has no theme-specific contract; known
+SCP-JP surfaces are still auto-discovered and tested by default.
 
 Acceptance requires:
 
@@ -263,6 +301,10 @@ Acceptance requires:
 - all required viewport overflow checks pass;
 - torture corpus passes;
 - relevant interactions pass;
+- all touched SCP-JP runtime surfaces have applicable-state coverage and no
+  unexplained surface-contract issue;
+- source-specific active selectors required by `surface-contract.json` are
+  present at their declared viewports;
 - required candidate assets present;
 - no external acquisition during the offline run;
 - Japanese font/wrapping behavior recorded;
@@ -285,6 +327,7 @@ ports/<slug>/
   candidate.wikidot.txt        # representative JP fixture
   theme-shell.wikidot.txt      # reusable/publishable source wrapper
   acceptance-selectors.txt
+  surface-contract.json         # when source-specific active selectors/reviews exist
   build.mjs                    # when build/materialization is required
   assets/
   artifacts/

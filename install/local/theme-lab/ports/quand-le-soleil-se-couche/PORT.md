@@ -105,6 +105,30 @@ to wrap. It does not hide or clip navigation.
 The failing pre-fix result is retained as `initial-verdict.json`; its overflow
 sources are the mobile top-bar `ul`, descendant `li`, and `a.newpage` geometry.
 
+Later comparison against an independent SCP-JP Technical Staff draft exposed a
+second, Theme-Lab-owned mistake in the first accepted candidate: the KO-derived
+compatibility mapping had flattened the SCP-JP baseline's responsive header
+geometry by forcing a 100×100 px logo and theme-sized wordmark at mobile
+widths. The port now preserves the JP baseline mobile sizing and applies the
+100 px logo size only at the desktop breakpoint. This is now guarded
+generically by the CSS-derived surface contract's
+`baseline_responsive_behavior_flattened` diagnostic rather than by a
+theme-specific assertion.
+
+The same comparison also demonstrated why Theme Lab must exercise the real JP
+component DOM instead of a simplified hand-written approximation. A simplified
+credit-button probe suggested a link-color regression, but the repository-owned
+current credit component has a higher-specificity link rule and the real
+surface remained readable. No unnecessary credit override was added. Full
+acceptance now renders the shared JP component fixture whenever candidate CSS
+touches credit/rating/navigation/etc. selectors.
+
+`surface-contract.json` additionally binds the source hub's active
+`h2 .flickering` selector at desktop and mobile. Known SCP-JP surfaces are
+auto-discovered from the CSS; source-specific selectors are explicit so a new
+theme cannot pass merely because its special showcase class was absent from the
+generic fixture.
+
 The final full offline check reports:
 
 - verdict: `warn`
@@ -116,6 +140,10 @@ The final full offline check reports:
 - candidate assets: **2 referenced, 0 missing**
 - candidate request failures: **0**
 - external acquisition during final offline run: **0**
+- surface-contract actionable issues: **0**
+- touched JP surfaces: header, top/mobile navigation, sidebar, rating,
+  article/links, credit, tabview, and image-block
+- source-specific `.flickering` heading: **present at desktop and mobile**
 
 The only remaining structured warning is
 `#page-content a`: FR showcase 21 occurrences vs JP fixture 9. Both sides
@@ -126,10 +154,10 @@ Full-page visual RMSE is retained as a diagnostic rather than a pass/fail
 criterion because the compared pages contain different language, text, site
 chrome and showcase content:
 
-- desktop `0.246809`
-- laptop `0.302017`
-- tablet `0.307138`
-- mobile `0.378423`
+- desktop `0.248828`
+- laptop `0.303082`
+- tablet `0.308492`
+- mobile `0.379088`
 
 The paired screenshots are in `artifacts/`. Geometry, required selectors,
 assets, interaction states and the responsive structure are the acceptance
@@ -137,7 +165,8 @@ signals; raw full-page pixel identity between FR and JP is not expected.
 
 All four paired viewport screenshots were manually reviewed after the final
 run. The candidate preserves the source theme's monochrome header/logo,
-wordmark treatment and responsive composition. The conspicuous FR red
+wordmark treatment and responsive composition while retaining SCP-JP's
+mobile header/logo sizing. The conspicuous FR red
 `EH TOI LÀ!` box and several surrounding blocks are showcase-page content
 from the foreign documentation/component layer, not reusable theme identity,
 so their absence from the JP validation fixture is intentional.

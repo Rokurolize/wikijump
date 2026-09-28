@@ -4,6 +4,15 @@ Version: 1.1 (2026-09-24; interactive harness and coverage contract)
 
 This is the acceptance inventory for applying a localized theme to actual SCP-JP/Wikijump pages. A selector's presence is not visual acceptance: each state requires a settled screenshot, an interaction assertion, and human image review. The current runtime must be the SCP-JP mirror or a run-owned page in `scpaiueouiuiuiui`; an SCP-EN page is useful implementation evidence but cannot close an SCP-JP row.
 
+For ordinary Theme Lab full checks, this inventory is now partially enforced
+automatically. Candidate CSS is parsed to determine which known SCP-JP runtime
+surfaces it touches; only those surfaces are promoted into the fast surface
+contract. The contract renders the repository-owned high-fidelity JP component
+fixture and measures the same state without/with the theme. It is a fast
+pre-acceptance gate, not a replacement for the larger cross-engine visual
+matrix below. Source-specific active selectors that are not known runtime
+surfaces belong in the port package's `surface-contract.json`.
+
 ## Authority and current evidence
 
 - SCP-JP custom theme policy: `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/custom-theme-policy/source.wikidot.txt`. It requires an installed Rate module, practical readability, and visibility of `#footer`, `#license-area`, `#login-status`, `.scpnet-interwiki-frame`; `#side-bar` and `#top-bar` may be redesigned only while retaining usable navigation. It recommends the credited Rate module.
@@ -68,6 +77,29 @@ Chromium captures normal content at all five viewports. Detailed interaction sta
 
 Each audit record binds theme, engine/version, viewport, surface/state, exact action sequence, screenshot path and SHA-256, candidate CSS/source hash, state-action contract hash, classification, visual findings, intentional divergence, missing evidence, external-request/asset diagnostics, and whether it was image-reviewed after the final source change. Theme CSS must be reset between themes. Screenshots are never edited after capture. Existing captures are reused only when the candidate CSS hash, browser version, session state, state-action contract (for new records), and on-disk screenshot SHA-256 still match; `--force` recaptures selected evidence. A fresh capture may inherit a visual classification without re-review only when theme, engine, viewport, surface and state are identical, the screenshot SHA-256 is byte-identical to an attributable prior review (direct image review, or a reuse row that retained its source reviewer/timestamp), and both the prior and current captures have no action, asset, page-error, external-request or missing-screenshot failures. Pixel-identical (different bytes, same decoded pixels) reuse is never automatic; the post-process tool requires an explicit `--pixel-identical` opt-in. Failed or unattributable evidence is never reused.
 
+The fast surface contract deliberately uses real repository-owned component
+markup when available. A simplified DOM invented for a single theme is not
+valid evidence for credit, rating, navigation, tabs, collapsibles or another
+existing SCP-JP component because component specificity/cascade is part of the
+behavior being tested. The contract also opens the relevant mobile submenu and
+sidebar states before checking overflow; a normal settled page alone cannot
+close those rows. Responsive computed-style differences between the JP
+baseline and candidate are recorded so fixed foreign-branch values cannot
+silently erase an existing mobile/desktop runtime distinction.
+
 ## Current gate status
 
-The run-owned fixture and Chromium state runner are implemented under `install/local/theme-lab/ports/interactive-visual-fixture/`. The required 320×800 Chromium interaction set has been captured for all 35 themes after the responsive History table fix; action/capture failures, missing local assets and sent external requests are all zero. Narrow History list/diff images and representative real error-dialog images have been directly inspected. Audit rows remain `UNCONFIRMED` until reviewed evidence is classified in the campaign manifest. Desktop/mobile visual review, laptop/tablet current-source refresh, Firefox/WebKit core runs, remaining surface review, fixes and regression/delivery gates are still in progress.
+The completed 35-package interactive campaign is retained under
+`install/local/theme-lab/ports/interactive-visual-fixture/` and
+`interactive-visual-audit.json`. The current accepted audit contains **4,947**
+records: **4,819 `PASS_NATURAL`**, **128
+`PASS_INTENTIONAL_DIVERGENCE`**, and **0 `UNCONFIRMED`**. Historical replaced
+captures remain in `superseded_records` rather than being reused as current
+evidence.
+
+The CSS-derived fast surface contract is a complementary gate for future
+ports/edits. It was validated against accepted themes with materially different
+structures (Black Highlighter, Penumbra, Classic) without creating actionable
+regressions, and against the unadapted FR Technical Staff draft where it still
+detects the known 390px mobile top-navigation overflow. It does not rewrite or
+reclassify the frozen 35-package visual evidence.
