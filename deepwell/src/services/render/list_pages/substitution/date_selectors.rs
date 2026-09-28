@@ -161,3 +161,52 @@ fn subtract_wikidot_relative_time(
         _ => None,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn utc(year: i32, month: time::Month, day: u8) -> time::OffsetDateTime {
+        time::Date::from_calendar_date(year, month, day)
+            .expect("test date should be valid")
+            .with_time(time::Time::MIDNIGHT)
+            .assume_utc()
+    }
+
+    #[test]
+    fn relative_time_units_subtract_exactly() {
+        let base = utc(2024, time::Month::March, 31);
+
+        for (amount, unit, expected) in [
+            (30, "seconds", base - time::Duration::seconds(30)),
+            (2, "minutes", base - time::Duration::minutes(2)),
+            (3, "hours", base - time::Duration::hours(3)),
+            (2, "days", base - time::Duration::days(2)),
+            (2, "weeks", base - time::Duration::weeks(2)),
+        ] {
+            assert_eq!(
+                subtract_wikidot_relative_time(base, amount, unit),
+                Some(expected),
+                "{amount} {unit}",
+            );
+        }
+
+        // Months and years clamp the day to the target month length.
+        assert_eq!(
+            subtract_wikidot_relative_time(base, 1, "month"),
+            Some(utc(2024, time::Month::February, 29)),
+        );
+        assert_eq!(
+            subtract_wikidot_relative_time(base, 1, "year"),
+            Some(utc(2023, time::Month::March, 31)),
+        );
+        assert_eq!(
+            subtract_wikidot_relative_time(base, 13, "months"),
+            Some(utc(2023, time::Month::February, 28)),
+        );
+
+        // An unknown unit, or an amount that overflows, is rejected.
+        assert_eq!(subtract_wikidot_relative_time(base, 1, "fortnight"), None,);
+        assert_eq!(subtract_wikidot_relative_time(base, i64::MAX, "days"), None,);
+    }
+}
