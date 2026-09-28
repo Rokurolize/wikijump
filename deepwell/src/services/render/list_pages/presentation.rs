@@ -636,4 +636,44 @@ mod tests {
             None,
         );
     }
+
+    #[test]
+    fn tag_rendering_uses_the_whitespace_target_only_for_a_whitespace_prefix() {
+        // A normal prefix renders an ordinary tag link.
+        let mut fragments = CompatHtmlFragments::new("");
+        let rendered = render_list_pages_tags(
+            &["alpha".to_owned()],
+            Some("/system:page-tags/tag/"),
+            true,
+            &mut fragments,
+        );
+        let normal = fragments.restore(&rendered);
+        assert!(
+            normal.contains(r#"<a href="/system:page-tags/tag/alpha">alpha</a>"#),
+            "{normal}"
+        );
+        assert!(!normal.contains("/tag/alpha "), "{normal}");
+
+        // An empty prefix falls back to the default ordinary tag link.
+        let mut fragments = CompatHtmlFragments::new("");
+        let rendered =
+            render_list_pages_tags(&["alpha".to_owned()], Some(""), true, &mut fragments);
+        let empty = fragments.restore(&rendered);
+        assert!(
+            empty.contains(r#"<a href="/system:page-tags/tag/alpha">alpha</a>"#),
+            "{empty}"
+        );
+        assert!(!empty.contains("/tag/alpha "), "{empty}");
+
+        // Only a whitespace prefix uses the whitespace target form.
+        let mut fragments = CompatHtmlFragments::new("");
+        let rendered = render_list_pages_tags(
+            &["alpha".to_owned()],
+            Some(" "),
+            true,
+            &mut fragments,
+        );
+        let whitespace = fragments.restore(&rendered);
+        assert!(whitespace.contains("/tag/alpha "), "{whitespace}");
+    }
 }
