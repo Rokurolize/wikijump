@@ -792,10 +792,8 @@
       "may_treat_differences_as_port_requirements": false,
       "intentional_differences": [],
       "unresolved_evidence_gaps": [
-        "The current live captures prove the seven-cell AMC fragment only; they do not capture source-side mobile CSS, focus/hover states, pagination transitions, or action outcomes.",
-        "The AMC fragment contains .odate markup and date text, but it does not prove final client-side date hydration. Wikijump's retained Wikidot Base CSS hides .odate with display:none, so visible/relative date behavior remains unverified and quarantined.",
-        "Live History includes an F file/attachment operation row. Wikijump's page revision API does not expose a combined page/file timeline, so that row remains an explicit source/runtime gap.",
-        "Current capture requests only the first ten rows; paging and longer-history behavior are not proven."
+        "The live AMC fragments prove seven-cell DOM and one file-deletion row; they do not prove other file-operation variants, action outcomes, mobile presentation, pagination transitions, focus/hover behavior, or .odate hydration.",
+        "Wikijump history actions for a file event resolve to the nearest page snapshot by timestamp; the corresponding Wikidot V/S action outcome is not established by AMC evidence."
       ],
       "selector_patterns": [
         "\\.page-history|#revision-list|#action-area.*(?:history|revision)|\\.revision-diff|#history-subarea"
@@ -803,19 +801,24 @@
     },
     {
       "surface_id": "page.history.file-revision-timeline",
-      "status": "PARITY_MISMATCH",
-      "scope": "combined page History timeline rows for file/attachment operations carrying the observed F flag",
+      "status": "PARITY_CERTIFIED",
+      "scope": "the observed file-deletion event in the combined page History list: F flag, seven-cell row, V/S affordances, descending event-time placement between page revisions, and shared history ordinal",
       "evidence_reference": [
-        "install/local/theme-lab/evidence/wikidot-history-parity-20260929.json#sites[scp-jp].history_contract.revision_rows",
+        "install/local/theme-lab/evidence/wikidot-history-parity-20260929.json#timeline_observation",
         "install/local/theme-lab/evidence/wikidot-history-parity-20260929.responses/jp-02.json"
       ],
       "implementation_reference": [
         "framerail/src/lib/server/deepwell/page.ts:pageHistory",
+        "framerail/src/lib/server/deepwell/page-file.ts:pageFileRevisionHistory",
+        "deepwell/src/endpoints/file_revision.rs:file_revision_page_history",
+        "deepwell/src/services/file_revision/service.rs:get_page_history",
+        "framerail/src/lib/server/wikidot-history-timeline.js",
         "framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte",
-        "framerail/src/routes/[slug]/[...extra]/FileHistoryPanel.svelte"
+        "framerail/src/lib/server/ajax-module-connector-page-reads.js:renderWikidotPageRevisionList"
       ],
       "test_reference": [
-        "framerail/tests/page-workflows.spec.ts",
+        "framerail/tests/wikidot-history-timeline.test.js",
+        "framerail/tests/ajax-module-connector-page-reads.test.js",
         "install/local/theme-lab/tests/history-parity-evidence.test.mjs"
       ],
       "evidence_date": "2026-09-29",
@@ -825,14 +828,29 @@
         "page_id": 19439882,
         "module": "history/PageRevisionListModule",
         "observed_row_id": "revision-row-1460043942",
-        "observed_flag": "F"
+        "observed_flag": "F",
+        "observed_row_number": 37,
+        "adjacent_row_ids": [
+          "revision-row-1518465386",
+          "revision-row-1460043932"
+        ],
+        "event_time_epoch_seconds": [
+          1708518860,
+          1649740525,
+          1649740471
+        ],
+        "response_sha256": "96c1115d31b3b645bd7efbc45abedcae14b6e7e9b14c2111b429523aaf440b4a"
       },
-      "may_treat_differences_as_port_requirements": false,
+      "may_treat_differences_as_port_requirements": true,
       "intentional_differences": [],
       "unresolved_evidence_gaps": [
-        "Wikidot returns a file/attachment operation row in the shared page History module. Wikijump pageHistory reads page revisions only; file revisions are exposed separately and do not currently contribute a row to this combined timeline. The confirmed mismatch remains quarantined pending an explicit implementation decision and file-revision parity contract."
+        "The retained live sample proves one file-deletion event. Upload/edit/move row variants and equal-timestamp ordering were not observed, so this certificate must not be widened to those cases.",
+        "The V/S action outcomes for file events are not established by the captured AMC response; broader History interactions remain quarantined by page.history."
       ],
-      "selector_patterns": []
+      "selector_patterns": [
+        "\\.page-history",
+        "#revision-row-"
+      ]
     },
     {
       "surface_id": "page.history.table-dom",
@@ -867,7 +885,8 @@
         "Header labels and flag tooltip text are localized while cell order and selectors remain stable."
       ],
       "unresolved_evidence_gaps": [
-        "This narrow DOM certification does not establish date hydration/visibility, mobile styling, interaction outcomes, pager states, or combined file revision rows."
+        "The narrow DOM certificate covers the observed seven-cell rows, including one file-deletion row. It does not establish date hydration/visibility, mobile styling, action outcomes, or pager states.",
+        "The captured file event is a deletion; upload/edit/move row variants and equal-timestamp ordering are not present in the retained live sample."
       ],
       "selector_patterns": [
         "\\.page-history",

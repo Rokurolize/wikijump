@@ -1,9 +1,12 @@
 import defaults from "$lib/defaults"
 
 import { client } from "$lib/server/deepwell"
+import { pageFileRevisionHistory } from "$lib/server/deepwell/page-file"
 import { Layout, PageLockType } from "$lib/types"
+import { mergeWikidotHistoryTimeline } from "$lib/server/wikidot-history-timeline.js"
 
 import type {
+  FileRevisionType,
   Nullable,
   Optional,
   PageRevisionType,
@@ -469,25 +472,111 @@ export interface PageRevisionModelFiltered {
   slug: Nullable<string>
   tags: Nullable<string[]>
 }
+
+export interface PageHistoryEntry {
+  history_kind: "page" | "file"
+  history_row_id: string
+  timeline_number: number
+  page_revision_number: Nullable<number>
+  history_action_revision_id?: Nullable<number>
+  revision_id: number
+  revision_type: PageRevisionType | FileRevisionType
+  created_at: string
+  revision_number: number
+  page_id: number
+  site_id: number
+  user_id: number
+  author: Nullable<UserInfo>
+  changes: string[]
+  comments: Nullable<string>
+  wikitext: Nullable<string>
+  compiled_body_html: Nullable<string>
+  compiled_body_styles: Nullable<string[]>
+  compiled_top_bar_html: Nullable<string>
+  compiled_side_bar_html: Nullable<string>
+  compiled_at: Nullable<string>
+  compiled_generator: Nullable<string>
+}
 export async function pageHistory(
   siteId: number,
   pageId: Optional<number>,
   revisionNumber: Optional<number>,
   limit: Optional<number>,
-  requestContext: RequestContext = {}
-): Promise<PageRevisionModelFiltered[]> {
+  requestContext: RequestContext = {},
+  includeFileRevisions = false
+): Promise<PageHistoryEntry[]> {
   const requestedLimit = limit ?? defaults.page.history.limit
-  return client.request(
-    "page_revision_range",
-    {
-      site_id: siteId,
-      page_id: pageId,
-      revision_number: revisionNumber ?? defaults.page.history.revisionNumber,
-      revision_direction: "before",
-      limit: Math.min(Math.max(requestedLimit, 1), MAX_PAGE_HISTORY_REVISIONS)
-    },
-    requestContext
+  if (pageId === undefined) return []
+
+  if (!includeFileRevisions) {
+    const pageRevisions = (await client.request(
+      "page_revision_range",
+      {
+        site_id: siteId,
+        page_id: pageId,
+        revision_number: revisionNumber ?? defaults.page.history.revisionNumber,
+        revision_direction: "before",
+        limit: Math.min(Math.max(requestedLimit, 1), MAX_PAGE_HISTORY_REVISIONS)
+      },
+      requestContext
+    )) as PageRevisionModelFiltered[]
+    return pageRevisions.map((revision) => ({
+      ...revision,
+      history_kind: "page",
+      history_row_id: String(revision.revision_id),
+      timeline_number: revision.revision_number,
+      page_revision_number: revision.revision_number
+    }))
+  }
+
+  const limitPerSource =
+    revisionNumber !== undefined && revisionNumber >= 0
+      ? MAX_PAGE_HISTORY_REVISIONS
+      : Math.min(Math.max(requestedLimit, 1), MAX_PAGE_HISTORY_REVISIONS)
+
+  const [pageRevisionsRaw, pageRevisionCountRaw, fileHistory] = await Promise.all([
+    client.request(
+      "page_revision_range",
+      {
+        site_id: siteId,
+        page_id: pageId,
+        revision_number: -1,
+        revision_direction: "before",
+        limit: limitPerSource
+      },
+      requestContext
+    ),
+    client.request(
+      "page_revision_count",
+      {
+        site_id: siteId,
+        page: pageId
+      },
+      requestContext
+    ),
+    pageFileRevisionHistory(siteId, pageId, limitPerSource, requestContext)
+  ])
+  const pageRevisions = pageRevisionsRaw as PageRevisionModelFiltered[]
+  const pageRevisionCount = pageRevisionCountRaw as PageRevisionCountOutput
+  const timeline = mergeWikidotHistoryTimeline(
+    pageRevisions,
+    fileHistory.revisions,
+    pageRevisionCount.revision_count + fileHistory.revision_count
   )
+  return timeline
+    .filter(
+      (revision) =>
+        revisionNumber === undefined ||
+        revisionNumber < 0 ||
+        revision.timeline_number <= revisionNumber
+    )
+    .slice(0, Math.min(Math.max(requestedLimit, 1), MAX_PAGE_HISTORY_REVISIONS)) as PageHistoryEntry[]
+}
+
+export interface PageRevisionCountOutput {
+  revision_count: number
+  first_revision: number
+  last_revision: number
 }
 
 /* ----- Page Move ----- */

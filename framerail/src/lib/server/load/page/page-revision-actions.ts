@@ -23,7 +23,7 @@ export async function pageHistoryAction(event: RequestEvent) {
   try {
     const requestData = await readActionJson(request, pageHistorySchema)
 
-    const { siteId, pageId, revisionNumber, limit } = requestData
+    const { siteId, pageId, revisionNumber, limit, includeFileRevisions } = requestData
     const context = await resolvePageActionRequestContext(event, {
       submittedSiteId: siteId
     })
@@ -32,7 +32,8 @@ export async function pageHistoryAction(event: RequestEvent) {
       pageId,
       revisionNumber,
       limit,
-      context.requestContext
+      context.requestContext,
+      includeFileRevisions ?? false
     )
     return { res }
   } catch (error) {
@@ -43,7 +44,8 @@ export async function pageHistoryAction(event: RequestEvent) {
 const pageHistorySchema = object({
   ...pageActionBaseSchema,
   revisionNumber: optional(number()),
-  limit: optional(number())
+  limit: optional(number()),
+  includeFileRevisions: optional(boolean())
 })
 
 export async function pageRevisionAction(event: RequestEvent) {

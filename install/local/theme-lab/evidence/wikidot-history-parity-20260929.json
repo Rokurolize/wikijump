@@ -780,5 +780,48 @@
     "pinned_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
     "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
     "version": "4.4.1"
+  },
+  "timeline_observation": {
+    "site": "scp-jp.wikidot.com",
+    "page": {
+      "slug": "scp-173",
+      "page_id": 19439882
+    },
+    "module": "history/PageRevisionListModule",
+    "response_file": "wikidot-history-parity-20260929.responses/jp-02.json",
+    "response_sha256": "96c1115d31b3b645bd7efbc45abedcae14b6e7e9b14c2111b429523aaf440b4a",
+    "observed_row": {
+      "id": "revision-row-1460043942",
+      "row_number": 37,
+      "event_time_epoch_seconds": 1649740525,
+      "flag": "F",
+      "actions": [
+        "V",
+        "S"
+      ],
+      "comments": "File \"SCP-173.jpg\" deleted",
+      "cells": 7
+    },
+    "neighbors_in_descending_event_time_order": [
+      {
+        "id": "revision-row-1518465386",
+        "row_number": 38,
+        "event_time_epoch_seconds": 1708518860,
+        "kind": "page"
+      },
+      {
+        "id": "revision-row-1460043942",
+        "row_number": 37,
+        "event_time_epoch_seconds": 1649740525,
+        "kind": "file-deletion"
+      },
+      {
+        "id": "revision-row-1460043932",
+        "row_number": 36,
+        "event_time_epoch_seconds": 1649740471,
+        "kind": "page"
+      }
+    ],
+    "scope_limit": "One deleted-file event is observed; other file-operation variants, equal timestamps, and action outcomes are not certified."
   }
 }

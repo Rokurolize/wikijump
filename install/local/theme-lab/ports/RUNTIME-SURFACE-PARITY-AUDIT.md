@@ -19,11 +19,11 @@ An accepted screenshot or passing test does not certify source parity. The 35-pa
 
 Anonymous read-only `wikidot.py` 4.4.1 captures were made on 2026-09-29 for `scp-173` on `scp-wiki.wikidot.com` (page 1956234) and `scp-jp.wikidot.com` (page 19439882). Both `history/PageRevisionListModule` fragments have one `table.page-history`, seven cells in the same order, revision row ids `revision-row-{id}`, `from` and `to` radios, a flags cell, V/S action links, `.printuser.avatarhover`, `.odate`, and comments. The English and Japanese header/flag labels differ while the structure stays the same. The complete response hashes and request receipts are in [`evidence/wikidot-history-parity-20260929.json`](../evidence/wikidot-history-parity-20260929.json) and its adjacent `*.responses/` directory.
 
-The same capture includes an `F` flag for a file/attachment operation in the Japanese History list. Wikijump currently obtains `pageHistory` from page revisions only and exposes file revisions separately. That combined timeline mismatch is confirmed and listed as `PARITY_MISMATCH`; it remains quarantined. AMC fragments do not expose source-side CSS or browser behavior, so History mobile presentation, pagination, focus/hover states, and action outcomes remain unproven. They contain `.odate` markup and date text but do not establish final client-side hydration or visibility. Wikijump's retained Wikidot Base CSS hides `.odate` with `display:none`, so visible and relative-date parity also remains unverified and quarantined.
+The Japanese capture contains an `F` file/attachment deletion row numbered 37 between page rows 38 and 36. Its timestamp sorts between those page events, and it retains the same seven cells, V/S links, author, date, and comment fields. Wikijump now merges page and file revision data for WIKIDOT-facing History, orders the observed event by creation time, and assigns one ordinal across both streams. The native Wikijump History view continues to use page revisions only. The narrow timeline certificate covers this observed deletion shape and placement; it does not establish other file-operation variants, equal-timestamp ordering, or V/S outcomes. AMC fragments do not expose source-side CSS or browser behavior, so History mobile presentation, pagination, focus/hover states, and action outcomes remain unproven. They contain `.odate` markup and date text but do not establish final client-side hydration or visibility. Wikijump's retained Wikidot Base CSS hides `.odate` with `display:none`, so visible and relative-date parity also remains unverified and quarantined.
 
 ## Surface inventory
 
-Every CSS-discovered surface and every surface id used by the interactive capture harness is listed below. Alias ids are kept explicit because Theme Lab uses both naming schemes. The only certified row is scoped to the captured History table DOM; it does not certify the whole History surface.
+The table lists all 41 unique IDs currently discovered by Theme Lab's CSS analyzer and interactive capture states, plus explicit History subscopes and the unmatched-runtime bucket. Alias ids are kept explicit because Theme Lab uses both naming schemes. The two certified History rows cover only the captured seven-cell table contract and the one observed file-deletion timeline event; neither certifies the whole History surface.
 
 | Surface ID | Status | Port action allowed? |
 |---|---|:---:|
@@ -58,7 +58,7 @@ Every CSS-discovered surface and every surface id used by the interactive captur
 | `page.edit` | `INSUFFICIENT_EVIDENCE` | no |
 | `page.files` | `INSUFFICIENT_EVIDENCE` | no |
 | `page.history` | `INSUFFICIENT_EVIDENCE` | no |
-| `page.history.file-revision-timeline` | `PARITY_MISMATCH` | no |
+| `page.history.file-revision-timeline` | `PARITY_CERTIFIED` | yes |
 | `page.history.table-dom` | `PARITY_CERTIFIED` | yes |
 | `page.normal` | `INSUFFICIENT_EVIDENCE` | no |
 | `page.options` | `INSUFFICIENT_EVIDENCE` | no |
@@ -77,24 +77,25 @@ Every CSS-discovered surface and every surface id used by the interactive captur
 | `shell.search` | `INSUFFICIENT_EVIDENCE` | no |
 | `unclassified-runtime-surface` | `INSUFFICIENT_EVIDENCE` | no |
 
-For `page.history.table-dom`, “yes” applies only to discrepancies in the certified seven-cell DOM contract. Presentation, temporal states, mobile behavior, and the file-revision timeline still map to the quarantined whole-surface records.
+For `page.history.table-dom`, “yes” applies only to discrepancies in the certified seven-cell DOM contract. For `page.history.file-revision-timeline`, “yes” applies only to the observed F deletion row and its event-time position and shared ordinal. Other file operations, action outcomes, presentation, temporal states, mobile behavior, and paging remain in the quarantined whole-surface record.
 
 ### Material surface findings
 
 - The CSS surface analyzer originally omitted `page.history` and `page.files`. Both are now discovered. Their quick fixture probes can report that the action-pane fixture is absent; this is evidence of coverage gaps, not a theme instruction to synthesize those structures.
 - The interactive harness force-opens one mobile submenu by adding a Theme Lab-only class and stylesheet, and appends an Interwiki iframe fixture. Those rows are `THEME_LAB_ONLY_SYNTHETIC_SURFACE`; they cannot certify real Wikidot states.
-- The registry has no source-side parity certificate for the shell, menus, rating, credit, article modules, page actions, Files, dialog, footer/license, or other interactive surfaces. These are individually `INSUFFICIENT_EVIDENCE`; no inference of success is made from the existing local interaction corpus.
+- The registry has no source-side parity certificate for the shell, menus, rating, credit, article modules, page actions, Files, dialog, footer/license, or other interactive surfaces. These are individually `INSUFFICIENT_EVIDENCE`; no inference of success is made from the existing local interaction corpus. All 41 active IDs remain quarantined except where a finding is explicitly matched to one of the two narrow History certificates.
 
 ## Adaptation audit
 
 | Classification | Finding | Decision |
 |---|---|---|
 | C — confirmed emulator-only workaround, removed | `HistoryPane.svelte` used six semantic cells, no from/to radios, a desktop grid to imitate imported-theme placements, and a locally invented mobile card layout. The live EN and JP AMC fragments show a seven-cell table, so this was a Wikijump/Wikidot mismatch rather than an EN/JP requirement. | Fixed in Wikijump WIKIDOT History rendering; the six-cell grid/card override was deleted. No Theme Lab candidate CSS was rewritten. |
+| C — confirmed runtime mismatch, fixed | WIKIDOT-facing History omitted file revisions from the page timeline even though the retained JP AMC response places a file deletion between page rows 38 and 36 as row 37. | WIKIDOT History now merges the page and file revision streams by event time and assigns a shared ordinal. Native Wikijump History remains page-revision-only. No theme CSS change was needed. |
 | B — intentional EN/JP difference, retained | Live History header and flag tooltip strings are localized; the seven cell positions and selectors are shared. | Localize text only. Keep DOM order identical. |
-| D — source proof missing, quarantined | SCPedia mobile History overrides mention a “History card grid” and target `.revision-row` sizing; Much Cool reserves phone-width action-pane heading space from a WebKit Source screenshot. Available artifacts are local candidate captures and do not pair these behaviors with the corresponding live Wikidot source state. | Leave these candidate rules and accepted screenshots unchanged. They cannot be promoted as port requirements while their surfaces remain uncertified. |
+| D — source proof missing, quarantined | SCPedia mobile History overrides mention a “History card grid” and target `.revision-row` sizing; Much Cool reserves phone-width action-pane heading space from a WebKit Source screenshot. Available artifacts are local candidate captures and do not pair these behaviors with the corresponding live Wikidot source state. The capture harness also had stale metadata claiming mobile History reflows to cards. | Leave candidate rules and accepted screenshots unchanged. The metadata now records that the AMC fragment does not establish mobile scroll/reflow behavior. These rules cannot be promoted as port requirements while the whole History surface remains uncertified. |
 | D — source proof missing, quarantined | SCP-JP header/search, credit-return, label-contrast, and long-name wrapping rules exist in port or generated-adaptation inputs. Some comments explain the Japanese text or local contrast problem, but the current source oracle does not provide matching Wikidot interaction/browser states for those claims. | Treat them as port hypotheses, not proven A/B requirements, until paired source evidence shows which differences are actual JP localization requirements. No candidate source was rewritten. |
 
-The search covered all Theme Lab candidate CSS and Wikitext source inputs, maintenance base/final/override files, the generated interactive-adaptation source, surface spec, interactive capture code, and retained asset CSS. Rules that simply implement the imported theme itself were not mislabeled as emulator repairs. No other Category C adaptation was established from available evidence. The D cases stay actionable for source capture but are quarantined from port conclusions.
+The search covered all Theme Lab candidate CSS and Wikitext source inputs, maintenance base/final/override files, the generated interactive-adaptation source, surface spec, interactive capture code, and retained asset CSS. Rules that simply implement the imported theme itself were not mislabeled as emulator repairs. This continuation removed no candidate CSS: inspected `.page-history` rules, including SCPedia and Monotypical styles, are not proven emulator-only workarounds by the retained source evidence. The D cases stay actionable for source capture but are quarantined from port conclusions.
 
 ## Source-side oracle gaps
 
@@ -104,7 +105,7 @@ The current harness also includes explicitly synthetic states. A source-side bro
 
 ## Regression and preservation
 
-- Frozen-history tests verify the raw response digests and seven-cell contract for both source sites.
-- Framerail tests assert seven-cell WIKIDOT output, radios, row ids, selectors, localized labels, V/S/R affordances, `.odate`, and mobile/desktop/tablet rendering plus comparison selection.
+- Frozen-history tests verify raw response digests, the seven-cell contract for both source sites, and the observed F deletion row's identity, order, ordinal, and seven-cell structure.
+- Framerail tests assert the seven-cell WIKIDOT output, shared page/file timeline ordering, F flag, radios, row ids, selectors, localized labels, V/S affordances without file rollback, `.odate`, and existing History behavior.
 - Theme Lab tests assert registry coverage, CSS discovery for History/Files, quarantining of uncertified/unmatched findings, continued actions for certified scopes, independent dependency actions, and synthetic-state status.
 - Existing port packages, candidate CSS, and accepted screenshot corpus are unchanged by the History repair.

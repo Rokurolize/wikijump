@@ -68,6 +68,24 @@ test("uncertified and unclassified runtime findings cannot become port next-acti
   assert.equal(verdict.top_issues.find((issue) => issue.surface === "page.history").parity_review.quarantined, true);
 });
 
+test("all currently auto-discovered and interactive surfaces stay quarantined without source evidence", () => {
+  const captureSource = fs.readFileSync(path.join(root, "ports/interactive-visual-fixture/capture-interactive.mjs"), "utf8");
+  const interactiveIds = [...captureSource.matchAll(/surface\s*:\s*['"]([^'"]+)['"]/gu)].map((match) => match[1]);
+  const activeIds = [...new Set([...KNOWN_THEME_SURFACES.map((row) => row.id), ...interactiveIds])];
+  const verdict = buildVerdict({extraIssues: activeIds.map((surface) => ({
+    severity: "error",
+    kind: "surface_fixture_missing",
+    surface,
+  }))});
+
+  assert.equal(activeIds.length, 41);
+  assert.equal(verdict.parity_gate.port_requirement_eligible_count, 0);
+  assert.equal(verdict.parity_gate.quarantined_count, activeIds.length);
+  assert.equal(verdict.next_actions.length, 0);
+  assert.equal(parityReviewForSurfaceIds(["page.history"]).may_treat_differences_as_port_requirements, false);
+  assert.equal(parityReviewForSurfaceIds(["page.history.file-revision-timeline"]).may_treat_differences_as_port_requirements, true);
+});
+
 test("an explicitly certified scoped contract remains actionable", () => {
   const review = parityReviewForSurfaceIds(["page.history.table-dom"]);
   assert.equal(review.status, "PARITY_CERTIFIED");

@@ -570,6 +570,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("file_revision_edit", file_revision_edit);
     register!("file_revision_count", file_revision_count);
     register!("file_revision_range", file_revision_range);
+    register!("file_revision_page_history", file_revision_page_history);
 
     // Text
     register!("text_create", text_create);

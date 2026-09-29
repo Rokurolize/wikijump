@@ -25,9 +25,13 @@ use crate::services::MutationAuthorization;
 use crate::services::file::GetFile;
 use crate::services::file_revision::{
     CountFileRevisions, FileRevisionCountOutput, FileRevisionModelFiltered,
-    GetFileRevision, GetFileRevisionRange, UpdateFileRevision,
+    GetFileRevision, GetFileRevisionRange, GetPageFileRevisionHistory,
+    PageFileRevisionHistoryModelFiltered, PageFileRevisionHistoryOutput,
+    UpdateFileRevision,
 };
 use crate::types::{Action, Permission, Reference, Resource};
+use ftml::data::UserInfo;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub async fn file_revision_count(
     ctx: &ServiceContext<'_>,
@@ -115,6 +119,63 @@ pub async fn file_revision_range(
         })?;
 
     revisions.into_iter().map(filter_file_revision).collect()
+}
+
+pub async fn file_revision_page_history(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<PageFileRevisionHistoryOutput> {
+    let input: GetPageFileRevisionHistory = parse!(params, FileRevision);
+    ensure_parent_page_view_permission(ctx, input.site_id, input.page_id, None)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to check file history parent-page visibility",
+                ErrorType::FileRevision,
+            )
+        })?;
+
+    let history = FileRevisionService::get_page_history(ctx, input)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to get file revision history for page",
+                ErrorType::FileRevision,
+            )
+        })?;
+
+    let user_ids = history
+        .revisions
+        .iter()
+        .map(|revision| revision.user_id)
+        .collect::<BTreeSet<_>>();
+    let mut authors = BTreeMap::<i64, UserInfo<'static>>::new();
+    for user_id in user_ids {
+        let Some(user) = UserService::get_optional(ctx, Reference::Id(user_id)).await?
+        else {
+            continue;
+        };
+        if let Some(author) = user.into_public_identity() {
+            authors.insert(user_id, author);
+        }
+    }
+
+    let revisions = history
+        .revisions
+        .into_iter()
+        .map(|revision| {
+            let author = authors.get(&revision.user_id).cloned();
+            Ok(PageFileRevisionHistoryModelFiltered {
+                revision: filter_file_revision(revision)?,
+                author,
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    Ok(PageFileRevisionHistoryOutput {
+        revision_count: history.revision_count,
+        revisions,
+    })
 }
 
 pub async fn file_revision_edit(

@@ -128,6 +128,10 @@ export const renderWikidotWhoRated = (votes) => {
  *   revision_id: number
  *   revision_type: string
  *   revision_number: number
+ *   timeline_number?: number
+ *   history_kind?: "page" | "file"
+ *   history_row_id?: string
+ *   history_action_revision_id?: number | null
  *   created_at: string
  *   user_id: number
  *   author: null | {
@@ -177,14 +181,19 @@ export const renderWikidotPageRevisionList = (revisions, locale = "en") => {
   const rows = revisions
     .map((revision, index) => {
       const revisionId = revision.revision_id
+      const actionRevisionId =
+        revision.history_action_revision_id ?? revisionId
+      const rowId = revision.history_row_id ?? String(revisionId)
+      const displayedRevisionNumber =
+        (revision.timeline_number ?? revision.revision_number) + 1
       const fromChecked = index === 1 ? ' checked="checked"' : ""
       const toChecked = index === 0 ? ' checked="checked"' : ""
       const date = wikidotRevisionDate(revision.created_at)
       const rollback =
-        index > 0
+        index > 0 && revision.history_kind !== "file"
           ? ` <a title="${escapeHtmlAttribute(titles.rollback)}" href="javascript:;" onclick="WIKIDOT.modules.PageHistoryModule.listeners.revert(event,${revisionId})">R</a>`
           : ""
-      return `<tr id="revision-row-${revisionId}"><td>${revision.revision_number + 1}.</td><td style="width: 5em"><input id="${revisionId}" type="radio" name="from" value="${revisionId}"${fromChecked} /><input id="${revisionId}" type="radio" name="to" value="${revisionId}"${toChecked} /></td><td>${renderWikidotRevisionFlags(revision, locale)}</td><td style="width: 5em" class="optionstd"><a title="${escapeHtmlAttribute(titles.view)}" href="javascript:;" onclick="showVersion(${revisionId})">V</a> <a title="${escapeHtmlAttribute(titles.source)}" href="javascript:;" onclick="showSource(${revisionId})">S</a>${rollback}</td><td style="width: 15em">${renderWikidotRevisionAuthor(revision)}</td><td style="padding: 0 0.5em; width: 7em;">${date ? `<span class="${date.className}">${date.text}</span>` : ""}</td><td style="font-size: 90%">${escapeHtml(revision.comments ?? "")}</td></tr>`
+      return `<tr id="revision-row-${escapeHtmlAttribute(rowId)}"><td>${displayedRevisionNumber}.</td><td style="width: 5em"><input id="${escapeHtmlAttribute(rowId)}" type="radio" name="from" value="${revisionId}"${fromChecked} /><input id="${escapeHtmlAttribute(rowId)}" type="radio" name="to" value="${revisionId}"${toChecked} /></td><td>${renderWikidotRevisionFlags(revision, locale)}</td><td style="width: 5em" class="optionstd"><a title="${escapeHtmlAttribute(titles.view)}" href="javascript:;" onclick="showVersion(${actionRevisionId})">V</a> <a title="${escapeHtmlAttribute(titles.source)}" href="javascript:;" onclick="showSource(${actionRevisionId})">S</a>${rollback}</td><td style="width: 15em">${renderWikidotRevisionAuthor(revision)}</td><td style="padding: 0 0.5em; width: 7em;">${date ? `<span class="${date.className}">${date.text}</span>` : ""}</td><td style="font-size: 90%">${escapeHtml(revision.comments ?? "")}</td></tr>`
     })
     .join("")
   const headers = wikidotHistoryHeaders(locale)

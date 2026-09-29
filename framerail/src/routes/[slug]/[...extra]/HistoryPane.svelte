@@ -17,6 +17,7 @@
   import type { PageProps } from "./$types"
   import type {
     PageRevisionModelFiltered,
+    PageHistoryEntry,
     CreatePageRevisionOutput,
     PageRevisionDiffOutput
   } from "$lib/server/deepwell/page"
@@ -33,7 +34,7 @@
 
   const pageLayoutContext = getPageLayoutContext()
 
-  let revisionMap = new SvelteMap<number, PageRevisionModelFiltered>()
+  let revisionMap = new SvelteMap<number, PageHistoryEntry>()
   let revision = $state<Optional<PageRevisionModelFiltered>>(undefined)
   let showRevisionSource = $state<boolean>(false)
   let fromRevisionNumber = $state<Optional<number>>(undefined)
@@ -62,12 +63,13 @@
       headers: SVELTEKIT_ACTION_HEADERS,
       body: JSON.stringify({
         siteId: data.site.site_id,
-        pageId: data.page?.page_id
+        pageId: data.page?.page_id,
+        includeFileRevisions: pageLayoutContext.current === Layout.WIKIDOT
       })
     }).then((res) => res.text())
 
     const result = deserialize<
-      { res: PageRevisionModelFiltered[] },
+      { res: PageHistoryEntry[] },
       { message: string; code: string; data: Record<string, unknown> }
     >(res)
 
@@ -81,11 +83,25 @@
       }
     } else if (result.type === "success" && result.data?.res) {
       revisionMap.clear()
-      result.data.res.forEach((rev) => {
-        revisionMap.set(rev.revision_number, rev)
+      result.data.res.forEach((rawRevision) => {
+        const rev: PageHistoryEntry = {
+          ...rawRevision,
+          history_kind: rawRevision.history_kind ?? "page",
+          history_row_id:
+            rawRevision.history_row_id ?? String(rawRevision.revision_id),
+          timeline_number:
+            rawRevision.timeline_number ?? rawRevision.revision_number,
+          page_revision_number:
+            rawRevision.page_revision_number === undefined
+              ? rawRevision.history_kind === "file"
+                ? null
+                : rawRevision.revision_number
+              : rawRevision.page_revision_number
+        }
+        revisionMap.set(rev.timeline_number, rev)
       })
       const revisionNumbers = result.data.res
-        .map((rev) => rev.revision_number)
+        .map((rev) => rev.timeline_number)
         .sort((a, b) => a - b)
       if (fromRevisionNumber === undefined) {
         fromRevisionNumber = revisionNumbers.at(-2)
@@ -99,6 +115,16 @@
   async function fetchRevisionDiff() {
     if (fromRevisionNumber === undefined || toRevisionNumber === undefined) return
 
+    const fromRevision = revisionMap.get(fromRevisionNumber)?.page_revision_number
+    const toRevision = revisionMap.get(toRevisionNumber)?.page_revision_number
+    if (
+      fromRevision === undefined ||
+      fromRevision === null ||
+      toRevision === undefined ||
+      toRevision === null
+    )
+      return
+
     const restoreCompareFocus = document.activeElement === revisionDiffCompareButton
     const requestedFromRevisionNumber = fromRevisionNumber
     const requestedToRevisionNumber = toRevisionNumber
@@ -111,8 +137,8 @@
         body: JSON.stringify({
           siteId: data.site.site_id,
           pageId: data.page?.page_id,
-          fromRevisionNumber: requestedFromRevisionNumber,
-          toRevisionNumber: requestedToRevisionNumber
+          fromRevisionNumber: fromRevision,
+          toRevisionNumber: toRevision
         })
       }).then((response) => response.text())
 
@@ -163,76 +189,67 @@
     clearRevisionDiff()
   }
 
+  function revisionTypeLabel(entry: PageHistoryEntry) {
+    const key =
+      entry.history_kind === "file"
+        ? `wiki-page-file-revision-type.${entry.revision_type}`
+        : `wiki-page-revision-type.${entry.revision_type}`
+    return data.internationalization?.[
+      key as keyof NonNullable<typeof data.internationalization>
+    ]
+  }
+
   async function getRevision(
-    revisionNumber: number,
+    timelineNumber: number,
     compiledHtml: boolean,
     wikitext: boolean
   ) {
-    const rev = revisionMap.get(revisionNumber)
-    // Try to see if the cached revision already has the wanted data
-    if (
-      compiledHtml &&
-      rev?.compiled_body_html &&
-      rev.compiled_body_styles !== undefined
-    ) {
-      setRevision(rev)
-      revision = rev
-    } else if (wikitext && rev?.wikitext) {
-      setRevision(rev)
-      revision = rev
-    } else {
-      const res = await fetch("?/revision", {
-        method: "POST",
-        headers: SVELTEKIT_ACTION_HEADERS,
-        body: JSON.stringify({
-          siteId: data.site.site_id,
-          pageId: data.page?.page_id,
-          revisionNumber,
-          compiledHtml,
-          wikitext
-        })
-      }).then((res) => res.text())
+    const entry = revisionMap.get(timelineNumber)
+    const revisionNumber = entry?.page_revision_number
+    if (revisionNumber === undefined || revisionNumber === null) return
 
-      const result = deserialize<
-        { res: Optional<PageRevisionModelFiltered> },
-        { message: string; code: string; data: Record<string, unknown> }
-      >(res)
-
-      if (!active) return
-
-      if (result.type === "failure" && result.data?.message) {
-        errorPopupState.current = {
-          state: true,
-          message: result.data.message,
-          data: result.data
-        }
-      } else if (result.type === "success" && result.data?.res) {
-        if (!rev) {
-          // This is a revision we didn't even cache...?
-          revisionMap.set(revisionNumber, result.data.res)
-          setRevision(result.data.res)
-        } else if (compiledHtml) {
-          rev.compiled_body_html = result.data.res.compiled_body_html
-          rev.compiled_body_styles = result.data.res.compiled_body_styles
-          setRevision(rev)
-          revision = rev
-        } else if (wikitext) {
-          rev.wikitext = result.data.res.wikitext
-          setRevision(rev)
-          revision = rev
-        }
-      }
-    }
-  }
-
-  async function rollbackRevision(revisionNumber: number, comments?: string) {
-    const res = await fetch("?/rollback", {
+    const res = await fetch("?/revision", {
       method: "POST",
       headers: SVELTEKIT_ACTION_HEADERS,
       body: JSON.stringify({
         siteId: data.site.site_id,
         pageId: data.page?.page_id,
         revisionNumber,
+        compiledHtml,
+        wikitext
+      })
+    }).then((res) => res.text())
+
+    const result = deserialize<
+      { res: Optional<PageRevisionModelFiltered> },
+      { message: string; code: string; data: Record<string, unknown> }
+    >(res)
+
+    if (!active) return
+
+    if (result.type === "failure" && result.data?.message) {
+      errorPopupState.current = {
+        state: true,
+        message: result.data.message,
+        data: result.data
+      }
+    } else if (result.type === "success" && result.data?.res) {
+      setRevision(result.data.res)
+      revision = result.data.res
+    }
+  }
+
+  async function rollbackRevision(timelineNumber: number, comments?: string) {
+    const entry = revisionMap.get(timelineNumber)
+    if (!entry || entry.history_kind !== "page") return
+
+    const res = await fetch("?/rollback", {
+      method: "POST",
+      headers: SVELTEKIT_ACTION_HEADERS,
+      body: JSON.stringify({
+        siteId: data.site.site_id,
+        pageId: data.page?.page_id,
+        revisionNumber: entry.revision_number,
         lastRevisionId: data.page_revision?.revision_id,
         comments
       })
@@ -274,32 +291,32 @@
           {/each}
         </tr>
         <!-- Here we sort the list in descending order. -->
-        {#each [...revisionMap].sort((a, b) => b[0] - a[0]) as [, revisionItem] (revisionItem.revision_number)}
+        {#each [...revisionMap].sort((a, b) => b[0] - a[0]) as [, revisionItem] (revisionItem.timeline_number)}
           {@const date = wikidotRevisionDate(revisionItem.created_at)}
-          <tr id={`revision-row-${revisionItem.revision_id}`}>
-            <td>{revisionItem.revision_number + 1}.</td>
+          <tr id={`revision-row-${revisionItem.history_row_id}`}>
+            <td>{revisionItem.timeline_number + 1}.</td>
             <td style="width: 5em">
               <input
-                id={String(revisionItem.revision_id)}
+                id={revisionItem.history_row_id}
                 type="radio"
                 name="from"
                 value={revisionItem.revision_id}
-                checked={revisionItem.revision_number === fromRevisionNumber}
-                aria-label={`${data.internationalization?.["wiki-page-revision-diff.from"]}: ${revisionItem.revision_number + 1}`}
+                checked={revisionItem.timeline_number === fromRevisionNumber}
+                aria-label={`${data.internationalization?.["wiki-page-revision-diff.from"]}: ${revisionItem.timeline_number + 1}`}
                 onchange={() => {
-                  fromRevisionNumber = revisionItem.revision_number
+                  fromRevisionNumber = revisionItem.timeline_number
                   clearRevisionDiff()
                 }}
               />
               <input
-                id={String(revisionItem.revision_id)}
+                id={revisionItem.history_row_id}
                 type="radio"
                 name="to"
                 value={revisionItem.revision_id}
-                checked={revisionItem.revision_number === toRevisionNumber}
-                aria-label={`${data.internationalization?.["wiki-page-revision-diff.to"]}: ${revisionItem.revision_number + 1}`}
+                checked={revisionItem.timeline_number === toRevisionNumber}
+                aria-label={`${data.internationalization?.["wiki-page-revision-diff.to"]}: ${revisionItem.timeline_number + 1}`}
                 onchange={() => {
-                  toRevisionNumber = revisionItem.revision_number
+                  toRevisionNumber = revisionItem.timeline_number
                   clearRevisionDiff()
                 }}
               />
@@ -316,7 +333,7 @@
                 title={wikidotHistoryActionTitles(data.site.locale).view}
                 onclick={(event) => {
                   event.stopPropagation()
-                  getRevision(revisionItem.revision_number, true, false).then(() => {
+                  getRevision(revisionItem.timeline_number, true, false).then(() => {
                     if (!active) return
                     setShowRevision(true)
                     showRevisionSource = false
@@ -331,7 +348,7 @@
                 title={wikidotHistoryActionTitles(data.site.locale).source}
                 onclick={(event) => {
                   event.stopPropagation()
-                  getRevision(revisionItem.revision_number, false, true).then(() => {
+                  getRevision(revisionItem.timeline_number, false, true).then(() => {
                     if (!active) return
                     setShowRevision(false)
                     showRevisionSource = true
@@ -340,14 +357,14 @@
               >
                 S
               </a>
-              {#if revisionItem.revision_number < latestRevisionNumber}
+              {#if revisionItem.history_kind === "page" && revisionItem.timeline_number < latestRevisionNumber}
                 <!-- svelte-ignore a11y_invalid_attribute -->
                 <a
                   href="javascript:;"
                   title={wikidotHistoryActionTitles(data.site.locale).rollback}
                   onclick={(event) => {
                     event.stopPropagation()
-                    rollbackRevision(revisionItem.revision_number)
+                    rollbackRevision(revisionItem.timeline_number)
                   }}
                 >
                   R
@@ -401,57 +418,57 @@
       </div>
     </div>
     <!-- Here we sort the list in descending order. -->
-    {#each [...revisionMap].sort((a, b) => b[0] - a[0]) as [, revisionItem] (revisionItem.revision_number)}
-      <div class="revision-row" data-id={revisionItem.revision_id}>
+    {#each [...revisionMap].sort((a, b) => b[0] - a[0]) as [, revisionItem] (revisionItem.timeline_number)}
+      <div class="revision-row" data-id={revisionItem.history_row_id}>
         <div class="revision-attribute action">
           {#if ["create", "regular"].includes(revisionItem.revision_type)}
-            <button
-              class="action-button view-revision clickable"
-              onclick={(event) => {
-                event.stopPropagation()
-                getRevision(revisionItem.revision_number, true, false).then(() => {
-                  if (!active) return
-                  setShowRevision(true)
-                  showRevisionSource = false
-                })
-              }}
-              type="button"
-            >
-              {data.internationalization?.view}
-            </button>
-            <button
-              class="action-button view-revision-source clickable"
-              onclick={(event) => {
-                event.stopPropagation()
-                getRevision(revisionItem.revision_number, false, true).then(() => {
-                  if (!active) return
-                  setShowRevision(false)
-                  showRevisionSource = true
-                })
-              }}
-              type="button"
-            >
-              {data.internationalization?.["wiki-page-view-source"]}
-            </button>
-            <button
-              class="action-button revision-rollback clickable"
-              onclick={(event) => {
-                event.stopPropagation()
-                rollbackRevision(revisionItem.revision_number)
-              }}
-              type="button"
-            >
-              {data.internationalization?.["wiki-page-revision-rollback"]}
-            </button>
+            {#if revisionItem.history_kind === "page"}
+              <button
+                class="action-button view-revision clickable"
+                onclick={(event) => {
+                  event.stopPropagation()
+                  getRevision(revisionItem.timeline_number, true, false).then(() => {
+                    if (!active) return
+                    setShowRevision(true)
+                    showRevisionSource = false
+                  })
+                }}
+                type="button"
+              >
+                {data.internationalization?.view}
+              </button>
+              <button
+                class="action-button view-revision-source clickable"
+                onclick={(event) => {
+                  event.stopPropagation()
+                  getRevision(revisionItem.timeline_number, false, true).then(() => {
+                    if (!active) return
+                    setShowRevision(false)
+                    showRevisionSource = true
+                  })
+                }}
+                type="button"
+              >
+                {data.internationalization?.["wiki-page-view-source"]}
+              </button>
+              <button
+                class="action-button revision-rollback clickable"
+                onclick={(event) => {
+                  event.stopPropagation()
+                  rollbackRevision(revisionItem.timeline_number)
+                }}
+                type="button"
+              >
+                {data.internationalization?.["wiki-page-revision-rollback"]}
+              </button>
+            {/if}
           {/if}
         </div>
         <div class="revision-attribute revision-number">
           {revisionItem.revision_number}
         </div>
         <div class="revision-attribute revision-type">
-          {data.internationalization?.[
-            `wiki-page-revision-type.${revisionItem.revision_type}`
-          ]}
+          {revisionTypeLabel(revisionItem)}
         </div>
         <div class="revision-attribute created-at">
           {new Date(revisionItem.created_at).toLocaleString()}
