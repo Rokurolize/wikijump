@@ -42,7 +42,15 @@ function surfaceMatchesText(surface, text) {
 function inferredSurfaceIds(finding) {
   const ids = new Set();
   const direct = finding.surface;
-  if (typeof direct === "string" && SURFACES.has(direct)) ids.add(direct);
+  if (typeof direct === "string" && SURFACES.has(direct)) {
+    const directSurface = SURFACES.get(direct);
+    if (directSurface.conclusion_resolution === "NO_CURRENT_DEPENDENCY") {
+      ids.add("unclassified-runtime-surface");
+    } else {
+      ids.add(direct);
+      if (directSurface.conclusion_resolution === "CERTIFIED_PARITY_SCOPE") return [...ids].sort();
+    }
+  }
   const roleSurface = ROLE_SURFACES.get(finding.reference_role);
   if (roleSurface) ids.add(roleSurface);
   const interactionSurface = INTERACTION_SURFACES.get(finding.interaction ?? finding.component);
@@ -56,6 +64,11 @@ function inferredSurfaceIds(finding) {
     ...(finding.overflow_sources ?? []).flatMap((source) => [source?.selector, ...(source?.ancestors ?? [])]),
   ].filter((value) => typeof value === "string");
   for (const surface of SURFACES.values()) {
+    // The page.diff row is retained as an explicit non-dependency. Its
+    // revision-diff selectors are already analyzed under the active History
+    // surface; a future direct page.diff observation is routed to the
+    // fail-closed fallback above.
+    if (surface.conclusion_resolution === "NO_CURRENT_DEPENDENCY") continue;
     if (selectors.some((selector) => surfaceMatchesText(surface, selector))) ids.add(surface.surface_id);
   }
   return [...ids].sort();
@@ -66,14 +79,31 @@ function failClosedSurface(surfaceId) {
 }
 
 export function parityReviewForSurfaceIds(surfaceIds, {unmatchedIsRuntime = true} = {}) {
-  const rows = [...new Set(surfaceIds)].map(failClosedSurface).filter(Boolean);
+  const rows = [...new Set(surfaceIds)].map((surfaceId) => {
+    const surface = failClosedSurface(surfaceId);
+    // Registry rows with no current harness dependency are not authority to
+    // disregard a direct runtime observation. If one is observed, route it
+    // through the same fail-closed path as any other unclassified contract.
+    return surface?.conclusion_resolution === "NO_CURRENT_DEPENDENCY"
+      ? failClosedSurface("unclassified-runtime-surface")
+      : surface;
+  }).filter(Boolean);
   const surfaces = rows.length
     ? rows
     : unmatchedIsRuntime
       ? [failClosedSurface("unclassified-runtime-surface")]
       : [];
   const mayTreatAsPortRequirement = surfaces.length > 0 && surfaces.every((surface) =>
-    surface.status === "PARITY_CERTIFIED" && surface.may_treat_differences_as_port_requirements === true,
+    surface.conclusion_resolution === "CERTIFIED_PARITY_SCOPE" &&
+    surface.status === "PARITY_CERTIFIED" &&
+    surface.may_treat_differences_as_port_requirements === true,
+  );
+  const blocksPortConclusion = surfaces.some((surface) => surface.blocks_port_conclusion === true);
+  const hasTargetAcceptanceSurface = surfaces.some((surface) =>
+    ["LOCAL_TARGET_ACCEPTANCE_ONLY", "COVERED_BY_ACTIVE_SURFACE"].includes(surface.conclusion_resolution),
+  );
+  const hasSyntheticDiagnostic = surfaces.some((surface) =>
+    surface.conclusion_resolution === "SYNTHETIC_DIAGNOSTIC_ONLY",
   );
   const status = mayTreatAsPortRequirement
     ? "PARITY_CERTIFIED"
@@ -84,10 +114,36 @@ export function parityReviewForSurfaceIds(surfaceIds, {unmatchedIsRuntime = true
     status,
     surface_ids: surfaces.map((surface) => surface.surface_id),
     may_treat_differences_as_port_requirements: mayTreatAsPortRequirement,
+    port_conclusion_eligible: mayTreatAsPortRequirement,
+    blocks_port_conclusion: blocksPortConclusion,
     quarantined: !mayTreatAsPortRequirement,
+    conclusion_resolution: mayTreatAsPortRequirement
+      ? "CERTIFIED_PARITY_SCOPE"
+      : blocksPortConclusion
+        ? "BLOCK_IF_OBSERVED"
+        : hasTargetAcceptanceSurface
+          ? "LOCAL_TARGET_ACCEPTANCE_ONLY"
+          : hasSyntheticDiagnostic
+            ? "SYNTHETIC_DIAGNOSTIC_ONLY"
+            : "NO_PORT_CONCLUSION_AUTHORITY",
+    decision_authority: mayTreatAsPortRequirement
+      ? "WIKIDOT_RUNTIME_PARITY"
+      : blocksPortConclusion
+        ? "UNCLASSIFIED_RUNTIME_FAIL_CLOSED"
+        : hasTargetAcceptanceSurface
+          ? "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY"
+          : hasSyntheticDiagnostic
+            ? "THEME_LAB_SYNTHETIC_DIAGNOSTIC_ONLY"
+            : "NONE_CURRENTLY",
     reason: mayTreatAsPortRequirement
-      ? "All matched runtime surface scopes are parity-certified."
-      : "Runtime surface parity is not certified for the finding's full observable scope.",
+      ? "Every matched contract is certified for the exact registered scope."
+      : blocksPortConclusion
+        ? "An observed runtime contract has no resolved parity disposition; the port conclusion is blocked."
+        : hasTargetAcceptanceSurface
+          ? "The finding remains in SCP-JP local target acceptance; it cannot establish Wikidot parity or a parity-based port requirement."
+          : hasSyntheticDiagnostic
+            ? "The synthetic Theme Lab fixture state is diagnostic only and has no Wikidot parity authority."
+            : "No current Theme Lab port-decision dependency is registered for this finding.",
   };
 }
 
@@ -97,7 +153,11 @@ export function reviewRuntimeSurfaceFinding(finding) {
       status: "NOT_RUNTIME_SURFACE",
       surface_ids: [],
       may_treat_differences_as_port_requirements: true,
+      port_conclusion_eligible: true,
+      blocks_port_conclusion: false,
       quarantined: false,
+      conclusion_resolution: "RUNTIME_INDEPENDENT_CANDIDATE_CHECK",
+      decision_authority: "RUNTIME_INDEPENDENT_CANDIDATE_CHECK",
       reason: "This finding concerns a candidate dependency or include, not Wikidot-facing runtime parity.",
     };
   }
@@ -129,12 +189,14 @@ export function applyRuntimeSurfaceParityGate(issues = [], styleChanges = []) {
       surface_ids: issue.parity_review.surface_ids,
       selector: issue.selector ?? issue.anchor ?? null,
       status: issue.parity_review.status,
+      blocks_port_conclusion: issue.parity_review.blocks_port_conclusion,
     })),
     ...reviewedStyleChanges.filter((change) => change.parity_review.quarantined).map((change) => ({
       kind: "style_change",
       surface_ids: change.parity_review.surface_ids,
       selector: change.anchor,
       status: change.parity_review.status,
+      blocks_port_conclusion: change.parity_review.blocks_port_conclusion,
     })),
   ];
   return {
@@ -142,10 +204,19 @@ export function applyRuntimeSurfaceParityGate(issues = [], styleChanges = []) {
     styleChanges: reviewedStyleChanges,
     summary: {
       schema: RUNTIME_SURFACE_PARITY_SCHEMA,
-      status: quarantined.length ? "quarantined_findings_present" : "eligible_or_independent_only",
+      status: reviewedIssues.some((issue) => issue.parity_review.blocks_port_conclusion)
+        || reviewedStyleChanges.some((change) => change.parity_review.blocks_port_conclusion)
+        ? "required_runtime_dependency_unresolved"
+        : quarantined.length
+          ? "non_authoritative_target_findings_present"
+          : "eligible_or_independent_only",
       port_requirement_eligible_count: reviewedIssues.filter((issue) => !issue.parity_review.quarantined).length
         + reviewedStyleChanges.filter((change) => !change.parity_review.quarantined).length,
       quarantined_count: quarantined.length,
+      target_acceptance_only_count: reviewedIssues.filter((issue) => issue.parity_review.conclusion_resolution === "LOCAL_TARGET_ACCEPTANCE_ONLY").length
+        + reviewedStyleChanges.filter((change) => change.parity_review.conclusion_resolution === "LOCAL_TARGET_ACCEPTANCE_ONLY").length,
+      required_uncertified_count: reviewedIssues.filter((issue) => issue.parity_review.blocks_port_conclusion).length
+        + reviewedStyleChanges.filter((change) => change.parity_review.blocks_port_conclusion).length,
       quarantined_findings: quarantined,
     },
   };

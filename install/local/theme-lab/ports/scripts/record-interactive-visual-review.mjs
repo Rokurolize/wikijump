@@ -43,6 +43,8 @@ export function applyVisualReviews(rows, reviews, currentIdentity, reviewedAt = 
     }
   }
   for (const {row, review} of updates) {
+    row.decision_authority = 'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY';
+    row.port_conclusion_eligible = false;
     row.classification = review.classification;
     row.visual_findings = review.visual_findings ?? [];
     row.intentional_differences = review.intentional_difference ? [review.intentional_difference] : [];
@@ -55,7 +57,9 @@ export function applyVisualReviews(rows, reviews, currentIdentity, reviewedAt = 
       reviewed_at: reviewedAt,
       screenshot_sha256: review.screenshot_sha256,
       note: review.note,
-      reviewer: 'Codex visual capability'
+      reviewer: 'Codex visual capability',
+      decision_authority: 'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY',
+      port_conclusion_eligible: false
     };
   }
   return {updated_rows: updates.length, unique_images: new Set(updates.map(({review}) => review.screenshot_sha256)).size};

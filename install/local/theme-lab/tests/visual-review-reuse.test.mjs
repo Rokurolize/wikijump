@@ -20,7 +20,9 @@ const base = {
   unconfirmed_items: ['screenshot captured but awaiting image review'],
   asset_failures: [],
   page_errors: [],
-  external_requests_sent: 0
+  external_requests_sent: 0,
+  decision_authority: 'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY',
+  port_conclusion_eligible: false
 };
 
 const prior = overrides => ({
@@ -49,6 +51,8 @@ test('exact-byte same-state review reuse preserves current provenance', () => {
   assert.deepEqual(row.unconfirmed_items, []);
   assert.equal(row.candidate_sha256, 'new-candidate');
   assert.equal(row.candidate_source_sha256, 'new-source');
+  assert.equal(row.decision_authority, 'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY');
+  assert.equal(row.port_conclusion_eligible, false);
   assert.deepEqual(row.visual_review_reuse, {
     reason: 'byte-identical',
     source_screenshot_sha256: 'a'.repeat(64),
