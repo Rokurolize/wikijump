@@ -1,0 +1,427 @@
+{
+  "schema": "wikijump_full_parity.browser_rendering_evidence.v1",
+  "inventory": "/home/roku/src/Rokurolize/wikijump/install/local/theme-lab/evidence/wikidot-runtime-surface-inventory-20260929.json",
+  "shard_manifest": null,
+  "shard_id": null,
+  "selected_count": 2,
+  "evidence": [
+    {
+      "schema": "wikijump_full_parity.browser_rendering_record.v1",
+      "evidence_type": "browser_rendering",
+      "fixture_id": "scp-wiki-scp-173-normal-20260929",
+      "family": "theme-lab-runtime-surface-parity",
+      "slug": "scp-173",
+      "source_url": "https://scp-wiki.wikidot.com/scp-173",
+      "local_url": "",
+      "source_browser_artifact": "/home/roku/src/Rokurolize/wikijump/install/local/theme-lab/evidence/wikidot-runtime-surface-20260929.normal/scp-wiki-scp-173-normal-20260929-5d64b862fb46/live.dom.html",
+      "local_browser_artifact": "/home/roku/src/Rokurolize/wikijump/install/local/theme-lab/evidence/wikidot-runtime-surface-20260929.normal/scp-wiki-scp-173-normal-20260929-5d64b862fb46/local.dom.html",
+      "source_screenshot_artifact": "/home/roku/src/Rokurolize/wikijump/install/local/theme-lab/evidence/wikidot-runtime-surface-20260929.normal/scp-wiki-scp-173-normal-20260929-5d64b862fb46/live.png",
+      "local_screenshot_artifact": null,
+      "source_visible_text": "SCP Foundation Secure, Contain, Protect About Community Resources Contact Us Create account or Sign in Getting Started Guide for Newcomers Join the Site Contribute | FAQ Universe Hub Main | Forum SCP by Series I | II | III | IV | V VI | VII | VIII | IX | X Lost Series Other SCP Explained | Joke International Feed New Pages Shortest | Top Rated Recent Changes New Forum Posts Lowest Rated Pages Stories Tales Hub | Series Groups of Interest GoI Formats Canon Hub Discovery Artwork Hub Curated Lists Curated Tale Series Tag Search Random SCP | Tale | GOI | Art Random Page Advanced Random Search SCP-173 rating: +11083+–X Item #: SCP-173 Object Class: Euclid Special Containment Procedures: Item SCP-173 is to be kept in a locked container at all times. When personnel must enter SCP-173's container, no fewer than 3 may enter at any time and the door is to be relocked behind them. At all times, two persons must maintain direct eye contact with SCP-173 until all personnel have vacated and relocked the container. Description: Moved to Site-19 1993. Origin is as of yet unknown. It is constructed from concrete and rebar with traces of Krylon brand spray paint. SCP-173 is animate and extremely hostile. The object cannot move while within a direct line of sight. Line of sight must not be broken at any time with SCP-173. Personnel assigned to enter container are instructed to alert one another before blinking. Object is reported to attack by snapping the neck at the base of the skull, or by strangulation. In the event of an attack, personnel are to observe Class 4 hazardous object containment procedures. Personnel report sounds of scraping stone originating from within the container when no one is present inside. This is considered normal, and any change in this behaviour should be reported to the acting HMCL supervisor on duty. The reddish brown substance on the floor is a combination of feces and blood. Origin of these materials is unknown. The enclosure must be cleaned on a bi-weekly basis. « SCP-172 | SCP-173 | SCP-174 » ‡ Licensing / Citation autonomousectoentropiceuclidfeaturedhorrorhostilemurder-monstermysteryobservationalscpsculpturethe-sculpture page revision: 57, last edited: 2 Apr 2025, 21:17 (545 days ago) Edit Rate (+11083) Tags Discuss (2077) History Files Print Site tools + Options Help | Terms of Service | Privacy | Report a bug | Flag as objectionable Powered by Wikidot.com Unless otherwise stated, the content of this page is licensed under Creative Commons Attribution-ShareAlike 3.0 License",
+      "local_visible_text": "",
+      "source_status": 200,
+      "local_status": null,
+      "source_final_url": "https://scp-wiki.wikidot.com/scp-173",
+      "local_final_url": null,
+      "source_console_errors": [
+        "Failed to execute 'browsingTopics' on 'Document': document.browsingTopics() is deprecated and has been removed."
+      ],
+      "local_console_errors": [],
+      "source_failed_requests": [
+        {
+          "url": "https://gum.criteo.com/sid/json?origin=prebid&topUrl=https%3A%2F%2Fscp-wiki.wikidot.com%2F&domain=scp-wiki.wikidot.com&cw=1&lsw=1",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://api.rlcdn.com/api/identity/envelope?pid=14333",
+          "failure": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://match.adsrvr.org/track/rid?ttd_pid=tpfrvh0&fmt=json",
+          "failure": "net::ERR_ABORTED"
+        }
+      ],
+      "local_failed_requests": [],
+      "capture_errors": [
+        {
+          "side": "local",
+          "message": "missing local URL"
+        }
+      ],
+      "source_storage_state": false,
+      "local_storage_state": false
+    },
+    {
+      "schema": "wikijump_full_parity.browser_rendering_record.v1",
+      "evidence_type": "browser_rendering",
+      "fixture_id": "scp-jp-scp-173-normal-20260929",
+      "family": "theme-lab-runtime-surface-parity",
+      "slug": "scp-173",
+      "source_url": "https://scp-jp.wikidot.com/scp-173",
+      "local_url": "",
+      "source_browser_artifact": "/home/roku/src/Rokurolize/wikijump/install/local/theme-lab/evidence/wikidot-runtime-surface-20260929.normal/scp-jp-scp-173-normal-20260929-7984e750c954/live.dom.html",
+      "local_browser_artifact": "/home/roku/src/Rokurolize/wikijump/install/local/theme-lab/evidence/wikidot-runtime-surface-20260929.normal/scp-jp-scp-173-normal-20260929-7984e750c954/local.dom.html",
+      "source_screenshot_artifact": "/home/roku/src/Rokurolize/wikijump/install/local/theme-lab/evidence/wikidot-runtime-surface-20260929.normal/scp-jp-scp-173-normal-20260929-7984e750c954/live.png",
+      "local_screenshot_artifact": null,
+      "source_visible_text": "SCP財団 確保、収容、保護 SCPデータベース JPデータベース SCP和訳一覧 SCPの世界観 ガイド アカウントを作成 または サインイン 初めての方へ 新規ユーザーのためのガイド FAQ サイトへの参加 問い合わせ メインページ SCP-JPシリーズ I | II | III | IV | V SCPシリーズ I | II | III | IV | V VI | VII | VIII | IX | X Lost SCP-JPライブラリ GoIフォーマット-JP Tales-JP カノン-JP 連作-JP アートワーク-JP SCPライブラリ GoIフォーマット Tales カノン アートワーク国際版 SCP国際版 サイト 最近作成された記事 最近の更新 評価の高い記事 評価の低い記事 ランダムページ コミュニティ フォーラム 最近の投稿 最近の下書き批評 公式チャット 著者ページ-JP 著者ページ国際版 茜刺財団新聞 公式X(Twitter) リンク サンドボックス ファイルストレージ リンク集 ユーザーリソース 記事を作成するには？ Wikidot構文 タグガイド | タグリスト タグ検索 | タグ翻訳 作者検索 困ったときは サイトルール ライセンスガイド ガイド | エッセイ スタッフサイト スタッフ一覧 問い合わせ SCP-173 評価: +1144 + – X アイテム番号: SCP-173 オブジェクトクラス: Euclid 特別収容プロトコル: SCP-173は常に施錠されたコンテナに保管されています。職員がSCP-173のコンテナに入室しなければならない場合は、必ず3人以上で入室し、入室後にドアは施錠されます。職員がコンテナから全員退室し再び施錠するまで、常に入室した職員のうち2人はSCP-173を注視し続けてください。 説明: SCP-173は1993年にサイト-19へ収容されました。SCP-173の起源は未だ不明です。SCP-173はコンクリートと鉄筋で構成されており、クライロン社製のスプレーを吹き付けられた痕跡があります。SCP-173は生きており、極めて敵対的です。SCP-173は直視されている間は動くことができません。決してSCP-173から視線を逸らさないでください。コンテナに入室する職員は互いに瞬きをする前に警告するよう指示されています。SCP-173は頸部の圧断や絞殺といった方法で攻撃を行うことが報告されています。SCP-173が攻撃を始めた場合、職員はクラス4の危険物収容プロトコルに従うことになっています。 コンテナに誰も入室していない間、コンテナの中から石を擦る音がすることを職員が報告しています。これが正常な状態とみなされており、いかなるSCP-173の振る舞いの変化も当直のHMCL主任代理に報告すべきです。 コンテナの床の赤褐色の物質は排泄物と血液の混合物です。これらの物質の起源は不明です。職員はコンテナを定期的に隔週で清掃してください。 製作者に関する情報 この記事に使用されていた画像は加藤泉氏の作品である\"無題 2004\"を撮影したものです。写真はKeisuke Yamamoto氏によって撮影されました。これらに関する全ての権利は各著者の方々が有しています。 注意: SCP-173は加藤泉氏の作品である\"無題 2004\"およびその写真を二次利用して生まれたものです。SCP-173のコンセプトは元作品である\"無題 2004\"のコンセプトとは全く関係ありません。 この彫刻及び写真はクリエイティブ・コモンズライセンスの元では公開されていません。記事の文章のみがクリエイティブ・コモンズライセンスの元で公開されています。いかなる場合においても、この彫刻および画像を営利目的で利用してはいけません。加藤泉氏は\"無題 2004\"の画像の利用を、非営利に限るという条件のもとでSCP Foundationおよびそのファンに対してお許しくださいました。これは加藤泉氏のご厚意によるものです。 1.加藤泉氏に \"SCP-173\"に関連するものは連絡したり、交渉したりしないでください。 2. 「SCP-173画像の商用ライセンス」を交渉しないでください。 3.加藤泉氏との「\"無題 2004\"商用ライセンス交渉」をSCPwikiに依頼しないでください。 4.\"無題 2004\"の画像はSCP-173に関連して使用するために商業的に利用することはできません。例外はありません。 eneuclidscpscp-173ホラーミステリー外部エントロピー彫像敵対的殺人モンスター注目記事自律観測 ページリビジョン: 41, 最終更新: 25 Sep 2026, 12:24 (4 days 前) 編集 評価 (+1144) タグ ディスカッション (27) 履歴 ファイル 印刷 サイトツール + オプション ヘルプ | 利用規約 | プライバシー | バグを報告 | 不快フラグを立てる Powered by Wikidot.com 特に指定がない限り、このサイトのすべてのコンテンツはクリエイティブ・コモンズ 表示 - 継承3.0ライセンス の元で利用可能です。",
+      "local_visible_text": "",
+      "source_status": 200,
+      "local_status": null,
+      "source_final_url": "https://scp-jp.wikidot.com/scp-173",
+      "local_final_url": null,
+      "source_console_errors": [
+        "Failed to execute 'browsingTopics' on 'Document': document.browsingTopics() is deprecated and has been removed.",
+        "Access to fetch at 'https://api.rlcdn.com/api/identity/envelope?pid=14333' from origin 'https://scp-jp.wikidot.com' has been blocked by CORS policy: The 'Access-Control-Allow-Origin' header has a value 'https://scp-wiki.wikidot.com' that is not equal to the supplied origin. Have the server send the header with a valid value.",
+        "Failed to load resource: net::ERR_FAILED"
+      ],
+      "local_console_errors": [],
+      "source_failed_requests": [
+        {
+          "url": "https://api.rlcdn.com/api/identity/envelope?pid=14333",
+          "failure": "net::ERR_FAILED"
+        }
+      ],
+      "local_failed_requests": [],
+      "capture_errors": [
+        {
+          "side": "local",
+          "message": "missing local URL"
+        }
+      ],
+      "source_storage_state": false,
+      "local_storage_state": false
+    }
+  ],
+  "capture": {
+    "timeout_ms": 120000,
+    "settle_ms": 1000,
+    "wait_until": "domcontentloaded",
+    "visible_text_scope": "main-frame",
+    "ignore_https_errors": true,
+    "screenshot": true,
+    "browser_executable": "/usr/bin/google-chrome",
+    "cdp_endpoint": null,
+    "actor_label": null,
+    "storage_state": false,
+    "source_storage_state": false,
+    "local_storage_state": false,
+    "request_gate_config": "/home/roku/src/Rokurolize/wikijump/install/local/theme-lab/evidence/wikidot-runtime-surface-20260929.normal/request-gate-config.json",
+    "request_gate": {
+      "schema": "wikijump_full_parity.browser_request_gate.v1",
+      "interval_ms": 0,
+      "next_admissible_at_epoch_ms": 1790690889714,
+      "retry_after_until_epoch_ms": 1789333483612,
+      "enforcement_failed": false,
+      "grants": [
+        {
+          "sequence": 1,
+          "released_at_epoch_ms": 1790690833434
+        },
+        {
+          "sequence": 2,
+          "released_at_epoch_ms": 1790690834927
+        },
+        {
+          "sequence": 3,
+          "released_at_epoch_ms": 1790690835077
+        },
+        {
+          "sequence": 4,
+          "released_at_epoch_ms": 1790690835190
+        },
+        {
+          "sequence": 5,
+          "released_at_epoch_ms": 1790690835296
+        },
+        {
+          "sequence": 6,
+          "released_at_epoch_ms": 1790690835426
+        },
+        {
+          "sequence": 7,
+          "released_at_epoch_ms": 1790690835553
+        },
+        {
+          "sequence": 8,
+          "released_at_epoch_ms": 1790690835717
+        },
+        {
+          "sequence": 9,
+          "released_at_epoch_ms": 1790690836760
+        },
+        {
+          "sequence": 10,
+          "released_at_epoch_ms": 1790690841243
+        },
+        {
+          "sequence": 11,
+          "released_at_epoch_ms": 1790690841661
+        },
+        {
+          "sequence": 12,
+          "released_at_epoch_ms": 1790690842891
+        },
+        {
+          "sequence": 13,
+          "released_at_epoch_ms": 1790690843011
+        },
+        {
+          "sequence": 14,
+          "released_at_epoch_ms": 1790690843167
+        },
+        {
+          "sequence": 15,
+          "released_at_epoch_ms": 1790690843274
+        },
+        {
+          "sequence": 16,
+          "released_at_epoch_ms": 1790690843770
+        },
+        {
+          "sequence": 17,
+          "released_at_epoch_ms": 1790690843935
+        },
+        {
+          "sequence": 18,
+          "released_at_epoch_ms": 1790690849559
+        },
+        {
+          "sequence": 19,
+          "released_at_epoch_ms": 1790690849632
+        },
+        {
+          "sequence": 20,
+          "released_at_epoch_ms": 1790690849675
+        },
+        {
+          "sequence": 21,
+          "released_at_epoch_ms": 1790690849949
+        },
+        {
+          "sequence": 22,
+          "released_at_epoch_ms": 1790690849978
+        },
+        {
+          "sequence": 23,
+          "released_at_epoch_ms": 1790690850027
+        },
+        {
+          "sequence": 24,
+          "released_at_epoch_ms": 1790690850213
+        },
+        {
+          "sequence": 25,
+          "released_at_epoch_ms": 1790690850922
+        },
+        {
+          "sequence": 26,
+          "released_at_epoch_ms": 1790690851099
+        },
+        {
+          "sequence": 27,
+          "released_at_epoch_ms": 1790690851344
+        },
+        {
+          "sequence": 28,
+          "released_at_epoch_ms": 1790690851550
+        },
+        {
+          "sequence": 29,
+          "released_at_epoch_ms": 1790690851788
+        },
+        {
+          "sequence": 30,
+          "released_at_epoch_ms": 1790690852936
+        },
+        {
+          "sequence": 31,
+          "released_at_epoch_ms": 1790690855628
+        },
+        {
+          "sequence": 32,
+          "released_at_epoch_ms": 1790690855852
+        },
+        {
+          "sequence": 33,
+          "released_at_epoch_ms": 1790690856920
+        },
+        {
+          "sequence": 34,
+          "released_at_epoch_ms": 1790690857630
+        },
+        {
+          "sequence": 35,
+          "released_at_epoch_ms": 1790690857825
+        },
+        {
+          "sequence": 36,
+          "released_at_epoch_ms": 1790690858481
+        },
+        {
+          "sequence": 37,
+          "released_at_epoch_ms": 1790690861726
+        },
+        {
+          "sequence": 38,
+          "released_at_epoch_ms": 1790690862134
+        },
+        {
+          "sequence": 39,
+          "released_at_epoch_ms": 1790690862282
+        },
+        {
+          "sequence": 40,
+          "released_at_epoch_ms": 1790690865073
+        },
+        {
+          "sequence": 41,
+          "released_at_epoch_ms": 1790690865220
+        },
+        {
+          "sequence": 42,
+          "released_at_epoch_ms": 1790690865362
+        },
+        {
+          "sequence": 43,
+          "released_at_epoch_ms": 1790690866892
+        },
+        {
+          "sequence": 44,
+          "released_at_epoch_ms": 1790690868993
+        },
+        {
+          "sequence": 45,
+          "released_at_epoch_ms": 1790690873101
+        },
+        {
+          "sequence": 46,
+          "released_at_epoch_ms": 1790690874657
+        },
+        {
+          "sequence": 47,
+          "released_at_epoch_ms": 1790690876456
+        },
+        {
+          "sequence": 48,
+          "released_at_epoch_ms": 1790690879263
+        },
+        {
+          "sequence": 49,
+          "released_at_epoch_ms": 1790690879726
+        },
+        {
+          "sequence": 50,
+          "released_at_epoch_ms": 1790690880880
+        },
+        {
+          "sequence": 51,
+          "released_at_epoch_ms": 1790690886256
+        },
+        {
+          "sequence": 52,
+          "released_at_epoch_ms": 1790690886270
+        },
+        {
+          "sequence": 53,
+          "released_at_epoch_ms": 1790690886839
+        },
+        {
+          "sequence": 54,
+          "released_at_epoch_ms": 1790690886871
+        },
+        {
+          "sequence": 55,
+          "released_at_epoch_ms": 1790690886914
+        },
+        {
+          "sequence": 56,
+          "released_at_epoch_ms": 1790690887252
+        },
+        {
+          "sequence": 57,
+          "released_at_epoch_ms": 1790690887480
+        },
+        {
+          "sequence": 58,
+          "released_at_epoch_ms": 1790690887685
+        },
+        {
+          "sequence": 59,
+          "released_at_epoch_ms": 1790690887775
+        },
+        {
+          "sequence": 60,
+          "released_at_epoch_ms": 1790690887973
+        },
+        {
+          "sequence": 61,
+          "released_at_epoch_ms": 1790690888276
+        },
+        {
+          "sequence": 62,
+          "released_at_epoch_ms": 1790690888296
+        },
+        {
+          "sequence": 63,
+          "released_at_epoch_ms": 1790690888320
+        },
+        {
+          "sequence": 64,
+          "released_at_epoch_ms": 1790690888341
+        },
+        {
+          "sequence": 65,
+          "released_at_epoch_ms": 1790690888438
+        },
+        {
+          "sequence": 66,
+          "released_at_epoch_ms": 1790690888504
+        },
+        {
+          "sequence": 67,
+          "released_at_epoch_ms": 1790690889503
+        },
+        {
+          "sequence": 68,
+          "released_at_epoch_ms": 1790690889696
+        }
+      ],
+      "blocked_hosts": {},
+      "blocked_hosts_by_fixture": {},
+      "public_requests": 69,
+      "external_network_requests": 69,
+      "synthetic_public_admissions": 0,
+      "local_exempt_requests": 0,
+      "unsupported_requests_blocked": 0,
+      "websocket_connections_blocked": 0,
+      "retry_after_honored": 0,
+      "retry_after_invalid": 0
+    },
+    "browser_context_scope": "run",
+    "source_response_cache_mode": "persistent_identity_bound",
+    "source_response_cache": {
+      "schema": "wikijump_full_parity.browser_response_cache.v1",
+      "entries": 526,
+      "bytes": 27355773,
+      "hits": 30,
+      "misses": 75,
+      "stores": 43,
+      "bypasses": 21,
+      "evictions": 0,
+      "max_entries": 8192,
+      "max_bytes": 536870912,
+      "max_entry_bytes": 9007199254740991,
+      "lookup_key": "exact_url_method_range_conditional_vary",
+      "lifetime": "persistent",
+      "documents_cached": true,
+      "evidence_replay": true,
+      "retention_policy": "append_only_no_eviction",
+      "exact_variant_hits": 17,
+      "legacy_variant_misses": 1,
+      "variant_stores": 17,
+      "acquisition_barriers": 2,
+      "persistent_identity": "wikijump-candidate-public-evidence-cache-v1",
+      "persistent_entries_loaded": 483
+    }
+  }
+}

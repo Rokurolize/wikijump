@@ -113,7 +113,7 @@ test("theme-port check fails on a missing included component in the rendered pre
   }, {previewClient});
 });
 
-test("theme-port check maps a missing foreign selector to the SCP-JP anchor", async (t) => {
+test("theme-port check retains a target-only selector suggestion without a parity action", async (t) => {
   await withSession(t, async ({session, fixture}) => {
     const verdict = await session.check({
       referenceUrl: `${fixture.origin}/reference`,
@@ -122,12 +122,16 @@ test("theme-port check maps a missing foreign selector to the SCP-JP anchor", as
       viewports: true,
       torture: false,
     });
-    assert.equal(verdict.verdict, "fail");
+    assert.equal(verdict.verdict, "inconclusive");
     const missing = verdict.top_issues.find((issue) => issue.selector === ".foreign-rate-box");
     assert.ok(missing, "foreign rate box should be reported missing");
     assert.equal(missing.reference_role, "rating_widget");
     assert.equal(missing.suggested_candidate.selector, ".page-rate-widget-box");
     assert.ok(missing.suggested_candidate.confidence >= 0.6);
+    assert.equal(missing.parity_review.decision_authority, "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY");
+    assert.equal(missing.parity_review.port_conclusion_eligible, false);
+    assert.ok(verdict.target_acceptance.findings.some((issue) => issue.selector === ".foreign-rate-box"));
+    assert.ok(!verdict.next_actions.some((action) => action.kind === "rewrite_selector"));
   });
 });
 
@@ -140,18 +144,21 @@ test("theme-port check explains a computed-style delta via the cascade", async (
       viewports: false,
       torture: false,
     });
-    const headerColor = verdict.style_changes.find(
+    const headerColor = verdict.target_acceptance.style_changes.find(
       (change) => change.anchor === "#header h1" && change.property === "color",
     );
     assert.ok(headerColor, "header color delta should be reported");
     assert.ok(headerColor.cascade, "delta should carry a cascade diagnosis");
+    assert.equal(headerColor.decision_authority, "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY");
+    assert.equal(headerColor.port_conclusion_eligible, false);
+    assert.ok(!verdict.style_changes.some((change) => change.anchor === "#header h1" && change.property === "color"));
     assert.equal(headerColor.cascade.status, "overridden");
     assert.equal(headerColor.cascade.winner.important, true);
     assert.equal(headerColor.cascade.winner.value, "rgb(0, 0, 0)");
   });
 });
 
-test("iteration-mode check keeps actionable comparison and explicitly defers full acceptance", async (t) => {
+test("iteration-mode check keeps local target comparison and explicitly defers full acceptance", async (t) => {
   const previewClient = {preview: async () => ({body: '<span class="theme-lab-jp-font-probe">日本語の字形</span><div id="iteration-content">theme DOM</div>', styles: [], legacy_actions: [], membership_actions: []})};
   await withSession(t, async ({session, fixture}) => {
     const verdict = await session.check({
@@ -167,7 +174,8 @@ test("iteration-mode check keeps actionable comparison and explicitly defers ful
       visual: true,
     });
     assert.equal(verdict.verification_scope.mode, "iteration");
-    assert.ok(verdict.style_changes.some((change) => change.property === "color"));
+    assert.ok(verdict.target_acceptance.style_changes.some((change) => change.property === "color"));
+    assert.ok(verdict.target_acceptance.style_changes.every((change) => change.decision_authority === "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY"));
     assert.equal(verdict.viewport_status, null);
     assert.equal(verdict.torture, null);
     assert.equal(verdict.interaction_diagnostics, null);
@@ -186,14 +194,16 @@ test("iteration-mode check keeps actionable comparison and explicitly defers ful
   }, {previewClient});
 });
 
-test("broken CSS canary fails closed with a viewport overflow", async (t) => {
+test("broken CSS canary fails local acceptance without certifying a parity mismatch", async (t) => {
   await withSession(t, async ({session}) => {
     const verdict = await session.check({
       css: "#page-content { width: 5000px; }",
       viewports: true,
       torture: false,
     });
-    assert.equal(verdict.verdict, "fail");
+    assert.equal(verdict.verdict, "pass");
+    assert.equal(verdict.port_decision.verdict, "pass");
+    assert.equal(verdict.target_acceptance.status, "fail");
     assert.ok(verdict.top_issues.some((issue) => issue.kind === "viewport_overflow"));
   });
 });

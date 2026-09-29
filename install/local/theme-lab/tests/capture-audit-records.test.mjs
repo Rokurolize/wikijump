@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {compactAuditRecord} from '../ports/scripts/capture-audit-records.mjs';
+import {compactAuditRecord, compactSupersededRecord} from '../ports/scripts/capture-audit-records.mjs';
 
 const baseRecord = overrides => ({
   theme: 'sigma10-baseline',
@@ -50,4 +50,16 @@ test('compaction still preserves the existing viewport and header diagnostics', 
   assert.deepEqual(compact.visual_diagnostics.header_text, []);
   assert.deepEqual(compact.visual_diagnostics.header_children, []);
   assert.equal(compact.asset_dependency_count, 0);
+});
+
+test('current and superseded SCP-JP captures retain local-only decision authority', () => {
+  const current = compactAuditRecord(baseRecord({
+    decision_authority: 'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY',
+    port_conclusion_eligible: false
+  }));
+  const superseded = compactSupersededRecord(baseRecord());
+  for (const record of [current, superseded]) {
+    assert.equal(record.decision_authority, 'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY');
+    assert.equal(record.port_conclusion_eligible, false);
+  }
 });

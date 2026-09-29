@@ -84,6 +84,7 @@ for(const theme of themeSlugs){
     if(!sourceCurrentAtCapture)unconfirmed.push('screenshot predates a current candidate/runtime dependency; recapture needed');
     if(!visuallyReviewed)unconfirmed.push('restored capture metadata from the screenshot artifact after an audit-writer race; direct image review is still required');
     const record={
+     decision_authority:'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY',port_conclusion_eligible:false,
      theme,session_state:'administrator',target_site:runContract.target_site.slug,locale:runContract.target_site.locale,
      baseline_theme:'Sigma-9',baseline_theme_css_href:'/wikidot/styles/sigma-fe5388a32e12.css',browser_engine:engine,browser_version:versions[engine],
      viewport,viewport_size:viewports[viewport],surface:spec.surface,state:spec.state,fixture:spec.fixture_slug??'run-owned:theme-lab-visual-acceptance-imported-20260924',

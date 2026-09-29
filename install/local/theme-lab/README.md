@@ -84,22 +84,30 @@ as a separate source/runtime trust boundary. Each CSS-discovered and
 interactive-fixture surface has an explicit status, provenance, implementation
 and test references, intentional differences, and remaining evidence gaps.
 
-Only a `PARITY_CERTIFIED` scope may turn a runtime-surface finding into a
-theme-port `next_action`. `PARITY_MISMATCH`, `INSUFFICIENT_EVIDENCE`,
-`THEME_LAB_ONLY_SYNTHETIC_SURFACE`, and unmatched runtime findings remain
-visible in diagnostics and are quarantined from port actions. Candidate asset
-and include failures stay actionable because they do not depend on Wikijump
-surface parity. A passing local screenshot, an accepted port, and a synthetic
-fixture state are not Wikidot parity evidence.
+The machine-readable registry now separates parity authority from local target
+acceptance. The 41 CSS-discovered and interactive SCP-JP runtime contracts
+remain in the local acceptance matrix, but their observations cannot establish
+Wikidot parity or create parity-based port actions. Their failures remain
+visible in `target_acceptance`; candidate asset and include failures remain
+actionable because they do not depend on runtime-surface parity. Only an exact
+`PARITY_CERTIFIED` scope can create a parity-based port requirement. A direct
+observation with no current disposition still blocks the port conclusion.
+Synthetic diagnostic states and naming aliases are explicitly classified and
+cannot certify a runtime contract.
 
 History is the initial scoped example. Current anonymous SCP-EN and SCP-JP AMC
-responses prove the same seven-cell History table DOM; they do not prove mobile
-presentation, pager transitions, action outcomes, or a combined file-revision
-timeline. The overall `page.history` row is therefore still
-`INSUFFICIENT_EVIDENCE`. Its narrow `page.history.table-dom` record covers only
-the captured selectors and ordering. See
+responses prove the same seven-cell History table DOM; the Japanese response
+also proves one file-deletion event's place in that timeline. They do not prove
+mobile presentation, pager transitions, action outcomes, or other file
+revision variants. The overall `page.history` row is therefore still
+`INSUFFICIENT_EVIDENCE`; only `page.history.table-dom` and
+`page.history.file-revision-timeline` have narrow parity authority. Read-only
+source-side browser captures and exact module receipts add bounded observations
+for shell and interaction states, but do not certify those broader contracts.
+See
 [`ports/RUNTIME-SURFACE-PARITY-AUDIT.md`](ports/RUNTIME-SURFACE-PARITY-AUDIT.md)
-before interpreting any port finding on these surfaces.
+and its accounting fixture before interpreting any port finding on these
+surfaces.
 
 For repeated edits after opening/capturing the reference, use `check --iteration`
 to get the selector, cascade, candidate-asset, and preview verdict without

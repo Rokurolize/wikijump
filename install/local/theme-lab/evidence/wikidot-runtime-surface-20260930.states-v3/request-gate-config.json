@@ -1,0 +1,31 @@
+{
+  "schema": "wikijump_full_parity.browser_request_gate_config.v1",
+  "status": "sealed_before_browser_request",
+  "run_id": "3263e535-932a-412a-b7d6-1643475ba7e8",
+  "lock": {
+    "path": "/var/tmp/wikijump-wikidot-browser-capture.lock",
+    "owner": {
+      "schema": "wikijump_full_parity.browser_capture_lock.v1",
+      "hostname": "DESKTOP-U0GHMTQ",
+      "pid": 2709092,
+      "process_start_ticks": "22444091",
+      "run_id": "3263e535-932a-412a-b7d6-1643475ba7e8",
+      "acquired_at": "2026-09-29T15:34:10.918Z",
+      "state_confirmation": "pending"
+    }
+  },
+  "state_path": "/var/tmp/wikijump-wikidot-browser-capture.lock.state.json",
+  "interval_ms": 0,
+  "source_context_exempt_origins": [],
+  "local_context_exempt_origins": [],
+  "source_only": true,
+  "public_request_policy": "every HTTP(S) request except an exact local-context origin is admitted by the shared gate",
+  "source_response_cache": {
+    "persistent_dir": "/home/roku/.cache/wikijump-verification/candidate-public-evidence-v1",
+    "persistent_identity": "wikijump-candidate-public-evidence-cache-v1",
+    "cache_documents": true,
+    "evidence_replay": true
+  },
+  "service_workers": "block",
+  "web_sockets": "blocked_without_network_connection"
+}

@@ -22,6 +22,7 @@ import {
 } from "../src/browser-session.mjs";
 import {
   buildEvidenceRecord,
+  compactVisibleText,
   readJson,
   inventoryRows,
   rowLocalUrl,
@@ -58,6 +59,7 @@ function parseArgs(argv) {
     sourceResponseCacheDir: null,
     sourceResponseCacheIdentity: null,
     sourceResponseCacheDocuments: false,
+    sourceOnly: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -113,6 +115,8 @@ function parseArgs(argv) {
       index += 1;
     } else if (arg === "--cache-source-documents") {
       args.sourceResponseCacheDocuments = true;
+    } else if (arg === "--source-only") {
+      args.sourceOnly = true;
     } else if (arg === "--actor-label") {
       args.actorLabel = nextArg(argv, index, arg);
       index += 1;
@@ -168,7 +172,7 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--storage-state FILE | --source-storage-state FILE --local-storage-state FILE] [--source-response-cache-dir DIR --source-response-cache-identity ID --cache-source-documents] [--actor-label LABEL] [--local-url-field local_https_url] [--timeout-ms 120000] [--settle-ms 1000] [--visible-text-scope main-frame] [--ignore-https-errors] [--no-screenshot] [--json]
+  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--storage-state FILE | --source-storage-state FILE --local-storage-state FILE] [--source-response-cache-dir DIR --source-response-cache-identity ID --cache-source-documents] [--actor-label LABEL] [--local-url-field local_https_url] [--source-only] [--timeout-ms 120000] [--settle-ms 1000] [--visible-text-scope main-frame] [--ignore-https-errors] [--no-screenshot] [--json]
 
 Writes validator-compatible browser rendering evidence JSON plus DOM/screenshot artifacts for selected corpus inventory rows. The output directory should live under one of the render validator evidence roots, for example:
 
@@ -209,14 +213,37 @@ async function waitForLoadStateWithinBudget(page, state, timeoutMs, startedAt) {
   await page.waitForLoadState(state, {timeout: Math.min(POST_NAVIGATION_STATE_TIMEOUT_MS, remainingMs)}).catch(() => {});
 }
 
-export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = DEFAULT_SETTLE_MS, screenshotPath, visibleTextScope = "main-frame"}) {
+export async function capturePage(page, url, {
+  timeoutMs,
+  waitUntil,
+  settleMs = DEFAULT_SETTLE_MS,
+  screenshotPath,
+  visibleTextScope = "main-frame",
+  captureStates = [],
+  stateArtifactsDir = null,
+  blockedRequestPrefixes = [],
+  stateScreenshots = true,
+}) {
   if (!VISIBLE_TEXT_SCOPES.has(visibleTextScope)) {
     throw new Error("visibleTextScope must be main-frame because cross-origin frame text is not captured");
   }
+  validateBlockedRequestPrefixes(blockedRequestPrefixes);
   const consoleErrors = [];
   const failedRequests = [];
   const badResponses = [];
+  const blockedRequests = [];
   let sawInitialMainFrameNavigationResponse = false;
+  if (blockedRequestPrefixes.length) {
+    await page.route("**/*", async (route) => {
+      const requestUrl = route.request().url();
+      if (blockedRequestPrefixes.some((prefix) => requestUrl.startsWith(prefix))) {
+        blockedRequests.push({url: requestUrl, disposition: "task_scoped_source_asset_exclusion"});
+        await route.abort("blockedbyclient");
+        return;
+      }
+      await route.continue();
+    });
+  }
   page.on("console", (message) => {
     if (message.type() === "error") {
       consoleErrors.push(message.text());
@@ -289,6 +316,19 @@ export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = D
     }
   }
 
+  let sourceStates = [];
+  if (captureStates.length) {
+    if (!stateArtifactsDir) throw new Error("stateArtifactsDir is required for source state captures");
+    await fs.mkdir(stateArtifactsDir, {recursive: true, mode: 0o700});
+    sourceStates = await captureReadOnlyStates(page, url, captureStates, {
+      timeoutMs,
+      waitUntil,
+      settleMs,
+      screenshot: stateScreenshots,
+      artifactsDir: stateArtifactsDir,
+    });
+  }
+
   if (!navigationError) {
     return {
       status: response?.status() ?? null,
@@ -297,6 +337,8 @@ export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = D
       html,
       consoleErrors,
       failedRequests: [...failedRequests, ...badResponses],
+      blockedRequests,
+      states: sourceStates,
       screenshotPath: writtenScreenshotPath,
     };
   }
@@ -308,9 +350,157 @@ export async function capturePage(page, url, {timeoutMs, waitUntil, settleMs = D
     html,
     consoleErrors,
     failedRequests: [...failedRequests, ...badResponses],
+    blockedRequests,
+    states: sourceStates,
     screenshotPath: writtenScreenshotPath,
     error: navigationError.message,
   };
+}
+
+const READ_ONLY_CAPTURE_CONTROLS = new Set([
+  "#more-options-button",
+  ".mobile-top-bar .open-menu a",
+  ".yui-navset .yui-nav li a",
+  ".yui-navset .yui-nav li:nth-child(2) a",
+  ".collapsible-block .collapsible-block-link",
+  "a[href=\"#u-credit-view\"]",
+  "a[href=\"#u-credit-otherwise\"]",
+]);
+const READ_ONLY_CAPTURE_FOCUS_TARGETS = new Set([
+  "#search-top-box-input",
+  ".page-rate-widget-box a",
+  ".mobile-top-bar .open-menu a",
+  "#top-bar a",
+  ".top-bar a",
+]);
+const READ_ONLY_CAPTURE_HOVER_TARGETS = new Set(["#top-bar", "#top-bar > ul > li:first-child", ".top-bar > ul > li:first-child"]);
+const READ_ONLY_CAPTURE_HASHES = new Set(["#side-bar", "#u-credit-view", "#u-credit-otherwise"]);
+
+export async function applyReadOnlyCaptureAction(page, action) {
+  if (!action || typeof action !== "object" || typeof action.kind !== "string") throw new Error("source state action requires a kind");
+  if (action.kind === "click") {
+    if (!READ_ONLY_CAPTURE_CONTROLS.has(action.selector)) throw new Error(`source capture click is not an approved read-only control: ${action.selector}`);
+    const matches = page.locator(action.selector);
+    const count = await matches.count();
+    for (let index = 0; index < count; index += 1) {
+      const candidate = matches.nth(index);
+      if (!await candidate.isVisible() || !await candidate.isEnabled()) continue;
+      await candidate.click({timeout: 5_000, noWaitAfter: true});
+      return {target_index: index};
+    }
+    throw new Error(`source capture found no visible, enabled control for ${action.selector}`);
+  } else if (action.kind === "focus") {
+    if (!READ_ONLY_CAPTURE_FOCUS_TARGETS.has(action.selector)) throw new Error(`source capture focus target is not approved: ${action.selector}`);
+    await page.locator(action.selector).first().focus({timeout: 5_000});
+  } else if (action.kind === "hover") {
+    if (!READ_ONLY_CAPTURE_HOVER_TARGETS.has(action.selector)) throw new Error(`source capture hover target is not approved: ${action.selector}`);
+    await page.locator(action.selector).first().hover({timeout: 5_000});
+  } else if (action.kind === "fill-search") {
+    if (action.selector !== "#search-top-box-input" || typeof action.value !== "string" || action.value.length > 256 || /[\r\n]/u.test(action.value)) {
+      throw new Error("source capture fill is limited to a short, single-line search field value");
+    }
+    await page.evaluate(({selector, value}) => {
+      const element = document.querySelector(selector);
+      if (!(element instanceof HTMLInputElement)) throw new Error(`search input is missing: ${selector}`);
+      element.focus();
+      element.value = value;
+      element.dispatchEvent(new Event("input", {bubbles: true}));
+    }, {selector: action.selector, value: action.value});
+  } else if (action.kind === "set-hash") {
+    if (!READ_ONLY_CAPTURE_HASHES.has(action.value)) throw new Error(`source capture hash target is not approved: ${action.value}`);
+    await page.evaluate((value) => { location.hash = value; }, action.value);
+  } else if (action.kind === "scroll") {
+    if (action.value !== "top" && action.value !== "bottom") throw new Error("source capture scroll value must be top or bottom");
+    await page.evaluate((value) => window.scrollTo(0, value === "bottom" ? document.documentElement.scrollHeight : 0), action.value);
+  } else {
+    throw new Error(`unsupported read-only source state action: ${action.kind}`);
+  }
+}
+
+function validateBlockedRequestPrefixes(prefixes) {
+  if (!Array.isArray(prefixes)) throw new Error("blocked source request prefixes must be an array");
+  for (const prefix of prefixes) {
+    if (typeof prefix !== "string") throw new Error("blocked source request prefix must be a string");
+    const url = new URL(prefix);
+    if (!new Set(["http:", "https:"]).has(url.protocol) || url.username || url.password || url.search || url.hash || url.pathname === "/") {
+      throw new Error(`blocked source request prefix must be an exact HTTP(S) host/path prefix: ${prefix}`);
+    }
+  }
+}
+
+async function captureReadOnlyStates(page, url, states, {timeoutMs, waitUntil, settleMs, screenshot, artifactsDir}) {
+  if (!Array.isArray(states) || states.length === 0) return [];
+  const records = [];
+  for (const state of states) {
+    if (!state || typeof state.state_id !== "string" || !/^[a-z0-9][a-z0-9._-]*$/u.test(state.state_id)) {
+      throw new Error("source state requires a stable lowercase state_id");
+    }
+    if (!Array.isArray(state.actions)) throw new Error(`source state ${state.state_id} requires an actions array`);
+    const startedAt = Date.now();
+    const actionResults = [];
+    let error = null;
+    let response = null;
+    try {
+      if (state.viewport) {
+        if (!Number.isSafeInteger(state.viewport.width) || !Number.isSafeInteger(state.viewport.height) || state.viewport.width < 200 || state.viewport.height < 200) {
+          throw new Error(`source state ${state.state_id} has an invalid viewport`);
+        }
+        await page.setViewportSize(state.viewport);
+      }
+      response = await page.goto(url, {timeout: timeoutMs, waitUntil});
+      await waitForLoadStateWithinBudget(page, "domcontentloaded", timeoutMs, startedAt);
+      await waitForLoadStateWithinBudget(page, "load", timeoutMs, startedAt);
+      for (const action of state.actions) {
+        const observation = await applyReadOnlyCaptureAction(page, action);
+        actionResults.push({kind: action.kind, selector: action.selector ?? null, value: action.value ?? null, status: "applied", ...(observation ?? {})});
+      }
+      if (settleMs > 0) await page.waitForTimeout(settleMs).catch(() => {});
+    } catch (cause) {
+      error = cause?.message ?? String(cause);
+      actionResults.push({status: "failed", error});
+    }
+
+    let html = "";
+    let visibleText = "";
+    try {
+      html = await page.content();
+      visibleText = await collectVisibleText(page);
+    } catch (cause) {
+      error ??= cause?.message ?? String(cause);
+    }
+    const stateSlug = safePathSegment(state.state_id);
+    const htmlPath = path.join(artifactsDir, `${stateSlug}.dom.html`);
+    await fs.writeFile(htmlPath, html, {encoding: "utf8", flag: "wx", mode: 0o600});
+    let screenshotPath = null;
+    if (screenshot && html) {
+      screenshotPath = path.join(artifactsDir, `${stateSlug}.png`);
+      try {
+        await page.screenshot({path: screenshotPath, fullPage: true, timeout: Math.max(1, timeoutMs - (Date.now() - startedAt))});
+      } catch (cause) {
+        error ??= cause?.message ?? String(cause);
+        screenshotPath = null;
+      }
+    }
+    records.push({
+      state_id: state.state_id,
+      viewport: state.viewport ?? null,
+      source_status: response?.status() ?? null,
+      source_final_url: page.url(),
+      source_visible_text: compactVisibleText(visibleText),
+      source_dom_artifact: htmlPath,
+      source_dom_sha256: crypto.createHash("sha256").update(html, "utf8").digest("hex"),
+      source_screenshot_artifact: screenshotPath,
+      source_screenshot_sha256: screenshotPath ? await hashFile(screenshotPath) : null,
+      actions: actionResults,
+      capture_error: error,
+    });
+  }
+  return records;
+}
+
+async function hashFile(filePath) {
+  const bytes = await fs.readFile(filePath);
+  return crypto.createHash("sha256").update(bytes).digest("hex");
 }
 
 async function captureOptionalPage(context, url, missingMessage, options) {
@@ -365,6 +555,7 @@ async function run() {
     throw new Error("--cdp-endpoint is disabled because capture egress cannot be pinned");
   }
   const localOrigins = [...new Set(selectedRows.flatMap((row) => {
+    if (args.sourceOnly) return [];
     try {
       const value = rowLocalUrl(row, args.localUrlField);
       if (!value) return [];
@@ -408,6 +599,7 @@ async function run() {
       interval_ms: DEFAULT_REQUEST_INTERVAL_MS,
       source_context_exempt_origins: [],
       local_context_exempt_origins: [...new Set(localOrigins)].sort(),
+      source_only: args.sourceOnly,
       public_request_policy: "every HTTP(S) request except an exact local-context origin is admitted by the shared gate",
       source_response_cache: {
         persistent_dir: args.sourceResponseCacheDir,
@@ -471,8 +663,12 @@ async function run() {
         settleMs: args.settleMs,
         visibleTextScope: args.visibleTextScope,
         screenshotPath: artifacts.sourceScreenshot,
+        captureStates: row.capture_states ?? [],
+        stateArtifactsDir: path.join(rowDir, "states"),
+        blockedRequestPrefixes: row.blocked_source_request_prefixes ?? [],
+        stateScreenshots: args.screenshot,
       });
-      const local = await captureOptionalPage(runContexts.localContext, localUrl, "missing local URL", {
+      const local = args.sourceOnly ? {html: "", consoleErrors: [], failedRequests: [], blockedRequests: [], states: [], screenshotPath: null} : await captureOptionalPage(runContexts.localContext, localUrl, "missing local URL", {
         timeoutMs: args.timeoutMs,
         waitUntil: args.waitUntil,
         settleMs: args.settleMs,
@@ -489,10 +685,14 @@ async function run() {
         sourceArtifact: artifacts.sourceArtifact,
         localArtifact: artifacts.localArtifact,
         sourceScreenshot: source.screenshotPath,
-        localScreenshot: local.screenshotPath,
+        localScreenshot: args.sourceOnly ? null : local.screenshotPath,
         localUrlField: args.localUrlField,
       });
       if (args.actorLabel) record.capture_actor = args.actorLabel;
+      record.source_only = args.sourceOnly;
+      record.source_states = source.states ?? [];
+      record.source_blocked_requests = source.blockedRequests ?? [];
+      record.source_blocked_request_prefixes = row.blocked_source_request_prefixes ?? [];
       record.source_storage_state = Boolean(resolvedStorageStates.sourceStorageState);
       record.local_storage_state = Boolean(resolvedStorageStates.localStorageState);
       records.push(record);
@@ -522,6 +722,13 @@ async function run() {
       browser_context_scope: "run",
       source_response_cache_mode: args.sourceResponseCacheDir === null ? "browser_context" : "persistent_identity_bound",
       source_response_cache: browserSession.sourceResponseCache?.snapshot() ?? null,
+      browser_version: typeof browserSession.browser.version === "function"
+        ? await browserSession.browser.version()
+        : null,
+      browser_executable_sha256: args.browserExecutable ? await hashFile(args.browserExecutable) : null,
+      inventory_sha256: await hashFile(args.inventory),
+      capture_script_sha256: await hashFile(SCRIPT_PATH),
+      source_only: args.sourceOnly,
     },
     };
     const resultPath = path.join(args.outputDir, "records.json");
@@ -535,7 +742,10 @@ async function run() {
       console.log(JSON.stringify({result_path: resultPath, selected_count: selectedRows.length}));
     }
 
-    const captureErrors = records.flatMap((record) => record.capture_errors ?? []);
+    const captureErrors = records.flatMap((record) => [
+      ...(record.capture_errors ?? []),
+      ...(record.source_states ?? []).filter((state) => state.capture_error).map((state) => ({side: "source_state", state_id: state.state_id, message: state.capture_error})),
+    ]);
     captureExitCode = captureErrors.length === 0 ? 0 : 1;
   } catch (error) {
     captureError = error;

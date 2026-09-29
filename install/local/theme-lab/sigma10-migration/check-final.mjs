@@ -43,8 +43,15 @@ const themeFixtureHash=async row=>{
  return h.digest('hex');
 };
 const seenShots=new Set();
+const localAcceptanceOnly=row=>row?.decision_authority==='SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY'&&row?.port_conclusion_eligible===false&&row?.finding_scope==='SCP_JP_TARGET_ACCEPTANCE';
+for(const [label,document] of [['Sigma-10',audit],['Sigma-9 control',comparison]]){
+ const policy=document.decision_authority_policy;
+ if(policy?.schema!=='theme_lab_decision_authority.v1'||policy.decision_authority!=='SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY'||policy.port_conclusion_eligible!==false||policy.finding_scope!=='SCP_JP_TARGET_ACCEPTANCE')fail.push(`missing local-only authority policy in ${label} audit`);
+}
 for(const [label,records] of [['Sigma-10',audit.records],['Sigma-9 control',comparison.records]]) for(const r of records){
  if(!r.migration_review||r.migration_review.screenshot_sha256!==r.screenshot_sha256)fail.push(`missing/stale direct visual review in ${label} ${r.theme}/${r.browser_engine}/${r.viewport}/${r.surface}.${r.state}`);
+ if(!localAcceptanceOnly(r)||!localAcceptanceOnly(r.migration_review))fail.push(`non-local or unscoped decision authority in ${label} ${r.theme}/${r.surface}.${r.state}`);
+ if(r.visual_review&&(!localAcceptanceOnly(r.visual_review)))fail.push(`non-local or unscoped visual review authority in ${label} ${r.theme}/${r.surface}.${r.state}`);
  if(!['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE','NEEDS_FIX','EXTERNAL_CONTRACT_UNVERIFIABLE','NOT_APPLICABLE'].includes(r.migration_review?.classification))fail.push(`invalid reviewed classification in ${label} ${r.theme}/${r.surface}.${r.state}`);
  if(r.unconfirmed_items?.length)fail.push(`unexplained unconfirmed item in ${label} ${r.theme}/${r.surface}.${r.state}: ${r.unconfirmed_items.join('; ')}`);
  if(r.external_requests_sent!==0)fail.push(`external request sent in ${label} ${r.theme}/${r.surface}.${r.state}`);
@@ -80,15 +87,17 @@ for(const r of audit.records){
 }
 for(const f of findings.findings??[])if(f.blocker===true&&!String(f.owner??'').trim())fail.push(`ownerless blocker ${f.id}`);
 for(const f of findings.findings??[])if(f.actionable===true&&!String(f.classification??'').trim())fail.push(`unclassified actionable finding ${f.id}`);
-if((findings.findings??[]).some(f=>f.id==='SIGMA10-SEARCH-002'))fail.push('obsolete SIGMA10-SEARCH-002 finding remains; hidden search is expected Wikidot unavailable-search parity');
-const searchParityRows=audit.records.filter(r=>r.surface==='shell.search'&&r.state==='typed-focused');
-if(searchParityRows.length!==3)fail.push(`expected 3 desktop/laptop/tablet search parity rows, got ${searchParityRows.length}`);
-for(const r of searchParityRows){
- if(r.classification!=='PASS_INTENTIONAL_DIVERGENCE')fail.push(`search parity row is not intentional divergence: ${r.browser_engine}/${r.viewport}`);
- if(r.migration_review?.owner!=null)fail.push(`search parity row incorrectly has an owner: ${r.browser_engine}/${r.viewport}`);
- if(r.migration_review?.confirmed_finding_ids?.length)fail.push(`search parity row incorrectly references a migration finding: ${r.browser_engine}/${r.viewport}`);
- if(r.action_contract_observation?.control!=='#search-top-box-input'||r.action_contract_observation?.display!=='none')fail.push(`search parity observation changed: ${r.browser_engine}/${r.viewport}`);
- if(!r.migration_review?.intentional_difference?.includes('Wikijump deliberately reproduces that unavailable search contract'))fail.push(`search parity rationale is missing the Wikidot-unavailable contract: ${r.browser_engine}/${r.viewport}`);
+if(findings.decision_authority_policy?.schema!=='theme_lab_decision_authority.v1'||findings.decision_authority_policy.decision_authority!=='SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY'||findings.decision_authority_policy.port_conclusion_eligible!==false)fail.push('findings document lacks local-only decision-authority policy');
+for(const f of findings.findings??[])if(!localAcceptanceOnly(f))fail.push(`finding lacks local-only authority: ${f.id}`);
+const searchTargetRows=audit.records.filter(r=>r.surface==='shell.search'&&r.state==='typed-focused');
+if(searchTargetRows.length!==3)fail.push(`expected 3 desktop/laptop/tablet local search target rows, got ${searchTargetRows.length}`);
+for(const r of searchTargetRows){
+ if(r.classification!=='PASS_INTENTIONAL_DIVERGENCE')fail.push(`local search target row is not intentionally classified: ${r.browser_engine}/${r.viewport}`);
+ if(r.migration_review?.owner!=null)fail.push(`local search target row incorrectly has an owner: ${r.browser_engine}/${r.viewport}`);
+ if(r.migration_review?.confirmed_finding_ids?.length)fail.push(`local search target row incorrectly references a migration finding: ${r.browser_engine}/${r.viewport}`);
+ if(r.action_contract_observation?.control!=='#search-top-box-input'||r.action_contract_observation?.display!=='none'||!r.action_sequence?.some(action=>action.type==='target-hidden-search-control'))fail.push(`local search target observation changed: ${r.browser_engine}/${r.viewport}`);
+ const searchDisposition=r.migration_review?.intentional_difference??'';
+ if(!searchDisposition.includes('does not establish the Wikidot source contract')||/expected\s+(?:Wikidot\s+)?parity|(?:Wikidot\s+)?parity\s+(?:requires|confirms|certifies)/iu.test(searchDisposition))fail.push(`local search target row lacks a no-parity disposition: ${r.browser_engine}/${r.viewport}`);
 }
 const expectedCoverage=findings.coverage?.current_records;
 if(expectedCoverage!=null&&expectedCoverage!==audit.records.length)fail.push(`findings current record count ${expectedCoverage} != audit ${audit.records.length}`);

@@ -1,7 +1,38 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
 
-import {capturePage} from "../scripts/capture-browser-rendering.mjs";
+import {applyReadOnlyCaptureAction, capturePage} from "../scripts/capture-browser-rendering.mjs";
+
+test("source-state capture actions are restricted to non-mutating theme controls", async () => {
+  const calls = [];
+  const page = {
+    locator(selector) {
+      const locator = {
+        first() { return this; },
+        nth() { return this; },
+        async count() { return 1; },
+        async isVisible() { return true; },
+        async isEnabled() { return true; },
+        async click(options) { calls.push({kind: "click", selector, options}); },
+        async focus(options) { calls.push({kind: "focus", selector, options}); },
+        async hover(options) { calls.push({kind: "hover", selector, options}); },
+        async fill(value) { calls.push({kind: "fill", selector, value}); },
+      };
+      return locator;
+    },
+    async evaluate(fn, value) { calls.push({kind: "evaluate", value}); },
+  };
+
+  await applyReadOnlyCaptureAction(page, {kind: "click", selector: "#more-options-button"});
+  await applyReadOnlyCaptureAction(page, {kind: "focus", selector: ".page-rate-widget-box a"});
+  await applyReadOnlyCaptureAction(page, {kind: "fill-search", selector: "#search-top-box-input", value: "SCP test"});
+  await applyReadOnlyCaptureAction(page, {kind: "set-hash", value: "#u-credit-view"});
+  await assert.rejects(applyReadOnlyCaptureAction(page, {kind: "click", selector: "#delete-button"}), /not an approved read-only control/u);
+  await assert.rejects(applyReadOnlyCaptureAction(page, {kind: "fill-search", selector: "#search-top-box-input", value: "line one\nline two"}), /limited to a short/u);
+  assert.deepEqual(calls.map((row) => row.kind), ["click", "focus", "evaluate", "evaluate"]);
+  assert.deepEqual(calls[2].value, {selector: "#search-top-box-input", value: "SCP test"});
+  assert.equal(calls[3].value, "#u-credit-view");
+});
 
 test("capturePage records page errors and failed subframe responses", async () => {
   const handlers = new Map();

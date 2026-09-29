@@ -4,7 +4,7 @@
 // list of "what broke and where" plus a short list of style changes, and only
 // asks for raw detail explicitly.
 
-import {applyRuntimeSurfaceParityGate} from "./runtime-surface-parity.mjs";
+import {applyRuntimeSurfaceParityGate, RUNTIME_SURFACE_PARITY} from "./runtime-surface-parity.mjs";
 
 export const DEFAULT_LIMITS = Object.freeze({
   topIssues: 12,
@@ -281,23 +281,41 @@ export function buildVerdict({
     })),
     ...extraIssues,
   ];
-  const rawStyleChanges = styleChangesFromComputed(reference?.computed_styles, limits.styleChanges);
+  const rawStyleChanges = styleChangesFromComputed(reference?.computed_styles, Number.POSITIVE_INFINITY);
+  if ((torture?.changed_component_count ?? 0) > 0 && (torture?.issues?.length ?? 0) === 0) {
+    rawIssues.push({
+      severity: "warn",
+      kind: "unscoped_torture_change_summary",
+      changed_component_count: torture.changed_component_count,
+    });
+  }
   const parityReview = applyRuntimeSurfaceParityGate(rawIssues, rawStyleChanges);
   const issues = parityReview.issues;
   issues.sort((left, right) => severityRank(left.severity) - severityRank(right.severity));
 
-  const hasError = issues.some((issue) => issue.severity === "error");
-  const hasWarn = issues.some((issue) => issue.severity === "warn");
-  const styleChanges = parityReview.styleChanges;
-  // Geometry/font changes are not errors, but they should still raise the
-  // verdict to "warn" so an agent notices them without a failure.
-  const hasTortureChanges = (torture?.changed_component_count ?? 0) > 0;
+  const decisionIssues = issues.filter((issue) => issue.parity_review.may_treat_differences_as_port_requirements);
+  const decisionStyleChanges = parityReview.styleChanges.filter((change) => change.parity_review.may_treat_differences_as_port_requirements);
+  const hasError = decisionIssues.some((issue) => issue.severity === "error");
+  const hasWarn = decisionIssues.some((issue) => issue.severity === "warn");
+  const unresolvedParity = parityReview.summary.required_uncertified_count > 0;
 
-  const verdict = hasError ? "fail" : hasWarn || styleChanges.length > 0 || hasTortureChanges ? "warn" : "pass";
+  // A local target-acceptance observation stays visible and can fail local
+  // acceptance, but it cannot establish a Wikidot mismatch or recommend a
+  // parity-based port adaptation. Unknown/unclassified runtime dependencies
+  // remain fail-closed and make the port conclusion inconclusive.
+  const verdict = hasError
+    ? "fail"
+    : hasWarn || decisionStyleChanges.length > 0
+      ? "warn"
+      : unresolvedParity
+        ? "inconclusive"
+        : "pass";
+  const styleChanges = decisionStyleChanges.slice(0, limits.styleChanges);
   const viewportStatus = viewports
     ? Object.fromEntries(Object.entries(viewports).map(([name, result]) => [name, {
         status: (result.document_overflow_px ?? 0) > 0 ? "fail" : "pass",
         document_overflow_px: result.document_overflow_px ?? 0,
+        decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY",
       }]))
     : null;
   const proposedActions = nextActions(issues, styleChanges);
@@ -317,10 +335,46 @@ export function buildVerdict({
     verdict,
     timing_ms: timing,
     issue_count: issues.length,
+    actionable_issue_count: decisionIssues.length,
     top_issues: issues.slice(0, limits.topIssues),
     style_changes: styleChanges,
     next_actions: actionableActions,
     parity_gate: parityReview.summary,
+    port_decision: {
+      verdict,
+      decision_authority: "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+      actionable_finding_count: decisionIssues.length + decisionStyleChanges.length,
+      unresolved_finding_count: parityReview.summary.required_uncertified_count,
+      unresolved_surface_ids: [...new Set(parityReview.summary.quarantined_findings
+        .filter((row) => row.blocks_port_conclusion)
+        .flatMap((row) => row.surface_ids))].sort(),
+    },
+    target_acceptance: {
+      status: issues.some((issue) => issue.severity === "error") || (visual && Object.values(visual).some((entry) => entry?.comparison?.status === "fail"))
+        ? "fail"
+        : issues.some((issue) => issue.severity === "warn") || rawStyleChanges.length > 0 || (torture?.changed_component_count ?? 0) > 0
+          ? "warn"
+          : "pass",
+      decision_authority: "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+      issue_count: issues.length,
+      style_change_count: rawStyleChanges.length,
+      findings: issues.filter((issue) => issue.parity_review.decision_authority === "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY"),
+      style_changes: rawStyleChanges.slice(0, limits.styleChanges).map((change) => ({
+        ...change,
+        decision_authority: "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+        port_conclusion_eligible: false,
+      })),
+      torture_changed_component_count: torture?.changed_component_count ?? 0,
+      visual_status: summarizeVisual(visual)?.status ?? null,
+      synthetic_diagnostic_count: parityReview.summary.quarantined_findings.filter((row) => row.surface_ids.some((id) =>
+        RUNTIME_SURFACE_PARITY.surfaces.find((surface) => surface.surface_id === id)?.conclusion_resolution === "SYNTHETIC_DIAGNOSTIC_ONLY",
+      )).length,
+    },
+    decision_authority: {
+      port_conclusion: "certified runtime scopes and runtime-independent candidate checks only",
+      local_target_acceptance: "SCP-JP local runtime observations; not Wikidot parity evidence",
+      quarantined_findings: "diagnostic only; cannot establish a port requirement or a passing port conclusion",
+    },
     ...(resolvedActions.length ? {resolved_actions: resolvedActions.map((action) => ({
       ...action,
       resolution: "all measured acceptance viewports pass; retain as a reviewed cascade difference",
@@ -346,7 +400,9 @@ export function buildVerdict({
     interaction_diagnostics: interactionDiagnostics,
     image_diagnostics: imageDiagnostics,
     page_image_assets: pageImageAssets,
-    visual: summarizeVisual(visual),
+    visual: summarizeVisual(visual)
+      ? {...summarizeVisual(visual), decision_authority: "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY"}
+      : null,
     assets,
     artifacts,
   };
