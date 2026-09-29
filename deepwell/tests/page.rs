@@ -24643,10 +24643,30 @@ INNER_TOTAL=%%total%%; INNER_COUNT=%%count%%; [[[start|start link]]]
         .compiled_body_html
         .expect("compiled body should be included in page_get details");
 
+    // Frozen Wikidot oracle: countpages-inside-listpages-live.json,
+    // case standalone-countpages-opening-inside-listpages-body. One matching
+    // page produces exactly one empty ListPages item.
+    let list_pages_box = r#"<div class="list-pages-box">"#;
+    let list_pages_item = r#"<div class="list-pages-item">"#;
+    assert_eq!(
+        html.matches(list_pages_box).count(),
+        1,
+        "the outer ListPages wrapper should appear once for one matching row:\n{html}",
+    );
+    assert_eq!(
+        html.matches(list_pages_item).count(),
+        1,
+        "Wikidot should emit exactly one result item for the one matching row:\n{html}",
+    );
+    let item_start = html.find(list_pages_item).expect("item count was checked")
+        + list_pages_item.len();
+    let item_end = item_start
+        + html[item_start..]
+            .find("</div>")
+            .expect("the ListPages item should close");
     assert!(
-        html.contains(r#"<div class="list-pages-box">"#)
-            && html.contains(r#"<div class="list-pages-item">"#),
-        "Wikidot still emits the outer ListPages container and an empty result item:\n{html}",
+        html[item_start..item_end].trim().is_empty(),
+        "the nested CountPages opening should leave the matching item empty:\n{html}",
     );
     for forbidden in [
         "Fixture CountPages Nested ListPages Target",
@@ -24662,6 +24682,73 @@ INNER_TOTAL=%%total%%; INNER_COUNT=%%count%%; [[[start|start link]]]
         assert!(
             !html.contains(forbidden),
             "CountPages inside a ListPages body should not expose {forbidden:?}, matching the live empty-item behavior:\n{html}",
+        );
+    }
+
+    // Frozen oracle control: the same selector renders an ordinary ListPages
+    // body. The parser function is evidenced by the ListPages expression
+    // observation, and the commented CountPages spelling remains literal per
+    // syntax-comments.md's ListPages literal-owner contract.
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-countpages-nested-listpages-control",
+        "Fixture CountPages Nested ListPages Control",
+        &format!(
+            r#"Ordinary CountPages control.
+
+[[module ListPages category="*" tags="+{tag}" limit="1" order="name"]]
+CONTROL_TITLE=%%title%%
+CONTROL_BEFORE
+[[#ifexpr 1 == 1 | CONTROL_IFEXPR | CONTROL_IFEXPR_FALSE]]
+[!--
+[[module CountPages category="*" tags="+{tag}" limit="10"]]
+--]
+CONTROL_AFTER
+[[/module]]"#
+        ),
+    )
+    .await;
+    let control_page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": "fixture-countpages-nested-listpages-control",
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("ordinary ListPages control page should exist");
+    let control_html = control_page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+    assert_eq!(
+        control_html.matches(list_pages_box).count(),
+        1,
+        "the ordinary body should keep rendering one matching ListPages result:\n{control_html}",
+    );
+    assert_eq!(
+        control_html.matches(list_pages_item).count(),
+        1,
+        "the ordinary body should render one result item for its one matching row:\n{control_html}",
+    );
+    for expected in [
+        "CONTROL_TITLE=Fixture CountPages Nested ListPages Target",
+        "CONTROL_BEFORE",
+        "CONTROL_IFEXPR",
+        "CONTROL_AFTER",
+    ] {
+        assert!(
+            control_html.contains(expected),
+            "ordinary ListPages output should contain {expected:?}:\n{control_html}",
+        );
+    }
+    for forbidden in ["CONTROL_IFEXPR_FALSE", "[[module CountPages", "%%title%%"] {
+        assert!(
+            !control_html.contains(forbidden),
+            "ordinary ListPages output should not contain {forbidden:?}:\n{control_html}",
         );
     }
 }
