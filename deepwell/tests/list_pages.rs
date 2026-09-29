@@ -7723,6 +7723,46 @@ async fn listpages_module_heads_accept_live_legacy_boundaries() {
             && unclosed_head_before_raw_closer.contains(&format!("SECOND|{TARGET_SLUG}")),
         "an unclosed head ending before a raw closer must consume only its own module and leave the following module independent:\n{unclosed_head_before_raw_closer}",
     );
+
+    // Frozen anonymous PagePreview case `listpages-unterminated-multiline-
+    // before-later-module`: the later quote inside apparent module syntax
+    // completes the outer name value, so the apparent inner module is not
+    // independently rendered and its authored row stays consumed by the
+    // outer zero-result query.
+    let later_quote_source = concat!(
+        "FIRST\n",
+        "[[module ListPages name=\"unterminated\n",
+        "[[module ListPages category=\"*\" limit=\"1\" order=\"name\"]]\n",
+        "SECOND|%%fullname%%\n",
+        "[[/module]]\n",
+        "LAST",
+    );
+    let later_quote_preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages multiline head completed by later quote",
+        later_quote_source.to_owned(),
+    )
+    .await
+    .expect("the frozen later-quote ListPages head should render")
+    .html_output
+    .body;
+    assert_eq!(
+        later_quote_preview
+            .matches(r#"<div class="list-pages-box">"#)
+            .count(),
+        1,
+        "the recovered outer opener must render exactly once:\n{later_quote_preview}",
+    );
+    assert!(
+        later_quote_preview.contains("FIRST")
+            && later_quote_preview.contains("LAST")
+            && !later_quote_preview.contains("SECOND|")
+            && !later_quote_preview.contains(r#"<div class="list-pages-item">"#)
+            && !later_quote_preview.contains("[[module ListPages")
+            && !later_quote_preview.contains("%%fullname%%"),
+        "the apparent inner opener and its row must remain owned by the outer head:\n{later_quote_preview}",
+    );
 }
 
 #[tokio::test]
