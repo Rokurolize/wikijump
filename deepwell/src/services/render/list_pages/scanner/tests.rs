@@ -623,6 +623,9 @@ fn list_pages_preflight_keeps_pinned_module_name_delimiters() {
     assert!(!has_list_pages_module_opening_candidate(
         "[[module \nListPages name=\"space-before-lf\"]]body[[/module]]",
     ));
+    assert!(!has_list_pages_module_opening_candidate(
+        "[[moduleFoo ListPages name=\"unknown-module-name\"]]body[[/module]]",
+    ));
 }
 
 #[test]
