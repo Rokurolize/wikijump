@@ -89,7 +89,7 @@ test("next actions carry selector, overflow, asset, and inactive media evidence"
   assert.equal(actions[3].evidence.media_inactive[0].media, "(min-width: 900px)");
 });
 
-test("inactive-media leads on an uncertified runtime surface are quarantined even after viewport checks pass", () => {
+test("inactive-media leads on a local-only surface stay in target acceptance", () => {
   const verdict = buildVerdict({
     reference: {
       diagnosis: {missing: [], collapsed: [], expanded: [], missing_count: 0},
@@ -107,29 +107,36 @@ test("inactive-media leads on an uncertified runtime surface are quarantined eve
     viewports: {desktop: {document_overflow_px: 0}, laptop: {document_overflow_px: 0}, tablet: {document_overflow_px: 0}, mobile: {document_overflow_px: 0}},
   });
   assert.equal(verdict.next_actions.length, 0);
+  assert.equal(verdict.verdict, "pass");
   assert.equal(verdict.resolved_actions, undefined);
-  assert.equal(verdict.parity_gate.status, "quarantined_findings_present");
+  assert.equal(verdict.parity_gate.status, "non_authoritative_target_findings_present");
   assert.equal(verdict.parity_gate.quarantined_count, 1);
+  assert.equal(verdict.parity_gate.required_uncertified_count, 0);
+  assert.equal(verdict.target_acceptance.status, "warn");
 });
 
-test("buildVerdict fails on error, warns on style-only change, passes clean", () => {
+test("buildVerdict separates parity conclusions from local target acceptance", () => {
   const fail = buildVerdict({
     reference: {diagnosis: {missing: [{selector: "#a", reference: 1, candidate: 0}], missing_count: 1}},
   });
-  assert.equal(fail.verdict, "fail");
+  assert.equal(fail.verdict, "inconclusive");
   assert.equal(fail.issue_count, 1);
+  assert.equal(fail.target_acceptance.status, "fail");
 
   const warn = buildVerdict({
     reference: {diagnosis: {missing: [], collapsed: [], expanded: [], missing_count: 0}, computed_styles: {top: [{anchor: "a", property: "width"}]}},
   });
-  assert.equal(warn.verdict, "warn");
-  assert.equal(warn.style_changes.length, 1);
+  assert.equal(warn.verdict, "pass");
+  assert.equal(warn.style_changes.length, 0);
+  assert.equal(warn.target_acceptance.status, "warn");
 
   const pass = buildVerdict({reference: {diagnosis: {missing: [], collapsed: [], expanded: [], missing_count: 0}}});
   assert.equal(pass.verdict, "pass");
 
   const tortureChange = buildVerdict({torture: {verdict: "pass", changed_component_count: 3, issues: []}});
-  assert.equal(tortureChange.verdict, "warn");
+  assert.equal(tortureChange.verdict, "inconclusive");
+  assert.equal(tortureChange.top_issues[0].parity_review.surface_ids[0], "unclassified-runtime-surface");
+  assert.equal(tortureChange.target_acceptance.status, "warn");
 });
 
 test("buildVerdict surfaces torture and reference summaries", () => {
@@ -149,10 +156,10 @@ test("compact verdict retains each viewport's overflow status", () => {
     mobile: {document_overflow_px: 0},
   }});
   assert.deepEqual(verdict.viewport_status, {
-    desktop: {status: "pass", document_overflow_px: 0},
-    laptop: {status: "pass", document_overflow_px: 0},
-    tablet: {status: "fail", document_overflow_px: 1},
-    mobile: {status: "pass", document_overflow_px: 0},
+    desktop: {status: "pass", document_overflow_px: 0, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
+    laptop: {status: "pass", document_overflow_px: 0, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
+    tablet: {status: "fail", document_overflow_px: 1, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
+    mobile: {status: "pass", document_overflow_px: 0, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
   });
 });
 
@@ -161,9 +168,11 @@ test("interaction failures on uncertified runtime surfaces remain quarantined", 
     tabs: {status: "pass", activated_index: 1, restored_index: 0},
     collapsible: {status: "fail", initial: "folded", after_click: "folded"},
   }});
-  assert.equal(verdict.verdict, "fail");
+  assert.equal(verdict.verdict, "pass");
   assert.deepEqual(verdict.next_actions, []);
+  assert.equal(verdict.target_acceptance.status, "fail");
   assert.equal(verdict.parity_gate.quarantined_count, 1);
+  assert.equal(verdict.parity_gate.required_uncertified_count, 0);
   assert.equal(verdict.top_issues[0].parity_review.surface_ids[0], "content.collapsible");
 });
 
@@ -189,9 +198,11 @@ test("surface-contract findings on uncertified runtime surfaces do not produce p
       overflow_sources: [{selector: "ul", overflow_px: 13}],
     },
   ]});
-  assert.equal(verdict.verdict, "fail");
+  assert.equal(verdict.verdict, "pass");
   assert.deepEqual(verdict.next_actions, []);
+  assert.equal(verdict.target_acceptance.status, "fail");
   assert.equal(verdict.parity_gate.quarantined_count, 2);
+  assert.equal(verdict.parity_gate.required_uncertified_count, 0);
 });
 
 test("certified scopes retain actionable surface findings", () => {

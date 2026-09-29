@@ -34,9 +34,9 @@ const apply=async(rows,kind)=>{
    note=`Direct screenshot review and action measurement confirm the local wrapper/frame placement. ${externalReason}`;
   }else if(row.surface==='shell.search'&&row.state==='typed-focused'){
    classification='PASS_INTENTIONAL_DIVERGENCE';owner=null;findingIds=[];
-   if(row.action_contract_observation?.control!=='#search-top-box-input'||row.action_contract_observation?.display!=='none'||!row.action_sequence?.some(x=>x.type==='source-hidden-search-control'))throw new Error(`search source-hidden observation missing: ${row.browser_engine}/${row.viewport}`);
-   intentional_difference='Frozen Sigma source intentionally sets #search-top-box-input to display:none because current Wikidot search is unavailable. Wikijump deliberately reproduces that unavailable search contract, so the hidden input is expected Wikidot parity and requires no Sigma-10 migration action.';
-   note='The exact screenshot was reviewed with the recorded computed-style probe confirming the source-hidden search input. The compatibility runtime preserves Wikidot\'s unavailable search result contract, so this is expected parity rather than a migration finding.';
+   if(row.action_contract_observation?.control!=='#search-top-box-input'||row.action_contract_observation?.display!=='none')throw new Error(`local search-target observation missing: ${row.browser_engine}/${row.viewport}`);
+   intentional_difference='This SCP-JP Sigma-10 target capture intentionally hides #search-top-box-input. This local migration review does not establish the Wikidot source contract or a parity-based search requirement.';
+   note='The exact screenshot and computed-style probe confirm the hidden input in the local SCP-JP Sigma-10 target. Current source-side Wikidot search behavior is outside this paired migration review; this record is local target-acceptance evidence only.';
   }else{
    const width=row.viewport_size?.width;const observed=row.visual_diagnostics?.viewport?.documentWidth??row.visual_diagnostics?.viewport?.document_width;
    const baseline=pairedControl(row);
@@ -58,17 +58,24 @@ const apply=async(rows,kind)=>{
    }
   }
   row.classification=classification;
+  if(row.surface==='shell.search')row.action_sequence=(row.action_sequence??[]).map(action=>action.type==='source-hidden-search-control'?{...action,type:'target-hidden-search-control'}:action);
+  row.decision_authority='SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY';
+  row.port_conclusion_eligible=false;
+  row.finding_scope='SCP_JP_TARGET_ACCEPTANCE';
   row.visual_findings=findingIds;
   row.intentional_differences=intentional_difference?[intentional_difference]:[];
   row.unconfirmed_items=[];
   row.reviewed_after_last_change=true;
-  row.migration_review={classification,reviewed_at:reviewedAt,review_method:'direct-image-vision-review plus paired contract probes',reviewer:'Codex visual capability',screenshot_sha256:row.screenshot_sha256,owner,confirmed_finding_ids:findingIds,external_contract_reason,intentional_difference,note};
-  row.visual_review={method:'direct-image-vision-review',reviewed_at:reviewedAt,screenshot_sha256:row.screenshot_sha256,note,reviewer:'Codex visual capability'};
+  row.migration_review={classification,reviewed_at:reviewedAt,review_method:'direct-image-vision-review plus paired local contract probes',reviewer:'Codex visual capability',screenshot_sha256:row.screenshot_sha256,owner,confirmed_finding_ids:findingIds,external_contract_reason,intentional_difference,note,decision_authority:'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY',port_conclusion_eligible:false,finding_scope:'SCP_JP_TARGET_ACCEPTANCE'};
+  row.visual_review={method:'direct-image-vision-review',reviewed_at:reviewedAt,screenshot_sha256:row.screenshot_sha256,note,reviewer:'Codex visual capability',decision_authority:'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY',port_conclusion_eligible:false,finding_scope:'SCP_JP_TARGET_ACCEPTANCE'};
   counts[classification]=(counts[classification]??0)+1;
  }
  return counts;
 };
 const counts={sigma10:await apply(audit.records,'sigma10'),sigma9_control:await apply(control.records,'control')};
+const decisionAuthorityPolicy={schema:'theme_lab_decision_authority.v1',decision_authority:'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY',port_conclusion_eligible:false,finding_scope:'SCP_JP_TARGET_ACCEPTANCE',boundary:'These visual reviews and paired Sigma-9/Sigma-10 observations classify local SCP-JP target acceptance. They do not certify Wikidot runtime parity or create parity-based port requirements.'};
+audit.decision_authority_policy=decisionAuthorityPolicy;
+control.decision_authority_policy=decisionAuthorityPolicy;
 audit.review_classifications=counts.sigma10;audit.visual_review_updates=(audit.visual_review_updates??0)+audit.records.length;audit.updated_at=reviewedAt;
 control.review_classifications=counts.sigma9_control;control.visual_review_updates=(control.visual_review_updates??0)+control.records.length;control.updated_at=reviewedAt;
 for(const [file,document] of [['evidence/interactive-visual-audit.json',audit],['evidence/sigma9-comparison-audit.json',control]]){

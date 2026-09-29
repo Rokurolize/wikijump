@@ -4,7 +4,7 @@
 
 The migration simulation is closed against frozen Technical Staff Sigma-10 authority. The full 36-candidate × 9-cell `page.normal` matrix is captured and reviewed (324/324); the Sigma-9 comparison also covers 324 matching cells, with two additional history-state probes. No current screenshot is left unclassified or unexplained. Findings and row-level evidence are in [findings.json](findings.json) and the isolated audits under `evidence/`.
 
-**Migration decision:** do not promote the Sigma-10 JP localization unchanged. Resolve `SIGMA10-MOB-001` (medium, owner `sigma10-staff-source`) before migration; the controlled test verified that `white-space: pre-wrap !important` removes the credit notice's horizontal document overflow at 390px. Sigma's hidden desktop search input is expected Wikidot parity: current Wikidot search is unavailable, and Wikijump deliberately reproduces that unavailable-result contract rather than providing a successful search backend. It is not a Sigma-10 migration finding. There are no per-theme adaptations required across the 35 maintained theme packages.
+**Migration decision:** do not promote the Sigma-10 JP localization unchanged. Resolve `SIGMA10-MOB-001` (medium, owner `sigma10-staff-source`) before migration; the controlled test verified that `white-space: pre-wrap !important` removes the credit notice's horizontal document overflow at 390px. The Sigma-10 SCP-JP capture hides its desktop search input. A separate read-only source capture on 2026-09-30 focused and filled Wikidot's search input. These observations are not paired to a general runtime contract, so this migration audit makes no search-parity claim and authorizes no parity-based search action. There are no per-theme adaptations required across the 35 maintained theme packages.
 
 ## Authority and fixture provenance
 
@@ -19,6 +19,7 @@ The offline fixture maps public cross-site includes to run-owned local pages, om
 - Sigma-10 audit: 460 current rows, including 145 baseline-theme rows (9 normal states and 136 interaction/admin rows); 850 superseded captures retained in the audit history.
 - Sigma-9 comparison: 326 current rows (324 matrix cells plus Chromium desktop/mobile `page.history.historical-source`).
 - All 35 maintained packages pass the real-port regression verification. All current rows have direct-image review metadata bound to their screenshot digest. No unexplained `UNCONFIRMED` rows, sent external requests, asset failures, or page errors remain.
+- Current audit and review records are explicitly scoped to `SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY`; they cannot certify Wikidot runtime parity or create parity-based port requirements. The paired Sigma-9 rows are local attribution controls.
 
 | Final row classification | Sigma-10 | Sigma-9 control |
 | --- | ---: | ---: |
@@ -30,7 +31,7 @@ The offline fixture maps public cross-site includes to run-owned local pages, om
 
 The repeated `NEEDS_FIX` rows aggregate to two confirmed issues: credit-notice overflow (`SIGMA10-MOB-001`) across affected theme/viewport compositions and the paired runtime history textarea issue (`WIKIJUMP-HIST-001`). Sigma-9 control rows are intentionally classified as divergence because Sigma-9 does not style the Sigma-10 credit module; they serve for paired geometry/attribution, not as the visual target.
 
-Interaction review inspected action traces, target state, visibility/focus/hover where applicable, geometry and screenshots for navigation focus/hover, content link/rating focus, tags, credit/modal states, history/source transitions, dialogs, sidebar, login, footer, search, and Interwiki. Search's source-hidden control is recorded as an intentional upstream state, not an action failure. The Interwiki wrapper and iframe attach in all seven sampled engine/viewport cases; the default frame is zero-height because remote Crom data is unavailable.
+Interaction review inspected action traces, target state, visibility/focus/hover where applicable, geometry and screenshots for navigation focus/hover, content link/rating focus, tags, credit/modal states, history/source transitions, dialogs, sidebar, login, footer, search, and Interwiki. Search's hidden control is recorded as an intentional local target state, not an upstream parity finding. The Interwiki wrapper and iframe attach in all seven sampled engine/viewport cases; the default frame is zero-height because remote Crom data is unavailable.
 
 ## Confirmed Technical Staff findings
 
@@ -61,13 +62,13 @@ At a 390px Chromium mobile viewport, `page.history.historical-source` measures 4
 ## Intentional differences
 
 - Sigma-9 control screenshots contain the Sigma-10 credit markup without Sigma-10 styling; comparison is limited to geometry and attribution.
-- The upstream search input is intentionally hidden because current Wikidot search is unavailable. Wikijump reproduces the same unavailable search contract, so the hidden input is expected parity and requires no migration action.
+- The Sigma-10 migration target hides its search input. The separate live source capture shows the Wikidot input visible and focusable. `shell.search` remains parity-uncertified; the local migration review carries no parity authority.
 - Source-derived page title/tagline text comes from the local authoring site's test configuration and is not SCP-JP production identity.
 - Browser matrix contracts use Firefox/WebKit desktop and mobile; Chromium additionally covers laptop, tablet, and 320px narrow-mobile.
 
 ## Action list
 
-**Technical Staff / migration policy:** resolve credit notice wrapping before migration. No search-specific Sigma-10 change is required for Wikijump parity.
+**Technical Staff / migration policy:** resolve credit notice wrapping before migration. The hidden local search input remains a target observation; the source/runtime contract requires a separate paired review before any parity-based action is proposed.
 
 **Wikijump runtime:** track the pre-existing history textarea width issue as low-priority runtime work. It is not a Sigma migration blocker.
 
@@ -75,7 +76,7 @@ At a 390px Chromium mobile viewport, `page.history.historical-source` measures 4
 
 ## Final readiness statement
 
-The simulator is closed: actionable simulator gaps 0; required matrix holes 0; stale current evidence 0; unexplained `UNCONFIRMED` records 0; ownerless blockers 0; fixture-owned defects 0. The Sigma-10 migration result is reviewable and owner-assigned. Promotion remains contingent on the Technical Staff credit-rule change. The hidden search input is an expected consequence of the current Wikidot-compatible unavailable-search contract, not an additional migration decision.
+The local simulator is closed: actionable simulator gaps 0; required matrix holes 0; stale current evidence 0; unexplained `UNCONFIRMED` records 0; ownerless blockers 0; fixture-owned defects 0. The Sigma-10 migration result is reviewable and owner-assigned. Promotion remains contingent on the Technical Staff credit-rule change. Search remains outside this migration review's parity authority.
 
 ## Validation
 

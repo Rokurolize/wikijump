@@ -12,6 +12,7 @@ import {
   parityReviewForSurfaceIds,
 } from "../src/runtime-surface-parity.mjs";
 import {buildVerdict} from "../src/verdict.mjs";
+import accounting from "../fixtures/runtime-surface-parity-accounting.json" with {type: "json"};
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..");
@@ -36,9 +37,56 @@ test("registry classifies every discovered and interactive runtime surface expli
     assert.ok(Array.isArray(surface.implementation_reference), surface.surface_id);
     assert.ok(Array.isArray(surface.test_reference), surface.surface_id);
     assert.equal(typeof surface.may_treat_differences_as_port_requirements, "boolean", surface.surface_id);
+    assert.equal(typeof surface.port_conclusion_eligible, "boolean", surface.surface_id);
+    assert.equal(typeof surface.blocks_port_conclusion, "boolean", surface.surface_id);
+    assert.ok(typeof surface.conclusion_resolution === "string" && surface.conclusion_resolution.length > 0, surface.surface_id);
+    assert.ok(typeof surface.decision_scope === "string" && surface.decision_scope.length > 0, surface.surface_id);
+    assert.ok(typeof surface.resolution_reason === "string" && surface.resolution_reason.length > 0, surface.surface_id);
     assert.ok(Array.isArray(surface.intentional_differences), surface.surface_id);
     assert.ok(Array.isArray(surface.unresolved_evidence_gaps), surface.surface_id);
   }
+});
+
+test("derived active runtime surfaces retain local acceptance without parity authority", () => {
+  const captureSource = fs.readFileSync(path.join(root, "ports/interactive-visual-fixture/capture-interactive.mjs"), "utf8");
+  const interactiveIds = [...captureSource.matchAll(/surface\s*:\s*['"]([^'"]+)['"]/gu)].map((match) => match[1]);
+  const activeIds = [...new Set([...KNOWN_THEME_SURFACES.map((row) => row.id), ...interactiveIds])].sort();
+  const activeRows = activeIds.map((id) => registryById.get(id));
+
+  assert.equal(activeIds.length, 41);
+  for (const row of activeRows) {
+    assert.equal(row.theme_lab_activity, "ACTIVE_CSS_OR_INTERACTION_SURFACE", row.surface_id);
+    assert.equal(row.conclusion_resolution, "LOCAL_TARGET_ACCEPTANCE_ONLY", row.surface_id);
+    assert.equal(row.decision_authority, "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY", row.surface_id);
+    assert.equal(row.port_conclusion_eligible, false, row.surface_id);
+    assert.equal(row.blocks_port_conclusion, false, row.surface_id);
+  }
+
+  assert.equal(accounting.counts.active_css_or_interaction_contracts, activeIds.length);
+  assert.deepEqual(accounting.active_css_or_interaction_contracts, activeIds);
+  assert.equal(accounting.counts.required_but_uncertified_or_mismatched, 0);
+  assert.equal(accounting.completion_gate.status, "PASS");
+  assert.equal(accounting.counts.active_dependencies_removed_from_parity_port_conclusions, activeIds.length);
+});
+
+test("source receipts and accounting retain capture failures and narrow module limits", () => {
+  const browser = JSON.parse(fs.readFileSync(path.join(root, "evidence/wikidot-runtime-surface-20260930.states-v3/records.json"), "utf8"));
+  const modules = JSON.parse(fs.readFileSync(path.join(root, "evidence/wikidot-runtime-surface-modules-20260930.json"), "utf8"));
+  const states = browser.evidence.flatMap((record) => record.source_states);
+  assert.equal(browser.evidence.length, accounting.source_evidence.capture_counts.source_pages);
+  assert.ok(browser.evidence.every((record) => record.source_only === true));
+  assert.equal(states.length, accounting.source_evidence.capture_counts.browser_state_attempts);
+  assert.equal(states.filter((state) => !state.capture_error).length, accounting.source_evidence.capture_counts.browser_states_captured);
+  assert.equal(states.filter((state) => state.capture_error).length, accounting.source_evidence.capture_counts.browser_states_failed);
+  assert.equal(browser.capture.request_gate.public_requests, 0);
+  assert.equal(browser.capture.request_gate.external_network_requests, 0);
+  assert.equal(browser.capture.source_response_cache.acquisition_barriers, accounting.source_evidence.capture_counts.existing_acquisition_barriers_retained);
+  assert.equal(modules.actor.authenticated, false);
+  assert.equal(modules.actor.mutations, 0);
+  const summaries = modules.sites.flatMap((site) => Object.values(site.module_summaries));
+  assert.equal(summaries.length, accounting.source_evidence.capture_counts.anonymous_module_responses);
+  assert.ok(modules.sites.every((site) => site.page.file_count === 0 && site.files_collection.length === 0));
+  assert.ok(modules.sites.every((site) => site.module_summaries["viewsource/ViewSourceModule"].page_source_count === 1));
 });
 
 test("surface CSS auto-discovery includes History and Files even when evidence is insufficient", () => {
@@ -62,13 +110,14 @@ test("uncertified and unclassified runtime findings cannot become port next-acti
   assert.equal(verdict.verdict, "fail");
   assert.equal(verdict.next_actions.length, 1);
   assert.equal(verdict.next_actions[0].kind, "provide_asset");
-  assert.equal(verdict.parity_gate.status, "quarantined_findings_present");
+  assert.equal(verdict.parity_gate.status, "required_runtime_dependency_unresolved");
+  assert.equal(verdict.parity_gate.required_uncertified_count, 1);
   assert.equal(verdict.parity_gate.quarantined_count, 2);
   assert.ok(verdict.top_issues.every((issue) => issue.parity_review));
   assert.equal(verdict.top_issues.find((issue) => issue.surface === "page.history").parity_review.quarantined, true);
 });
 
-test("all currently auto-discovered and interactive surfaces stay quarantined without source evidence", () => {
+test("active uncertified surfaces stay in local acceptance and cannot alter port conclusions", () => {
   const captureSource = fs.readFileSync(path.join(root, "ports/interactive-visual-fixture/capture-interactive.mjs"), "utf8");
   const interactiveIds = [...captureSource.matchAll(/surface\s*:\s*['"]([^'"]+)['"]/gu)].map((match) => match[1]);
   const activeIds = [...new Set([...KNOWN_THEME_SURFACES.map((row) => row.id), ...interactiveIds])];
@@ -81,9 +130,33 @@ test("all currently auto-discovered and interactive surfaces stay quarantined wi
   assert.equal(activeIds.length, 41);
   assert.equal(verdict.parity_gate.port_requirement_eligible_count, 0);
   assert.equal(verdict.parity_gate.quarantined_count, activeIds.length);
+  assert.equal(verdict.parity_gate.target_acceptance_only_count, activeIds.length);
+  assert.equal(verdict.parity_gate.required_uncertified_count, 0);
   assert.equal(verdict.next_actions.length, 0);
+  assert.equal(verdict.verdict, "pass");
+  assert.equal(verdict.port_decision.verdict, "pass");
+  assert.equal(verdict.port_decision.unresolved_finding_count, 0);
+  assert.deepEqual(verdict.port_decision.unresolved_surface_ids, []);
+  assert.equal(verdict.target_acceptance.status, "fail");
   assert.equal(parityReviewForSurfaceIds(["page.history"]).may_treat_differences_as_port_requirements, false);
   assert.equal(parityReviewForSurfaceIds(["page.history.file-revision-timeline"]).may_treat_differences_as_port_requirements, true);
+});
+
+test("an unclassified runtime surface still blocks the port conclusion", () => {
+  const verdict = buildVerdict({extraIssues: [
+    {severity: "error", kind: "missing_selector", selector: ".future-wikidot-widget", reference: 1, candidate: 0},
+  ]});
+  assert.equal(verdict.verdict, "inconclusive");
+  assert.equal(verdict.port_decision.verdict, "inconclusive");
+  assert.equal(verdict.parity_gate.required_uncertified_count, 1);
+  assert.deepEqual(verdict.port_decision.unresolved_surface_ids, ["unclassified-runtime-surface"]);
+});
+
+test("direct observation of an inactive registry row fails closed", () => {
+  const review = parityReviewForSurfaceIds(["page.diff"]);
+  assert.equal(review.blocks_port_conclusion, true);
+  assert.equal(review.port_conclusion_eligible, false);
+  assert.deepEqual(review.surface_ids, ["unclassified-runtime-surface"]);
 });
 
 test("an explicitly certified scoped contract remains actionable", () => {
@@ -95,6 +168,7 @@ test("an explicitly certified scoped contract remains actionable", () => {
     {severity: "error", kind: "surface_fixture_missing", surface: "page.history.table-dom", selector: "tr#revision-row-1"},
   ]);
   assert.equal(result.issues[0].parity_review.quarantined, false);
+  assert.equal(result.issues[0].parity_review.port_conclusion_eligible, true);
 });
 
 test("synthetic Theme Lab states stay identified as synthetic and never certify a runtime surface", () => {
@@ -103,4 +177,6 @@ test("synthetic Theme Lab states stay identified as synthetic and never certify 
   const review = parityReviewForSurfaceIds(["nav.mobile-top.forced-submenu-state"]);
   assert.equal(review.may_treat_differences_as_port_requirements, false);
   assert.equal(review.quarantined, true);
+  assert.equal(review.decision_authority, "THEME_LAB_SYNTHETIC_DIAGNOSTIC_ONLY");
+  assert.equal(review.blocks_port_conclusion, false);
 });

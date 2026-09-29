@@ -127,7 +127,10 @@
       },
       "fix_verification": "In an isolated browser load of the captured Sigma-10 mobile DOM, adding .creditRate::before{white-space:pre-wrap !important} reduced document scrollWidth from 511 to 390.",
       "classification": "CONFIRMED",
-      "actionable": true
+      "actionable": true,
+      "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+      "port_conclusion_eligible": false,
+      "finding_scope": "SCP_JP_TARGET_ACCEPTANCE"
     },
     {
       "id": "THEMELAB-SIM-001",
@@ -140,7 +143,10 @@
       "evidence": "Captured DOM before the fix contained Theme Lab navigation; after the fix #side-bar contains the Sigma-10 nav-side (初めての方へ) and #top-bar contains the Sigma-10 nav-top ([# SCPデータベース]).",
       "fix": "capture-interactive.mjs injectMigrationShell() now waits for a delegated Svelte handler as a hydration barrier and re-applies the substitution until it survives a 400 ms quiet window, failing hard if it never stabilises.",
       "classification": "FIXED",
-      "actionable": false
+      "actionable": false,
+      "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+      "port_conclusion_eligible": false,
+      "finding_scope": "SCP_JP_TARGET_ACCEPTANCE"
     },
     {
       "id": "EXT-INTERWIKI-001",
@@ -337,7 +343,10 @@
         "boundary": "local data URL/empty data fixture supports wrapper and iframe placement only; remote page/style frames, fetched rows, frame resize and content are not claimed; zero requests sent"
       },
       "classification": "EXTERNAL_CONTRACT_BOUNDED",
-      "actionable": false
+      "actionable": false,
+      "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+      "port_conclusion_eligible": false,
+      "finding_scope": "SCP_JP_TARGET_ACCEPTANCE"
     },
     {
       "id": "THEMELAB-FIXTURE-002",
@@ -349,7 +358,10 @@
       "evidence": "See audit records: nav.* / shell.* fixture = run-owned:sigma10-main; content/credit/page.* fixture = run-owned:theme-lab-visual-acceptance-imported-20260924.",
       "status": "resolved-design-contract",
       "classification": "DOCUMENTED_BINDING",
-      "actionable": false
+      "actionable": false,
+      "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+      "port_conclusion_eligible": false,
+      "finding_scope": "SCP_JP_TARGET_ACCEPTANCE"
     },
     {
       "id": "THEMELAB-SIM-003",
@@ -362,7 +374,10 @@
       "fix": "Only URLs explicitly present in the WebKit external-page-asset replay map are replaced/decoded there; content-addressed local assets remain owned by the route handler and other external images remain owned by the network-policy blocked-external accounting. The Sigma-10 nav-side black.png was additionally frozen as a content-addressed fixture static asset.",
       "evidence": "After the fix, all 35 themes plus sigma10-baseline recaptured at WebKit desktop and mobile page.normal with 0 action failures and 0 asset failures; the nav-side black.png bytes are bound as 4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7.png.",
       "classification": "FIXED",
-      "actionable": false
+      "actionable": false,
+      "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+      "port_conclusion_eligible": false,
+      "finding_scope": "SCP_JP_TARGET_ACCEPTANCE"
     },
     {
       "id": "WIKIJUMP-HIST-001",
@@ -388,7 +403,10 @@
         "sigma9_screenshot": "migration/sigma9-comparison/sigma10-baseline/artifacts/interactive/chromium/mobile/page-history-historical-source-mobile-1fc603874d6b1e15163295e9ccfa6619cc4a5ab354b85d1608069e9ffe93a77d.png",
         "sigma9_screenshot_sha256": "1fc603874d6b1e15163295e9ccfa6619cc4a5ab354b85d1608069e9ffe93a77d",
         "sigma9_document_width": 433
-      }
+      },
+      "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+      "port_conclusion_eligible": false,
+      "finding_scope": "SCP_JP_TARGET_ACCEPTANCE"
     }
   ],
   "theme_sigma10_vs_sigma9_mobile_page_normal": [
@@ -648,7 +666,7 @@
   "unresolved_simulator_limitations": [],
   "intentional_differences": [
     "Sigma-10 header hides the configured site title/tagline text (max-height:0; line-height:0). The visible \"Local Translation Corpus\" text is the local test site configuration, not SCP-JP source; production SCP-JP would supply its own title/tagline.",
-    "Sigma-10 baseline intentionally hides #search-top-box-input because current Wikidot search is unavailable. Wikijump deliberately reproduces that unavailable search contract, so this is expected Wikidot parity and requires no migration action.",
+    "The SCP-JP Sigma-10 migration capture hides #search-top-box-input. A separate read-only source capture on 2026-09-30 shows the live Wikidot input visible and accepts focus and text entry. These are not paired to the same page/runtime contract, so this local audit does not certify search parity or authorize a parity-based port action.",
     "Theme overlays change document typography, so the credit notice width (and therefore overflow magnitude) differs per theme; this is a consequence of SIGMA10-MOB-001, not a separate theme defect."
   ],
   "completion": {
@@ -683,5 +701,12 @@
         "live Crom data"
       ]
     }
-  ]
+  ],
+  "decision_authority_policy": {
+    "schema": "theme_lab_decision_authority.v1",
+    "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+    "port_conclusion_eligible": false,
+    "finding_scope": "SCP_JP_TARGET_ACCEPTANCE",
+    "boundary": "Migration screenshots, paired Sigma-9 controls, and findings classify the local SCP-JP target. They do not certify Wikidot runtime parity or create parity-based port requirements."
+  }
 }

@@ -30,6 +30,7 @@ export function compactSupersededRecord(record){
  }:record.review_provenance;
  return{
   theme:record.theme,browser_engine:record.browser_engine,browser_version:record.browser_version,viewport:record.viewport,surface:record.surface,state:record.state,
+  decision_authority:'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY',port_conclusion_eligible:false,
   screenshot:record.screenshot,screenshot_sha256:record.screenshot_sha256,candidate_sha256:record.candidate_sha256,candidate_source_sha256:record.candidate_source_sha256,
   baseline_theme:record.baseline_theme,baseline_theme_css_href:record.baseline_theme_css_href,baseline_theme_css_sha256:record.baseline_theme_css_sha256,
   runtime_baseline_theme_css_href:record.runtime_baseline_theme_css_href,baseline_theme_mode:record.baseline_theme_mode,

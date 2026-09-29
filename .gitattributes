@@ -8,3 +8,6 @@ install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview
 # Theme Lab source-authority snapshots preserve exact public Wikidot bytes.
 install/local/theme-lab/ports/quand-le-soleil-se-couche/upstream-*.wikidot.txt -whitespace
 install/local/theme-lab/ports/quand-le-soleil-se-couche/current-jp-hub.wikidot.txt -whitespace
+
+# Browser-captured Wikidot DOM artifacts preserve their source whitespace.
+install/local/theme-lab/evidence/**/*.dom.html -whitespace

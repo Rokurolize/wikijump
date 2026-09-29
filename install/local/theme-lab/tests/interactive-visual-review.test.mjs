@@ -11,7 +11,11 @@ test('records exact-image review for duplicate rows only when both candidate ide
   const result = applyVisualReviews(rows, [{screenshot_sha256:hash, classification:'PASS_NATURAL', note:'Text, logo and mobile masthead remain separate and legible.'}], identity, '2026-09-25T00:00:00Z');
   assert.deepEqual(result, {updated_rows:2, unique_images:1});
   assert.equal(rows[0].reviewed_after_last_change, true);
+  assert.equal(rows[0].decision_authority, 'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY');
+  assert.equal(rows[0].port_conclusion_eligible, false);
   assert.equal(rows[0].visual_review.method, 'direct-image-vision-review');
+  assert.equal(rows[0].visual_review.decision_authority, 'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY');
+  assert.equal(rows[0].visual_review.port_conclusion_eligible, false);
   assert.deepEqual(rows[1].unconfirmed_items, []);
 });
 

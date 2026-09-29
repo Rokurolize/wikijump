@@ -167,12 +167,17 @@ for (const item of selectedCases) {
   }
   const verdict = output.result ?? output;
   const external = verdict.assets?.external_requests ?? verdict.asset_summary?.external_requests ?? 0;
-  const warningIssues = (verdict.top_issues ?? []).filter((issue) => issue.severity === "warn");
-  const errorIssues = (verdict.top_issues ?? []).filter((issue) => issue.severity === "error");
+  const localAcceptanceStatus = verdict.target_acceptance?.status ?? "unknown";
+  const decisionIssues = (verdict.top_issues ?? []).filter((issue) => issue.parity_review?.may_treat_differences_as_port_requirements === true);
+  const warningIssues = decisionIssues.filter((issue) => issue.severity === "warn");
+  const errorIssues = decisionIssues.filter((issue) => issue.severity === "error");
   const missingAssets = verdict.assets?.candidate?.missing?.length ?? 0;
   const row = {
     slug: item.slug,
     verdict: verdict.verdict ?? "unknown",
+    port_decision: verdict.port_decision ?? null,
+    local_target_acceptance: verdict.target_acceptance ?? null,
+    local_target_acceptance_status: localAcceptanceStatus,
     errors: errorIssues.length,
     next_actions: verdict.next_actions?.length ?? 0,
     torture: verdict.torture?.verdict ?? "unknown",
@@ -196,7 +201,7 @@ for (const item of selectedCases) {
   const fontFailed = row.font_diagnostics?.status !== "measured" || !row.font_diagnostics.fonts?.some((font) => font.glyph_count > 0);
   const interactionFailed = !iteration && Object.values(row.interaction_diagnostics ?? {}).some((entry) => entry.status === "fail");
   const imageFailed = (row.image_diagnostics?.broken?.length ?? 0) > 0;
-  const failed = result.status !== 0 || row.verdict === "fail" || row.errors > 0 || row.next_actions > 0 || (!iteration && row.torture !== "pass") || external !== 0 || missingAssets > 0 || viewportFailed || fontFailed || interactionFailed || imageFailed;
+  const failed = result.status !== 0 || row.verdict === "fail" || row.verdict === "inconclusive" || localAcceptanceStatus === "fail" || row.errors > 0 || row.next_actions > 0 || (!iteration && row.torture !== "pass") || external !== 0 || missingAssets > 0 || viewportFailed || fontFailed || interactionFailed || imageFailed;
   row.status = failed ? "fail" : iteration ? "iteration-verdict" : row.verdict === "warn" ? "warn-no-actionable-issues" : "pass";
   if (failed) failures.push({...row, exit_code: result.status, stderr: result.stderr?.slice(0, 500)});
   summaries.push(row);
