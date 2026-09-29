@@ -107,6 +107,20 @@ export const handlePageLookupRpc = ({ rpcRequest, request, response }) => {
     pageReadRequests.pageGetDirect.push(rpcRequest.params)
     result = toPageResult(pageById(rpcRequest.params.page_id), rpcRequest.params.details)
   } else if (
+    rpcRequest.method === "page_revision_count" &&
+    hasExactKeys(rpcRequest.params, ["page", "site_id"]) &&
+    rpcRequest.params.site_id === 6000005 &&
+    (rpcRequest.params.page === HISTORY_WORKFLOW_PAGE_ID ||
+      rpcRequest.params.page === HISTORY_NAVIGATION_PAGE_ID)
+  ) {
+    const page = pageById(rpcRequest.params.page)
+    const revisionCount = page?.page_revision_count ?? 1
+    result = {
+      revision_count: revisionCount,
+      first_revision: 0,
+      last_revision: revisionCount - 1
+    }
+  } else if (
     rpcRequest.method === "page_revision_range" &&
     hasExactKeys(rpcRequest.params, [
       "limit",

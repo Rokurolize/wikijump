@@ -27,5 +27,7 @@ pub use self::structs::{
     CreateFileRevisionOutput, CreateFirstFileRevision, CreateFirstFileRevisionOutput,
     CreateResurrectionFileRevision, CreateTombstoneFileRevision, FileBlob,
     FileRevisionCountOutput, FileRevisionModelFiltered, GetFileRevision,
-    GetFileRevisionRange, UpdateFileRevision,
+    GetFileRevisionRange, GetPageFileRevisionHistory, PageFileRevisionHistory,
+    PageFileRevisionHistoryModelFiltered, PageFileRevisionHistoryOutput,
+    UpdateFileRevision,
 };

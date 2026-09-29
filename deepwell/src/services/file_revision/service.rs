@@ -22,7 +22,8 @@ use super::structs::{
     CountFileRevisions, CreateFileRevision, CreateFileRevisionOutput,
     CreateFirstFileRevision, CreateFirstFileRevisionOutput,
     CreateResurrectionFileRevision, CreateTombstoneFileRevision, GetFileRevision,
-    GetFileRevisionRange, UpdateFileRevision,
+    GetFileRevisionRange, GetPageFileRevisionHistory, PageFileRevisionHistory,
+    UpdateFileRevision,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::file_revision::{
@@ -814,6 +815,51 @@ impl FileRevisionService {
         let revisions = query.limit(limit).all(txn).await.or_raise(make_error)?;
 
         Ok(revisions)
+    }
+
+    /// Gets the latest file revisions attached to a page, including revisions
+    /// for files that have since been deleted. Page History consumes this as
+    /// part of its shared chronological timeline.
+    pub async fn get_page_history(
+        ctx: &ServiceContext<'_>,
+        GetPageFileRevisionHistory {
+            site_id,
+            page_id,
+            limit,
+        }: GetPageFileRevisionHistory,
+    ) -> Result<PageFileRevisionHistory> {
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to get file revision history for page ID {} in site ID {}",
+                    page_id, site_id,
+                ),
+                ErrorType::FileRevision,
+            )
+        };
+
+        let txn = ctx.transaction();
+        let filter = Condition::all()
+            .add(file_revision::Column::SiteId.eq(site_id))
+            .add(file_revision::Column::PageId.eq(page_id));
+        let revision_count = FileRevision::find()
+            .filter(filter.clone())
+            .count(txn)
+            .await
+            .or_raise(make_error)?;
+        let revisions = FileRevision::find()
+            .filter(filter)
+            .order_by_desc(file_revision::Column::CreatedAt)
+            .order_by_desc(file_revision::Column::RevisionId)
+            .limit(limit)
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+
+        Ok(PageFileRevisionHistory {
+            revision_count,
+            revisions,
+        })
     }
 
     async fn get_page_slug(

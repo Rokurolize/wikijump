@@ -497,7 +497,8 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
           pageId,
           -1,
           Number.parseInt(parameters.perpage, 10),
-          pageRequestContext
+          pageRequestContext,
+          true
         )
         const locales = getPreloadBackendLocales(getPreloadRequestLocales(request))
         const { site } = await preloadView(siteId, locales, sessionToken)

@@ -16,7 +16,13 @@ import {
 } from "$lib/server/deepwell/page-file-mutation-payloads"
 import { DEEPWELL_PERMISSION_DENIED } from "$lib/server/deepwell/public-error.js"
 
-import type { FileRevisionModel, FileRevisionType, Nullable, Optional } from "$lib/types"
+import type {
+  FileRevisionModel,
+  FileRevisionType,
+  Nullable,
+  Optional,
+  UserInfo
+} from "$lib/types"
 import type { RequestContext } from "../request-context"
 
 /* ----- Common Interface ----- */
@@ -357,6 +363,32 @@ export async function pageFileHistory(
       revision_number: revisionNumber ?? defaults.page.history.revisionNumber,
       revision_direction: "before",
       limit: limit ?? defaults.page.history.limit
+    },
+    requestContext
+  )
+}
+
+export interface PageFileRevisionHistoryRecord extends FileRevisionModel {
+  author: Nullable<UserInfo>
+}
+
+export interface PageFileRevisionHistoryOutput {
+  revision_count: number
+  revisions: PageFileRevisionHistoryRecord[]
+}
+
+export async function pageFileRevisionHistory(
+  siteId: number,
+  pageId: number,
+  limit: number,
+  requestContext: RequestContext
+): Promise<PageFileRevisionHistoryOutput> {
+  return client.request(
+    "file_revision_page_history",
+    {
+      site_id: siteId,
+      page_id: pageId,
+      limit
     },
     requestContext
   )

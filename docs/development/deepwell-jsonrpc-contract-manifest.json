@@ -3,7 +3,7 @@
   "source_identities": {
     "jsonrpc_registry": {
       "path": "deepwell/src/api.rs",
-      "sha256": "9431415dcfdfcf63eb35c27af0c1c63459f6550cc1ecd1c771fa05e5bed8983a"
+      "sha256": "a5dff7d1ef92fa4595329423d097c4907810a40e6e30b52acab3a949ebd6c9d1"
     },
     "request_context_middleware": {
       "path": "deepwell/src/middleware.rs",
@@ -26,7 +26,7 @@
       "classification": "historical"
     }
   ],
-  "method_count": 177,
+  "method_count": 178,
   "methods": [
     {
       "method": "admin_view",
@@ -2771,7 +2771,7 @@
         "component": "deepwell",
         "handler": "file_revision_count",
         "source": "deepwell/src/endpoints/file_revision.rs#file_revision_count",
-        "source_sha256": "c7ad1013831b341f1acc500ba332e0119b56065a1d0d05bf34ed97f4ec2fc8a2",
+        "source_sha256": "2e02b6c45fb78c4e8028d45b333eff9fd7ca3cd5122fc6be8e5dc246264d74eb",
         "function_sha256": "3d391319fd188c83ec8acb12edc9a2db7e9b9d9107bb539dac070e305269c5cf"
       },
       "params_schema": {
@@ -2824,7 +2824,7 @@
         "component": "deepwell",
         "handler": "file_revision_edit",
         "source": "deepwell/src/endpoints/file_revision.rs#file_revision_edit",
-        "source_sha256": "c7ad1013831b341f1acc500ba332e0119b56065a1d0d05bf34ed97f4ec2fc8a2",
+        "source_sha256": "2e02b6c45fb78c4e8028d45b333eff9fd7ca3cd5122fc6be8e5dc246264d74eb",
         "function_sha256": "994f4a934b898ee9801078c685caa56df0d4c4d2f570be0cede38346971ddede"
       },
       "params_schema": {
@@ -2887,7 +2887,7 @@
         "component": "deepwell",
         "handler": "file_revision_get",
         "source": "deepwell/src/endpoints/file_revision.rs#file_revision_get",
-        "source_sha256": "c7ad1013831b341f1acc500ba332e0119b56065a1d0d05bf34ed97f4ec2fc8a2",
+        "source_sha256": "2e02b6c45fb78c4e8028d45b333eff9fd7ca3cd5122fc6be8e5dc246264d74eb",
         "function_sha256": "a1fb77ede817605c4ec8a1b47c8aa05c4ef99140e2f1200c25896453499fd037"
       },
       "params_schema": {
@@ -2935,12 +2935,72 @@
       }
     },
     {
+      "method": "file_revision_page_history",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "file_revision_page_history",
+        "source": "deepwell/src/endpoints/file_revision.rs#file_revision_page_history",
+        "source_sha256": "2e02b6c45fb78c4e8028d45b333eff9fd7ca3cd5122fc6be8e5dc246264d74eb",
+        "function_sha256": "2e48ee0eae6b97056cf471bdbde107a3d9639285488c5e2c0fbdf03c556d52c4"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params, FileRevision)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [],
+        "requirement_sources": [
+          "deepwell/src/endpoints/file_revision.rs#file_revision_page_history",
+          "deepwell/src/endpoints/file_revision.rs#filter_file_revision"
+        ]
+      },
+      "mutation_class": {
+        "classification": "read_only",
+        "source_signals": []
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "source_contract_only",
+        "reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract",
+        "coverage_gap": {
+          "searched_root": "deepwell/tests",
+          "reason": "no direct run_endpoint handler invocation or rpc_request method invocation was found",
+          "searched_invocations": [
+            "run_endpoint!(runner, handler, ...)",
+            "rpc_request(\"method\", ...)"
+          ]
+        }
+      }
+    },
+    {
       "method": "file_revision_range",
       "endpoint_owner": {
         "component": "deepwell",
         "handler": "file_revision_range",
         "source": "deepwell/src/endpoints/file_revision.rs#file_revision_range",
-        "source_sha256": "c7ad1013831b341f1acc500ba332e0119b56065a1d0d05bf34ed97f4ec2fc8a2",
+        "source_sha256": "2e02b6c45fb78c4e8028d45b333eff9fd7ca3cd5122fc6be8e5dc246264d74eb",
         "function_sha256": "56e50ef565e798b24ea683f83321773eac778f9730107660319162e743728fea"
       },
       "params_schema": {

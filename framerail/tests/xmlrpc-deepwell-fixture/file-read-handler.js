@@ -33,6 +33,14 @@ export const handleFileReadRpc = ({ rpcRequest, request, port }) => {
       toFileResultWithoutData
     )
   } else if (
+    rpcRequest.method === "file_revision_page_history" &&
+    hasExactKeys(rpcRequest.params, ["limit", "page_id", "site_id"]) &&
+    rpcRequest.params.site_id === 6000005 &&
+    (rpcRequest.params.page_id === 3000345 || rpcRequest.params.page_id === 3000173) &&
+    rpcRequest.params.limit === 20
+  ) {
+    result = { revision_count: 0, revisions: [] }
+  } else if (
     rpcRequest.method === "file_get" &&
     hasExactKeys(rpcRequest.params, ["details", "file", "page_id", "site_id"]) &&
     rpcRequest.params.site_id === 6000005 &&

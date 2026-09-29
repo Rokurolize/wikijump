@@ -50,6 +50,7 @@ export const wikidotHistoryActionTitles = (locale) => ACTION_TITLES[localeKey(lo
  */
 export const wikidotRevisionFlags = (revision, locale) => {
   const titles = FLAG_TITLES[localeKey(locale)]
+  if (revision.history_kind === "file") return [{ code: "F", title: titles.files }]
   if (revision.revision_type === "create") return [{ code: "N", title: titles.create }]
   if (revision.revision_type === "move") return [{ code: "R", title: titles.move }]
 

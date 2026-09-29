@@ -19,10 +19,12 @@
  */
 
 use crate::hash::BlobHash;
+use crate::models::file_revision::Model as FileRevisionModel;
 use crate::services::blob::ContentTypeDescriptor;
 use crate::services::page_revision::PageRevisionCountOutput;
 use crate::types::Maybe;
 use crate::types::{FetchDirection, FileRevisionType};
+use ftml::data::UserInfo;
 use time::OffsetDateTime;
 
 #[derive(Debug, Clone)]
@@ -139,6 +141,19 @@ pub struct GetFileRevisionRange {
     pub limit: u64,
 }
 
+#[derive(Deserialize, Debug, Clone)]
+pub struct GetPageFileRevisionHistory {
+    pub site_id: i64,
+    pub page_id: i64,
+    pub limit: u64,
+}
+
+#[derive(Debug)]
+pub struct PageFileRevisionHistory {
+    pub revision_count: u64,
+    pub revisions: Vec<FileRevisionModel>,
+}
+
 #[derive(Serialize, Debug, Clone)]
 pub struct FileRevisionModelFiltered {
     pub revision_id: i64,
@@ -159,6 +174,19 @@ pub struct FileRevisionModelFiltered {
     pub changes: Vec<String>,
     pub comments: Option<String>,
     pub hidden: Vec<String>,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct PageFileRevisionHistoryModelFiltered {
+    #[serde(flatten)]
+    pub revision: FileRevisionModelFiltered,
+    pub author: Option<UserInfo<'static>>,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct PageFileRevisionHistoryOutput {
+    pub revision_count: u64,
+    pub revisions: Vec<PageFileRevisionHistoryModelFiltered>,
 }
 
 pub type FileRevisionCountOutput = PageRevisionCountOutput;
