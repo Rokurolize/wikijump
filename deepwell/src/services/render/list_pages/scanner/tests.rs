@@ -1717,9 +1717,16 @@ fn module_head_validation_preserves_nesting_without_executing_malformed_heads() 
 
 #[test]
 fn full_source_typography_changes_make_direct_heads_runtime_unsafe() {
+    assert_eq!(
+        validate_module_head(r#"name="``foo''" limit=1"#, true),
+        ModuleHeadValidation::ValidRuntimeUnsafe,
+    );
+
     for source in [
         "`prefix [[module ListPages name=\"foo'bar\"]]B[[/module]]",
         "[[module ListPages name=\"foo`bar\"]]B' suffix[[/module]]",
+        // A later bare value must not clear a projection contained in the head.
+        r#"[[module ListPages name="``foo''" limit=1]]B[[/module]]"#,
     ] {
         let modules = find_list_pages_module_matches(source);
         assert_eq!(modules.len(), 1, "{source:?}");
