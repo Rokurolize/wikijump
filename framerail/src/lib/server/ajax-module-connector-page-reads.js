@@ -1,3 +1,10 @@
+import {
+  wikidotHistoryActionTitles,
+  wikidotHistoryHeaders,
+  wikidotRevisionDate,
+  wikidotRevisionFlags
+} from "../wikidot-history-contract.js"
+
 /** @param {string} value */
 const escapeHtml = (value) =>
   value
@@ -116,26 +123,6 @@ export const renderWikidotWhoRated = (votes) => {
   return `<h2>Users who rated:</h2>\n\n<div style="-moz-column-count:3">${rows}</div>`
 }
 
-/** @param {string} createdAt */
-const wikidotDateText = (createdAt) => {
-  const date = new Date(createdAt)
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec"
-  ]
-  return `${date.getUTCDate()} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()}`
-}
-
 /**
  * @typedef {{
  *   revision_id: number
@@ -147,6 +134,9 @@ const wikidotDateText = (createdAt) => {
  *     "user-id": number
  *     "user-slug": string
  *     "user-name": string
+ *     "user-karma": number
+ *     "user-avatar-data": string
+ *     "user-profile-url": string
  *   }
  *   changes: string[]
  *   comments: string | null
@@ -156,18 +146,13 @@ const wikidotDateText = (createdAt) => {
  */
 
 /** @param {WikidotHistoryRevision} revision */
-const renderWikidotRevisionFlags = (revision) => {
-  if (revision.revision_type === "create") {
-    return '<span class="spantip" title="New page">N</span>'
-  }
-  if (revision.revision_type === "move") {
-    return '<span class="spantip" title="Page renamed">R</span>'
-  }
-  if (revision.changes.some((change) => change !== "wikitext")) {
-    return '<span class="spantip" title="Metadata changed">M</span>'
-  }
-  return ""
-}
+const renderWikidotRevisionFlags = (revision, locale) =>
+  wikidotRevisionFlags(revision, locale)
+    .map(
+      ({ code, title }) =>
+        `<span class="spantip" title="${escapeHtmlAttribute(title)}">${code}</span>`
+    )
+    .join(" ")
 
 /** @param {WikidotHistoryRevision} revision */
 const renderWikidotRevisionAuthor = (revision) => {
@@ -175,23 +160,37 @@ const renderWikidotRevisionAuthor = (revision) => {
     return `<span class="printuser deleted" data-id="${revision.user_id}"></span>`
   }
   const userId = revision.author["user-id"]
-  const userSlug = escapeHtmlAttribute(revision.author["user-slug"])
   const userName = escapeHtml(revision.author["user-name"])
-  return `<span class="printuser"><a href="http://www.wikidot.com/user:info/${userSlug}" onclick="WIKIDOT.page.listeners.userInfo(${userId}); return false;">${userName}</a></span>`
+  const profileUrl = escapeHtmlAttribute(
+    revision.author["user-profile-url"].replace(/^http:/u, "https:")
+  )
+  const avatarData = revision.author["user-avatar-data"]
+  const avatar = avatarData
+    ? `<a href="${profileUrl}"><img class="small" src="${escapeHtmlAttribute(avatarData.replace(/^http:/u, "https:"))}" alt="${escapeHtmlAttribute(revision.author["user-name"])}" style="background-image:url(https://www.wikidot.com/userkarma.php?u=${userId})"/></a>`
+    : ""
+  return `<span class="printuser avatarhover">${avatar}<a href="${profileUrl}">${userName}</a></span>`
 }
 
 /** @param {WikidotHistoryRevision[]} revisions */
-export const renderWikidotPageRevisionList = (revisions) => {
+export const renderWikidotPageRevisionList = (revisions, locale = "en") => {
+  const titles = wikidotHistoryActionTitles(locale)
   const rows = revisions
     .map((revision, index) => {
       const revisionId = revision.revision_id
       const fromChecked = index === 1 ? ' checked="checked"' : ""
       const toChecked = index === 0 ? ' checked="checked"' : ""
-      const timestamp = Math.floor(new Date(revision.created_at).getTime() / 1000)
-      return `<tr id="revision-row-${revisionId}"><td>${revision.revision_number + 1}.</td><td><input type="radio" name="from" value="${revisionId}"${fromChecked} /><input type="radio" name="to" value="${revisionId}"${toChecked} /></td><td>${renderWikidotRevisionFlags(revision)}</td><td><a href="javascript:;" onclick="showVersion(${revisionId})">V</a> <a href="javascript:;" onclick="showSource(${revisionId})">S</a></td><td>${renderWikidotRevisionAuthor(revision)}</td><td><span class="odate time_${timestamp}">${wikidotDateText(revision.created_at)}</span></td><td>${escapeHtml(revision.comments ?? "")}</td></tr>`
+      const date = wikidotRevisionDate(revision.created_at)
+      const rollback =
+        index > 0
+          ? ` <a title="${escapeHtmlAttribute(titles.rollback)}" href="javascript:;" onclick="WIKIDOT.modules.PageHistoryModule.listeners.revert(event,${revisionId})">R</a>`
+          : ""
+      return `<tr id="revision-row-${revisionId}"><td>${revision.revision_number + 1}.</td><td style="width: 5em"><input id="${revisionId}" type="radio" name="from" value="${revisionId}"${fromChecked} /><input id="${revisionId}" type="radio" name="to" value="${revisionId}"${toChecked} /></td><td>${renderWikidotRevisionFlags(revision, locale)}</td><td style="width: 5em" class="optionstd"><a title="${escapeHtmlAttribute(titles.view)}" href="javascript:;" onclick="showVersion(${revisionId})">V</a> <a title="${escapeHtmlAttribute(titles.source)}" href="javascript:;" onclick="showSource(${revisionId})">S</a>${rollback}</td><td style="width: 15em">${renderWikidotRevisionAuthor(revision)}</td><td style="padding: 0 0.5em; width: 7em;">${date ? `<span class="${date.className}">${date.text}</span>` : ""}</td><td style="font-size: 90%">${escapeHtml(revision.comments ?? "")}</td></tr>`
     })
     .join("")
-  return `<table class="page-history"><tr><td>rev.</td><td>&nbsp;</td><td>flags</td><td>action</td><td>by</td><td>date</td><td>comment</td></tr>${rows}</table>`
+  const headers = wikidotHistoryHeaders(locale)
+    .map((header) => `<td>${header ? escapeHtml(header) : "&nbsp;"}</td>`)
+    .join("")
+  return `<table class="page-history"><tr>${headers}</tr>${rows}</table>`
 }
 
 /** @param {WikidotHistoryRevision} revision */

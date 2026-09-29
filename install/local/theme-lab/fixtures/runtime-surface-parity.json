@@ -1,0 +1,1257 @@
+{
+  "schema": "theme_lab_runtime_surface_parity.v1",
+  "updated_at": "2026-09-29",
+  "decision_rule": "Only a PARITY_CERTIFIED scope may support a theme-port requirement. All other and unclassified runtime findings are quarantined from port next_actions; independent asset/include findings remain actionable.",
+  "source_baseline": {
+    "generic_wikidot_base_css": {
+      "status": "FROZEN_SOURCE_ARTIFACT",
+      "source_identity": "Wikidot common theme Base stylesheet retained in the local Wikidot static asset tree",
+      "path": "framerail/static/wikidot/styles/wikidot-base-165bc434fd1d.css",
+      "sha256": "165bc434fd1da2092fee0ea6bdeb55aa38402aaaafd6d1e3303180d2b595b981",
+      "evidence_reference": [
+        "install/local/theme-lab/tests/integration.test.mjs",
+        "docs/wikidot-specifications/specifications/platform/site-themes.md#persisted-built-in-theme-ids-serve-exact-ordered-versioned-common--theme-stylesheets"
+      ]
+    },
+    "scp_en_theme_site": {
+      "status": "SOURCE_CONFIRMED",
+      "title": "Sigma-10 Theme",
+      "page": "https://scp-wiki.wikidot.com/theme:site",
+      "source_sha256": "17f5d83fc92f3f171fcdb790f78fe207db86203eeca1e34f508631fb36daca34",
+      "updated_at": "2026-05-22T09:04:20+00:00",
+      "import": "https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css",
+      "official_source_repository": "https://github.com/scpwiki/sigma",
+      "evidence_reference": [
+        "install/local/theme-lab/ports/site/manifest.json",
+        "install/local/theme-lab/ports/site/upstream-en.wikidot.txt",
+        "install/local/theme-lab/ports/en-theme-dependency-graph.json",
+        "install/local/theme-lab/ports/site/candidate-base.css"
+      ]
+    }
+  },
+  "inventories": {
+    "theme_css_surface_discovery": "install/local/theme-lab/src/theme-surface-contract.mjs:KNOWN_THEME_SURFACES",
+    "interactive_fixture_surfaces": "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+  },
+  "surfaces": [
+    {
+      "surface_id": "content.article",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#page-title|#page-content|#page-info|#main-content"
+      ]
+    },
+    {
+      "surface_id": "content.blockquote",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "^blockquote(?:$|[\\s>+~.#:\\[])"
+      ]
+    },
+    {
+      "surface_id": "content.code",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "\\.code|\\bpre\\b"
+      ]
+    },
+    {
+      "surface_id": "content.collapsible",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "\\.collapsible-block"
+      ]
+    },
+    {
+      "surface_id": "content.credit",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "\\.creditButton|\\.creditRate|#u-credit-(?:view|otherwise)|\\.creditBottomRate"
+      ]
+    },
+    {
+      "surface_id": "content.footnotes",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "\\.footnotes-footer|\\.footnoteref"
+      ]
+    },
+    {
+      "surface_id": "content.image-block",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "\\.scp-image-block|\\bdiv\\.img"
+      ]
+    },
+    {
+      "surface_id": "content.link",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "(?:^|\\s)a(?:$|[:.\\[])|#page-content\\s+a"
+      ]
+    },
+    {
+      "surface_id": "content.links",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "(?:^|\\s)a(?:$|[:.\\[])|#page-content\\s+a"
+      ]
+    },
+    {
+      "surface_id": "content.rating",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "\\.page-rate-widget-box|\\.rate-points|\\.rateup|\\.ratedown"
+      ]
+    },
+    {
+      "surface_id": "content.table",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "^(?:table|\\.wiki-content-table)(?:$|[\\s>+~.#:\\[])"
+      ]
+    },
+    {
+      "surface_id": "content.tabview",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "\\.yui-navset|\\.yui-nav|\\.yui-content"
+      ]
+    },
+    {
+      "surface_id": "content.toc",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#toc"
+      ]
+    },
+    {
+      "surface_id": "credit.close-back",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "\\.creditButton|\\.modalbox|\\.fader"
+      ]
+    },
+    {
+      "surface_id": "credit.default",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "\\.creditButton|\\.creditRate|\\.creditBottomRate"
+      ]
+    },
+    {
+      "surface_id": "credit.otherwise",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#u-credit-otherwise|\\.modalbox"
+      ]
+    },
+    {
+      "surface_id": "credit.view",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#u-credit-view|\\.modalbox"
+      ]
+    },
+    {
+      "surface_id": "dialog.generic",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#odialog-container|\\.owindow|\\.odialog-shader"
+      ]
+    },
+    {
+      "surface_id": "nav.desktop-top",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#top-bar|\\.top-bar"
+      ]
+    },
+    {
+      "surface_id": "nav.mobile-top",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "\\.mobile-top-bar|\\.open-menu"
+      ]
+    },
+    {
+      "surface_id": "nav.mobile-top.forced-submenu-state",
+      "status": "THEME_LAB_ONLY_SYNTHETIC_SURFACE",
+      "scope": "synthetic Theme Lab fixture state only",
+      "evidence_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs"
+      ],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/runtime-surface-parity.test.mjs",
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "The state runner adds a Theme Lab-only class and style rule to force a submenu open; it is a local test device, not an observed Wikidot transition."
+      ],
+      "selector_patterns": []
+    },
+    {
+      "surface_id": "nav.sidebar",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#side-bar|\\.side-block|\\.close-menu"
+      ]
+    },
+    {
+      "surface_id": "nav.tablet-top",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#top-bar|\\.top-bar|\\.mobile-top-bar"
+      ]
+    },
+    {
+      "surface_id": "nav.top",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#top-bar|\\.top-bar"
+      ]
+    },
+    {
+      "surface_id": "page.actions",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#page-options|#more-options-button"
+      ]
+    },
+    {
+      "surface_id": "page.backlinks",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#backlinks|\\.backlinks"
+      ]
+    },
+    {
+      "surface_id": "page.delete",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#delete|\\.delete-page"
+      ]
+    },
+    {
+      "surface_id": "page.diff",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "\\.revision-diff|#revision-diff"
+      ]
+    },
+    {
+      "surface_id": "page.edit",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#editor|#edit-form|\\.editor-toolbar"
+      ]
+    },
+    {
+      "surface_id": "page.files",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "\\.page-files|\\.file-list|\\.file-row|\\.file-name|\\.file-attribute"
+      ]
+    },
+    {
+      "surface_id": "page.history",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole History surface; see the separately scoped table DOM contract",
+      "evidence_reference": [
+        "install/local/theme-lab/evidence/wikidot-history-parity-20260929.json#sites[scp-wiki,scp-jp].history_contract",
+        "install/local/theme-lab/evidence/wikidot-history-parity-20260929.responses/en-02.json",
+        "install/local/theme-lab/evidence/wikidot-history-parity-20260929.responses/jp-02.json"
+      ],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": "2026-09-29",
+      "source_identity": {
+        "captured_at": "2026-09-29T06:35:07.588103+00:00",
+        "transport": "anonymous HTTPS via pinned wikidot.py 4.4.1",
+        "source_pages": [
+          {
+            "site": "scp-wiki.wikidot.com",
+            "slug": "scp-173",
+            "page_id": 1956234,
+            "module": "history/PageRevisionListModule"
+          },
+          {
+            "site": "scp-jp.wikidot.com",
+            "slug": "scp-173",
+            "page_id": 19439882,
+            "module": "history/PageRevisionListModule"
+          }
+        ]
+      },
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "The current live captures prove the seven-cell AMC fragment only; they do not capture source-side mobile CSS, focus/hover states, pagination transitions, or action outcomes.",
+        "The AMC fragment contains .odate markup and date text, but it does not prove final client-side date hydration. Wikijump's retained Wikidot Base CSS hides .odate with display:none, so visible/relative date behavior remains unverified and quarantined.",
+        "Live History includes an F file/attachment operation row. Wikijump's page revision API does not expose a combined page/file timeline, so that row remains an explicit source/runtime gap.",
+        "Current capture requests only the first ten rows; paging and longer-history behavior are not proven."
+      ],
+      "selector_patterns": [
+        "\\.page-history|#revision-list|#action-area.*(?:history|revision)|\\.revision-diff|#history-subarea"
+      ]
+    },
+    {
+      "surface_id": "page.history.file-revision-timeline",
+      "status": "PARITY_MISMATCH",
+      "scope": "combined page History timeline rows for file/attachment operations carrying the observed F flag",
+      "evidence_reference": [
+        "install/local/theme-lab/evidence/wikidot-history-parity-20260929.json#sites[scp-jp].history_contract.revision_rows",
+        "install/local/theme-lab/evidence/wikidot-history-parity-20260929.responses/jp-02.json"
+      ],
+      "implementation_reference": [
+        "framerail/src/lib/server/deepwell/page.ts:pageHistory",
+        "framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte",
+        "framerail/src/routes/[slug]/[...extra]/FileHistoryPanel.svelte"
+      ],
+      "test_reference": [
+        "framerail/tests/page-workflows.spec.ts",
+        "install/local/theme-lab/tests/history-parity-evidence.test.mjs"
+      ],
+      "evidence_date": "2026-09-29",
+      "source_identity": {
+        "site": "scp-jp.wikidot.com",
+        "slug": "scp-173",
+        "page_id": 19439882,
+        "module": "history/PageRevisionListModule",
+        "observed_row_id": "revision-row-1460043942",
+        "observed_flag": "F"
+      },
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "Wikidot returns a file/attachment operation row in the shared page History module. Wikijump pageHistory reads page revisions only; file revisions are exposed separately and do not currently contribute a row to this combined timeline. The confirmed mismatch remains quarantined pending an explicit implementation decision and file-revision parity contract."
+      ],
+      "selector_patterns": []
+    },
+    {
+      "surface_id": "page.history.table-dom",
+      "status": "PARITY_CERTIFIED",
+      "scope": "only the observed History table DOM contract: seven ordered cells, row id prefix, from/to radios, flag/action cells, author/date/comment selectors; localization may change visible header/flag text",
+      "evidence_reference": [
+        "install/local/theme-lab/evidence/wikidot-history-parity-20260929.json#sites[scp-wiki,scp-jp].history_contract",
+        "install/local/theme-lab/evidence/wikidot-history-parity-20260929.responses/en-02.json",
+        "install/local/theme-lab/evidence/wikidot-history-parity-20260929.responses/jp-02.json"
+      ],
+      "implementation_reference": [
+        "framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte",
+        "framerail/src/lib/wikidot-history-contract.js",
+        "framerail/src/lib/server/ajax-module-connector-page-reads.js"
+      ],
+      "test_reference": [
+        "framerail/tests/page-workflows.spec.ts",
+        "framerail/tests/ajax-module-connector-page-reads.test.js",
+        "install/local/theme-lab/tests/history-parity-evidence.test.mjs"
+      ],
+      "evidence_date": "2026-09-29",
+      "source_identity": {
+        "sites": [
+          "scp-wiki.wikidot.com/scp-173 (page 1956234)",
+          "scp-jp.wikidot.com/scp-173 (page 19439882)"
+        ],
+        "module": "history/PageRevisionListModule",
+        "transport": "anonymous HTTPS via pinned wikidot.py 4.4.1"
+      },
+      "may_treat_differences_as_port_requirements": true,
+      "intentional_differences": [
+        "Header labels and flag tooltip text are localized while cell order and selectors remain stable."
+      ],
+      "unresolved_evidence_gaps": [
+        "This narrow DOM certification does not establish date hydration/visibility, mobile styling, interaction outcomes, pager states, or combined file revision rows."
+      ],
+      "selector_patterns": [
+        "\\.page-history",
+        "#revision-row-"
+      ]
+    },
+    {
+      "surface_id": "page.normal",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#page-content|#main-content"
+      ]
+    },
+    {
+      "surface_id": "page.options",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#page-options-container|#page-options-bottom|#more-options-button"
+      ]
+    },
+    {
+      "surface_id": "page.parent",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#parent|\\.page-parent"
+      ]
+    },
+    {
+      "surface_id": "page.rename",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#rename|#move-page|\\.move-page"
+      ]
+    },
+    {
+      "surface_id": "page.source",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "\\.page-source|#view-source-button"
+      ]
+    },
+    {
+      "surface_id": "page.tags",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "\\.page-tags|#page-tags"
+      ]
+    },
+    {
+      "surface_id": "shell.container",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "^(?:html|body|#container-wrap|#content-wrap|#main-content)(?:$|[\\s>+~.#:\\[])"
+      ]
+    },
+    {
+      "surface_id": "shell.footer",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#footer"
+      ]
+    },
+    {
+      "surface_id": "shell.footer-license",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#footer|#license-area"
+      ]
+    },
+    {
+      "surface_id": "shell.header",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "^#header(?:$|[\\s>+~.#:\\[])"
+      ]
+    },
+    {
+      "surface_id": "shell.interwiki",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "\\.scpnet-interwiki|#interwiki"
+      ]
+    },
+    {
+      "surface_id": "shell.interwiki.fixture",
+      "status": "THEME_LAB_ONLY_SYNTHETIC_SURFACE",
+      "scope": "synthetic Theme Lab fixture state only",
+      "evidence_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs"
+      ],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/runtime-surface-parity.test.mjs",
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "The state runner appends a local srcdoc iframe so candidate selectors can be exercised; it is not the source Interwiki document or a source-side interaction capture."
+      ],
+      "selector_patterns": []
+    },
+    {
+      "surface_id": "shell.license",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#license-area"
+      ]
+    },
+    {
+      "surface_id": "shell.login",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#login-status|#account-topbutton"
+      ]
+    },
+    {
+      "surface_id": "shell.search",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "whole surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/theme-surface-contract.mjs",
+        "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/theme-surface-contract.test.mjs",
+        "install/local/theme-lab/ports/SCP-JP-THEME-SURFACE-SPEC.md"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
+      ],
+      "selector_patterns": [
+        "#search-top-box"
+      ]
+    },
+    {
+      "surface_id": "unclassified-runtime-surface",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "scope": "fail-closed fallback for a runtime-related finding not matched to a registered surface",
+      "evidence_reference": [],
+      "implementation_reference": [
+        "install/local/theme-lab/src/runtime-surface-parity.mjs"
+      ],
+      "test_reference": [
+        "install/local/theme-lab/tests/runtime-surface-parity.test.mjs"
+      ],
+      "evidence_date": null,
+      "source_identity": null,
+      "may_treat_differences_as_port_requirements": false,
+      "intentional_differences": [],
+      "unresolved_evidence_gaps": [
+        "No registered source/runtime parity evidence was matched; add an explicit registry row and evidence before port promotion."
+      ],
+      "selector_patterns": []
+    }
+  ]
+}

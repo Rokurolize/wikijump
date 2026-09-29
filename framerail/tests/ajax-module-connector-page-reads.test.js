@@ -143,7 +143,11 @@ test("renders typed Deepwell revisions in the wikidot.py history parser boundary
       author: {
         "user-id": 12345,
         "user-slug": "test-user",
-        "user-name": "Test <User>"
+        "user-name": "Test <User>",
+        "user-karma": 5,
+        "user-avatar-data":
+          "http://www.wikidot.com/avatar.php?userid=12345&amp;size=small",
+        "user-profile-url": "http://www.wikidot.com/user:info/test-user"
       },
       changes: ["slug"],
       comments: "Renamed & retained",
@@ -168,13 +172,86 @@ test("renders typed Deepwell revisions in the wikidot.py history parser boundary
   assert.match(body, /<tr id="revision-row-1000003"><td>3\.<\/td>/u)
   assert.match(body, /name="to" value="1000003" checked="checked"/u)
   assert.match(body, /name="from" value="1000002" checked="checked"/u)
+  assert.match(body, /<td style="width: 5em" class="optionstd">/u)
+  assert.match(body, /title="View page revision"[^>]*>V<\/a>/u)
+  assert.match(body, /title="Revert to revision"[^>]*>R<\/a>/u)
   assert.match(
     body,
-    /<span class="printuser"><a href="http:\/\/www\.wikidot\.com\/user:info\/test-user" onclick="WIKIDOT\.page\.listeners\.userInfo\(12345\); return false;">Test &lt;User&gt;<\/a><\/span>/u
+    /<span class="printuser avatarhover"><a href="https:\/\/www\.wikidot\.com\/user:info\/test-user"><img class="small" src="https:\/\/www\.wikidot\.com\/avatar\.php\?userid=12345&amp;amp;size=small" alt="Test &lt;User&gt;" style="background-image:url\(https:\/\/www\.wikidot\.com\/userkarma\.php\?u=12345\)"\/><\/a><a href="https:\/\/www\.wikidot\.com\/user:info\/test-user">Test &lt;User&gt;<\/a><\/span>/u
   )
-  assert.match(body, /<span class="odate time_1700002000">14 Nov 2023<\/span>/u)
+  assert.match(
+    body,
+    /<td style="width: 5em"><input id="1000003" type="radio" name="from" value="1000003"/u
+  )
+  assert.match(
+    body,
+    /<span class="odate time_1700002000 format_%25e%20%25b%20%25Y%7Cagohover">14 Nov 2023 22:46<\/span>/u
+  )
   assert.match(body, /Renamed &amp; retained/u)
   assert.match(body, /<span class="printuser deleted" data-id="45678"><\/span>/u)
+  assert.match(
+    body,
+    /<td>rev\.<\/td><td>&nbsp;<\/td><td>flags<\/td><td>actions<\/td><td>by<\/td><td>date<\/td><td>comments<\/td>/u
+  )
+})
+
+test("History flags and headers use the shared localized Wikidot contract", () => {
+  const body = renderWikidotPageRevisionList(
+    [
+      {
+        revision_id: 1000004,
+        revision_type: "regular",
+        revision_number: 3,
+        created_at: "2023-11-14T22:46:40Z",
+        user_id: 12345,
+        author: {
+          "user-id": 12345,
+          "user-slug": "test-user",
+          "user-name": "Test User",
+          "user-karma": 0,
+          "user-avatar-data":
+            "http://www.wikidot.com/avatar.php?userid=12345&amp;size=small",
+          "user-profile-url": "http://www.wikidot.com/user:info/test-user"
+        },
+        changes: ["wikitext"],
+        comments: "Source",
+        wikitext: null,
+        compiled_body_html: null
+      },
+      {
+        revision_id: 1000003,
+        revision_type: "regular",
+        revision_number: 2,
+        created_at: "2023-11-14T22:30:00Z",
+        user_id: 12345,
+        author: {
+          "user-id": 12345,
+          "user-slug": "test-user",
+          "user-name": "Test User",
+          "user-karma": 0,
+          "user-avatar-data":
+            "http://www.wikidot.com/avatar.php?userid=12345&amp;size=small",
+          "user-profile-url": "http://www.wikidot.com/user:info/test-user"
+        },
+        changes: ["tags"],
+        comments: "Tags",
+        wikitext: null,
+        compiled_body_html: null
+      }
+    ],
+    "ja-JP"
+  )
+
+  assert.equal((body.match(/<td\b[^>]*>/gu) ?? []).length, 21)
+  assert.match(
+    body,
+    /<td>フラグ<\/td><td>アクション<\/td><td>by<\/td><td>日付<\/td><td>コメント<\/td>/u
+  )
+  assert.match(body, /title="コンテンツソースが変更されました">S<\/span>/u)
+  assert.match(body, /title="タグが変更されました">A<\/span>/u)
+  assert.equal((body.match(/class="optionstd"/gu) ?? []).length, 2)
+  assert.equal((body.match(/>R<\/a>/gu) ?? []).length, 1)
+  assert.doesNotMatch(body, /Metadata changed|class="spantip" title=""/u)
 })
 
 test("renders historical source and compiled HTML without exposing source markup", () => {

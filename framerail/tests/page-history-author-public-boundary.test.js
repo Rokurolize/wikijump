@@ -11,6 +11,7 @@ let previousWorkingDirectory
 let vite
 let render
 let revisionAuthorComponent
+let wikidotRevisionAuthorComponent
 
 before(async () => {
   previousWorkingDirectory = process.cwd()
@@ -20,6 +21,9 @@ before(async () => {
   ;({ render } = await vite.ssrLoadModule("svelte/server"))
   ;({ default: revisionAuthorComponent } = await vite.ssrLoadModule(
     "/src/routes/[slug]/[...extra]/RevisionAuthor.svelte"
+  ))
+  ;({ default: wikidotRevisionAuthorComponent } = await vite.ssrLoadModule(
+    "/src/routes/[slug]/[...extra]/WikidotRevisionAuthor.svelte"
   ))
 })
 
@@ -47,6 +51,37 @@ test("History renders the resolved author name without exposing its numeric ID",
     /<span class="printuser"><a href="\/-\/user\/history-importer">History Importer<\/a><\/span>/u
   )
   assert.doesNotMatch(body, />-20</u)
+})
+
+test("WIKIDOT History author keeps the avatarhover profile and avatar structure", () => {
+  const body = render(wikidotRevisionAuthorComponent, {
+    props: {
+      author: {
+        "user-id": 12345,
+        "user-slug": "history-author",
+        "user-name": "History Author",
+        "user-karma": 5,
+        "user-avatar-data":
+          "http://www.wikidot.com/avatar.php?userid=12345&amp;size=small",
+        "user-profile-url": "http://www.wikidot.com/user:info/history-author"
+      }
+    }
+  }).body
+
+  assert.match(body, /<span class="printuser avatarhover">/u)
+  assert.match(body, /<img class="small"[^>]+alt="History Author"/u)
+  assert.match(
+    body,
+    /src="https:\/\/www\.wikidot\.com\/avatar\.php\?userid=12345&amp;amp;size=small"/u
+  )
+  assert.match(
+    body,
+    /style="background-image:url\(https:\/\/www\.wikidot\.com\/userkarma\.php\?u=12345\)"/u
+  )
+  assert.match(
+    body,
+    /<a href="https:\/\/www\.wikidot\.com\/user:info\/history-author">History Author<\/a>/u
+  )
 })
 
 test("History leaves a missing or deleted author identity neutral", () => {

@@ -128,7 +128,16 @@ export const handlePageLookupRpc = ({ rpcRequest, request, response }) => {
         revision_type: "regular",
         revision_number: 1,
         created_at: "2026-08-15T00:00:00Z",
-        author: null,
+        user_id: 12345,
+        author: {
+          "user-id": 12345,
+          "user-slug": "history-author",
+          "user-name": "History Author",
+          "user-karma": 0,
+          "user-avatar-data":
+            "http://www.wikidot.com/avatar.php?userid=12345&amp;size=small",
+          "user-profile-url": "http://www.wikidot.com/user:info/history-author"
+        },
         comments: "old revision"
       },
       {
@@ -136,7 +145,16 @@ export const handlePageLookupRpc = ({ rpcRequest, request, response }) => {
         revision_type: "regular",
         revision_number: 2,
         created_at: "2026-08-15T00:00:00Z",
-        author: null,
+        user_id: 12345,
+        author: {
+          "user-id": 12345,
+          "user-slug": "history-author",
+          "user-name": "History Author",
+          "user-karma": 0,
+          "user-avatar-data":
+            "http://www.wikidot.com/avatar.php?userid=12345&amp;size=small",
+          "user-profile-url": "http://www.wikidot.com/user:info/history-author"
+        },
         comments: "new revision"
       }
     ]
@@ -179,6 +197,40 @@ export const handlePageLookupRpc = ({ rpcRequest, request, response }) => {
         }
       }
       return { responded: true }
+    }
+  } else if (
+    rpcRequest.method === "page_revision_get" &&
+    hasExactKeys(rpcRequest.params, [
+      "details",
+      "page_id",
+      "revision_number",
+      "site_id"
+    ]) &&
+    rpcRequest.params.site_id === 6000005 &&
+    rpcRequest.params.page_id === HISTORY_WORKFLOW_PAGE_ID &&
+    [1, 2].includes(rpcRequest.params.revision_number) &&
+    hasExactKeys(rpcRequest.params.details, ["compiled_html", "wikitext"]) &&
+    (rpcRequest.params.details.compiled_html || rpcRequest.params.details.wikitext)
+  ) {
+    pageReadRequests.pageRevisionGet.push(rpcRequest.params)
+    result = {
+      revision_id: 9000340 + rpcRequest.params.revision_number,
+      revision_type: "regular",
+      revision_number: rpcRequest.params.revision_number,
+      site_id: 6000005,
+      page_id: HISTORY_WORKFLOW_PAGE_ID,
+      user_id: 123,
+      created_at: "2026-08-15T00:00:00Z",
+      changes: ["wikitext"],
+      comments: rpcRequest.params.revision_number === 1 ? "old revision" : "new revision",
+      wikitext: rpcRequest.params.details.wikitext
+        ? `Source for revision ${rpcRequest.params.revision_number}`
+        : null,
+      compiled_body_html: rpcRequest.params.details.compiled_html
+        ? `<p>Historical version ${rpcRequest.params.revision_number}</p>`
+        : null,
+      compiled_body_styles: [],
+      tags: []
     }
   } else if (
     rpcRequest.method === "page_revision_get" &&
