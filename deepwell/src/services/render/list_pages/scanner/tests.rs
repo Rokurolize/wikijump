@@ -2328,6 +2328,8 @@ fn corpus_trailing_at_marker_head_keeps_its_evidenced_raw_row_tail_executable() 
 
 #[test]
 fn unquoted_comparison_discriminators_remain_structurally_executable() {
+    // Frozen Wikidot oracle: unquoted-comparison-live.jsonl. These observed
+    // inert tokens must not force an executable module into literal fallback.
     for token in [
         "rating>100000",
         "score>100000",
@@ -2349,6 +2351,7 @@ fn unquoted_comparison_discriminators_remain_structurally_executable() {
             format!("[[module ListPages {head}]]\nROW=%%fullname%%\n[[/module]]");
         let modules = find_list_pages_module_matches(&source);
         assert_eq!(modules.len(), 1, "{source:?}: {modules:#?}");
+        assert!(modules[0].runtime_safe, "{source:?}: {modules:#?}");
     }
 }
 
