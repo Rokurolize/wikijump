@@ -746,6 +746,25 @@ fn list_pages_scanner_projects_structural_module_closers() {
 }
 
 #[test]
+fn projection_guard_is_consumed_only_at_its_candidate() {
+    let source = "plain";
+    let lowercase = source.to_ascii_lowercase();
+    let literal_regions =
+        LiteralRegionIndex::new_list_pages_scanner_syntax(source).unwrap();
+    let mut scanner = ModuleEventScanner::new(source, &lowercase, &literal_regions);
+
+    scanner.pending_projection_guard = Some((5, 20));
+    assert_eq!(scanner.take_projection_guard(4), None);
+    assert_eq!(scanner.pending_projection_guard, Some((5, 20)));
+    assert_eq!(scanner.take_projection_guard(5), Some(20));
+    assert_eq!(scanner.pending_projection_guard, None);
+
+    scanner.pending_projection_guard = Some((7, 30));
+    assert_eq!(scanner.take_projection_guard(8), None);
+    assert_eq!(scanner.pending_projection_guard, None);
+}
+
+#[test]
 fn list_pages_scanner_respects_left_bracket_token_precedence() {
     for run in [4usize, 8] {
         let source = format!(

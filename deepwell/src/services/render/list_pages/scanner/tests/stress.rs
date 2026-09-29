@@ -2,6 +2,35 @@ use super::super::*;
 use crate::services::render::render_budget::RenderCostBudget;
 
 #[test]
+fn event_scanner_cursor_work_counter_tracks_displacement() {
+    let source = "0123456789";
+    let lowercase = source.to_ascii_lowercase();
+    let literal_regions =
+        LiteralRegionIndex::new_list_pages_scanner_syntax(source).unwrap();
+    let mut scanner = ModuleEventScanner::new(source, &lowercase, &literal_regions);
+
+    scanner.advance_to(3);
+    assert_eq!(scanner.scanned_bytes, 3);
+    scanner.advance_to(8);
+    assert_eq!(scanner.scanned_bytes, 8);
+}
+
+#[test]
+fn event_scanner_speculative_budget_allows_exact_limit() {
+    let source = "plain";
+    let lowercase = source.to_ascii_lowercase();
+    let literal_regions =
+        LiteralRegionIndex::new_list_pages_scanner_syntax(source).unwrap();
+    let mut scanner = ModuleEventScanner::new(source, &lowercase, &literal_regions);
+    scanner.speculative_limit = 3;
+
+    assert!(scanner.charge_speculative(3));
+    assert_eq!(scanner.speculative_bytes, 3);
+    assert!(!scanner.charge_speculative(1));
+    assert!(scanner.ambiguous_whole_head);
+}
+
+#[test]
 fn list_pages_event_scanner_keeps_monotone_cursor_work_bounded_on_deep_nesting() {
     const DEPTH: usize = 20_000;
     let mut source = String::from("[[module ListPages name=\"outer\"]]before");
