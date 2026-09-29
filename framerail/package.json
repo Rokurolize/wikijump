@@ -63,7 +63,7 @@
     "include-media": "^2.0.0",
     "jquery": "4.0.0",
     "jquery-ui": "1.14.2",
-    "json-rpc-2.0": "^1.8.0",
+    "json-rpc-2.0": "^1.8.1",
     "prismjs": "1.30.0",
     "svelte": "^5.57.0",
     "svelte-check": "^4.7.6",
