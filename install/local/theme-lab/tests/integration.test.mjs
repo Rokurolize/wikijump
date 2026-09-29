@@ -39,7 +39,11 @@ const FOREIGN_CSS = `#header h1 { color: rgb(187, 1, 17); font-size: 31px; }
 const SELECTORS = ["#header h1", "#page-content", ".foreign-rate-box", ".page-rate-widget-box", "table.wiki-content-table"];
 
 async function fixtureServer() {
-  const baseCss = await fs.readFile(WIKIDOT_BASE_CSS);
+  // This is a diagnostic loopback fixture, not source-Wikidot authority.
+  // Flatten decorative remote URLs so cache acquisition itself stays local.
+  const pixel='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  const baseCss = (await fs.readFile(WIKIDOT_BASE_CSS,'utf8'))
+    .replace(/url\(\s*(['"]?)(?:https?:)?\/\/[^)]*\)/giu,`url("${pixel}")`);
   const hits = [];
   const server = http.createServer((request, response) => {
     hits.push(request.url);
