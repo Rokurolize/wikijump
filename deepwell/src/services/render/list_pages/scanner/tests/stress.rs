@@ -96,6 +96,10 @@ fn generated_gate_close_range_checks_stay_linear() {
 
     assert_eq!(modules.len(), 1, "unexpected modules {modules:#?}");
     assert!(
+        comparisons > 0,
+        "the generated gate recovery path was not exercised"
+    );
+    assert!(
         comparisons <= GATES * 4,
         "generated gate recovery compared {comparisons} ranges for {GATES} gates",
     );
