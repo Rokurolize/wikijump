@@ -545,6 +545,34 @@ fn count_pages_preflight_accepts_regex_valid_mixed_whitespace() {
 }
 
 #[test]
+fn standalone_countpages_detector_matches_frozen_ownership_shapes() {
+    // Frozen Wikidot observation: a standalone nested opening is treated as
+    // the empty-row shape, while a same-line module body takes the separate
+    // legacy-tail path. Comments own their module-shaped text per the syntax
+    // comment specification.
+    let standalone = "[[module CountPages category=\"*\" tags=\"+active\" limit=\"10\"]]";
+    assert!(list_pages_body_has_standalone_count_pages_opening(
+        standalone
+    ));
+
+    let inline = concat!(
+        "BEFORE_INLINE\n",
+        "[[module CountPages category=\"*\" tags=\"+active\" limit=\"10\"]]",
+        "INLINE_COUNT=%%total%%[[/module]]\n",
+        "AFTER_INLINE",
+    );
+    assert!(!list_pages_body_has_standalone_count_pages_opening(inline));
+    assert!(list_pages_body_inline_count_pages_legacy_tail(inline).is_some());
+
+    let comment = concat!(
+        "[!--\n",
+        "[[module CountPages category=\"*\" tags=\"+active\" limit=\"10\"]]\n",
+        "--]",
+    );
+    assert!(!list_pages_body_has_standalone_count_pages_opening(comment));
+}
+
+#[test]
 fn list_pages_preflight_keeps_pinned_module_name_delimiters() {
     assert!(!has_list_pages_module_opening_candidate(
         "[[module \nListPages name=\"space-before-lf\"]]body[[/module]]",
