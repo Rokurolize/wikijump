@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs"
 import { pathToFileURL } from "node:url"
 
-export const GROUPS = ["deepwell", "wws", "framerail", "locales", "workflow"]
+export const GROUPS = ["deepwell", "wws", "framerail", "locales", "workflow", "theme_lab"]
 
 /// Files outside `.github/` that `.github/tests/ci-gate-workflow.test.mjs`
 /// makes assertions about. Keep in step with the `read(...)` calls there.
@@ -65,7 +65,8 @@ export function classifyChanges(paths, all = false) {
     if (
       file === ".github/workflows/ci-gate.yaml" ||
       file === ".github/scripts/classify-changes.mjs" ||
-      file === ".github/tests/ci-gate-workflow.test.mjs"
+      file === ".github/tests/ci-gate-workflow.test.mjs" ||
+      file === "scripts/preflight.sh"
     ) {
       selectWorkflow(selected)
       continue
@@ -74,6 +75,11 @@ export function classifyChanges(paths, all = false) {
     if (metadataOnly(file) || verificationOnly(file)) continue
 
     let matched = false
+
+    if (file.startsWith("install/local/theme-lab/")) {
+      selected.theme_lab = true
+      matched = true
+    }
 
     if (file.startsWith(".github/")) {
       selected.workflow = true

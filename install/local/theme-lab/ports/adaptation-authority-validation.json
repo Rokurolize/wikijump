@@ -12,7 +12,7 @@
   "publishable_without_authority": 0,
   "checks": {
     "theme_lab_node_tests": {
-      "pass": 205,
+      "pass": 206,
       "fail": 0
     },
     "theme_lab_python_tests": {
@@ -46,7 +46,8 @@
     "sigma10_source_and_final_evidence_integrity": "pass",
     "sigma10_preview_authority": "UNVERIFIED_PREVIEW_HYPOTHESIS",
     "deterministic_regeneration": "zero changed files",
-    "git_diff_check": "pass"
+    "git_diff_check": "pass",
+    "read_only_replay_write_channels": "HTTP POST, foreign origins, and WebSockets blocked"
   },
   "public_wikidot_writes": 0,
   "public_edit_locks": 0,

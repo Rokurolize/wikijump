@@ -86,7 +86,8 @@ node install/local/theme-lab/scripts/wikidot-adaptation-ab.mjs \
 
 Default acquisition is offline. Explicit `--acquire` permits cache-first public
 GET acquisition with a durable unfinished-acquisition barrier. Browser requests
-are confined to loopback GET replay; public mutation requests are blocked.
+are confined to loopback GET replay; public mutation requests and WebSocket
+connections are blocked before reaching a server.
 `--without-css` compares another complete CSS input; omitting both removal and
 that input compares baseline against candidate. Use `--selectors` for source
 computed styles and geometry, `search-hover` / `search-focus` for search,

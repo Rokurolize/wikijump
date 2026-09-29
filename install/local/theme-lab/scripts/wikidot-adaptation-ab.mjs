@@ -21,6 +21,23 @@ export function removeNamedBlock(css, name) {
   return css.slice(0, comments[start].index) + css.slice(next?.index ?? css.length);
 }
 
+export async function confineReadOnlyReplay(context, origin, blocked) {
+  // WebSockets bypass HTTP route handlers. Close their page-side route before
+  // connecting to a server so frozen scripts have no alternate write channel.
+  await context.routeWebSocket('**/*', socket => {
+    blocked.push({method:'WEBSOCKET',url:socket.url().split('?')[0]});
+    socket.close();
+  });
+  await context.route('**/*', async route => {
+    const request=route.request();
+    if(request.method()!=='GET' || !request.url().startsWith(origin+'/')) {
+      blocked.push({method:request.method(),url:request.url().split('?')[0]});
+      return route.abort();
+    }
+    return route.continue();
+  });
+}
+
 export async function runAdaptationAB({url, cacheDir, css = '', withoutCss = '',
   removeBlock = null, assetDir, outputDir, acquire = false, widths = [320,390],
   state = 'navigation', selectors = ['#header'], executablePath = '/usr/bin/google-chrome'}) {
@@ -45,14 +62,7 @@ export async function runAdaptationAB({url, cacheDir, css = '', withoutCss = '',
       const context = await browser.newContext({viewport: {width, height:844}, serviceWorkers:'block'});
       // Only loopback replay GETs are admitted. Original scripts cannot write
       // to any site or acquire an edit lock, even if a frozen script executes.
-      await context.route('**/*', async route => {
-        const request = route.request();
-        if (request.method() !== 'GET' || !request.url().startsWith(replay.origin + '/')) {
-          blocked.push({method:request.method(), url:request.url().split('?')[0]});
-          return route.abort();
-        }
-        return route.continue();
-      });
+      await confineReadOnlyReplay(context,replay.origin,blocked);
       const page = await context.newPage();
       await page.goto(replay.entryUrl, {waitUntil:'load'});
       if (sourceCss) await page.addStyleTag({content: assetDir ? await materializeCandidateCssAssets(sourceCss, assetDir) : sourceCss});

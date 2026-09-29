@@ -1,0 +1,8 @@
+# Immutable Theme Lab audit inputs and public replay responses retain exact bytes.
+ports/**/maintenance/historical-* -whitespace
+ports/authority-evidence/replay/objects/** -whitespace
+ports/authority-evidence/sigma-preview/*.wikidot.txt -whitespace
+ports/authority-evidence/sigma-preview/preview.html -whitespace
+ports/dear-dictator/upstream-ko.css -whitespace
+ports/*/candidate-input.css -whitespace
+ports/*/maintenance/authority-base.wikidot.txt -whitespace

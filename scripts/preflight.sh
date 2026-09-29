@@ -100,13 +100,25 @@ run_test() {
   run "${name}" "${TEST_NETWORK_GUARD}" "$@"
 }
 
-if group_selected verification || group_selected deepwell || group_selected wws || group_selected framerail; then
+if group_selected verification || group_selected deepwell || group_selected wws || group_selected framerail || group_selected theme_lab; then
   if [[ "${MODE}" == "final" ]]; then
     run_test "source-bound generated contracts" node \
       install/local/wikidot-verification/scripts/verify-repository-generated-contracts.mjs --full
   else
     run_test "source-bound generated contracts" node \
       install/local/wikidot-verification/scripts/verify-repository-generated-contracts.mjs
+  fi
+fi
+
+if group_selected theme_lab; then
+  run_test "Theme Lab tests" npm --prefix install/local/theme-lab test
+  run_test "Theme Lab adaptation authority" node install/local/theme-lab/ports/scripts/check-adaptation-authority.mjs
+  if [[ "${MODE}" == "final" ]]; then
+    run_test "Theme Lab Python tests" python3 -m unittest discover -s install/local/theme-lab/tests -p 'test_*.py'
+    run_test "Theme Lab maintainable sources" node install/local/theme-lab/ports/scripts/prepare-maintainable-sources.mjs --check
+    run_test "Theme Lab deterministic packages" node install/local/theme-lab/scripts/real-port-regression.mjs --verify-only
+    run_test "Sigma-10 source evidence" node install/local/theme-lab/sigma10-migration/check-sources.mjs
+    run_test "Sigma-10 final evidence integrity" node install/local/theme-lab/sigma10-migration/check-final.mjs
   fi
 fi
 

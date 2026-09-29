@@ -215,3 +215,17 @@ test("validation workflows contain no Wikidot or WDFiles origin literals", () =>
     assert.doesNotMatch(workflow(name), /(?:wikidot\.com|wdfiles)/iu, name)
   }
 })
+
+test("Theme Lab inputs select their own acceptance gates without selecting runtime components", () => {
+  for (const file of ["install/local/theme-lab/src/verdict.mjs", "install/local/theme-lab/ports/adaptation-authority.json", "install/local/theme-lab/.gitattributes"]) {
+    const selected = classifyChanges([file])
+    assert.equal(selected.theme_lab, true, file)
+    for (const group of ["deepwell", "wws", "framerail", "locales"]) assert.equal(selected[group], false, `${file}: ${group}`)
+    assert.equal(selected.verification, false, file)
+  }
+  const mixed = classifyChanges(["install/local/theme-lab/src/verdict.mjs", "deepwell/src/api.rs"])
+  assert.equal(mixed.theme_lab, true)
+  assert.equal(mixed.deepwell, true)
+  const preflight = read("scripts/preflight.sh")
+  for (const gate of ["check-adaptation-authority.mjs", "prepare-maintainable-sources.mjs --check", "real-port-regression.mjs --verify-only", "sigma10-migration/check-final.mjs"]) assert.ok(preflight.includes(gate), gate)
+})
