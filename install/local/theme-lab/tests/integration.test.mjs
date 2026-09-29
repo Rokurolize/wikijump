@@ -122,7 +122,8 @@ test("theme-port check retains a target-only selector suggestion without a parit
       viewports: true,
       torture: false,
     });
-    assert.equal(verdict.verdict, "inconclusive");
+    assert.equal(verdict.verdict, "fail");
+    assert.equal(verdict.port_decision.verdict, "inconclusive");
     const missing = verdict.top_issues.find((issue) => issue.selector === ".foreign-rate-box");
     assert.ok(missing, "foreign rate box should be reported missing");
     assert.equal(missing.reference_role, "rating_widget");
@@ -201,7 +202,8 @@ test("broken CSS canary fails local acceptance without certifying a parity misma
       viewports: true,
       torture: false,
     });
-    assert.equal(verdict.verdict, "pass");
+    assert.equal(verdict.verdict, "fail");
+    assert.equal(verdict.overall_acceptance.status, "fail");
     assert.equal(verdict.port_decision.verdict, "pass");
     assert.equal(verdict.target_acceptance.status, "fail");
     assert.ok(verdict.top_issues.some((issue) => issue.kind === "viewport_overflow"));

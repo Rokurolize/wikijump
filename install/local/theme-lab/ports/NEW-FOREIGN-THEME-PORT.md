@@ -295,7 +295,21 @@ node install/local/theme-lab/scripts/theme-lab.mjs check \
 Omit the last option when the package has no theme-specific contract; known
 SCP-JP surfaces are still auto-discovered and tested by default.
 
-Acceptance requires:
+Acceptance requires `overall_acceptance.status` (also exposed as the public
+`verdict`) to be `pass`, or `warn` with every warning explained. A separate port
+pass never overrides a failed local target. Inconclusive results are incomplete;
+CLI exit codes 1 and 2 must stop completion. Keep both diagnostic dimensions.
+
+Every JP adaptation must pass the authority inventory gate described in
+[ADAPTATION-AUTHORITY-AUDIT.md](ADAPTATION-AUTHORITY-AUDIT.md). Source CSS is
+preserved; local Wikijump observations and synthetic fixture/image reviews
+cannot create publishable CSS. Freeze real source/target A/B evidence before
+adding a target correction. Check all submenu/link left and right bounds at
+320px and 390px, in addition to document width. Sigma-9 and Sigma-10 credit
+contracts must remain distinct. A changed candidate invalidates its old visual
+acceptance unless exact identity reuse is proven.
+
+Acceptance also requires:
 
 - no evidence-backed errors or unexplained `next_actions`;
 - all required viewport overflow checks pass;

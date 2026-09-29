@@ -5,27 +5,21 @@
       "bytes": 39204,
       "content_type": "font/ttf",
       "original_url": "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD.ttf",
-      "final_url": "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD.ttf",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at ae17feb6f10d68546a191a8d9419d5bef76ad13785c9b5d7aa1492c8428e648b.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+      "final_url": "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD.ttf"
     },
     {
       "sha256": "a62a15a6b56287171cc9127041ea8225655529851e49501a069f1fa852037d35",
       "bytes": 27411,
       "content_type": "image/png",
       "original_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at a62a15a6b56287171cc9127041ea8225655529851e49501a069f1fa852037d35.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png"
     },
     {
       "sha256": "f3f2789e588b964cd6a3e453b70a10d33a06d7deaf73440b3a64c4fef8032bb1",
       "bytes": 8763,
       "content_type": "image/svg+xml",
       "original_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at f3f2789e588b964cd6a3e453b70a10d33a06d7deaf73440b3a64c4fef8032bb1.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg"
     }
   ],
   "missing": [],
@@ -33,57 +27,6 @@
     "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap",
     "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1"
   ],
-  "pruned_fonts": [],
-  "template_placeholders": [],
-  "asset_replacements": {},
-  "omitted_assets": [],
-  "dependency_decisions": [
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD.ttf",
-      "final_url": "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD.ttf",
-      "sha256": "ae17feb6f10d68546a191a8d9419d5bef76ad13785c9b5d7aa1492c8428e648b",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at ae17feb6f10d68546a191a8d9419d5bef76ad13785c9b5d7aa1492c8428e648b.ttf; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png",
-      "sha256": "a62a15a6b56287171cc9127041ea8225655529851e49501a069f1fa852037d35",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at a62a15a6b56287171cc9127041ea8225655529851e49501a069f1fa852037d35.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg",
-      "sha256": "f3f2789e588b964cd6a3e453b70a10d33a06d7deaf73440b3a64c4fef8032bb1",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at f3f2789e588b964cd6a3e453b70a10d33a06d7deaf73440b3a64c4fef8032bb1.svg; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "7510083ee6ded5991dcb3eeaca7346ff79beab7ed2947a5ded67cca65bcc01a4",
-      "evidence": "The imported stylesheet bytes are preserved as 1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df.css with SHA-256 1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df; the flattened final candidate was replayed offline.",
-      "final_url": "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap",
-      "sha256": "1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df",
-      "asset_file": "1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df.css"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "7510083ee6ded5991dcb3eeaca7346ff79beab7ed2947a5ded67cca65bcc01a4",
-      "evidence": "The imported stylesheet bytes are preserved as 96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922.css with SHA-256 96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922; the flattened final candidate was replayed offline.",
-      "final_url": "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1",
-      "sha256": "96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922",
-      "asset_file": "96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922.css"
-    }
-  ],
-  "candidate_base_css_assets": [],
   "import_provenance_status": "complete",
   "import_provenance": [
     {
@@ -94,7 +37,7 @@
       "bytes": 223,
       "content_type": "text/css",
       "asset_file": "1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df.css",
-      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+      "provenance_basis": "frozen-cache-exact-at-build"
     },
     {
       "source_url": "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1",
@@ -104,7 +47,46 @@
       "bytes": 15970,
       "content_type": "text/css",
       "asset_file": "96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922.css",
-      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+      "provenance_basis": "frozen-cache-exact-at-build"
+    }
+  ],
+  "localization_transforms": [],
+  "pruned_fonts": [],
+  "template_placeholders": [],
+  "asset_replacements": {},
+  "omitted_assets": [],
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD.ttf",
+      "sha256": "ae17feb6f10d68546a191a8d9419d5bef76ad13785c9b5d7aa1492c8428e648b",
+      "decision": "freeze-runtime-independent-asset"
+    },
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png",
+      "sha256": "a62a15a6b56287171cc9127041ea8225655529851e49501a069f1fa852037d35",
+      "decision": "freeze-runtime-independent-asset"
+    },
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg",
+      "sha256": "f3f2789e588b964cd6a3e453b70a10d33a06d7deaf73440b3a64c4fef8032bb1",
+      "decision": "freeze-runtime-independent-asset"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap",
+      "sha256": "1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df",
+      "asset_file": "1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df.css",
+      "decision": "freeze-source-stylesheet"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1",
+      "sha256": "96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922",
+      "asset_file": "96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922.css",
+      "decision": "freeze-source-stylesheet"
     }
   ]
 }

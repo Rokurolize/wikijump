@@ -18,6 +18,7 @@ class ForeignThemePortExampleTests(unittest.TestCase):
     def setUp(self):
         self.manifest = json.loads((PORT / "manifest.json").read_text())
         self.receipt = json.loads((PORT / "receipt.json").read_text())
+        self.historical = json.loads((PORT / "maintenance/historical-receipt.json").read_text())
 
     def test_frozen_source_and_asset_provenance_matches_manifest(self):
         self.assertEqual(
@@ -88,21 +89,21 @@ class ForeignThemePortExampleTests(unittest.TestCase):
         )
         self.assertTrue(contract["reviewed_exceptions"])
         self.assertEqual(
-            self.receipt["candidate"]["surface_contract_sha256"],
+            self.historical["candidate"]["surface_contract_sha256"],
             sha256(contract_path),
         )
-        self.assertEqual(self.receipt["surface_contract"]["issue_count"], 0)
+        self.assertEqual(self.historical["surface_contract"]["issue_count"], 0)
         self.assertEqual(
-            {(row["id"], row["viewport"], row["count"]) for row in self.receipt["surface_contract"]["custom_selectors"]},
+            {(row["id"], row["viewport"], row["count"]) for row in self.historical["surface_contract"]["custom_selectors"]},
             {
                 ("theme.flickering-heading", "desktop", 1),
                 ("theme.flickering-heading", "mobile", 1),
             },
         )
 
-    def test_retained_acceptance_closes_the_initial_actionable_failure(self):
+    def test_historical_acceptance_is_archived_without_accepting_current_css(self):
         initial = json.loads((PORT / "initial-verdict.json").read_text())["result"]
-        final = json.loads((PORT / "acceptance-verdict.json").read_text())["result"]
+        final = json.loads((PORT / "maintenance/historical-acceptance-verdict.json").read_text())["result"]
         mobile_issue = next(
             issue
             for issue in initial["top_issues"]
@@ -118,22 +119,28 @@ class ForeignThemePortExampleTests(unittest.TestCase):
         self.assertEqual(final["surface_contract"]["issue_count"], 0)
         self.assertEqual(final["assets"]["external_requests"], 0)
         self.assertEqual(final["assets"]["candidate"]["missing"], [])
-        self.assertEqual(self.receipt["state"], "verified-local-candidate-not-published")
-        self.assertEqual(self.receipt["final_check"]["verdict"], "warn")
+        self.assertEqual(self.historical["state"], "verified-local-candidate-not-published")
+        self.assertEqual(self.historical["final_check"]["verdict"], "warn")
         self.assertEqual(
-            self.receipt["final_check"]["raw_result_sha256"],
-            sha256(PORT / "acceptance-verdict.json"),
+            self.historical["final_check"]["raw_result_sha256"],
+            sha256(PORT / "maintenance/historical-acceptance-verdict.json"),
         )
         self.assertEqual(
-            self.receipt["cross_branch_evidence"]["current_scp_jp_usage"]["local_theme_page"]["http_status"],
+            self.historical["cross_branch_evidence"]["current_scp_jp_usage"]["local_theme_page"]["http_status"],
             404,
         )
         self.assertEqual(
-            self.receipt["cross_branch_evidence"]["current_scp_jp_usage"]["active_theme_include"],
+            self.historical["cross_branch_evidence"]["current_scp_jp_usage"]["active_theme_include"],
             ":scpko:theme:quand-le-soleil-se-couche",
         )
-        for filename, expected in self.receipt["screenshots"].items():
+        for filename, expected in self.historical["screenshots"].items():
             self.assertEqual(sha256(PORT / "artifacts" / filename), expected)
+
+        current = json.loads((PORT / "acceptance-verdict.json").read_text())["result"]
+        self.assertEqual(current["verdict"], "inconclusive")
+        self.assertEqual(current["overall_acceptance"]["status"], "inconclusive")
+        self.assertEqual(self.receipt["adaptation_authority"]["publishable_without_authority"], 0)
+        self.assertEqual(self.receipt["historical_acceptance"]["status"], "SUPERSEDED_CANDIDATE")
 
 
 if __name__ == "__main__":

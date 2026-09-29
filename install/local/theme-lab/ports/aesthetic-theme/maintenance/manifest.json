@@ -1,82 +1,25 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "57f4b52cd0010b106b705755b47cf4e80d3d98c565a42948a6a61428755219d0",
+  "frozen_candidate_source_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
   "base_source_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
-  "raw_jp_overrides_sha256": "19d91d9125ec3137072ff90502bbbd8f445823aa229c935bfde04183993f7b26",
-  "jp_overrides_sha256": "d9808a93575d6c124f9007bf84519666f33f93d2d157e4e62dfc4c6f57524b8a",
-  "semantic_css_sha256": "b7424c979db73b1fe593c7dbe6d2e4111540d22f029dcac531bf39d67bc60627",
-  "canonical_override_sha256": "e10b6ca2c5b334ad9f6e0d42ebc8f4af77d474fc26ae0459a6389bbcd094ca34",
+  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "semantic_css_sha256": "ffb321e0e204d458290d1af95e8c2d8ac7a9ffa9d96b522b6eb5b0e8e8f7dc7c",
+  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "f811712ae8b70952ddd9e17cc0145fc90f528857c868ddb7d4138ab89c4b7a05",
+  "final_source_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
   "final_source_inputs": {
     "base_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
-    "jp_overrides_sha256": "d9808a93575d6c124f9007bf84519666f33f93d2d157e4e62dfc4c6f57524b8a"
+    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
   "ordered_include_sha256": "ebb5a5fd5da0ba020abdbb0b8ac56809ff6843d5e53e794a17b8dba51d3e9931",
-  "declaration_reviews": {
-    "[[],\"#page-content .collapsible-block-unfolded .collapsible-block-content *\",\"-webkit-text-fill-color\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 1,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[],\"#page-content .collapsible-block-unfolded .collapsible-block-content *\",\"color\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 1,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[],\"#page-content .collapsible-block-unfolded .collapsible-block-content\",\"-webkit-text-fill-color\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 1,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[],\"#page-content .collapsible-block-unfolded .collapsible-block-content\",\"color\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 1,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[],\"#page-content .collapsible-block-unfolded .collapsible-block-content *\",\"text-shadow\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[],\"#page-content .collapsible-block-unfolded .collapsible-block-content\",\"text-shadow\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[],\"body:has(#u-credit-otherwise:target) #header\",\"z-index\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[],\"body:has(#u-credit-view:target) #header\",\"z-index\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    }
-  },
-  "adaptation_block_count": 11,
-  "raw_override_rule_count": 23,
-  "canonical_override_rule_count": 22,
-  "exact_duplicate_rules_removed": 1,
-  "redundant_same_value_declarations_removed": 4,
-  "empty_rules_removed": 2,
+  "declaration_reviews": {},
+  "adaptation_block_count": 0,
+  "raw_override_rule_count": 0,
+  "canonical_override_rule_count": 0,
+  "exact_duplicate_rules_removed": 0,
+  "redundant_same_value_declarations_removed": 0,
+  "empty_rules_removed": 0,
   "active_tags": [
     "テーマ"
   ],
@@ -84,7 +27,7 @@
   "historical_adaptations": [
     {
       "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
-      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "Established source/target read-only A/B rejects the invented shared behavior.",
       "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
       "selectors": [
         "#search-top-box-form:focus-within #search-top-box-input",
@@ -92,11 +35,15 @@
       ],
       "at_contexts": [
         "@media (min-width: 768px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "REMOVE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "57f4b52cd0010b106b705755b47cf4e80d3d98c565a42948a6a61428755219d0"
     },
     {
       "marker": "SCP-JP interactive acceptance: aesthetic-theme account and navigation behavior",
-      "rationale": "The narrow Aesthetic submenu keeps its purple panel and uses a pale rose foreground with readable separation.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "a2aa280b0678d58fd0c65a9fc37d603b60af3f12cd1aca40e9e6e74d9900361d",
       "selectors": [
         "#side-bar .collapsible-block-unfolded",
@@ -104,11 +51,15 @@
       ],
       "at_contexts": [
         "@media (max-width: 400px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "57f4b52cd0010b106b705755b47cf4e80d3d98c565a42948a6a61428755219d0"
     },
     {
       "marker": "SCP-JP interactive visual follow-up v2: aesthetic-theme",
-      "rationale": "Keep the Aesthetic return link horizontal and reachable by scrolling when its translated modal content exceeds the phone viewport.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "461435b1e0ef2e06d91c2bb1b015c4dc8c36b4909b5de53cbd8da463326c2465",
       "selectors": [
         "#u-credit-otherwise .modalbox",
@@ -117,22 +68,30 @@
       ],
       "at_contexts": [
         "@media (max-width: 600px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "57f4b52cd0010b106b705755b47cf4e80d3d98c565a42948a6a61428755219d0"
     },
     {
       "marker": "SCP-JP interactive visual acceptance image review repair v13: aesthetic-theme",
-      "rationale": "Image-reviewed mobile contrast repair: the generated wordmark fill used Aesthetic's very dark gradient stops on its saturated magenta header, making the theme name hard to read. Keep the magenta/cyan identity and emblem while giving only the wordmark a pale cyan fill and dark outline.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "0ee6e6395349ed96805660f6926e3d99e5addec29a8590e6bf35dd367e44904d",
       "selectors": [
         "#header h1 a::after"
       ],
       "at_contexts": [
         "@media (max-width: 767px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "57f4b52cd0010b106b705755b47cf4e80d3d98c565a42948a6a61428755219d0"
     },
     {
       "marker": "SCP-JP interactive visual acceptance image review repair v14: aesthetic-theme",
-      "rationale": "Follow-up image review: the upstream BHL title uses two stacked pseudo-elements; recoloring only ::after left the dark ::before glyph fill visible on the magenta masthead. Apply the same high-contrast fill to both layers while retaining a dark outline and the original emblem/background.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "f7a3d590139a9da440f9a4c6cfb2935359b5ce669da30cdf6210749f846c14fa",
       "selectors": [
         "#header h1 a::after",
@@ -140,70 +99,155 @@
       ],
       "at_contexts": [
         "@media (max-width: 767px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "57f4b52cd0010b106b705755b47cf4e80d3d98c565a42948a6a61428755219d0"
     },
     {
       "marker": "SCP-JP interactive visual acceptance image review repair v24: aesthetic-theme",
-      "rationale": "The lime sidebar highlight is a deliberate theme accent, but its pink submenu label is hard to read. Use the existing deep-plum ink on this control only.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "c03ea7c5dfb813cf04bce743290a7b5049d70a1c6fcc27868cc15c0a485f9537",
       "selectors": [
         "#side-bar .collapsible-block-link",
         "#side-bar .collapsible-block-unfolded-link .collapsible-block-link"
       ],
-      "at_contexts": []
+      "at_contexts": [],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "57f4b52cd0010b106b705755b47cf4e80d3d98c565a42948a6a61428755219d0"
     },
     {
       "marker": "SCP-JP interactive visual acceptance image review repair v29: aesthetic-theme",
-      "rationale": "Image review found the expanded article disclosure retained aqua ink on Aesthetic's fluorescent lime panel. Keep the neon surface and use the established deep-plum ink only inside the open content; links stay underlined.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "e3f50ea33ef6f28fd8db34762618b7ba70a422719a2c4a0decb96043392eec5a",
       "selectors": [
         "#page-content .collapsible-block-unfolded .collapsible-block-content",
         "#page-content .collapsible-block-unfolded .collapsible-block-content *",
         "#page-content .collapsible-block-unfolded .collapsible-block-content a"
       ],
-      "at_contexts": []
+      "at_contexts": [],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "57f4b52cd0010b106b705755b47cf4e80d3d98c565a42948a6a61428755219d0"
     },
     {
       "marker": "SCP-JP interactive visual acceptance image review repair v30: aesthetic-theme",
-      "rationale": "Follow-up image review found the fluorescent yellow surface belongs to the TOC links, while the opened disclosure body uses Aesthetic's dark panel. Restore the light body ink and darken only links on the yellow TOC surface.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "4af418a03b1abfa490c6a5919378593be7c308782f8aee4aec1356b5414be4b9",
       "selectors": [
         "#page-content #toc-list a",
         "#page-content .collapsible-block-unfolded .collapsible-block-content",
         "#page-content .collapsible-block-unfolded .collapsible-block-content *"
       ],
-      "at_contexts": []
+      "at_contexts": [],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "57f4b52cd0010b106b705755b47cf4e80d3d98c565a42948a6a61428755219d0"
     },
     {
       "marker": "SCP-JP interactive visual acceptance image review repair v33: aesthetic-theme",
-      "rationale": "The mobile theme header is a higher stacking context than SCP-JP's credit layer, so its hamburger crossed the fader and hid the otherwise-modal title. Drop only the header stack below the visible credit dialog while a credit hash is active.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "6fe41ae404c56e1d2f9bfc2e32d76fc08e79f0a800c33136191ea784dc75c49a",
       "selectors": [
         "body:has(#u-credit-otherwise:target) #header",
         "body:has(#u-credit-view:target) #header"
       ],
-      "at_contexts": []
+      "at_contexts": [],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "57f4b52cd0010b106b705755b47cf4e80d3d98c565a42948a6a61428755219d0"
     },
     {
       "marker": "SCP-JP interactive visual acceptance image review repair v34: aesthetic-theme",
-      "rationale": "V33 lowering z-index alone did not form a stacking context because the theme leaves #header unpositioned. During either SCP-JP credit hash, isolate the in-flow header below the shared modal/fader so its high-z hamburger cannot cross the overlay.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "5c72d6af165533cfd5b2d4f9f81c95e3847657679e31f35e4417a2dae9e568d3",
       "selectors": [
         "body:has(#u-credit-otherwise:target) #header",
         "body:has(#u-credit-view:target) #header"
       ],
-      "at_contexts": []
+      "at_contexts": [],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "57f4b52cd0010b106b705755b47cf4e80d3d98c565a42948a6a61428755219d0"
     },
     {
       "marker": "SCP-JP interactive visual acceptance image review repair v35: aesthetic-theme",
-      "rationale": "At 320px the otherwise-license modal's one-rem container inset left an undimmed strip of the page above the fader. Extend the real hash-target overlay to the viewport edge while keeping the modal's own bounded scroll area.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "cc071f8e2a69d2ca0ac3e69fb93db39bf09cfb9f808ce3d6b8f9f2f931645392",
       "selectors": [
         "#u-credit-otherwise:target .modalcontainer"
       ],
       "at_contexts": [
         "@media (max-width: 600px)"
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "57f4b52cd0010b106b705755b47cf4e80d3d98c565a42948a6a61428755219d0"
+    },
+    {
+      "marker": "SCP-JP responsive adaptation: Theme Lab evidenced viewport and component rules.",
+      "sha256": "9bd8cfb10e245287cc9bca078c0b4862cd307192c674123389fb939a4f512912",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "fc81b9fcc53f910d4a1444085c495f34aacf4e92a594dabfffd055678aa1120f"
+    },
+    {
+      "marker": "JP runtime header DOM: keep theme title positioning inside the current SCP-JP header.",
+      "sha256": "c75b94bfefa29231250914812d0a4b47c3ac9ffd0264686df8ac4a68c665f152",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "fc81b9fcc53f910d4a1444085c495f34aacf4e92a594dabfffd055678aa1120f"
+    },
+    {
+      "marker": "Campaign JP adaptation aesthetic-theme: Theme Lab viewport evidence.",
+      "sha256": "e1db5618b8e9bb1b2e16b43624c86e4003ae666870c2284134713355629a8864",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "fc81b9fcc53f910d4a1444085c495f34aacf4e92a594dabfffd055678aa1120f"
+    },
+    {
+      "marker": "Campaign JP follow-up aesthetic-theme: direct selector/property evidence from viewport verdict.",
+      "sha256": "e14457221e9c77eec4aa0517dab43cbf0045b9c5708b990c8a48e2e7545687bc",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "fc81b9fcc53f910d4a1444085c495f34aacf4e92a594dabfffd055678aa1120f"
+    },
+    {
+      "marker": "source-theme-and-localized-document-input",
+      "origin": "preserved-source",
+      "sha256": "e80f23c0464a6a330996706854384cbc909da111cf08a2114af967ca503835d8",
+      "authority": "SOURCE_THEME",
+      "rationale": "Preserve source-theme imports, source declarations, include parameters and localized documentation before the historical campaign suffix. Asset freezing and include expansion are separate runtime-independent transforms.",
+      "evidence": [
+        {
+          "path": "aesthetic-theme/upstream-en.wikidot.txt",
+          "sha256": "35234ec38792ffc739258798c50bb91d993575fb23eb6b6a51c58c2d02b26efd",
+          "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+        },
+        {
+          "path": "aesthetic-theme/existing-jp.wikidot.txt",
+          "sha256": "da06a9e340ca0f6faa0f900117f1c165eaffed070d2269df0a99aec038b06338",
+          "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+        }
       ]
     }
-  ]
+  ],
+  "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
+  "publishable_adaptations": []
 }

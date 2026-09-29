@@ -12,6 +12,12 @@ SPEC.loader.exec_module(freeze_css)
 
 
 class PlainTextImportedCssTests(unittest.TestCase):
+    def test_generated_transport_whitespace_preserves_css_strings(self):
+        self.assertEqual(
+            freeze_css.normalize_css_transport('/* theme\'s code */  \r\n.a { color: red; }\t\r\n.b { content: "a b "; }\r\n'),
+            '/* theme\'s code */\n.a { color: red; }\n.b { content: "a b "; }\n',
+        )
+
     def test_wikidot_text_plain_css_import_is_flattened(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

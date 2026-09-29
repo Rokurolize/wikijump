@@ -44,7 +44,7 @@
     },
     "existing_jp_audit": "new-jp-candidate-verified",
     "technical_spec_version": "1.4",
-    "final_verdict": "warn"
+    "final_verdict": "inconclusive"
   },
   "dependencies": {
     "slug": "theme:bedrock",
@@ -73,7 +73,7 @@
   "candidate_input": "human-port-candidate.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
-  "final_verdict": "warn",
+  "final_verdict": "inconclusive",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/bedrock/assets.json",
   "asset_dependency_decision_count": 52,
@@ -82,13 +82,39 @@
     "jp_overrides": "maintenance/jp-overrides.css",
     "manifest": "maintenance/manifest.json",
     "base_sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423",
-    "jp_overrides_sha256": "346927b49b6a932ba27b815cdc559b64d48cea24d627a9b941189c4d1fe7ba71",
-    "semantic_css_sha256": "05cedc4be56f61a12e26aaab038d21e8654fc772f2b57185638c1fb36ce1f712",
-    "canonical_override_sha256": "7aabeed89ad2ebb86205fbf2df1abaadc6a1880c8269918c941b9700b7ef58de",
+    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "semantic_css_sha256": "967007365c3788e67f86073b867b15d4d61c365a2de0611bb534f140fcd62509",
+    "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
     "final_source": "maintenance/final.wikidot.txt",
-    "final_source_sha256": "2d2c50bafc5fe1e78d1f244ea11cf750f155518855512dc9ba48743e2fc6176c",
-    "exact_duplicate_rules_removed": 4,
+    "final_source_sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423",
+    "exact_duplicate_rules_removed": 0,
     "redundant_same_value_declarations_removed": 0,
     "empty_rules_removed": 0
+  },
+  "interactive_acceptance": {
+    "resolved_theme_css": {
+      "source_path": "candidate-input.css",
+      "source_sha256": "c24bad7d056ed84e0e3dfe0762e599ca5a62bb414cc6659597bd89e59348a747",
+      "active_tags": [],
+      "candidate_source_sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423",
+      "candidate_active_tags": [],
+      "css_source_path": "candidate-source.css",
+      "candidate_css_sha256": "9e7e79c109fcefe79b31bf7b351f79beac28b4b047795a177ff00180f6c5129b",
+      "asset_receipt_path": "assets.json",
+      "assets": 49,
+      "imports": 3,
+      "localization_transforms": 0,
+      "localization_transform_manifest": null,
+      "missing": 0,
+      "external_requests_during_build": 0
+    }
+  },
+  "adaptation_authority": {
+    "ledger": "../adaptation-authority.json",
+    "publishable_without_authority": 0
+  },
+  "overall_acceptance": {
+    "status": "inconclusive",
+    "reason": "Historical candidate acceptance superseded"
   }
 }

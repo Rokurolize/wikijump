@@ -83,7 +83,7 @@
       "severity": "medium",
       "owner": "sigma10-staff-source",
       "blocker": false,
-      "title": "Sigma-10 JP credit preview notice forces tablet/mobile horizontal document overflow",
+      "title": "Unverified Sigma-10 Wikidot preview-state notice overflow hypothesis",
       "affected_surface": [
         "page.normal",
         "nav.mobile-top",
@@ -102,15 +102,15 @@
         "mobile",
         "narrow-mobile"
       ],
-      "interaction_state": "settled (unmodified page load)",
+      "interaction_state": "Local preview simulation; real Wikidot preview cascade not yet established",
       "technical_staff_source_revision": "2bfcb97451695d99e8d056c3ac40ec954e005636",
       "source_file": "sources/jp-localization.css (compiled into sigma10-offline.css, sha256 08b5e63699eae178f35fc1958560d4c794a3dd5078bbf5f6f9e72906ac34f87e)",
       "selector": " .creditRate::before  (with .creditRate > li { display: none })",
       "source_fragment": ".creditRate::before { content: '\\30d7\\30ec\\30d3\\30e5\\30fc\\6642...'; display: list-item; font-weight: bold; margin: 1.5em 0; white-space: pre; }",
       "observed_behavior": "At 768px Chromium expands the document to 806px; at 390px the document scrollWidth is 503 (chromium), 504 (firefox), and 492 (webkit); at 320px Chromium expands to 500px. The single-line ::before content cannot wrap because white-space:pre, so ul.creditRate overflows and expands the document. The controlled Sigma-9 mobile baseline on the identical page and shell remains 390px wide.",
-      "expected_behavior": "The credit notice should wrap (or be scoped to preview) so no document-level horizontal overflow occurs at supported tablet/mobile widths.",
-      "why_sigma10_not_wikijump": "The overflow appears only when the Sigma-10 replacement CSS is applied; the identical DOM under the runtime Sigma-9 baseline measures 390. Removing ul.creditRate from the same Sigma-10 DOM drops documentWidth 511->390 (isolated probe). The rule and its white-space:pre are Sigma-10 JP localization source.",
-      "minimal_recommended_change": "Change the notice to white-space: pre-wrap (or normal), and scope the notice+'.creditRate > li{display:none}' rule to the preview context only if that was the intent.",
+      "expected_behavior": "Technical Staff/manual Wikidot preview confirmation is required before declaring a preview defect.",
+      "why_sigma10_not_wikijump": "The local simulation omits the saved-page Info stylesheet override. Real saved Wikidot loads sigma-10:info:style, hides .creditRate::before, and has no 390px document overflow. Anonymous PagePreviewModule returned real preview HTML without acquiring a lock; this alone does not establish the editor/browser preview stylesheet cascade.",
+      "minimal_recommended_change": "No required migration change. If an actual Wikidot preview capture confirms overflow, evaluate a preview-scoped wrapping fix.",
       "evidence": {
         "chromium_mobile_screenshot": "migration/sigma10/sigma10-baseline/artifacts/interactive/chromium/mobile/page-normal-settled-mobile-3f110dcfa6cbfa405d1602daddbd91fce8276b4a1e60501e5d8cc5139f48bfa7.png",
         "chromium_mobile_screenshot_sha256": "3f110dcfa6cbfa405d1602daddbd91fce8276b4a1e60501e5d8cc5139f48bfa7",
@@ -125,12 +125,17 @@
         "baseline_probe_also_adds_overflow": true,
         "note": "Document width equals ul.creditRate reachable_right for every theme that overflows; contained themes clip it and keep documentWidth 390."
       },
-      "fix_verification": "In an isolated browser load of the captured Sigma-10 mobile DOM, adding .creditRate::before{white-space:pre-wrap !important} reduced document scrollWidth from 511 to 390.",
-      "classification": "CONFIRMED",
-      "actionable": true,
+      "fix_verification": "pre-wrap repairs the local simulation only; it is not proof of a Wikidot preview defect.",
+      "classification": "UNVERIFIED_PREVIEW_HYPOTHESIS",
+      "actionable": false,
       "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
       "port_conclusion_eligible": false,
-      "finding_scope": "SCP_JP_TARGET_ACCEPTANCE"
+      "finding_scope": "SCP_JP_TARGET_ACCEPTANCE",
+      "confirmation_required": "Technical Staff/manual true Wikidot preview-state screenshot, DOM and stylesheet cascade, acquired without public writes.",
+      "source_saved_page_evidence": "../ports/authority-evidence/sigma-saved-final/receipt.json",
+      "read_only_preview_attempt": "../ports/authority-evidence/sigma-preview/receipt.json",
+      "read_only_preview_attempt_sha256": "d95e6a7befd2e79a1f3f76eb4318a020282e15c99aef0a9d7342f9e43c0f7f5a",
+      "source_saved_page_evidence_sha256": "5626aa1cb9d1614edc6a23a890b869488b8afb09bdc76b35662278545f71de39"
     },
     {
       "id": "THEMELAB-SIM-001",
@@ -708,5 +713,7 @@
     "port_conclusion_eligible": false,
     "finding_scope": "SCP_JP_TARGET_ACCEPTANCE",
     "boundary": "Migration screenshots, paired Sigma-9 controls, and findings classify the local SCP-JP target. They do not certify Wikidot runtime parity or create parity-based port requirements."
-  }
+  },
+  "candidate_acceptance_scope": "Historical local simulator captures; current authority-cleaned candidates supersede the campaign overlays. No old screenshot review is reused for current CSS.",
+  "inherited_behavior_notes": []
 }

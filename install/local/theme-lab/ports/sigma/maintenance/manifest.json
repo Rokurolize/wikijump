@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "8df3a5dbae531dc1d8a873b39fbfedd6eb5fe6c7d81bdbdde6a886acc8b0948d",
+  "frozen_candidate_source_sha256": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23",
   "base_source_sha256": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23",
-  "raw_jp_overrides_sha256": "7aa2ab6de4a5836b34a22de8a3b8fab790b7377a069f5566fa79fb9d82a24a19",
-  "jp_overrides_sha256": "cb195992c9aa1776e4ca7d813fa294cfb97584215e977bee30e30b51cd0c3feb",
-  "semantic_css_sha256": "fa963ae568228b05ad40136e1834c09b6a7a751e0f546fe4f0b915e3fbf7dbb0",
-  "canonical_override_sha256": "b707502ff1463532a28832458824f8f6b9a098d0e2a4eaa698cf9b2058e98886",
+  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "semantic_css_sha256": "648553bc9b1c96483771dcdffe9fd56f16d573ed1fd9b1d13ec58633a221713d",
+  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "c650847a0942b14916fbe99efba9747a79203b9763469a77f6d6c46c825f395f",
+  "final_source_sha256": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23",
   "final_source_inputs": {
     "base_sha256": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23",
-    "jp_overrides_sha256": "cb195992c9aa1776e4ca7d813fa294cfb97584215e977bee30e30b51cd0c3feb"
+    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
   "ordered_include_sha256": "dea6e68f1bc57e2ada3b6ef913fd454dd2d78079dff8a233a17795791a20ed75",
   "declaration_reviews": {},
-  "adaptation_block_count": 2,
-  "raw_override_rule_count": 3,
-  "canonical_override_rule_count": 3,
+  "adaptation_block_count": 0,
+  "raw_override_rule_count": 0,
+  "canonical_override_rule_count": 0,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -27,7 +27,7 @@
   "historical_adaptations": [
     {
       "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
-      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "Established source/target read-only A/B rejects the invented shared behavior.",
       "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
       "selectors": [
         "#search-top-box-form:focus-within #search-top-box-input",
@@ -35,18 +35,51 @@
       ],
       "at_contexts": [
         "@media (min-width: 768px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "REMOVE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "8df3a5dbae531dc1d8a873b39fbfedd6eb5fe6c7d81bdbdde6a886acc8b0948d"
     },
     {
       "marker": "SCP-JP interactive visual acceptance interaction repair v1: sigma",
-      "rationale": "Keep Sigma's credit return action as one readable Japanese control at phone widths.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "466ab7d26bd0ec93822cf3da0fccee692ac02d24422110246b2ece1b7d5d7c45",
       "selectors": [
         "#u-credit-otherwise .modalbox a[href=\"#u-credit-view\"]"
       ],
       "at_contexts": [
         "@media (max-width: 600px)"
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "8df3a5dbae531dc1d8a873b39fbfedd6eb5fe6c7d81bdbdde6a886acc8b0948d"
+    },
+    {
+      "marker": "SCP-JP responsive adaptation: active Sigma selectors are checked with the real theme fixture.",
+      "sha256": "3393228ce5c0741ea80de7d9750c04696f6035c134df5702ce147dfe73896ce5",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "5145fe78f0cab3c2f8ee3d45e54ca709fd6a6af82bf5495ff504da68c70bea95"
+    },
+    {
+      "marker": "source-theme-and-localized-document-input",
+      "origin": "preserved-source",
+      "sha256": "8f99adadb50538f45d7c287b81f5070ca6128cb72d170e4a42f890e65584fc8c",
+      "authority": "SOURCE_THEME",
+      "rationale": "Preserve source-theme imports, source declarations, include parameters and localized documentation before the historical campaign suffix. Asset freezing and include expansion are separate runtime-independent transforms.",
+      "evidence": [
+        {
+          "path": "sigma/upstream-en.wikidot.txt",
+          "sha256": "e2f126ba6f6debd4cbde5f1712f04da794e2820f0180a6501b54dbe4e318639c",
+          "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+        }
       ]
     }
-  ]
+  ],
+  "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
+  "publishable_adaptations": []
 }

@@ -1,3 +1,8 @@
+<!-- adaptation-authority-current -->
+Current publication inputs have passed the adaptation-authority gate. Historical campaign/local-runtime screenshots describe the superseded candidate; they are not acceptance for this CSS. See ../ADAPTATION-AUTHORITY-AUDIT.md and maintenance/historical-receipt.json where present.
+Current source SHA-256: 269ade2ec56414c951616e92d9155865cb1365c06a8af1ad514c960d26259a85; CSS SHA-256: 76f4a14b16d53108068e2cd2f7cf8beeb9fd7a1d46d2215de9c7b6d5677b8053. Full port acceptance remains a separate combined result.
+<!-- adaptation-authority-end -->
+
 # SCP-EN → SCP-JP port: `theme:paperstack`
 
 State: **verified local candidate; not published**. Current upstream source is frozen in `upstream-en.wikidot.txt`; the SHA-256 and update date are in `manifest.json`.

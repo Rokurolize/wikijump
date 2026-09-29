@@ -1,3 +1,8 @@
+<!-- adaptation-authority-current -->
+Current publication inputs have passed the adaptation-authority gate. Historical campaign/local-runtime screenshots describe the superseded candidate; they are not acceptance for this CSS. See ../ADAPTATION-AUTHORITY-AUDIT.md and maintenance/historical-receipt.json where present.
+Current source SHA-256: b6c93b192d4db6ca662f3560a00a47f273d221f3e52ba3832a5d04f7f2b76e52; CSS SHA-256: c52365e80c9f89d061622e910a59425c04c283201d09cfc45faa4fb108932f8a. Full port acceptance remains a separate combined result.
+<!-- adaptation-authority-end -->
+
 # Dear Dictator: SCP-KO → SCP-JP
 
 This is a real port of the Korean branch's [Dear Dictator theme](https://scpko.wikidot.com/theme:dear-dictator), credited on the source page to thd-glasses. The starting wikitext and retained rendered body are in the local `scp-wiki-translation/corpus/ko/pages/theme:dear-dictator` archive. `reference.json` records the acquired page, applied CSS, and asset digests. The foreign page uses custom fonts and imagery, seven media queries, fixed tower layers, a rating warning, pseudo-elements, tables, blockquotes, tabs, and collapsibles.

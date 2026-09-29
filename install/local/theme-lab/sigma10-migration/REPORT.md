@@ -2,9 +2,9 @@
 
 ## Final result
 
-The migration simulation is closed against frozen Technical Staff Sigma-10 authority. The full 36-candidate × 9-cell `page.normal` matrix is captured and reviewed (324/324); the Sigma-9 comparison also covers 324 matching cells, with two additional history-state probes. No current screenshot is left unclassified or unexplained. Findings and row-level evidence are in [findings.json](findings.json) and the isolated audits under `evidence/`.
+The retained local simulation is historical evidence, with a complete reviewed 36-candidate × 9-cell matrix. The Theme Lab adaptation-authority cleanup supersedes the 35 campaign candidates. Old screenshots remain bound to their archived CSS/source identities and do not accept the cleaned candidates.
 
-**Migration decision:** do not promote the Sigma-10 JP localization unchanged. Resolve `SIGMA10-MOB-001` (medium, owner `sigma10-staff-source`) before migration; the controlled test verified that `white-space: pre-wrap !important` removes the credit notice's horizontal document overflow at 390px. The Sigma-10 SCP-JP capture hides its desktop search input. A separate read-only source capture on 2026-09-30 focused and filled Wikidot's search input. These observations are not paired to a general runtime contract, so this migration audit makes no search-parity claim and authorizes no parity-based search action. There are no per-theme adaptations required across the 35 maintained theme packages.
+**Migration decision:** `SIGMA10-MOB-001` is an **unverified preview-state hypothesis**, not a required migration blocker or a required Technical Staff source change. The real saved Sigma-10 Wikidot page hides the preview notice through the later `sigma-10:info:style` stylesheet and has no 390px document overflow. Anonymous `edit/PagePreviewModule` returned real preview HTML without a lock or save, but did not establish the complete browser/editor preview stylesheet cascade. Technical Staff/manual Wikidot preview confirmation is required before proposing a source change. Search and historical local simulator findings carry no broader Wikidot parity authority.
 
 ## Authority and fixture provenance
 
@@ -16,12 +16,12 @@ The offline fixture maps public cross-site includes to run-owned local pages, om
 
 - Candidates: 35 maintained theme packages plus `sigma10-baseline`.
 - Both baselines: Chromium desktop, laptop, tablet, mobile, narrow-mobile; Firefox desktop/mobile; WebKit desktop/mobile. Each has 324 `page.normal` rows.
-- Sigma-10 audit: 460 current rows, including 145 baseline-theme rows (9 normal states and 136 interaction/admin rows); 850 superseded captures retained in the audit history.
-- Sigma-9 comparison: 326 current rows (324 matrix cells plus Chromium desktop/mobile `page.history.historical-source`).
-- All 35 maintained packages pass the real-port regression verification. All current rows have direct-image review metadata bound to their screenshot digest. No unexplained `UNCONFIRMED` rows, sent external requests, asset failures, or page errors remain.
-- Current audit and review records are explicitly scoped to `SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY`; they cannot certify Wikidot runtime parity or create parity-based port requirements. The paired Sigma-9 rows are local attribution controls.
+- Sigma-10 audit: 460 historical rows, including 145 baseline-theme rows (9 normal states and 136 interaction/admin rows); 850 superseded captures retained in the audit history.
+- Sigma-9 comparison: 326 historical rows (324 matrix cells plus Chromium desktop/mobile `page.history.historical-source`).
+- All 35 maintained packages pass the real-port regression verification. All retained rows have direct-image review metadata bound to their screenshot digest. No unexplained `UNCONFIRMED` rows, sent external requests, asset failures, or page errors remain.
+- Historical audit and review records are explicitly scoped to `SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY`; they cannot certify Wikidot runtime parity or create parity-based port requirements. The paired Sigma-9 rows are local attribution controls.
 
-| Final row classification | Sigma-10 | Sigma-9 control |
+| Historical local row classification | Sigma-10 | Sigma-9 control |
 | --- | ---: | ---: |
 | `PASS_NATURAL` | 288 | 0 |
 | `PASS_INTENTIONAL_DIVERGENCE` | 3 | 325 |
@@ -29,21 +29,20 @@ The offline fixture maps public cross-site includes to run-owned local pages, om
 | `EXTERNAL_CONTRACT_UNVERIFIABLE` | 7 | 0 |
 | `NOT_APPLICABLE` | 0 | 0 |
 
-The repeated `NEEDS_FIX` rows aggregate to two confirmed issues: credit-notice overflow (`SIGMA10-MOB-001`) across affected theme/viewport compositions and the paired runtime history textarea issue (`WIKIJUMP-HIST-001`). Sigma-9 control rows are intentionally classified as divergence because Sigma-9 does not style the Sigma-10 credit module; they serve for paired geometry/attribution, not as the visual target.
+The retained `NEEDS_FIX` rows describe a local preview simulation (`SIGMA10-MOB-001`, now unverified against a true Wikidot preview) and a paired local history textarea issue (`WIKIJUMP-HIST-001`). They do not establish required Wikidot or migration repairs. Sigma-9 control rows are intentionally classified as divergence because Sigma-9 does not style the Sigma-10 credit module; they serve for paired geometry/attribution, not as the visual target.
 
 Interaction review inspected action traces, target state, visibility/focus/hover where applicable, geometry and screenshots for navigation focus/hover, content link/rating focus, tags, credit/modal states, history/source transitions, dialogs, sidebar, login, footer, search, and Interwiki. Search's hidden control is recorded as an intentional local target state, not an upstream parity finding. The Interwiki wrapper and iframe attach in all seven sampled engine/viewport cases; the default frame is zero-height because remote Crom data is unavailable.
 
-## Confirmed Technical Staff findings
+## Preview-state hypothesis requiring confirmation
 
-### SIGMA10-MOB-001 — JP credit preview notice causes horizontal overflow
+### SIGMA10-MOB-001 — preview notice overflow is unverified on real Wikidot
 
-- **Owner/severity:** `sigma10-staff-source`, medium; migration blocker until resolved.
-- **Source:** frozen `sources/jp-localization.css`, selector `.creditRate::before` with `white-space: pre` and `.creditRate > li { display:none }`.
-- **Evidence:** the unwrapped Japanese notice extends the document to about 503px at a 390px Chromium viewport, 504px Firefox, 492px WebKit, and about 500px at 320px. At 768px Chromium reaches 806px. On every affected theme, the notice's `ul.creditRate` is the root/reachable edge. The matching Sigma-9 baseline does not add the same width. Thirty of 35 maintained themes gain mobile overflow; four clip/contain it (`dear-dictator`, `hansarp`, `inkblot`, `monotypical`), and `aesthetic-theme` reduces pre-existing overflow. The same four contain at 320px. No theme-specific repair is indicated.
-- **Minimal fix/proof:** allow wrapping (`pre-wrap` or `normal`), and scope the hidden-credit preview rule to preview context if intended. An isolated browser probe using `.creditRate::before { white-space: pre-wrap !important; }` returned the 390px document to 390px.
-- **Evidence references:** current screenshot hashes and per-theme paired measurements are recorded in `findings.json`; all 324 current matrix rows are in the migration audit.
+- **Authority:** local preview simulation only; `port_conclusion_eligible = false`, `blocker = false`, `actionable = false`.
+- **Real saved-page evidence:** [saved-page receipt](../ports/authority-evidence/sigma-saved-final/receipt.json) records `.creditRate::before { display: none }` and viewport-sized documents at 320px and 390px. [Credit return capture](../ports/authority-evidence/sigma-credit-final/receipt.json) records the real `.creditRateOtherwiseBottom .return-credits` control fitting both widths. `.credit-back` is absent from this target DOM.
+- **Source chain:** [read-only source and preview receipt](../ports/authority-evidence/sigma-preview/receipt.json) freezes `sigma-10:main`, `sigma-10:credit:start`, `sigma-10:credit:style`, and `sigma-10:info:style`. The last source intentionally hides the notice on saved pages.
+- **Preview limit:** anonymous PagePreviewModule produced 9,424 bytes of real preview HTML. It did not establish the editor/browser stylesheet cascade or measure an actual preview notice. No edit UI, lock, save, or public mutation was used.
+- **Next evidence:** Technical Staff/manual preview confirmation. If actual preview overflow is confirmed, evaluate a preview-scoped wrapping correction. No source change is currently required for migration.
 
-## Confirmed Wikijump finding
 
 ### WIKIJUMP-HIST-001 — mobile history source textarea overflows
 
@@ -68,7 +67,7 @@ At a 390px Chromium mobile viewport, `page.history.historical-source` measures 4
 
 ## Action list
 
-**Technical Staff / migration policy:** resolve credit notice wrapping before migration. The hidden local search input remains a target observation; the source/runtime contract requires a separate paired review before any parity-based action is proposed.
+**Technical Staff / migration policy:** confirm the true Wikidot preview state before deciding whether a preview-only change is needed. The hidden local search input remains a target observation; the source/runtime contract requires a separate paired review before any parity-based action is proposed.
 
 **Wikijump runtime:** track the pre-existing history textarea width issue as low-priority runtime work. It is not a Sigma migration blocker.
 
@@ -76,7 +75,7 @@ At a 390px Chromium mobile viewport, `page.history.historical-source` measures 4
 
 ## Final readiness statement
 
-The local simulator is closed: actionable simulator gaps 0; required matrix holes 0; stale current evidence 0; unexplained `UNCONFIRMED` records 0; ownerless blockers 0; fixture-owned defects 0. The Sigma-10 migration result is reviewable and owner-assigned. Promotion remains contingent on the Technical Staff credit-rule change. Search remains outside this migration review's parity authority.
+The archived local simulator evidence has: actionable simulator gaps 0; required matrix holes 0; all retained evidence bound to historical candidate identities; unexplained `UNCONFIRMED` records 0; ownerless blockers 0; fixture-owned defects 0. The Sigma-10 migration result is reviewable and owner-assigned. No migration prerequisite is established by the unverified preview hypothesis. Current cleaned candidates require their own combined full acceptance before a future migration promotion. Search remains outside this migration review's parity authority.
 
 ## Validation
 

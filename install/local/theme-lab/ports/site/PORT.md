@@ -1,3 +1,8 @@
+<!-- adaptation-authority-current -->
+Current publication inputs have passed the adaptation-authority gate. Historical campaign/local-runtime screenshots describe the superseded candidate; they are not acceptance for this CSS. See ../ADAPTATION-AUTHORITY-AUDIT.md and maintenance/historical-receipt.json where present.
+Current source SHA-256: 9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343; CSS SHA-256: 18768d711c87cec0cb6ed1b79a2d7023a53a422f35f39e841417374be0de3a69. Full port acceptance remains a separate combined result.
+<!-- adaptation-authority-end -->
+
 # SCP-EN → SCP-JP port: `theme:site`
 
 State: **verified local candidate; not published**. Current upstream source is frozen in `upstream-en.wikidot.txt`; the SHA-256 and update date are in `manifest.json`.

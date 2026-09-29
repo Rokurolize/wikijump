@@ -40,9 +40,9 @@ function run(theme, ordinal, measured, includeWikitext) {
   if (result.status !== 0) throw new Error(`${theme.slug} check failed: ${result.stderr || result.stdout}`);
   const output = JSON.parse(result.stdout).result;
   if (!output || output.verification_scope?.mode !== 'iteration') throw new Error(`${theme.slug} did not return iteration scope`);
-  if (output.next_actions?.length || output.verdict === 'fail') throw new Error(`${theme.slug} has unresolved actionable findings: ${JSON.stringify(output.next_actions)}`);
+  if (output.next_actions?.length || !['pass','warn'].includes(output.overall_acceptance?.status)) throw new Error(`${theme.slug} has unresolved actionable findings: ${JSON.stringify(output.next_actions)}`);
   if ((output.assets?.external_requests ?? 0) !== 0) throw new Error(`${theme.slug} made external requests`);
-  if (measured) measurements.push({slug: theme.slug, timing_ms: output.timing_ms, verdict: output.verdict, actions: output.next_actions.length, external_requests: output.assets?.external_requests ?? 0});
+  if (measured) measurements.push({slug: theme.slug, timing_ms: output.timing_ms, verdict: output.overall_acceptance.status, actions: output.next_actions.length, external_requests: output.assets?.external_requests ?? 0});
 }
 
 for (const theme of cases) {

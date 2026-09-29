@@ -273,6 +273,13 @@ async function main() {
   }
 
   const response = await sendRequest(socketPath, request);
+  if (command === "check" && response.ok) {
+    const status=response.result?.overall_acceptance?.status ?? "inconclusive";
+    response.verdict=status;
+    response.overall_acceptance=response.result?.overall_acceptance ?? {status};
+    process.stdout.write(`${JSON.stringify(response, null, args.compact ? 0 : 2)}\n`);
+    return status === "fail" ? 1 : ["pass", "warn"].includes(status) ? 0 : 2;
+  }
   process.stdout.write(`${JSON.stringify(response, null, args.compact ? 0 : 2)}\n`);
   return response.ok ? 0 : 1;
 }

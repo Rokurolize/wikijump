@@ -7,6 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {parseStyleSheet,stripCssComments} from '../../src/css-probe.mjs';
 import {analyzeOverrideCascade,extractSCPJPAdaptationBlocks,isEnCampaignMaintenanceManifest,parseCssDeclarations} from '../../src/port-maintenance.mjs';
 import {extractUnconditionalCssModules} from './extract-css-modules.mjs';
+import {assertPublishablePackage, authorityInventory} from '../../src/adaptation-authority.mjs';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const portsDir=path.dirname(here);
@@ -457,7 +458,8 @@ function inferCandidateTags(source,manifest){
 }
 
 function extractedCss(source,activeTags){
-  return extractUnconditionalCssModules(source,{activeTags});
+  try { return extractUnconditionalCssModules(source,{activeTags}); }
+  catch(error) { if(error.message==='No unconditional CSS modules found') return ''; throw error; }
 }
 
 export function verifyEquivalentCandidate({original,base,rawOverlayCss,overlayCss=rawOverlayCss,activeTags=[]}){
@@ -508,7 +510,8 @@ export async function preparePackage(name,{write=false,check=false}={}){
     if(classification.schema_version!==1||!Array.isArray(classification.unmarked_adaptation_modules))throw new Error(`${name}: invalid maintenance classification`);
   }
   const {base,overlayCss:rawOverlayCss,overlays}=splitMaintainableCandidate(original,{unmarkedAdaptations:classification.unmarked_adaptation_modules});
-  if(!overlays.length)throw new Error(`${name}: no SCP-JP adaptation CSS modules found`);
+  assertPublishablePackage(name);
+  const authority=authorityInventory(name);
   const exactCompacted=compactExactDuplicateRules(overlays);
   const declarationCompacted=canonicalizeShadowedDeclarations(exactCompacted.css);
   declarationCompacted.css=normalizeMaintenanceRationales(declarationCompacted.css);
@@ -573,7 +576,9 @@ export async function preparePackage(name,{write=false,check=false}={}){
     empty_rules_removed:declarationCompacted.empty_rules_removed,
     active_tags:activeTags,
     equivalence:'base + uncompressed historical JP overlay is comment-free token-identical to the frozen candidate; canonical jp-overrides.css removes exact duplicate rules, same-value redundancies, and shadowed declarations classified as superseded while preserving documented syntax fallbacks, then proves exact-key declaration winners unchanged',
-    historical_adaptations:[...history,...synthetic],
+    historical_adaptations:authority.blocks,
+    adaptation_authority_schema:'theme_lab_adaptation_authority.v1',
+    publishable_adaptations:[...history,...synthetic].map(row=>({...row,authority:authority.blocks.find(block=>block.sha256===row.sha256)?.authority})),
   };
   const expectedMaintenanceManifest=JSON.stringify(maintenanceManifest,null,2)+'\n';
   const maintenanceSource={

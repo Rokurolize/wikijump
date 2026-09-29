@@ -4,11 +4,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {candidateIdentity} from '../ports/scripts/candidate-identity.mjs';
+import {assertPublishablePackage} from '../src/adaptation-authority.mjs';
+import {validateSigmaPreviewFinding} from './preview-authority.mjs';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
 const ports=path.resolve(root,'../ports');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const fail=[];
+const authorityLedger=JSON.parse(await fs.readFile(path.join(ports,'adaptation-authority.json'),'utf8'));
 const read=async file=>JSON.parse(await fs.readFile(path.join(root,file),'utf8'));
 const [audit,comparison,manifest,contract,findings,campaign]=await Promise.all([
  read('evidence/interactive-visual-audit.json'),read('evidence/sigma9-comparison-audit.json'),read('fixture-manifest.json'),read('run-contract.json'),read('findings.json'),
@@ -78,13 +81,21 @@ for(const r of audit.records){
  if(!['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE','NEEDS_FIX','EXTERNAL_CONTRACT_UNVERIFIABLE','NOT_APPLICABLE'].includes(r.classification))fail.push(`invalid classification ${r.theme}/${r.surface}.${r.state}: ${r.classification}`);
  const themeDir=r.theme==='sigma10-baseline'?path.join(root,'baseline-probe'):path.join(ports,r.theme);
  try{
-  const css=await fs.readFile(path.join(themeDir,'candidate.css'));
-  const base=await fs.readFile(path.join(themeDir,'candidate-base.css')).catch(()=>Buffer.alloc(0));
-  const source=await fs.readFile(path.join(themeDir,'candidate.wikidot.source.txt')).catch(()=>fs.readFile(path.join(themeDir,'candidate.wikidot.txt')));
+  const archived=authorityLedger.packages[r.theme]?.historical_candidate;
+  if(r.theme!=='sigma10-baseline'&&!archived)throw new Error('historical candidate identity missing');
+  const css=await fs.readFile(path.join(themeDir,archived?.css??'candidate.css'));
+  const base=archived?.base?await fs.readFile(path.join(themeDir,archived.base)):r.theme==='sigma10-baseline'?await fs.readFile(path.join(themeDir,'candidate-base.css')).catch(()=>Buffer.alloc(0)):Buffer.alloc(0);
+  const source=await fs.readFile(path.join(themeDir,archived?.source??'candidate.wikidot.source.txt')).catch(()=>fs.readFile(path.join(themeDir,'candidate.wikidot.txt')));
+  if(archived)for(const [key,hash] of Object.entries(archived.hashes))if(sha(await fs.readFile(path.join(themeDir,archived[key])))!==hash)fail.push(`corrupt historical candidate ${r.theme}/${key}`);
   const current=candidateIdentity(css,base,new Set([r.candidate_sha256]));
-  if(current.candidateSha!==r.candidate_sha256||sha(source)!==r.candidate_source_sha256)fail.push(`stale candidate ${r.theme}/${r.surface}.${r.state}`);
+  if(current.candidateSha!==r.candidate_sha256||sha(source)!==r.candidate_source_sha256)fail.push(`unbound historical candidate ${r.theme}/${r.surface}.${r.state}`);
  }catch{fail.push(`candidate files missing for ${r.theme}`)}
 }
+const previewFinding=(findings.findings??[]).find(f=>f.id==='SIGMA10-MOB-001');
+try{validateSigmaPreviewFinding(previewFinding,root)}catch(error){fail.push(error.message)}
+const report=await fs.readFile(path.join(root,'REPORT.md'),'utf8');
+if(previewFinding?.classification==='UNVERIFIED_PREVIEW_HYPOTHESIS'&&/Resolve `SIGMA10-MOB-001`.*before migration|Promotion remains contingent on the Technical Staff credit-rule change/iu.test(report))fail.push('report promotes an unverified preview hypothesis to a migration prerequisite');
+for(const name of Object.keys(authorityLedger.packages))try{assertPublishablePackage(name,{checkOutputs:true})}catch(error){fail.push(error.message)}
 for(const f of findings.findings??[])if(f.blocker===true&&!String(f.owner??'').trim())fail.push(`ownerless blocker ${f.id}`);
 for(const f of findings.findings??[])if(f.actionable===true&&!String(f.classification??'').trim())fail.push(`unclassified actionable finding ${f.id}`);
 if(findings.decision_authority_policy?.schema!=='theme_lab_decision_authority.v1'||findings.decision_authority_policy.decision_authority!=='SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY'||findings.decision_authority_policy.port_conclusion_eligible!==false)fail.push('findings document lacks local-only decision-authority policy');
@@ -108,4 +119,4 @@ const gitRoot=path.resolve(root,'../../../../');
 const touched=execFileSync('git',['diff','--name-only','HEAD','--','install/local/theme-lab/ports/interactive-visual-audit.json'],{cwd:gitRoot,encoding:'utf8'});
 if(touched.trim())fail.push('accepted Sigma-9 audit was modified / normal campaign evidence was contaminated');
 if(fail.length){console.error(JSON.stringify({result:'FINAL-ZERO FAIL',failures:fail.length,details:fail.slice(0,100)},null,2));process.exitCode=1}
-else console.log(JSON.stringify({result:'FINAL-ZERO PASS',candidates:candidates.length,page_normal_cells:candidates.length*matrix.length,current_records:audit.records.length,superseded_records:audit.superseded_records?.length??0,unique_screenshots:seenShots.size,fixture_manifest_sha256:manifestSha,run_contract_sha256:contractSha},null,2));
+else console.log(JSON.stringify({result:'HISTORICAL AND SOURCE EVIDENCE VERIFIED',evidence_integrity:{status:'pass'},overall_acceptance:{status:'inconclusive',reason:'Historical local migration screenshots do not accept authority-cleaned candidates or an unverified Wikidot preview hypothesis'},sigma10_preview_authority:previewFinding.classification,candidates:candidates.length,page_normal_cells:candidates.length*matrix.length,current_records:audit.records.length,superseded_records:audit.superseded_records?.length??0,unique_screenshots:seenShots.size,fixture_manifest_sha256:manifestSha,run_contract_sha256:contractSha},null,2));

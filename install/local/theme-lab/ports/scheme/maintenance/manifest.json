@@ -1,138 +1,25 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "9750acfd8d50ab08c43ba68495219538be5741f334909277b6e1a3ab4074fcad",
+  "frozen_candidate_source_sha256": "c38af875eb8a1b8a78d4cac779af3c56ebf2641a193410a7a81e019a6c7f46f0",
   "base_source_sha256": "c38af875eb8a1b8a78d4cac779af3c56ebf2641a193410a7a81e019a6c7f46f0",
-  "raw_jp_overrides_sha256": "465b053b933b324ba5103724098c1b375d5cd701e465f3d97c81630c992a7d6f",
-  "jp_overrides_sha256": "890beb277f75e36d2d1585800a68512d5e42e6ce2e7581045fbb79052b7d19d0",
-  "semantic_css_sha256": "4a01c126d5f2ea8b92331488b22443e1767468ddc66f8e934d6b4f3ad8e2c46f",
-  "canonical_override_sha256": "a1cb1aef2cbc3eb10b3ceab95285385a66b485e51b95c15d6b76528140e2cc6e",
+  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "semantic_css_sha256": "f8d849beb04b6c20cc3b0c61556c74236a0f911db5147f92655f8ee9d1f5c81b",
+  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "ab402df962c11d032ec855c9c115aeccc4a9e785bf08d6075b1c0ba3ffab8079",
+  "final_source_sha256": "c38af875eb8a1b8a78d4cac779af3c56ebf2641a193410a7a81e019a6c7f46f0",
   "final_source_inputs": {
     "base_sha256": "c38af875eb8a1b8a78d4cac779af3c56ebf2641a193410a7a81e019a6c7f46f0",
-    "jp_overrides_sha256": "890beb277f75e36d2d1585800a68512d5e42e6ce2e7581045fbb79052b7d19d0"
+    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
   "ordered_include_sha256": "08fe729c8869c5afbeb2a6cfaceef80cb81cc7aa515dd1754979f0e1d7ef8da7",
-  "declaration_reviews": {
-    "[[\"@media (max-width: 767px)\"],\".mobile-top-bar > ul\",\"inset\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 1,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\".mobile-top-bar > ul\",\"max-width\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 1,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\".mobile-top-bar > ul\",\"position\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 1,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\".mobile-top-bar > ul\",\"width\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 1,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\"#top-bar .mobile-top-bar .open-menu\",\"z-index\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 1,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\"#top-bar .mobile-top-bar\",\"z-index\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 1,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\"#top-bar\",\"position\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 1,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\"#top-bar\",\"z-index\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 1,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\".mobile-top-bar > ul a\",\"line-height\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\".mobile-top-bar > ul a\",\"overflow-wrap\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\".mobile-top-bar > ul a\",\"white-space\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\".mobile-top-bar > ul a\",\"word-break\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\".mobile-top-bar > ul\",\"box-sizing\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\".mobile-top-bar > ul\",\"min-width\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\"#top-bar .mobile-top-bar .open-menu\",\"position\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\"#top-bar .mobile-top-bar\",\"position\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    }
-  },
-  "adaptation_block_count": 9,
-  "raw_override_rule_count": 28,
-  "canonical_override_rule_count": 28,
+  "declaration_reviews": {},
+  "adaptation_block_count": 0,
+  "raw_override_rule_count": 0,
+  "canonical_override_rule_count": 0,
   "exact_duplicate_rules_removed": 0,
-  "redundant_same_value_declarations_removed": 16,
-  "empty_rules_removed": 5,
+  "redundant_same_value_declarations_removed": 0,
+  "empty_rules_removed": 0,
   "active_tags": [
     "テーマ"
   ],
@@ -140,7 +27,7 @@
   "historical_adaptations": [
     {
       "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
-      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "Established source/target read-only A/B rejects the invented shared behavior.",
       "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
       "selectors": [
         "#search-top-box-form:focus-within #search-top-box-input",
@@ -148,11 +35,15 @@
       ],
       "at_contexts": [
         "@media (min-width: 768px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "REMOVE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "9750acfd8d50ab08c43ba68495219538be5741f334909277b6e1a3ab4074fcad"
     },
     {
       "marker": "SCP-JP interactive visual acceptance mobile header refinement v5: scheme",
-      "rationale": "The decorative gear overlaps the live site wordmark on narrow screens. Reserve the logo band, then lay the localized identity below it while preserving the original masthead art.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "c4deb0f34a10bd09bf1f563cf5e3a79a9555ee1750aa5320731f2efe485716ca",
       "selectors": [
         "#header",
@@ -165,11 +56,15 @@
       ],
       "at_contexts": [
         "@media (max-width: 600px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "9750acfd8d50ab08c43ba68495219538be5741f334909277b6e1a3ab4074fcad"
     },
     {
       "marker": "SCP-JP interactive visual acceptance mobile navigation repair v1: scheme",
-      "rationale": "The positioned gear decoration (div#extra-div-2, z-index 20) intercepted the mobile menu touch target. Raise the responsive navigation layer above its decorative header sibling without changing the artwork.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "4cbd83a86bf5973f6337bc4c3d4fca0df5f7a3a5adbec8a4c75985b5c61fb45e",
       "selectors": [
         "#top-bar",
@@ -178,11 +73,15 @@
       ],
       "at_contexts": [
         "@media (max-width: 767px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "9750acfd8d50ab08c43ba68495219538be5741f334909277b6e1a3ab4074fcad"
     },
     {
       "marker": "SCP-JP interactive visual acceptance mobile navigation repair v2: scheme",
-      "rationale": "After the tap-test fix, the screenshot showed the static trigger at the top-bar's inherited top:179px position, where it overlaid the first article heading. Return the theme's mobile top bar to normal document flow so it reserves its own navigation row before the page title.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "45428b12f646416eb3202b20cc6805c34e5e75ff3a1cdd46dccc9e51c25dce57",
       "selectors": [
         "#top-bar",
@@ -191,11 +90,15 @@
       ],
       "at_contexts": [
         "@media (max-width: 767px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "9750acfd8d50ab08c43ba68495219538be5741f334909277b6e1a3ab4074fcad"
     },
     {
       "marker": "SCP-JP interactive visual acceptance image review repair v41: scheme",
-      "rationale": "Current mobile submenu screenshot showed the longest Japanese navigation label clipped at the viewport edge. Keep the gear artwork and menu colors; anchor the opened list to the right edge with a viewport-bounded width and allow labels to wrap.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "141b1cbca32ed6ae3e7de88b76f5ee7097f8a98bd379aa5593c7b64b491babac",
       "selectors": [
         ".mobile-top-bar > ul",
@@ -203,11 +106,15 @@
       ],
       "at_contexts": [
         "@media (max-width: 767px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "9750acfd8d50ab08c43ba68495219538be5741f334909277b6e1a3ab4074fcad"
     },
     {
       "marker": "SCP-JP interactive visual acceptance image review repair v42: scheme",
-      "rationale": "Re-review showed the right-anchored submenu still covered the article title. Keep the expanded mobile links in normal flow so they wrap within the nav row and push article content down.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "8c6d1e81906269c4aae00626ac47b943af609045e5d739a7e6ec21985a2ad67e",
       "selectors": [
         ".mobile-top-bar > ul",
@@ -215,11 +122,15 @@
       ],
       "at_contexts": [
         "@media (max-width: 767px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "9750acfd8d50ab08c43ba68495219538be5741f334909277b6e1a3ab4074fcad"
     },
     {
       "marker": "SCP-JP interactive visual acceptance image review repair v43: scheme",
-      "rationale": "The 390px and 320px after-images confirmed the list wrapped but the topbar retained a fixed-height box, leaving its open menu over the page heading. Let the actual expanded list contribute its intrinsic height in normal flow.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "a1eb463cf35e22b07a079a5eb71781ca48d74a06fc5e3d15ccbf6c1468c67d47",
       "selectors": [
         ".mobile-top-bar",
@@ -228,11 +139,15 @@
       ],
       "at_contexts": [
         "@media (max-width: 767px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "9750acfd8d50ab08c43ba68495219538be5741f334909277b6e1a3ab4074fcad"
     },
     {
       "marker": "SCP-JP interactive visual acceptance image review repair v44: scheme",
-      "rationale": "Browser diagnostics showed the outer nav row was static but its nested expanded submenu remained a positioned child, so the article title still painted behind it. Put only the open nested list back in flow and let long localized labels wrap.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "9791955b2df21b0b4c9b0c45fba342ccbc74d62885150217eaef48e00beae03f",
       "selectors": [
         ".mobile-top-bar > ul",
@@ -242,11 +157,15 @@
       ],
       "at_contexts": [
         "@media (max-width: 767px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "9750acfd8d50ab08c43ba68495219538be5741f334909277b6e1a3ab4074fcad"
     },
     {
       "marker": "SCP-JP interactive visual acceptance image review repair v45: scheme",
-      "rationale": "Measured runtime geometry shows the floated mobile navigation is 231px tall while its #top-bar parent collapses to 21px. Make the actual parent establish a formatting context so the localized, expanded submenu reserves its full height before the article.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "2575230af78e106a6644254d3470188d56a7f8438a17b45f104f80564d082a99",
       "selectors": [
         "#top-bar",
@@ -254,7 +173,77 @@
       ],
       "at_contexts": [
         "@media (max-width: 767px)"
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "9750acfd8d50ab08c43ba68495219538be5741f334909277b6e1a3ab4074fcad"
+    },
+    {
+      "marker": "SCP-JP responsive adaptation: Theme Lab evidenced viewport and component rules.",
+      "sha256": "9bd8cfb10e245287cc9bca078c0b4862cd307192c674123389fb939a4f512912",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "65e258521b541b994c76d19708ac417f6e9fa71e93e902244f1c3f3f0f884545"
+    },
+    {
+      "marker": "JP runtime header DOM: keep theme title positioning inside the current SCP-JP header.",
+      "sha256": "c75b94bfefa29231250914812d0a4b47c3ac9ffd0264686df8ac4a68c665f152",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "65e258521b541b994c76d19708ac417f6e9fa71e93e902244f1c3f3f0f884545"
+    },
+    {
+      "marker": "Campaign JP adaptation scheme: Theme Lab viewport evidence.",
+      "sha256": "8c4616f7aa76720aff3be98011ef5bc548597a5554b1ca40b16a0e843a3ac6c6",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "65e258521b541b994c76d19708ac417f6e9fa71e93e902244f1c3f3f0f884545"
+    },
+    {
+      "marker": "Campaign JP follow-up scheme: direct selector/property evidence from viewport verdict.",
+      "sha256": "69db5cae709dca9ce0b03c4aec77bf0f80fffa0217159c157e12ab636de122be",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "65e258521b541b994c76d19708ac417f6e9fa71e93e902244f1c3f3f0f884545"
+    },
+    {
+      "marker": "source-theme-and-localized-document-input",
+      "origin": "preserved-source",
+      "sha256": "a26d65afe2617622565d79368b7d7ace8367dac07742ac038e2d0187e825e55a",
+      "authority": "SOURCE_THEME",
+      "rationale": "Preserve source-theme imports, source declarations, include parameters and localized documentation before the historical campaign suffix. Asset freezing and include expansion are separate runtime-independent transforms.",
+      "evidence": [
+        {
+          "path": "scheme/upstream-en.wikidot.txt",
+          "sha256": "639e67baca7add0448d8170f065e1672b7393416f5753792ab81832429676471",
+          "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+        }
+      ]
+    },
+    {
+      "marker": "frozen-asset-url-transforms",
+      "origin": "asset-transform",
+      "sha256": "d862007deb6d66c4c2bed2fa20ecd71acd3fa088cc64549541ab588d3f3e1118",
+      "authority": "RUNTIME_INDEPENDENT",
+      "rationale": "Already frozen asset replacements and unavailable decorative resource receipts; no runtime DOM assumption.",
+      "evidence": [
+        {
+          "path": "scheme/asset-transforms.json",
+          "sha256": "d862007deb6d66c4c2bed2fa20ecd71acd3fa088cc64549541ab588d3f3e1118",
+          "decision_authority": "FROZEN_ASSET_TRANSFORM"
+        }
       ]
     }
-  ]
+  ],
+  "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
+  "publishable_adaptations": []
 }

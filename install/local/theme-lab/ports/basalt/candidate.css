@@ -194,7 +194,7 @@ Usage example:
   font-weight: 100;
   font-stretch: 100%;
   font-display: swap;
-  src: url("7822c5273ce55714162d60b1600b1e44dce3b10e468cfaca6b3a064b85524ed1.woff2") format('woff2'), url("1dee0495b5d90520e24c35414ba11ffafc7b4ea5cbe6842f69b7e0d6fa9cb1f5.woff") format('woff'); 
+  src: url("7822c5273ce55714162d60b1600b1e44dce3b10e468cfaca6b3a064b85524ed1.woff2") format('woff2'), url("1dee0495b5d90520e24c35414ba11ffafc7b4ea5cbe6842f69b7e0d6fa9cb1f5.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -205,7 +205,7 @@ Usage example:
   font-weight: 100;
   font-stretch: 100%;
   font-display: swap;
-  src: url("2c357d445cc08497c96af1f27386d682ca3c9521902bff1b7ba6f5a0d6538a50.woff2") format('woff2'), url("affe8ca24aa261141a711dfcde4ab942328c1759aca83de85269b928d276183a.woff") format('woff'); 
+  src: url("2c357d445cc08497c96af1f27386d682ca3c9521902bff1b7ba6f5a0d6538a50.woff2") format('woff2'), url("affe8ca24aa261141a711dfcde4ab942328c1759aca83de85269b928d276183a.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -216,7 +216,7 @@ Usage example:
   font-weight: 100;
   font-stretch: 100%;
   font-display: swap;
-  src: url("41bffacf5867d8a6df1233ed3aa7c9a02b90ba0f61c12958e6447a7d5501147f.woff2") format('woff2'), url("f0592b1039f2ec2f7929286db56bf87383bf9971626664cc33996a8f441a66ec.woff") format('woff'); 
+  src: url("41bffacf5867d8a6df1233ed3aa7c9a02b90ba0f61c12958e6447a7d5501147f.woff2") format('woff2'), url("f0592b1039f2ec2f7929286db56bf87383bf9971626664cc33996a8f441a66ec.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -227,7 +227,7 @@ Usage example:
   font-weight: 100;
   font-stretch: 100%;
   font-display: swap;
-  src: url("516dff341787a3e37d2826d30b5ad0dbea29b861600a71edca2c69a50dadf356.woff2") format('woff2'), url("b522ed1a3734cacf6626a787ae80de3648182e0a1a12cce8e701664b17b1ebda.woff") format('woff'); 
+  src: url("516dff341787a3e37d2826d30b5ad0dbea29b861600a71edca2c69a50dadf356.woff2") format('woff2'), url("b522ed1a3734cacf6626a787ae80de3648182e0a1a12cce8e701664b17b1ebda.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -238,7 +238,7 @@ Usage example:
   font-weight: 100;
   font-stretch: 100%;
   font-display: swap;
-  src: url("81cfae5d7739d0e73b5e1bccf064be1c4e944786b957d393aaebaea134c3eb85.woff2") format('woff2'), url("6617790bfb15339ebf4abd575a3b899ef9b224bc155de1cb2a0353b2896705c6.woff") format('woff'); 
+  src: url("81cfae5d7739d0e73b5e1bccf064be1c4e944786b957d393aaebaea134c3eb85.woff2") format('woff2'), url("6617790bfb15339ebf4abd575a3b899ef9b224bc155de1cb2a0353b2896705c6.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -249,7 +249,7 @@ Usage example:
   font-weight: 200;
   font-stretch: 100%;
   font-display: swap;
-  src: url("00ffeadd5f65905441e6321606a6b85ea9c47376271b49ccc4052ccc6606876c.woff2") format('woff2'), url("02acab2e78286d13880f99c2bb7a13306eb4088201703801c41eed19d8726076.woff") format('woff'); 
+  src: url("00ffeadd5f65905441e6321606a6b85ea9c47376271b49ccc4052ccc6606876c.woff2") format('woff2'), url("02acab2e78286d13880f99c2bb7a13306eb4088201703801c41eed19d8726076.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -260,7 +260,7 @@ Usage example:
   font-weight: 200;
   font-stretch: 100%;
   font-display: swap;
-  src: url("d58a17cdf3789fef45b760c9c06431e6d9c379ad4dbb84352ff3a32775c2e203.woff2") format('woff2'), url("20b36f4f235c9e874f482a3d2811570dc7dedbd8ee00dfc626cf21fded7b65a9.woff") format('woff'); 
+  src: url("d58a17cdf3789fef45b760c9c06431e6d9c379ad4dbb84352ff3a32775c2e203.woff2") format('woff2'), url("20b36f4f235c9e874f482a3d2811570dc7dedbd8ee00dfc626cf21fded7b65a9.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -271,7 +271,7 @@ Usage example:
   font-weight: 200;
   font-stretch: 100%;
   font-display: swap;
-  src: url("dfe23b102c192f160aa44b6e3f1adfe4d22b6568a4957a7ca97c1a8d742be525.woff2") format('woff2'), url("fc9da9d1f68c1524e22ec150eda0a95904da52069b2b57993d780c2616c39d41.woff") format('woff'); 
+  src: url("dfe23b102c192f160aa44b6e3f1adfe4d22b6568a4957a7ca97c1a8d742be525.woff2") format('woff2'), url("fc9da9d1f68c1524e22ec150eda0a95904da52069b2b57993d780c2616c39d41.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -282,7 +282,7 @@ Usage example:
   font-weight: 200;
   font-stretch: 100%;
   font-display: swap;
-  src: url("20ee39304890d4a0284f84da028beaf8a148cdc3c311d8c3c84eb160a6d2f4b4.woff2") format('woff2'), url("27840b14521da7a1804a7a1761e72699ff0697274a1f9e2ecf59846d1e1466e9.woff") format('woff'); 
+  src: url("20ee39304890d4a0284f84da028beaf8a148cdc3c311d8c3c84eb160a6d2f4b4.woff2") format('woff2'), url("27840b14521da7a1804a7a1761e72699ff0697274a1f9e2ecf59846d1e1466e9.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -293,7 +293,7 @@ Usage example:
   font-weight: 200;
   font-stretch: 100%;
   font-display: swap;
-  src: url("6fbad35a4f0f9359916158040ae50d625e977b6d585d01ce7604f8a6d6cc2a98.woff2") format('woff2'), url("df55e255ab025e306954582b6f0c968242ecf597b8ad7c4ecd3ffc0f8585969b.woff") format('woff'); 
+  src: url("6fbad35a4f0f9359916158040ae50d625e977b6d585d01ce7604f8a6d6cc2a98.woff2") format('woff2'), url("df55e255ab025e306954582b6f0c968242ecf597b8ad7c4ecd3ffc0f8585969b.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -304,7 +304,7 @@ Usage example:
   font-weight: 300;
   font-stretch: 100%;
   font-display: swap;
-  src: url("19fd241a721ae6654dfd3d044a53d69e70b2eab96d7f9800bc6eee60c2acfeea.woff2") format('woff2'), url("24e1c48d3b9166bf35ab5ca9773e3fd2fd9c046a657c2bf1bd05303c9b68b6de.woff") format('woff'); 
+  src: url("19fd241a721ae6654dfd3d044a53d69e70b2eab96d7f9800bc6eee60c2acfeea.woff2") format('woff2'), url("24e1c48d3b9166bf35ab5ca9773e3fd2fd9c046a657c2bf1bd05303c9b68b6de.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -315,7 +315,7 @@ Usage example:
   font-weight: 300;
   font-stretch: 100%;
   font-display: swap;
-  src: url("9181423a93385c56db01813605fd3d0da3649a88196769d8a57f0191f47e2be6.woff2") format('woff2'), url("3145b3e56f2d03254ba251e50df573f80866480cf08dface7a5779261750f5b3.woff") format('woff'); 
+  src: url("9181423a93385c56db01813605fd3d0da3649a88196769d8a57f0191f47e2be6.woff2") format('woff2'), url("3145b3e56f2d03254ba251e50df573f80866480cf08dface7a5779261750f5b3.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -326,7 +326,7 @@ Usage example:
   font-weight: 300;
   font-stretch: 100%;
   font-display: swap;
-  src: url("d558b248d0fb826cdd904b9adefb1ca00e6215d3f5387bb7043720124f9324c9.woff2") format('woff2'), url("fd731c35cde7398a3c51d0a2440091b1d16502c92128b8d775406323ddcd076e.woff") format('woff'); 
+  src: url("d558b248d0fb826cdd904b9adefb1ca00e6215d3f5387bb7043720124f9324c9.woff2") format('woff2'), url("fd731c35cde7398a3c51d0a2440091b1d16502c92128b8d775406323ddcd076e.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -337,7 +337,7 @@ Usage example:
   font-weight: 300;
   font-stretch: 100%;
   font-display: swap;
-  src: url("e0bc8794e1256063612e4eaceb64cd4559a9ee60c3f9b10ef1a9a01412a27188.woff2") format('woff2'), url("cdb53a2a5042c18d1b43f95831b593e0ad921b0f28d3804df489d117a205aba2.woff") format('woff'); 
+  src: url("e0bc8794e1256063612e4eaceb64cd4559a9ee60c3f9b10ef1a9a01412a27188.woff2") format('woff2'), url("cdb53a2a5042c18d1b43f95831b593e0ad921b0f28d3804df489d117a205aba2.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -348,7 +348,7 @@ Usage example:
   font-weight: 300;
   font-stretch: 100%;
   font-display: swap;
-  src: url("53bb3cefd8c1589fc0b1890fcf9878ab0278da3f9f745a314a936d608ef859dd.woff2") format('woff2'), url("292130c73affdaaea6f45585f0cfcbde5fff3e240204963356feb99e8f0d798e.woff") format('woff'); 
+  src: url("53bb3cefd8c1589fc0b1890fcf9878ab0278da3f9f745a314a936d608ef859dd.woff2") format('woff2'), url("292130c73affdaaea6f45585f0cfcbde5fff3e240204963356feb99e8f0d798e.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -359,7 +359,7 @@ Usage example:
   font-weight: 400;
   font-stretch: 100%;
   font-display: swap;
-  src: url("bf4cf44657f35e99e05c83f5b1e7aa39d29136dbc2e821e0425e7e6ddeb255f2.woff2") format('woff2'), url("82b1abbeafde629c8f822f472dc5cab450d35787de55973407bcd134306b0cd6.woff") format('woff'); 
+  src: url("bf4cf44657f35e99e05c83f5b1e7aa39d29136dbc2e821e0425e7e6ddeb255f2.woff2") format('woff2'), url("82b1abbeafde629c8f822f472dc5cab450d35787de55973407bcd134306b0cd6.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -370,7 +370,7 @@ Usage example:
   font-weight: 400;
   font-stretch: 100%;
   font-display: swap;
-  src: url("9cf5dc4ae558b1dfb83d5700fb991b3e497f64f5dcf9d026d2640540e31100f7.woff2") format('woff2'), url("0d7115a14e36370c97f44476dbacb4be9c268ffdadc83efe86ea6215fa7f7bf2.woff") format('woff'); 
+  src: url("9cf5dc4ae558b1dfb83d5700fb991b3e497f64f5dcf9d026d2640540e31100f7.woff2") format('woff2'), url("0d7115a14e36370c97f44476dbacb4be9c268ffdadc83efe86ea6215fa7f7bf2.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -381,7 +381,7 @@ Usage example:
   font-weight: 400;
   font-stretch: 100%;
   font-display: swap;
-  src: url("21058252dd24a8ac10774f96390c81677b12bb4a80954c084b46c21dd99cec63.woff2") format('woff2'), url("12ba85924f6cda0bbd79ee58d1cbf2fab3b0eb865c84b8418cc7369fd789a705.woff") format('woff'); 
+  src: url("21058252dd24a8ac10774f96390c81677b12bb4a80954c084b46c21dd99cec63.woff2") format('woff2'), url("12ba85924f6cda0bbd79ee58d1cbf2fab3b0eb865c84b8418cc7369fd789a705.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -392,7 +392,7 @@ Usage example:
   font-weight: 400;
   font-stretch: 100%;
   font-display: swap;
-  src: url("a3fa160474fb65b5aa2d39cb0209e3a414c8bc6b9001a83c610916da117778dd.woff2") format('woff2'), url("628452c600d70b92140b67ba894cf7ed56e418d867979d0bca9fe50873c674b5.woff") format('woff'); 
+  src: url("a3fa160474fb65b5aa2d39cb0209e3a414c8bc6b9001a83c610916da117778dd.woff2") format('woff2'), url("628452c600d70b92140b67ba894cf7ed56e418d867979d0bca9fe50873c674b5.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -403,7 +403,7 @@ Usage example:
   font-weight: 400;
   font-stretch: 100%;
   font-display: swap;
-  src: url("6befe1d33cbce2c5c457934740212d2451d20912ca8e3d3e38d2af7c95b28cf3.woff2") format('woff2'), url("89f735453f06758c237de1a4ba506a497b758974603bb9aab41ebe41e3af14bb.woff") format('woff'); 
+  src: url("6befe1d33cbce2c5c457934740212d2451d20912ca8e3d3e38d2af7c95b28cf3.woff2") format('woff2'), url("89f735453f06758c237de1a4ba506a497b758974603bb9aab41ebe41e3af14bb.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -414,7 +414,7 @@ Usage example:
   font-weight: 500;
   font-stretch: 100%;
   font-display: swap;
-  src: url("0bc16615a55bbc332601a797de771c34334454370f558e8f855727adfcbd04e6.woff2") format('woff2'), url("bc22594897d7c3eb147c1f8c3ed9d9d17e326aff5f70cb83af53133c449ffb52.woff") format('woff'); 
+  src: url("0bc16615a55bbc332601a797de771c34334454370f558e8f855727adfcbd04e6.woff2") format('woff2'), url("bc22594897d7c3eb147c1f8c3ed9d9d17e326aff5f70cb83af53133c449ffb52.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -425,7 +425,7 @@ Usage example:
   font-weight: 500;
   font-stretch: 100%;
   font-display: swap;
-  src: url("0fe0678ee4f9741092e25953112018f0f2a713f2ee687cea235a4ef97e873ea3.woff2") format('woff2'), url("9fa17a9586e9a23abdcb06f3c7c8931ce72ac60441ccdf2878552a138ae3ffb3.woff") format('woff'); 
+  src: url("0fe0678ee4f9741092e25953112018f0f2a713f2ee687cea235a4ef97e873ea3.woff2") format('woff2'), url("9fa17a9586e9a23abdcb06f3c7c8931ce72ac60441ccdf2878552a138ae3ffb3.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -436,7 +436,7 @@ Usage example:
   font-weight: 500;
   font-stretch: 100%;
   font-display: swap;
-  src: url("7171d1ac79b1549ec39af2aa41bb1d8a67edb8d30c0c5e3a8b47fea4e78a1e39.woff2") format('woff2'), url("73d80091f8b610b49a03ce4a024bd4b43efdd461a68254bb272940f9aca133a3.woff") format('woff'); 
+  src: url("7171d1ac79b1549ec39af2aa41bb1d8a67edb8d30c0c5e3a8b47fea4e78a1e39.woff2") format('woff2'), url("73d80091f8b610b49a03ce4a024bd4b43efdd461a68254bb272940f9aca133a3.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -447,7 +447,7 @@ Usage example:
   font-weight: 500;
   font-stretch: 100%;
   font-display: swap;
-  src: url("ced07e904f7a0cafeefa0a8531677b5572a7a1d8813b4628d3c1a4616da4e2df.woff2") format('woff2'), url("77741ba4f6130544fcb7b4f16be039516bb2ee9d1069967eb7d2a6695cfca840.woff") format('woff'); 
+  src: url("ced07e904f7a0cafeefa0a8531677b5572a7a1d8813b4628d3c1a4616da4e2df.woff2") format('woff2'), url("77741ba4f6130544fcb7b4f16be039516bb2ee9d1069967eb7d2a6695cfca840.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -458,7 +458,7 @@ Usage example:
   font-weight: 500;
   font-stretch: 100%;
   font-display: swap;
-  src: url("e116cb49b35ed6c443a8277de2d68b9888ab51c1633700a00457f13ca5ddfe32.woff2") format('woff2'), url("5819df79fa2b10d80561e69a2933eee958b6399276fe917a8857f09cf4595bb7.woff") format('woff'); 
+  src: url("e116cb49b35ed6c443a8277de2d68b9888ab51c1633700a00457f13ca5ddfe32.woff2") format('woff2'), url("5819df79fa2b10d80561e69a2933eee958b6399276fe917a8857f09cf4595bb7.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -469,7 +469,7 @@ Usage example:
   font-weight: 600;
   font-stretch: 100%;
   font-display: swap;
-  src: url("f9b793c39faf2d525ead59d60621e147504c678df604e2cea1172018637b03d8.woff2") format('woff2'), url("9df90e94ff0f4472c7e9082d7ffde9596eaf5683586b709c3658f288c3fb4ea8.woff") format('woff'); 
+  src: url("f9b793c39faf2d525ead59d60621e147504c678df604e2cea1172018637b03d8.woff2") format('woff2'), url("9df90e94ff0f4472c7e9082d7ffde9596eaf5683586b709c3658f288c3fb4ea8.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -480,7 +480,7 @@ Usage example:
   font-weight: 600;
   font-stretch: 100%;
   font-display: swap;
-  src: url("1119fbe26d1a175fab627dac37c98aba1959eb92cc1c200e52c1342a06d4f369.woff2") format('woff2'), url("9865da6abffb722aa6eaa62594c82ea7d1a5e4b0607955da802a20136f3d0e0c.woff") format('woff'); 
+  src: url("1119fbe26d1a175fab627dac37c98aba1959eb92cc1c200e52c1342a06d4f369.woff2") format('woff2'), url("9865da6abffb722aa6eaa62594c82ea7d1a5e4b0607955da802a20136f3d0e0c.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -491,7 +491,7 @@ Usage example:
   font-weight: 600;
   font-stretch: 100%;
   font-display: swap;
-  src: url("aafa9023ca8dcb16eb2814ab73ab651ed8caec2996256e90f74d1361d4a18fd6.woff2") format('woff2'), url("6910a766c5a85beaf9371c044206289a67eb2054475f3089767851ebae040cc0.woff") format('woff'); 
+  src: url("aafa9023ca8dcb16eb2814ab73ab651ed8caec2996256e90f74d1361d4a18fd6.woff2") format('woff2'), url("6910a766c5a85beaf9371c044206289a67eb2054475f3089767851ebae040cc0.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -502,7 +502,7 @@ Usage example:
   font-weight: 600;
   font-stretch: 100%;
   font-display: swap;
-  src: url("c0ccd60bac4dfb0b35d4eeffbf54a36f91bffcea7d37496f8d3faf54b7352749.woff2") format('woff2'), url("a1d1f1283d1c08dabc39d8b2118ef4003b56c682a7517e95ee0add454c7ef48d.woff") format('woff'); 
+  src: url("c0ccd60bac4dfb0b35d4eeffbf54a36f91bffcea7d37496f8d3faf54b7352749.woff2") format('woff2'), url("a1d1f1283d1c08dabc39d8b2118ef4003b56c682a7517e95ee0add454c7ef48d.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -513,7 +513,7 @@ Usage example:
   font-weight: 600;
   font-stretch: 100%;
   font-display: swap;
-  src: url("025a1dff1eb5857cf74de317d70a1c899d5d22b3c3a36ff478829eba9031d309.woff2") format('woff2'), url("8484dcb576ef7fca6f36dc09387ec4c2b3ad396331a149c90fde248ca5fcf344.woff") format('woff'); 
+  src: url("025a1dff1eb5857cf74de317d70a1c899d5d22b3c3a36ff478829eba9031d309.woff2") format('woff2'), url("8484dcb576ef7fca6f36dc09387ec4c2b3ad396331a149c90fde248ca5fcf344.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -524,7 +524,7 @@ Usage example:
   font-weight: 700;
   font-stretch: 100%;
   font-display: swap;
-  src: url("2a7facad5e91f16a52721eabaa09726d5452738f23499c6fafbd759b90d3d77d.woff2") format('woff2'), url("e0943ba9b42510a40e2bb9b21e5a0fb0c02924bf6b13f1fcf67004306cfb680e.woff") format('woff'); 
+  src: url("2a7facad5e91f16a52721eabaa09726d5452738f23499c6fafbd759b90d3d77d.woff2") format('woff2'), url("e0943ba9b42510a40e2bb9b21e5a0fb0c02924bf6b13f1fcf67004306cfb680e.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -535,7 +535,7 @@ Usage example:
   font-weight: 700;
   font-stretch: 100%;
   font-display: swap;
-  src: url("1eec0f3c2dbcd0091d91cdfec727674c88eeef46a525d29998cc0e20c13456d6.woff2") format('woff2'), url("200487aa638921e09512a16c29bb570ec29a990eae477c538f8b2e8a60c33362.woff") format('woff'); 
+  src: url("1eec0f3c2dbcd0091d91cdfec727674c88eeef46a525d29998cc0e20c13456d6.woff2") format('woff2'), url("200487aa638921e09512a16c29bb570ec29a990eae477c538f8b2e8a60c33362.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -546,7 +546,7 @@ Usage example:
   font-weight: 700;
   font-stretch: 100%;
   font-display: swap;
-  src: url("653f6bc0a372366cbba09fb1e253b82efac17988aecddc65988f9aa9079f3711.woff2") format('woff2'), url("0328e6b2635f9b0d47cc4d2f7d8202c9b462ccee09656fbf4b4ec8544140afde.woff") format('woff'); 
+  src: url("653f6bc0a372366cbba09fb1e253b82efac17988aecddc65988f9aa9079f3711.woff2") format('woff2'), url("0328e6b2635f9b0d47cc4d2f7d8202c9b462ccee09656fbf4b4ec8544140afde.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -557,7 +557,7 @@ Usage example:
   font-weight: 700;
   font-stretch: 100%;
   font-display: swap;
-  src: url("2c233b308be99b0044d6b4b6bf341f0cf0f4832181178684eeb499a7fef1612f.woff2") format('woff2'), url("ffe93eae369c82f1392ed247ad59836f9cebcd09334343f6425ffed83607fdcb.woff") format('woff'); 
+  src: url("2c233b308be99b0044d6b4b6bf341f0cf0f4832181178684eeb499a7fef1612f.woff2") format('woff2'), url("ffe93eae369c82f1392ed247ad59836f9cebcd09334343f6425ffed83607fdcb.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -568,7 +568,7 @@ Usage example:
   font-weight: 700;
   font-stretch: 100%;
   font-display: swap;
-  src: url("48c3abdc969c002558d7b0d62bd9163f7e8136423b88bf1884d65672662f944c.woff2") format('woff2'), url("45dadd2a99263b367c718cb252a8455fa212a28492e29d870688101cfc81ef1f.woff") format('woff'); 
+  src: url("48c3abdc969c002558d7b0d62bd9163f7e8136423b88bf1884d65672662f944c.woff2") format('woff2'), url("45dadd2a99263b367c718cb252a8455fa212a28492e29d870688101cfc81ef1f.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -579,7 +579,7 @@ Usage example:
   font-weight: 800;
   font-stretch: 100%;
   font-display: swap;
-  src: url("c1fec34457c617dbb760c757f0b1394a748fb29adf918e5e221d99df78e89547.woff2") format('woff2'), url("9b226c7167cddb45a7818d4ff3d07551be3369cee84651b3e9e1f42428893723.woff") format('woff'); 
+  src: url("c1fec34457c617dbb760c757f0b1394a748fb29adf918e5e221d99df78e89547.woff2") format('woff2'), url("9b226c7167cddb45a7818d4ff3d07551be3369cee84651b3e9e1f42428893723.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -590,7 +590,7 @@ Usage example:
   font-weight: 800;
   font-stretch: 100%;
   font-display: swap;
-  src: url("1d77b763d9ad7c7323ddbc734198d0dce15b556b8d419ab2705dec838c8422ec.woff2") format('woff2'), url("0e9728d75613c4d78c0a77f802115228beafffa7b134e715aa32638648df5760.woff") format('woff'); 
+  src: url("1d77b763d9ad7c7323ddbc734198d0dce15b556b8d419ab2705dec838c8422ec.woff2") format('woff2'), url("0e9728d75613c4d78c0a77f802115228beafffa7b134e715aa32638648df5760.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -601,7 +601,7 @@ Usage example:
   font-weight: 800;
   font-stretch: 100%;
   font-display: swap;
-  src: url("65c3ba73dbff81c1600a5067073d516e23bbaba4ed1dc42957ab735dfb979bea.woff2") format('woff2'), url("c4d2328132c8ad48d65d3baf4fac7a8a881d9628d829585dc514b065b5b676e1.woff") format('woff'); 
+  src: url("65c3ba73dbff81c1600a5067073d516e23bbaba4ed1dc42957ab735dfb979bea.woff2") format('woff2'), url("c4d2328132c8ad48d65d3baf4fac7a8a881d9628d829585dc514b065b5b676e1.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -612,7 +612,7 @@ Usage example:
   font-weight: 800;
   font-stretch: 100%;
   font-display: swap;
-  src: url("2c210c1dbf981a52c8cb2efdcfb1a9ada3131a715abb45298480e7d35033e081.woff2") format('woff2'), url("28968bc14389974a1160953a8ed307f33d29f82856a5200a6c5db6657c12290e.woff") format('woff'); 
+  src: url("2c210c1dbf981a52c8cb2efdcfb1a9ada3131a715abb45298480e7d35033e081.woff2") format('woff2'), url("28968bc14389974a1160953a8ed307f33d29f82856a5200a6c5db6657c12290e.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -623,7 +623,7 @@ Usage example:
   font-weight: 800;
   font-stretch: 100%;
   font-display: swap;
-  src: url("f5e54b7498f68ca068406284060e83e44229a31750c073e175792e79f1ab5937.woff2") format('woff2'), url("c07de040eabd5280dfa9575d89dabb4e7c5bb9c17f6df2e1bb9942fb864fc8c0.woff") format('woff'); 
+  src: url("f5e54b7498f68ca068406284060e83e44229a31750c073e175792e79f1ab5937.woff2") format('woff2'), url("c07de040eabd5280dfa9575d89dabb4e7c5bb9c17f6df2e1bb9942fb864fc8c0.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -634,7 +634,7 @@ Usage example:
   font-weight: 900;
   font-stretch: 100%;
   font-display: swap;
-  src: url("46dc69caf643428e6935f7bccb034a4a48367ea000fa9433973d09b786dd7dfc.woff2") format('woff2'), url("d34ee6c99fab1230be36f520fd72934052940472a49c0d85bc5642af977cd835.woff") format('woff'); 
+  src: url("46dc69caf643428e6935f7bccb034a4a48367ea000fa9433973d09b786dd7dfc.woff2") format('woff2'), url("d34ee6c99fab1230be36f520fd72934052940472a49c0d85bc5642af977cd835.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -645,7 +645,7 @@ Usage example:
   font-weight: 900;
   font-stretch: 100%;
   font-display: swap;
-  src: url("19b727167be53d080942f0447b641df66f008496e08ea953ff1ec3293ed5b5df.woff2") format('woff2'), url("30622927320d04ff35a5aa3ec84584e544e1b3fff8df73f89c3ee12b097a2712.woff") format('woff'); 
+  src: url("19b727167be53d080942f0447b641df66f008496e08ea953ff1ec3293ed5b5df.woff2") format('woff2'), url("30622927320d04ff35a5aa3ec84584e544e1b3fff8df73f89c3ee12b097a2712.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -656,7 +656,7 @@ Usage example:
   font-weight: 900;
   font-stretch: 100%;
   font-display: swap;
-  src: url("8ccbe9b089e646b1f9594040e06fb043356f49edbd9e972fca210fcf48be1adf.woff2") format('woff2'), url("e6a30bba7358d888e17228f62b4b55e0fceb04eb490bf41f86028df581d0ad90.woff") format('woff'); 
+  src: url("8ccbe9b089e646b1f9594040e06fb043356f49edbd9e972fca210fcf48be1adf.woff2") format('woff2'), url("e6a30bba7358d888e17228f62b4b55e0fceb04eb490bf41f86028df581d0ad90.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -667,7 +667,7 @@ Usage example:
   font-weight: 900;
   font-stretch: 100%;
   font-display: swap;
-  src: url("8ae82a8b326dd1de7c8a6b667b9f7a9165f9c3ef68ca16c392485bb1f898ce80.woff2") format('woff2'), url("58f264287a4a6d9cee994841a6f829c55a368cb1751a809d03071ef5c473d2d7.woff") format('woff'); 
+  src: url("8ae82a8b326dd1de7c8a6b667b9f7a9165f9c3ef68ca16c392485bb1f898ce80.woff2") format('woff2'), url("58f264287a4a6d9cee994841a6f829c55a368cb1751a809d03071ef5c473d2d7.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -678,7 +678,7 @@ Usage example:
   font-weight: 900;
   font-stretch: 100%;
   font-display: swap;
-  src: url("0ca6160d0f9ceeb32e146dce11f451f362506d0a09df6de573a19176b3fad51b.woff2") format('woff2'), url("d8aeb075e0fcb9b614f7e2b12f22f5a976e8d6d170e58ac50bfd016e6c0b5b36.woff") format('woff'); 
+  src: url("0ca6160d0f9ceeb32e146dce11f451f362506d0a09df6de573a19176b3fad51b.woff2") format('woff2'), url("d8aeb075e0fcb9b614f7e2b12f22f5a976e8d6d170e58ac50bfd016e6c0b5b36.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -689,7 +689,7 @@ Usage example:
   font-weight: 100;
   font-stretch: 100%;
   font-display: swap;
-  src: url("c32993ed570c22850bb57bdba9c9587fa23f31c54f4f1ff85bb58bf1067feb8e.woff2") format('woff2'), url("ccd284e47c95afa9661c7f7f1ec8e0f4be01c9277813e52215cf266999272b85.woff") format('woff'); 
+  src: url("c32993ed570c22850bb57bdba9c9587fa23f31c54f4f1ff85bb58bf1067feb8e.woff2") format('woff2'), url("ccd284e47c95afa9661c7f7f1ec8e0f4be01c9277813e52215cf266999272b85.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -700,7 +700,7 @@ Usage example:
   font-weight: 100;
   font-stretch: 100%;
   font-display: swap;
-  src: url("9071f91d1843cd5264aae52e8a302302b4dd3fdbb13f58bee34d6109641fcb56.woff2") format('woff2'), url("2b4ad8717862b0321745720991226edbf26597ae80d582037618f237589ffe5a.woff") format('woff'); 
+  src: url("9071f91d1843cd5264aae52e8a302302b4dd3fdbb13f58bee34d6109641fcb56.woff2") format('woff2'), url("2b4ad8717862b0321745720991226edbf26597ae80d582037618f237589ffe5a.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -711,7 +711,7 @@ Usage example:
   font-weight: 100;
   font-stretch: 100%;
   font-display: swap;
-  src: url("e7ae75fd0e860fef8f9e2ab28050b1e43ab3984a6720e158d14cc213453f85d9.woff2") format('woff2'), url("b959d079e3553e53d8c9e8e245d1238139214075c6fb8ae9b9c86b30cd13161a.woff") format('woff'); 
+  src: url("e7ae75fd0e860fef8f9e2ab28050b1e43ab3984a6720e158d14cc213453f85d9.woff2") format('woff2'), url("b959d079e3553e53d8c9e8e245d1238139214075c6fb8ae9b9c86b30cd13161a.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -722,7 +722,7 @@ Usage example:
   font-weight: 100;
   font-stretch: 100%;
   font-display: swap;
-  src: url("0a146e64375f00307c50baa2cff691836d5452257f78702d33f636140326607a.woff2") format('woff2'), url("9346906e59de2c23173293a2a08b6941c63930615eb413073fbd3d13daed5a1a.woff") format('woff'); 
+  src: url("0a146e64375f00307c50baa2cff691836d5452257f78702d33f636140326607a.woff2") format('woff2'), url("9346906e59de2c23173293a2a08b6941c63930615eb413073fbd3d13daed5a1a.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -733,7 +733,7 @@ Usage example:
   font-weight: 100;
   font-stretch: 100%;
   font-display: swap;
-  src: url("53162ed2a2de821a647dddfed08ddbe0e527ca9942e28f888c44db86787594f9.woff2") format('woff2'), url("0b1b9a18d49ec39577c2bbde2200395214e55518aee0df91232e0dd7f3ca690b.woff") format('woff'); 
+  src: url("53162ed2a2de821a647dddfed08ddbe0e527ca9942e28f888c44db86787594f9.woff2") format('woff2'), url("0b1b9a18d49ec39577c2bbde2200395214e55518aee0df91232e0dd7f3ca690b.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -744,7 +744,7 @@ Usage example:
   font-weight: 200;
   font-stretch: 100%;
   font-display: swap;
-  src: url("476d1e70365a9ef17c1776f03c58e4bd81eb07e029fbbe75fbc95548dd54635d.woff2") format('woff2'), url("81b722c77d18b2f9614f275c7aefe5313e3fd1f208e9f9caef38c7e8f5385bdd.woff") format('woff'); 
+  src: url("476d1e70365a9ef17c1776f03c58e4bd81eb07e029fbbe75fbc95548dd54635d.woff2") format('woff2'), url("81b722c77d18b2f9614f275c7aefe5313e3fd1f208e9f9caef38c7e8f5385bdd.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -755,7 +755,7 @@ Usage example:
   font-weight: 200;
   font-stretch: 100%;
   font-display: swap;
-  src: url("ba142f1d3754d4b7cb47e01493283b277154476b874888f81592263e255d305d.woff2") format('woff2'), url("16d54f9e09322f3004124654cab7a872cfdec76f210c09a57525ecc157f717d5.woff") format('woff'); 
+  src: url("ba142f1d3754d4b7cb47e01493283b277154476b874888f81592263e255d305d.woff2") format('woff2'), url("16d54f9e09322f3004124654cab7a872cfdec76f210c09a57525ecc157f717d5.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -766,7 +766,7 @@ Usage example:
   font-weight: 200;
   font-stretch: 100%;
   font-display: swap;
-  src: url("6120753dce1dce6dbfd2871a1d5e7088f04ac42bcea524d1f22dd5bf3cf5b977.woff2") format('woff2'), url("7ce0959f8b7e25490c71d9c2760ab330ee0a14e8ecbb05bc8eed3cfc3de0f9a0.woff") format('woff'); 
+  src: url("6120753dce1dce6dbfd2871a1d5e7088f04ac42bcea524d1f22dd5bf3cf5b977.woff2") format('woff2'), url("7ce0959f8b7e25490c71d9c2760ab330ee0a14e8ecbb05bc8eed3cfc3de0f9a0.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -777,7 +777,7 @@ Usage example:
   font-weight: 200;
   font-stretch: 100%;
   font-display: swap;
-  src: url("2cde47dda1303d423e4366ed2fe0dd100cca12873d699d9c58b8c451e7a97964.woff2") format('woff2'), url("5d492be0991f1e3d0c154a474405a3e5d35973af25e9c0469aac3f786f33aa63.woff") format('woff'); 
+  src: url("2cde47dda1303d423e4366ed2fe0dd100cca12873d699d9c58b8c451e7a97964.woff2") format('woff2'), url("5d492be0991f1e3d0c154a474405a3e5d35973af25e9c0469aac3f786f33aa63.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -788,7 +788,7 @@ Usage example:
   font-weight: 200;
   font-stretch: 100%;
   font-display: swap;
-  src: url("7371f7376298d41db1533eed15288dbf6a954eba679079c3478b4b48ac5ad652.woff2") format('woff2'), url("c18255619cbc70a3e9c73949c240720f10687c42d245f01b2624d957766341ca.woff") format('woff'); 
+  src: url("7371f7376298d41db1533eed15288dbf6a954eba679079c3478b4b48ac5ad652.woff2") format('woff2'), url("c18255619cbc70a3e9c73949c240720f10687c42d245f01b2624d957766341ca.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -799,7 +799,7 @@ Usage example:
   font-weight: 300;
   font-stretch: 100%;
   font-display: swap;
-  src: url("3f2d70cd9db6d7a8634e43871da99bb0f92b8c0e8db69d75ee36a7b5428977b2.woff2") format('woff2'), url("85540785eabd6e4a4a7e3f081241eeaa03f0bad9b87abfa7d0b8ead3856edcbc.woff") format('woff'); 
+  src: url("3f2d70cd9db6d7a8634e43871da99bb0f92b8c0e8db69d75ee36a7b5428977b2.woff2") format('woff2'), url("85540785eabd6e4a4a7e3f081241eeaa03f0bad9b87abfa7d0b8ead3856edcbc.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -810,7 +810,7 @@ Usage example:
   font-weight: 300;
   font-stretch: 100%;
   font-display: swap;
-  src: url("f19410d8561bc902d6badad1ae0aaf65771b50532b3f600e90d7b07752e5e796.woff2") format('woff2'), url("d8df3c72443bb2ebd8d0c58a9f3dbb51e8b3d3a927ba903e91193f4e68b01abb.woff") format('woff'); 
+  src: url("f19410d8561bc902d6badad1ae0aaf65771b50532b3f600e90d7b07752e5e796.woff2") format('woff2'), url("d8df3c72443bb2ebd8d0c58a9f3dbb51e8b3d3a927ba903e91193f4e68b01abb.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -821,7 +821,7 @@ Usage example:
   font-weight: 300;
   font-stretch: 100%;
   font-display: swap;
-  src: url("a04ddd2f2e4cefe7e6e33563628d98232f99fbabd7f05d71fe24657ce7139774.woff2") format('woff2'), url("5a75db5b98a518919c09a1fa51e3cb7e3fda6e821d597eec20e15e4891ed1aa4.woff") format('woff'); 
+  src: url("a04ddd2f2e4cefe7e6e33563628d98232f99fbabd7f05d71fe24657ce7139774.woff2") format('woff2'), url("5a75db5b98a518919c09a1fa51e3cb7e3fda6e821d597eec20e15e4891ed1aa4.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -832,7 +832,7 @@ Usage example:
   font-weight: 300;
   font-stretch: 100%;
   font-display: swap;
-  src: url("a7e9c6036bf24b07e2860f75d105018c97c5549b2297085f27238d80d0db5062.woff2") format('woff2'), url("0a02faf587e2ad1f4f524bfd28499a4d03c7e31729c95442cb953df7abbb3ab9.woff") format('woff'); 
+  src: url("a7e9c6036bf24b07e2860f75d105018c97c5549b2297085f27238d80d0db5062.woff2") format('woff2'), url("0a02faf587e2ad1f4f524bfd28499a4d03c7e31729c95442cb953df7abbb3ab9.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -843,7 +843,7 @@ Usage example:
   font-weight: 300;
   font-stretch: 100%;
   font-display: swap;
-  src: url("5bd5eda12bcd0c231bf00bf71270b23c5ed8291ee268f59aabd51ea2ae17d8b7.woff2") format('woff2'), url("f0da95a1968335236b82c3b1a10c99dddaf43b191939feef6887541a16fd0019.woff") format('woff'); 
+  src: url("5bd5eda12bcd0c231bf00bf71270b23c5ed8291ee268f59aabd51ea2ae17d8b7.woff2") format('woff2'), url("f0da95a1968335236b82c3b1a10c99dddaf43b191939feef6887541a16fd0019.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -854,7 +854,7 @@ Usage example:
   font-weight: 400;
   font-stretch: 100%;
   font-display: swap;
-  src: url("4f997180fe2bfdbd78bb5636995513f6b6f4289b9d90f11e39633f4ec231a0c9.woff2") format('woff2'), url("4af8c9721d8c335080258ee5a5420288c6f72c458bef2dea41ea1322887db6c2.woff") format('woff'); 
+  src: url("4f997180fe2bfdbd78bb5636995513f6b6f4289b9d90f11e39633f4ec231a0c9.woff2") format('woff2'), url("4af8c9721d8c335080258ee5a5420288c6f72c458bef2dea41ea1322887db6c2.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -865,7 +865,7 @@ Usage example:
   font-weight: 400;
   font-stretch: 100%;
   font-display: swap;
-  src: url("530c2b2550749d670a2f0cff1250452abdcd0c32659edb13a4645fdd81ab6fc2.woff2") format('woff2'), url("438e9e27d839439dcaa08a0af3ad49fffd905cec9a863ebcdd8aedd8948d83ec.woff") format('woff'); 
+  src: url("530c2b2550749d670a2f0cff1250452abdcd0c32659edb13a4645fdd81ab6fc2.woff2") format('woff2'), url("438e9e27d839439dcaa08a0af3ad49fffd905cec9a863ebcdd8aedd8948d83ec.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -876,7 +876,7 @@ Usage example:
   font-weight: 400;
   font-stretch: 100%;
   font-display: swap;
-  src: url("9d287b626587cdab7c06ea8b5daf5a8a7263fd12c5c4ef007feebce528b0ab95.woff2") format('woff2'), url("af11f9e531511b5e27f8686809c8e6ea77339141335067fdb3dba62eb5944b1e.woff") format('woff'); 
+  src: url("9d287b626587cdab7c06ea8b5daf5a8a7263fd12c5c4ef007feebce528b0ab95.woff2") format('woff2'), url("af11f9e531511b5e27f8686809c8e6ea77339141335067fdb3dba62eb5944b1e.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -887,7 +887,7 @@ Usage example:
   font-weight: 400;
   font-stretch: 100%;
   font-display: swap;
-  src: url("bb5d8634f36eb59b87d8e0292d10567fd62c3477c17417eec69510749ed71da5.woff2") format('woff2'), url("d5ada44a86bccdc80643c18b50cb6768346967676368fc84bf50dcce0b30c15f.woff") format('woff'); 
+  src: url("bb5d8634f36eb59b87d8e0292d10567fd62c3477c17417eec69510749ed71da5.woff2") format('woff2'), url("d5ada44a86bccdc80643c18b50cb6768346967676368fc84bf50dcce0b30c15f.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -898,7 +898,7 @@ Usage example:
   font-weight: 400;
   font-stretch: 100%;
   font-display: swap;
-  src: url("95eaee0cb4a0cc1bb2f7b0cb8cd5c80c4fd30d79d3ff743dd251f8ec82ed68be.woff2") format('woff2'), url("afe1907ad2d91974dde94a0d384c93e99d3563a4aee86b4a59014095b0118e0c.woff") format('woff'); 
+  src: url("95eaee0cb4a0cc1bb2f7b0cb8cd5c80c4fd30d79d3ff743dd251f8ec82ed68be.woff2") format('woff2'), url("afe1907ad2d91974dde94a0d384c93e99d3563a4aee86b4a59014095b0118e0c.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -909,7 +909,7 @@ Usage example:
   font-weight: 500;
   font-stretch: 100%;
   font-display: swap;
-  src: url("633d27b63fcb27c7553e142aa1eef65a50996be3b6850da42b243295e80a493c.woff2") format('woff2'), url("62c6465392c6f84d8ce593bcd4be9502202db17404c6a9655b5f66f371d45f18.woff") format('woff'); 
+  src: url("633d27b63fcb27c7553e142aa1eef65a50996be3b6850da42b243295e80a493c.woff2") format('woff2'), url("62c6465392c6f84d8ce593bcd4be9502202db17404c6a9655b5f66f371d45f18.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -920,7 +920,7 @@ Usage example:
   font-weight: 500;
   font-stretch: 100%;
   font-display: swap;
-  src: url("9d1c6e3408894fea23976e812bc86678d4072a00b0c8311e2de85447136401fc.woff2") format('woff2'), url("72b45b5e9cf1d4c00898aefe9a85daa41f9fd751da23b2609cff2abb0b7c2c70.woff") format('woff'); 
+  src: url("9d1c6e3408894fea23976e812bc86678d4072a00b0c8311e2de85447136401fc.woff2") format('woff2'), url("72b45b5e9cf1d4c00898aefe9a85daa41f9fd751da23b2609cff2abb0b7c2c70.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -931,7 +931,7 @@ Usage example:
   font-weight: 500;
   font-stretch: 100%;
   font-display: swap;
-  src: url("efe0ea3d37f1d58e7d8d5a825c730a84aca4e9a08655a7fd275002b64fd4d573.woff2") format('woff2'), url("96d05be7cff9ae5335e18122195a04adcc7f6bd9176902baf114503dbeb1a083.woff") format('woff'); 
+  src: url("efe0ea3d37f1d58e7d8d5a825c730a84aca4e9a08655a7fd275002b64fd4d573.woff2") format('woff2'), url("96d05be7cff9ae5335e18122195a04adcc7f6bd9176902baf114503dbeb1a083.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -942,7 +942,7 @@ Usage example:
   font-weight: 500;
   font-stretch: 100%;
   font-display: swap;
-  src: url("f7b8bb022b92f675ebb112b0c6c5ce39dbc49c7d631c7fd53aaf2d624f8a3c58.woff2") format('woff2'), url("0a800e9f2115449d8d791fa85cb08f812ec0af9900a1610f9a1a6f578d4d2145.woff") format('woff'); 
+  src: url("f7b8bb022b92f675ebb112b0c6c5ce39dbc49c7d631c7fd53aaf2d624f8a3c58.woff2") format('woff2'), url("0a800e9f2115449d8d791fa85cb08f812ec0af9900a1610f9a1a6f578d4d2145.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -953,7 +953,7 @@ Usage example:
   font-weight: 500;
   font-stretch: 100%;
   font-display: swap;
-  src: url("27ab5fc57e8000b25370262d4cb79ba8fa473c8c319a0756efb59db7cf4ff8aa.woff2") format('woff2'), url("ccad879266b210dafc00c27c4e9fbf9f6b013130025d87134bc0987d9682c234.woff") format('woff'); 
+  src: url("27ab5fc57e8000b25370262d4cb79ba8fa473c8c319a0756efb59db7cf4ff8aa.woff2") format('woff2'), url("ccad879266b210dafc00c27c4e9fbf9f6b013130025d87134bc0987d9682c234.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -964,7 +964,7 @@ Usage example:
   font-weight: 600;
   font-stretch: 100%;
   font-display: swap;
-  src: url("38fb99248998cf3a7497d81de3c225588c920ac19c9bc5fc07f1660207660487.woff2") format('woff2'), url("3ba5a9667624f978e6d5b9c995b2f17133e2ff2134fffca2d2fd6d7aab9bea9c.woff") format('woff'); 
+  src: url("38fb99248998cf3a7497d81de3c225588c920ac19c9bc5fc07f1660207660487.woff2") format('woff2'), url("3ba5a9667624f978e6d5b9c995b2f17133e2ff2134fffca2d2fd6d7aab9bea9c.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -975,7 +975,7 @@ Usage example:
   font-weight: 600;
   font-stretch: 100%;
   font-display: swap;
-  src: url("205a358fc68ef9223241c9b799b3e4736302f6f44789063ba6f587c987185ae6.woff2") format('woff2'), url("7205be3489c2585521d15013bfa702459a6bbe8161589fa688a4c7c95cb33967.woff") format('woff'); 
+  src: url("205a358fc68ef9223241c9b799b3e4736302f6f44789063ba6f587c987185ae6.woff2") format('woff2'), url("7205be3489c2585521d15013bfa702459a6bbe8161589fa688a4c7c95cb33967.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -986,7 +986,7 @@ Usage example:
   font-weight: 600;
   font-stretch: 100%;
   font-display: swap;
-  src: url("0f53a664407cd696719ca4dc3aef8a1cf164f645b96f700fcbd3a9c231cd8d87.woff2") format('woff2'), url("31688cf5aed82cd2a31d3c6773b2db21bf4af4f821ae563652d4c78cd04247b0.woff") format('woff'); 
+  src: url("0f53a664407cd696719ca4dc3aef8a1cf164f645b96f700fcbd3a9c231cd8d87.woff2") format('woff2'), url("31688cf5aed82cd2a31d3c6773b2db21bf4af4f821ae563652d4c78cd04247b0.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -997,7 +997,7 @@ Usage example:
   font-weight: 600;
   font-stretch: 100%;
   font-display: swap;
-  src: url("7109c9f5a7065991a55e51151fecf6d7f40d8fe7f9a5e52b2aa9b64dcff6f4a9.woff2") format('woff2'), url("f9e6d6c3872bda5ec965e7502b6d1d6050ec80c73877dbbaaa4ce4acce10f844.woff") format('woff'); 
+  src: url("7109c9f5a7065991a55e51151fecf6d7f40d8fe7f9a5e52b2aa9b64dcff6f4a9.woff2") format('woff2'), url("f9e6d6c3872bda5ec965e7502b6d1d6050ec80c73877dbbaaa4ce4acce10f844.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -1008,7 +1008,7 @@ Usage example:
   font-weight: 600;
   font-stretch: 100%;
   font-display: swap;
-  src: url("3f645d636a9fa0ddeea2f6e0210d6bda3f6de31824ad6016f32268b3d3786f1c.woff2") format('woff2'), url("c78d02c3dadd1a17d50ec5418253e25efe83be046942cbd6769fae95d7bbe7f9.woff") format('woff'); 
+  src: url("3f645d636a9fa0ddeea2f6e0210d6bda3f6de31824ad6016f32268b3d3786f1c.woff2") format('woff2'), url("c78d02c3dadd1a17d50ec5418253e25efe83be046942cbd6769fae95d7bbe7f9.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -1019,7 +1019,7 @@ Usage example:
   font-weight: 700;
   font-stretch: 100%;
   font-display: swap;
-  src: url("83e1e67c6d22c8101b1658878f4ae5ab5db0ca55d2ad0b0e9c38e4cde730665b.woff2") format('woff2'), url("45de90f71436bc0b8552420feae66d645e24363bc549199502c9c2ea0cab3296.woff") format('woff'); 
+  src: url("83e1e67c6d22c8101b1658878f4ae5ab5db0ca55d2ad0b0e9c38e4cde730665b.woff2") format('woff2'), url("45de90f71436bc0b8552420feae66d645e24363bc549199502c9c2ea0cab3296.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -1030,7 +1030,7 @@ Usage example:
   font-weight: 700;
   font-stretch: 100%;
   font-display: swap;
-  src: url("c89cc7fc829444744c08bbcec0d5372c5647daa35736c9a5cb400717d0e241ff.woff2") format('woff2'), url("90d8e5f27417a5236f9a4bb5f7d368615baa052f94757d27f9f9aa7390eae786.woff") format('woff'); 
+  src: url("c89cc7fc829444744c08bbcec0d5372c5647daa35736c9a5cb400717d0e241ff.woff2") format('woff2'), url("90d8e5f27417a5236f9a4bb5f7d368615baa052f94757d27f9f9aa7390eae786.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -1041,7 +1041,7 @@ Usage example:
   font-weight: 700;
   font-stretch: 100%;
   font-display: swap;
-  src: url("00dfc4b7efac31e7b3c99dbcce603469f5b24e2f5955ce2ee06ce8741a78c226.woff2") format('woff2'), url("791b2207554a0ac169b358b22a226938bbcdb29a06f748932a80981bd963b7fd.woff") format('woff'); 
+  src: url("00dfc4b7efac31e7b3c99dbcce603469f5b24e2f5955ce2ee06ce8741a78c226.woff2") format('woff2'), url("791b2207554a0ac169b358b22a226938bbcdb29a06f748932a80981bd963b7fd.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -1052,7 +1052,7 @@ Usage example:
   font-weight: 700;
   font-stretch: 100%;
   font-display: swap;
-  src: url("e0f89acf334a6dd63eca0d5aea030b6728f475803991ca4d1ea67bcab904197b.woff2") format('woff2'), url("5271f0964f09a93140aebfa007cdd2c610abd63bd65e72562f18ce2bb646df55.woff") format('woff'); 
+  src: url("e0f89acf334a6dd63eca0d5aea030b6728f475803991ca4d1ea67bcab904197b.woff2") format('woff2'), url("5271f0964f09a93140aebfa007cdd2c610abd63bd65e72562f18ce2bb646df55.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -1063,7 +1063,7 @@ Usage example:
   font-weight: 700;
   font-stretch: 100%;
   font-display: swap;
-  src: url("e831b3946435cefe836922eddfc119b82e0ff786fd2e2e4822d0040d98bc7ed4.woff2") format('woff2'), url("93ecc15dfabe5bd0b8096795cbe34bbd865b680223f028924ac32ba4e232b546.woff") format('woff'); 
+  src: url("e831b3946435cefe836922eddfc119b82e0ff786fd2e2e4822d0040d98bc7ed4.woff2") format('woff2'), url("93ecc15dfabe5bd0b8096795cbe34bbd865b680223f028924ac32ba4e232b546.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -1074,7 +1074,7 @@ Usage example:
   font-weight: 800;
   font-stretch: 100%;
   font-display: swap;
-  src: url("6607142abb2be3063bf70b01ab6fd70a4d4b5a83f4f1598a4ad54482a3fcc208.woff2") format('woff2'), url("f1a50d5c14aefe84cf4a116b1df570ebf4abf75fe7c45dbe2170be22b189885c.woff") format('woff'); 
+  src: url("6607142abb2be3063bf70b01ab6fd70a4d4b5a83f4f1598a4ad54482a3fcc208.woff2") format('woff2'), url("f1a50d5c14aefe84cf4a116b1df570ebf4abf75fe7c45dbe2170be22b189885c.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -1085,7 +1085,7 @@ Usage example:
   font-weight: 800;
   font-stretch: 100%;
   font-display: swap;
-  src: url("bb06367a0b4b58bd8a75db87c1cca05a2ff711cd6d7ca78f322ca6941254749b.woff2") format('woff2'), url("e5686c395ce80be4ceac429a40c4c6df969bd599b55a7ee5c91d1c7d97eb3005.woff") format('woff'); 
+  src: url("bb06367a0b4b58bd8a75db87c1cca05a2ff711cd6d7ca78f322ca6941254749b.woff2") format('woff2'), url("e5686c395ce80be4ceac429a40c4c6df969bd599b55a7ee5c91d1c7d97eb3005.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -1096,7 +1096,7 @@ Usage example:
   font-weight: 800;
   font-stretch: 100%;
   font-display: swap;
-  src: url("f6c2299411011c98e3c706624a5cf14924cafd097577c50eaf45550d2a779a72.woff2") format('woff2'), url("12bc39a35443ec2e063ffb17702ec04de2da6aac4f8374979280b4d797a770f0.woff") format('woff'); 
+  src: url("f6c2299411011c98e3c706624a5cf14924cafd097577c50eaf45550d2a779a72.woff2") format('woff2'), url("12bc39a35443ec2e063ffb17702ec04de2da6aac4f8374979280b4d797a770f0.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -1107,7 +1107,7 @@ Usage example:
   font-weight: 800;
   font-stretch: 100%;
   font-display: swap;
-  src: url("9b096f251f8ef4a367a2c51608c0b5d3cb855c9ad2623fe79208b89712964a88.woff2") format('woff2'), url("63f142d9fa93111b781e8f6d16621bccfcd4e1973ca4888c257e5ce7f9ae3d9c.woff") format('woff'); 
+  src: url("9b096f251f8ef4a367a2c51608c0b5d3cb855c9ad2623fe79208b89712964a88.woff2") format('woff2'), url("63f142d9fa93111b781e8f6d16621bccfcd4e1973ca4888c257e5ce7f9ae3d9c.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -1118,7 +1118,7 @@ Usage example:
   font-weight: 800;
   font-stretch: 100%;
   font-display: swap;
-  src: url("b45967a79c2f67b7457e013d1c1119e8f2586bc0c9dd8bf3b79c386a4ae0fa62.woff2") format('woff2'), url("3f4ac1230aed54c83eaa36e1f8de19a3790a3520fe1aadfc4734c2439692600d.woff") format('woff'); 
+  src: url("b45967a79c2f67b7457e013d1c1119e8f2586bc0c9dd8bf3b79c386a4ae0fa62.woff2") format('woff2'), url("3f4ac1230aed54c83eaa36e1f8de19a3790a3520fe1aadfc4734c2439692600d.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -1129,7 +1129,7 @@ Usage example:
   font-weight: 900;
   font-stretch: 100%;
   font-display: swap;
-  src: url("b3353793f05f57d1d1c0ada1f23c7463c062ebba14b47e48b2be0e4faf702dc6.woff2") format('woff2'), url("f73e5b1b24601410432ca0ebc9175dd64b4429976eec2e2ff7006b7e1546a836.woff") format('woff'); 
+  src: url("b3353793f05f57d1d1c0ada1f23c7463c062ebba14b47e48b2be0e4faf702dc6.woff2") format('woff2'), url("f73e5b1b24601410432ca0ebc9175dd64b4429976eec2e2ff7006b7e1546a836.woff") format('woff');
   unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }
 
@@ -1140,7 +1140,7 @@ Usage example:
   font-weight: 900;
   font-stretch: 100%;
   font-display: swap;
-  src: url("aed4229a02d39d4b8611601ee933ef2682ffa4a0a008e4bfb209f2a10e5e09d1.woff2") format('woff2'), url("0db2d140ed017732ff04c2f7d46f52857416df774b053cc32b11fa6570264dbf.woff") format('woff'); 
+  src: url("aed4229a02d39d4b8611601ee933ef2682ffa4a0a008e4bfb209f2a10e5e09d1.woff2") format('woff2'), url("0db2d140ed017732ff04c2f7d46f52857416df774b053cc32b11fa6570264dbf.woff") format('woff');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
@@ -1151,7 +1151,7 @@ Usage example:
   font-weight: 900;
   font-stretch: 100%;
   font-display: swap;
-  src: url("b5e379ceab82667d61e28b0a451ce8e5e666c0cb754c0d83f3c18a5a34fb0232.woff2") format('woff2'), url("88e95a99ee4048badc4fb43158c528cc075ec02bc625d731df24cdb2cc76ed75.woff") format('woff'); 
+  src: url("b5e379ceab82667d61e28b0a451ce8e5e666c0cb754c0d83f3c18a5a34fb0232.woff2") format('woff2'), url("88e95a99ee4048badc4fb43158c528cc075ec02bc625d731df24cdb2cc76ed75.woff") format('woff');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
 }
 
@@ -1162,7 +1162,7 @@ Usage example:
   font-weight: 900;
   font-stretch: 100%;
   font-display: swap;
-  src: url("35e9d0f642eecce3e3b16e4e757a90f092eb9be70c1617a7b313af3551815cd2.woff2") format('woff2'), url("98fd0715f6ed74a767cadea6001c1c3692edaced570eabe2ef56cd9d581b57c8.woff") format('woff'); 
+  src: url("35e9d0f642eecce3e3b16e4e757a90f092eb9be70c1617a7b313af3551815cd2.woff2") format('woff2'), url("98fd0715f6ed74a767cadea6001c1c3692edaced570eabe2ef56cd9d581b57c8.woff") format('woff');
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -1173,7 +1173,7 @@ Usage example:
   font-weight: 900;
   font-stretch: 100%;
   font-display: swap;
-  src: url("1e98bbf4ce8ff103336196b77649890c220d5e88d14c747d82cefdbd177ecef0.woff2") format('woff2'), url("3e38c484f4c681ee42d32325916ecf0323ff89bd2ebdc034aa584ee200499aaa.woff") format('woff'); 
+  src: url("1e98bbf4ce8ff103336196b77649890c220d5e88d14c747d82cefdbd177ecef0.woff2") format('woff2'), url("3e38c484f4c681ee42d32325916ecf0323ff89bd2ebdc034aa584ee200499aaa.woff") format('woff');
   unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
 }
 
@@ -2221,123 +2221,3 @@ sup {
 .noclick {
     user-select: none;
 }
-/* SCP-JP responsive adaptation: Theme Lab evidenced viewport and component rules. */
-#main-content, #content-wrap { max-width: 100vw; box-sizing: border-box; }
-.page-rate-widget-box { max-width: 100%; min-width: 0; display: inline-flex; flex-wrap: wrap; overflow-x: auto; box-sizing: border-box; }
-.yui-navset { max-width: 100%; min-width: 0; overflow-x: auto; box-sizing: border-box; }
-@media (max-width: 979px) {
-  #main-content, #content-wrap, #page-content, #page-title { min-width: 0 !important; max-width: 100% !important; box-sizing: border-box; }
-  #page-content .code, #page-content pre { min-width: 0; max-width: 100%; overflow-x: auto; box-sizing: border-box; }
-  #page-content code { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
-  #page-content pre code { white-space: pre; overflow-wrap: normal; }
-  #page-content table { max-width: 100%; display: block; overflow-x: auto; box-sizing: border-box; }
-  #page-content img, #page-content video, #page-content iframe { max-width: 100%; }
-  #page-content .page-rate-widget-box, #page-content .rate-box-with-credit-button { max-width: 100% !important; min-width: 0; display: inline-flex; flex-wrap: wrap; overflow-x: auto; box-sizing: border-box; }
-  #page-content .yui-navset .yui-nav { max-width: 100%; overflow-x: auto; white-space: nowrap; }
-  #page-content #toc, #toc { max-width: 100%; overflow-wrap: anywhere; white-space: normal; box-sizing: border-box; }
-  #header { max-width: calc(100vw - 2rem) !important; box-sizing: border-box; }
-  #header h1, #header h2, #page-title { max-width: 100%; width: auto !important; font-size: clamp(1rem, 7vw, 2.2rem); overflow-wrap: anywhere; box-sizing: border-box; }
-}
-/* JP runtime header DOM: keep theme title positioning inside the current SCP-JP header. */
-#header h1, #header h2 { max-width: calc(100vw - 2rem) !important; box-sizing: border-box; left: auto !important; right: auto !important; }
-
-/* SCP-JP component:theme-squares runtime CSS, frozen from current component source. */
-td { vertical-align: top; }
-td strong { white-space: nowrap; }
-.options table.wiki-content-table td { border: none; padding: 0.7em 1em; }
-.colors-container {
-  width: 98%;
-  display: flex;
-  flex-direction: column;
-  margin: 0 auto;
-  font-weight: 700;
-  font-family: var(--title-font, Verdana);
-  color: black;
-}
-
-.colors-container .colors, .colors-container .subcolors {
-  width: 100%;
-  flex-shrink: 0;
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.colors-container .color {
-  flex-grow: 2;
-  padding: 0.5rem;
-  margin: 0.5rem;
-  color: rgb(var(--swatch-text-dark, 0, 0, 0));
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.colors-container .colors .color {
-  height: 7rem;
-  flex-basis: calc((100% / 2) - 2rem);
-}
-
-.colors-container .subcolors .color {
-  height: 4rem;
-  font-size: 75%;
-  text-align: center;
-  flex-basis: calc((100% / 6) - 2rem);
-}
-
-.colors-container .css-variable {
-  font-size: 75%;
-  letter-spacing: 0.1em;
-  font-family: var(--body-font, Verdana);
-}
-
-/* Hide a colour that's not been provided by seeing if the variable starts with "{$" */
-.colors-container [data-variable^=\{\$] {
-  display: none;
-}
-
-.colors-container [data-has-light-text="1"] {
-  color: white;
-  color: rgb(var(--swatch-text-light, 255, 255, 255));
-}
-
-/* SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused. */
-@media (min-width: 768px) {
-  #search-top-box-form:hover #search-top-box-input,
-  #search-top-box-form:focus-within #search-top-box-input {
-    display: inline-block !important;
-  }
-}
-
-/* SCP-JP interactive acceptance: basalt account and navigation behavior */
-
-/* SCP-JP interaction adaptation: the inherited Basalt header disabled pointer events on the account control and menu. */
-#login-status, #login-status #account-options { pointer-events: auto !important; }
-
-/* SCP-JP interactive visual acceptance evidence fix v1: basalt */
-
-/* Opaque the open desktop dropdown while retaining the Basalt menu palette. */
-@media (min-width: 768px) { #top-bar .top-bar li ul { background-color: rgb(var(--swatch-menubg-color, 248, 248, 248)) !important; } }
-
-/* SCP-JP interactive visual acceptance mobile header refinement v5: basalt */
-
-/* Keep the drawer close label inside the viewport while the full-screen close anchor continues to dim the page. */
-@media (max-width: 767px) { #side-bar a.close-menu { padding-inline-start: .65rem !important; box-sizing: border-box !important; } }
-
-/* SCP-JP interactive visual acceptance image review repair v23: basalt */
-
-/* Heritage screenshot exposed malformed nested [[iftags]] residue in the shared credit fixture and left Rate detached. Candidate typography retains the Basalt layout while the corrected fixture source is regenerated. */
-@media (max-width: 600px) { #u-credit-view .modalbox .credit { max-width: 100% !important; overflow-wrap: anywhere !important; } }
-
-/* SCP-JP interactive visual acceptance image review repair v31: basalt */
-
-/* The inherited Basalt base reset SCP-JP's fixed credit dialog container to normal flow, leaving the mobile modal at the top-left. Center both real credit-dialog states in the viewport while retaining the theme's own panel and fader colors. */
-@media (max-width: 767px) {
- #u-credit-view:target .modalcontainer, #u-credit-otherwise:target .modalcontainer { position: absolute !important; inset: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; width: 100% !important; height: 100% !important; max-width: none !important; margin: 0 !important; box-sizing: border-box !important; }
- #u-credit-view:target .modalbox, #u-credit-otherwise:target .modalbox { width: min(37.5rem, calc(100vw - 1rem)) !important; min-width: 0 !important; max-width: calc(100vw - 1rem) !important; height: min(50svh, calc(100dvh - 1rem)) !important; max-height: calc(100dvh - 1rem) !important; margin: 0 !important; box-sizing: border-box !important; }
-}
-
-/* SCP-JP interactive visual acceptance image review repair v35: basalt */
-
-/* At SCP-JP's 320px boundary, the imported Basalt masthead subtitle ran beneath the search/account controls. Keep the identity text, wrap it into the available title column, and leave the controls in their authored row. */
-@media (max-width: 340px) { #header h2 { width: 9rem !important; max-width: 9rem !important; white-space: normal !important; overflow-wrap: anywhere !important; line-height: 1.1 !important; } }

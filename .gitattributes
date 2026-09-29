@@ -11,3 +11,12 @@ install/local/theme-lab/ports/quand-le-soleil-se-couche/current-jp-hub.wikidot.t
 
 # Browser-captured Wikidot DOM artifacts preserve their source whitespace.
 install/local/theme-lab/evidence/**/*.dom.html -whitespace
+
+# Immutable Theme Lab audit inputs and public replay responses retain exact bytes.
+install/local/theme-lab/ports/**/maintenance/historical-* -whitespace
+install/local/theme-lab/ports/authority-evidence/replay/objects/** -whitespace
+install/local/theme-lab/ports/authority-evidence/sigma-preview/*.wikidot.txt -whitespace
+install/local/theme-lab/ports/authority-evidence/sigma-preview/preview.html -whitespace
+install/local/theme-lab/ports/dear-dictator/upstream-ko.css -whitespace
+install/local/theme-lab/ports/*/candidate-input.css -whitespace
+install/local/theme-lab/ports/*/maintenance/authority-base.wikidot.txt -whitespace

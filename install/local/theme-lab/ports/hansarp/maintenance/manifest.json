@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "586784a5830a65c735d39c62c642425646d4ff87159cd864698102d68a8d99e6",
+  "frozen_candidate_source_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
   "base_source_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
-  "raw_jp_overrides_sha256": "f3e53882ed57eccf39074dbfb6c5c1b400f198698f76aa9391b4a9a2bdfb2be1",
-  "jp_overrides_sha256": "bb0032cb8fffaa123382dfd80f00ba52743aad28f8141ed156533dad2c711084",
-  "semantic_css_sha256": "dc02be0110236c51e6790f00f8bf54758606925c5ab18124cd785803f90e3a52",
-  "canonical_override_sha256": "26b1d1bf88b4da6459ab1a6a199291caeb7966403c813ebad2b4a0a70632253f",
+  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "semantic_css_sha256": "90599f7ede0caf4f45cd80063f0d7b2d5de39c2259a67954d408a0350e1f9ae3",
+  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "44f461d90a0e3895969478001eb8a32d2604cd32564ce3ef05a4c72f15b5b906",
+  "final_source_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
   "final_source_inputs": {
     "base_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
-    "jp_overrides_sha256": "bb0032cb8fffaa123382dfd80f00ba52743aad28f8141ed156533dad2c711084"
+    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
   "ordered_include_sha256": "c78e9a83788409eaefc15c359fcb4481f5a4db39f8b72b619cf819a452412df2",
   "declaration_reviews": {},
-  "adaptation_block_count": 4,
-  "raw_override_rule_count": 13,
-  "canonical_override_rule_count": 13,
+  "adaptation_block_count": 0,
+  "raw_override_rule_count": 0,
+  "canonical_override_rule_count": 0,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -27,7 +27,7 @@
   "historical_adaptations": [
     {
       "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
-      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "Established source/target read-only A/B rejects the invented shared behavior.",
       "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
       "selectors": [
         "#search-top-box-form:focus-within #search-top-box-input",
@@ -35,21 +35,29 @@
       ],
       "at_contexts": [
         "@media (min-width: 768px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "REMOVE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "586784a5830a65c735d39c62c642425646d4ff87159cd864698102d68a8d99e6"
     },
     {
       "marker": "SCP-JP interactive visual follow-up v2: hansarp",
-      "rationale": "The moving orange Hansarp credit stripe crosses the license link; lift the link on a small opaque label without removing the stripe.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "41c7586f5891c674c85b1ec4a6d18773ce421cc89c1f7f28c57fdb4041964079",
       "selectors": [
         "#u-credit-otherwise .modalbox .credit a",
         "#u-credit-view .modalbox .credit a"
       ],
-      "at_contexts": []
+      "at_contexts": [],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "586784a5830a65c735d39c62c642425646d4ff87159cd864698102d68a8d99e6"
     },
     {
       "marker": "SCP-JP interactive visual acceptance image review repair v35: hansarp",
-      "rationale": "The 320px credit.otherwise back label had one Japanese character per line. Keep the paired credit/back controls on one reachable row.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "344ec433bfd3111e21ec3b06d9de0293fa54072bef5b045d78ba641d18724639",
       "selectors": [
         "#u-credit-otherwise .modalbox .credit-back",
@@ -57,11 +65,15 @@
       ],
       "at_contexts": [
         "@media (max-width: 400px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "586784a5830a65c735d39c62c642425646d4ff87159cd864698102d68a8d99e6"
     },
     {
       "marker": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
-      "rationale": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
+      "rationale": "Established source/target read-only A/B rejects the invented shared behavior.",
       "sha256": "a7d08f5e3645665482f335e0cfe80954a4da6781e0bbe546dc2f31f9383b6b82",
       "selectors": [
         "#top-bar .mobile-top-bar ul li ul",
@@ -73,7 +85,100 @@
       ],
       "at_contexts": [
         "@media (max-width: 767px)"
+      ],
+      "origin": "historical-source-module",
+      "authority": "REMOVE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "586784a5830a65c735d39c62c642425646d4ff87159cd864698102d68a8d99e6"
+    },
+    {
+      "marker": "SCP-JP responsive adaptation: Theme Lab evidenced viewport and component rules.",
+      "sha256": "9bd8cfb10e245287cc9bca078c0b4862cd307192c674123389fb939a4f512912",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "60aa76bd48c7a3d48e50e022e50b7dfc186a4d57c7a3c76ec6ab6e95d3478e68"
+    },
+    {
+      "marker": "JP runtime header DOM: keep theme title positioning inside the current SCP-JP header.",
+      "sha256": "c75b94bfefa29231250914812d0a4b47c3ac9ffd0264686df8ac4a68c665f152",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "60aa76bd48c7a3d48e50e022e50b7dfc186a4d57c7a3c76ec6ab6e95d3478e68"
+    },
+    {
+      "marker": "Campaign JP adaptation hansarp: Theme Lab viewport evidence.",
+      "sha256": "5c3df7396c3cff10e6883bcc67cf921437334cd55fc286eeb345efee3b2ce9cc",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "60aa76bd48c7a3d48e50e022e50b7dfc186a4d57c7a3c76ec6ab6e95d3478e68"
+    },
+    {
+      "marker": "Campaign JP follow-up hansarp: direct selector/property evidence from viewport verdict.",
+      "sha256": "ac16367df495cb2671e67e54afd051c1c4914e1aaf71a3f28034d8cbd04949e4",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "60aa76bd48c7a3d48e50e022e50b7dfc186a4d57c7a3c76ec6ab6e95d3478e68"
+    },
+    {
+      "marker": "Campaign JP header/rating fit: Theme Lab showed a 6px decorative crop and a -4.35px rating edge.",
+      "sha256": "9da7029b61da5677149cea6109fb25974b0450b5cb282d06dcf8a6b2148ee1c7",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "60aa76bd48c7a3d48e50e022e50b7dfc186a4d57c7a3c76ec6ab6e95d3478e68"
+    },
+    {
+      "marker": "Campaign JP root clip: Theme Lab showed an unowned 6px decoration overhang at tablet/mobile.",
+      "sha256": "c15c8e41c0bb4b5040c4e1e4452208f05be5544fc23262f154e09eb0dd59bab0",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "60aa76bd48c7a3d48e50e022e50b7dfc186a4d57c7a3c76ec6ab6e95d3478e68"
+    },
+    {
+      "marker": "source-theme-and-localized-document-input",
+      "origin": "preserved-source",
+      "sha256": "de74faf9920df398c3582b4a8d810130a744ab9e8657645c4c1cdc030d626cad",
+      "authority": "SOURCE_THEME",
+      "rationale": "Preserve source-theme imports, source declarations, include parameters and localized documentation before the historical campaign suffix. Asset freezing and include expansion are separate runtime-independent transforms.",
+      "evidence": [
+        {
+          "path": "hansarp/upstream-en.wikidot.txt",
+          "sha256": "d8484393306d5ae7ded365f3a0a611258213a0dc9cb011829015802bbfbaa01e",
+          "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+        },
+        {
+          "path": "hansarp/existing-jp.wikidot.txt",
+          "sha256": "f398f2ab409800a156552d37382cbd396a6745d6bbdd794f3f39ab17c5fa78dd",
+          "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+        }
+      ]
+    },
+    {
+      "marker": "frozen-asset-url-transforms",
+      "origin": "asset-transform",
+      "sha256": "4b0c068f13004ecbc65dc4139e0f97c4b8ef7f5125f3656610fabbe5fa838f11",
+      "authority": "RUNTIME_INDEPENDENT",
+      "rationale": "Already frozen asset replacements and unavailable decorative resource receipts; no runtime DOM assumption.",
+      "evidence": [
+        {
+          "path": "hansarp/asset-transforms.json",
+          "sha256": "4b0c068f13004ecbc65dc4139e0f97c4b8ef7f5125f3656610fabbe5fa838f11",
+          "decision_authority": "FROZEN_ASSET_TRANSFORM"
+        }
       ]
     }
-  ]
+  ],
+  "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
+  "publishable_adaptations": []
 }
