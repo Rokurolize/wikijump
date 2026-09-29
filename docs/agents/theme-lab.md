@@ -5,6 +5,14 @@ branch themes to the SCP-JP/Wikijump compatibility surface. This file is the
 agent entry point. It tells you which deeper document owns the task; it is not
 a replacement for those documents.
 
+Before accepting a foreign-theme adaptation based on a Wikijump DOM, CSS, or
+interaction difference, check `install/local/theme-lab/fixtures/runtime-surface-parity.json`
+and `install/local/theme-lab/ports/RUNTIME-SURFACE-PARITY-AUDIT.md`. A local
+candidate comparison proves only the local runtime. Treat a surface as a port
+requirement only within a `PARITY_CERTIFIED` registry scope; retain and report
+all other findings as quarantined until current or frozen source-side evidence
+supports them. Do not let Theme Lab synthetic states certify Wikidot behavior.
+
 ## Route the request before editing
 
 ### New foreign-branch theme → SCP-JP

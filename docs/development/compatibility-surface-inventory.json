@@ -11385,7 +11385,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "5196767c1e4680dd6cb82e1114587d47a2bdbd2cc807c7549bb9e5c26e4619ac"
+      "source_input_set_sha256": "c6d08b68de235fb61fcba67a93bc3eaf5c0121eb6f905245ac7cf37c688b23bc"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11546,7 +11546,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "7c65d3d3951ce4ece2449840315ffe71edd9c0ed32d46872fc14dcd5ec6a64cd"
+        "sha256": "175dd35c4ee69aa8645bd34654b6f1dfba784bc9222217303de5d716edb8c14a"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11766,7 +11766,7 @@
       },
       {
         "path": "framerail/src/routes/ajax-module-connector.php/+server.ts",
-        "sha256": "01d967c7030621ccbd15f9c17f328c400dddf512e5c8fd2250bfa0cae82449c2"
+        "sha256": "bd607907e503b6d0b5bb78b428364e22b651217469a28de39f6a1a2f1d73a7a0"
       },
       {
         "path": "framerail/src/routes/common--images/jquery-raty/[asset]/+server.ts",

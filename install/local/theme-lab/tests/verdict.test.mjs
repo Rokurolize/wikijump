@@ -89,7 +89,7 @@ test("next actions carry selector, overflow, asset, and inactive media evidence"
   assert.equal(actions[3].evidence.media_inactive[0].media, "(min-width: 900px)");
 });
 
-test("inactive-media leads resolve after every measured viewport passes", () => {
+test("inactive-media leads on an uncertified runtime surface are quarantined even after viewport checks pass", () => {
   const verdict = buildVerdict({
     reference: {
       diagnosis: {missing: [], collapsed: [], expanded: [], missing_count: 0},
@@ -107,8 +107,9 @@ test("inactive-media leads resolve after every measured viewport passes", () => 
     viewports: {desktop: {document_overflow_px: 0}, laptop: {document_overflow_px: 0}, tablet: {document_overflow_px: 0}, mobile: {document_overflow_px: 0}},
   });
   assert.equal(verdict.next_actions.length, 0);
-  assert.equal(verdict.resolved_actions[0].kind, "inspect_inactive_media");
-  assert.equal(verdict.resolved_actions[0].resolution.includes("all measured acceptance viewports pass"), true);
+  assert.equal(verdict.resolved_actions, undefined);
+  assert.equal(verdict.parity_gate.status, "quarantined_findings_present");
+  assert.equal(verdict.parity_gate.quarantined_count, 1);
 });
 
 test("buildVerdict fails on error, warns on style-only change, passes clean", () => {
@@ -155,20 +156,18 @@ test("compact verdict retains each viewport's overflow status", () => {
   });
 });
 
-test("interaction failures produce an evidence-backed repair action", () => {
+test("interaction failures on uncertified runtime surfaces remain quarantined", () => {
   const verdict = buildVerdict({interactionDiagnostics: {
     tabs: {status: "pass", activated_index: 1, restored_index: 0},
     collapsible: {status: "fail", initial: "folded", after_click: "folded"},
   }});
   assert.equal(verdict.verdict, "fail");
-  assert.deepEqual(verdict.next_actions, [{
-    kind: "repair_interaction",
-    interaction: "collapsible",
-    evidence: {status: "fail", initial: "folded", after_click: "folded"},
-  }]);
+  assert.deepEqual(verdict.next_actions, []);
+  assert.equal(verdict.parity_gate.quarantined_count, 1);
+  assert.equal(verdict.top_issues[0].parity_review.surface_ids[0], "content.collapsible");
 });
 
-test("surface-contract findings produce specific evidence-backed actions", () => {
+test("surface-contract findings on uncertified runtime surfaces do not produce port actions", () => {
   const verdict = buildVerdict({extraIssues: [
     {
       severity: "warn",
@@ -191,24 +190,27 @@ test("surface-contract findings produce specific evidence-backed actions", () =>
     },
   ]});
   assert.equal(verdict.verdict, "fail");
-  assert.deepEqual(verdict.next_actions, [
-    {
-      kind: "reduce_overflow",
-      viewport: "mobile",
-      evidence: {before_px: 0, after_px: 13},
-      overflow_sources: [{selector: "ul", overflow_px: 13}],
-    },
-    {
-      kind: "review_responsive_baseline_override",
-      surface: "shell.header",
-      selector: "#header",
-      property: "background-size",
-      evidence: {
-        baseline: {desktop: "100px auto", mobile: "calc(5% + 48px) auto"},
-        theme: {desktop: "100px 100px", mobile: "100px 100px"},
-      },
-    },
-  ]);
+  assert.deepEqual(verdict.next_actions, []);
+  assert.equal(verdict.parity_gate.quarantined_count, 2);
+});
+
+test("certified scopes retain actionable surface findings", () => {
+  const verdict = buildVerdict({extraIssues: [{
+    severity: "error",
+    kind: "surface_fixture_missing",
+    surface: "page.history.table-dom",
+    state: "table-dom",
+    viewport: "desktop",
+    selector: "tr#revision-row-1",
+  }]});
+  assert.deepEqual(verdict.next_actions, [{
+    kind: "cover_theme_surface",
+    surface: "page.history.table-dom",
+    state: "table-dom",
+    viewport: "desktop",
+    selector: "tr#revision-row-1",
+  }]);
+  assert.equal(verdict.parity_gate.quarantined_count, 0);
 });
 
 test("broken candidate page images fail with an asset-backed repair action", () => {

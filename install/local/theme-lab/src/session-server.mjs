@@ -57,6 +57,7 @@ import {
 } from "./semantic-anchors.mjs";
 import {TORTURE_VIEWPORTS, runTortureCorpus} from "./torture-corpus.mjs";
 import {buildVerdict, expandVerdict} from "./verdict.mjs";
+import {annotateRuntimeSurfaceUsage, applyRuntimeSurfaceParityGate} from "./runtime-surface-parity.mjs";
 import {captureVisualPair} from "./visual-diff.mjs";
 import {inspectCandidateAssets, materializeCandidateCssAssets, materializeCandidatePageImages} from "./local-assets.mjs";
 import {
@@ -566,14 +567,16 @@ export function createSession({
           contractValue: contract,
         });
         const customIssues = issuesFromCustomSelectorCoverage(customSelectors, contract.strict);
+        const surfaceIssues = applyRuntimeSurfaceParityGate([...known.issues, ...customIssues]);
         surfaceContractDiagnostics = {
           schema: known.schema,
           strict: contract.strict,
-          usage: known.usage,
+          usage: annotateRuntimeSurfaceUsage(known.usage),
           custom_selectors: customSelectors,
           captures: known.captures,
           reviewed_findings: known.reviewed_findings,
-          issues: [...known.issues, ...customIssues],
+          issues: surfaceIssues.issues,
+          parity_gate: surfaceIssues.summary,
         };
         full.surface_contract = surfaceContractDiagnostics;
         timing.surface_contract_ms = Number((performance.now() - step).toFixed(1));
@@ -632,6 +635,7 @@ export function createSession({
           custom_selectors: surfaceContractDiagnostics.custom_selectors,
           reviewed_findings: surfaceContractDiagnostics.reviewed_findings,
           issue_count: surfaceContractDiagnostics.issues.length,
+          parity_gate: surfaceContractDiagnostics.parity_gate,
         };
       }
       verdict.verification_scope = iteration

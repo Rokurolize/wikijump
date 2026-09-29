@@ -286,7 +286,51 @@ test("history ignores a stale revision diff response", async ({ page, request })
   await expect(diff).not.toContainText("OLD STALE DIFF")
 })
 
-test("history diff keeps added and removed source readable against its semantic colors", async ({ page, request }) => {
+test("WIKIDOT History View Version and View Source actions still load selected revisions", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-read-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/authoring-history-probe")
+  await waitForSvelteDelegatedHandler(page, "#history-button")
+  await page.getByRole("link", { name: "history", exact: true }).click()
+
+  const oldRevision = page.locator(
+    '#action-area table.page-history tr[id="revision-row-9000341"]'
+  )
+  await oldRevision.locator("a[title='View source of the revision']").click()
+  await expect(page.locator("#history-subarea textarea.page-source")).toHaveValue(
+    "Source for revision 1"
+  )
+
+  await oldRevision.locator("a[title='View page revision']").click()
+  await expect(page.locator("#page-content")).toContainText("Historical version 1")
+  await expect(page.locator("#history-subarea textarea.page-source")).toHaveCount(0)
+
+  const requests = await request
+    .get(`${FIXTURE_URL}/last-page-read-requests`)
+    .then((response) => response.json())
+  expect(requests.pageRevisionGet).toContainEqual(
+    expect.objectContaining({
+      page_id: 3000345,
+      revision_number: 1,
+      details: { compiled_html: false, wikitext: true }
+    })
+  )
+  expect(requests.pageRevisionGet).toContainEqual(
+    expect.objectContaining({
+      page_id: 3000345,
+      revision_number: 1,
+      details: { compiled_html: true, wikitext: false }
+    })
+  )
+})
+
+test("history diff keeps added and removed source readable against its semantic colors", async ({
+  page,
+  request
+}) => {
   await request.get(`${FIXTURE_URL}/last-page-read-requests`)
   await page.setViewportSize({ width: 390, height: 844 })
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
@@ -316,181 +360,138 @@ test("history diff keeps added and removed source readable against its semantic 
     .poll(async () => added.evaluate((element) => getComputedStyle(element).whiteSpace))
     .toBe("pre-wrap")
   await expect
-    .poll(async () => added.evaluate((element) => {
-      const parent = element.parentElement
-      return parent ? parent.scrollWidth <= parent.clientWidth : false
-    }))
+    .poll(async () =>
+      added.evaluate((element) => {
+        const parent = element.parentElement
+        return parent ? parent.scrollWidth <= parent.clientWidth : false
+      })
+    )
     .toBe(true)
   await expect
     .poll(async () => added.evaluate((element) => getComputedStyle(element).color))
     .toBe("rgb(23, 52, 33)")
   await expect
-    .poll(async () => added.evaluate((element) => getComputedStyle(element).backgroundColor))
+    .poll(async () =>
+      added.evaluate((element) => getComputedStyle(element).backgroundColor)
+    )
     .toBe("rgb(220, 255, 220)")
   await expect
     .poll(async () => removed.evaluate((element) => getComputedStyle(element).color))
     .toBe("rgb(74, 32, 32)")
   await expect
-    .poll(async () => removed.evaluate((element) => getComputedStyle(element).backgroundColor))
+    .poll(async () =>
+      removed.evaluate((element) => getComputedStyle(element).backgroundColor)
+    )
     .toBe("rgb(255, 225, 225)")
 })
 
-test("mobile history presents all revision details as readable in-viewport cards", async ({ page }) => {
+test("WIKIDOT History keeps the seven-cell source table contract at phone widths", async ({
+  page
+}) => {
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 })
     await page.goto("/authoring-history-probe")
-    // This is the legacy mobile History label treatment used by several real
-    // upstream themes. It targets only the first data row and is injected
-    // after the app styles, as a theme candidate is during acceptance replay.
-    await page.addStyleTag({
-      content: `@media (max-width: 600px) {
-        table.page-history tr:nth-of-type(2) td:not(:nth-of-type(7)):before {
-          position: absolute !important;
-          top: calc(-100% - .5em) !important;
-          left: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
-          background: rgb(133, 0, 5) !important;
-          color: white !important;
-          font-size: 9.5px !important;
-          display: flex !important;
-        }
-      }`
-    })
     await waitForSvelteDelegatedHandler(page, "#history-button")
     await page.getByRole("link", { name: "history", exact: true }).click()
-    await expect(page.locator(".revision-list")).toBeVisible()
+    const table = page.locator("#action-area table.page-history")
+    await expect(table).toBeVisible()
+    await expect(table.locator("tbody > tr").first().locator("td")).toHaveCount(7)
 
-    const layout = await page.evaluate(() => {
-      const list = document.querySelector<HTMLElement>(".revision-list")
-      const row = document.querySelector<HTMLElement>(".revision-list .revision-row")
-      const fields = [...document.querySelectorAll<HTMLElement>(
-        ".revision-list .revision-row .revision-type, .revision-list .revision-row .user, .revision-list .revision-row .created-at, .revision-list .revision-row .comments"
-      )]
-      return {
-        viewport_width: window.innerWidth,
-        document_width: document.documentElement.scrollWidth,
-        list_display: list ? getComputedStyle(list).display : null,
-        list_overflow_x: list ? getComputedStyle(list).overflowX : null,
-        list_client_width: list?.clientWidth ?? 0,
-        list_scroll_width: list?.scrollWidth ?? 0,
-        row_bounds: row ? row.getBoundingClientRect().toJSON() : null,
-        field_labels: fields.map((field) => ({
-          label: field.getAttribute("data-label"),
-          before: getComputedStyle(field, "::before").content,
-          pseudo_position: getComputedStyle(field, "::before").position,
-          pseudo_background: getComputedStyle(field, "::before").backgroundColor,
-          pseudo_color: getComputedStyle(field, "::before").color,
-          text_color: getComputedStyle(field).color,
-          revision: field.closest(".revision-row")?.getAttribute("data-id"),
-          bounds: field.getBoundingClientRect().toJSON()
-        }))
-      }
-    })
+    const rows = table.locator('tbody > tr[id^="revision-row-"]')
+    await expect(rows.first().locator("td")).toHaveCount(7)
+    const currentRow = rows.first()
+    const currentCells = currentRow.locator("td")
+    const revisionId =
+      (await currentRow.getAttribute("id"))?.replace("revision-row-", "") ?? ""
+    await expect(
+      currentCells.nth(1).locator('input[type="radio"][name="from"]')
+    ).toBeVisible()
+    await expect(
+      currentCells.nth(1).locator('input[type="radio"][name="to"]')
+    ).toBeVisible()
+    await expect(currentCells.nth(1)).toHaveAttribute("style", "width: 5em")
+    await expect(currentCells.nth(3)).toHaveAttribute("style", "width: 5em")
+    await expect(currentCells.nth(4)).toHaveAttribute("style", "width: 15em")
+    await expect(currentCells.nth(5)).toHaveAttribute(
+      "style",
+      "padding: 0 0.5em; width: 7em;"
+    )
+    await expect(currentCells.nth(6)).toHaveAttribute("style", "font-size: 90%")
+    await expect(currentCells.nth(1).locator('input[type="radio"]')).toHaveCount(2)
+    await expect(
+      currentCells.nth(1).locator('input[type="radio"]').nth(0)
+    ).toHaveAttribute("id", revisionId)
+    await expect(
+      currentCells.nth(1).locator('input[type="radio"]').nth(1)
+    ).toHaveAttribute("id", revisionId)
+    await expect(
+      currentCells.nth(3).locator("a").filter({ hasText: /^V$/u })
+    ).toBeVisible()
+    await expect(
+      currentCells.nth(3).locator("a").filter({ hasText: /^S$/u })
+    ).toBeVisible()
+    await expect(
+      currentCells.nth(3).locator("a").filter({ hasText: /^R$/u })
+    ).toHaveCount(0)
+    await expect(currentCells.nth(4).locator(".printuser.avatarhover")).toBeVisible()
+    await expect(
+      currentCells.nth(4).locator(".printuser.avatarhover img.small")
+    ).toHaveCount(1)
+    await expect(currentCells.nth(4).locator(".printuser.avatarhover a")).toHaveCount(2)
+    await expect(
+      currentCells.nth(4).locator(".printuser.avatarhover a").nth(1)
+    ).toHaveAttribute("href", "https://www.wikidot.com/user:info/history-author")
+    await expect(currentCells.nth(5).locator(".odate")).toHaveCount(1)
+    await expect(currentCells.nth(5).locator(".odate")).toHaveText("15 Aug 2026 00:00")
 
-    expect(layout.document_width).toBeLessThanOrEqual(layout.viewport_width)
-    expect(layout.list_display).toBe("block")
-    expect(layout.list_overflow_x).toBe("visible")
-    expect(layout.list_scroll_width).toBeLessThanOrEqual(layout.list_client_width + 1)
-    expect(layout.row_bounds?.x).toBeGreaterThanOrEqual(0)
-    expect(layout.row_bounds?.right).toBeLessThanOrEqual(layout.viewport_width)
-    expect(layout.field_labels).toHaveLength(8)
-    for (const field of layout.field_labels) {
-      expect(field.label).toBeTruthy()
-      expect(field.before).not.toBe("none")
-      expect(field.pseudo_position).toBe("static")
-      expect(field.pseudo_background).toBe("rgba(0, 0, 0, 0)")
-      expect(field.pseudo_color).toBe(field.text_color)
-      expect(field.bounds.x).toBeGreaterThanOrEqual(0)
-      expect(field.bounds.right).toBeLessThanOrEqual(layout.viewport_width)
-      expect(field.bounds.width).toBeGreaterThan(layout.viewport_width * 0.7)
-    }
-    const firstRevisionId = layout.field_labels[0]?.revision
-    const firstRevision = layout.field_labels.filter((field) => field.revision === firstRevisionId)
-    for (let index = 1; index < firstRevision.length; index += 1) {
-      expect(firstRevision[index - 1].bounds.bottom).toBeLessThanOrEqual(firstRevision[index].bounds.top)
-    }
+    const olderRow = rows.nth(1)
+    await expect(olderRow.locator("td")).toHaveCount(7)
+    await expect(
+      olderRow.locator("td").nth(3).locator("a").filter({ hasText: /^R$/u })
+    ).toBeVisible()
+    await olderRow.locator('input[type="radio"][name="from"]').check()
+    const selectedRevisionNumber = await olderRow
+      .locator("td")
+      .first()
+      .innerText()
+      .then((value) => Number.parseInt(value, 10) - 1)
+    await expect(page.locator("#revision-diff-from")).toHaveValue(
+      String(selectedRevisionNumber)
+    )
   }
 })
 
-test("desktop and tablet History keep author and revision actions readable", async ({ page }) => {
+test("WIKIDOT History preserves source row selectors and functional actions across desktop and tablet widths", async ({
+  page
+}) => {
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   for (const width of [1440, 1024, 768]) {
     await page.setViewportSize({ width, height: 900 })
     await page.goto("/authoring-history-probe")
-    // Reproduce a common imported-theme pattern: named grid lines are applied
-    // to the legacy History table. The SCP-JP action pane must map its semantic
-    // cells back to a non-overlapping layout without replacing theme colors.
-    await page.addStyleTag({
-      content: `
-        #action-area .revision-list .page-history tr.revision-row,
-        #action-area .revision-list .page-history tr.revision-header {
-          grid-template-columns: 3rem 0 4.5rem minmax(7rem, .9fr) minmax(9rem, 1fr) minmax(10rem, 1.4fr) !important;
-        }
-        #action-area .revision-list .page-history .revision-number { grid-column: rev-num !important; }
-        #action-area .revision-list .page-history .action { grid-column: rev-actions !important; }
-        #action-area .revision-list .page-history .revision-type { grid-column: rev-flags !important; }
-        #action-area .revision-list .page-history .created-at { grid-column: rev-user !important; }
-      `
-    })
     await waitForSvelteDelegatedHandler(page, "#history-button")
     await page.locator("#history-button").click()
-    await expect(page.locator(".revision-list .page-history tbody tr.revision-row").first()).toBeVisible()
-
-    const layout = await page.evaluate(() => {
-      const row = document.querySelector<HTMLElement>(".revision-list .page-history tbody tr.revision-row")!
-      const action = row.querySelector<HTMLElement>(".revision-attribute.action")!
-      const links = [...action.querySelectorAll<HTMLElement>("a")]
-      const user = row.querySelector<HTMLElement>(".revision-attribute.user")!
-      const cells = [...row.querySelectorAll<HTMLElement>("td.revision-attribute")]
-      const rowRect = row.getBoundingClientRect()
-      const actionRects = links.map((link) => link.getBoundingClientRect())
-      return {
-        viewport: innerWidth,
-        document: document.documentElement.scrollWidth,
-        overflowing: [...document.querySelectorAll<HTMLElement>("body *")]
-          .map((element) => ({
-            selector: `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ""}${
-              [...element.classList].map((name) => `.${name}`).join("")
-            }`,
-            x: element.getBoundingClientRect().x,
-            right: element.getBoundingClientRect().right,
-            width: element.getBoundingClientRect().width,
-            scrollWidth: element.scrollWidth
-          }))
-          .filter((element) => element.right > innerWidth + 1 || element.x < -1)
-          .sort((a, b) => b.right - a.right)
-          .slice(0, 8),
-        row: rowRect.toJSON(),
-        rowDisplay: getComputedStyle(row).display,
-        user: user.getBoundingClientRect().toJSON(),
-        userWhiteSpace: getComputedStyle(user).whiteSpace,
-        actionRects,
-        cellRects: cells.map((cell) => ({ name: cell.className, ...cell.getBoundingClientRect().toJSON() }))
-      }
-    })
-
-    expect(layout.rowDisplay).toBe("grid")
-    expect(layout.document, JSON.stringify(layout.overflowing)).toBeLessThanOrEqual(layout.viewport)
-    expect(layout.row.x).toBeGreaterThanOrEqual(0)
-    expect(layout.row.right).toBeLessThanOrEqual(layout.viewport)
-    expect(layout.user.width).toBeGreaterThanOrEqual(100)
-    expect(layout.actionRects.length).toBeGreaterThanOrEqual(3)
-    expect(layout.actionRects[0].top).toBeCloseTo(layout.actionRects[1].top, 0)
-    expect(layout.actionRects[1].top).toBeCloseTo(layout.actionRects[2].top, 0)
-    for (let left = 0; left < layout.cellRects.length; left++) {
-      for (let right = left + 1; right < layout.cellRects.length; right++) {
-        const a = layout.cellRects[left]
-        const b = layout.cellRects[right]
-        const intersects = a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y
-        expect(intersects, `${a.name} ${JSON.stringify(a)} intersects ${b.name} ${JSON.stringify(b)} at ${width}px`).toBe(false)
-      }
-    }
+    const table = page.locator("#action-area table.page-history")
+    const row = table.locator('tbody > tr[id^="revision-row-"]').first()
+    await expect(row).toBeVisible()
+    await expect(row).toHaveAttribute("id", /^revision-row-\d+$/u)
+    await expect(row.locator("td")).toHaveCount(7)
+    await expect(row.locator("td.optionstd[style*='width: 5em'] a")).toHaveCount(2)
+    await expect(row.locator(".printuser.avatarhover")).toBeVisible()
+    await expect(row.locator(".odate[class*='format_%25e']")).toHaveCount(1)
+    await expect(row.locator(".odate")).toHaveText("15 Aug 2026 00:00")
+    await expect(row.locator('input[type="radio"][name="from"]')).toBeVisible()
+    await expect(row.locator('input[type="radio"][name="to"]')).toBeVisible()
+    const cells = await row
+      .locator("td")
+      .evaluateAll((items) => items.map((cell) => cell.textContent?.trim() ?? ""))
+    expect(cells).toHaveLength(7)
   }
 })
 
-test("mobile Files pane keeps long Japanese filenames and actions horizontally accessible", async ({ page }) => {
+test("mobile Files pane keeps long Japanese filenames and actions horizontally accessible", async ({
+  page
+}) => {
   const filename =
     "theme-lab-visual-fixture_日本語長名_320px_readability_and_download_controls.txt"
   await page.setViewportSize({ width: 390, height: 844 })
@@ -518,7 +519,11 @@ test("mobile Files pane keeps long Japanese filenames and actions horizontally a
   const narrowGeometry = await narrowFilename.evaluate((anchor) => {
     const range = document.createRange()
     range.selectNodeContents(anchor)
-    return {line_count: range.getClientRects().length, client_width: anchor.parentElement?.clientWidth ?? 0, overflow_width: anchor.scrollWidth}
+    return {
+      line_count: range.getClientRects().length,
+      client_width: anchor.parentElement?.clientWidth ?? 0,
+      overflow_width: anchor.scrollWidth
+    }
   })
   expect(narrowGeometry.line_count).toBeGreaterThan(1)
   expect(narrowGeometry.overflow_width).toBeLessThanOrEqual(narrowGeometry.client_width)
@@ -528,7 +533,9 @@ test("mobile Files pane keeps long Japanese filenames and actions horizontally a
   await expect(page.locator(".file-row a").last()).toBeVisible()
 })
 
-test("mobile edit-permission dialog keeps its message and close control in the viewport", async ({ page }) => {
+test("mobile edit-permission dialog keeps its message and close control in the viewport", async ({
+  page
+}) => {
   await page.setViewportSize({ width: 320, height: 800 })
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   await page.goto("/authoring-history-probe")
@@ -543,7 +550,9 @@ test("mobile edit-permission dialog keeps its message and close control in the v
   await expect(close).toBeVisible()
 
   const layout = await page.evaluate(() => {
-    const modal = document.querySelector<HTMLElement>("#odialog-container .owindow.error")!
+    const modal = document.querySelector<HTMLElement>(
+      "#odialog-container .owindow.error"
+    )!
     const message = modal.querySelector<HTMLElement>("#modal-title")!
     const buttonBar = modal.querySelector<HTMLElement>(".button-bar")!
     const close = modal.querySelector<HTMLElement>(".button-close-message")!
