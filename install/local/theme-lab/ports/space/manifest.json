@@ -53,7 +53,7 @@
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
-    "final_verdict": "warn"
+    "final_verdict": "inconclusive"
   },
   "dependencies": {
     "slug": "theme:space",
@@ -116,7 +116,7 @@
   "flattened_css_transforms": "localization-transforms.json",
   "maintenance_classification": "maintenance-classification.json",
   "candidate_origin": "current official SCP-JP page source",
-  "final_verdict": "warn",
+  "final_verdict": "inconclusive",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/space/assets.json",
   "asset_dependency_decision_count": 21,
@@ -125,13 +125,42 @@
     "jp_overrides": "maintenance/jp-overrides.css",
     "manifest": "maintenance/manifest.json",
     "base_sha256": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
-    "jp_overrides_sha256": "d27fd49f02389e56cda3df6f4afd42069bed26308f74450159f1a187fdbb227f",
-    "semantic_css_sha256": "bc694f62a01815021532f7092034c57ffd8748afc6629409871856dfc1401ca1",
-    "canonical_override_sha256": "89943dcf19f14d6afaac1cacea457db01df8f38643c80d0417b6aaa8ead85814",
+    "jp_overrides_sha256": "7179e310f38adca85d27d7747bc32f8eaa9b6d8cb10d8d0bd37ba50a740b5eac",
+    "semantic_css_sha256": "28e7f218362ea7a2ddd75ee270e0204cb1df267448ee6cb135f86f3d132af52c",
+    "canonical_override_sha256": "e5bb8b492d2561c886c2621882bb3ff7e5bb4584272a9ec12b03a6fb86027779",
     "final_source": "maintenance/final.wikidot.txt",
-    "final_source_sha256": "c3957699cbedad93a6f02c0a8371478c65969e32a7f84b95e68eb1f3b2c523fe",
-    "exact_duplicate_rules_removed": 5,
-    "redundant_same_value_declarations_removed": 5,
-    "empty_rules_removed": 1
+    "final_source_sha256": "24feba1dc2bdc873782087be385f67d1f0079f5b49e44897f4b3e5319fe741e6",
+    "exact_duplicate_rules_removed": 0,
+    "redundant_same_value_declarations_removed": 0,
+    "empty_rules_removed": 0
+  },
+  "interactive_acceptance": {
+    "resolved_theme_css": {
+      "source_path": "candidate-input.css",
+      "source_sha256": "718d6bfc1705006f15a492f3cb96000489e32efc1df0ab50d5ffc10b41276367",
+      "active_tags": [],
+      "candidate_source_sha256": "a0b7de5f1454804c2ab3f1fcce0263003a14c52227511e954a2b1c1c864dd829",
+      "candidate_active_tags": [],
+      "css_source_path": "candidate-source.css",
+      "candidate_css_sha256": "23f10fcec669f622be64a854b1b130f8f06dc4156d7ac97685350da7d6c5a105",
+      "asset_receipt_path": "assets.json",
+      "assets": 16,
+      "imports": 5,
+      "localization_transforms": 0,
+      "localization_transform_manifest": {
+        "path": "localization-transforms.json",
+        "sha256": "5bb0dafbbd0203a6f543149c23e996b022fc69f735b60495d296030abe295cf5"
+      },
+      "missing": 0,
+      "external_requests_during_build": 0
+    }
+  },
+  "adaptation_authority": {
+    "ledger": "../adaptation-authority.json",
+    "publishable_without_authority": 0
+  },
+  "overall_acceptance": {
+    "status": "inconclusive",
+    "reason": "Historical candidate acceptance superseded"
   }
 }

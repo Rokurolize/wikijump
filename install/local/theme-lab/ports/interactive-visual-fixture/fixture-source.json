@@ -13,10 +13,17 @@
     }
   },
   "credit_source_identity": "source-identity.json",
-  "module_source_adaptation": "Credit component markup is frozen from current JP source. Remote style is flattened from credit:style; remote decorative backmodule iframes and images are represented by local equivalent text/controls so replay does not send requests. Original snapshots and hashes are retained.",
+  "target_version": "SIGMA9_HISTORICAL_SOURCE_WITH_SYNTHETIC_SUBSTITUTIONS",
+  "decision_authority": "SYNTHETIC_DIAGNOSTIC_ONLY",
+  "port_conclusion_eligible": false,
+  "synthetic_selectors": [
+    ".credit-back-link"
+  ],
+  "real_target_contracts": "../../fixtures/credit-targets.json",
+  "module_source_adaptation": "Credit component markup is frozen from historical Sigma-9 JP source. Remote style is flattened from credit:style; remote decorative backmodule iframes and images are represented by local equivalent text/controls so replay does not send requests. Original snapshots and hashes are retained. The iframe replacement anchor is synthetic and cannot authorize a published CSS adaptation; it is not Sigma-10 markup.",
   "features": [
     "Rate",
-    "current credit:start/otherwise/end markup",
+    "historical Sigma-9 credit:start/otherwise/end markup",
     "credit view and otherwise hash targets",
     "Japanese reader components",
     "TOC",

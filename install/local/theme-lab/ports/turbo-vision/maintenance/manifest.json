@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "2eb8a67aa819a58e0da88dfeecd991eba03a1b3a117aac84c6e7e9b42b3daa10",
+  "frozen_candidate_source_sha256": "7b32a6fa1b2a70349c490314ca05eaf064d2bc0c31674373fc853f167fa02d61",
   "base_source_sha256": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
-  "raw_jp_overrides_sha256": "d7b42bc882e29842dbebfe9e6f405d6e2c77ae2a70248ad380336978d1b5c172",
-  "jp_overrides_sha256": "fe51a69c9f09b13d517579b941179b8290a8d2a06a670a6195817920fae7c797",
-  "semantic_css_sha256": "33856599ccb2752f820b2bc35ad8af8c91bb5e9a59dd899b7648c78ad08d3742",
-  "canonical_override_sha256": "8502894d69a9d0fe80cce18b2fdca2956ba839b712951b54d8d022c093f61672",
+  "raw_jp_overrides_sha256": "e01904ac44de0b0b4f0022165be119a61c0ec7592c5781c30b9cdff88ae06b65",
+  "jp_overrides_sha256": "82e770c5adc01e7a7479cb8baa03596f1ea5608f7da422f26b0034c4714da354",
+  "semantic_css_sha256": "1314e7acb3a5d8a3dda03211f563397433272ca5668d3e0d934bc2b4d011daa2",
+  "canonical_override_sha256": "55ab8e632e7c250de2b5b94d81541bcfb5078b1517a4efb94d07cfe6c6c570ce",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "6351e8eb9e336cada8be1e930ca40d0c41378277b441eb56a0e9671c58db524b",
+  "final_source_sha256": "82173741c2d0f8cc00b0d2e3801896da7bc72b93f270970fdcbd50d79f348259",
   "final_source_inputs": {
     "base_sha256": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
-    "jp_overrides_sha256": "fe51a69c9f09b13d517579b941179b8290a8d2a06a670a6195817920fae7c797"
+    "jp_overrides_sha256": "82e770c5adc01e7a7479cb8baa03596f1ea5608f7da422f26b0034c4714da354"
   },
   "ordered_include_sha256": "2d9da036cfae7fd12cfc6366c1e5bafaaf37105d3e5a19172b72a4a4bc3763e8",
   "declaration_reviews": {},
-  "adaptation_block_count": 7,
-  "raw_override_rule_count": 34,
-  "canonical_override_rule_count": 34,
+  "adaptation_block_count": 1,
+  "raw_override_rule_count": 3,
+  "canonical_override_rule_count": 3,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -27,7 +27,7 @@
   "historical_adaptations": [
     {
       "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
-      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "Established source/target read-only A/B rejects the invented shared behavior.",
       "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
       "selectors": [
         "#search-top-box-form:focus-within #search-top-box-input",
@@ -35,11 +35,15 @@
       ],
       "at_contexts": [
         "@media (min-width: 768px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "REMOVE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "2eb8a67aa819a58e0da88dfeecd991eba03a1b3a117aac84c6e7e9b42b3daa10"
     },
     {
       "marker": "SCP-JP interactive acceptance: turbo-vision account and navigation behavior",
-      "rationale": "Keep the cyan Turbo-Vision menu surface and use a dark ink for the red text links whose foreground blends into it.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "25f41f0d132bebc7ec1df745f69bbebeabc53abefa2d75ca0f3683c222fc1447",
       "selectors": [
         "#side-bar .collapsible-block-unfolded a",
@@ -47,11 +51,15 @@
         "#side-bar .side-block a",
         "#side-bar .side-block a:hover"
       ],
-      "at_contexts": []
+      "at_contexts": [],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "2eb8a67aa819a58e0da88dfeecd991eba03a1b3a117aac84c6e7e9b42b3daa10"
     },
     {
       "marker": "SCP-JP interactive visual acceptance evidence fix v1: turbo-vision",
-      "rationale": "FontAwesome is not a required SCP-JP runtime dependency; provide visible rate actions with theme-colored text glyphs.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "3e26c686abba891442bdb86fea671d298042284faa70175f209e737e84211f21",
       "selectors": [
         ".creditRate .cancel a::before",
@@ -61,11 +69,15 @@
         ".page-rate-widget-box .ratedown a::before",
         ".page-rate-widget-box .rateup a::before"
       ],
-      "at_contexts": []
+      "at_contexts": [],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "2eb8a67aa819a58e0da88dfeecd991eba03a1b3a117aac84c6e7e9b42b3daa10"
     },
     {
       "marker": "SCP-JP interactive visual acceptance evidence fix v2: turbo-vision",
-      "rationale": "The theme's pixel display font lacks Japanese vertical metrics; retain its face and palette but provide enough line box for translated headings and dialog messages.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "f017f4de3e014ce4a45f2f6048469d1caf007eaf458cd7582a230466e21e765e",
       "selectors": [
         "#main-content #page-content h1",
@@ -75,11 +87,15 @@
         "#odialog-container .owindow.error #modal-title",
         "#odialog-container .owindow.error .modal-body"
       ],
-      "at_contexts": []
+      "at_contexts": [],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "2eb8a67aa819a58e0da88dfeecd991eba03a1b3a117aac84c6e7e9b42b3daa10"
     },
     {
       "marker": "SCP-JP interactive visual acceptance mobile header refinement v5: turbo-vision",
-      "rationale": "The pixel theme's fixed narrow return button turns the Japanese credit label into stacked fragments; let it wrap as a normal compact control.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "bdb980da59f3e93953351990153f5561ebffe77e2157f6143e714fce185a76c0",
       "selectors": [
         "#u-credit-otherwise .modalbox > a[href=\"#u-credit-view\"]",
@@ -87,11 +103,15 @@
       ],
       "at_contexts": [
         "@media (max-width: 600px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "2eb8a67aa819a58e0da88dfeecd991eba03a1b3a117aac84c6e7e9b42b3daa10"
     },
     {
       "marker": "SCP-JP interactive visual acceptance header/navigation repair v3: turbo-vision",
-      "rationale": "Keep the Turbo-Vision cyan drawer and prevent its small Japanese labels from inheriting the upstream pale foreground on that light surface.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "d5dc771bc79eb9d19a5e5022f8f68936674baa31f07f4af89560f75b0bad504d",
       "selectors": [
         "#side-bar .collapsible-block-link",
@@ -103,11 +123,15 @@
       ],
       "at_contexts": [
         "@media (max-width: 767px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "2eb8a67aa819a58e0da88dfeecd991eba03a1b3a117aac84c6e7e9b42b3daa10"
     },
     {
       "marker": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
-      "rationale": "SCP-JP navigation adaptation: constrain submenu item min-content sizing as well as the menu box so long Japanese labels reflow instead of extending past the viewport.",
+      "rationale": "Established source/target read-only A/B rejects the invented shared behavior.",
       "sha256": "a7d08f5e3645665482f335e0cfe80954a4da6781e0bbe546dc2f31f9383b6b82",
       "selectors": [
         "#top-bar .mobile-top-bar ul li ul",
@@ -119,7 +143,109 @@
       ],
       "at_contexts": [
         "@media (max-width: 767px)"
+      ],
+      "origin": "historical-source-module",
+      "authority": "REMOVE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "2eb8a67aa819a58e0da88dfeecd991eba03a1b3a117aac84c6e7e9b42b3daa10"
+    },
+    {
+      "marker": "SCP-JP responsive adaptation: Theme Lab evidenced viewport and component rules.",
+      "sha256": "9bd8cfb10e245287cc9bca078c0b4862cd307192c674123389fb939a4f512912",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "e11db583ecbe94222b3fd73087439c7606c06fa0f90c9e22200462bf40948ca6"
+    },
+    {
+      "marker": "JP runtime header DOM: keep theme title positioning inside the current SCP-JP header.",
+      "sha256": "c75b94bfefa29231250914812d0a4b47c3ac9ffd0264686df8ac4a68c665f152",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "e11db583ecbe94222b3fd73087439c7606c06fa0f90c9e22200462bf40948ca6"
+    },
+    {
+      "marker": "Campaign JP adaptation turbo-vision: Theme Lab viewport evidence.",
+      "sha256": "bb72fc7b3f8e1fb97164845a963be93981aff3b7fad3e0411f966fd5e62b7e64",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "e11db583ecbe94222b3fd73087439c7606c06fa0f90c9e22200462bf40948ca6"
+    },
+    {
+      "marker": "source-theme-and-localized-document-input",
+      "origin": "preserved-source",
+      "sha256": "277f938a1ab759664945e72cf4d5a1a5adc249e5c7d0cc234343711ab27116e6",
+      "authority": "SOURCE_THEME",
+      "rationale": "Preserve source-theme imports, source declarations, include parameters and localized documentation before the historical campaign suffix. Asset freezing and include expansion are separate runtime-independent transforms.",
+      "evidence": [
+        {
+          "path": "turbo-vision/upstream-en.wikidot.txt",
+          "sha256": "c28a37187cdc6bcb768921c8a05f805b18d153a929411db17971dd8e9019f97f",
+          "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+        },
+        {
+          "path": "turbo-vision/existing-jp.wikidot.txt",
+          "sha256": "325801b1dd4a3d1fb23f216c08a0ea56519d32da234638a8b5022c45a30d982c",
+          "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+        }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot navigation correction: turbo-vision rightmost submenu anchors.",
+      "sha256": "db2bb634aa8c44283a1a42de3fa506fcf57db5e8e8830c5620e3e5c0922324d5",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "Per-theme real SCP-JP A/B at 320px and 390px; every submenu/item/link stays inside both viewport edges. Preserve the wrapped row, source menu widths, palette and link layout. Space also retains its separate header grid correction; Turbo bounds only the invisible masthead responsible for remaining 320px document overflow.",
+      "evidence": [
+        {
+          "path": "authority-evidence/turbo-vision-published-final/receipt.json",
+          "sha256": "6eb40dabe86d9d3f7f1404a884f5af99ca56828adb5b5730a4549f2338c5f366",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        },
+        {
+          "path": "authority-evidence/turbo-header-published/receipt.json",
+          "sha256": "201cb4242130919ba88d64c051abd674cb0e61eee0c6c50c49e8e8fdb93eb2b5",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "published_css_sha256": "ac24e470f5121a256b7d05b96b6d58fb113bfd35314ec367652196f770c69c0f",
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "state": "navigation",
+        "viewports": [
+          320,
+          390
+        ],
+        "selectors": [
+          ".mobile-top-bar > ul > li > ul",
+          ".mobile-top-bar > ul > li > ul li",
+          ".mobile-top-bar > ul > li > ul a"
+        ]
+      }
+    }
+  ],
+  "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot navigation correction: turbo-vision rightmost submenu anchors.",
+      "rationale": "SCP-JP Wikidot invisible masthead bound: Turbo Vision.",
+      "sha256": "db2bb634aa8c44283a1a42de3fa506fcf57db5e8e8830c5620e3e5c0922324d5",
+      "selectors": [
+        "#top-bar .mobile-top-bar > ul > li:last-child > ul",
+        "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul",
+        "div#header h1"
+      ],
+      "at_contexts": [
+        "@media (max-width: 365px)",
+        "@media (max-width: 767px)",
+        "@media (min-width: 360px) and (max-width: 767px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
     }
   ]
 }

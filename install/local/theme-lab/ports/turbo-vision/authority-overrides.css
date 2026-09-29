@@ -1,0 +1,11 @@
+/* SCP-JP Wikidot navigation correction: turbo-vision rightmost submenu anchors. */
+@media (max-width: 767px) {
+  #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul { left: auto; right: 0; }
+}
+@media (min-width: 360px) and (max-width: 767px) {
+  #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
+}
+/* SCP-JP Wikidot invisible masthead bound: Turbo Vision. */
+@media (max-width: 365px) {
+  div#header h1 { max-width: calc(100% - 55px); }
+}

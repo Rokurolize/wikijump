@@ -120,7 +120,6 @@
 = {{**@@[[div class="wikibox"]]@@**}}
 
 
-
 ----
 {{wikibox}} div内の水平線。
 [[span class="capt grey"]]{{capt grey}} span[[/span]]
@@ -954,26 +953,6 @@ div#action-area h1 {
     }
 }
 [[/code]]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

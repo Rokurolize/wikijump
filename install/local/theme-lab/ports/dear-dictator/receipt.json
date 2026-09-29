@@ -1,0 +1,17 @@
+{
+  "slug": "theme:dear-dictator",
+  "adaptation_authority": {
+    "ledger": "../adaptation-authority.json",
+    "status": "pass",
+    "publishable_without_authority": 0
+  },
+  "overall_acceptance": {
+    "status": "inconclusive",
+    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+  },
+  "state": "authority-cleaned-local-candidate-not-published",
+  "candidate_source_sha256": "b6c93b192d4db6ca662f3560a00a47f273d221f3e52ba3832a5d04f7f2b76e52",
+  "final_verdict": "inconclusive",
+  "final_status": "adaptation-authority-cleaned",
+  "candidate_css_sha256": "c52365e80c9f89d061622e910a59425c04c283201d09cfc45faa4fb108932f8a"
+}

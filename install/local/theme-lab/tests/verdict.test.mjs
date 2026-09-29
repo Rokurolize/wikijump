@@ -57,7 +57,7 @@ test("unresolved Wikidot includes become actionable preview errors", () => {
     evidence: 'Included page "component:theme-squares" does not exist (create it now)',
   }]);
   const verdict = buildVerdict({preview});
-  assert.equal(verdict.verdict, "fail");
+  assert.equal(verdict.port_decision.verdict, "fail");
   assert.deepEqual(verdict.next_actions, [{
     kind: "resolve_candidate_include",
     include: "component:theme-squares",
@@ -107,7 +107,7 @@ test("inactive-media leads on a local-only surface stay in target acceptance", (
     viewports: {desktop: {document_overflow_px: 0}, laptop: {document_overflow_px: 0}, tablet: {document_overflow_px: 0}, mobile: {document_overflow_px: 0}},
   });
   assert.equal(verdict.next_actions.length, 0);
-  assert.equal(verdict.verdict, "pass");
+  assert.equal(verdict.port_decision.verdict, "pass");
   assert.equal(verdict.resolved_actions, undefined);
   assert.equal(verdict.parity_gate.status, "non_authoritative_target_findings_present");
   assert.equal(verdict.parity_gate.quarantined_count, 1);
@@ -119,22 +119,22 @@ test("buildVerdict separates parity conclusions from local target acceptance", (
   const fail = buildVerdict({
     reference: {diagnosis: {missing: [{selector: "#a", reference: 1, candidate: 0}], missing_count: 1}},
   });
-  assert.equal(fail.verdict, "inconclusive");
+  assert.equal(fail.port_decision.verdict, "inconclusive");
   assert.equal(fail.issue_count, 1);
   assert.equal(fail.target_acceptance.status, "fail");
 
   const warn = buildVerdict({
     reference: {diagnosis: {missing: [], collapsed: [], expanded: [], missing_count: 0}, computed_styles: {top: [{anchor: "a", property: "width"}]}},
   });
-  assert.equal(warn.verdict, "pass");
+  assert.equal(warn.port_decision.verdict, "pass");
   assert.equal(warn.style_changes.length, 0);
   assert.equal(warn.target_acceptance.status, "warn");
 
   const pass = buildVerdict({reference: {diagnosis: {missing: [], collapsed: [], expanded: [], missing_count: 0}}});
-  assert.equal(pass.verdict, "pass");
+  assert.equal(pass.port_decision.verdict, "pass");
 
   const tortureChange = buildVerdict({torture: {verdict: "pass", changed_component_count: 3, issues: []}});
-  assert.equal(tortureChange.verdict, "inconclusive");
+  assert.equal(tortureChange.port_decision.verdict, "inconclusive");
   assert.equal(tortureChange.top_issues[0].parity_review.surface_ids[0], "unclassified-runtime-surface");
   assert.equal(tortureChange.target_acceptance.status, "warn");
 });
@@ -168,7 +168,7 @@ test("interaction failures on uncertified runtime surfaces remain quarantined", 
     tabs: {status: "pass", activated_index: 1, restored_index: 0},
     collapsible: {status: "fail", initial: "folded", after_click: "folded"},
   }});
-  assert.equal(verdict.verdict, "pass");
+  assert.equal(verdict.port_decision.verdict, "pass");
   assert.deepEqual(verdict.next_actions, []);
   assert.equal(verdict.target_acceptance.status, "fail");
   assert.equal(verdict.parity_gate.quarantined_count, 1);
@@ -198,7 +198,7 @@ test("surface-contract findings on uncertified runtime surfaces do not produce p
       overflow_sources: [{selector: "ul", overflow_px: 13}],
     },
   ]});
-  assert.equal(verdict.verdict, "pass");
+  assert.equal(verdict.port_decision.verdict, "pass");
   assert.deepEqual(verdict.next_actions, []);
   assert.equal(verdict.target_acceptance.status, "fail");
   assert.equal(verdict.parity_gate.quarantined_count, 2);
@@ -230,7 +230,7 @@ test("broken candidate page images fail with an asset-backed repair action", () 
     image_count: 2,
     broken: [{src: "https://local.test/logo.png", alt: "SCP logo", selector: "img.logo", natural_width: 0, natural_height: 0}],
   }});
-  assert.equal(verdict.verdict, "fail");
+  assert.equal(verdict.port_decision.verdict, "fail");
   assert.deepEqual(verdict.next_actions, [{
     kind: "localize_image",
     asset: "https://local.test/logo.png",
@@ -247,4 +247,22 @@ test("expandVerdict restores full detail", () => {
   assert.deepEqual(expanded.selector_rows, [{selector: "a"}]);
   assert.equal(expanded.viewport_diagnostics.mobile.overflow_sources[0].selector, ".x");
   assert.equal(expanded.surface_contract_full.schema, "theme_lab_surface_contract.v1");
+});
+
+
+test("overall acceptance combines both dimensions and fails closed", async () => {
+  const {overallAcceptance} = await import("../src/verdict.mjs");
+  assert.equal(overallAcceptance("pass", "fail"), "fail");
+  assert.equal(overallAcceptance("inconclusive", "pass"), "inconclusive");
+  assert.equal(overallAcceptance("pass", "pass"), "pass");
+  assert.equal(overallAcceptance("warn", "pass"), "warn");
+  assert.equal(overallAcceptance("pass", undefined), "inconclusive");
+  const localFailure = buildVerdict({interactionDiagnostics: {
+    collapsible: {status: "fail", initial: "folded", after_click: "folded"},
+  }});
+  assert.equal(localFailure.port_decision.verdict, "pass");
+  assert.equal(localFailure.target_acceptance.status, "fail");
+  assert.equal(localFailure.verdict, "fail");
+  assert.equal(localFailure.overall_acceptance.status, "fail");
+  assert.equal(buildVerdict().overall_acceptance.status, "pass");
 });

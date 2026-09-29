@@ -2380,7 +2380,6 @@ textarea {
 >[[/ift{$verdana}gs]]
 
 
-
 >THEME VARIANTS
 
 >[[ift{$canada}gs -テーマ]]
@@ -2572,40 +2571,6 @@ textarea {
 >
 
 >
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 + Theme Lab runtime fixture

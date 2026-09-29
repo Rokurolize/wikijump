@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "replacements": {},
+  "omissions": {
+    "https://scp-wiki.wdfiles.com/local--files/theme%3Ascheme/rack.png": "upstream HTTP 500; optional mechanical rack texture unavailable"
+  }
+}

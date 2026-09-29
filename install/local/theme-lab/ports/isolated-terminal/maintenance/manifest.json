@@ -1,82 +1,25 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "0f94026cb973ca4de41bd5e5b579a5242f24ec6a5cdeb7e3f27953c21c557ae1",
+  "frozen_candidate_source_sha256": "e2a79c2965b4558f59b4a0884fc18563a7ee8c6ad17d27d6e5f219856044459c",
   "base_source_sha256": "e2a79c2965b4558f59b4a0884fc18563a7ee8c6ad17d27d6e5f219856044459c",
-  "raw_jp_overrides_sha256": "d24f6f4ba8a27c0d3bd8d69de2823a05413545c658044f4cf4123dd12f3aa6ea",
-  "jp_overrides_sha256": "993307fd53dc0de4379b6e960613762ba448a695ec74ada36b4ecb901a5c36c8",
-  "semantic_css_sha256": "6eafdb12b0dd4892adc031022c8633ca0cea55229ebf2c70aa1d45d93207d7dc",
-  "canonical_override_sha256": "b249129dc139f87e3e3af3452e4561b838a599aa722013a73be9c07e0b42cf92",
+  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "semantic_css_sha256": "a7139ea381d0f8c6d1e3c629ccf6f12b4c77503cc43514d3c0900a267346ee02",
+  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "4950d778847028ae1dda63e46364a3d5530fb7b00748ff02ed2c0b4da69deb05",
+  "final_source_sha256": "e2a79c2965b4558f59b4a0884fc18563a7ee8c6ad17d27d6e5f219856044459c",
   "final_source_inputs": {
     "base_sha256": "e2a79c2965b4558f59b4a0884fc18563a7ee8c6ad17d27d6e5f219856044459c",
-    "jp_overrides_sha256": "993307fd53dc0de4379b6e960613762ba448a695ec74ada36b4ecb901a5c36c8"
+    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
   "ordered_include_sha256": "957e5b16f3829417edc46d104d12889b420b4e9aecec9f9458acb8d875055849",
-  "declaration_reviews": {
-    "[[\"@media (max-width: 767px)\"],\"#side-bar .side-block .collapsible-block-link\",\"line-height\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 1,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\"#side-bar .side-block .collapsible-block-link\",\"margin-block\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 1,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\"#side-bar .side-block .heading\",\"display\"]": {
-      "status": "intentional-fallback",
-      "rationale": "Keep block before flow-root as the display fallback for engines without flow-root support.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 0,
-      "fallback_declarations_retained": 1
-    },
-    "[[\"@media (max-width: 767px)\"],\"#side-bar .side-block .heading\",\"margin-block\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 1 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 1,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\"#side-bar .side-block .collapsible-block-link\",\"display\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\"#side-bar .side-block .collapsible-block-link\",\"overflow-wrap\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\"#side-bar .side-block .collapsible-block-link\",\"white-space\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    },
-    "[[\"@media (max-width: 767px)\"],\"#side-bar .side-block .heading\",\"line-height\"]": {
-      "status": "resolved-canonical",
-      "rationale": "Removed 0 obsolete conflicting declaration(s) and 1 same-value duplicate(s); the retained exact-key winner is unchanged.",
-      "conflicting_declarations_consolidated": 0,
-      "same_value_declarations_removed": 1,
-      "fallback_declarations_retained": 0
-    }
-  },
-  "adaptation_block_count": 5,
-  "raw_override_rule_count": 20,
-  "canonical_override_rule_count": 20,
+  "declaration_reviews": {},
+  "adaptation_block_count": 0,
+  "raw_override_rule_count": 0,
+  "canonical_override_rule_count": 0,
   "exact_duplicate_rules_removed": 0,
-  "redundant_same_value_declarations_removed": 7,
-  "empty_rules_removed": 1,
+  "redundant_same_value_declarations_removed": 0,
+  "empty_rules_removed": 0,
   "active_tags": [
     "テーマ"
   ],
@@ -84,7 +27,7 @@
   "historical_adaptations": [
     {
       "marker": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
-      "rationale": "SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused.",
+      "rationale": "Established source/target read-only A/B rejects the invented shared behavior.",
       "sha256": "5ab41768e411f06dbde9b43fb3e2a36bec91e680a9a1e36635b1a9e7fdabe0fe",
       "selectors": [
         "#search-top-box-form:focus-within #search-top-box-input",
@@ -92,11 +35,15 @@
       ],
       "at_contexts": [
         "@media (min-width: 768px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "REMOVE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "0f94026cb973ca4de41bd5e5b579a5242f24ec6a5cdeb7e3f27953c21c557ae1"
     },
     {
       "marker": "SCP-JP interactive acceptance: isolated-terminal account and navigation behavior",
-      "rationale": "Japanese navigation labels must wrap inside the terminal menu instead of being cut off by its fixed row sizing.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "3abf4d7f16d169a9dda7d8f6ee6a2bb6759f843f79bfc7c7d74f335b1c650c14",
       "selectors": [
         "#side-bar .collapsible-block-link",
@@ -105,11 +52,15 @@
         "#top-bar .top-bar li a",
         "#top-bar .top-bar li ul"
       ],
-      "at_contexts": []
+      "at_contexts": [],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "0f94026cb973ca4de41bd5e5b579a5242f24ec6a5cdeb7e3f27953c21c557ae1"
     },
     {
       "marker": "SCP-JP interactive visual acceptance evidence fix v1: isolated-terminal",
-      "rationale": "Keep the mobile drawer close control on one line and separate its Japanese label from the terminal section heading.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "fb6e03f990dd9dbfc23c7b2b17903a0ff08a5f6527553b5f7ed1931aae6ea084",
       "selectors": [
         "#side-bar .close-menu",
@@ -119,11 +70,15 @@
       ],
       "at_contexts": [
         "@media (max-width: 767px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "0f94026cb973ca4de41bd5e5b579a5242f24ec6a5cdeb7e3f27953c21c557ae1"
     },
     {
       "marker": "SCP-JP interactive image-review repair v1: isolated-terminal",
-      "rationale": "The mobile drawer places its collapsed toggle at zero-width absolute coordinates; restore the real label to flow so it cannot collide with the next section heading.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "5e74cb82616d08c5f0053489ffb68e8678e3e475c781e726bf7d7e974c468496",
       "selectors": [
         "#side-bar:target .side-block .collapsible-block",
@@ -133,11 +88,15 @@
       ],
       "at_contexts": [
         "@media (max-width: 767px)"
-      ]
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "0f94026cb973ca4de41bd5e5b579a5242f24ec6a5cdeb7e3f27953c21c557ae1"
     },
     {
       "marker": "SCP-JP interactive visual acceptance image review repair v22: isolated-terminal",
-      "rationale": "Cross-engine mobile image review: the long Japanese collapsible label wraps into the following sidebar heading. Give each live sidebar row an intrinsic block size and explicit separation while preserving the terminal palette.",
+      "rationale": "Historical runtime/image-review provenance is not certified Wikidot adaptation authority; excluded from publication.",
       "sha256": "dd1d810716f66c6b996a01289476170c3eb892de411f3a44943031d39e976a99",
       "selectors": [
         "#side-bar .side-block .collapsible-block",
@@ -148,7 +107,50 @@
       ],
       "at_contexts": [
         "@media (max-width: 767px)"
+      ],
+      "origin": "historical-source-module",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "diagnostic_file": "maintenance/historical-diagnostic.wikidot.txt",
+      "diagnostic_file_sha256": "0f94026cb973ca4de41bd5e5b579a5242f24ec6a5cdeb7e3f27953c21c557ae1"
+    },
+    {
+      "marker": "SCP-JP responsive adaptation: Theme Lab evidenced viewport and component rules.",
+      "sha256": "9bd8cfb10e245287cc9bca078c0b4862cd307192c674123389fb939a4f512912",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "5678ba4e1983b77962dac60f1e8ae385ac431b0730aa0af80cf754378a8520f3"
+    },
+    {
+      "marker": "JP runtime header DOM: keep theme title positioning inside the current SCP-JP header.",
+      "sha256": "6621d0c53034e2a3216b9f84cd60e8feed1e15398a7d85b59f0c489e11b3313e",
+      "origin": "historical-css-input",
+      "authority": "NONPUBLISHABLE_QUARANTINE",
+      "rationale": "Campaign-only runtime/fixture evidence; this complete historical block is excluded from publishable inputs.",
+      "diagnostic_file": "maintenance/historical-diagnostic.css",
+      "diagnostic_file_sha256": "5678ba4e1983b77962dac60f1e8ae385ac431b0730aa0af80cf754378a8520f3"
+    },
+    {
+      "marker": "source-theme-and-localized-document-input",
+      "origin": "preserved-source",
+      "sha256": "8d94e5301b2d8defe39877fa97953287ca77acb73b49b58daf4fa1d5edc43a1a",
+      "authority": "SOURCE_THEME",
+      "rationale": "Preserve source-theme imports, source declarations, include parameters and localized documentation before the historical campaign suffix. Asset freezing and include expansion are separate runtime-independent transforms.",
+      "evidence": [
+        {
+          "path": "isolated-terminal/upstream-en.wikidot.txt",
+          "sha256": "120ce0a71fa1ca235d3ed1955957ebe037bdb8e4a160b7099fe810d61f17a257",
+          "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+        },
+        {
+          "path": "isolated-terminal/existing-jp.wikidot.txt",
+          "sha256": "4cffaa491e5f88926e9793f732bdb80616f0c8a91282b2544478e1b9caa41e30",
+          "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+        }
       ]
     }
-  ]
+  ],
+  "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
+  "publishable_adaptations": []
 }

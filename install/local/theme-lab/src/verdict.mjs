@@ -250,6 +250,16 @@ export function summarizeVisual(visual) {
   return {status: worst, viewports};
 }
 
+// The public verdict combines acceptance without promoting local observations
+// into authority for a port adaptation.
+export function overallAcceptance(port, target) {
+  if (target === "fail" || port === "fail") return "fail";
+  if (port === "inconclusive") return "inconclusive";
+  if (port === "warn" || target === "warn") return "warn";
+  if (port === "pass" && target === "pass") return "pass";
+  return "inconclusive";
+}
+
 export function buildVerdict({
   reference = null,
   torture = null,
@@ -331,8 +341,14 @@ export function buildVerdict({
     ? proposedActions.filter((action) => action.kind !== "inspect_inactive_media")
     : proposedActions;
 
+  const targetStatus = issues.some((issue) => issue.severity === "error") || (visual && Object.values(visual).some((entry) => entry?.comparison?.status === "fail"))
+    ? "fail"
+    : issues.some((issue) => issue.severity === "warn") || rawStyleChanges.length > 0 || (torture?.changed_component_count ?? 0) > 0
+      ? "warn" : "pass";
+  const overall = overallAcceptance(verdict, targetStatus);
   return {
-    verdict,
+    verdict: overall,
+    overall_acceptance: {status: overall, port_verdict: verdict, target_status: targetStatus},
     timing_ms: timing,
     issue_count: issues.length,
     actionable_issue_count: decisionIssues.length,
@@ -350,11 +366,7 @@ export function buildVerdict({
         .flatMap((row) => row.surface_ids))].sort(),
     },
     target_acceptance: {
-      status: issues.some((issue) => issue.severity === "error") || (visual && Object.values(visual).some((entry) => entry?.comparison?.status === "fail"))
-        ? "fail"
-        : issues.some((issue) => issue.severity === "warn") || rawStyleChanges.length > 0 || (torture?.changed_component_count ?? 0) > 0
-          ? "warn"
-          : "pass",
+      status: targetStatus,
       decision_authority: "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
       issue_count: issues.length,
       style_change_count: rawStyleChanges.length,

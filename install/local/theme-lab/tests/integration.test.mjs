@@ -39,7 +39,11 @@ const FOREIGN_CSS = `#header h1 { color: rgb(187, 1, 17); font-size: 31px; }
 const SELECTORS = ["#header h1", "#page-content", ".foreign-rate-box", ".page-rate-widget-box", "table.wiki-content-table"];
 
 async function fixtureServer() {
-  const baseCss = await fs.readFile(WIKIDOT_BASE_CSS);
+  // This is a diagnostic loopback fixture, not source-Wikidot authority.
+  // Flatten decorative remote URLs so cache acquisition itself stays local.
+  const pixel='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  const baseCss = (await fs.readFile(WIKIDOT_BASE_CSS,'utf8'))
+    .replace(/url\(\s*(['"]?)(?:https?:)?\/\/[^)]*\)/giu,`url("${pixel}")`);
   const hits = [];
   const server = http.createServer((request, response) => {
     hits.push(request.url);
@@ -122,7 +126,8 @@ test("theme-port check retains a target-only selector suggestion without a parit
       viewports: true,
       torture: false,
     });
-    assert.equal(verdict.verdict, "inconclusive");
+    assert.equal(verdict.verdict, "fail");
+    assert.equal(verdict.port_decision.verdict, "inconclusive");
     const missing = verdict.top_issues.find((issue) => issue.selector === ".foreign-rate-box");
     assert.ok(missing, "foreign rate box should be reported missing");
     assert.equal(missing.reference_role, "rating_widget");
@@ -201,7 +206,8 @@ test("broken CSS canary fails local acceptance without certifying a parity misma
       viewports: true,
       torture: false,
     });
-    assert.equal(verdict.verdict, "pass");
+    assert.equal(verdict.verdict, "fail");
+    assert.equal(verdict.overall_acceptance.status, "fail");
     assert.equal(verdict.port_decision.verdict, "pass");
     assert.equal(verdict.target_acceptance.status, "fail");
     assert.ok(verdict.top_issues.some((issue) => issue.kind === "viewport_overflow"));

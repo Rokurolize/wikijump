@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "replacements": {},
+  "omissions": {
+    "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alSCP.webp": "upstream HTTP 500; SCP header mark unavailable",
+    "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alDespair.png": "upstream HTTP 500; optional downvote artwork unavailable"
+  }
+}

@@ -63,10 +63,10 @@ test('surface contract validates custom selectors and fails closed on missing co
   assert.equal(issues[0].viewport,'mobile');
 });
 
-test('FR example automatically declares the general runtime surfaces learned from staff comparison',()=>{
+test('FR source mapping declares only the runtime surfaces it still styles',()=>{
   const css=fs.readFileSync(path.join(root,'ports/quand-le-soleil-se-couche/candidate-template.css'),'utf8');
   const ids=new Set(analyzeThemeSurfaceUsage(css,'auto').surfaces.map(row=>row.id));
-  for(const id of ['shell.header','nav.mobile-top','nav.sidebar','content.rating','content.credit','content.tabview']){
+  for(const id of ['shell.header','nav.sidebar','content.rating','content.credit','content.tabview']){
     assert.ok(ids.has(id),`missing ${id}`);
   }
 });

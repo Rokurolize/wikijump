@@ -53,8 +53,20 @@ node scripts/theme-lab.mjs check --socket /tmp/theme-lab.sock \
   [--verbose | --json-full]
 ```
 
-`check` returns the compact verdict; `--verbose` adds raw selector rows,
+`check` returns one final result: `verdict` and `overall_acceptance.status`
+combine `port_decision.verdict` with `target_acceptance.status`. Either failure
+makes the final result `fail`; an inconclusive port makes it `inconclusive`;
+otherwise a warning yields `warn`, and both passes yield `pass`. CLI exit codes
+are 1 for failure, 2 for inconclusive, and 0 for pass/warn. A successful socket
+request (`ok: true`) alone is not acceptance. `--verbose` adds raw selector rows,
 computed-style rows, and the full torture result.
+
+Publication also requires the [adaptation-authority gate](ports/ADAPTATION-AUTHORITY-AUDIT.md).
+Local target acceptance and synthetic fixture results cannot authorize JP CSS.
+Use `scripts/wikidot-adaptation-ab.mjs` with frozen read-only Wikidot replay to
+prove a target correction. Its receipts bind both viewport edges, every submenu
+and link, the exact CSS, DOM, screenshots and acquisition identity. Generation
+rejects missing dispositions, stale evidence and non-publishable quarantine.
 
 For a normal full check with both `--site-id` and candidate CSS, Theme Lab also
 runs the SCP-JP runtime **surface contract** by default. It parses the

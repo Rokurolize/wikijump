@@ -3,6 +3,7 @@
 // Sequential, receipt-driven campaign runner. Each case uses the existing
 // persistent Theme Lab daemon and an already acquired offline reference.
 import fs from "node:fs";
+import {assertPublishablePackage} from "../src/adaptation-authority.mjs";
 import crypto from "node:crypto";
 import path from "node:path";
 import {spawnSync} from "node:child_process";
@@ -141,6 +142,7 @@ if (only && selectedCases.length !== 1) throw new Error(`unknown --only theme: $
 const failures = [];
 const summaries = [];
 for (const item of selectedCases) {
+  assertPublishablePackage(path.basename(item.directory), {checkOutputs: true});
   verifyFrozenPackage(item);
   if (verifyOnly) {
     summaries.push({slug: item.slug, status: "verified"});
@@ -174,7 +176,10 @@ for (const item of selectedCases) {
   const missingAssets = verdict.assets?.candidate?.missing?.length ?? 0;
   const row = {
     slug: item.slug,
-    verdict: verdict.verdict ?? "unknown",
+    verdict: verdict.overall_acceptance?.status ?? "inconclusive",
+    overall_acceptance: verdict.overall_acceptance ?? {status: "inconclusive"},
+    candidate_css_sha256: sha256(path.join(item.directory,item.css)),
+    candidate_preview_sha256: sha256(path.join(item.directory,item.candidate)),
     port_decision: verdict.port_decision ?? null,
     local_target_acceptance: verdict.target_acceptance ?? null,
     local_target_acceptance_status: localAcceptanceStatus,

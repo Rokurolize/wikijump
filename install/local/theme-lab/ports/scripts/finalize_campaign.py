@@ -81,6 +81,19 @@ def main() -> int:
     iteration_benchmark = json.loads(ITERATION_BENCHMARK.read_text())
     summary = rows[-1]["summary"]
     results = {row["slug"]: row for row in rows[:-1]}
+    # Legacy rows with only a port verdict cannot publish final success.
+    # Validate the combined dimensions and exact current candidate identity
+    # before touching any receipt or campaign manifest.
+    for row in results.values():
+        status = row.get("overall_acceptance", {}).get("status")
+        port = row.get("port_decision", {}).get("verdict")
+        target = row.get("local_target_acceptance_status")
+        if status not in ("pass", "warn") or port not in ("pass", "warn") or target not in ("pass", "warn") or row.get("verdict") != status:
+            raise SystemExit(f"missing or unsuccessful combined final acceptance: {row['slug']}")
+        name = row["slug"].split(":", 1)[1].split(" (", 1)[0]
+        for key, file in (("candidate_css_sha256", "candidate.css"), ("candidate_preview_sha256", "candidate.wikidot.txt")):
+            if row.get(key) != digest(PORTS / name / file):
+                raise SystemExit(f"stale final acceptance candidate identity: {row['slug']} {file}")
     expected = {theme["slug"] for theme in manifest["themes"]}
     if set(results) != expected | {"theme:dear-dictator (SCP-KO)"}:
         raise SystemExit("final regression slug set does not match 34 EN themes + Dear Dictator")

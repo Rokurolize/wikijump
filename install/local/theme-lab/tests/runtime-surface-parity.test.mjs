@@ -107,7 +107,7 @@ test("uncertified and unclassified runtime findings cannot become port next-acti
     {severity: "error", kind: "candidate_asset_missing", asset: "logo.svg"},
   ]});
 
-  assert.equal(verdict.verdict, "fail");
+  assert.equal(verdict.port_decision.verdict, "fail");
   assert.equal(verdict.next_actions.length, 1);
   assert.equal(verdict.next_actions[0].kind, "provide_asset");
   assert.equal(verdict.parity_gate.status, "required_runtime_dependency_unresolved");
@@ -133,8 +133,8 @@ test("active uncertified surfaces stay in local acceptance and cannot alter port
   assert.equal(verdict.parity_gate.target_acceptance_only_count, activeIds.length);
   assert.equal(verdict.parity_gate.required_uncertified_count, 0);
   assert.equal(verdict.next_actions.length, 0);
-  assert.equal(verdict.verdict, "pass");
   assert.equal(verdict.port_decision.verdict, "pass");
+  assert.equal(verdict.verdict, "fail");
   assert.equal(verdict.port_decision.unresolved_finding_count, 0);
   assert.deepEqual(verdict.port_decision.unresolved_surface_ids, []);
   assert.equal(verdict.target_acceptance.status, "fail");
@@ -146,8 +146,8 @@ test("an unclassified runtime surface still blocks the port conclusion", () => {
   const verdict = buildVerdict({extraIssues: [
     {severity: "error", kind: "missing_selector", selector: ".future-wikidot-widget", reference: 1, candidate: 0},
   ]});
-  assert.equal(verdict.verdict, "inconclusive");
   assert.equal(verdict.port_decision.verdict, "inconclusive");
+  assert.equal(verdict.verdict, "fail");
   assert.equal(verdict.parity_gate.required_uncertified_count, 1);
   assert.deepEqual(verdict.port_decision.unresolved_surface_ids, ["unclassified-runtime-surface"]);
 });

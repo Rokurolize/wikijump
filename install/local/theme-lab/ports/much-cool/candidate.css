@@ -45,7 +45,7 @@ div#container-wrap {
     width: 100%;
     height: 100%;
 }
- 
+
 #header h1 a::before {
     content: " ";
     color: #00000000;
@@ -213,14 +213,14 @@ a:visited {
     border: 10px solid #F5EFE9;
     box-shadow: 0 1px 3px rgba(0, 0, 0, .5);
 }
- 
+
 .scp-image-block .scp-image-caption {
     padding-top: 1em;
     background: #F5EFE9;
     border-top: none;
     font-size: 85%;
 }
- 
+
 .scp-image-block img {
     box-shadow: 0 0 1px black;
 }
@@ -371,67 +371,67 @@ div.yui-navset div.yui-content {
     border-radius: 5px;
     box-shadow: none;
 }
- 
+
 .page-rate-widget-box > span {
     border: none !important;
 }
- 
+
 div.page-rate-widget-box .rate-points {
     background: #E5D7B7;
     color: #000000;
 }
- 
+
 .page-rate-widget-box .rateup,
 .page-rate-widget-box .ratedown {
     background: #E5D7B7;
 }
- 
+
 .page-rate-widget-box .rateup a:hover,
 .page-rate-widget-box .ratedown a:hover {
     background-color: #AD8C45;
     color: #E5D7B7;
 }
- 
+
 .page-rate-widget-box .cancel {
     background: #E5D7B7;
 }
- 
+
 .page-rate-widget-box .cancel a {
     color: #000000 !important;
     font-weight: bold;
 }
- 
+
 .page-rate-widget-box .cancel a:hover {
     background: #AD8C45;
     border-radius: 0;
     color: #E5D7B7 !important;
 }
- 
+
 .creditRate {
     margin-right: 0 !important;
 }
- 
+
 .rate-box-with-credit-button .creditButton {
     background: #E5D7B7 !important;
     border: 2px solid #AD8C45 !important;
     box-shadow: none !important;
     color: #000000 !important;
 }
- 
+
 .rate-box-with-credit-button .page-rate-widget-box {
     border: none;
 }
- 
+
 .creditButton p a {
     border-left: none !important;
     color: #000000 !important;
 }
- 
+
 #page-content .rate-box-with-credit-button .fa-info {
     padding: 3px 0 1px;
     color: #000000 !important;
 }
- 
+
 #page-content .rate-box-with-credit-button .fa-info:hover {
     background: #AD8C45 !important;
     border-radius: 0 3px 3px 0;
@@ -553,41 +553,3 @@ div.blockquote {
         background-size: 210px auto;
     }
 }
-
-/* SCP-JP responsive adaptation: Theme Lab evidenced viewport and component rules. */
-#main-content, #content-wrap { max-width: 100vw; box-sizing: border-box; }
-.page-rate-widget-box { max-width: 100%; min-width: 0; display: inline-flex; flex-wrap: wrap; overflow-x: auto; box-sizing: border-box; }
-.yui-navset { max-width: 100%; min-width: 0; overflow-x: auto; box-sizing: border-box; }
-@media (max-width: 979px) {
-  #main-content, #content-wrap, #page-content, #page-title { min-width: 0 !important; max-width: 100% !important; box-sizing: border-box; }
-  #page-content .code, #page-content pre { min-width: 0; max-width: 100%; overflow-x: auto; box-sizing: border-box; }
-  #page-content code { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
-  #page-content pre code { white-space: pre; overflow-wrap: normal; }
-  #page-content table { max-width: 100%; display: block; overflow-x: auto; box-sizing: border-box; }
-  #page-content img, #page-content video, #page-content iframe { max-width: 100%; }
-  #page-content .page-rate-widget-box, #page-content .rate-box-with-credit-button { max-width: 100% !important; min-width: 0; display: inline-flex; flex-wrap: wrap; overflow-x: auto; box-sizing: border-box; }
-  #page-content .yui-navset .yui-nav { max-width: 100%; overflow-x: auto; white-space: nowrap; }
-  #page-content #toc, #toc { max-width: 100%; overflow-wrap: anywhere; white-space: normal; box-sizing: border-box; }
-  #header { max-width: calc(100vw - 2rem) !important; box-sizing: border-box; }
-  #header h1, #header h2, #page-title { max-width: 100%; width: auto !important; font-size: clamp(1rem, 7vw, 2.2rem); overflow-wrap: anywhere; box-sizing: border-box; }
-}
-/* JP runtime header DOM: keep theme title positioning inside the current SCP-JP header. */
-#header h1, #header h2 { max-width: calc(100vw - 2rem) !important; box-sizing: border-box; left: auto !important; right: auto !important; }
-
-/* SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused. */
-@media (min-width: 768px) {
-  #search-top-box-form:hover #search-top-box-input,
-  #search-top-box-form:focus-within #search-top-box-input {
-    display: inline-block !important;
-  }
-}
-
-/* SCP-JP interactive acceptance: much-cool account and navigation behavior */
-
-/* Keep the dark Much Cool header while making its sidebar close affordance visible. */
-#side-bar .close-menu, #side-bar .close-menu a { color: #fff !important; }
-
-/* SCP-JP interactive visual acceptance image review repair v23: much-cool */
-
-/* WebKit mobile Source screenshot: the fixed hamburger overlays the first letter of the action-pane heading. Reserve its left touch-control lane on action panes while retaining Much Cool's display face. */
-@media (max-width: 767px) { #action-area > h1, #action-area > h2 { padding-inline-start: 3rem !important; box-sizing: border-box !important; } }

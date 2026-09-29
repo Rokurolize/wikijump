@@ -1,3 +1,4 @@
+import {viewportEscape} from "./viewport-bounds.mjs";
 import {parseStyleSheet} from "./css-probe.mjs";
 import {parseCssDeclarations} from "./port-maintenance.mjs";
 import {applyStylesheet, clearStylesheet, collectViewportOverflow, setViewport} from "./browser-lab.mjs";
@@ -438,7 +439,7 @@ async function collectProbe(page, probes) {
         optional: !!probe.optional,
         present: true,
         visible: rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden" && style.visibility !== "collapse",
-        rect: {x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom},
+        rect: {left: rect.left, x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom},
         style: Object.fromEntries(properties.map((property) => [property, style.getPropertyValue(property)])),
         effective_background_color: effectiveBackgroundValue.color,
         effective_background_image: effectiveBackgroundValue.image,
@@ -457,6 +458,19 @@ async function captureMode(page, {surface, state, viewport, themed, effectiveCss
   try { await applySurfaceState(page, surface.id, state.id); }
   catch (error) { actionError = String(error?.message ?? error); }
   const snapshot = await collectProbe(page, surface.probes);
+  snapshot.navigation_bounds = surface.id.startsWith("nav.") ? await page.evaluate(({expanded}) => {
+    const menus=[...document.querySelectorAll(".mobile-top-bar > ul > li > ul, #top-bar .top-bar > ul > li > ul")];
+    const rows=[];
+    for(const menu of menus) {
+      const original=menu.getAttribute("style");
+      if(expanded) for(const [property,value] of Object.entries({display:"block",visibility:"visible",opacity:"1"})) menu.style.setProperty(property,value,"important");
+      if(menu.checkVisibility()) for(const el of [menu,...menu.querySelectorAll("li,a")]) {
+        if(el.checkVisibility())rows.push({selector:el.tagName.toLowerCase(),rect:el.getBoundingClientRect().toJSON()});
+      }
+      if(original===null)menu.removeAttribute("style");else menu.setAttribute("style",original);
+    }
+    return rows;
+  },{expanded:state.id==="submenu-expanded"}) : [];
   const overflow = (await collectViewportOverflow(page, [VIEWPORTS[viewport]]))[viewport];
   await cleanupSurfaceState(page, surface.id, state.id);
   return {
@@ -509,6 +523,17 @@ function recordSurfacePair({surface, state, viewport, baseline, theme, captures,
           background: row.effective_background_color,
         });
       }
+    }
+  }
+  if (surface.id === "nav.mobile-top" || surface.id === "nav.top") {
+    for (const row of Object.values(theme.rows)) {
+      if (!row.present || !row.visible || !row.rect) continue;
+      const bounds = viewportEscape(row.rect, theme.viewport_width);
+      if (!bounds.pass) issues.push({severity: "error", kind: "surface_navigation_viewport_escape", surface: surface.id, state: state.id, viewport, selector: row.selector, bounds});
+    }
+    for (const row of theme.navigation_bounds ?? []) {
+      const bounds = viewportEscape(row.rect, theme.viewport_width);
+      if (!bounds.pass) issues.push({severity: "error", kind: "surface_navigation_viewport_escape", surface: surface.id, state: state.id, viewport, selector: row.selector, bounds});
     }
   }
   const ownedOverflow = (theme.overflow_sources ?? []).some((source) => overflowBelongsToSurface(surface.id, source));

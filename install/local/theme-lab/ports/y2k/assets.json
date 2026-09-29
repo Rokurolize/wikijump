@@ -5,57 +5,20 @@
       "bytes": 1631,
       "content_type": "image/png",
       "original_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-5-12sw/bg.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-5-12sw/bg.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at 3f58b41c46a373cbb4c505a328c103726feeaf490a17dc0c7e4a00efde7e6a50.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-5-12sw/bg.png"
     },
     {
       "sha256": "69ddec8c42128b72449ee2058d8c4a68501c44c2c1b35c8efc98a7d83b0d712e",
       "bytes": 2090,
       "content_type": "image/png",
       "original_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-4-k55r/logo.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-4-k55r/logo.png",
-      "decision": "localize-into-package",
-      "decision_evidence": "SHA-256 verified at 69ddec8c42128b72449ee2058d8c4a68501c44c2c1b35c8efc98a7d83b0d712e.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-4-k55r/logo.png"
     }
   ],
   "missing": [],
   "imports": [
     "https://scp-jp.wdfiles.com/local--code/theme:y2k/1"
   ],
-  "pruned_fonts": [],
-  "template_placeholders": [],
-  "asset_replacements": {},
-  "omitted_assets": [],
-  "dependency_decisions": [
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-5-12sw/bg.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-5-12sw/bg.png",
-      "sha256": "3f58b41c46a373cbb4c505a328c103726feeaf490a17dc0c7e4a00efde7e6a50",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at 3f58b41c46a373cbb4c505a328c103726feeaf490a17dc0c7e4a00efde7e6a50.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-url-asset",
-      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-4-k55r/logo.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-4-k55r/logo.png",
-      "sha256": "69ddec8c42128b72449ee2058d8c4a68501c44c2c1b35c8efc98a7d83b0d712e",
-      "decision": "localize-into-package",
-      "evidence": "SHA-256 verified at 69ddec8c42128b72449ee2058d8c4a68501c44c2c1b35c8efc98a7d83b0d712e.png; the candidate CSS references this content-addressed local replay asset. The original URL is retained as provenance, not fetched during replay."
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-jp.wdfiles.com/local--code/theme:y2k/1",
-      "decision": "localize-into-package",
-      "candidate_css_sha256": "80d2b3b875f0891e2f82855372cdb23b3a19d3a81db4c17dcfb9f9ca68134f62",
-      "evidence": "The imported stylesheet bytes are preserved as 0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4.css with SHA-256 0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4; the flattened final candidate was replayed offline.",
-      "final_url": "https://scp-jp.wdfiles.com/local--code/theme:y2k/1",
-      "sha256": "0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4",
-      "asset_file": "0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4.css"
-    }
-  ],
-  "candidate_base_css_assets": [],
   "import_provenance_status": "complete",
   "import_provenance": [
     {
@@ -66,7 +29,33 @@
       "bytes": 7372,
       "content_type": "text/css",
       "asset_file": "0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4.css",
-      "provenance_basis": "retrospective-normalized-content-proof-against-accepted-candidate"
+      "provenance_basis": "frozen-cache-exact-at-build"
+    }
+  ],
+  "localization_transforms": [],
+  "pruned_fonts": [],
+  "template_placeholders": [],
+  "asset_replacements": {},
+  "omitted_assets": [],
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-5-12sw/bg.png",
+      "sha256": "3f58b41c46a373cbb4c505a328c103726feeaf490a17dc0c7e4a00efde7e6a50",
+      "decision": "freeze-runtime-independent-asset"
+    },
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-4-k55r/logo.png",
+      "sha256": "69ddec8c42128b72449ee2058d8c4a68501c44c2c1b35c8efc98a7d83b0d712e",
+      "decision": "freeze-runtime-independent-asset"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp.wdfiles.com/local--code/theme:y2k/1",
+      "sha256": "0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4",
+      "asset_file": "0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4.css",
+      "decision": "freeze-source-stylesheet"
     }
   ]
 }

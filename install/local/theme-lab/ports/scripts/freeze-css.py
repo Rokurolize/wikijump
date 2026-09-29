@@ -211,6 +211,37 @@ class CacheCSS:
         return text
 
 
+def normalize_css_transport(css: str) -> str:
+    """Normalize generated transport whitespace, preserving quoted CSS text."""
+    output: list[str] = []
+    quote = None
+    escaped = False
+    comment = False
+    for char in css.replace("\r\n", "\n"):
+        if quote:
+            output.append(char)
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = None
+        else:
+            if comment and char == "/" and output and output[-1] == "*":
+                comment = False
+                output.append(char)
+                continue
+            if not comment and char == "*" and output and output[-1] == "/":
+                comment = True
+            if not comment and char in ("'", '"'):
+                quote = char
+            if char == "\n":
+                while output and output[-1] in (" ", "\t"):
+                    output.pop()
+            output.append(char)
+    return "".join(output).rstrip() + "\n"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, required=True, help="candidate.css as authored in the port package")
@@ -248,11 +279,11 @@ def main() -> int:
     css, receipt = engine.build(args.input.read_text(errors="replace"), args.base_url)
     if args.transforms:
         receipt["localization_transform_manifest"] = {
-            "path": str(args.transforms),
+            "path": args.transforms.name,
             "sha256": transform_manifest_sha256,
         }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(css.rstrip() + "\n", encoding="utf-8")
+    args.output.write_text(normalize_css_transport(css), encoding="utf-8")
     args.receipt.parent.mkdir(parents=True, exist_ok=True)
     args.receipt.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"output": str(args.output), "assets": len(receipt["assets"]), "missing": len(receipt["missing"]), "imports": len(receipt["imports"])}))

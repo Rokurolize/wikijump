@@ -2,12 +2,12 @@
   "assets": [],
   "missing": [],
   "imports": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [],
+  "localization_transforms": [],
   "pruned_fonts": [],
   "template_placeholders": [],
   "asset_replacements": {},
   "omitted_assets": [],
-  "dependency_decisions": [],
-  "candidate_base_css_assets": [],
-  "import_provenance_status": "complete",
-  "import_provenance": []
+  "dependency_decisions": []
 }
