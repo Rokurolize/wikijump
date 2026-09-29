@@ -4,6 +4,8 @@
 // list of "what broke and where" plus a short list of style changes, and only
 // asks for raw detail explicitly.
 
+import {applyRuntimeSurfaceParityGate} from "./runtime-surface-parity.mjs";
+
 export const DEFAULT_LIMITS = Object.freeze({
   topIssues: 12,
   styleChanges: 10,
@@ -128,6 +130,7 @@ export function styleChangesFromComputed(computedStyles, limit = DEFAULT_LIMITS.
 export function nextActions(issues, styleChanges = [], limit = 5) {
   const actions = [];
   for (const issue of issues) {
+    if (issue.parity_review?.may_treat_differences_as_port_requirements === false) continue;
     if (issue.kind === "missing_selector") {
       actions.push({
         kind: issue.suggested_candidate ? "rewrite_selector" : "supply_candidate_structure",
@@ -207,6 +210,7 @@ export function nextActions(issues, styleChanges = [], limit = 5) {
     if (actions.length >= limit) return actions;
   }
   for (const change of styleChanges) {
+    if (change.parity_review?.may_treat_differences_as_port_requirements === false) continue;
     // A different computed value is not, by itself, a repair action: theme
     // ports deliberately change fonts and colors. Surface only a concrete
     // cascade clue that could explain an unresolved difference.
@@ -262,7 +266,7 @@ export function buildVerdict({
   extraIssues = [],
   limits = DEFAULT_LIMITS,
 } = {}) {
-  const issues = [
+  const rawIssues = [
     ...issuesFromSelectorDiagnosis(reference?.diagnosis),
     ...issuesFromTorture(torture),
     ...issuesFromViewports(viewports),
@@ -277,11 +281,14 @@ export function buildVerdict({
     })),
     ...extraIssues,
   ];
+  const rawStyleChanges = styleChangesFromComputed(reference?.computed_styles, limits.styleChanges);
+  const parityReview = applyRuntimeSurfaceParityGate(rawIssues, rawStyleChanges);
+  const issues = parityReview.issues;
   issues.sort((left, right) => severityRank(left.severity) - severityRank(right.severity));
 
   const hasError = issues.some((issue) => issue.severity === "error");
   const hasWarn = issues.some((issue) => issue.severity === "warn");
-  const styleChanges = styleChangesFromComputed(reference?.computed_styles, limits.styleChanges);
+  const styleChanges = parityReview.styleChanges;
   // Geometry/font changes are not errors, but they should still raise the
   // verdict to "warn" so an agent notices them without a failure.
   const hasTortureChanges = (torture?.changed_component_count ?? 0) > 0;
@@ -313,6 +320,7 @@ export function buildVerdict({
     top_issues: issues.slice(0, limits.topIssues),
     style_changes: styleChanges,
     next_actions: actionableActions,
+    parity_gate: parityReview.summary,
     ...(resolvedActions.length ? {resolved_actions: resolvedActions.map((action) => ({
       ...action,
       resolution: "all measured acceptance viewports pass; retain as a reviewed cascade difference",

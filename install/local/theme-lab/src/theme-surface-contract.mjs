@@ -156,6 +156,26 @@ export const KNOWN_THEME_SURFACES = Object.freeze([
     states: [{id: "normal", viewports: ["desktop", "mobile"]}],
   },
   {
+    id: "page.history",
+    selector_patterns: [/\.page-history/u, /#revision-list/u, /\.revision-diff/u, /#history-subarea/u],
+    probes: [
+      {selector: "#action-area .page-history"},
+      {selector: "#action-area .page-history tr#revision-row-1"},
+      {selector: "#action-area .revision-diff"},
+    ],
+    states: [{id: "history-list", viewports: ["desktop", "mobile"]}],
+  },
+  {
+    id: "page.files",
+    selector_patterns: [/\.page-files/u, /\.file-list/u, /\.file-row/u, /\.file-name/u, /\.file-attribute/u],
+    probes: [
+      {selector: "#action-area .page-files"},
+      {selector: "#action-area .file-list"},
+      {selector: "#action-area .file-name"},
+    ],
+    states: [{id: "attachment-list", viewports: ["desktop", "mobile"]}],
+  },
+  {
     id: "shell.interwiki",
     selector_patterns: [/\.scpnet-interwiki/u],
     probes: [{selector: ".scpnet-interwiki-wrapper"}, {selector: ".scpnet-interwiki-frame"}],

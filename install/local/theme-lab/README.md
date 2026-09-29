@@ -75,6 +75,32 @@ theme-specific selectors and evidence-backed reviewed exceptions. Use
 valid final acceptance shortcut. `--iteration` omits the surface contract,
 along with the other expensive final-acceptance checks, for edit-loop speed.
 
+## Wikidot parity is a prerequisite for port requirements
+
+The JP surface contract proves how candidate CSS affects the local Wikijump
+runtime. It does not prove that runtime matches Wikidot. Theme Lab therefore
+uses [`fixtures/runtime-surface-parity.json`](fixtures/runtime-surface-parity.json)
+as a separate source/runtime trust boundary. Each CSS-discovered and
+interactive-fixture surface has an explicit status, provenance, implementation
+and test references, intentional differences, and remaining evidence gaps.
+
+Only a `PARITY_CERTIFIED` scope may turn a runtime-surface finding into a
+theme-port `next_action`. `PARITY_MISMATCH`, `INSUFFICIENT_EVIDENCE`,
+`THEME_LAB_ONLY_SYNTHETIC_SURFACE`, and unmatched runtime findings remain
+visible in diagnostics and are quarantined from port actions. Candidate asset
+and include failures stay actionable because they do not depend on Wikijump
+surface parity. A passing local screenshot, an accepted port, and a synthetic
+fixture state are not Wikidot parity evidence.
+
+History is the initial scoped example. Current anonymous SCP-EN and SCP-JP AMC
+responses prove the same seven-cell History table DOM; they do not prove mobile
+presentation, pager transitions, action outcomes, or a combined file-revision
+timeline. The overall `page.history` row is therefore still
+`INSUFFICIENT_EVIDENCE`. Its narrow `page.history.table-dom` record covers only
+the captured selectors and ordering. See
+[`ports/RUNTIME-SURFACE-PARITY-AUDIT.md`](ports/RUNTIME-SURFACE-PARITY-AUDIT.md)
+before interpreting any port finding on these surfaces.
+
 For repeated edits after opening/capturing the reference, use `check --iteration`
 to get the selector, cascade, candidate-asset, and preview verdict without
 rerunning viewport, torture, interaction, or screenshot acceptance. The JSON
