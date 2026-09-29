@@ -310,6 +310,16 @@ fn scanner_accepts_an_inline_comment_between_legacy_arguments() {
 }
 
 #[test]
+fn incomplete_module_openers_at_eof_fail_closed() {
+    // Without the required closing delimiter, this unsupported shape must
+    // stay outside the scanner's executable module matches.
+    for source in ["[[module ListPages", "[[module ListPages]"] {
+        let modules = find_list_pages_module_matches(source);
+        assert!(modules.is_empty(), "{source:?}: {modules:#?}");
+    }
+}
+
+#[test]
 fn unclosed_listpages_head_consumes_immediate_raw_closer() {
     let source = concat!(
         "[[module ListPages separate=\"no\" limit=\"250\" perPage=\"250\" ",
