@@ -26,6 +26,32 @@ for (const name of fs.readdirSync(assetRoot)) {
   const digest = name.match(/^([0-9a-f]{64})\./u)?.[1];
   if (digest && !assetByDigest.has(digest)) assetByDigest.set(digest, name);
 }
+
+// The daemon materializes candidate assets from its own --asset-dir, which is an
+// unverified external input rather than the frozen pool this runner verifies. A
+// daemon pool that predates the committed pool reports candidate_asset_missing
+// for assets the package already declares, so the mismatch has to fail closed
+// before it can be misread as a port-authoritative package finding.
+const daemonAssetDirs = new Map();
+function daemonAssetDir(socketPath) {
+  if (daemonAssetDirs.has(socketPath)) return daemonAssetDirs.get(socketPath);
+  const status = spawnSync(process.execPath, [lab, "status", "--socket", socketPath],
+    {cwd: root, encoding: "utf8", timeout: 60_000, maxBuffer: 4 * 1024 * 1024});
+  if (status.status !== 0) {
+    const detail = (status.stderr || status.error?.message || "").trim().slice(0, 300);
+    throw new Error(`Theme Lab daemon status unavailable on ${socketPath}: ${detail}`);
+  }
+  let response;
+  try { response = JSON.parse(status.stdout); } catch {
+    throw new Error(`Theme Lab daemon status returned invalid JSON on ${socketPath}`);
+  }
+  if (response.ok === false) throw new Error(`Theme Lab daemon status failed on ${socketPath}: ${response.error?.code ?? "unknown_error"}`);
+  const dir = response.result?.asset_dir;
+  if (!dir) throw new Error(`Theme Lab daemon on ${socketPath} has no --asset-dir; candidate asset findings would be unverifiable`);
+  const resolved = fs.realpathSync(dir);
+  daemonAssetDirs.set(socketPath, resolved);
+  return resolved;
+}
 const shaCache = new Map();
 
 function sha256(file) {
@@ -37,7 +63,10 @@ function sha256(file) {
   return digest;
 }
 
-function verifyFrozenPackage(item) {
+function verifyFrozenPackage(item, {requireDaemonAssets = true} = {}) {
+  // dear-dictator and quand-le-soleil-se-couche keep their own packaged assets
+  // and are served by dedicated daemons, so their frozen pool is the daemon's
+  // asset dir by construction and there is no second pool to reconcile.
   if (item.slug === "theme:dear-dictator (SCP-KO)") return;
   if (path.basename(item.directory) === "quand-le-soleil-se-couche") {
     const foreign = JSON.parse(fs.readFileSync(path.join(item.directory,"manifest.json"),"utf8"));
@@ -65,10 +94,20 @@ function verifyFrozenPackage(item) {
     throw new Error(`${item.slug}: ${unresolvedSiteLocalCredits.length} unreviewed site-local author identity link(s); confirm on SCP-JP or preserve the credited name as text`);
   }
   const assetManifest = JSON.parse(fs.readFileSync(path.join(item.directory, "assets.json"), "utf8"));
+  // --verify-only stays hermetic and daemon-free, so the daemon pool is only
+  // reconciled when this run will actually ask the daemon to render the CSS.
+  const served = requireDaemonAssets ? daemonAssetDir(item.socket ?? socket) : null;
   for (const asset of assetManifest.assets ?? []) {
     const filename = assetByDigest.get(asset.sha256);
     if (!filename || sha256(path.join(assetRoot, filename)) !== asset.sha256) {
       throw new Error(`${item.slug}: frozen CSS asset missing or corrupt: ${asset.sha256}`);
+    }
+    const servedFile = served && path.join(served, filename);
+    if (servedFile && (!fs.existsSync(servedFile) || sha256(servedFile) !== asset.sha256)) {
+      throw new Error(
+        `${item.slug}: Theme Lab daemon asset pool ${served} does not contain the frozen CSS asset ${filename}. `
+        + `The package declares it, so a candidate_asset_missing finding here would be a daemon asset-pool `
+        + `artifact and not a port finding. Restart the daemon with --asset-dir ${assetRoot}.`);
     }
   }
   const imports = new Set(assetManifest.imports ?? []);
@@ -155,7 +194,7 @@ const failures = [];
 const summaries = [];
 for (const item of selectedCases) {
   assertPublishablePackage(path.basename(item.directory), {checkOutputs: true});
-  verifyFrozenPackage(item);
+  verifyFrozenPackage(item, {requireDaemonAssets: !verifyOnly});
   if (verifyOnly) {
     summaries.push({slug: item.slug, status: "verified"});
     process.stdout.write(`${JSON.stringify(summaries.at(-1))}\n`);
