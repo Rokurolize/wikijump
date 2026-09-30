@@ -76,6 +76,15 @@ test("torture diff rejects an invalid baseline fixture", () => {
   assert.equal(diff.issues[0].kind, "baseline_structure_missing");
 });
 
+test("unmaterialized Wikidot TOC is reported as unavailable, not a package failure", () => {
+  const unavailable = component({expected_present: false, unavailable_preview: true});
+  const diff = diffTortureStates(state(unavailable), state(unavailable));
+  assert.equal(diff.verdict, "warn");
+  assert.equal(diff.issues.length, 1);
+  assert.equal(diff.issues[0].kind, "preview_structure_unavailable");
+  assert.equal(diff.issues[0].severity, "warn");
+});
+
 test("torture diff catches newly hidden content", () => {
   const diff = diffTortureStates(state(), state(component({visible: false})));
   assert.equal(diff.verdict, "fail");
