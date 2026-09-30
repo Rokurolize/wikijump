@@ -46,3 +46,25 @@ test('surface cleanup closes History and Files when a mobile drawer covers the c
   assert.deepEqual(await page.evaluate(()=>window.opened),['history','files']);
  }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
 });
+
+test('Files surface accepts the maintained empty attachment list',async()=>{
+ const server=http.createServer((request,response)=>response.end(`<!doctype html><html><body>
+ <button id="history-button">History</button><button id="files-button">Files</button><div id="action-area"></div>
+ <script>
+ const area=document.getElementById('action-area');
+ document.getElementById('files-button').onclick=()=>{area.innerHTML='<button class="action-area-close">Close</button><div class="file-list">No files attached to this page</div>';area.querySelector('.action-area-close').onclick=()=>area.innerHTML=''};
+ </script></body></html>`));
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const browser=await loadChromium().launch({headless:true});
+ try {
+  const page=await browser.newPage();await page.goto(`http://127.0.0.1:${server.address().port}/`);
+  const result=await runKnownSurfaceContract(page,{css:'.file-list,.file-name{color:black}',styleId:'empty-files-check',contractValue:'auto'});
+  assert.equal(result.issues.filter(row=>row.severity==='error').length,0);
+  const captures=result.captures.filter(capture=>capture.surface==='page.files');
+  assert.equal(captures.length,4);
+  assert.ok(captures.every(capture=>capture.rows['#action-area .file-list']?.present));
+  assert.ok(captures.every(capture=>capture.rows['#action-area .file-name']?.optional===true));
+  assert.ok(captures.every(capture=>capture.rows['#action-area .file-name']?.present===false));
+  assert.equal(await page.locator('#action-area').textContent(),'');
+ }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
+});

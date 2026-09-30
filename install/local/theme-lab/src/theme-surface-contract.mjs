@@ -170,7 +170,10 @@ export const KNOWN_THEME_SURFACES = Object.freeze([
     selector_patterns: [/\.page-files/u, /\.file-list/u, /\.file-row/u, /\.file-name/u, /\.file-attribute/u],
     probes: [
       {selector: "#action-area .file-list"},
-      {selector: "#action-area .file-name"},
+      // The maintained JP acceptance page has the real, evidenced empty-file
+      // state. Keep the list itself required while allowing its row selector
+      // to be absent when there are no attachments.
+      {selector: "#action-area .file-name", optional: true},
     ],
     states: [{id: "attachment-list", viewports: ["desktop", "mobile"]}],
   },
@@ -342,7 +345,7 @@ export async function applySurfaceState(page, surfaceId, stateId) {
   }
   if (["page.history", "page.files"].includes(surfaceId)) {
     await page.locator(surfaceId === "page.history" ? "#history-button" : "#files-button").click({timeout: 5000});
-    await page.locator(surfaceId === "page.history" ? "#action-area .page-history tr[id^='revision-row-']" : "#action-area .file-list .file-name").first().waitFor({state: "visible", timeout: 5000});
+    await page.locator(surfaceId === "page.history" ? "#action-area .page-history tr[id^='revision-row-']" : "#action-area .file-list").first().waitFor({state: "visible", timeout: 5000});
     await settle(page);
     return;
   }
