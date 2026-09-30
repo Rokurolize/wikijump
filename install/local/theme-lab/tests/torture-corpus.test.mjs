@@ -9,6 +9,7 @@ test("torture viewports match the real-port acceptance contract", () => {
     {id: "laptop", width: 1024, height: 900},
     {id: "tablet", width: 768, height: 1024},
     {id: "mobile", width: 390, height: 844},
+    {id: "narrow-mobile", width: 320, height: 800},
   ]);
 });
 

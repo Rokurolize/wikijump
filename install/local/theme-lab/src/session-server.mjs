@@ -57,10 +57,12 @@ import {
   suggestCandidateAnchors,
 } from "./semantic-anchors.mjs";
 import {TORTURE_VIEWPORTS, runTortureCorpus} from "./torture-corpus.mjs";
+import {ACCEPTANCE_VIEWPORTS} from "./acceptance-viewports.mjs";
 import {buildVerdict, expandVerdict} from "./verdict.mjs";
 import {annotateRuntimeSurfaceUsage, applyRuntimeSurfaceParityGate} from "./runtime-surface-parity.mjs";
 import {captureVisualPair} from "./visual-diff.mjs";
 import {bindVisualAcceptance} from "./visual-acceptance.mjs";
+import {dedupeCssLayers} from "./css-layers.mjs";
 import {inspectCandidateAssets, materializeCandidateCssAssets, materializeCandidatePageImages} from "./local-assets.mjs";
 import {
   captureCustomSelectorCoverage,
@@ -95,12 +97,7 @@ const DEFAULT_PROPERTIES = [
   "z-index",
 ];
 
-const DEFAULT_VIEWPORTS = [
-  {id: "desktop", width: 1440, height: 1000},
-  {id: "laptop", width: 1024, height: 768},
-  {id: "tablet", width: 768, height: 1024},
-  {id: "mobile", width: 390, height: 844},
-];
+const DEFAULT_VIEWPORTS = ACCEPTANCE_VIEWPORTS;
 
 export function createSession({
   chromium,
@@ -492,7 +489,7 @@ export function createSession({
       let imageDiagnostics = null;
       let pageImageAssets = null;
       let interactionDiagnostics = null;
-      let effectiveCss = typeof css === "string" ? [baseCss, css].filter(Boolean).join("\n") : null;
+      let effectiveCss = typeof css === "string" ? dedupeCssLayers([baseCss, css]).join("\n") : null;
       let surfaceContractDiagnostics = null;
 
       // Undo any destructive operation (torture fixture, previous preview)
@@ -597,13 +594,25 @@ export function createSession({
           containerSelector: "#page-content",
           styleId: "theme-lab-surface-contract-fixture-styles",
         });
-        if(sourceStructure)await candidate.locator('#page-content').evaluate((element,html)=>element.insertAdjacentHTML('afterbegin',html),sourceStructure.html);
-        const known = await runKnownSurfaceContract(candidate, {
-          css,
-          effectiveCss,
-          styleId: session.cssId,
-          contractValue: contract,
-        });
+        let structureOriginal = null;
+        if(sourceStructure) {
+          structureOriginal = await candidate.locator('#page-content').innerHTML();
+          await candidate.locator('#page-content').evaluate((element,html)=>element.insertAdjacentHTML('afterbegin',html),sourceStructure.html);
+        }
+        let known;
+        try {
+          known = await runKnownSurfaceContract(candidate, {
+            css,
+            effectiveCss,
+            styleId: session.cssId,
+            contractValue: contract,
+          });
+        } finally {
+          // Source-owned structure is a contract probe fixture, not part of
+          // the candidate page. Restore it before interaction/torture checks
+          // so a probe cannot leak synthetic DOM into later dimensions.
+          if(structureOriginal !== null) await candidate.locator('#page-content').evaluate((element,html)=>{element.innerHTML=html},structureOriginal);
+        }
         const customIssues = issuesFromCustomSelectorCoverage(customSelectors, contract.strict);
         const surfaceIssues = applyRuntimeSurfaceParityGate([...known.issues, ...customIssues]);
         surfaceContractDiagnostics = {

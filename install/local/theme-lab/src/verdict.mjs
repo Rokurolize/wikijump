@@ -82,9 +82,11 @@ export function issuesFromTorture(torture) {
 export function issuesFromViewports(viewports) {
   const issues = [];
   for (const [id, viewport] of Object.entries(viewports ?? {})) {
-    const overflow = viewport?.document_overflow_px ?? 0;
-    if (overflow > VIEWPORT_OVERFLOW_TOLERANCE_PX) {
-      issues.push({severity: "error", kind: "viewport_overflow", viewport: id, overflow_px: overflow, overflow_sources: viewport?.overflow_sources ?? []});
+    const documentOverflow = viewport?.document_overflow_px ?? 0;
+    const viewportEscape = viewport?.viewport_escape_px ?? 0;
+    const overflow = Math.max(documentOverflow > VIEWPORT_OVERFLOW_TOLERANCE_PX ? documentOverflow : 0, viewportEscape);
+    if (overflow > 0) {
+      issues.push({severity: "error", kind: "viewport_overflow", viewport: id, overflow_px: overflow, document_overflow_px: documentOverflow, viewport_escape_px: viewportEscape, overflow_sources: viewport?.overflow_sources ?? []});
     }
   }
   return issues;
@@ -335,8 +337,9 @@ export function buildVerdict({
   const styleChanges = decisionStyleChanges.slice(0, limits.styleChanges);
   const viewportStatus = viewports
     ? Object.fromEntries(Object.entries(viewports).map(([name, result]) => [name, {
-        status: (result.document_overflow_px ?? 0) > VIEWPORT_OVERFLOW_TOLERANCE_PX ? "fail" : "pass",
+        status: ((result.document_overflow_px ?? 0) > VIEWPORT_OVERFLOW_TOLERANCE_PX || (result.viewport_escape_px ?? 0) > 0) ? "fail" : "pass",
         document_overflow_px: result.document_overflow_px ?? 0,
+        ...(result.viewport_escape_px !== undefined ? {viewport_escape_px: result.viewport_escape_px} : {}),
         decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY",
       }]))
     : null;
