@@ -23,6 +23,7 @@ const runContractArg=process.argv.find(value=>value.startsWith('--run-contract='
 // Seven is the measured plateau (six is within noise); keep it. Callers on
 // smaller hosts can set --jobs explicitly.
 const jobsArg=Number(process.argv.find(value=>value.startsWith('--jobs='))?.slice(7)??7);
+const captureConcurrencyArg=Number(process.argv.find(value=>value.startsWith('--capture-concurrency='))?.slice(22)??6);
 const transportArg=process.argv.find(value=>value.startsWith('--transport='))?.slice(12)??'built';
 const force=process.argv.includes('--force');
 const anonymous=process.argv.includes('--anonymous');
@@ -33,10 +34,11 @@ for(const argument of process.argv.slice(2)){
  seenOptions.add(name);
 }
 const accepted=new Set(['--force','--anonymous','--help']);
-for(const arg of process.argv.slice(2)){if(accepted.has(arg)||/^--(?:theme|themes|state|jobs|transport|run-contract)=/u.test(arg))continue;throw new Error(`unknown argument: ${arg}`)}
-if(process.argv.includes('--help')){console.log('Usage: capture-theme-matrix.mjs (--theme=slug|--themes=a,b) [--state=surface.state,...] [--jobs=1..9] [--transport=built|dev] [--run-contract=/path/to/contract.json] [--anonymous] [--force]');console.log('--anonymous only captures states that work without the authenticated administrator; admin-only states (page.edit, page.rename, page.delete) fail closed. Pass --state for a public subset.');process.exit(0)}
+for(const arg of process.argv.slice(2)){if(accepted.has(arg)||/^--(?:theme|themes|state|jobs|capture-concurrency|transport|run-contract)=/u.test(arg))continue;throw new Error(`unknown argument: ${arg}`)}
+if(process.argv.includes('--help')){console.log('Usage: capture-theme-matrix.mjs (--theme=slug|--themes=a,b) [--state=surface.state,...] [--jobs=1..9] [--capture-concurrency=1..8] [--transport=built|dev] [--run-contract=/path/to/contract.json] [--anonymous] [--force]');console.log('--anonymous only captures states that work without the authenticated administrator; admin-only states (page.edit, page.rename, page.delete) fail closed. Pass --state for a public subset.');process.exit(0)}
 if((!themeArg&&!themesArg)||(themeArg&&themesArg))throw new Error('exactly one of --theme or --themes is required');
 if(!Number.isInteger(jobsArg)||jobsArg<1||jobsArg>9)throw new Error('--jobs must be an integer from 1 to 9');
+if(!Number.isInteger(captureConcurrencyArg)||captureConcurrencyArg<1||captureConcurrencyArg>8)throw new Error('--capture-concurrency must be an integer from 1 to 8');
 if(!['built','dev'].includes(transportArg))throw new Error('--transport must be built or dev');
 const themes=themeArg?[themeArg]:themesArg.split(',');
 if(themes.some(theme=>!theme.trim())||new Set(themes).size!==themes.length)throw new Error('themes must be non-empty and unique');
@@ -139,6 +141,7 @@ let auditCommitChain=Promise.resolve();
 function flushAuditShards(){const next=auditCommitChain.then(commitAuditShards);auditCommitChain=next.catch(()=>{});return next;}
 
 const common=[themes.length===1?`--theme=${themes[0]}`:`--themes=${themes.join(',')}`];
+common.push(`--concurrency=${captureConcurrencyArg}`);
 if(runContractPath)common.push(`--run-contract=${runContractPath}`);
 if(stateArg)common.push(`--state=${stateArg}`);
 if(force)common.push('--force');
@@ -209,6 +212,7 @@ console.log(JSON.stringify({
  transport:transportArg,
  transport_origin:transportOrigin,
  jobs:jobsArg,
+ capture_concurrency:captureConcurrencyArg,
  elapsed_ms:Date.now()-started,
  successful_states:runRows.filter(row=>row.screenshot&&!row.unconfirmed_items?.some(item=>String(item).startsWith('action/capture failed'))).length,
  action_failures:remainingFailures.length,
