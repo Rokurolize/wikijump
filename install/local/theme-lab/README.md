@@ -303,6 +303,22 @@ evidence, 2 for missing or inconclusive acceptance, and 64 for invalid command
 options. The JSON `overall_acceptance.status` is authoritative; historical
 inspection success never means campaign acceptance.
 
+After current browser evidence and direct reviews are complete, finalize each
+package with `node scripts/finalize-current-package.mjs --package NAME
+--result PATH --review PATH --audit PATH --output ports/current-acceptance/NAME`.
+This writes `accepted-result.json` and `browser-audit.json` under that package's
+current directory and updates its package receipt. The Sigma-10 current matrix
+owner supplies `sigma10-migration/current-campaign/browser-audit.json` and
+`accepted-result.json`; the latter must already be a
+`theme_lab_current_sigma10_acceptance.v1` decision bound to the exact audit and
+run contract. The campaign assembler only indexes these finished artifacts:
+run `node scripts/assemble-current-campaign.mjs`, then
+`node scripts/check-campaign-completion.mjs`. Assembly records exact SHA-256
+bindings for every maintained candidate input, package result/audit, and the
+Sigma-10 result/audit. It does not create a review, infer a pass, or consult
+historical evidence. Missing inputs stop assembly; stale or incomplete evidence
+is rejected by the completion checker.
+
 Paired images compare different foreign and JP articles. Pixel RMSE remains a
 diagnostic; `check --visual --visual-review review.json` binds an explicit image
 review to both exact PNGs and candidate inputs. Unreviewed images are inconclusive.
