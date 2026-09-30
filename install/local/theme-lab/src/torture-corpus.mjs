@@ -10,6 +10,7 @@ import path from "node:path";
 import {fileURLToPath} from "node:url";
 
 import {applyStylesheet, clearStylesheet, setViewport} from "./browser-lab.mjs";
+import {ACCEPTANCE_VIEWPORTS} from "./acceptance-viewports.mjs";
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
@@ -18,12 +19,7 @@ export const DEFAULT_TORTURE_FIXTURE = path.resolve(
   "../fixtures/theme-torture.wikidot.txt",
 );
 
-export const TORTURE_VIEWPORTS = [
-  {id: "desktop", width: 1440, height: 1000},
-  {id: "laptop", width: 1024, height: 900},
-  {id: "tablet", width: 768, height: 1024},
-  {id: "mobile", width: 390, height: 844},
-];
+export const TORTURE_VIEWPORTS = ACCEPTANCE_VIEWPORTS;
 
 export const TORTURE_COMPONENTS = [
   {id: "heading", selector: ".tl-heading", expected: ".tl-heading h1, .tl-heading h2"},

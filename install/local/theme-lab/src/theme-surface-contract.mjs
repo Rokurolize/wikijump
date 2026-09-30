@@ -501,13 +501,16 @@ async function captureMode(page, {surface, state, viewport, themed, effectiveCss
     return rows;
   },{expanded:state.id==="submenu-expanded"}) : [];
   const overflow = (await collectViewportOverflow(page, [VIEWPORTS[viewport]]))[viewport];
-  await cleanupSurfaceState(page, surface.id, state.id);
+  let cleanupError = null;
+  try { await cleanupSurfaceState(page, surface.id, state.id); }
+  catch (error) { cleanupError = String(error?.message ?? error); }
   return {
     mode: themed ? "theme" : "baseline",
     surface: surface.id,
     state: state.id,
     viewport,
     action_error: actionError,
+    cleanup_error: cleanupError,
     ...snapshot,
     document_overflow_px: overflow.document_overflow_px,
     content_overflow_px: overflow.content_overflow_px,
@@ -534,6 +537,9 @@ function recordSurfacePair({surface, state, viewport, baseline, theme, captures,
   for (const capture of [baseline, theme]) {
     if (capture.action_error) {
       issues.push({severity: strict ? "error" : "warn", kind: "surface_state_action_failed", surface: surface.id, state: state.id, viewport, mode: capture.mode, evidence: capture.action_error});
+    }
+    if (capture.cleanup_error) {
+      issues.push({severity: strict ? "error" : "warn", kind: "surface_state_cleanup_failed", surface: surface.id, state: state.id, viewport, mode: capture.mode, evidence: capture.cleanup_error});
     }
     for (const row of Object.values(capture.rows)) {
       if (!row.present && !row.optional) {

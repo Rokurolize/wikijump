@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import browserContract from '../fixtures/browser-acceptance-states.json' with {type:'json'};
 import {candidateIdentity} from '../ports/scripts/candidate-identity.mjs';
 import {overallAcceptance} from './verdict.mjs';
+import {ACCEPTANCE_VIEWPORT_IDS} from './acceptance-viewports.mjs';
 
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const accepted = value => ['pass', 'warn'].includes(value);
@@ -75,7 +76,7 @@ export function checkCampaignCompletion(root) {
       failures.push(...validateCombinedAcceptance(result, row.package));
       if(Object.entries(expectedTargetFixtures).some(([name,hash])=>result.target_fixture_identity?.[name]!==hash))failures.push(`${row.package}: paired check uses superseded target fixtures`);
       if(result.verification_scope?.mode!=='full'||result.verification_scope?.deferred?.length)failures.push(`${row.package}: completion requires a full, non-deferred check`);
-      if(['desktop','laptop','tablet','mobile'].some(viewport=>result.viewport_status?.[viewport]?.status!=='pass'))failures.push(`${row.package}: current viewport acceptance is incomplete`);
+      if(ACCEPTANCE_VIEWPORT_IDS.some(viewport=>result.viewport_status?.[viewport]?.status!=='pass'))failures.push(`${row.package}: current viewport acceptance is incomplete`);
       if(result.font_diagnostics?.status!=='measured'||!result.font_diagnostics?.fonts?.some(font=>font.glyph_count>0))failures.push(`${row.package}: Japanese glyph acceptance is incomplete`);
       for (const [key, filename] of [['css', 'candidate.css'], ['source', ledger.packages[row.package]?.source_file ?? 'candidate.wikidot.source.txt'], ['preview', 'candidate.wikidot.txt']]) {
         const bytes = bind(row.inputs?.[key], `${row.package}/${key}`);
@@ -84,9 +85,10 @@ export function checkCampaignCompletion(root) {
         const resultKey={css:'candidate_css_sha256',source:'candidate_source_sha256',preview:'candidate_preview_sha256'}[key];
         if(result[resultKey]!==sha(bytes))failures.push(`${row.package}: accepted result is not bound to current ${key}`);
       }
-      for(const viewport of ['desktop','laptop','tablet','mobile']){
+      for(const viewport of ACCEPTANCE_VIEWPORT_IDS){
         const visual=result.visual?.viewports?.[viewport];
-        if(!accepted(visual?.status)||visual?.review?.candidate_screenshot_sha256!==visual?.candidate_screenshot_sha256||visual?.review?.reference_screenshot_sha256!==visual?.reference_screenshot_sha256)failures.push(`${row.package}: unbound paired image review at ${viewport}`);
+        const review=visual?.review;
+        if(!accepted(visual?.status)||review?.candidate_screenshot_sha256!==visual?.candidate_screenshot_sha256||review?.reference_screenshot_sha256!==visual?.reference_screenshot_sha256||typeof review?.note!=='string'||review.note.trim().length<12||typeof review?.reviewer!=='string'||!review.reviewer.trim()||typeof review?.reviewed_at!=='string'||!Number.isFinite(Date.parse(review.reviewed_at)))failures.push(`${row.package}: unbound paired image review at ${viewport}`);
         for(const side of ['candidate','reference']){
           const file=visual?.[`${side}_path`];
           // Retained captures may use absolute checkout paths; the file must
@@ -96,6 +98,8 @@ export function checkCampaignCompletion(root) {
           bind({path:relative,sha256:visual[`${side}_screenshot_sha256`]},`${row.package}/${viewport}/${side}`);
         }
       }
+      const reviewProvenance=result.image_review_provenance;
+      if(reviewProvenance?.schema!=='theme_lab_visual_acceptance.v1'||reviewProvenance.candidate_css_sha256!==result.candidate_css_sha256||reviewProvenance.candidate_source_sha256!==result.candidate_source_sha256||reviewProvenance.candidate_preview_sha256!==result.candidate_preview_sha256)failures.push(`${row.package}: image review identity is not bound to the accepted inputs`);
       const audit = JSON.parse(bind(row.browser_audit, `${row.package}/browser audit`));
       const records = audit.records?.filter(record => record.theme === row.package) ?? [];
       failures.push(...validateBrowserCoverage(audit,[row.package]));
