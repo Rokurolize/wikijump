@@ -31,6 +31,36 @@ const reviewedMigrationImage = (review, screenshotHash) =>
   typeof review.note === 'string' && review.note.trim().length >= 12 &&
   review.screenshot_sha256 === screenshotHash;
 
+export function validateCurrentSigma10Contract(root){
+ const failures=[];const read=file=>fs.readFileSync(path.join(root,file));
+ try{
+  const contract=JSON.parse(read('sigma10-migration/current-campaign/run-contract.json'));
+  const ledger=JSON.parse(read('ports/adaptation-authority.json'));
+  const expected=[...Object.keys(ledger.packages),'sigma10-baseline'].sort();
+  const inventory=contract.current_candidate_inventory??[];
+  if(inventory.length!==expected.length||inventory.map(row=>row.package).sort().join('\0')!==expected.join('\0'))failures.push('Sigma-10 current candidate inventory does not enumerate every maintained candidate plus baseline');
+  if(JSON.stringify(Object.keys(contract.additional_candidates??{}).sort())!==JSON.stringify(expected))failures.push('Sigma-10 capture candidates do not match the explicit current inventory');
+  for(const row of inventory){
+   const capture=contract.additional_candidates?.[row.package];
+   if(!capture||capture.directory!==row.directory||capture.candidate_sha256!==row.candidate_sha256||capture.source_sha256!==row.source_sha256)failures.push(`${row.package}: capture identity differs from the declared current inventory`);
+   const dir=path.resolve(path.dirname(path.join(root,'sigma10-migration/current-campaign/run-contract.json')),row.directory);
+   let base=Buffer.alloc(0);try{base=fs.readFileSync(path.join(dir,'candidate-base.css'))}catch{}
+   const css=fs.readFileSync(path.join(dir,'candidate.css'));
+   const sourceFile=ledger.packages[row.package]?.source_file??'candidate.wikidot.source.txt';
+   let source;try{source=fs.readFileSync(path.join(dir,sourceFile))}catch{source=fs.readFileSync(path.join(dir,'candidate.wikidot.txt'))}
+   if(candidateIdentity(css,base).candidateSha!==row.candidate_sha256||sha(source)!==row.source_sha256)failures.push(`${row.package}: current Sigma-10 contract candidate identity is stale`);
+  }
+  for(const binding of Object.values(contract.frozen_sigma10_authority?.artifacts??{}))if(sha(read(binding.path))!==binding.sha256)failures.push(`Frozen Sigma-10 authority changed: ${binding.path}`);
+  const manifestBytes=read(contract.frozen_sigma10_authority.source_manifest);
+  if(sha(manifestBytes)!==contract.frozen_sigma10_authority.source_manifest_sha256)failures.push('Frozen Sigma-10 source manifest changed');
+  const manifest=JSON.parse(manifestBytes);
+  for(const [identity,page] of Object.entries(manifest.pages??{}))if(sha(read(path.join('sigma10-migration',page.file)))!==page.sha256)failures.push(`Frozen Sigma-10 source changed: ${identity}`);
+  const saved=JSON.parse(read('sigma10-migration/current-campaign/saved-credit-component.json'));
+  if(saved.schema!=='theme_lab_frozen_component_css.v1'||saved.css_sha256!==contract.saved_component_css?.sha256||JSON.stringify(saved.cascade)!==JSON.stringify(contract.saved_component_css?.cascade)||sha(read('sigma10-migration/current-campaign/saved-credit-component.css'))!==saved.css_sha256)failures.push('Saved-page Credit cascade or CSS binding is invalid');
+ }catch(error){failures.push(`Current Sigma-10 contract invalid: ${error.message}`)}
+ return failures;
+}
+
 export function validateCombinedAcceptance(result, label) {
   const overall = result?.overall_acceptance;
   const target = result?.target_acceptance ?? result?.local_target_acceptance;
@@ -68,7 +98,7 @@ export function validateBrowserCoverage(audit,packages,{migration=false}={}) {
 }
 
 export function checkCampaignCompletion(root) {
-  const failures = [];
+  const failures = validateCurrentSigma10Contract(root);
   const read = file => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
   const bind = (binding, label) => {
     if (!binding || typeof binding.path !== 'string' || !/^[0-9a-f]{64}$/u.test(binding.sha256 ?? '')) throw new Error(`${label}: missing exact artifact binding`);
@@ -81,8 +111,8 @@ export function checkCampaignCompletion(root) {
   let document;
   try { document = read('current-campaign-acceptance.json'); }
   catch (error) {
-    if (error.code === 'ENOENT') return {status: 'inconclusive', failures: ['Current campaign acceptance receipt is missing; historical integrity cannot authorize completion.']};
-    return {status: 'fail', failures: [`Current campaign acceptance receipt is invalid: ${error.message}`]};
+    if (error.code === 'ENOENT') return {status: 'inconclusive', failures: ['Current campaign acceptance receipt is missing; historical integrity cannot authorize completion.', ...failures]};
+    return {status: 'fail', failures: [`Current campaign acceptance receipt is invalid: ${error.message}`, ...failures]};
   }
   if (document.schema !== 'theme_lab_current_campaign_acceptance.v1') failures.push('Invalid current campaign receipt schema');
   let ledger;
@@ -94,6 +124,37 @@ export function checkCampaignCompletion(root) {
   const currentRunContractSha=sha(currentRunContract),currentRunSpec=JSON.parse(currentRunContract);
   const currentMigrationContract=fs.readFileSync(path.join(root,'sigma10-migration/current-campaign/run-contract.json'));
   const currentMigrationContractSha=sha(currentMigrationContract),currentMigrationSpec=JSON.parse(currentMigrationContract);
+  const currentInventory=currentMigrationSpec.current_candidate_inventory??[];
+  const expectedMigrationNames=[...names,'sigma10-baseline'].sort();
+  if(currentInventory.length!==expectedMigrationNames.length||currentInventory.map(item=>item.package).sort().join('\0')!==expectedMigrationNames.join('\0'))failures.push('Sigma-10 current candidate inventory does not enumerate every maintained candidate plus baseline');
+  const inventoryByName=new Map(currentInventory.map(item=>[item.package,item]));
+  for(const name of expectedMigrationNames){
+    const item=inventoryByName.get(name);if(!item)continue;
+    const dir=name==='sigma10-baseline'?path.join(root,'sigma10-migration/baseline-probe'):path.join(root,'ports',name);
+    const sourceName=ledger.packages[name]?.source_file??'candidate.wikidot.source.txt';
+    try{
+      let base=Buffer.alloc(0);try{base=fs.readFileSync(path.join(dir,'candidate-base.css'))}catch{}
+      const css=fs.readFileSync(path.join(dir,'candidate.css'));
+      let source;try{source=fs.readFileSync(path.join(dir,sourceName))}catch{source=fs.readFileSync(path.join(dir,'candidate.wikidot.txt'))}
+      if(candidateIdentity(css,base).candidateSha!==item.candidate_sha256||sha(source)!==item.source_sha256)failures.push(`${name}: current Sigma-10 contract candidate identity is stale`);
+    }catch(error){failures.push(`${name}: cannot bind current Sigma-10 candidate: ${error.message}`)}
+  }
+  for(const binding of Object.values(currentMigrationSpec.frozen_sigma10_authority?.artifacts??[])){
+    try{bind(binding,`Frozen Sigma-10 authority ${binding.path}`)}catch(error){failures.push(error.message)}
+  }
+  try{
+    const sourceManifestBytes=bind({path:currentMigrationSpec.frozen_sigma10_authority.source_manifest,sha256:currentMigrationSpec.frozen_sigma10_authority.source_manifest_sha256},'Frozen Sigma-10 source manifest');
+    const sourceManifest=JSON.parse(sourceManifestBytes);
+    for(const [identity,page] of Object.entries(sourceManifest.pages??[])){
+      const sourceBytes=fs.readFileSync(path.resolve(root,'sigma10-migration',page.file));
+      if(sha(sourceBytes)!==page.sha256)failures.push(`Frozen Sigma-10 source changed: ${identity}`);
+    }
+  }catch(error){failures.push(`Frozen Sigma-10 source authority invalid: ${error.message}`)}
+  try{
+    const saved=read('sigma10-migration/current-campaign/saved-credit-component.json');
+    if(saved.schema!=='theme_lab_frozen_component_css.v1'||saved.css_sha256!==currentMigrationSpec.saved_component_css?.sha256||JSON.stringify(saved.cascade)!==JSON.stringify(currentMigrationSpec.saved_component_css?.cascade))failures.push('Saved-page Credit cascade differs from the reviewed frozen component contract');
+    bind({path:'sigma10-migration/current-campaign/saved-credit-component.css',sha256:saved.css_sha256},'Saved-page Credit CSS');
+  }catch(error){failures.push(`Saved-page Credit cascade contract invalid: ${error.message}`)}
   const rows = document.packages ?? [];
   if (rows.length !== names.length || new Set(rows.map(row => row.package)).size !== rows.length || rows.map(row => row.package).sort().join('\0') !== names.join('\0')) failures.push('Current package acceptance inventory does not match maintained packages');
   for (const row of rows) {
@@ -164,11 +225,25 @@ export function checkCampaignCompletion(root) {
     const candidateNames = Object.keys(migration.candidates ?? {}).sort();
     if (candidateNames.join('\0') !== Object.keys(expectedCandidates).sort().join('\0') || candidateNames.some(name => migration.candidates[name]?.candidate_sha256 !== expectedCandidates[name].candidate_sha256 || migration.candidates[name]?.source_sha256 !== expectedCandidates[name].source_sha256)) failures.push('Sigma-10 acceptance candidate identities do not match the current package matrix');
     for(const record of audit.records??[]){
+      const declared = inventoryByName.get(record.theme);
       const identity = expectedCandidates[record.theme];
-      if(!identity || record.candidate_sha256!==identity.candidate_sha256 || record.candidate_source_sha256!==identity.source_sha256)failures.push(`Sigma-10 capture uses a superseded candidate ${record.theme}/${record.surface}.${record.state}`);
+      if(!declared || !identity ||
+        record.candidate_sha256!==declared.candidate_sha256 ||
+        record.candidate_source_sha256!==declared.source_sha256 ||
+        record.candidate_sha256!==identity.candidate_sha256 ||
+        record.candidate_source_sha256!==identity.source_sha256) {
+        failures.push(`Sigma-10 capture uses an undeclared or superseded candidate identity: ${record.theme}/${record.surface}.${record.state}`);
+      }
       if(record.run_contract_sha256!==currentMigrationContractSha||record.baseline_theme_mode!=='replacement'||record.baseline_theme_css_sha256!==currentMigrationSpec.baseline_theme.replacement_css_sha256)failures.push('Sigma-10 capture uses superseded baseline/contract');
       if(!Array.isArray(record.unconfirmed_items)||!Array.isArray(record.asset_failures)||!Array.isArray(record.page_errors)||!Array.isArray(record.action_responses)||record.action_responses.some(response=>response.type==='failure'||response.status>=400||response.error_message))failures.push('Sigma-10 capture lacks clean explicit safety results');
       if(record.unconfirmed_items?.length||record.asset_failures?.length||record.page_errors?.length||record.external_requests_sent!==0||!record.reviewed_after_last_change||!reviewedMigrationImage(record.migration_review,record.screenshot_sha256))failures.push(`Unresolved Sigma-10 state ${record.theme}/${record.surface}.${record.state}`);
+      if(!['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE','EXTERNAL_CONTRACT_UNVERIFIABLE','NOT_APPLICABLE'].includes(record.classification)||
+        record.migration_review?.classification!==record.classification||
+        !reviewedImage(record.visual_review,record.screenshot_sha256)||
+        record.visual_review?.candidate_sha256!==record.candidate_sha256||
+        record.visual_review?.candidate_source_sha256!==record.candidate_source_sha256) {
+        failures.push(`Sigma-10 state lacks a current accepted visual review: ${record.theme}/${record.surface}.${record.state}`);
+      }
       bind({path:`ports/${record.screenshot}`,sha256:record.screenshot_sha256},'Sigma-10 screenshot');
       if(!['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE','EXTERNAL_CONTRACT_UNVERIFIABLE','NOT_APPLICABLE'].includes(record.classification)&&!migration.nonblocking_observations?.some(item=>item.screenshot_sha256===record.screenshot_sha256&&item.blocker===false&&item.authority!=='WIKIDOT_RUNTIME_PARITY'))failures.push(`Unresolved Sigma-10 classification ${record.theme}/${record.surface}.${record.state}`);
     }

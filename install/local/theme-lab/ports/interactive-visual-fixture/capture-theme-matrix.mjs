@@ -46,7 +46,7 @@ const registered=new Set(['dear-dictator',...manifest.themes.map(theme=>theme.sl
 const runContractPath=runContractArg?path.resolve(runContractArg):null;
 const runContract=runContractPath?JSON.parse(await fs.readFile(runContractPath,'utf8')):null;
 for(const name of Object.keys(runContract?.additional_candidates??{})){
- if(!/^[a-z0-9-]+$/u.test(name)||registered.has(name))throw new Error(`invalid or colliding additional candidate: ${name}`);
+ if(!/^[a-z0-9-]+$/u.test(name)||registered.has(name)&&runContract?.schema!=='scp_jp_sigma10_migration_run.v1')throw new Error(`invalid or colliding additional candidate: ${name}`);
  registered.add(name);
 }
 if(runContract&&!runContract.artifact_namespace?.split('/').every(segment=>/^[a-z0-9-]+$/u.test(segment)))throw new Error('custom run contract needs a valid isolated artifact namespace');

@@ -101,6 +101,28 @@ const registry={chromium,firefox,webkit};
 if(!registry[engineArg])throw new Error(`unknown engine ${engineArg}`);
 if(!runContract.browser_engines.includes(engineArg))throw new Error(`engine ${engineArg} is not in the acceptance run contract`);
 const campaign=JSON.parse(await fs.readFile(path.join(portsDir,'en-theme-campaign.json'),'utf8'));
+const currentCampaign=runContract.schema==='scp_jp_sigma10_migration_run.v1';
+if(currentCampaign){
+ const ledger=JSON.parse(await fs.readFile(path.join(portsDir,'adaptation-authority.json'),'utf8'));
+ const expected=[...Object.keys(ledger.packages).sort(),'sigma10-baseline'].sort();
+ const inventory=runContract.current_candidate_inventory??[];
+ if(inventory.length!==expected.length||inventory.map(row=>row.package).sort().join('\0')!==expected.join('\0'))throw new Error('Sigma-10 current contract must enumerate every maintained package and the baseline');
+ if(JSON.stringify(Object.keys(runContract.additional_candidates??{}).sort())!==JSON.stringify(expected))throw new Error('Sigma-10 capture candidates differ from the explicit current inventory');
+ if(runContract.frozen_sigma10_authority?.schema!=='theme_lab_frozen_sigma10_authority.v1'||!runContract.frozen_sigma10_authority.source_manifest_sha256)throw new Error('Sigma-10 capture needs frozen source authority bindings');
+ for(const binding of Object.values(runContract.frozen_sigma10_authority.artifacts??{})){
+  const bytes=await fs.readFile(resolveRunContractPath(binding.path,'frozen Sigma-10 authority'));
+  if(crypto.createHash('sha256').update(bytes).digest('hex')!==binding.sha256)throw new Error(`frozen Sigma-10 authority changed: ${binding.path}`);
+ }
+ const sourceManifestBytes=await fs.readFile(resolveRunContractPath(runContract.frozen_sigma10_authority.source_manifest,'Sigma-10 source manifest'));
+ if(crypto.createHash('sha256').update(sourceManifestBytes).digest('hex')!==runContract.frozen_sigma10_authority.source_manifest_sha256)throw new Error('Sigma-10 source manifest differs from frozen authority');
+ const sourceManifest=JSON.parse(sourceManifestBytes);
+ for(const [identity,page] of Object.entries(sourceManifest.pages??{})){
+  const bytes=await fs.readFile(resolveRunContractPath(`../${page.file}`,'frozen Sigma-10 source page'));
+  if(crypto.createHash('sha256').update(bytes).digest('hex')!==page.sha256)throw new Error(`frozen Sigma-10 source changed: ${identity}`);
+ }
+ const saved=JSON.parse(await fs.readFile(resolveRunContractPath('saved-credit-component.json','saved Credit cascade')));
+ if(JSON.stringify(saved.cascade)!==JSON.stringify(runContract.saved_component_css?.cascade))throw new Error('saved Credit cascade differs from the current run contract');
+}
 const extraCandidates=new Map(Object.entries(runContract.additional_candidates??{}).map(([name,value])=>{
  if(!/^[a-z0-9-]+$/u.test(name))throw new Error(`invalid additional candidate name: ${name}`);
  const relative=typeof value==='string'?value:value?.directory;
@@ -109,7 +131,7 @@ const extraCandidates=new Map(Object.entries(runContract.additional_candidates??
  return [name,directory];
 }));
 const allThemes=['dear-dictator',...campaign.themes.map(x=>x.slug.replace(/^theme:/u,'')),...extraCandidates.keys()];
-if([...extraCandidates.keys()].some(name=>name==='dear-dictator'||campaign.themes.some(x=>x.slug===`theme:${name}`)))throw new Error('additional candidate collides with an accepted campaign theme');
+if(!currentCampaign&&[...extraCandidates.keys()].some(name=>name==='dear-dictator'||campaign.themes.some(x=>x.slug===`theme:${name}`)))throw new Error('additional candidate collides with an accepted campaign theme');
 const themes=themeArg?[themeArg]:themesArg?themesArg.split(',').filter(Boolean):allThemes;
 if(themes.some(theme=>!allThemes.includes(theme)))throw new Error('requested theme is not registered in the campaign or run contract');
 const themeDirectory=theme=>extraCandidates.get(theme)??path.join(portsDir,theme);
@@ -629,6 +651,8 @@ async function persistBatch(batch,theme){
   const {candidateSha}=candidateIdentity(css,baseCss,knownThemeIdentities);
   const candidateSourceBytes=await fs.readFile(path.join(dir,'candidate.wikidot.source.txt')).catch(()=>fs.readFile(path.join(dir,'candidate.wikidot.txt')).catch(()=>Buffer.alloc(0)));
   const candidateSourceSha=crypto.createHash('sha256').update(candidateSourceBytes).digest('hex');
+  const expectedIdentity=runContract.additional_candidates?.[theme];
+  if(currentCampaign&&(!expectedIdentity||expectedIdentity.candidate_sha256!==candidateSha||expectedIdentity.source_sha256!==candidateSourceSha))throw new Error(`${theme}: candidate identity differs from the frozen Sigma-10 campaign contract`);
   const assetNamePattern=/[0-9a-f]{64}\.(?:css|svg|png|jpe?g|webp|woff2?|ttf|otf|eot)/giu;
   const referencedAssetNames=new Set(`${runtimeSupportCss}\n${baselineReplacementCss}\n${baseCss}\n${css}\n${candidateSourceBytes.toString('utf8')}`.match(assetNamePattern)??[]);
   const assetDependencies=[];
