@@ -140,9 +140,14 @@
       height: initial;
     }
 
-    // Imported Wikidot themes own mobile navigation positioning. The real
-    // SCP-JP shell places this bar absolutely inside #header; forcing it
-    // into document flow changes submenu anchors and creates viewport escape.
-
+    // Wikidot's Sigma-9 base stylesheet owns this shell's mobile navigation
+    // positioning, and the shell must not override it. Real Wikidot anchors
+    // `.mobile-top-bar` to the bottom left of the header box with
+    // `position: absolute; left: 1em; bottom: 0`, because `#header` is itself
+    // `position: relative`, and pins `.open-menu a` to a fixed bottom-left
+    // viewport button. Only navigation bars rendered inside page content are
+    // `position: static`, via a `#page-content` scoped rule. This DOM is
+    // imported navbar HTML rather than Svelte markup, so any shell rule here
+    // wins over the theme's own cascade and must leave the bar alone.
   }
 </style>
