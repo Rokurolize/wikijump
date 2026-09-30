@@ -1289,3 +1289,9 @@ LICENSE
 @media (max-width: 365px) {
   div#header h1 { max-width: calc(100% - 55px); }
 }
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+/* SCP-JP Wikidot Turbo Vision desktop top-bar bound: keep its source-width row within the viewport while preserving the right inset. */
+@media (min-width: 768px) {
+  #top-bar { left: 0; right: 16px; width: calc(100% - 16px); }
+}

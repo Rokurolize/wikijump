@@ -2283,8 +2283,8 @@
           "rationale": "The preserved Sigma Plus source grid expands beyond the real Japanese search control at 320px. On the frozen real SCP-JP header/menu DOM, candidate without this declaration escapes 22px at 320px; candidate with it keeps all links and submenus inside both edges at 320px and 390px. One source grid track becomes shrinkable; source typography, menu spacing, and colors remain intact.",
           "evidence": [
             {
-              "path": "authority-evidence/al-slop-grid-published-final/receipt.json",
-              "sha256": "76d0ae16665e8974eb87380d64d9603ed8d5bb950d1c3d8debaeff777f1daf09",
+              "path": "authority-evidence/al-slop-grid-current/receipt.json",
+              "sha256": "1478fb35c23d5a977a9b4cc1da2f39788141f0f5d7b3907559d7f3a3ddab63a4",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -2303,7 +2303,7 @@
               "submenu a"
             ]
           },
-          "published_css_sha256": "dec8bced927ebe8048d20115c824bd649058c89bf4ca2bf954e728699441a72e"
+          "published_css_sha256": "9036434a9d3d7d838cf7e96c12a2734adfbd8455f0ee4609efc9a0c125f23538"
         },
         {
           "marker": "SCP-JP Wikidot Al Slop desktop submenu fit: keep the long second-to-last target menu within the viewport.",
@@ -2312,8 +2312,8 @@
           "rationale": "The complete Al Slop source CSS introduces a right-edge overflow in the real SCP-JP desktop navigation at 768px and 1024px. A per-theme second-to-last submenu alignment removes it while the frozen source/target page remains within both viewport edges at 768px, 1024px, 1100px, and 1440px.",
           "evidence": [
             {
-              "path": "authority-evidence/al-slop-current-desktop-navigation-final/receipt.json",
-              "sha256": "e8c365a281aa228af51dfba2cdcd14f983c8e0cd60087aa63a4e2c727e7619bc",
+              "path": "authority-evidence/al-slop-desktop-navigation-current/receipt.json",
+              "sha256": "32cb0d948d35aac604c416b5885c8c5e5ecc2e5d2bde60722a1085c02d581cca",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -2329,7 +2329,8 @@
               "#header"
             ]
           },
-          "published_css_sha256": null
+          "published_css_sha256": "9036434a9d3d7d838cf7e96c12a2734adfbd8455f0ee4609efc9a0c125f23538",
+          "sha256": "1cd2c305dd795cb6320d2c8d7d8b6c51b0331e20ecdf4086367e37e94d856a22"
         }
       ],
       "inputs": {
@@ -2342,13 +2343,13 @@
         "source-includes/sigma-plus-input.css": "09350849191e39a9fbaaa1596f602135457989b169cc24233a2d7eee5b9ef4ab"
       },
       "outputs": {
-        "candidate.css": "dec8bced927ebe8048d20115c824bd649058c89bf4ca2bf954e728699441a72e",
-        "candidate-source.css": "62390d4fe13b8b0fae8a5bb85a7b6a6fd306e93dc66a75d44174f6aae24111e6",
-        "candidate.wikidot.source.txt": "1c603b5460791a94a2c82c794cfc7f8a2917c7d51e8a44364de2086be2e5fe0b",
+        "candidate.css": "9036434a9d3d7d838cf7e96c12a2734adfbd8455f0ee4609efc9a0c125f23538",
+        "candidate-source.css": "30f02daea6547b9a8d87369b1dc4ca0e804a63a27024d614cd56d1289b6d5890",
+        "candidate.wikidot.source.txt": "b86654032bd696212ebb8c1a5742b34763cc28bb459546dfa90e5fa66ea1e82f",
         "candidate.wikidot.txt": "f519222a5e6c9179f9421294a5df6307240441adbb6475943deef6f9921ae898",
         "maintenance/base.wikidot.txt": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
-        "maintenance/jp-overrides.css": "8fb9922107edc68eeb34a00b2e8a2514edade045895196208287e6484bc9ec28",
-        "maintenance/final.wikidot.txt": "c986a3c4ee6b18af00396c4e49f61c943919708853956dee5c25669c91afc3b3"
+        "maintenance/jp-overrides.css": "f66884753c63b4490cfa32dad2680d660ee9a6bdda81aaa3ed29b43b043a32e5",
+        "maintenance/final.wikidot.txt": "77f38efa844a1c3067de050964289c3fba374dab605ad89152f7745247d6491a"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -2359,8 +2360,8 @@
         }
       },
       "current_navigation_evidence": {
-        "path": "authority-evidence/al-slop-grid-published-final/receipt.json",
-        "sha256": "76d0ae16665e8974eb87380d64d9603ed8d5bb950d1c3d8debaeff777f1daf09"
+        "path": "authority-evidence/al-slop-grid-current/receipt.json",
+        "sha256": "1478fb35c23d5a977a9b4cc1da2f39788141f0f5d7b3907559d7f3a3ddab63a4"
       }
     },
     "wikifot": {
@@ -4621,17 +4622,17 @@
           "rationale": "Per-theme real SCP-JP A/B at 320px and 390px; every submenu/item/link stays inside both viewport edges. Preserve the wrapped row, source menu widths, palette and link layout. Space also retains its separate header grid correction; Turbo bounds only the invisible masthead responsible for remaining 320px document overflow.",
           "evidence": [
             {
-              "path": "authority-evidence/turbo-vision-complete-source-current/receipt.json",
-              "sha256": "e3922313f70e79ff7bf285a62f4b3016b53849c757e144ba4536893607caf4ba",
+              "path": "authority-evidence/turbo-navigation-current/receipt.json",
+              "sha256": "a228a9765b36a2b556a4f89c831b36b3263ba24cc61615627ab6a7ab3ed7f5b2",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             },
             {
-              "path": "authority-evidence/turbo-header-complete-source-current/receipt.json",
-              "sha256": "933eb04e8c573b759c757dcdd86fe20c081d801d7f5084992f095b1de195c9d4",
+              "path": "authority-evidence/turbo-header-current/receipt.json",
+              "sha256": "06556a14216923b90f6a7f412dc5bfd2b8347e465bfce7e38e275f713dd2e9a6",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
-          "published_css_sha256": "92596135412039f70f68728c2d8892ecb620dd156cf31efa9f3d59c01b9012db",
+          "published_css_sha256": "9ed89df7215b967f7eb458e09b45454bbbcd2d5ff77cb94472aeb891042dca1c",
           "scope": {
             "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
             "state": "navigation",
@@ -4670,8 +4671,8 @@
           "rationale": "The complete Turbo Vision source CSS inherits Sigma positioning that places the real SCP-JP desktop top-bar 16px off the left edge. A bounded per-theme inset fixes the left edge while keeping the existing 16px right inset and leaves document width at the viewport at 768px, 1024px, and 1440px.",
           "evidence": [
             {
-              "path": "authority-evidence/turbo-vision-current-desktop-topbar-final/receipt.json",
-              "sha256": "bcca4dd5cd1aa0e0bf84d81c9f1cf4b352ef60e302318ccd66bcc04d9d2af539",
+              "path": "authority-evidence/turbo-desktop-topbar-current/receipt.json",
+              "sha256": "75eed1c4034750a883063dbf9ad1e5c320cf18eaeab3aa158a58dc43fdb22f02",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -4689,7 +4690,8 @@
               "#top-bar .top-bar"
             ]
           },
-          "published_css_sha256": null
+          "published_css_sha256": "9ed89df7215b967f7eb458e09b45454bbbcd2d5ff77cb94472aeb891042dca1c",
+          "sha256": "1815af33b6b70ad3ae2e97b5b850c3e5ffc24bd6c8ea04f332f52ba06252ed5f"
         }
       ],
       "inputs": {
@@ -4702,13 +4704,13 @@
         "source-css-includes.json": "22ec56b4a00133c5e763223b56503807bbfc245c31c0a66324886fcf716ed5a9"
       },
       "outputs": {
-        "candidate.css": "92596135412039f70f68728c2d8892ecb620dd156cf31efa9f3d59c01b9012db",
-        "candidate-source.css": "21b4b6655abc57ce5a9e4b6f99c77cc088c458cbf57b636b59e27a860d04c918",
-        "candidate.wikidot.source.txt": "7b32a6fa1b2a70349c490314ca05eaf064d2bc0c31674373fc853f167fa02d61",
+        "candidate.css": "9ed89df7215b967f7eb458e09b45454bbbcd2d5ff77cb94472aeb891042dca1c",
+        "candidate-source.css": "e388b4ce4ca7b10e61a6c636b60f637f18e746b58524a7626acfbc20be9892fb",
+        "candidate.wikidot.source.txt": "52fb93c3d72f66f18876db66c7616a57f51ba20c325674144003a40b633a48f4",
         "candidate.wikidot.txt": "0396a2bd10df784d0cf5f9b7912c1e455f477b0fcf419ae28b2c510a4f842d3a",
         "maintenance/base.wikidot.txt": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
-        "maintenance/jp-overrides.css": "82e770c5adc01e7a7479cb8baa03596f1ea5608f7da422f26b0034c4714da354",
-        "maintenance/final.wikidot.txt": "82173741c2d0f8cc00b0d2e3801896da7bc72b93f270970fdcbd50d79f348259"
+        "maintenance/jp-overrides.css": "a7ec7e0af754d85f372e3c465cee1711db0079c59b11f93a0947a469be488d6d",
+        "maintenance/final.wikidot.txt": "f012d37b61c3658b9895a6aa8df05fef05187f8b118b992a8004bbbf68fdd075"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -4719,8 +4721,8 @@
         }
       },
       "current_navigation_evidence": {
-        "path": "authority-evidence/turbo-vision-complete-source-current/receipt.json",
-        "sha256": "e3922313f70e79ff7bf285a62f4b3016b53849c757e144ba4536893607caf4ba"
+        "path": "authority-evidence/turbo-navigation-current/receipt.json",
+        "sha256": "a228a9765b36a2b556a4f89c831b36b3263ba24cc61615627ab6a7ab3ed7f5b2"
       }
     },
     "skipos": {

@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "1c603b5460791a94a2c82c794cfc7f8a2917c7d51e8a44364de2086be2e5fe0b",
+  "frozen_candidate_source_sha256": "b86654032bd696212ebb8c1a5742b34763cc28bb459546dfa90e5fa66ea1e82f",
   "base_source_sha256": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
-  "raw_jp_overrides_sha256": "12cdd0dd746b95baa9a0415b671e8b171b4bdeffdc429c04f02ce2e58c634fcc",
-  "jp_overrides_sha256": "8fb9922107edc68eeb34a00b2e8a2514edade045895196208287e6484bc9ec28",
-  "semantic_css_sha256": "be846b227554bb99b94d3048daa18103cf375280522cd357f18c819d10fdb1fc",
-  "canonical_override_sha256": "0493a3b8fccc06a5ed5e4cab3b65fd3f70154d0165db3af411959e66b7480081",
+  "raw_jp_overrides_sha256": "c9ad26cbbf8d5be4dd7dbe9fea55e7694e29ee34f00ec863c0e1c5101a948f65",
+  "jp_overrides_sha256": "f66884753c63b4490cfa32dad2680d660ee9a6bdda81aaa3ed29b43b043a32e5",
+  "semantic_css_sha256": "448e3c1caa17fccad16a6c74ddeee4f215519579c381676e2dae4c6e8b69dca0",
+  "canonical_override_sha256": "55966c0ffdee004383e3b2a0a0abd8f9326ec1e76f954f23f7dbe1f6c922aed1",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "c986a3c4ee6b18af00396c4e49f61c943919708853956dee5c25669c91afc3b3",
+  "final_source_sha256": "77f38efa844a1c3067de050964289c3fba374dab605ad89152f7745247d6491a",
   "final_source_inputs": {
     "base_sha256": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
-    "jp_overrides_sha256": "8fb9922107edc68eeb34a00b2e8a2514edade045895196208287e6484bc9ec28"
+    "jp_overrides_sha256": "f66884753c63b4490cfa32dad2680d660ee9a6bdda81aaa3ed29b43b043a32e5"
   },
   "ordered_include_sha256": "abea77fe1e3eb18a7c60405c937cd50fa1c2d1cf76913372673a979ed6ebcd2b",
   "declaration_reviews": {},
-  "adaptation_block_count": 1,
-  "raw_override_rule_count": 1,
-  "canonical_override_rule_count": 1,
+  "adaptation_block_count": 2,
+  "raw_override_rule_count": 2,
+  "canonical_override_rule_count": 2,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -280,8 +280,8 @@
       "rationale": "The preserved Sigma Plus source grid expands beyond the real Japanese search control at 320px. On the frozen real SCP-JP header/menu DOM, candidate without this declaration escapes 22px at 320px; candidate with it keeps all links and submenus inside both edges at 320px and 390px. One source grid track becomes shrinkable; source typography, menu spacing, and colors remain intact.",
       "evidence": [
         {
-          "path": "authority-evidence/al-slop-grid-published-final/receipt.json",
-          "sha256": "76d0ae16665e8974eb87380d64d9603ed8d5bb950d1c3d8debaeff777f1daf09",
+          "path": "authority-evidence/al-slop-grid-current/receipt.json",
+          "sha256": "1478fb35c23d5a977a9b4cc1da2f39788141f0f5d7b3907559d7f3a3ddab63a4",
           "decision_authority": "REAL_WIKIDOT_TARGET_AB"
         }
       ],
@@ -300,7 +300,34 @@
           "submenu a"
         ]
       },
-      "published_css_sha256": "dec8bced927ebe8048d20115c824bd649058c89bf4ca2bf954e728699441a72e"
+      "published_css_sha256": "9036434a9d3d7d838cf7e96c12a2734adfbd8455f0ee4609efc9a0c125f23538"
+    },
+    {
+      "marker": "SCP-JP Wikidot Al Slop desktop submenu fit: keep the long second-to-last target menu within the viewport.",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "origin": "target-certified-replacement",
+      "rationale": "The complete Al Slop source CSS introduces a right-edge overflow in the real SCP-JP desktop navigation at 768px and 1024px. A per-theme second-to-last submenu alignment removes it while the frozen source/target page remains within both viewport edges at 768px, 1024px, 1100px, and 1440px.",
+      "evidence": [
+        {
+          "path": "authority-evidence/al-slop-desktop-navigation-current/receipt.json",
+          "sha256": "32cb0d948d35aac604c416b5885c8c5e5ecc2e5d2bde60722a1085c02d581cca",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "state": "desktop-navigation",
+        "viewports": [
+          768,
+          1024
+        ],
+        "selectors": [
+          "#top-bar",
+          "#header"
+        ]
+      },
+      "published_css_sha256": "9036434a9d3d7d838cf7e96c12a2734adfbd8455f0ee4609efc9a0c125f23538",
+      "sha256": "1cd2c305dd795cb6320d2c8d7d8b6c51b0331e20ecdf4086367e37e94d856a22"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -313,6 +340,18 @@
         "#header"
       ],
       "at_contexts": [],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot Al Slop desktop submenu fit: keep the long second-to-last target menu within the viewport.",
+      "rationale": "SCP-JP Wikidot Al Slop desktop submenu fit: keep the long second-to-last target menu within the viewport.",
+      "sha256": "1cd2c305dd795cb6320d2c8d7d8b6c51b0331e20ecdf4086367e37e94d856a22",
+      "selectors": [
+        "#top-bar .top-bar > ul > li:nth-last-child(2) > ul"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px) and (max-width: 1100px)"
+      ],
       "authority": "TARGET_WIKIDOT_CERTIFIED"
     }
   ]
