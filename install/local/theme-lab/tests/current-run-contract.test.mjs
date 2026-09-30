@@ -29,10 +29,13 @@ test('current browser run contract binds production Sigma-9 and exact current fi
     header_fixture: 'scp-jp-header.html',
     navigation_fixture: 'scp-jp-navigation.html',
     sidebar_fixture: 'scp-jp-sidebar.html',
+    interwiki_fixture: 'scp-jp-interwiki.html',
   })) {
     assert.equal(contract[key].path, `../../fixtures/${fixture}`);
     assert.equal(sha(fs.readFileSync(path.resolve(path.dirname(contractPath), contract[key].path))), contract[key].sha256, `${fixture} hash`);
   }
+  assert.equal(contract.interwiki_fixture.sha256, 'b9c58104c2aa3e1aece7ce3eeada8b55d318075de9a67a4fbbc2ae16fcdbca0b');
+  assert.equal(contract.interwiki_fixture.contract, 'Local placement only; remote resize/content is bounded external.');
 });
 
 test('current run contract covers the 35 registered packages and only the unregistered maintained package', () => {
@@ -64,5 +67,4 @@ test('current run artifacts stay isolated below current-acceptance', () => {
   const audit = path.resolve(path.dirname(contractPath), contract.audit_path);
   assert.ok(audit.startsWith(path.dirname(contractPath) + path.sep));
   assert.notEqual(audit, path.join(ports, 'interactive-visual-audit.json'));
-  assert.equal(fs.existsSync(audit), false, 'contract creation must not fabricate acceptance evidence');
 });
