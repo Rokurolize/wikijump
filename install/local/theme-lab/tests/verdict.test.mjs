@@ -37,6 +37,7 @@ test("torture and viewport issues map", () => {
   );
   assert.equal(issuesFromViewports({mobile: {document_overflow_px: 83}})[0].kind, "viewport_overflow");
   assert.equal(issuesFromViewports({mobile: {document_overflow_px: 2}})[0].severity, "error");
+  assert.equal(issuesFromViewports({mobile: {document_overflow_px: 1}}).length, 0);
   assert.equal(issuesFromViewports({mobile: {document_overflow_px: 0}}).length, 0);
   const overflow = issuesFromViewports({mobile: {document_overflow_px: 83, overflow_sources: [{selector: ".hero", overflow_px: 83}]}})[0];
   assert.equal(overflow.overflow_sources[0].selector, ".hero");
@@ -153,13 +154,13 @@ test("compact verdict retains each viewport's overflow status", () => {
     desktop: {document_overflow_px: 0},
     laptop: {document_overflow_px: 0},
     tablet: {document_overflow_px: 1},
-    mobile: {document_overflow_px: 0},
+    mobile: {document_overflow_px: 2},
   }});
   assert.deepEqual(verdict.viewport_status, {
     desktop: {status: "pass", document_overflow_px: 0, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
     laptop: {status: "pass", document_overflow_px: 0, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
-    tablet: {status: "fail", document_overflow_px: 1, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
-    mobile: {status: "pass", document_overflow_px: 0, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
+    tablet: {status: "pass", document_overflow_px: 1, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
+    mobile: {status: "fail", document_overflow_px: 2, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
   });
 });
 

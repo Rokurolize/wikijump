@@ -12,6 +12,11 @@ export const DEFAULT_LIMITS = Object.freeze({
   selectorRows: 30,
 });
 
+// Fractional full-bleed edges can round to one CSS pixel of document overflow
+// while still fitting the real target viewport. Keep this aligned with the
+// surface-contract gate, which only fails overflow greater than one pixel.
+export const VIEWPORT_OVERFLOW_TOLERANCE_PX = 1;
+
 function severityRank(severity) {
   return {error: 0, warn: 1, info: 2}[severity] ?? 3;
 }
@@ -78,9 +83,7 @@ export function issuesFromViewports(viewports) {
   const issues = [];
   for (const [id, viewport] of Object.entries(viewports ?? {})) {
     const overflow = viewport?.document_overflow_px ?? 0;
-    // viewportStatus fails for any positive document overflow; use the same
-    // boundary here so a failed viewport always has an actionable issue.
-    if (overflow > 0) {
+    if (overflow > VIEWPORT_OVERFLOW_TOLERANCE_PX) {
       issues.push({severity: "error", kind: "viewport_overflow", viewport: id, overflow_px: overflow, overflow_sources: viewport?.overflow_sources ?? []});
     }
   }
@@ -332,7 +335,7 @@ export function buildVerdict({
   const styleChanges = decisionStyleChanges.slice(0, limits.styleChanges);
   const viewportStatus = viewports
     ? Object.fromEntries(Object.entries(viewports).map(([name, result]) => [name, {
-        status: (result.document_overflow_px ?? 0) > 0 ? "fail" : "pass",
+        status: (result.document_overflow_px ?? 0) > VIEWPORT_OVERFLOW_TOLERANCE_PX ? "fail" : "pass",
         document_overflow_px: result.document_overflow_px ?? 0,
         decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY",
       }]))

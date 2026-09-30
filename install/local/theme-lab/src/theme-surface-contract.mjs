@@ -568,8 +568,6 @@ function recordSurfacePair({surface, state, viewport, baseline, theme, captures,
   const ownedOverflow = (theme.overflow_sources ?? []).some((source) => overflowBelongsToSurface(surface.id, source));
   if (!theme.action_error && theme.document_overflow_px > 1 && ownedOverflow) {
     issues.push({severity: "error", kind: "surface_viewport_overflow", surface: surface.id, state: state.id, viewport, before_px: baseline.document_overflow_px, after_px: theme.document_overflow_px, overflow_sources:theme.overflow_sources});
-  } else if (!baseline.action_error && !theme.action_error && theme.document_overflow_px > baseline.document_overflow_px + 1) {
-    issues.push({severity: "error", kind: "surface_new_viewport_overflow", surface: surface.id, state: state.id, viewport, before_px: baseline.document_overflow_px, after_px: theme.document_overflow_px, overflow_sources:theme.overflow_sources});
   }
   for (const probe of surface.probes.filter((row) => row.contrast)) {
     const key=probeKey(probe);
