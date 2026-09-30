@@ -297,7 +297,11 @@ export async function cleanupSurfaceState(page, surfaceId, stateId) {
   }
   if (["page.history", "page.files"].includes(surfaceId)) {
     const close = page.locator("#action-area .action-area-close");
-    if (await close.count()) await close.click({timeout: 5000});
+    // The mobile navigation drawer can remain above the action pane while a
+    // surface capture is being torn down. This is cleanup, not an interaction
+    // measurement: dispatch the pane's own close handler even when another
+    // fixed layer covers its button.
+    if (await close.count()) await close.evaluate(element => element.click());
     await page.locator(surfaceId === "page.history" ? "#action-area .page-history" : "#action-area .file-list").waitFor({state: "hidden", timeout: 5000});
   }
   await page.evaluate(async ({surfaceId: surface, stateId: state}) => {
