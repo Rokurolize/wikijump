@@ -1,5 +1,11 @@
 export async function activateNavigationControl(page, anchor, submenu) {
-  if (await submenu.isVisible()) return;
+  if (await hasRenderedSubmenuGeometry(submenu)) return;
+  const href=await anchor.getAttribute('href');
+  if(href==='javascript:;'){
+    await anchor.hover({force:true});
+    const hoverDeadline=Date.now()+500;
+    while(Date.now()<hoverDeadline){if(await hasRenderedSubmenuGeometry(submenu))return;await page.waitForTimeout(50)}
+  }
   const reachable = await anchor.evaluate(element => {
     const rect = element.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0 || rect.right <= 0 || rect.bottom <= 0 || rect.left >= innerWidth || rect.top >= innerHeight) return false;
@@ -7,8 +13,15 @@ export async function activateNavigationControl(page, anchor, submenu) {
     return !!hit && (hit === element || element.contains(hit));
   });
   if (reachable) await anchor.click(); else await anchor.evaluate(element => element.click());
-  await submenu.waitFor({state: 'visible', timeout: 3000});
+  const deadline=Date.now()+3000;
+  while(Date.now()<deadline){if(await hasRenderedSubmenuGeometry(submenu))return;await page.waitForTimeout(50)}
+  throw new Error('source navigation action did not produce rendered submenu geometry');
 }
+
+export async function hasRenderedSubmenuGeometry(submenu){return submenu.evaluate(element=>{
+  const style=getComputedStyle(element),rect=element.getBoundingClientRect();
+  return style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)>0&&rect.width>0&&rect.height>0&&rect.right>0&&rect.bottom>0&&rect.left<innerWidth&&rect.top<innerHeight;
+})}
 
 export async function expandMobileTopSubmenu(page) {
   const item = page.locator('.mobile-top-bar > ul > li').filter({has: page.locator(':scope > ul')}).first();

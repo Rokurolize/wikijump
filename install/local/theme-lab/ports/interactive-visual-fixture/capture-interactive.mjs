@@ -13,8 +13,8 @@ import {applyExactVisualReviewReuseToRows,verifyExactReviewSources} from '../scr
 import {topFixedNavigationInset} from './top-fixed-navigation-inset.mjs';
 import {loadCandidateStructure} from '../../src/candidate-structure.mjs';
 import {interactiveAcceptanceFixture} from '../../src/interactive-acceptance-fixture.mjs';
-import {openSidebar,closeSidebar} from '../../src/sidebar-interaction.mjs';
-import {activateNavigationControl,expandMobileTopSubmenu,expandTabletTopNavigation} from '../../src/navigation-interaction.mjs';
+import {openSidebar,closeSidebar,sidebarIsClosed,sidebarOccupiesViewport} from '../../src/sidebar-interaction.mjs';
+import {activateNavigationControl,expandMobileTopSubmenu,expandTabletTopNavigation,hasRenderedSubmenuGeometry} from '../../src/navigation-interaction.mjs';
 import {dedupeCssLayers} from '../../src/css-layers.mjs';
 import {resolveRunContractPath as resolveBoundRunContractPath} from '../../src/run-contract-path.mjs';
 
@@ -454,6 +454,7 @@ function actionContractFor(spec){
   expandMobileTopSubmenu:actionSource.includes('expandMobileTopSubmenu')?expandMobileTopSubmenu.toString():null,
   expandTabletTopNavigation:actionSource.includes('expandTabletTopNavigation')?expandTabletTopNavigation.toString():null,
   navigationActivation:actionSource.includes('expandMobileTopSubmenu')||actionSource.includes('expandTabletTopNavigation')?activateNavigationControl.toString():null,
+  renderedSubmenuGeometry:actionSource.includes('expandMobileTopSubmenu')||actionSource.includes('expandTabletTopNavigation')?hasRenderedSubmenuGeometry.toString():null,
   waitForSvelteClickHandler:dependencies.waitForSvelteClickHandler?waitForSvelteClickHandler.toString():null,
   revealPagePane:dependencies.revealPagePane?revealPagePane.toString():null,
   revealBelowFixedMobileNavigation:dependencies.revealBelowFixedMobileNavigation?revealBelowFixedMobileNavigation.toString():null,
@@ -463,8 +464,8 @@ function actionContractFor(spec){
   visualDiagnostics:visualDiagnostics.toString()
  };
  if(dependencies.topFixedNavigationInset)contract.topFixedNavigationInset=topFixedNavigationInset.toString();
- if(actionSource.includes('openSidebar'))contract.openSidebar=openSidebar.toString();
- if(actionSource.includes('closeSidebar'))contract.closeSidebar=closeSidebar.toString();
+ if(actionSource.includes('openSidebar')){contract.openSidebar=openSidebar.toString();contract.sidebarOccupiesViewport=sidebarOccupiesViewport.toString()}
+ if(actionSource.includes('closeSidebar')){contract.closeSidebar=closeSidebar.toString();contract.sidebarIsClosed=sidebarIsClosed.toString();contract.sidebarOccupiesViewport=sidebarOccupiesViewport.toString()}
  return crypto.createHash('sha256').update(JSON.stringify(contract)).digest('hex');
 }
 if(process.argv.includes('--dump-contracts')){console.log(JSON.stringify({schema:'scp_jp_interactive_capture_contracts.v2',browser_engine:engineArg,browser_version:browser.version(),run_contract_sha256:runContractSha,runtime_surface_contracts:runtimeSurfaceContracts,states:await Promise.all(states.map(async spec=>({surface:spec.surface,state:spec.state,fixture_slug:spec.fixtureSlug??null,fixture_contract_sha256:await fixtureContractSha(spec),guest:!!spec.guest,applicable_viewports:spec.viewports??defaultInteractionViewports,action_contract_sha256:actionContractFor(spec),action_contract_dependencies:actionContractDependencies(spec)})))},null,2));await browser.close();if(authBrowser)await authBrowser.close();process.exit(0)}

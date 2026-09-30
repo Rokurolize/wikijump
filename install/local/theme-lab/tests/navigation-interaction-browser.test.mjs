@@ -23,9 +23,32 @@ test('mobile parent activates its real submenu when offscreen and overlapped', a
   const browser = await chromium.launch({executablePath: '/usr/bin/google-chrome', headless: true});
   try {
     const page = await browser.newPage({viewport: {width: 390, height: 844}});
-    await page.setContent('<style>.mobile-top-bar{margin-top:1000px}.mobile-top-bar > ul > li > ul{display:none}.mobile-top-bar > ul > li.open > ul{display:block}#cover{position:fixed;inset:0;z-index:99}</style><div class="mobile-top-bar"><ul><li><a href="#menu">Menu</a><ul><li><a href="#child">Child</a></li></ul></li></ul></div><div id="cover"></div><script>document.querySelector(".mobile-top-bar > ul > li > a").onclick=e=>{e.preventDefault();e.currentTarget.parentElement.classList.toggle("open")}</script>');
+    await page.setContent('<style>.mobile-top-bar{margin-top:1000px}.mobile-top-bar > ul > li > ul{display:none}.mobile-top-bar > ul > li.open > ul{display:block;position:fixed;top:20px;left:20px}#cover{position:fixed;inset:0;z-index:99}</style><div class="mobile-top-bar"><ul><li><a href="#menu">Menu</a><ul><li><a href="#child">Child</a></li></ul></li></ul></div><div id="cover"></div><script>document.querySelector(".mobile-top-bar > ul > li > a").onclick=e=>{e.preventDefault();e.currentTarget.parentElement.classList.toggle("open")}</script>');
     await expandMobileTopSubmenu(page);
     assert.equal(await page.locator('.mobile-top-bar > ul > li > ul').isVisible(), true);
+  } finally { await browser.close(); }
+});
+
+test('mobile submenu activates when source action brings its rendered geometry into the viewport', async () => {
+  const browser = await chromium.launch({executablePath: '/usr/bin/google-chrome', headless: true});
+  try {
+    const page = await browser.newPage({viewport: {width: 390, height: 844}});
+    await page.setContent('<style>.mobile-top-bar{position:fixed;top:20px}.mobile-top-bar > ul > li > ul{display:block;position:fixed;left:-500px;top:60px}.mobile-top-bar > ul > li.open > ul{left:20px}</style><div class="mobile-top-bar"><ul><li><a href="#menu">Menu</a><ul><li><a href="#child">Child</a></li></ul></li></ul></div><script>document.querySelector(".mobile-top-bar > ul > li > a").onclick=e=>{e.preventDefault();e.currentTarget.parentElement.classList.toggle("open")}</script>');
+    const submenu = page.locator('.mobile-top-bar > ul > li > ul');
+    assert.equal(await submenu.isVisible(), true);
+    assert.equal(await submenu.evaluate(e=>e.getBoundingClientRect().right<=0), true);
+    await expandMobileTopSubmenu(page);
+    assert.equal(await submenu.evaluate(e=>e.getBoundingClientRect().left>=0), true);
+  } finally { await browser.close(); }
+});
+
+test('javascript submenu source control expands from its pointer hover state', async () => {
+  const browser = await chromium.launch({executablePath: '/usr/bin/google-chrome', headless: true});
+  try {
+    const page = await browser.newPage({viewport: {width: 390, height: 844}});
+    await page.setContent('<style>.mobile-top-bar > ul > li > ul{display:none;position:fixed;top:60px;left:20px}.mobile-top-bar > ul > li:hover > ul{display:block}</style><div class="mobile-top-bar"><ul><li><a href="javascript:;">Menu</a><ul><li><a href="#child">Child</a></li></ul></li></ul></div>');
+    await expandMobileTopSubmenu(page);
+    assert.equal(await page.locator('.mobile-top-bar > ul > li > ul').evaluate(e=>e.getBoundingClientRect().top>=0), true);
   } finally { await browser.close(); }
 });
 
