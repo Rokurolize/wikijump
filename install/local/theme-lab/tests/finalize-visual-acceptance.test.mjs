@@ -1,6 +1,11 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs/promises';import os from 'node:os';import path from 'node:path';import crypto from 'node:crypto';
-import {finalizeVisualAcceptance} from '../src/finalize-visual-acceptance.mjs';
+import {finalizeVisualAcceptance,reviewCompletionTime} from '../src/finalize-visual-acceptance.mjs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+test('current acceptance completion time is deterministic from all exact viewport reviews',()=>{
+ const review={viewports:{desktop:{reviewed_at:'2026-09-01T00:00:00Z'},laptop:{reviewed_at:'2026-09-02T00:00:00Z'},tablet:{reviewed_at:'2026-09-03T00:00:00Z'},mobile:{reviewed_at:'2026-09-04T00:00:00Z'}}};
+ assert.equal(reviewCompletionTime(review),'2026-09-04T00:00:00Z');
+ assert.throws(()=>reviewCompletionTime({viewports:{desktop:{reviewed_at:'not-a-date'}}}),/every required viewport/u);
+});
 test('exact image review completes only the visual dimension and preserves target findings',async t=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'theme-lab-final-image-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
  const candidate=path.join(dir,'candidate.png'),reference=path.join(dir,'reference.png');await fs.writeFile(candidate,'candidate');await fs.writeFile(reference,'reference');

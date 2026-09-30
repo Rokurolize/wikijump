@@ -56,6 +56,8 @@ export function applyVisualReviews(rows, reviews, currentIdentity, reviewedAt = 
       method: 'direct-image-vision-review',
       reviewed_at: reviewedAt,
       screenshot_sha256: review.screenshot_sha256,
+      candidate_sha256: row.candidate_sha256,
+      candidate_source_sha256: row.candidate_source_sha256,
       note: review.note,
       reviewer: 'Codex visual capability',
       decision_authority: 'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY',

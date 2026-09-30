@@ -34,7 +34,8 @@ function mockCampaign(){
  const contract={baseline_theme:{replacement_css_sha256:fixtureIdentity.baseline}};
  const runContract=write('ports/current-acceptance/run-contract.json',contract),migrationContract=write('sigma10-migration/current-campaign/run-contract.json',contract);
  const shot=write('ports/captures/test.png','controlled mock screenshot');
- const row=(theme,engine,viewport,state)=>({run_contract_sha256:runContract.sha256,baseline_theme_mode:'replacement',baseline_theme_css_sha256:fixtureIdentity.baseline,action_responses:[],theme,browser_engine:engine,viewport,surface:state.surface,state:state.state,candidate_sha256:candidateIdentity(fs.readFileSync(path.join(root,css.path)),Buffer.alloc(0)).candidateSha,candidate_source_sha256:source.sha256,classification:'PASS_NATURAL',reviewed_after_last_change:true,unconfirmed_items:[],asset_failures:[],page_errors:[],external_requests_sent:0,screenshot:'captures/test.png',screenshot_sha256:shot.sha256,visual_review:{screenshot_sha256:shot.sha256},migration_review:{screenshot_sha256:shot.sha256}});
+ const candidateSha=candidateIdentity(fs.readFileSync(path.join(root,css.path)),Buffer.alloc(0)).candidateSha;
+ const row=(theme,engine,viewport,state)=>({run_contract_sha256:runContract.sha256,baseline_theme_mode:'replacement',baseline_theme_css_sha256:fixtureIdentity.baseline,action_responses:[],theme,browser_engine:engine,viewport,surface:state.surface,state:state.state,candidate_sha256:candidateSha,candidate_source_sha256:source.sha256,classification:'PASS_NATURAL',reviewed_after_last_change:true,unconfirmed_items:[],asset_failures:[],page_errors:[],external_requests_sent:0,screenshot:'captures/test.png',screenshot_sha256:shot.sha256,visual_review:{screenshot_sha256:shot.sha256,candidate_sha256:candidateSha,candidate_source_sha256:source.sha256},migration_review:{screenshot_sha256:shot.sha256}});
  const rows=(theme,normalOnly=false)=>matrix.flatMap(([engine,viewport])=>browserContract.states.filter(state=>state.applicable_viewports.includes(viewport)&&(engine==='chromium'||core.has(`${state.surface}.${state.state}`))&&(!normalOnly||state.surface==='page.normal')).map(state=>row(theme,engine,viewport,state)));
  const audit={state_applicability:browserContract.states,records:rows('testtheme')};
  const migrationAudit={state_applicability:browserContract.states,records:[...rows('testtheme',true),...rows('sigma10-baseline')]};
@@ -73,5 +74,12 @@ test('promotion rejects a omitted state even when remaining screenshots have bee
  const mock=mockCampaign();try{
   mock.audit.records.pop();mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
   assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('Missing current browser state')));
+ }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
+});
+test('promotion rejects a stale candidate or source identity recorded in the review receipt',()=>{
+ const mock=mockCampaign();try{
+  mock.audit.records[0].visual_review.candidate_sha256='stale-css';
+  mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
+  assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('image review is not bound to the current candidate identity')));
  }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
 });
