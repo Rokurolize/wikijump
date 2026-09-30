@@ -114,8 +114,8 @@
     },
     "inkblot": {
       "directory": "../../ports/inkblot",
-      "candidate_sha256": "49d9d2fe39c30908844383098c67ddd815c64f95b5ba0bb6dd249c10294fca60",
-      "source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f"
+      "candidate_sha256": "c3dd803cfa39221bccb3379eb312c945cf3c3aae931be60da0ad9d6a386df0ff",
+      "source_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a"
     },
     "isolated-terminal": {
       "directory": "../../ports/isolated-terminal",
@@ -358,8 +358,8 @@
     {
       "package": "inkblot",
       "directory": "../../ports/inkblot",
-      "candidate_sha256": "49d9d2fe39c30908844383098c67ddd815c64f95b5ba0bb6dd249c10294fca60",
-      "source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f"
+      "candidate_sha256": "c3dd803cfa39221bccb3379eb312c945cf3c3aae931be60da0ad9d6a386df0ff",
+      "source_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a"
     },
     {
       "package": "isolated-terminal",
