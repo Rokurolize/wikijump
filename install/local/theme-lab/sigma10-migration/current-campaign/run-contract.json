@@ -59,7 +59,7 @@
     },
     "al-slop": {
       "directory": "../../ports/al-slop",
-      "candidate_sha256": "dec8bced927ebe8048d20115c824bd649058c89bf4ca2bf954e728699441a72e",
+      "candidate_sha256": "9036434a9d3d7d838cf7e96c12a2734adfbd8455f0ee4609efc9a0c125f23538",
       "source_sha256": "b86654032bd696212ebb8c1a5742b34763cc28bb459546dfa90e5fa66ea1e82f"
     },
     "basalt": {
@@ -114,8 +114,8 @@
     },
     "inkblot": {
       "directory": "../../ports/inkblot",
-      "candidate_sha256": "49d9d2fe39c30908844383098c67ddd815c64f95b5ba0bb6dd249c10294fca60",
-      "source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f"
+      "candidate_sha256": "c3dd803cfa39221bccb3379eb312c945cf3c3aae931be60da0ad9d6a386df0ff",
+      "source_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a"
     },
     "isolated-terminal": {
       "directory": "../../ports/isolated-terminal",
@@ -214,8 +214,8 @@
     },
     "turbo-vision": {
       "directory": "../../ports/turbo-vision",
-      "candidate_sha256": "92596135412039f70f68728c2d8892ecb620dd156cf31efa9f3d59c01b9012db",
-      "source_sha256": "7b32a6fa1b2a70349c490314ca05eaf064d2bc0c31674373fc853f167fa02d61"
+      "candidate_sha256": "9ed89df7215b967f7eb458e09b45454bbbcd2d5ff77cb94472aeb891042dca1c",
+      "source_sha256": "52fb93c3d72f66f18876db66c7616a57f51ba20c325674144003a40b633a48f4"
     },
     "wikifot": {
       "directory": "../../ports/wikifot",
@@ -292,7 +292,7 @@
     {
       "package": "al-slop",
       "directory": "../../ports/al-slop",
-      "candidate_sha256": "dec8bced927ebe8048d20115c824bd649058c89bf4ca2bf954e728699441a72e",
+      "candidate_sha256": "9036434a9d3d7d838cf7e96c12a2734adfbd8455f0ee4609efc9a0c125f23538",
       "source_sha256": "b86654032bd696212ebb8c1a5742b34763cc28bb459546dfa90e5fa66ea1e82f"
     },
     {
@@ -358,8 +358,8 @@
     {
       "package": "inkblot",
       "directory": "../../ports/inkblot",
-      "candidate_sha256": "49d9d2fe39c30908844383098c67ddd815c64f95b5ba0bb6dd249c10294fca60",
-      "source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f"
+      "candidate_sha256": "c3dd803cfa39221bccb3379eb312c945cf3c3aae931be60da0ad9d6a386df0ff",
+      "source_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a"
     },
     {
       "package": "isolated-terminal",
@@ -478,8 +478,8 @@
     {
       "package": "turbo-vision",
       "directory": "../../ports/turbo-vision",
-      "candidate_sha256": "92596135412039f70f68728c2d8892ecb620dd156cf31efa9f3d59c01b9012db",
-      "source_sha256": "7b32a6fa1b2a70349c490314ca05eaf064d2bc0c31674373fc853f167fa02d61"
+      "candidate_sha256": "9ed89df7215b967f7eb458e09b45454bbbcd2d5ff77cb94472aeb891042dca1c",
+      "source_sha256": "52fb93c3d72f66f18876db66c7616a57f51ba20c325674144003a40b633a48f4"
     },
     {
       "package": "wikifot",
