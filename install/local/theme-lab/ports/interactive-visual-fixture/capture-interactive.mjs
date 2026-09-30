@@ -15,6 +15,7 @@ import {loadCandidateStructure} from '../../src/candidate-structure.mjs';
 import {interactiveAcceptanceFixture} from '../../src/interactive-acceptance-fixture.mjs';
 import {openSidebar,closeSidebar} from '../../src/sidebar-interaction.mjs';
 import {dedupeCssLayers} from '../../src/css-layers.mjs';
+import {resolveRunContractPath as resolveBoundRunContractPath} from '../../src/run-contract-path.mjs';
 
 const packageDir=path.dirname(fileURLToPath(import.meta.url));
 const portsDir=path.resolve(packageDir,'..');
@@ -58,9 +59,7 @@ const migrationFixture=runContract.migration_fixture??null;
 if(migrationFixture&&['main_slug','top_slug','side_slug'].some(key=>!/^run-owned:sigma10-[a-z0-9-]+$/u.test(migrationFixture[key]??'')))throw new Error('invalid migration fixture slug');
 if(runContractArg&&(!artifactNamespace||artifactNamespace.split('/').some(segment=>!/^[a-z0-9-]+$/u.test(segment))))throw new Error('custom run contract needs a valid isolated artifact namespace');
 const resolveRunContractPath=(relative,label)=>{
- const resolved=path.resolve(runContractDir,relative);
- if(resolved!==themeLabDir&&!resolved.startsWith(themeLabDir+path.sep))throw new Error(`${label} escapes Theme Lab`);
- return resolved;
+ return resolveBoundRunContractPath(themeLabDir,runContractDir,relative,label);
 };
 const savedComponentCss=runContract.saved_component_css ? await fs.readFile(resolveRunContractPath(runContract.saved_component_css.path,'saved component CSS'),'utf8') : '';
 if(savedComponentCss && crypto.createHash('sha256').update(savedComponentCss).digest('hex')!==runContract.saved_component_css.sha256)throw new Error('saved component CSS identity differs from run contract');
