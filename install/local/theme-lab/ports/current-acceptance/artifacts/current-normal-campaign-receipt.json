@@ -1,0 +1,63 @@
+{
+  "schema": "theme_lab_normal_current_browser_campaign_receipt.v1",
+  "status": "capture-complete-review-pending-with-action-capture-failures",
+  "captured_at": "2026-09-30T11:25:22.079Z",
+  "source_head": "bbf8f26f1bcf4fc4256cf1b1694d792e48cf55ca",
+  "target_site": {
+    "slug": "scpaiueouiuiuiui",
+    "origin": "https://scpaiueouiuiuiui.wikijump.localhost:18443",
+    "locale": "ja"
+  },
+  "baseline_theme": "Sigma-9",
+  "run_contract": {
+    "path": "install/local/theme-lab/ports/current-acceptance/run-contract.json",
+    "sha256": "220dae88647313b0f3f58b0303dea330a6593da5d7ed9d2117c5a725fb00339d"
+  },
+  "transport": {
+    "mode": "built",
+    "origin": "https://scpaiueouiuiuiui.wikijump.localhost:3395",
+    "built_source_sha256": "25c49841369c6183bfebb5011f966f70f5963ec7c1570b7f226fd7582594db33"
+  },
+  "matrix": {
+    "maintained_packages": 36,
+    "engines": [
+      "chromium",
+      "firefox",
+      "webkit"
+    ],
+    "viewports": [
+      "desktop",
+      "laptop",
+      "tablet",
+      "mobile",
+      "narrow-mobile"
+    ],
+    "jobs": 5,
+    "capture_concurrency_per_worker": 2
+  },
+  "evidence": {
+    "rows": 5220,
+    "required_browser_coverage_failures": 0,
+    "interwiki_visible_rows": 252,
+    "rows_without_screenshot": 0,
+    "asset_failure_rows": 0,
+    "page_error_rows": 0,
+    "external_requests_sent": 0,
+    "action_capture_failures": 48,
+    "action_capture_failures_by_engine": {
+      "chromium": 38,
+      "firefox": 4,
+      "webkit": 6
+    },
+    "screenshot_review_pending": 5172,
+    "exact_visual_reviews_reused": 0,
+    "pixel_identical_review_reuse": false
+  },
+  "retry_policy": {
+    "targeted_retry_pass": "stopped after the matrix because remaining action failures did not establish a harness or fixture cause; no further targeted reruns performed"
+  },
+  "diagnostic_inputs": [
+    "artifacts/diagnostic-aborted-current-2026-09-30-interactive-visual-audit.json.gz",
+    "artifacts/archives/30bef62767059e2d3cb37802a9484a0262a81047d5cb6c6f9d1ba8a90eddd829.json.gz"
+  ]
+}
