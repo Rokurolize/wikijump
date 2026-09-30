@@ -24,9 +24,9 @@
   "existing_jp_audit": "new-jp-candidate-verified",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/inkblot",
-  "candidate_source_hash": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
+  "candidate_source_hash": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a",
   "source_candidate_path": "install/local/theme-lab/ports/inkblot/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
+  "source_candidate_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -34,11 +34,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/inkblot/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
+  "candidate_source_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a",
   "human_port_candidate_path": "install/local/theme-lab/ports/inkblot/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "eb4f0d31324c9b7949043c9a42a415d42e26230c144829a7eba7b118269d79c9",
-  "candidate_preview_sha256": "0442618a6a9e3245329e467e9a26c2e5f135c994ed78f085719be9817888e3bc",
-  "candidate_css_sha256": "49d9d2fe39c30908844383098c67ddd815c64f95b5ba0bb6dd249c10294fca60",
+  "candidate_preview_sha256": "5a4c255a614b84147debde1dbb944f2f04d6a9167157951a317f6eebb2a9f681",
+  "candidate_css_sha256": "c3dd803cfa39221bccb3379eb312c945cf3c3aae931be60da0ad9d6a386df0ff",
   "page_assets": [
     {
       "filename": "pancakes.png",
@@ -92,10 +92,30 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "fail",
+    "reason": "Wikidot adaptation authority passes with zero unresolved findings. Fresh full local target acceptance fails only on a TOC fixture that the current preview path does not render and local-only mobile navigation/color observations; these do not authorize further CSS."
   },
   "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "final_verdict": "fail",
+  "final_status": "current-target-acceptance-fail-authority-pass",
+  "current_wikidot_authority": {
+    "path": "authority-evidence/inkblot-narrow-navigation/receipt.json",
+    "sha256": "4e63736393e73def4a023bcbe05348e294a2de190bcf77da591aea0ee0e6b840",
+    "state": "navigation",
+    "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+    "widths": [
+      320,
+      390
+    ],
+    "public_writes": 0
+  },
+  "current_local_check": {
+    "path": "artifacts/current-acceptance/current-local-check.json",
+    "sha256": "a9060365ebda265fa96f2b23043c0bbe1b8ac51d2723690e78772ea23a17c919",
+    "candidate_source_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a",
+    "candidate_preview_sha256": "5a4c255a614b84147debde1dbb944f2f04d6a9167157951a317f6eebb2a9f681",
+    "candidate_css_sha256": "c3dd803cfa39221bccb3379eb312c945cf3c3aae931be60da0ad9d6a386df0ff",
+    "port_verdict": "pass",
+    "target_status": "fail"
+  }
 }

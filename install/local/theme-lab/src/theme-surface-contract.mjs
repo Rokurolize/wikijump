@@ -487,19 +487,26 @@ async function captureMode(page, {surface, state, viewport, themed, effectiveCss
   try { await applySurfaceState(page, surface.id, state.id); }
   catch (error) { actionError = String(error?.message ?? error); }
   const snapshot = await collectProbe(page, surface.probes);
-  snapshot.navigation_bounds = surface.id.startsWith("nav.") ? await page.evaluate(({expanded}) => {
-    const menus=[...document.querySelectorAll(".mobile-top-bar > ul > li > ul, #top-bar .top-bar > ul > li > ul")];
+  snapshot.navigation_bounds = surface.id.startsWith("nav.") ? await page.evaluate(({expanded, surfaceId}) => {
+    // Measure only the tree owned by this navigation surface. Opening hidden
+    // desktop menus while checking mobile navigation creates synthetic escapes.
+    const selector = surfaceId === "nav.mobile-top"
+      ? ".mobile-top-bar > ul > li > ul"
+      : "#top-bar .top-bar > ul > li > ul";
+    const menus=[...document.querySelectorAll(selector)];
     const rows=[];
     for(const menu of menus) {
       const original=menu.getAttribute("style");
       if(expanded) for(const [property,value] of Object.entries({display:"block",visibility:"visible",opacity:"1"})) menu.style.setProperty(property,value,"important");
-      if(menu.checkVisibility()) for(const el of [menu,...menu.querySelectorAll("li,a")]) {
-        if(el.checkVisibility())rows.push({selector:el.tagName.toLowerCase(),rect:el.getBoundingClientRect().toJSON()});
+      const menuStyle=getComputedStyle(menu);
+      if(menu.checkVisibility()&&menuStyle.opacity!=="0") for(const el of [menu,...menu.querySelectorAll("li,a")]) {
+        const style=getComputedStyle(el);
+        if(el.checkVisibility()&&style.opacity!=="0")rows.push({selector:el.tagName.toLowerCase(),owner:surfaceId,rect:el.getBoundingClientRect().toJSON()});
       }
       if(original===null)menu.removeAttribute("style");else menu.setAttribute("style",original);
     }
     return rows;
-  },{expanded:state.id==="submenu-expanded"}) : [];
+  },{expanded:state.id==="submenu-expanded",surfaceId:surface.id}) : [];
   const overflow = (await collectViewportOverflow(page, [VIEWPORTS[viewport]]))[viewport];
   let cleanupError = null;
   try { await cleanupSurfaceState(page, surface.id, state.id); }

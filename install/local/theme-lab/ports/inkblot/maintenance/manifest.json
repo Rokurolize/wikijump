@@ -3,11 +3,11 @@
   "frozen_candidate_source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
   "base_source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
   "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "jp_overrides_sha256": "c476100184db923edca24453a64b0a288e05cd03d02fed7eb65bbb3139bcf871",
   "semantic_css_sha256": "d98e7ac63bf4c6aaf180fe1e2b0e2bb0f2e20d0ed9ebdc56255a67fde0230692",
   "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
+  "final_source_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a",
   "final_source_inputs": {
     "base_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
     "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"

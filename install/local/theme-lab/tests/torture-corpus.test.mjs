@@ -1,7 +1,20 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import test from "node:test";
+import {fileURLToPath} from "node:url";
 
 import {TORTURE_VIEWPORTS, diffTortureStates} from "../src/torture-corpus.mjs";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+test("torture fixture uses retained real PageRateWidget DOM where preview cannot execute the module", () => {
+  const fixture = fs.readFileSync(path.join(root, "fixtures/theme-torture.wikidot.txt"), "utf8");
+  assert.match(fixture, /class="page-rate-widget-box"/u);
+  assert.match(fixture, /class="rate-points"/u);
+  assert.match(fixture, /class="rateup btn btn-default"/u);
+  assert.doesNotMatch(fixture, /\[\[module Rate\]\]/u);
+});
 
 test("torture viewports match the real-port acceptance contract", () => {
   assert.deepEqual(TORTURE_VIEWPORTS, [
@@ -61,6 +74,15 @@ test("torture diff rejects an invalid baseline fixture", () => {
   );
   assert.equal(diff.verdict, "fail");
   assert.equal(diff.issues[0].kind, "baseline_structure_missing");
+});
+
+test("unmaterialized Wikidot TOC is reported as unavailable, not a package failure", () => {
+  const unavailable = component({expected_present: false, unavailable_preview: true});
+  const diff = diffTortureStates(state(unavailable), state(unavailable));
+  assert.equal(diff.verdict, "warn");
+  assert.equal(diff.issues.length, 1);
+  assert.equal(diff.issues[0].kind, "preview_structure_unavailable");
+  assert.equal(diff.issues[0].severity, "warn");
 });
 
 test("torture diff catches newly hidden content", () => {

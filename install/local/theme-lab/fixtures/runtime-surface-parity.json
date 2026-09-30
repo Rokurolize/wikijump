@@ -398,7 +398,7 @@
         "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
       ],
       "selector_patterns": [
-        "\\.yui-navset|\\.yui-nav|\\.yui-content"
+        "\\.yui-navset|\\.yui-nav|\\.yui-content|\\.picker\\s+(?:li|em)"
       ],
       "theme_lab_activity": "ACTIVE_CSS_OR_INTERACTION_SURFACE",
       "conclusion_resolution": "LOCAL_TARGET_ACCEPTANCE_ONLY",
