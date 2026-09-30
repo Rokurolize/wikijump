@@ -360,7 +360,7 @@ export function buildVerdict({
     ? "fail"
     : visual && Object.values(visual).some((entry) => !["pass", "warn"].includes(entry?.acceptance?.status))
       ? "inconclusive"
-    : issues.some((issue) => issue.severity === "warn") || rawStyleChanges.length > 0 || (torture?.changed_component_count ?? 0) > 0
+    : issues.some((issue) => issue.severity === "warn") || (visual && Object.values(visual).some((entry) => entry?.acceptance?.status === "warn")) || rawStyleChanges.length > 0 || (torture?.changed_component_count ?? 0) > 0
       ? "warn" : "pass";
   const overall = overallAcceptance(verdict, targetStatus);
   return {

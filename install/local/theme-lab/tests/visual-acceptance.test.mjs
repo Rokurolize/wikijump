@@ -18,6 +18,11 @@ test('different-page pixel metrics cannot substitute for exact reviewed image ac
  const review={schema:'theme_lab_visual_acceptance.v1',candidate_css_sha256:sha(inputs.css),candidate_preview_sha256:sha(inputs.wikitext),viewports:{desktop:{candidate_screenshot_sha256:sha('candidate pixels'),reference_screenshot_sha256:sha('different reference content'),status:'pass',reviewer:'reviewer',reviewed_at:new Date().toISOString(),note:'Reviewed different article content; all controls remain readable.'}}};
  await bindVisualAcceptance(capture,review,inputs);
  assert.equal(buildVerdict({visual:capture}).verdict,'pass');
+ review.viewports.desktop.status='warn';await bindVisualAcceptance(capture,review,inputs);
+ assert.equal(buildVerdict({visual:capture}).overall_acceptance.target_status,'warn');
+ review.viewports.desktop.status='pass';review.viewports.desktop.reviewed_at='not-a-date';await bindVisualAcceptance(capture,review,inputs);
+ assert.equal(buildVerdict({visual:capture}).verdict,'inconclusive');
+ review.viewports.desktop.reviewed_at=new Date().toISOString();await bindVisualAcceptance(capture,review,inputs);
  assert.equal(buildVerdict({visual:capture,viewports:{mobile:{document_overflow_px:12}}}).verdict,'fail');
  review.viewports.desktop.status='fail';await bindVisualAcceptance(capture,review,inputs);
  assert.equal(buildVerdict({visual:capture}).verdict,'fail');

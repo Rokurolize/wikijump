@@ -74,7 +74,15 @@ async function isReady(){
 async function buildSource(fingerprint){
  const buildDir=path.join(cacheBase,fingerprint);
  const ready=path.join(buildDir,'.theme-lab-built-ready');
- try{await fs.access(ready);await fs.access(path.join(buildDir,'build/handler.js'));return{buildDir,built:false}}catch{}
+ try{
+  const recordedFingerprint=(await fs.readFile(ready,'utf8')).trim();
+  if(recordedFingerprint!==fingerprint)throw new Error('cached built capture daemon readiness identity is stale');
+  const handler=await fs.stat(path.join(buildDir,'build/handler.js'));
+  if(!handler.isFile())throw new Error('cached built capture runtime handler is missing');
+  return{buildDir,built:false};
+ }catch(error){
+  if(error.code!=='ENOENT'&&!/identity is stale|handler is missing/u.test(error.message))throw error;
+ }
  await fs.rm(buildDir,{recursive:true,force:true});
  await fs.mkdir(buildDir,{recursive:true});
  await run('rsync',['-a','--delete','--exclude','node_modules','--exclude','.svelte-kit','--exclude','build',`${framerailDir}/`,`${buildDir}/`]);

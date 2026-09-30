@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
+import {hasCompleteVisualReview} from '../ports/interactive-visual-fixture/browser-acceptance-geometry.mjs';
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 
 export async function bindVisualAcceptance(captures,review,{css,baseCss="",wikitext,source=null}) {
@@ -13,7 +14,7 @@ export async function bindVisualAcceptance(captures,review,{css,baseCss="",wikit
   const candidateSha=sha(await fs.readFile(capture.candidate_path));
   const referenceSha=capture.reference_path?sha(await fs.readFile(capture.reference_path)):null;
   const row=matches?review.viewports?.[viewport]:null;
-   const bound=row?.candidate_screenshot_sha256===candidateSha && row?.reference_screenshot_sha256===referenceSha && typeof row?.note==='string' && row.note.trim().length>=12 && typeof row?.reviewed_at==='string' && Number.isFinite(Date.parse(row.reviewed_at)) && typeof row?.reviewer==='string' && row.reviewer.trim().length>0;
+  const bound=hasCompleteVisualReview(row,candidateSha,referenceSha);
   capture.candidate_screenshot_sha256=candidateSha;
   capture.reference_screenshot_sha256=referenceSha;
   capture.acceptance={status:bound&&['pass','warn','fail'].includes(row.status)?row.status:'inconclusive',reason:bound?row.note:'Different source/target content requires exact image review; pixel RMSE alone is diagnostic.',...(bound?{review:row}:{})};
