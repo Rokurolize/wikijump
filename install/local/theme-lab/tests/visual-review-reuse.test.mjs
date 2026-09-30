@@ -57,6 +57,7 @@ test('exact-byte same-state review reuse preserves current provenance', () => {
     reason: 'byte-identical',
     source_screenshot_sha256: 'a'.repeat(64),
     source_candidate_sha256: 'old-candidate',
+    source_candidate_source_sha256: 'old-source',
     source_classification: 'PASS_NATURAL',
     source_reviewed_at: '2026-09-25T12:00:00.000Z',
     source_reviewer: 'Codex visual capability',
@@ -64,6 +65,10 @@ test('exact-byte same-state review reuse preserves current provenance', () => {
     source_review_screenshot_sha256: 'a'.repeat(64)
   });
   assert.equal(row.review_provenance.reviewed_at, '2026-09-25T12:00:00.000Z');
+  assert.equal(row.visual_review.screenshot_sha256, row.screenshot_sha256);
+  assert.equal(row.visual_review.candidate_sha256, row.candidate_sha256);
+  assert.equal(row.visual_review.candidate_source_sha256, row.candidate_source_sha256);
+  assert.equal(row.visual_review.reviewer, row.review_provenance.reviewer);
 });
 
 test('intentional-divergence reason is retained across exact-byte reuse', () => {
@@ -318,14 +323,16 @@ test('malformed companion explanations are dropped instead of copied forward', (
   }
 });
 
-test('nonvisual reviews are ineligible and stale direct attribution cannot shadow reuse', () => {
+test('nonvisual reviews are ineligible and exact reuse replaces stale attribution with current identity', () => {
   for(const method of ['geometry-only','',null]){
     const source=prior();source.visual_review.method=method;
     assert.equal(applyExactVisualReviewReuseToRows([{...base}],[source]),0);
   }
   const row={...base,visual_review:{method:'obsolete',screenshot_sha256:'b'.repeat(64)}};
   assert.equal(applyExactVisualReviewReuseToRows([row],[prior()]),1);
-  assert.equal(row.visual_review,undefined);
+  assert.equal(row.visual_review.screenshot_sha256,row.screenshot_sha256);
+  assert.equal(row.visual_review.candidate_sha256,row.candidate_sha256);
+  assert.equal(row.visual_review.candidate_source_sha256,row.candidate_source_sha256);
   assert.equal(applyExactVisualReviewReuseToRows([{...base}],[row]),1);
 });
 
