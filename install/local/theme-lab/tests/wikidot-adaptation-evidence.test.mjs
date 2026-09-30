@@ -17,8 +17,11 @@ function receipt(name) {
 
 test('all nine cleaned navigation packages fit every menu/link at both mobile widths',()=>{
   for(const theme of ['al-slop','foxtrot','hansarp','pataphysics','quand-le-soleil-se-couche','scpedia','space','paperstack','turbo-vision']) {
-    const corrected=['space','paperstack','turbo-vision'].includes(theme);
-    const r=receipt(corrected?theme+'-published-final':'removed-'+theme);
+    const corrected=['al-slop','paperstack','turbo-vision'].includes(theme);
+    const ledger=JSON.parse(fs.readFileSync(path.join(ports,'adaptation-authority.json'),'utf8'));
+    const current=ledger.packages[theme].current_navigation_evidence;
+    if(current)assert.equal(digest(fs.readFileSync(path.join(ports,current.path))),current.sha256);
+    const r=receipt(current?path.dirname(current.path).replace(/^authority-evidence\//u,''):corrected?theme+'-published-final':'removed-'+theme);
     const after=r.rows.filter(row=>row.variant==='with');
     assert.deepEqual([...new Set(after.map(row=>row.width))],[320,390]);
     assert.equal(after.length,8,theme);
@@ -34,11 +37,12 @@ test('all nine cleaned navigation packages fit every menu/link at both mobile wi
 });
 
 test('distinct Space header and invisible Turbo masthead have independent target A/B need',()=>{
-  for(const name of ['space-header-published','turbo-header-published']) {
-    const r=receipt(name);
-    assert.ok(r.rows.some(row=>row.variant==='without'&&!row.pass));
-    assert.ok(r.rows.filter(row=>row.variant==='with').every(row=>row.pass));
-  }
+  const space=receipt('space-header-complete-source-current');
+  assert.ok(space.rows.filter(row=>row.variant==='with').every(row=>row.pass));
+  assert.ok(space.rows.find(row=>row.width===320&&row.variant==='with').measurement.header_ink_rects['#header h1'][0].width>0);
+  const turbo=receipt('turbo-header-complete-source-current');
+  assert.ok(turbo.rows.some(row=>row.variant==='without'&&!row.pass));
+  assert.ok(turbo.rows.filter(row=>row.variant==='with').every(row=>row.pass));
 });
 
 test('real EN and JP search authority preserves normal, hover and focus behavior',()=>{

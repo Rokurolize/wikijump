@@ -161,8 +161,7 @@ export const KNOWN_THEME_SURFACES = Object.freeze([
     selector_patterns: [/\.page-history/u, /#revision-list/u, /\.revision-diff/u, /#history-subarea/u],
     probes: [
       {selector: "#action-area .page-history"},
-      {selector: "#action-area .page-history tr#revision-row-1"},
-      {selector: "#action-area .revision-diff"},
+      {selector: "#action-area .page-history tr[id^='revision-row-']"},
     ],
     states: [{id: "history-list", viewports: ["desktop", "mobile"]}],
   },
@@ -170,7 +169,6 @@ export const KNOWN_THEME_SURFACES = Object.freeze([
     id: "page.files",
     selector_patterns: [/\.page-files/u, /\.file-list/u, /\.file-row/u, /\.file-name/u, /\.file-attribute/u],
     probes: [
-      {selector: "#action-area .page-files"},
       {selector: "#action-area .file-list"},
       {selector: "#action-area .file-name"},
     ],
@@ -278,7 +276,8 @@ async function settle(page) {
 
 async function resetState(page) {
   await page.evaluate(() => {
-    history.replaceState(null, "", `${location.pathname}${location.search}`);
+    // Navigate the fragment so CSS :target is reset as well as the URL.
+    location.hash = "";
     document.activeElement?.blur?.();
     window.scrollTo(0, 0);
   });
@@ -286,7 +285,21 @@ async function resetState(page) {
   await settle(page);
 }
 
-async function cleanupSurfaceState(page, surfaceId, stateId) {
+export async function cleanupSurfaceState(page, surfaceId, stateId) {
+  if(surfaceId==='content.collapsible' && stateId==='expanded'){
+    const block=page.locator('#page-content .collapsible-block').first();
+    const unfolded=block.locator(':scope > .collapsible-block-unfolded');
+    if(await unfolded.isVisible()){
+      const control=block.locator('.collapsible-block-unfolded-link .collapsible-block-link:visible').first();
+      await control.focus();await control.press('Enter');await unfolded.waitFor({state:'hidden'});
+    }
+    await resetState(page);return;
+  }
+  if (["page.history", "page.files"].includes(surfaceId)) {
+    const close = page.locator("#action-area .action-area-close");
+    if (await close.count()) await close.click({timeout: 5000});
+    await page.locator(surfaceId === "page.history" ? "#action-area .page-history" : "#action-area .file-list").waitFor({state: "hidden", timeout: 5000});
+  }
   await page.evaluate(async ({surfaceId: surface, stateId: state}) => {
     const settle = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const visible = (element) => {
@@ -299,7 +312,8 @@ async function cleanupSurfaceState(page, surfaceId, stateId) {
       document.querySelector(".mobile-top-bar > ul > li.theme-lab-surface-open")?.classList.remove("theme-lab-surface-open");
       document.getElementById("theme-lab-surface-state-style")?.remove();
     } else if ((surface === "nav.sidebar" && state === "open") || (surface === "content.credit" && state === "open")) {
-      history.replaceState(null, "", `${location.pathname}${location.search}`);
+      // Navigate the fragment so CSS :target is reset as well as the URL.
+    location.hash = "";
     } else if (surface === "content.tabview" && state === "second-tab-selected") {
       document.querySelector(".yui-navset .yui-nav li a")?.click();
     } else if (surface === "content.collapsible" && state === "expanded") {
@@ -311,8 +325,23 @@ async function cleanupSurfaceState(page, surfaceId, stateId) {
   await resetState(page);
 }
 
-async function applySurfaceState(page, surfaceId, stateId) {
+export async function applySurfaceState(page, surfaceId, stateId) {
   await resetState(page);
+  if(surfaceId==='content.collapsible' && stateId==='expanded'){
+    const block=page.locator('#page-content .collapsible-block').first();
+    const unfolded=block.locator(':scope > .collapsible-block-unfolded');
+    if(!await unfolded.isVisible()){
+      const control=block.locator('.collapsible-block-folded .collapsible-block-link:visible').first();
+      await control.focus();await control.press('Enter');
+    }
+    await unfolded.waitFor({state:'visible'});await settle(page);return;
+  }
+  if (["page.history", "page.files"].includes(surfaceId)) {
+    await page.locator(surfaceId === "page.history" ? "#history-button" : "#files-button").click({timeout: 5000});
+    await page.locator(surfaceId === "page.history" ? "#action-area .page-history tr[id^='revision-row-']" : "#action-area .file-list .file-name").first().waitFor({state: "visible", timeout: 5000});
+    await settle(page);
+    return;
+  }
   const result = await page.evaluate(async ({surfaceId: surface, stateId: state}) => {
     const settle = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const visible = (element) => {
@@ -335,10 +364,10 @@ async function applySurfaceState(page, surfaceId, stateId) {
         return visible(submenu) ? {ok: true} : {ok: false, error: "forced mobile top submenu did not become visible"};
       }
       if (surface === "nav.sidebar" && state === "open") {
-        const control = document.querySelector(".mobile-top-bar .open-menu a");
+        const control = [...document.querySelectorAll('.mobile-top-bar .open-menu a, a[href="#container-wrap"]')].find(visible);
         const sidebar = document.querySelector("#side-bar");
         if (!control || !sidebar) return {ok: false, error: "mobile sidebar fixture/control is absent"};
-        location.hash = "#side-bar";
+        location.hash = control.getAttribute('href');
         await settle();
         return visible(sidebar) ? {ok: true} : {ok: false, error: "mobile sidebar did not become visible"};
       }

@@ -141,7 +141,7 @@
       "candidate_source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
       "candidate_active_tags": [],
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "45789c3c04061480fe9e0999f13043df306cbee6c574555071f7143d99d55bb0",
+      "candidate_css_sha256": "5c16674db89cb21d546a1c8c81c9a298c4628db38d1c7e0d97be52ad1c88ddf0",
       "asset_receipt_path": "assets.json",
       "assets": 33,
       "imports": 5,
@@ -149,6 +149,12 @@
       "localization_transform_manifest": null,
       "missing": 0,
       "external_requests_during_build": 0
+    },
+    "source_css_includes": {
+      "manifest": "source-css-includes.json",
+      "materialized_css_sha256": "875497dc164526da0940bc91a56d9b3cb6839e30cb02881e47245d662982a621",
+      "cascade": "before-main-source-css",
+      "public_writes": 0
     }
   },
   "adaptation_authority": {

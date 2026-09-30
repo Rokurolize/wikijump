@@ -27,9 +27,9 @@
   "existing_jp_audit": "new-jp-candidate-verified",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/al-slop",
-  "candidate_source_hash": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
+  "candidate_source_hash": "1c603b5460791a94a2c82c794cfc7f8a2917c7d51e8a44364de2086be2e5fe0b",
   "source_candidate_path": "install/local/theme-lab/ports/al-slop/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
+  "source_candidate_sha256": "1c603b5460791a94a2c82c794cfc7f8a2917c7d51e8a44364de2086be2e5fe0b",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -37,11 +37,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/al-slop/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
+  "candidate_source_sha256": "1c603b5460791a94a2c82c794cfc7f8a2917c7d51e8a44364de2086be2e5fe0b",
   "human_port_candidate_path": "install/local/theme-lab/ports/al-slop/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "f56b3eb7ae025b38d0e65b7d4042be9aa2bb92f24fff421f68504aaf34645e4b",
-  "candidate_preview_sha256": "bc91478e765f52e29c5bf26ef3b201f2a236fa8dd1a83c995ebd4683ec81e101",
-  "candidate_css_sha256": "358fd5b35cf2040f9b6bb38abb69a8cfbcb942c75db6d5fd2abf9e2dd6701fad",
+  "candidate_preview_sha256": "f519222a5e6c9179f9421294a5df6307240441adbb6475943deef6f9921ae898",
+  "candidate_css_sha256": "dec8bced927ebe8048d20115c824bd649058c89bf4ca2bf954e728699441a72e",
   "page_attachment_manifest": null,
   "new_port_reconciliation": {
     "source_authority": "current-en-source",
@@ -55,7 +55,7 @@
     "source_evidence": "candidate screenshots visibly rendered unresolved SCP-EN usernames against SCP-JP identity links; preserve display names and freeze upstream/human-port originals"
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/al-slop/assets.json",
-  "asset_dependency_decision_count": 20,
+  "asset_dependency_decision_count": 21,
   "page_asset_dependency_decisions_path": null,
   "historical_acceptance": {
     "status": "SUPERSEDED_CANDIDATE",

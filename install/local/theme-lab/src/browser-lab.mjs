@@ -681,7 +681,7 @@ export async function collectViewportOverflow(page, viewports) {
         const style = getComputedStyle(element);
         const overflowPx = Math.max(0, rect.right - root.clientWidth);
         const clipped = clippingRight !== null && rect.right > clippingRight + 2;
-        if (overflowPx > 0.5 && !clipped) keepTopFive({element, rect, style, overflow_px: overflowPx});
+        if (overflowPx > 0 && !clipped) keepTopFive({element, rect, style, overflow_px: overflowPx});
         let childClippingRight = clippingRight;
         if (
           ["auto", "scroll", "hidden", "clip"].includes(style.overflowX) &&

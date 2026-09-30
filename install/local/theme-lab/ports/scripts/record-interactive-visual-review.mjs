@@ -67,9 +67,12 @@ export function applyVisualReviews(rows, reviews, currentIdentity, reviewedAt = 
 
 async function main() {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-  const input = process.argv[2];
+  const args=process.argv.slice(2);
+  const input = args[0];
   if (!input) throw new Error('usage: node record-interactive-visual-review.mjs <review-evidence.json>');
-  const auditPath = path.join(root, 'interactive-visual-audit.json');
+  const auditOption=args.indexOf('--audit');
+  const auditPath = auditOption<0 ? path.join(root, 'interactive-visual-audit.json') : path.resolve(args[auditOption+1]);
+  if(!auditPath.startsWith(path.resolve(root,'..')+path.sep))throw new Error('review audit must remain inside Theme Lab');
   const evidence = JSON.parse(await fs.readFile(path.resolve(input), 'utf8'));
   if (!Array.isArray(evidence.reviews) || evidence.reviews.length === 0) throw new Error('review evidence must contain a non-empty reviews array');
   await withAuditLock(auditPath, async () => {

@@ -407,3 +407,17 @@ For a later upstream refresh:
 
 If this workflow becomes common enough to automate, add a standalone-port
 planner rather than weakening the EN maintenance manifest guard.
+
+## Campaign closure
+
+Source integrity, deterministic generation, and adaptation authority do not
+substitute for current browser acceptance. Finish the full port check with exact
+paired image review and the applicable interaction matrix. Unreviewed visual
+results are inconclusive even when raw pixel comparison succeeds. A separate
+`candidate-base.css` must be included with `--css-base`.
+
+For maintained campaigns, run
+`node install/local/theme-lab/scripts/check-campaign-completion.mjs`. Completion
+requires current combined package acceptance and current Sigma-10 acceptance,
+complete current-identity browser coverage, and reviewed screenshot hashes.
+`check-final.mjs --historical-only` is evidence inspection, never promotion.

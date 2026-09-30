@@ -18,7 +18,7 @@ for(const [name,pkg] of Object.entries(ledger.packages)) {
   for(const [file,sha] of Object.entries(pkg.inputs)) if(digest(await fs.readFile(path.join(dir,file)))!==sha) throw new Error(`${name}: unreviewed input ${file}`);
   const base=await fs.readFile(path.join(dir,'maintenance/authority-base.wikidot.txt'),'utf8');
   const css=await fs.readFile(path.join(dir,'authority-overrides.css'),'utf8');
-  const source=name==='dear-dictator'?base:composeMaintainableCandidate(base,css);
+  const source=composeMaintainableCandidate(base,css);
   await fs.writeFile(path.join(dir,pkg.source_file),source);
   assertPublishablePackage(name);
   results.push({theme:name,source_sha256:digest(source)});

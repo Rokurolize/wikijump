@@ -16,6 +16,7 @@ const manifestPath = process.env.THEME_LAB_CAMPAIGN_MANIFEST ?? path.join(ports,
 const socket = process.env.THEME_LAB_SOCKET ?? "/tmp/theme-lab-en34.sock";
 const dearSocket = process.env.THEME_LAB_DEAR_SOCKET ?? socket;
 const siteId = process.env.THEME_LAB_SITE_ID ?? "6000003";
+const runArtifactRoot = process.env.THEME_LAB_RUN_ARTIFACT_DIR ? path.resolve(process.env.THEME_LAB_RUN_ARTIFACT_DIR) : null;
 const sharedSelectors = path.join(ports, "shared-acceptance-selectors.txt");
 const lab = path.join(root, "install/local/theme-lab/scripts/theme-lab.mjs");
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
@@ -38,6 +39,12 @@ function sha256(file) {
 
 function verifyFrozenPackage(item) {
   if (item.slug === "theme:dear-dictator (SCP-KO)") return;
+  if (path.basename(item.directory) === "quand-le-soleil-se-couche") {
+    const foreign = JSON.parse(fs.readFileSync(path.join(item.directory,"manifest.json"),"utf8"));
+    if (sha256(path.join(item.directory,"upstream-fr.wikidot.txt")) !== foreign.source_sha256) throw new Error("FR frozen source identity mismatch");
+    for (const asset of foreign.assets) if (sha256(path.join(item.directory,"assets",asset.name)) !== asset.sha256) throw new Error(`FR frozen asset mismatch: ${asset.name}`);
+    return;
+  }
   const packageManifest = JSON.parse(fs.readFileSync(path.join(item.directory, "manifest.json"), "utf8"));
   const identity = packageManifest.source_identity;
   for (const [key, file] of [["en", "upstream-en.wikidot.txt"], ["jp", "existing-jp.wikidot.txt"]]) {
@@ -131,6 +138,11 @@ cases.push({
   socket: dearSocket,
 });
 
+if (process.argv.includes("--maintained")) {
+  const directory = path.join(ports,"quand-le-soleil-se-couche");
+  const foreign = JSON.parse(fs.readFileSync(path.join(directory,"manifest.json"),"utf8"));
+  cases.push({slug:"theme:quand-le-soleil-se-couche (SCP-FR)",directory,candidate:"candidate.wikidot.txt",css:"candidate.css",reference:foreign.source_url,selectors:path.join(directory,"acceptance-selectors.txt"),surfaceContract:path.join(directory,"surface-contract.json"),title:"Quand le Soleil se couche",socket:process.env.THEME_LAB_FR_SOCKET ?? socket});
+}
 const onlyIndex = process.argv.indexOf("--only");
 const only = onlyIndex >= 0 ? process.argv[onlyIndex + 1] : null;
 const noVisual = process.argv.includes("--no-visual");
@@ -154,8 +166,13 @@ for (const item of selectedCases) {
     "--wikitext", path.join(item.directory, item.candidate),
     "--css", path.join(item.directory, item.css),
     "--reference", item.reference, "--offline", "--selectors", item.selectors,
-    "--title", item.title, "--compact", ...(noVisual ? [] : ["--visual"]), "--artifact-dir", path.join(item.directory, "artifacts"),
+    "--title", item.title, "--compact", ...(noVisual ? [] : ["--visual"]), "--artifact-dir", runArtifactRoot ? path.join(runArtifactRoot, path.basename(item.directory)) : path.join(item.directory, "artifacts"),
   ];
+  if (item.surfaceContract) args.push("--surface-contract",item.surfaceContract);
+  const structureFile=path.join(item.directory,"acceptance-structure.json");
+  if(fs.existsSync(structureFile))args.push("--source-structure",structureFile);
+  const baseCssFile = path.join(item.directory,"candidate-base.css");
+  if (fs.existsSync(baseCssFile)) args.push("--css-base",baseCssFile);
   if (iteration) args.push("--iteration");
   const pageAssetManifest = path.join(item.directory, "page-assets.json");
   if (fs.existsSync(pageAssetManifest)) args.push("--page-assets", pageAssetManifest);
@@ -166,6 +183,10 @@ for (const item of selectedCases) {
     summaries.push({slug: item.slug, status: "error"});
     process.stdout.write(`${JSON.stringify(summaries.at(-1))}\n`);
     continue;
+  }
+  if (output.ok === false) {
+    const row = {slug: item.slug, status: "error", error: output.error, exit_code: result.status};
+    failures.push(row); summaries.push(row); process.stdout.write(`${JSON.stringify(row)}\n`); continue;
   }
   const verdict = output.result ?? output;
   const external = verdict.assets?.external_requests ?? verdict.asset_summary?.external_requests ?? 0;
@@ -178,9 +199,14 @@ for (const item of selectedCases) {
     slug: item.slug,
     verdict: verdict.overall_acceptance?.status ?? "inconclusive",
     overall_acceptance: verdict.overall_acceptance ?? {status: "inconclusive"},
+    verification_scope: verdict.verification_scope ?? null,
+    target_fixture_identity: verdict.target_fixture_identity ?? null,
+    candidate_source_sha256: sha256(path.join(item.directory,path.basename(item.directory)==="dear-dictator"||path.basename(item.directory)==="quand-le-soleil-se-couche" ? "candidate.wikidot.txt" : "candidate.wikidot.source.txt")),
     candidate_css_sha256: sha256(path.join(item.directory,item.css)),
+    candidate_base_css_sha256: fs.existsSync(baseCssFile) ? sha256(baseCssFile) : null,
     candidate_preview_sha256: sha256(path.join(item.directory,item.candidate)),
     port_decision: verdict.port_decision ?? null,
+    parity_gate: verdict.parity_gate ?? null,
     local_target_acceptance: verdict.target_acceptance ?? null,
     local_target_acceptance_status: localAcceptanceStatus,
     errors: errorIssues.length,
@@ -206,7 +232,7 @@ for (const item of selectedCases) {
   const fontFailed = row.font_diagnostics?.status !== "measured" || !row.font_diagnostics.fonts?.some((font) => font.glyph_count > 0);
   const interactionFailed = !iteration && Object.values(row.interaction_diagnostics ?? {}).some((entry) => entry.status === "fail");
   const imageFailed = (row.image_diagnostics?.broken?.length ?? 0) > 0;
-  const failed = result.status !== 0 || row.verdict === "fail" || row.verdict === "inconclusive" || localAcceptanceStatus === "fail" || row.errors > 0 || row.next_actions > 0 || (!iteration && row.torture !== "pass") || external !== 0 || missingAssets > 0 || viewportFailed || fontFailed || interactionFailed || imageFailed;
+  const failed = result.status !== 0 || row.verdict === "fail" || row.verdict === "inconclusive" || localAcceptanceStatus === "fail" || row.errors > 0 || row.next_actions > 0 || (!iteration && !["pass", "warn"].includes(row.torture)) || external !== 0 || missingAssets > 0 || viewportFailed || fontFailed || interactionFailed || imageFailed;
   row.status = failed ? "fail" : iteration ? "iteration-verdict" : row.verdict === "warn" ? "warn-no-actionable-issues" : "pass";
   if (failed) failures.push({...row, exit_code: result.status, stderr: result.stderr?.slice(0, 500)});
   summaries.push(row);

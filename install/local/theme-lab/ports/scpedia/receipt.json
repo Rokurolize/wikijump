@@ -25,9 +25,9 @@
   "existing_jp_audit": "new-jp-candidate-verified",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/scpedia",
-  "candidate_source_hash": "c72a8efe05d1b61db6186108038dbfaca435d076a00f78319464deed5cfbb7c5",
+  "candidate_source_hash": "7d3669b6ee3e4c5cc5a2653403c679532610e2a78a7c4d8969eccc2577e1346f",
   "source_candidate_path": "install/local/theme-lab/ports/scpedia/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "c72a8efe05d1b61db6186108038dbfaca435d076a00f78319464deed5cfbb7c5",
+  "source_candidate_sha256": "7d3669b6ee3e4c5cc5a2653403c679532610e2a78a7c4d8969eccc2577e1346f",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -35,11 +35,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/scpedia/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "c72a8efe05d1b61db6186108038dbfaca435d076a00f78319464deed5cfbb7c5",
+  "candidate_source_sha256": "7d3669b6ee3e4c5cc5a2653403c679532610e2a78a7c4d8969eccc2577e1346f",
   "human_port_candidate_path": "install/local/theme-lab/ports/scpedia/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "5316c14f73b16462234cdbd4b06e8174fa41c57910492058df171404ad3a8e96",
-  "candidate_preview_sha256": "0a7c8111df8d7ccb66c0dcabf6449c2ab6d5b093d827440cb1a8788c9f38aa71",
-  "candidate_css_sha256": "0c084e07a8809a2f33fdee800c793293a7835412d5fb279d387e966d6de928de",
+  "candidate_preview_sha256": "4258c537b2ff47e5be915d0dff75fdf5d3f4a72dd8f2859613e928ea1c8cad35",
+  "candidate_css_sha256": "8879d620581f542e01b0f16d52df22737db850e655b61e0326cfb71831ee0660",
   "page_assets": [
     {
       "filename": "u.png",

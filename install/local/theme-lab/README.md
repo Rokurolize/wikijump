@@ -280,3 +280,27 @@ diagnosis, a broken-CSS canary that must fail, and a zero-request offline run.
   database, Redis, and S3. The current preview reuses Deepwell's
   `wikidot_page_preview`, which is ~10–25 ms, so this is only worth doing if
   the stack dependency becomes an agent-session obstacle.
+
+## Current campaign completion
+
+Historical source and screenshot integrity can be inspected with
+`node sigma10-migration/check-final.mjs --historical-only`. This does not accept
+current candidates or authorize promotion.
+
+The final campaign gate is `node scripts/check-campaign-completion.mjs` (also
+`node sigma10-migration/check-final.mjs` without inspection options). It requires
+accepted combined results for every maintained package and the current Sigma-10
+simulation, exact current source/CSS identities, complete browser coverage, and
+hash-bound image reviews. Missing or inconclusive acceptance exits 2; failed or
+stale evidence exits 1. Historical integrity alone cannot pass this gate.
+
+Paired images compare different foreign and JP articles. Pixel RMSE remains a
+diagnostic; `check --visual --visual-review review.json` binds an explicit image
+review to both exact PNGs and candidate inputs. Unreviewed images are inconclusive.
+Use `--css-base candidate-base.css` when the package declares a separate frozen
+base stylesheet. Full acceptance includes that layer.
+
+Current browser runs use `ports/current-acceptance/run-contract.json`, including
+the frozen production SCP-JP Sigma-9 baseline and hash-bound header/navigation
+markup. The runtime asset previously labelled Sigma-9 contains English Sigma-10
+CSS; its historical measurements remain archived under their original identity.

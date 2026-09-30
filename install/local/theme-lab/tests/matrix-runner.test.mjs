@@ -43,7 +43,7 @@ async function fixture(operation) {
       await fs.mkdir(process.env.THEME_LAB_AUDIT_SHARD_DIR,{recursive:true});
       const key=theme+'|'+engine+'|'+viewport+'|page.normal|settled';
       const shard={schema:'theme_lab_interactive_audit_delta.v1',remove_keys:[key],records:[row],superseded_records:[],visual_review_reuse_updates:0,document_patch:{}};
-      await fs.writeFile(path.join(process.env.THEME_LAB_AUDIT_SHARD_DIR,engine+'__'+viewport+'.json'),JSON.stringify(shard));
+      const destination=path.join(process.env.THEME_LAB_AUDIT_SHARD_DIR,engine+'__'+viewport+'.json');await fs.writeFile(destination+'.tmp',JSON.stringify(shard));await fs.rename(destination+'.tmp',destination);
       process.exit(0);
     }
     await withAuditLock(auditPath, async()=>{
@@ -83,6 +83,10 @@ for (const scenario of ['success', 'retry', 'exhausted', 'child-failure', 'built
       assert.match(result.stderr,scenario==='exhausted'?/after targeted retries/:scenario==='built-failure'?/sidecar unavailable/:/child failed/);
       if(scenario==='exhausted')assert.equal(calls.length,27);
       if(scenario==='built-failure')assert.equal(calls.length,0);
+      if(scenario==='child-failure'){
+        const partial=JSON.parse(await fs.readFile(auditPath,'utf8'));
+        assert.ok(partial.records.some(row=>row.surface==='page.normal'&&row.screenshot==='x.png'),'Successful parallel captures must survive a failed worker');
+      }
       // No child may keep writing after the runner reports failure.
       const snapshot=await fs.readFile(auditPath,'utf8');
       await new Promise(resolve=>setTimeout(resolve,100));

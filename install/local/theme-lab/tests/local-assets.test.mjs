@@ -40,3 +40,13 @@ test("candidate page images use verified local attachment bytes", async (t) => {
     {filename: "logo.png", asset_file: `../${digest}.png`, sha256: digest},
   ], dir), /invalid content-addressed page asset/u);
 });
+
+test('freezer filenames use the frozen asset pool without widening arbitrary relative URLs',async t=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'theme-lab-frozen-assets-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+ const bytes=Buffer.from('frozen font');const digest=crypto.createHash('sha256').update(bytes).digest('hex');
+ await fs.writeFile(path.join(dir,`${digest}.woff2`),bytes);
+ const css=`@font-face{src:url("${digest}.woff2")} .logo{background:url("./${digest}.png")} .unowned{background:url("relative.png")}`;
+ assert.deepEqual(await inspectCandidateAssets(css,dir),{referenced:2,missing:[`${digest}.png`]});
+ const injected=await materializeCandidateCssAssets(css,dir);
+ assert.ok(injected.includes('data:font/woff2;base64,'));assert.ok(injected.includes('url("relative.png")'));assert.ok(injected.includes(`url("./${digest}.png")`));
+});

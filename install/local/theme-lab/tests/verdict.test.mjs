@@ -266,3 +266,12 @@ test("overall acceptance combines both dimensions and fails closed", async () =>
   assert.equal(localFailure.overall_acceptance.status, "fail");
   assert.equal(buildVerdict().overall_acceptance.status, "pass");
 });
+
+test('concrete torture changes retain their surface identity while unknown summaries stay fail closed',()=>{
+ const known=buildVerdict({torture:{issues:[],changed_component_count:1,changes:[{component:'table',viewport:'mobile',property:'rect.width',before:120,after:130}]}});
+ assert.equal(known.port_decision.verdict,'pass');
+ assert.equal(known.target_acceptance.status,'warn');
+ assert.equal(known.target_acceptance.findings[0].surface,'content.table');
+ assert.equal(known.target_acceptance.findings[0].parity_review.port_conclusion_eligible,false);
+ for(const changes of [[],[{component:'unknown'}]])assert.equal(buildVerdict({torture:{issues:[],changed_component_count:1,changes}}).verdict,'inconclusive');
+});

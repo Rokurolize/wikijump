@@ -1,5 +1,10 @@
 @import url("https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css");
 @import url("https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css");
+
+@import url("https://scp-jp.github.io/files/component/bhl-dark-sidebar/style0.css");
+
+
+
 #page-title, #breadcrumbs {
     text-align: center !important;
 }

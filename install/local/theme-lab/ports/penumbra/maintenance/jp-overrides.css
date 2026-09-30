@@ -1,0 +1,12 @@
+/* SCP-JP Wikidot penumbra navigation correction: anchor only the overflowing mobile row endpoint menus. */
+@media (max-width: 767px) {
+  #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul {
+    left: auto; right: 0;
+  }
+}
+
+@media (min-width: 360px) and (max-width: 767px) {
+  #top-bar .mobile-top-bar > ul > li:last-child > ul {
+    left: auto; right: 0;
+  }
+}

@@ -69,6 +69,8 @@ export function issuesFromTorture(torture) {
     ...(issue.overflow_sources ? {overflow_sources: issue.overflow_sources} : {}),
     ...(issue.element_rect ? {element_rect: issue.element_rect} : {}),
     ...(issue.computed ? {computed: issue.computed} : {}),
+    ...(issue.rationale ? {rationale: issue.rationale} : {}),
+    ...(issue.content_viewport_overflow_px !== undefined ? {content_viewport_overflow_px: issue.content_viewport_overflow_px} : {}),
   }));
 }
 
@@ -236,16 +238,20 @@ export function summarizeVisual(visual) {
   const viewports = {};
   let worst = "pass";
   for (const [id, entry] of Object.entries(visual)) {
-    if (!entry.comparison) {
-      viewports[id] = {status: "captured"};
-      continue;
-    }
+    const status = entry.acceptance?.status ?? "inconclusive";
     viewports[id] = {
-      status: entry.comparison.status,
-      normalized_rmse: entry.comparison.normalized_rmse ?? null,
+      status,
+      comparison_status: entry.comparison?.status ?? "unavailable",
+      normalized_rmse: entry.comparison?.normalized_rmse ?? null,
+      candidate_path: entry.candidate_path,
+      reference_path: entry.reference_path,
+      candidate_screenshot_sha256: entry.candidate_screenshot_sha256,
+      reference_screenshot_sha256: entry.reference_screenshot_sha256,
+      review: entry.acceptance?.review ?? null,
     };
-    if (entry.comparison.status === "fail") worst = "fail";
-    else if (entry.comparison.status === "unavailable" && worst === "pass") worst = "unavailable";
+    if (status === "fail") worst = "fail";
+    else if (status === "inconclusive" && worst !== "fail") worst = "inconclusive";
+    else if (status === "warn" && worst === "pass") worst = "warn";
   }
   return {status: worst, viewports};
 }
@@ -254,7 +260,7 @@ export function summarizeVisual(visual) {
 // into authority for a port adaptation.
 export function overallAcceptance(port, target) {
   if (target === "fail" || port === "fail") return "fail";
-  if (port === "inconclusive") return "inconclusive";
+  if (port === "inconclusive" || target === "inconclusive") return "inconclusive";
   if (port === "warn" || target === "warn") return "warn";
   if (port === "pass" && target === "pass") return "pass";
   return "inconclusive";
@@ -293,11 +299,14 @@ export function buildVerdict({
   ];
   const rawStyleChanges = styleChangesFromComputed(reference?.computed_styles, Number.POSITIVE_INFINITY);
   if ((torture?.changed_component_count ?? 0) > 0 && (torture?.issues?.length ?? 0) === 0) {
-    rawIssues.push({
-      severity: "warn",
-      kind: "unscoped_torture_change_summary",
-      changed_component_count: torture.changed_component_count,
-    });
+    const surfaces = {heading: "content.article", list: "content.article", blockquote: "content.blockquote", table: "content.table", code: "content.code", collapsible: "content.collapsible", tabview: "content.tabview", footnote: "content.footnotes", math: "content.article", toc: "content.toc", rating: "content.rating"};
+    const changes = torture.changes ?? [];
+    const components = [...new Set(changes.map(change => change.component))];
+    if (components.length === torture.changed_component_count && components.every(component => surfaces[component])) {
+      for (const component of components) rawIssues.push({severity: "warn", kind: "torture_component_style_change", surface: surfaces[component], component, evidence: changes.filter(change => change.component === component)});
+    } else {
+      rawIssues.push({severity: "warn", kind: "unscoped_torture_change_summary", changed_component_count: torture.changed_component_count});
+    }
   }
   const parityReview = applyRuntimeSurfaceParityGate(rawIssues, rawStyleChanges);
   const issues = parityReview.issues;
@@ -341,8 +350,10 @@ export function buildVerdict({
     ? proposedActions.filter((action) => action.kind !== "inspect_inactive_media")
     : proposedActions;
 
-  const targetStatus = issues.some((issue) => issue.severity === "error") || (visual && Object.values(visual).some((entry) => entry?.comparison?.status === "fail"))
+  const targetStatus = issues.some((issue) => issue.severity === "error") || (visual && Object.values(visual).some((entry) => entry?.acceptance?.status === "fail"))
     ? "fail"
+    : visual && Object.values(visual).some((entry) => !["pass", "warn"].includes(entry?.acceptance?.status))
+      ? "inconclusive"
     : issues.some((issue) => issue.severity === "warn") || rawStyleChanges.length > 0 || (torture?.changed_component_count ?? 0) > 0
       ? "warn" : "pass";
   const overall = overallAcceptance(verdict, targetStatus);

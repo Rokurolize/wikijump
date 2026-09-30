@@ -37,7 +37,7 @@
   "candidate_source_sha256": "9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343",
   "human_port_candidate_path": "install/local/theme-lab/ports/site/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "266aebc62fbeadb0fe493c6da1a89c8c340f0c30058a527a09ed6571ff02e003",
-  "candidate_preview_sha256": "2fcfc80fbfccbe23475133039714f1556a762fa65cbe95da0fc59e96b019c10d",
+  "candidate_preview_sha256": "032d35fa50bd1acf9d77da0d90b91ae53c01d16c4423925d3a412c45610eabba",
   "candidate_css_sha256": "18768d711c87cec0cb6ed1b79a2d7023a53a422f35f39e841417374be0de3a69",
   "page_attachment_manifest": null,
   "new_port_reconciliation": {

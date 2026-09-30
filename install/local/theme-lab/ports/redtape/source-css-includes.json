@@ -1,0 +1,33 @@
+{
+  "schema": "theme_lab_source_css_includes.v1",
+  "authority": "RUNTIME_INDEPENDENT",
+  "candidate_source": "candidate.wikidot.source.txt",
+  "upstream_source": "upstream-en.wikidot.txt",
+  "includes": [
+    {
+      "locator": "component:toggle-sidebar-bhl",
+      "source": {
+        "path": "source-includes/toggle-sidebar-bhl.wikidot.txt",
+        "sha256": "212ffc2c275de8baa38b3da02d6e08636d649ea5324e0c9c2e9dab6a313a73dc"
+      },
+      "kind": "unconditional-modules",
+      "css": {
+        "path": "source-includes/toggle-sidebar-bhl-input.css",
+        "sha256": "6a820d809d6029aa94eb1285ae644e0f2e28d03c3656e37ee32f6d4473fed1fb"
+      }
+    },
+    {
+      "locator": "component:centered-header-bhl",
+      "source": {
+        "path": "source-includes/centered-header-bhl.wikidot.txt",
+        "sha256": "488ad7868aa07cacca0d5890b47ce4fa75d3ad68e3762f76f481a2e8addf18a1"
+      },
+      "kind": "unconditional-modules",
+      "css": {
+        "path": "source-includes/centered-header-bhl-input.css",
+        "sha256": "714da2c6c65196bf2ef77e758a89f1b5b34b2c1db2616ce14f9c617c56f0bed1"
+      }
+    }
+  ],
+  "base_import_count": 2
+}

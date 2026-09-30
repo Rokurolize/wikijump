@@ -238,7 +238,8 @@
     "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
     "https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap",
     "https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css",
-    "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css"
+    "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
+    "https://scp-jp.github.io/files/component/bhl-dark-sidebar/style0.css"
   ],
   "import_provenance_status": "complete",
   "import_provenance": [
@@ -290,6 +291,16 @@
       "bytes": 62636,
       "content_type": "text/css",
       "asset_file": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6.css",
+      "provenance_basis": "frozen-cache-exact-at-build"
+    },
+    {
+      "source_url": "https://scp-jp.github.io/files/component/bhl-dark-sidebar/style0.css",
+      "final_url": "https://scp-jp.github.io/files/component/bhl-dark-sidebar/style0.css",
+      "sha256": "937c49b92021245dc02ce5e62f11d369ef778e3b565d07d96c4f9c4d827acce4",
+      "normalized_text_sha256": "937c49b92021245dc02ce5e62f11d369ef778e3b565d07d96c4f9c4d827acce4",
+      "bytes": 7444,
+      "content_type": "text/css",
+      "asset_file": "937c49b92021245dc02ce5e62f11d369ef778e3b565d07d96c4f9c4d827acce4.css",
       "provenance_basis": "frozen-cache-exact-at-build"
     }
   ],
@@ -530,6 +541,13 @@
       "source_url": "https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css",
       "sha256": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6",
       "asset_file": "125894e7574ca2ed30a0a0e8a85923be85d3d48a32a0f53ea0dc6b9a4b4367e6.css",
+      "decision": "freeze-source-stylesheet"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp.github.io/files/component/bhl-dark-sidebar/style0.css",
+      "sha256": "937c49b92021245dc02ce5e62f11d369ef778e3b565d07d96c4f9c4d827acce4",
+      "asset_file": "937c49b92021245dc02ce5e62f11d369ef778e3b565d07d96c4f9c4d827acce4.css",
       "decision": "freeze-source-stylesheet"
     }
   ]

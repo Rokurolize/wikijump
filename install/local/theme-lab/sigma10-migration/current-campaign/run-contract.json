@@ -1,0 +1,80 @@
+{
+  "schema": "scp_jp_sigma10_migration_run.v1",
+  "target_site": {
+    "slug": "scpaiueouiuiuiui",
+    "origin": "https://scpaiueouiuiuiui.wikijump.localhost:18443",
+    "locale": "ja"
+  },
+  "baseline_theme": {
+    "name": "Sigma-10",
+    "runtime_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
+    "replacement_css_path": "../sigma10-offline.css",
+    "replacement_css_sha256": "08b5e63699eae178f35fc1958560d4c794a3dd5078bbf5f6f9e72906ac34f87e"
+  },
+  "fixture_contract": {
+    "page_family": "run-owned Sigma-10 SCP-JP migration pages",
+    "identity_manifest": "fixture-manifest.json",
+    "source_snapshots_directory": "../fixtures"
+  },
+  "migration_fixture": {
+    "main_slug": "run-owned:sigma10-main",
+    "top_slug": "run-owned:sigma10-nav-top",
+    "side_slug": "run-owned:sigma10-nav-side"
+  },
+  "viewports": {
+    "desktop": {
+      "width": 1440,
+      "height": 1000
+    },
+    "laptop": {
+      "width": 1024,
+      "height": 900
+    },
+    "tablet": {
+      "width": 768,
+      "height": 1024
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844
+    },
+    "narrow-mobile": {
+      "width": 320,
+      "height": 800
+    }
+  },
+  "browser_engines": [
+    "chromium",
+    "firefox",
+    "webkit"
+  ],
+  "network_policy": "block external requests before send",
+  "artifact_namespace": "migration/sigma10-current",
+  "audit_path": "evidence/interactive-visual-audit.json",
+  "additional_candidates": {
+    "sigma10-baseline": {
+      "directory": "../baseline-probe"
+    },
+    "quand-le-soleil-se-couche": {
+      "directory": "../../ports/quand-le-soleil-se-couche"
+    }
+  },
+  "saved_component_css": {
+    "path": "saved-credit-component.css",
+    "sha256": "7a103ef5c5f62bb73f4051e2bb7228381dcc884f23b2aed49626b20288be8fae",
+    "state": "Saved-page Credit/Info cascade; preview-only notice suppressed by source info:style."
+  },
+  "header_fixture": {
+    "path": "../../fixtures/scp-jp-header.html",
+    "sha256": "797caf30903a44c24e7cacdee3709a402a7ae9cc443194f0aa9380daf758c872"
+  },
+  "interwiki_fixture": {
+    "path": "../../fixtures/scp-jp-interwiki.html",
+    "sha256": "b9c58104c2aa3e1aece7ce3eeada8b55d318075de9a67a4fbbc2ae16fcdbca0b",
+    "contract": "Local placement only; remote resize/content is bounded external."
+  },
+  "sidebar_fixture": {
+    "path": "../../fixtures/scp-jp-sidebar.html",
+    "sha256": "e4ec133d51cfc843e65478a80ffcb82b161c1cc8209a80a42fa7f1b31dd7e032"
+  }
+}

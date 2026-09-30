@@ -113,3 +113,12 @@ test("torture diff reports large geometry changes without calling them invalid",
   assert.equal(diff.changes[0].property, "rect.width");
   assert.equal(diff.changes[0].relative, 0.5);
 });
+
+test('visible decorative overflow stays a review warning only when content geometry is safe',()=>{
+ const safe=diffTortureStates(state(),state(component({own_overflow_px:60,own_overflow_unclipped:true,content_viewport_overflow_px:0})));
+ assert.equal(safe.issues[0].severity,'warn');assert.notEqual(safe.verdict,'fail');
+ for(const fields of [{own_overflow_unclipped:false,content_viewport_overflow_px:0},{own_overflow_unclipped:true,content_viewport_overflow_px:12},{own_overflow_unclipped:true}]){
+  const unsafe=diffTortureStates(state(),state(component({own_overflow_px:60,...fields})));
+  assert.equal(unsafe.verdict,'fail');
+ }
+});

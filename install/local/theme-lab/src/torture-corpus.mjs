@@ -129,6 +129,16 @@ export async function captureTortureState(
             viewport_overflow_px: Math.max(leftOverflow, rightOverflow),
             own_overflow_px: Math.max(0, element.scrollWidth - element.clientWidth),
             own_overflow_scrollable: ["auto", "scroll"].includes(style.overflowX),
+            own_overflow_unclipped: style.overflowX === "visible",
+            // scrollWidth also includes intended pseudo-element decoration.
+            // Measure the text and controls independently before deciding
+            // whether border-box overflow actually loses usable content.
+            content_viewport_overflow_px: Math.max(0, ...[element, ...element.querySelectorAll("*")].flatMap(node => {
+              const computed = getComputedStyle(node);
+              if (computed.display === "none" || computed.visibility === "hidden") return [];
+              const range = document.createRange(); range.selectNodeContents(node);
+              return [...range.getClientRects(), node.getBoundingClientRect()].map(rect => Math.max(0, -rect.left, rect.right - viewportSpec.width));
+            })),
             font_size_px: px(values["font-size"]),
             line_height_px: px(values["line-height"]),
           };
@@ -274,10 +284,14 @@ export function diffTortureStates(
         (after.own_overflow_px ?? 0) > (before.own_overflow_px ?? 0) + componentOverflowTolerancePx
       ) {
         issues.push({
-          severity: "error",
+          severity: after.own_overflow_unclipped === true && after.content_viewport_overflow_px <= overflowTolerancePx ? "warn" : "error",
           viewport: viewportId,
           component: componentId,
           kind: "new_component_overflow",
+          content_viewport_overflow_px: after.content_viewport_overflow_px ?? null,
+          rationale: after.own_overflow_unclipped === true && after.content_viewport_overflow_px <= overflowTolerancePx
+            ? "Border-box overflow is visible; measured text and controls remain inside both viewport edges. Review the intended decoration."
+            : "Content safety was not established independently of component scrollWidth.",
           before_px: before.own_overflow_px ?? 0,
           after_px: after.own_overflow_px ?? 0,
         });
@@ -323,7 +337,7 @@ export function diffTortureStates(
 
   changes.sort((left, right) => Math.abs(right.relative ?? 0) - Math.abs(left.relative ?? 0));
   return {
-    verdict: issues.length === 0 ? "pass" : "fail",
+    verdict: issues.some(issue => issue.severity === "error") ? "fail" : issues.length > 0 ? "warn" : "pass",
     issue_count: issues.length,
     changed_component_count: new Set(changes.map((row) => row.component)).size,
     issues,

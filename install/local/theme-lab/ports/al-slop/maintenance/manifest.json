@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
+  "frozen_candidate_source_sha256": "1c603b5460791a94a2c82c794cfc7f8a2917c7d51e8a44364de2086be2e5fe0b",
   "base_source_sha256": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "02c85f63a6989610b859eaa77132e83010b023bc913947202d531484f626014e",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "12cdd0dd746b95baa9a0415b671e8b171b4bdeffdc429c04f02ce2e58c634fcc",
+  "jp_overrides_sha256": "8fb9922107edc68eeb34a00b2e8a2514edade045895196208287e6484bc9ec28",
+  "semantic_css_sha256": "be846b227554bb99b94d3048daa18103cf375280522cd357f18c819d10fdb1fc",
+  "canonical_override_sha256": "0493a3b8fccc06a5ed5e4cab3b65fd3f70154d0165db3af411959e66b7480081",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
+  "final_source_sha256": "c986a3c4ee6b18af00396c4e49f61c943919708853956dee5c25669c91afc3b3",
   "final_source_inputs": {
     "base_sha256": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "8fb9922107edc68eeb34a00b2e8a2514edade045895196208287e6484bc9ec28"
   },
   "ordered_include_sha256": "abea77fe1e3eb18a7c60405c937cd50fa1c2d1cf76913372673a979ed6ebcd2b",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 1,
+  "raw_override_rule_count": 1,
+  "canonical_override_rule_count": 1,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -235,8 +235,85 @@
           "decision_authority": "FROZEN_ASSET_TRANSFORM"
         }
       ]
+    },
+    {
+      "marker": "source-css-include-resolution",
+      "origin": "source-include-resolution",
+      "sha256": "cd50f3ac5ebab3f87b884d4dec25ba0172d2985b39224aec2ec6e9f2787ae544",
+      "authority": "RUNTIME_INDEPENDENT",
+      "rationale": "Resolve the Sigma Plus stylesheet already explicitly included by both preserved upstream and candidate source. The browser simulation omitted this base; no JP adaptation is introduced.",
+      "evidence": [
+        {
+          "path": "al-slop/source-includes/receipt.json",
+          "sha256": "ec3cb6e20e0940f5a975573fa78c6aba8caa7edb29fe020c380b5bbecae1bc70",
+          "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+        },
+        {
+          "path": "al-slop/source-css-includes.json",
+          "sha256": "c0fae8c4897b5ee9f2b46a968be89a88ad0c22765199284d9b02d4daa8016bce",
+          "decision_authority": "SOURCE_INCLUDE_TRANSFORM"
+        }
+      ]
+    },
+    {
+      "marker": "Resolve preserved source CSS component includes",
+      "origin": "source-css-include-resolution",
+      "authority": "RUNTIME_INDEPENDENT",
+      "sha256": "c0fae8c4897b5ee9f2b46a968be89a88ad0c22765199284d9b02d4daa8016bce",
+      "rationale": "Exact CSS from the preserved upstream include chain, materialized before main source CSS; no JP adaptation.",
+      "evidence": [
+        {
+          "path": "al-slop/source-css-includes.json",
+          "sha256": "c0fae8c4897b5ee9f2b46a968be89a88ad0c22765199284d9b02d4daa8016bce"
+        },
+        {
+          "path": "al-slop/source-includes/receipt.json",
+          "sha256": "ec3cb6e20e0940f5a975573fa78c6aba8caa7edb29fe020c380b5bbecae1bc70"
+        }
+      ]
+    },
+    {
+      "marker": "SCP-JP Wikidot Al Slop responsive header grid: let the native localized search control fit at narrow widths.",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "sha256": "83c3cf458b6bb5bdbd840fd9cbe61a4505d52cfe3f7611a99bd546aa0b897ab7",
+      "rationale": "The preserved Sigma Plus source grid expands beyond the real Japanese search control at 320px. On the frozen real SCP-JP header/menu DOM, candidate without this declaration escapes 22px at 320px; candidate with it keeps all links and submenus inside both edges at 320px and 390px. One source grid track becomes shrinkable; source typography, menu spacing, and colors remain intact.",
+      "evidence": [
+        {
+          "path": "authority-evidence/al-slop-grid-published-final/receipt.json",
+          "sha256": "76d0ae16665e8974eb87380d64d9603ed8d5bb950d1c3d8debaeff777f1daf09",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "state": "navigation",
+        "viewports": [
+          320,
+          390
+        ],
+        "selectors": [
+          "#header",
+          "#top-bar .mobile-top-bar > ul",
+          "submenu",
+          "submenu li",
+          "submenu a"
+        ]
+      },
+      "published_css_sha256": "dec8bced927ebe8048d20115c824bd649058c89bf4ca2bf954e728699441a72e"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot Al Slop responsive header grid: let the native localized search control fit at narrow widths.",
+      "rationale": "SCP-JP Wikidot Al Slop responsive header grid: let the native localized search control fit at narrow widths.",
+      "sha256": "83c3cf458b6bb5bdbd840fd9cbe61a4505d52cfe3f7611a99bd546aa0b897ab7",
+      "selectors": [
+        "#header"
+      ],
+      "at_contexts": [],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    }
+  ]
 }

@@ -140,24 +140,9 @@
       height: initial;
     }
 
-    // Wikidot's Sigma-9 base CSS can position the mobile navigation bar and
-    // its open-menu control over page content. This DOM is imported HTML, so
-    // these selectors must be global: Svelte-scoped selectors silently miss
-    // the legacy nodes. Keep the navigation in document flow so it cannot
-    // cover header text or the first visible content in inline action panes.
-    :global(#skrollr-body #top-bar .mobile-top-bar) {
-      position: static !important;
-      inset: auto !important;
-      float: none !important;
-      transform: none !important;
-    }
+    // Imported Wikidot themes own mobile navigation positioning. The real
+    // SCP-JP shell places this bar absolutely inside #header; forcing it
+    // into document flow changes submenu anchors and creates viewport escape.
 
-    :global(#skrollr-body #top-bar .mobile-top-bar .open-menu a) {
-      position: static !important;
-      inset: auto !important;
-      display: inline-flex !important;
-      vertical-align: middle;
-      margin: 1rem !important;
-    }
   }
 </style>

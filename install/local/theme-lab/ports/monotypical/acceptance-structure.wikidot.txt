@@ -1,0 +1,5 @@
+[[div_ id="mono-structure"]]
+[[a id="sb-button" href="#container-wrap"]]
+≡
+[[/a]]
+[[a id="no-more-menu" href="##"]][[/a]]

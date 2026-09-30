@@ -1,0 +1,4 @@
+/* SCP-JP Wikidot Al Slop responsive header grid: let the native localized search control fit at narrow widths. */
+#header {
+  grid-template-columns: var(--sp_area-comp-margin) minmax(0, 1fr) auto var(--sp_area-comp-margin);
+}

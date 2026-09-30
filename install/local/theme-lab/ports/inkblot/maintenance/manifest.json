@@ -214,6 +214,23 @@
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]
+    },
+    {
+      "marker": "Resolve preserved source CSS component includes",
+      "origin": "source-css-include-resolution",
+      "authority": "RUNTIME_INDEPENDENT",
+      "sha256": "305a2efe22658437210a164b05216472fe60b93ff6d029db3f858c27b61aac6d",
+      "rationale": "Exact source-owned include CSS and literal source parameters, materialized after site base imports before source theme declarations.",
+      "evidence": [
+        {
+          "path": "inkblot/source-css-includes.json",
+          "sha256": "305a2efe22658437210a164b05216472fe60b93ff6d029db3f858c27b61aac6d"
+        },
+        {
+          "path": "shared-fixtures/current-source-components/receipt.json",
+          "sha256": "38a3de3d2a1987b57615dfa215eeaddde2fe31e5ffb5d7ce4f190656c18dcee2"
+        }
+      ]
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",

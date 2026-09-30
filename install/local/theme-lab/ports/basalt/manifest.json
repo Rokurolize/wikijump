@@ -136,7 +136,7 @@
   "final_verdict": "inconclusive",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/basalt/assets.json",
-  "asset_dependency_decision_count": 243,
+  "asset_dependency_decision_count": 244,
   "maintenance_source": {
     "base": "maintenance/base.wikidot.txt",
     "jp_overrides": "maintenance/jp-overrides.css",
@@ -159,14 +159,20 @@
       "candidate_source_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
       "candidate_active_tags": [],
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "d8cb23317304728ccb6eaf77ade4e4efaeef328a18306d928525d6635d057d52",
+      "candidate_css_sha256": "deff9268cc43697bc404182a9679e90bffab0c6ac04e4c9456de1c6f497683b8",
       "asset_receipt_path": "assets.json",
       "assets": 237,
-      "imports": 5,
+      "imports": 6,
       "localization_transforms": 0,
       "localization_transform_manifest": null,
       "missing": 0,
       "external_requests_during_build": 0
+    },
+    "source_css_includes": {
+      "manifest": "source-css-includes.json",
+      "materialized_css_sha256": "920d7ae67987df51ae4d45035bbbcca9d1bfd130e0f99d653d54c5299198ad51",
+      "cascade": "before-main-source-css",
+      "public_writes": 0
     }
   },
   "adaptation_authority": {

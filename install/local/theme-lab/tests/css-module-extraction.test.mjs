@@ -69,3 +69,8 @@ test('ignores escaped Wikidot CSS-module examples in localized documentation',()
   assert.match(css,/\.live/u);
   assert.doesNotMatch(css,/copied example/u);
 });
+
+test('extracts attributed CSS modules while excluding commented and escaped examples',()=>{
+ const source='[!-- [[module CSS]] .wrong{} [[/module]] --]\n@@[[module CSS show="true"]] .escaped{} [[/module]]@@\n[[module CSS show="true"]] .actual{} [[/module]]';
+ assert.equal(extractUnconditionalCssModules(source),'.actual{}\n');
+});

@@ -1,0 +1,21 @@
+{
+  "schema": "theme_lab_source_css_includes.v1",
+  "authority": "RUNTIME_INDEPENDENT",
+  "candidate_source": "candidate.wikidot.source.txt",
+  "upstream_source": "upstream-en.wikidot.txt",
+  "includes": [
+    {
+      "locator": "component:sigma-plus",
+      "source": {
+        "path": "source-includes/sigma-plus.wikidot.txt",
+        "sha256": "2ee01c9b8a8b4ad082abc030944a41e4d9624d7eda46ea3ecf1dcf9046d66498"
+      },
+      "code_index": 1,
+      "css": {
+        "path": "source-includes/sigma-plus-input.css",
+        "sha256": "09350849191e39a9fbaaa1596f602135457989b169cc24233a2d7eee5b9ef4ab"
+      }
+    }
+  ],
+  "base_import_count": 0
+}

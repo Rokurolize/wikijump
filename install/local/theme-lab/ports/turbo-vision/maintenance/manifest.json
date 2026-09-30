@@ -203,17 +203,17 @@
       "rationale": "Per-theme real SCP-JP A/B at 320px and 390px; every submenu/item/link stays inside both viewport edges. Preserve the wrapped row, source menu widths, palette and link layout. Space also retains its separate header grid correction; Turbo bounds only the invisible masthead responsible for remaining 320px document overflow.",
       "evidence": [
         {
-          "path": "authority-evidence/turbo-vision-published-final/receipt.json",
-          "sha256": "6eb40dabe86d9d3f7f1404a884f5af99ca56828adb5b5730a4549f2338c5f366",
+          "path": "authority-evidence/turbo-vision-complete-source-current/receipt.json",
+          "sha256": "e3922313f70e79ff7bf285a62f4b3016b53849c757e144ba4536893607caf4ba",
           "decision_authority": "REAL_WIKIDOT_TARGET_AB"
         },
         {
-          "path": "authority-evidence/turbo-header-published/receipt.json",
-          "sha256": "201cb4242130919ba88d64c051abd674cb0e61eee0c6c50c49e8e8fdb93eb2b5",
+          "path": "authority-evidence/turbo-header-complete-source-current/receipt.json",
+          "sha256": "933eb04e8c573b759c757dcdd86fe20c081d801d7f5084992f095b1de195c9d4",
           "decision_authority": "REAL_WIKIDOT_TARGET_AB"
         }
       ],
-      "published_css_sha256": "ac24e470f5121a256b7d05b96b6d58fb113bfd35314ec367652196f770c69c0f",
+      "published_css_sha256": "92596135412039f70f68728c2d8892ecb620dd156cf31efa9f3d59c01b9012db",
       "scope": {
         "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
         "state": "navigation",
@@ -227,6 +227,23 @@
           ".mobile-top-bar > ul > li > ul a"
         ]
       }
+    },
+    {
+      "marker": "Resolve preserved source CSS component includes",
+      "origin": "source-css-include-resolution",
+      "authority": "RUNTIME_INDEPENDENT",
+      "sha256": "22ec56b4a00133c5e763223b56503807bbfc245c31c0a66324886fcf716ed5a9",
+      "rationale": "Exact CSS from the preserved upstream include chain, materialized before main source CSS; no JP adaptation.",
+      "evidence": [
+        {
+          "path": "turbo-vision/source-css-includes.json",
+          "sha256": "22ec56b4a00133c5e763223b56503807bbfc245c31c0a66324886fcf716ed5a9"
+        },
+        {
+          "path": "shared-fixtures/current-toggle-sidebar/receipt.json",
+          "sha256": "ff7d52196adb6c816a08d813e1182cda1daf93eed288115cea72aa8ae74a5cc2"
+        }
+      ]
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",

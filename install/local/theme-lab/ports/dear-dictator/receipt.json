@@ -10,8 +10,8 @@
     "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
   },
   "state": "authority-cleaned-local-candidate-not-published",
-  "candidate_source_sha256": "b6c93b192d4db6ca662f3560a00a47f273d221f3e52ba3832a5d04f7f2b76e52",
+  "candidate_source_sha256": "f7e527344421713247e5e0121c2d98f1fc5413b142e35537be9662f65e552c65",
+  "candidate_css_sha256": "b3e486689dd74a77e432fd06a3444281a7c75659042db02853494454b727ee67",
   "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned",
-  "candidate_css_sha256": "c52365e80c9f89d061622e910a59425c04c283201d09cfc45faa4fb108932f8a"
+  "final_status": "adaptation-authority-cleaned"
 }

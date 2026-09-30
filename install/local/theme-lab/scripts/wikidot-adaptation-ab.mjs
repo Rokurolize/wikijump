@@ -9,6 +9,7 @@ import {ReferenceCache, sha256Hex} from '../src/reference-cache.mjs';
 import {startReferenceReplay} from '../src/reference-replay.mjs';
 import {loadChromium} from '../src/browser-lab.mjs';
 import {materializeCandidateCssAssets} from '../src/local-assets.mjs';
+import {measureVisibleTextBounds} from '../src/visible-text-bounds.mjs';
 import {viewportEscape} from '../src/viewport-bounds.mjs';
 
 export function removeNamedBlock(css, name) {
@@ -40,7 +41,7 @@ export async function confineReadOnlyReplay(context, origin, blocked) {
 
 export async function runAdaptationAB({url, cacheDir, css = '', withoutCss = '',
   removeBlock = null, assetDir, outputDir, acquire = false, widths = [320,390],
-  state = 'navigation', selectors = ['#header'], executablePath = '/usr/bin/google-chrome'}) {
+  state = 'navigation', computedContract = [], selectors = ['#header'], executablePath = '/usr/bin/google-chrome'}) {
   const cache = new ReferenceCache({cacheDir});
   const barrier=path.join(cache.cacheDir,`adaptation-ab-${sha256Hex(url)}.acquiring`);
   await fs.mkdir(cache.cacheDir,{recursive:true});
@@ -67,11 +68,35 @@ export async function runAdaptationAB({url, cacheDir, css = '', withoutCss = '',
       await page.goto(replay.entryUrl, {waitUntil:'load'});
       if (sourceCss) await page.addStyleTag({content: assetDir ? await materializeCandidateCssAssets(sourceCss, assetDir) : sourceCss});
       await page.evaluate(() => document.fonts.ready);
+      if(['credit-license','credit-otherwise'].includes(state)){
+        await page.evaluate(state=>{location.hash=state==='credit-license'?'u-credit-view':'u-credit-otherwise'},state);
+        await page.waitForFunction(id=>document.querySelector(id)?.matches(':target'),'#'+(state==='credit-license'?'u-credit-view':'u-credit-otherwise'));
+        await page.evaluate(()=>{for(const animation of document.getAnimations()){if(Number.isFinite(animation.effect?.getTiming().iterations))try{animation.finish()}catch{}}});
+        await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      }
+      let interactionError=null;
+      if(state==='sidebar-open'){try{await page.locator('.mobile-top-bar .open-menu a').click({timeout:3000});await page.waitForFunction(()=>location.hash==='#side-bar',null,{timeout:3000});await page.evaluate(()=>{for(const a of document.getAnimations())if(Number.isFinite(a.effect?.getTiming().iterations))try{a.finish()}catch{}});await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))}catch(error){interactionError=error.message}}
       if (state === 'search-hover') await page.locator('#search-top-box-form').hover();
-      const count = state === 'navigation' ? await page.locator('.mobile-top-bar > ul > li').evaluateAll(nodes => nodes.filter(n => n.querySelector(':scope > ul')).length) : 1;
-      if (!count) throw new Error('real Wikidot mobile submenu contract missing');
+      const count = state === 'navigation'
+        ? await page.locator('.mobile-top-bar > ul > li').evaluateAll(nodes => nodes.filter(n => n.querySelector(':scope > ul')).length)
+        : state === 'desktop-navigation'
+          ? await page.locator('#top-bar .top-bar > ul > li').evaluateAll(nodes => nodes.filter(n => n.querySelector(':scope > ul')).length)
+          : 1;
+      if (!count) throw new Error(`real Wikidot ${state} submenu contract missing`);
       for (let index=0; index<count; index++) {
-        const measurement = await page.evaluate(({state,index,selectors}) => {
+        if(state==='desktop-navigation'){
+          const item=page.locator('#top-bar .top-bar > ul > li:has(> ul)').nth(index);
+          await item.hover();
+          await page.waitForFunction(index=>{
+            const items=[...document.querySelectorAll('#top-bar .top-bar > ul > li')].filter(row=>row.querySelector(':scope > ul'));
+            const submenu=items[index]?.querySelector(':scope > ul');if(!submenu)return false;
+            const style=getComputedStyle(submenu),rect=submenu.getBoundingClientRect();
+            return style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)>0.99&&rect.width>0&&rect.height>0;
+          },index,{timeout:5000});
+          await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+        }
+        const headerInk = state==='header-title-search' ? await measureVisibleTextBounds(page,['#header h1','#header h2']) : null;
+        const measurement = await page.evaluate(({state,index,selectors,headerInk,computedContract}) => {
           let submenu = null;
           if (state === 'navigation') {
             const parents = [...document.querySelectorAll('.mobile-top-bar > ul > li')].filter(n=>n.querySelector(':scope > ul'));
@@ -81,15 +106,22 @@ export async function runAdaptationAB({url, cacheDir, css = '', withoutCss = '',
             submenu.style.setProperty('display','block','important');
             submenu.style.setProperty('visibility','visible','important');
             submenu.style.setProperty('opacity','1','important');
+          } else if (state === 'desktop-navigation') {
+            const parents=[...document.querySelectorAll('#top-bar .top-bar > ul > li')].filter(node=>node.querySelector(':scope > ul'));
+            submenu=parents[index]?.querySelector(':scope > ul')??null;
           }
           const input = document.querySelector('#search-top-box-input');
-          if (state === 'credit-otherwise') location.hash='u-credit-otherwise';
           if (state === 'search-focus' && input) { input.focus(); input.value='Theme Lab'; }
           const probes = submenu ? [submenu,...submenu.querySelectorAll('li, a')].map(el=>({el,selector:el===submenu?'submenu':el.tagName.toLowerCase(),pseudo:null})) : selectors.flatMap(selector=>{
             const match=selector.match(/^(.*?)(::before|::after)$/u),base=match?.[1]??selector,pseudo=match?.[2]??null;
             return [...document.querySelectorAll(base)].map(el=>({el,selector,pseudo}));
           });
           const overlaps=[];
+          const controlOcclusion=state==='credit-license'?[...document.querySelectorAll('#u-credit-view a[href="#u-credit-otherwise"]')].map(control=>{
+            const rect=control.getBoundingClientRect();
+            const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+            return{selector:'#u-credit-view a[href="#u-credit-otherwise"]',visible:rect.width>0&&rect.height>0,clickable:hit===control||control.contains(hit),hit:hit?`${hit.tagName}.${hit.className}`:null};
+          }):[];
           if(state==='header-title-search') {
             // The form wrapper can include empty positioning space. Compare
             // visible controls, rather than treating transparent space as ink.
@@ -97,27 +129,29 @@ export async function runAdaptationAB({url, cacheDir, css = '', withoutCss = '',
               .filter(el=>getComputedStyle(el).display!=='none')
               .map(el=>el.getBoundingClientRect());
             for(const selector of ['#header h1','#header h2']) {
-              const title=document.querySelector(selector)?.getBoundingClientRect();
-              for (const search of searches) if(title) {
+              for (const title of headerInk[selector]??[]) for (const search of searches) {
                 const width=Math.min(search.right,title.right)-Math.max(search.left,title.left);
                 const height=Math.min(search.bottom,title.bottom)-Math.max(search.top,title.top);
                 if(width>1&&height>1)overlaps.push({title:selector,control:'#search-top-box',width,height});
               }
             }
           }
-          return {document_width:document.documentElement.scrollWidth, viewport_width:document.documentElement.clientWidth,overlaps,
+          const computed_checks=computedContract.map(check=>{const el=document.querySelector(check.selector);const actual=el?getComputedStyle(el).getPropertyValue(check.property).trim():null;return{...check,actual,pass:actual===check.expected}});
+          const scroll_overflow_sources=[...document.querySelectorAll('body *')].filter(element=>element.scrollWidth>element.clientWidth+1).slice(0,30).map(element=>({tag:element.tagName,id:element.id,class_name:typeof element.className==='string'?element.className:'',scroll_width:element.scrollWidth,client_width:element.clientWidth,rect:element.getBoundingClientRect().toJSON(),overflow_x:getComputedStyle(element).overflowX}));
+          return {computed_checks,document_width:document.documentElement.scrollWidth, viewport_width:document.documentElement.clientWidth,overlaps,control_occlusion:controlOcclusion,header_ink_rects:headerInk,scroll_overflow_sources,
+            overflow_sources:[...document.querySelectorAll('body *')].map(element=>({element,rect:element.getBoundingClientRect()})).filter(({element,rect})=>rect.width>0&&getComputedStyle(element).display!=='none'&&(rect.left < -1||rect.right>innerWidth+1)).slice(0,24).map(({element,rect})=>({tag:element.tagName,id:element.id,class_name:typeof element.className==='string'?element.className:'',rect:rect.toJSON(),parent_id:element.parentElement?.id,box_sizing:getComputedStyle(element).boxSizing,min_width:getComputedStyle(element).minWidth,padding:getComputedStyle(element).padding})),
             selector_coverage:submenu?null:Object.fromEntries(selectors.map(selector=>[selector,probes.filter(p=>p.selector===selector).length])),
-            rows:probes.map(({el,selector,pseudo})=>({selector,pseudo,text:el.textContent.trim(),rect:el.getBoundingClientRect().toJSON(),
-              style:Object.fromEntries(['display','visibility','content','background-size','width','min-width','left','right','white-space'].map(p=>[p,getComputedStyle(el,pseudo).getPropertyValue(p)]))})),
+            rows:probes.map(({el,selector,pseudo})=>({selector,pseudo,text:el.textContent.trim(),rect:el.getBoundingClientRect().toJSON(),parent_rect:el.parentElement?.getBoundingClientRect().toJSON()??null,scroll_width:el.scrollWidth,client_width:el.clientWidth,
+              style:Object.fromEntries(['display','visibility','opacity','position','box-sizing','transform','margin-left','margin-right','padding-left','padding-right','content','background-size','width','min-width','left','right','inset-inline-start','inset-inline-end','white-space'].map(p=>[p,getComputedStyle(el,pseudo).getPropertyValue(p)]))})),
             search:input?{display:getComputedStyle(input).display,focused:document.activeElement===input}:null};
-        }, {state,index,selectors});
+        }, {state,index,selectors,headerInk,computedContract});
         const bounds = measurement.rows.map(row=>viewportEscape(row.rect, width));
         const stem = `${variant}-${width}-${state}-${index}`;
         const screenshot = `${stem}.png`, dom = `${stem}.html.gz`;
-        await page.screenshot({path:path.join(outputDir,screenshot)});
+        await page.screenshot({path:path.join(outputDir,screenshot),animations:'disabled'});
         await fs.writeFile(path.join(outputDir,dom),gzipSync(await page.content(),{level:9}));
         rows.push({variant,width,state,index,css_sha256:sha256Hex(sourceCss),measurement,bounds,
-          pass:measurement.document_width<=width+1 && bounds.every(row=>row.pass) && measurement.overlaps.length===0 && (!measurement.selector_coverage || Object.values(measurement.selector_coverage).every(count=>count>0)),
+          interaction_error:interactionError,pass:!interactionError && measurement.computed_checks.every(check=>check.pass) && measurement.document_width<=width+1 && bounds.every(row=>row.pass) && measurement.overlaps.length===0 && (state!=='credit-license'||measurement.control_occlusion.length>0&&measurement.control_occlusion.every(control=>control.visible&&control.clickable)) && (!measurement.selector_coverage || Object.values(measurement.selector_coverage).every(count=>count>0)),
           screenshot, screenshot_sha256:sha256Hex(await fs.readFile(path.join(outputDir,screenshot))),
           dom, dom_sha256:sha256Hex(await fs.readFile(path.join(outputDir,dom)))});
       }
@@ -126,7 +160,7 @@ export async function runAdaptationAB({url, cacheDir, css = '', withoutCss = '',
     const receipt = {schema:'theme_lab_wikidot_adaptation_ab.v1',url,site:new URL(url).hostname,
       observed_at:snapshot.created_at, measured_at:new Date().toISOString(),snapshot,
       browser_version:browser.version(),browser_sha256:sha256Hex(await fs.readFile(executablePath)),
-      acquisition,public_writes:0,external_browser_requests:0,blocked_requests:blocked,rows};
+      acquisition,computed_contract:computedContract,public_writes:0,external_browser_requests:0,blocked_requests:blocked,rows};
     await fs.writeFile(path.join(outputDir,'receipt.json'),JSON.stringify(receipt,null,2)+'\n');
     return receipt;
   } finally { await browser.close(); await replay.close(); }
@@ -142,6 +176,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     removeBlock:args.includes('--remove-block')?value('--remove-block'):null,
     assetDir:args.includes('--assets')?path.resolve(value('--assets')):undefined,
     state:args.includes('--state')?value('--state'):'navigation',
+    computedContract:args.includes('--computed-contract')?JSON.parse(await fs.readFile(value('--computed-contract'),'utf8')):[],
     selectors:args.includes('--selectors')?value('--selectors').split(','):undefined,
     widths:args.includes('--widths')?value('--widths').split(',').map(Number):undefined});
   console.log(JSON.stringify({rows:result.rows.length,with_pass:result.rows.filter(r=>r.variant==='with').every(r=>r.pass),public_writes:0}));

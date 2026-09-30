@@ -1940,3 +1940,23 @@ body {
 @import url(https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/2);
 [[/module]]
 [!--   --]
+
+[[module CSS]]
+/* SCP-JP Wikidot cosmonaut credit correction: keep the modal rating in document flow below the license control. */
+#u-credit-view .modalbox .modalbox-ratemodule {
+  position: static;
+}
+
+@media (max-width: 359px) {
+  #u-credit-view .modalbox {
+    box-sizing: border-box;
+  }
+}
+
+/* SCP-JP Wikidot Cosmonaut navigation correction: anchor the rightmost mobile submenu to its source menu endpoint. */
+@media (max-width: 767px) {
+  #top-bar .mobile-top-bar > ul > li:last-child > ul {
+    left: auto; right: 0;
+  }
+}
+[[/module]]

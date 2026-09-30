@@ -1,0 +1,88 @@
+{
+  "schema": "theme_lab_source_css_includes.v1",
+  "authority": "RUNTIME_INDEPENDENT",
+  "candidate_source": "candidate.wikidot.source.txt",
+  "upstream_source": "upstream-en.wikidot.txt",
+  "includes": [
+    {
+      "locator": "component:acs-animation",
+      "kind": "unconditional-modules",
+      "parameters": {},
+      "source": {
+        "path": "source-includes/acs-animation.wikidot.txt",
+        "sha256": "9d275b2ce4a8399a5754801e943ce8962c597d2515d9b4bd3ec8101711161de8"
+      },
+      "css": {
+        "path": "source-includes/acs-animation-input.css",
+        "sha256": "9c2d54387591ead58b15b16791039c675b87d47c268b98800b48eed8f6662690"
+      }
+    },
+    {
+      "locator": "component:betterfootnotes",
+      "kind": "unconditional-modules",
+      "parameters": {},
+      "source": {
+        "path": "source-includes/betterfootnotes.wikidot.txt",
+        "sha256": "066c8183fe39451b88e4d53a6b08306829d21846170d14b0688d91f3c6203bc0"
+      },
+      "css": {
+        "path": "source-includes/betterfootnotes-input.css",
+        "sha256": "e772de798fc0b7df2005967a39c9d66584bebc9e1851ec41207d2352249b1ab4"
+      }
+    },
+    {
+      "locator": "component:croqstyle",
+      "kind": "unconditional-modules",
+      "parameters": {},
+      "source": {
+        "path": "source-includes/croqstyle.wikidot.txt",
+        "sha256": "9c8b316516f374d664c92042a1913268e9018a7eaeaaac1f5011e16546bab529"
+      },
+      "css": {
+        "path": "source-includes/croqstyle-input.css",
+        "sha256": "0fdfceb0a44d0fb558b9c70e6e5b7677fb2cc917e9e7a4446d44e163c191f679"
+      }
+    },
+    {
+      "locator": "component:fade-in",
+      "kind": "unconditional-modules",
+      "parameters": {
+        "speed": "1"
+      },
+      "source": {
+        "path": "source-includes/fade-in.wikidot.txt",
+        "sha256": "a952981c4b1443cabdea6cd37205cafa7be3291b61d23ad521016f684418e00a"
+      },
+      "css": {
+        "path": "source-includes/fade-in-input.css",
+        "sha256": "5a74694f5601bc5fb2e36dc6dcaa9996091d2b3891aaa392b2e9a5715a08290d"
+      }
+    },
+    {
+      "locator": "component:text-style",
+      "kind": "unconditional-modules",
+      "parameters": {},
+      "source": {
+        "path": "source-includes/text-style.wikidot.txt",
+        "sha256": "e3a5a66146f647d29675138ae6edab6ad8236e5221d8e79d94a10ceb546433c5"
+      },
+      "css": {
+        "path": "source-includes/text-style-input.css",
+        "sha256": "42d5212a9b2c678da42c7475070ce923befcd1d7fe67c57292d1b3ce3d33d29b"
+      }
+    },
+    {
+      "locator": "component:toggle-sidebar",
+      "source": {
+        "path": "source-includes/toggle-sidebar.wikidot.txt",
+        "sha256": "5e6e6bf79aa9b08344865b1209693254db4c8d1aef7d579092bc6dd9c7c55e35"
+      },
+      "kind": "unconditional-modules",
+      "css": {
+        "path": "source-includes/toggle-sidebar-input.css",
+        "sha256": "d4d80ebcc0e2afb61490420a96b3f0b4cc29dfc9de532029e062af1ee80028ae"
+      }
+    }
+  ],
+  "base_import_count": 0
+}

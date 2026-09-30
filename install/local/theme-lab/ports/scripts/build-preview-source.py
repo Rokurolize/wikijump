@@ -14,7 +14,7 @@ import re
 from pathlib import Path
 
 
-CSS_MODULE = re.compile(r"\[\[module\s+css\s*\]\].*?\[\[/module\s*\]\]", re.I | re.S)
+CSS_MODULE = re.compile(r"\[\[module\s+css\b[^\]]*\]\].*?\[\[/module\s*\]\]", re.I | re.S)
 SQUARES_INCLUDE = re.compile(r"\[\[include\s+:scp-jp:component:theme-squares\b(.*?)\]\]", re.I | re.S)
 INCLUDE_RE = re.compile(r"\[\[include\s+(?::scp-[a-z0-9-]+:)?([^\s|\]\r\n]+)[\s\S]*?\]\]", re.I)
 
@@ -111,7 +111,9 @@ def build(source: str, squares_source: str = "") -> tuple[str, int, list[str]]:
     # Always render a genuine current SCP-JP rating DOM. Theme articles also
     # contain literal Rate markup in code samples, which must not satisfy this
     # runtime-surface requirement.
-    fixture.append('[[div class="creditRate"]][[div class="rateBox"]][[div class="rate-box-with-credit-button"]]\n[[module Rate]]\n[[/div]][[/div]][[/div]]')
+    # Block delimiters occupy separate lines. Combining them leaves unmatched
+    # closes as literal text and incorrectly puts the article inside creditRate.
+    fixture.append('[[div class="creditRate"]]\n[[div class="rateBox"]]\n[[div class="rate-box-with-credit-button"]]\n[[module Rate]]\n[[/div]]\n[[/div]]\n[[/div]]')
     fixture.append('[[span class="theme-lab-jp-font-probe"]]日本語の字形を確認する検体です。漢字、ひらがな、カタカナ。[[/span]]')
     fixture.extend([
         "[[toc]]",

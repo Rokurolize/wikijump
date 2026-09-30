@@ -1,6 +1,13 @@
 {
   "assets": [
     {
+      "sha256": "fcd9f75940109475f878f0702d7eb0e1c55cd461369244c86203bb032b6dbe31",
+      "bytes": 7532,
+      "content_type": "image/svg+xml",
+      "original_url": "https://scpwiki.github.io/sigma/images/header-logo.svg",
+      "final_url": "https://scpwiki.github.io/sigma/images/header-logo.svg"
+    },
+    {
       "sha256": "eeb30fcdf40a06dc41d31cfd34847798c609a6a3f78e600118139d7a98e78e2c",
       "bytes": 42020,
       "content_type": "font/ttf",
@@ -184,6 +191,12 @@
     "sha256": "5bb0dafbbd0203a6f543149c23e996b022fc69f735b60495d296030abe295cf5"
   },
   "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://scpwiki.github.io/sigma/images/header-logo.svg",
+      "sha256": "fcd9f75940109475f878f0702d7eb0e1c55cd461369244c86203bb032b6dbe31",
+      "decision": "freeze-runtime-independent-asset"
+    },
     {
       "resource_type": "candidate-css-asset",
       "source_url": "https://fonts.gstatic.com/s/urbanist/v18/L0xtDF02iFML4hGCyMqgdyNEf6or5L2WA133VZmv.ttf",
