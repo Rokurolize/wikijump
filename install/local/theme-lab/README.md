@@ -288,11 +288,20 @@ Historical source and screenshot integrity can be inspected with
 current candidates or authorize promotion.
 
 The final campaign gate is `node scripts/check-campaign-completion.mjs` (also
-`node sigma10-migration/check-final.mjs` without inspection options). It requires
-accepted combined results for every maintained package and the current Sigma-10
-simulation, exact current source/CSS identities, complete browser coverage, and
-hash-bound image reviews. Missing or inconclusive acceptance exits 2; failed or
-stale evidence exits 1. Historical integrity alone cannot pass this gate.
+`node sigma10-migration/check-final.mjs` with no options). Promotion requires
+both a full combined current acceptance for every maintained package and a
+separate `theme_lab_current_sigma10_acceptance.v1` receipt for the current
+Sigma-10 candidate matrix. That receipt binds the current migration run contract,
+browser audit, candidate CSS/source identities, complete browser coverage, and
+reviewed screenshots. Historical integrity and screenshots remain inspectable
+with `node sigma10-migration/check-final.mjs --historical-only`; that command's
+`evidence_integrity.status` describes only archive integrity and its
+`overall_acceptance.status` is always `inconclusive`.
+
+Current completion CLI exit codes are 0 for accepted, 1 for failed/stale
+evidence, 2 for missing or inconclusive acceptance, and 64 for invalid command
+options. The JSON `overall_acceptance.status` is authoritative; historical
+inspection success never means campaign acceptance.
 
 Paired images compare different foreign and JP articles. Pixel RMSE remains a
 diagnostic; `check --visual --visual-review review.json` binds an explicit image

@@ -79,9 +79,14 @@ export function checkCampaignCompletion(root) {
   };
   let document;
   try { document = read('current-campaign-acceptance.json'); }
-  catch { return {status: 'inconclusive', failures: ['Current campaign acceptance receipt is missing; historical integrity cannot authorize completion.']}; }
+  catch (error) {
+    if (error.code === 'ENOENT') return {status: 'inconclusive', failures: ['Current campaign acceptance receipt is missing; historical integrity cannot authorize completion.']};
+    return {status: 'fail', failures: [`Current campaign acceptance receipt is invalid: ${error.message}`]};
+  }
   if (document.schema !== 'theme_lab_current_campaign_acceptance.v1') failures.push('Invalid current campaign receipt schema');
-  const ledger = read('ports/adaptation-authority.json');
+  let ledger;
+  try { ledger = read('ports/adaptation-authority.json'); }
+  catch (error) { return {status: error.code === 'ENOENT' ? 'inconclusive' : 'fail', failures: [`Current campaign inventory is unavailable: ${error.message}`]}; }
   const names = Object.keys(ledger.packages).sort();
   const expectedTargetFixtures=Object.fromEntries(Object.entries({baseline:'fixtures/scp-jp-sigma9-offline.css',sidebar:'fixtures/scp-jp-sidebar.html',header:'fixtures/scp-jp-header.html',navigation:'fixtures/scp-jp-navigation.html'}).map(([name,file])=>[name,sha(fs.readFileSync(path.join(root,file)))]));
   const currentRunContract=fs.readFileSync(path.join(root,'ports/current-acceptance/run-contract.json'));
@@ -136,11 +141,28 @@ export function checkCampaignCompletion(root) {
   }
   try {
     const migration = JSON.parse(bind(document.migration?.receipt, 'Sigma-10 migration'));
-    if (!accepted(migration.overall_acceptance?.status)) failures.push(`Current Sigma-10 migration acceptance is ${migration.overall_acceptance?.status ?? 'missing'}`);
+    if (migration.schema !== 'theme_lab_current_sigma10_acceptance.v1') failures.push('Sigma-10 receipt is not a current-candidate acceptance record');
+    if (!accepted(migration.status) || migration.status !== migration.overall_acceptance?.status) failures.push(`Current Sigma-10 migration acceptance is ${migration.status ?? migration.overall_acceptance?.status ?? 'missing'}`);
     const audit = JSON.parse(bind(document.migration?.browser_audit, 'Sigma-10 migration audit'));
     failures.push(...validateBrowserCoverage(audit,[...names,'sigma10-baseline'],{migration:true}));
     if(migration.browser_audit_sha256!==document.migration.browser_audit.sha256)failures.push('Migration decision is not bound to current browser audit');
+    if (migration.run_contract_sha256 !== currentMigrationContractSha) failures.push('Sigma-10 acceptance is not bound to the current run contract');
+    const expectedCandidates = {};
+    for (const name of [...names, 'sigma10-baseline']) {
+      const dir = name === 'sigma10-baseline' ? path.join(root, 'sigma10-migration/baseline-probe') : path.join(root, 'ports', name);
+      const css = fs.readFileSync(path.join(dir, 'candidate.css'));
+      let base = Buffer.alloc(0);
+      try { base = fs.readFileSync(path.join(dir, 'candidate-base.css')); } catch {}
+      const sourceFile = name === 'sigma10-baseline' ? 'candidate.wikidot.source.txt' : (ledger.packages[name]?.source_file ?? 'candidate.wikidot.source.txt');
+      const source = fs.readFileSync(path.join(dir, sourceFile));
+      const identity = candidateIdentity(css, base);
+      expectedCandidates[name] = {candidate_sha256: identity.candidateSha, source_sha256: sha(source)};
+    }
+    const candidateNames = Object.keys(migration.candidates ?? {}).sort();
+    if (candidateNames.join('\0') !== Object.keys(expectedCandidates).sort().join('\0') || candidateNames.some(name => migration.candidates[name]?.candidate_sha256 !== expectedCandidates[name].candidate_sha256 || migration.candidates[name]?.source_sha256 !== expectedCandidates[name].source_sha256)) failures.push('Sigma-10 acceptance candidate identities do not match the current package matrix');
     for(const record of audit.records??[]){
+      const identity = expectedCandidates[record.theme];
+      if(!identity || record.candidate_sha256!==identity.candidate_sha256 || record.candidate_source_sha256!==identity.source_sha256)failures.push(`Sigma-10 capture uses a superseded candidate ${record.theme}/${record.surface}.${record.state}`);
       if(record.run_contract_sha256!==currentMigrationContractSha||record.baseline_theme_mode!=='replacement'||record.baseline_theme_css_sha256!==currentMigrationSpec.baseline_theme.replacement_css_sha256)failures.push('Sigma-10 capture uses superseded baseline/contract');
       if(!Array.isArray(record.unconfirmed_items)||!Array.isArray(record.asset_failures)||!Array.isArray(record.page_errors)||!Array.isArray(record.action_responses)||record.action_responses.some(response=>response.type==='failure'||response.status>=400||response.error_message))failures.push('Sigma-10 capture lacks clean explicit safety results');
       if(record.unconfirmed_items?.length||record.asset_failures?.length||record.page_errors?.length||record.external_requests_sent!==0||!record.reviewed_after_last_change||!reviewedMigrationImage(record.migration_review,record.screenshot_sha256))failures.push(`Unresolved Sigma-10 state ${record.theme}/${record.surface}.${record.state}`);
@@ -156,5 +178,5 @@ export function checkCampaignCompletion(root) {
       if (records.some(record => record.candidate_source_sha256 !== row.inputs.source.sha256)) failures.push(`${row.package}: Sigma-10 matrix uses a superseded candidate`);
     }
   } catch (error) { failures.push(error.message); }
-  return {status: failures.length ? 'fail' : 'pass', packages: rows.length, failures};
+  return {status: failures.length ? 'fail' : 'pass', packages: rows.length, package_acceptance: 'required', sigma10_current_candidate_acceptance: 'required', failures};
 }
