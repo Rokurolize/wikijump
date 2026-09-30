@@ -8,12 +8,15 @@ import {assertPublishablePackage} from '../src/adaptation-authority.mjs';
 import {validateSigmaPreviewFinding} from './preview-authority.mjs';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
-if(process.argv.slice(2).some(arg=>arg!=='--historical-only'))throw new Error('Use --historical-only to inspect archived evidence, or no option for current campaign completion');
+if(process.argv.slice(2).some(arg=>arg!=='--historical-only')){
+ console.log(JSON.stringify({command:'sigma10-migration-check',result:'INVALID COMMAND',failures:['Use --historical-only to inspect archived evidence, or no option for current campaign completion.']},null,2));
+ process.exit(64);
+}
 const historicalOnly=process.argv.includes('--historical-only');
 if(!historicalOnly){
  const {checkCampaignCompletion}=await import('../src/campaign-completion.mjs');
  const result=checkCampaignCompletion(path.resolve(root,'..'));
- console.log(JSON.stringify({result:result.status==='pass'?'CURRENT CAMPAIGN ACCEPTED':'CURRENT CAMPAIGN NOT ACCEPTED',overall_acceptance:{status:result.status},...result},null,2));
+ console.log(JSON.stringify({command:'current-campaign-completion',result:result.status==='pass'?'CURRENT CAMPAIGN ACCEPTED':'CURRENT CAMPAIGN NOT ACCEPTED',overall_acceptance:{status:result.status},...result},null,2));
  process.exit(result.status==='pass'?0:result.status==='inconclusive'?2:1);
 }
 const ports=path.resolve(root,'../ports');
