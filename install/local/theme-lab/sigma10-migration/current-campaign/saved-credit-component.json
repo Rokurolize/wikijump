@@ -3,7 +3,32 @@
   "url": "https://pseudo-scp-jp.wdfiles.com/local--code/sigma-10%3Acredit%3Astyle/1",
   "source_authority": "ports/authority-evidence/sigma-preview/receipt.json",
   "saved_page_url": "https://pseudo-scp-jp.wikidot.com/sigma-10:main",
-  "cascade": "Saved Credit module loads credit:style -> info:style after Sigma localization.",
+  "cascade": {
+    "schema": "theme_lab_saved_credit_cascade.v1",
+    "order": [
+      "sigma10-baseline-replacement",
+      "credit:style stylesheet with its info:style @import expanded at the import position",
+      "credit:start saved module markup and its nested otherwise CSS module"
+    ],
+    "semantics": "The credit:style response imports info:style first, then applies its own remaining rules and Creative Commons icon rules. The saved main page loads this component after Sigma localization. Preview-only explanatory CSS is not part of the saved page.",
+    "sources": [
+      {
+        "identity": "pseudo-scp-jp:sigma-10:credit:style",
+        "path": "ports/authority-evidence/sigma-preview/sigma-10-credit-style.wikidot.txt",
+        "sha256": "3a63b14639af9ab5dd447567319156e9dee0baaa223b5e4b5725738ee113e645"
+      },
+      {
+        "identity": "pseudo-scp-jp:sigma-10:info:style",
+        "path": "ports/authority-evidence/sigma-preview/sigma-10-info-style.wikidot.txt",
+        "sha256": "d59fc333b77412ba8f49f095c5f5ec726d383f432d9ac46d35d59958a10318d0"
+      },
+      {
+        "identity": "pseudo-scp-jp:sigma-10:credit:start",
+        "path": "ports/authority-evidence/sigma-preview/sigma-10-credit-start.wikidot.txt",
+        "sha256": "61f1591ed7d3e90dca18e3d473a0387f30b35a14f495cf2a4276451a71a67c75"
+      }
+    ]
+  },
   "css_sha256": "7a103ef5c5f62bb73f4051e2bb7228381dcc884f23b2aed49626b20288be8fae",
   "dependencies": [
     {
