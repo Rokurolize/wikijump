@@ -1,0 +1,4145 @@
+{
+  "schema": "theme_lab_wikidot_adaptation_ab.v1",
+  "url": "https://scp-jp.wikidot.com/scp-173-jp",
+  "site": "scp-jp.wikidot.com",
+  "observed_at": "2026-09-29T19:17:18.255Z",
+  "measured_at": "2026-09-30T00:23:46.718Z",
+  "snapshot": {
+    "entry": "/o/5c92d7dc050a72ac4e130aab62f56fa70105a044aa610da940c17b7fe66d2fb6",
+    "created_at": "2026-09-29T19:17:18.255Z",
+    "assets": 46,
+    "failed_assets": 2,
+    "failed_asset_details": [
+      {
+        "url": "https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png",
+        "code": "reference_http_error",
+        "message": "reference fetch returned HTTP 500 for https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png"
+      },
+      {
+        "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+        "code": "reference_http_error",
+        "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+      }
+    ],
+    "replay_complete": true,
+    "object_digests": [
+      "5c92d7dc050a72ac4e130aab62f56fa70105a044aa610da940c17b7fe66d2fb6",
+      "58cab0208fa4ab61053eb9d92a99a1a1999ad6e3dc63f8fd80828e33cb069d53",
+      "f53bdeec5d0316301982c49cf86701d13680dc6f44efb3a8eb1ca93ca183e3ba",
+      "86bfb8fa53fdca123db5feecf7e995eb6de67edbe39ca0a800134c69258c2ba1",
+      "7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387",
+      "49bcabdb14d446bb93d261f9c967bedfa7cdf7b214807a8180974cbd00b21f11",
+      "c2d11cbe27c45ddd08591eeb54e50fbe199942a2448b3fc5c7ed904ce4d83172",
+      "12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941",
+      "c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc",
+      "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a",
+      "4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7",
+      "5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583",
+      "dab79d3aeee7dc23243a53e417f1b8dc4cb0f397f06aa17bac4c1f373abd5ede",
+      "c893531613ca348b0217ea5976a52c4dfe7cda7ffa0ca002ef24a0980a201825",
+      "6d59328357ba699fae7fe1ce66e403bcb430c4a86fb750e2c240d483f6ff2201",
+      "8ee173565b2e771fecf3b471a79bdf072aaa1bd9dc27582cfda2b2a322beeba8",
+      "841dadb079124d00a289640d7ddae9ecd8b9e8b245d59c33593d3905863b568a",
+      "d4b09792783e799e3dfd3acc0590f59783a9875909b5baf88f43f5d384d6acd3",
+      "222902c16fcda2ffbe6acf20f48a9a3b1ce3ec1b1f37e4cea2df449c3b053ff8",
+      "2b3f53a407d5b25bc91bd9920f164b13e14d944bc95a7bf32a5138b30cef07c6",
+      "fbfecc922b34a8921eadef91c1763804baa9dc5fe8c9299ccaa94dad3bb31604",
+      "77aa03dfe99dca77dd663d465c87fa642d26267f5190208c11d5498e7c7fe697",
+      "7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c",
+      "44d631b2507c9bfceabf960599f9f3d2093a3e19f5d6f04d27d375efb8012f84",
+      "7668781daf80240168d1142c72b3502f75617be40fbbe081caae66ac7d38d571",
+      "231630b39af902bf9ad98a22bd77b3c5359b18a9336b63bf599c31a76f1e08cd",
+      "cbb644d0ee730ea57dd5fbae35ef5ba4a41d57a254a6b1215de5c9ff8a321c2d",
+      "aadc3580d2b64ff5a7e6f1425587db4e8b033efcbf8f5c332ca52a5ed580c87c",
+      "e3870de89716b72cb61a4bba0e17c75783b361cdaba35ea96961c3070bd8ca18",
+      "9e540a087924a6e64790149d735cac022640e4fa6bff6bd65f5e9f41529bf0b3",
+      "bfdef833219a6edffd9c3cbc28db72739d22bb4d20cc2e2f8d56a7a4d408a206",
+      "ed0652b49899259e10ff2b7270ffee4d9f07b4c2a46c8d95a7f86fa3e94e01d8",
+      "40723fa718237c74623d7b64ce186a02b872f7fb4b3a917013fcc8b6aec3ded6",
+      "2eb982d8faa4ab9bcc8bc39c31cad8f1d73e1d8df8e4aebd3970af1e38620841",
+      "41950d74f0aae0ee95ca1381b8096f1d19dc4154971505c8bdc3b18dce70912d",
+      "1a9b14799594702e4d0350164623d9e71261d70042ed4b3979808b08ba6e38b6",
+      "3ee20e2529a17cdd369a6c89edb23d5662ecfa9007936786d33c22c38fac14de",
+      "d8e1808c4f33e6bd075bd13b7aafc8596a1937495d5c57732322502b9c711a03",
+      "aa602c40276279d9b8e782b8c4d1e466d51e5349dbe55d1756db93976584bcab",
+      "f458790e7e2d0b83533b4d0f3669630adcb473673455815fd38c5c2496c06a46",
+      "d65d63e6581b8c1210bed42a30dc766a0f0273018cb163947fdb8c0e160f3cb5",
+      "1d7378ae112da2d33aafdf0ce83bd2bccb36d6786a5c58317444367f2b9b4604",
+      "8aab16649c61f865e40a66b550fc954c8e1e42e317c06b22970a14a5390e8123",
+      "8814de07a0445f47adffed154a0cd18ed228dcf88faaebaeed1a9f71a280cd80"
+    ]
+  },
+  "browser_version": "154.0.8037.57",
+  "browser_sha256": "aea09d69ce7f24d5901f6bfb15dd44d0c856e793e0a498f8d8393ec7d2c308ec",
+  "acquisition": {
+    "root_url": "https://scp-jp.wikidot.com/scp-173-jp",
+    "entry": "/o/5c92d7dc050a72ac4e130aab62f56fa70105a044aa610da940c17b7fe66d2fb6",
+    "asset_count": 46,
+    "external_requests": 0,
+    "cache_hits": 1,
+    "failed_assets": [
+      {
+        "url": "https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png",
+        "code": "reference_http_error",
+        "message": "reference fetch returned HTTP 500 for https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png"
+      },
+      {
+        "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+        "code": "reference_http_error",
+        "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+      }
+    ],
+    "failed_asset_count": 2
+  },
+  "computed_contract": [],
+  "public_writes": 0,
+  "external_browser_requests": 0,
+  "blocked_requests": [
+    {
+      "method": "GET",
+      "url": "https://drizzles.scp-jp.org/api/v2/raven.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://stats.g.doubleclick.net/dc.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/interwikiFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/styleFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "https://floors.nitropay.com/f"
+    },
+    {
+      "method": "GET",
+      "url": "https://srv.scalibur.io/adserver/static/loader.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.confiant-integrations.net/QwN0KdjTe-a-6y-70Vps9qMqCzM/gpt_and_prebid/config.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://sb.scorecardresearch.com/cs/20631572/beacon.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://securepubads.g.doubleclick.net/tag/js/gpt.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://s.nitropay.com/1.gif"
+    },
+    {
+      "method": "GET",
+      "url": "https://gum.criteo.com/sid/json"
+    },
+    {
+      "method": "POST",
+      "url": "https://id5-sync.com/api/config/prebid"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.id5-sync.com/api/1.0/id5PrebidModule.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://api.rlcdn.com/api/identity/envelope"
+    },
+    {
+      "method": "GET",
+      "url": "https://match.adsrvr.org/track/rid"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://s.nitropay.com/gpp-61d490e.min.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://c.amazon-adsystem.com/aax2/apstag.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://btloader.com/tag"
+    },
+    {
+      "method": "GET",
+      "url": "https://drizzles.scp-jp.org/api/v2/raven.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://stats.g.doubleclick.net/dc.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/interwikiFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/styleFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "https://floors.nitropay.com/f"
+    },
+    {
+      "method": "GET",
+      "url": "https://srv.scalibur.io/adserver/static/loader.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.confiant-integrations.net/QwN0KdjTe-a-6y-70Vps9qMqCzM/gpt_and_prebid/config.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://sb.scorecardresearch.com/cs/20631572/beacon.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://securepubads.g.doubleclick.net/tag/js/gpt.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://s.nitropay.com/1.gif"
+    },
+    {
+      "method": "GET",
+      "url": "https://gum.criteo.com/sid/json"
+    },
+    {
+      "method": "POST",
+      "url": "https://id5-sync.com/api/config/prebid"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.id5-sync.com/api/1.0/id5PrebidModule.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://api.rlcdn.com/api/identity/envelope"
+    },
+    {
+      "method": "GET",
+      "url": "https://match.adsrvr.org/track/rid"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://s.nitropay.com/gpp-61d490e.min.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://c.amazon-adsystem.com/aax2/apstag.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://btloader.com/tag"
+    },
+    {
+      "method": "GET",
+      "url": "https://drizzles.scp-jp.org/api/v2/raven.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://stats.g.doubleclick.net/dc.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/interwikiFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/styleFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "https://floors.nitropay.com/f"
+    },
+    {
+      "method": "GET",
+      "url": "https://srv.scalibur.io/adserver/static/loader.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.confiant-integrations.net/QwN0KdjTe-a-6y-70Vps9qMqCzM/gpt_and_prebid/config.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://sb.scorecardresearch.com/cs/20631572/beacon.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://securepubads.g.doubleclick.net/tag/js/gpt.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://s.nitropay.com/1.gif"
+    },
+    {
+      "method": "GET",
+      "url": "https://gum.criteo.com/sid/json"
+    },
+    {
+      "method": "POST",
+      "url": "https://id5-sync.com/api/config/prebid"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.id5-sync.com/api/1.0/id5PrebidModule.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://api.rlcdn.com/api/identity/envelope"
+    },
+    {
+      "method": "GET",
+      "url": "https://match.adsrvr.org/track/rid"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://s.nitropay.com/gpp-61d490e.min.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://c.amazon-adsystem.com/aax2/apstag.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://btloader.com/tag"
+    },
+    {
+      "method": "GET",
+      "url": "https://drizzles.scp-jp.org/api/v2/raven.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://stats.g.doubleclick.net/dc.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/interwikiFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/styleFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "https://floors.nitropay.com/f"
+    },
+    {
+      "method": "GET",
+      "url": "https://srv.scalibur.io/adserver/static/loader.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.confiant-integrations.net/QwN0KdjTe-a-6y-70Vps9qMqCzM/gpt_and_prebid/config.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://sb.scorecardresearch.com/cs/20631572/beacon.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://securepubads.g.doubleclick.net/tag/js/gpt.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://s.nitropay.com/1.gif"
+    },
+    {
+      "method": "GET",
+      "url": "https://gum.criteo.com/sid/json"
+    },
+    {
+      "method": "POST",
+      "url": "https://id5-sync.com/api/config/prebid"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.id5-sync.com/api/1.0/id5PrebidModule.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://api.rlcdn.com/api/identity/envelope"
+    },
+    {
+      "method": "GET",
+      "url": "https://match.adsrvr.org/track/rid"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://s.nitropay.com/gpp-61d490e.min.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://c.amazon-adsystem.com/aax2/apstag.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://btloader.com/tag"
+    },
+    {
+      "method": "GET",
+      "url": "https://drizzles.scp-jp.org/api/v2/raven.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://stats.g.doubleclick.net/dc.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/interwikiFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/styleFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "https://floors.nitropay.com/f"
+    },
+    {
+      "method": "GET",
+      "url": "https://srv.scalibur.io/adserver/static/loader.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.confiant-integrations.net/QwN0KdjTe-a-6y-70Vps9qMqCzM/gpt_and_prebid/config.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://sb.scorecardresearch.com/cs/20631572/beacon.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://securepubads.g.doubleclick.net/tag/js/gpt.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://s.nitropay.com/1.gif"
+    },
+    {
+      "method": "GET",
+      "url": "https://gum.criteo.com/sid/json"
+    },
+    {
+      "method": "POST",
+      "url": "https://id5-sync.com/api/config/prebid"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.id5-sync.com/api/1.0/id5PrebidModule.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://api.rlcdn.com/api/identity/envelope"
+    },
+    {
+      "method": "GET",
+      "url": "https://match.adsrvr.org/track/rid"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://s.nitropay.com/gpp-61d490e.min.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://c.amazon-adsystem.com/aax2/apstag.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://btloader.com/tag"
+    },
+    {
+      "method": "GET",
+      "url": "https://drizzles.scp-jp.org/api/v2/raven.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://stats.g.doubleclick.net/dc.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/interwikiFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/styleFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "https://floors.nitropay.com/f"
+    },
+    {
+      "method": "GET",
+      "url": "https://srv.scalibur.io/adserver/static/loader.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.confiant-integrations.net/QwN0KdjTe-a-6y-70Vps9qMqCzM/gpt_and_prebid/config.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://sb.scorecardresearch.com/cs/20631572/beacon.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://securepubads.g.doubleclick.net/tag/js/gpt.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://s.nitropay.com/1.gif"
+    },
+    {
+      "method": "GET",
+      "url": "https://gum.criteo.com/sid/json"
+    },
+    {
+      "method": "POST",
+      "url": "https://id5-sync.com/api/config/prebid"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.id5-sync.com/api/1.0/id5PrebidModule.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://api.rlcdn.com/api/identity/envelope"
+    },
+    {
+      "method": "GET",
+      "url": "https://match.adsrvr.org/track/rid"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://s.nitropay.com/gpp-61d490e.min.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://c.amazon-adsystem.com/aax2/apstag.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://btloader.com/tag"
+    },
+    {
+      "method": "GET",
+      "url": "https://drizzles.scp-jp.org/api/v2/raven.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://stats.g.doubleclick.net/dc.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/interwikiFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/styleFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "https://floors.nitropay.com/f"
+    },
+    {
+      "method": "GET",
+      "url": "https://srv.scalibur.io/adserver/static/loader.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.confiant-integrations.net/QwN0KdjTe-a-6y-70Vps9qMqCzM/gpt_and_prebid/config.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://sb.scorecardresearch.com/cs/20631572/beacon.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://securepubads.g.doubleclick.net/tag/js/gpt.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://s.nitropay.com/1.gif"
+    },
+    {
+      "method": "GET",
+      "url": "https://gum.criteo.com/sid/json"
+    },
+    {
+      "method": "POST",
+      "url": "https://id5-sync.com/api/config/prebid"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.id5-sync.com/api/1.0/id5PrebidModule.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://api.rlcdn.com/api/identity/envelope"
+    },
+    {
+      "method": "GET",
+      "url": "https://match.adsrvr.org/track/rid"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://s.nitropay.com/gpp-61d490e.min.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://c.amazon-adsystem.com/aax2/apstag.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://btloader.com/tag"
+    },
+    {
+      "method": "GET",
+      "url": "https://drizzles.scp-jp.org/api/v2/raven.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://stats.g.doubleclick.net/dc.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/interwikiFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/styleFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "https://floors.nitropay.com/f"
+    },
+    {
+      "method": "GET",
+      "url": "https://srv.scalibur.io/adserver/static/loader.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.confiant-integrations.net/QwN0KdjTe-a-6y-70Vps9qMqCzM/gpt_and_prebid/config.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://sb.scorecardresearch.com/cs/20631572/beacon.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://securepubads.g.doubleclick.net/tag/js/gpt.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://s.nitropay.com/1.gif"
+    },
+    {
+      "method": "GET",
+      "url": "https://gum.criteo.com/sid/json"
+    },
+    {
+      "method": "POST",
+      "url": "https://id5-sync.com/api/config/prebid"
+    },
+    {
+      "method": "GET",
+      "url": "https://cdn.id5-sync.com/api/1.0/id5PrebidModule.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://api.rlcdn.com/api/identity/envelope"
+    },
+    {
+      "method": "GET",
+      "url": "https://match.adsrvr.org/track/rid"
+    },
+    {
+      "method": "GET",
+      "url": "https://ats-wrapper.privacymanager.io/ats-modules/438cb908-ed61-41e9-b716-05d5f4122a64/ats.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://s.nitropay.com/gpp-61d490e.min.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://c.amazon-adsystem.com/aax2/apstag.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://btloader.com/tag"
+    }
+  ],
+  "rows": [
+    {
+      "variant": "without",
+      "width": 320,
+      "state": "header-title-search",
+      "index": 0,
+      "css_sha256": "f423ac031f396201778ed960f11348f726da7f076b3bcbafa7bc32e0c00ba079",
+      "measurement": {
+        "computed_checks": [],
+        "document_width": 320,
+        "viewport_width": 320,
+        "overlaps": [],
+        "control_occlusion": [],
+        "header_ink_rects": {
+          "#header h1": [
+            {
+              "x": 53.53125,
+              "y": 198.46875,
+              "width": 212.921875,
+              "height": 75.390625,
+              "top": 198.46875,
+              "right": 266.453125,
+              "bottom": 273.859375,
+              "left": 53.53125
+            }
+          ],
+          "#header h2": [
+            {
+              "x": 48.53125,
+              "y": 256.5625,
+              "width": 222.9375,
+              "height": 39.46875,
+              "top": 256.5625,
+              "right": 271.46875,
+              "bottom": 296.03125,
+              "left": 48.53125
+            }
+          ]
+        },
+        "overflow_sources": [
+          {
+            "tag": "DIV",
+            "id": "side-bar",
+            "class_name": "",
+            "rect": {
+              "x": -334.78125,
+              "y": 0,
+              "width": 234.796875,
+              "height": 844,
+              "top": 0,
+              "right": -99.984375,
+              "bottom": 844,
+              "left": -334.78125
+            },
+            "parent_id": "content-wrap",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block resources",
+            "rect": {
+              "x": -334.78125,
+              "y": 0,
+              "width": 234.796875,
+              "height": 137.171875,
+              "top": 0,
+              "right": -99.984375,
+              "bottom": 137.171875,
+              "left": -334.78125
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "8px 10.8px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -323.984375,
+              "y": 8,
+              "width": 213.203125,
+              "height": 20.421875,
+              "top": 8,
+              "right": -110.78125,
+              "bottom": 28.421875,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -323.984375,
+              "y": 8,
+              "width": 213.203125,
+              "height": 19.421875,
+              "top": 8,
+              "right": -110.78125,
+              "bottom": 27.421875,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -323.984375,
+              "y": 32.421875,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 32.421875,
+              "right": -110.78125,
+              "bottom": 54.609375,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -323.984375,
+              "y": 32.421875,
+              "width": 192.375,
+              "height": 21,
+              "top": 32.421875,
+              "right": -131.609375,
+              "bottom": 53.421875,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -323.984375,
+              "y": 56.609375,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 56.609375,
+              "right": -110.78125,
+              "bottom": 78.796875,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -323.984375,
+              "y": 56.609375,
+              "width": 28.9375,
+              "height": 21,
+              "top": 56.609375,
+              "right": -295.046875,
+              "bottom": 77.609375,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -323.984375,
+              "y": 80.796875,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 80.796875,
+              "right": -110.78125,
+              "bottom": 102.984375,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -323.984375,
+              "y": 80.796875,
+              "width": 103.59375,
+              "height": 21,
+              "top": 80.796875,
+              "right": -220.390625,
+              "bottom": 101.796875,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -323.984375,
+              "y": 104.984375,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 104.984375,
+              "right": -110.78125,
+              "bottom": 127.171875,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -323.984375,
+              "y": 104.984375,
+              "width": 74,
+              "height": 21,
+              "top": 104.984375,
+              "right": -249.984375,
+              "bottom": 125.984375,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -334.78125,
+              "y": 137.171875,
+              "width": 234.796875,
+              "height": 0,
+              "top": 137.171875,
+              "right": -99.984375,
+              "bottom": 137.171875,
+              "left": -334.78125
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block",
+            "rect": {
+              "x": -334.78125,
+              "y": 137.171875,
+              "width": 234.796875,
+              "height": 938.765625,
+              "top": 137.171875,
+              "right": -99.984375,
+              "bottom": 1075.9375,
+              "left": -334.78125
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "8px 10.8px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -323.984375,
+              "y": 147.171875,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 147.171875,
+              "right": -110.78125,
+              "bottom": 169.359375,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -323.984375,
+              "y": 147.171875,
+              "width": 88.796875,
+              "height": 21,
+              "top": 147.171875,
+              "right": -235.1875,
+              "bottom": 168.171875,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -323.984375,
+              "y": 171.359375,
+              "width": 213.203125,
+              "height": 20.421875,
+              "top": 171.359375,
+              "right": -110.78125,
+              "bottom": 191.78125,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -323.984375,
+              "y": 171.359375,
+              "width": 213.203125,
+              "height": 19.421875,
+              "top": 171.359375,
+              "right": -110.78125,
+              "bottom": 190.78125,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -323.984375,
+              "y": 195.78125,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 195.78125,
+              "right": -110.78125,
+              "bottom": 217.96875,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -323.984375,
+              "y": 195.78125,
+              "width": 4.703125,
+              "height": 21,
+              "top": 195.78125,
+              "right": -319.28125,
+              "bottom": 216.78125,
+              "left": -323.984375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -305.609375,
+              "y": 195.78125,
+              "width": 9.234375,
+              "height": 21,
+              "top": 195.78125,
+              "right": -296.375,
+              "bottom": 216.78125,
+              "left": -305.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -282.703125,
+              "y": 195.78125,
+              "width": 13.78125,
+              "height": 21,
+              "top": 195.78125,
+              "right": -268.921875,
+              "bottom": 216.78125,
+              "left": -282.703125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -255.25,
+              "y": 195.78125,
+              "width": 14.953125,
+              "height": 21,
+              "top": 195.78125,
+              "right": -240.296875,
+              "bottom": 216.78125,
+              "left": -255.25
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -226.625,
+              "y": 195.78125,
+              "width": 10.265625,
+              "height": 21,
+              "top": 195.78125,
+              "right": -216.359375,
+              "bottom": 216.78125,
+              "left": -226.625
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          }
+        ],
+        "selector_coverage": {
+          "#header": 1,
+          "#header h1": 1,
+          "#header h2": 1,
+          "#search-top-box": 1
+        },
+        "rows": [
+          {
+            "selector": "#header",
+            "pseudo": null,
+            "text": "SCP財団\n                \n                    確保、収容、保護\n                \n                \n                \n                \n                \n    \n        \n    \n\n                \n                \n                    \n                        \n\n\n\nSCPデータベース\n\n合作\nインシデント記録\nシリーズアーカイブ\nコンテストアーカイブ国際版\n\n\nJPデータベース\n\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション\n\n\nSCP和訳一覧\nSCPの世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n\n\n≡\n\n\nシリーズ\n\nEN - I (001-999)\nEN - II (1000-1999)\nEN - III (2000-2999)\nEN - IV (3000-3999)\nEN - V (4000-4999)\nEN - VI (5000-5999)\nEN - VII (6000-6999)\nEN - VIII (7000-7999)\nEN - IX (8000-8999)\nEN - X (9000-9999)\nEN - Lost (L000-L999)\nJP - I (001-999)\nJP - II (1000-1999)\nJP - III (2000-2999)\nJP - IV (3000-3999)\nJP - V (4000-4999)\nSCP和訳一覧\n\n\nデータベース\n\n合作\nシリーズアーカイブ\nコンテストアーカイブ国際版\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション-JP\n\n\n世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n    \n\n\n\n    \n    \n    \n    \n    \n\n\n\n\n    \n    \n    \n    \n                    \n                \n                アカウントを作成 または サインイン",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 442.390625,
+              "top": 0,
+              "right": 320,
+              "bottom": 442.390625,
+              "left": 0
+            },
+            "style": {
+              "display": "grid",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "320px",
+              "min-width": "0px",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h1",
+            "pseudo": null,
+            "text": "SCP財団",
+            "rect": {
+              "x": 20,
+              "y": 204.46875,
+              "width": 280,
+              "height": 64.78125,
+              "top": 204.46875,
+              "right": 300,
+              "bottom": 269.25,
+              "left": 20
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "280px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h2",
+            "pseudo": null,
+            "text": "確保、収容、保護",
+            "rect": {
+              "x": 20,
+              "y": 269.25,
+              "width": 280,
+              "height": 19.453125,
+              "top": 269.25,
+              "right": 300,
+              "bottom": 288.703125,
+              "left": 20
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "280px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#search-top-box",
+            "pseudo": null,
+            "text": "",
+            "rect": {
+              "x": 176.1875,
+              "y": 37.96875,
+              "width": 123.8125,
+              "height": 26,
+              "top": 37.96875,
+              "right": 300,
+              "bottom": 63.96875,
+              "left": 176.1875
+            },
+            "style": {
+              "display": "flex",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "123.812px",
+              "min-width": "auto",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          }
+        ],
+        "search": {
+          "display": "block",
+          "focused": false
+        }
+      },
+      "bounds": [
+        {
+          "left": 0,
+          "right": 320,
+          "viewport_width": 320,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 20,
+          "right": 300,
+          "viewport_width": 320,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 20,
+          "right": 300,
+          "viewport_width": 320,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 176.1875,
+          "right": 300,
+          "viewport_width": 320,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        }
+      ],
+      "interaction_error": null,
+      "pass": true,
+      "screenshot": "without-320-header-title-search-0.png",
+      "screenshot_sha256": "d6c969fb182dec960b3ac1d1fc9560bcb435c1bc11f0c75d4c37dd2a99f08608",
+      "dom": "without-320-header-title-search-0.html.gz",
+      "dom_sha256": "6e01d8fe3586de0882b4e389eb07576adf2494654478de054b9db2185a64d9ca"
+    },
+    {
+      "variant": "with",
+      "width": 320,
+      "state": "header-title-search",
+      "index": 0,
+      "css_sha256": "dbe0093ff2bb7fd8bc6ba4eb5831ff13975cbc0ed7c34c564176b31500071b5b",
+      "measurement": {
+        "computed_checks": [],
+        "document_width": 320,
+        "viewport_width": 320,
+        "overlaps": [],
+        "control_occlusion": [],
+        "header_ink_rects": {
+          "#header h1": [
+            {
+              "x": 16.765625,
+              "y": 225.890625,
+              "width": 286.4375,
+              "height": 43,
+              "top": 225.890625,
+              "right": 303.203125,
+              "bottom": 268.890625,
+              "left": 16.765625
+            }
+          ],
+          "#header h2": [
+            {
+              "x": 48.515625,
+              "y": 251.59375,
+              "width": 222.9375,
+              "height": 39.46875,
+              "top": 251.59375,
+              "right": 271.453125,
+              "bottom": 291.0625,
+              "left": 48.515625
+            }
+          ]
+        },
+        "overflow_sources": [
+          {
+            "tag": "DIV",
+            "id": "side-bar",
+            "class_name": "",
+            "rect": {
+              "x": -333.03125,
+              "y": 0,
+              "width": 234.796875,
+              "height": 844,
+              "top": 0,
+              "right": -98.234375,
+              "bottom": 844,
+              "left": -333.03125
+            },
+            "parent_id": "content-wrap",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block resources",
+            "rect": {
+              "x": -333.03125,
+              "y": 0,
+              "width": 234.796875,
+              "height": 137.171875,
+              "top": 0,
+              "right": -98.234375,
+              "bottom": 137.171875,
+              "left": -333.03125
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "8px 10.8px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -322.234375,
+              "y": 8,
+              "width": 213.203125,
+              "height": 20.421875,
+              "top": 8,
+              "right": -109.03125,
+              "bottom": 28.421875,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -322.234375,
+              "y": 8,
+              "width": 213.203125,
+              "height": 19.421875,
+              "top": 8,
+              "right": -109.03125,
+              "bottom": 27.421875,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -322.234375,
+              "y": 32.421875,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 32.421875,
+              "right": -109.03125,
+              "bottom": 54.609375,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -322.234375,
+              "y": 32.421875,
+              "width": 192.375,
+              "height": 21,
+              "top": 32.421875,
+              "right": -129.859375,
+              "bottom": 53.421875,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -322.234375,
+              "y": 56.609375,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 56.609375,
+              "right": -109.03125,
+              "bottom": 78.796875,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -322.234375,
+              "y": 56.609375,
+              "width": 28.9375,
+              "height": 21,
+              "top": 56.609375,
+              "right": -293.296875,
+              "bottom": 77.609375,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -322.234375,
+              "y": 80.796875,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 80.796875,
+              "right": -109.03125,
+              "bottom": 102.984375,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -322.234375,
+              "y": 80.796875,
+              "width": 103.59375,
+              "height": 21,
+              "top": 80.796875,
+              "right": -218.640625,
+              "bottom": 101.796875,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -322.234375,
+              "y": 104.984375,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 104.984375,
+              "right": -109.03125,
+              "bottom": 127.171875,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -322.234375,
+              "y": 104.984375,
+              "width": 74,
+              "height": 21,
+              "top": 104.984375,
+              "right": -248.234375,
+              "bottom": 125.984375,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -333.03125,
+              "y": 137.171875,
+              "width": 234.796875,
+              "height": 0,
+              "top": 137.171875,
+              "right": -98.234375,
+              "bottom": 137.171875,
+              "left": -333.03125
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block",
+            "rect": {
+              "x": -333.03125,
+              "y": 137.171875,
+              "width": 234.796875,
+              "height": 938.765625,
+              "top": 137.171875,
+              "right": -98.234375,
+              "bottom": 1075.9375,
+              "left": -333.03125
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "8px 10.8px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -322.234375,
+              "y": 147.171875,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 147.171875,
+              "right": -109.03125,
+              "bottom": 169.359375,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -322.234375,
+              "y": 147.171875,
+              "width": 88.796875,
+              "height": 21,
+              "top": 147.171875,
+              "right": -233.4375,
+              "bottom": 168.171875,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -322.234375,
+              "y": 171.359375,
+              "width": 213.203125,
+              "height": 20.421875,
+              "top": 171.359375,
+              "right": -109.03125,
+              "bottom": 191.78125,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -322.234375,
+              "y": 171.359375,
+              "width": 213.203125,
+              "height": 19.421875,
+              "top": 171.359375,
+              "right": -109.03125,
+              "bottom": 190.78125,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -322.234375,
+              "y": 195.78125,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 195.78125,
+              "right": -109.03125,
+              "bottom": 217.96875,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -322.234375,
+              "y": 195.78125,
+              "width": 4.703125,
+              "height": 21,
+              "top": 195.78125,
+              "right": -317.53125,
+              "bottom": 216.78125,
+              "left": -322.234375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -303.859375,
+              "y": 195.78125,
+              "width": 9.234375,
+              "height": 21,
+              "top": 195.78125,
+              "right": -294.625,
+              "bottom": 216.78125,
+              "left": -303.859375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -280.953125,
+              "y": 195.78125,
+              "width": 13.78125,
+              "height": 21,
+              "top": 195.78125,
+              "right": -267.171875,
+              "bottom": 216.78125,
+              "left": -280.953125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -253.5,
+              "y": 195.78125,
+              "width": 14.953125,
+              "height": 21,
+              "top": 195.78125,
+              "right": -238.546875,
+              "bottom": 216.78125,
+              "left": -253.5
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -224.875,
+              "y": 195.78125,
+              "width": 10.265625,
+              "height": 21,
+              "top": 195.78125,
+              "right": -214.609375,
+              "bottom": 216.78125,
+              "left": -224.875
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          }
+        ],
+        "selector_coverage": {
+          "#header": 1,
+          "#header h1": 1,
+          "#header h2": 1,
+          "#search-top-box": 1
+        },
+        "rows": [
+          {
+            "selector": "#header",
+            "pseudo": null,
+            "text": "SCP財団\n                \n                    確保、収容、保護\n                \n                \n                \n                \n                \n    \n        \n    \n\n                \n                \n                    \n                        \n\n\n\nSCPデータベース\n\n合作\nインシデント記録\nシリーズアーカイブ\nコンテストアーカイブ国際版\n\n\nJPデータベース\n\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション\n\n\nSCP和訳一覧\nSCPの世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n\n\n≡\n\n\nシリーズ\n\nEN - I (001-999)\nEN - II (1000-1999)\nEN - III (2000-2999)\nEN - IV (3000-3999)\nEN - V (4000-4999)\nEN - VI (5000-5999)\nEN - VII (6000-6999)\nEN - VIII (7000-7999)\nEN - IX (8000-8999)\nEN - X (9000-9999)\nEN - Lost (L000-L999)\nJP - I (001-999)\nJP - II (1000-1999)\nJP - III (2000-2999)\nJP - IV (3000-3999)\nJP - V (4000-4999)\nSCP和訳一覧\n\n\nデータベース\n\n合作\nシリーズアーカイブ\nコンテストアーカイブ国際版\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション-JP\n\n\n世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n    \n\n\n\n    \n    \n    \n    \n    \n\n\n\n\n    \n    \n    \n    \n                    \n                \n                アカウントを作成 または サインイン",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 442.390625,
+              "top": 0,
+              "right": 320,
+              "bottom": 442.390625,
+              "left": 0
+            },
+            "style": {
+              "display": "grid",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "320px",
+              "min-width": "0px",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h1",
+            "pseudo": null,
+            "text": "SCP財団",
+            "rect": {
+              "x": 16.765625,
+              "y": 231.890625,
+              "width": 286.4375,
+              "height": 32.390625,
+              "top": 231.890625,
+              "right": 303.203125,
+              "bottom": 264.28125,
+              "left": 16.765625
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "286.438px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h2",
+            "pseudo": null,
+            "text": "確保、収容、保護",
+            "rect": {
+              "x": 71.578125,
+              "y": 264.28125,
+              "width": 176.828125,
+              "height": 19.453125,
+              "top": 264.28125,
+              "right": 248.40625,
+              "bottom": 283.734375,
+              "left": 71.578125
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "176.828px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#search-top-box",
+            "pseudo": null,
+            "text": "",
+            "rect": {
+              "x": 160,
+              "y": 57.9375,
+              "width": 106.65625,
+              "height": 26,
+              "top": 57.9375,
+              "right": 266.65625,
+              "bottom": 83.9375,
+              "left": 160
+            },
+            "style": {
+              "display": "flex",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "106.656px",
+              "min-width": "auto",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          }
+        ],
+        "search": {
+          "display": "block",
+          "focused": false
+        }
+      },
+      "bounds": [
+        {
+          "left": 0,
+          "right": 320,
+          "viewport_width": 320,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 16.765625,
+          "right": 303.203125,
+          "viewport_width": 320,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 71.578125,
+          "right": 248.40625,
+          "viewport_width": 320,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 160,
+          "right": 266.65625,
+          "viewport_width": 320,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        }
+      ],
+      "interaction_error": null,
+      "pass": true,
+      "screenshot": "with-320-header-title-search-0.png",
+      "screenshot_sha256": "1d261190e93be8bf1a6449ffe6f85415ca1400e30527e4f596550cee652ec67c",
+      "dom": "with-320-header-title-search-0.html.gz",
+      "dom_sha256": "bd2afa998348b2c36014a6910db1d9b2e9058b30f7a0b3912be56998ba94b73e"
+    },
+    {
+      "variant": "without",
+      "width": 390,
+      "state": "header-title-search",
+      "index": 0,
+      "css_sha256": "f423ac031f396201778ed960f11348f726da7f076b3bcbafa7bc32e0c00ba079",
+      "measurement": {
+        "computed_checks": [],
+        "document_width": 390,
+        "viewport_width": 390,
+        "overlaps": [],
+        "control_occlusion": [],
+        "header_ink_rects": {
+          "#header h1": [
+            {
+              "x": 44.71875,
+              "y": 223.453125,
+              "width": 300.5625,
+              "height": 44,
+              "top": 223.453125,
+              "right": 345.28125,
+              "bottom": 267.453125,
+              "left": 44.71875
+            }
+          ],
+          "#header h2": [
+            {
+              "x": 41.171875,
+              "y": 249.15625,
+              "width": 307.65625,
+              "height": 42.453125,
+              "top": 249.15625,
+              "right": 348.828125,
+              "bottom": 291.609375,
+              "left": 41.171875
+            }
+          ]
+        },
+        "overflow_sources": [
+          {
+            "tag": "DIV",
+            "id": "side-bar",
+            "class_name": "",
+            "rect": {
+              "x": -334.796875,
+              "y": 0,
+              "width": 234.796875,
+              "height": 844,
+              "top": 0,
+              "right": -100,
+              "bottom": 844,
+              "left": -334.796875
+            },
+            "parent_id": "content-wrap",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block resources",
+            "rect": {
+              "x": -334.796875,
+              "y": 0,
+              "width": 234.796875,
+              "height": 137.171875,
+              "top": 0,
+              "right": -100,
+              "bottom": 137.171875,
+              "left": -334.796875
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "8px 10.8px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -324,
+              "y": 8,
+              "width": 213.203125,
+              "height": 20.421875,
+              "top": 8,
+              "right": -110.796875,
+              "bottom": 28.421875,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -324,
+              "y": 8,
+              "width": 213.203125,
+              "height": 19.421875,
+              "top": 8,
+              "right": -110.796875,
+              "bottom": 27.421875,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -324,
+              "y": 32.421875,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 32.421875,
+              "right": -110.796875,
+              "bottom": 54.609375,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -324,
+              "y": 32.421875,
+              "width": 192.375,
+              "height": 21,
+              "top": 32.421875,
+              "right": -131.625,
+              "bottom": 53.421875,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -324,
+              "y": 56.609375,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 56.609375,
+              "right": -110.796875,
+              "bottom": 78.796875,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -324,
+              "y": 56.609375,
+              "width": 28.9375,
+              "height": 21,
+              "top": 56.609375,
+              "right": -295.0625,
+              "bottom": 77.609375,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -324,
+              "y": 80.796875,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 80.796875,
+              "right": -110.796875,
+              "bottom": 102.984375,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -324,
+              "y": 80.796875,
+              "width": 103.59375,
+              "height": 21,
+              "top": 80.796875,
+              "right": -220.40625,
+              "bottom": 101.796875,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -324,
+              "y": 104.984375,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 104.984375,
+              "right": -110.796875,
+              "bottom": 127.171875,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -324,
+              "y": 104.984375,
+              "width": 74,
+              "height": 21,
+              "top": 104.984375,
+              "right": -250,
+              "bottom": 125.984375,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -334.796875,
+              "y": 137.171875,
+              "width": 234.796875,
+              "height": 0,
+              "top": 137.171875,
+              "right": -100,
+              "bottom": 137.171875,
+              "left": -334.796875
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block",
+            "rect": {
+              "x": -334.796875,
+              "y": 137.171875,
+              "width": 234.796875,
+              "height": 938.765625,
+              "top": 137.171875,
+              "right": -100,
+              "bottom": 1075.9375,
+              "left": -334.796875
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "8px 10.8px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -324,
+              "y": 147.171875,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 147.171875,
+              "right": -110.796875,
+              "bottom": 169.359375,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -324,
+              "y": 147.171875,
+              "width": 88.796875,
+              "height": 21,
+              "top": 147.171875,
+              "right": -235.203125,
+              "bottom": 168.171875,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -324,
+              "y": 171.359375,
+              "width": 213.203125,
+              "height": 20.421875,
+              "top": 171.359375,
+              "right": -110.796875,
+              "bottom": 191.78125,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -324,
+              "y": 171.359375,
+              "width": 213.203125,
+              "height": 19.421875,
+              "top": 171.359375,
+              "right": -110.796875,
+              "bottom": 190.78125,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -324,
+              "y": 195.78125,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 195.78125,
+              "right": -110.796875,
+              "bottom": 217.96875,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -324,
+              "y": 195.78125,
+              "width": 4.703125,
+              "height": 21,
+              "top": 195.78125,
+              "right": -319.296875,
+              "bottom": 216.78125,
+              "left": -324
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -305.625,
+              "y": 195.78125,
+              "width": 9.234375,
+              "height": 21,
+              "top": 195.78125,
+              "right": -296.390625,
+              "bottom": 216.78125,
+              "left": -305.625
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -282.71875,
+              "y": 195.78125,
+              "width": 13.78125,
+              "height": 21,
+              "top": 195.78125,
+              "right": -268.9375,
+              "bottom": 216.78125,
+              "left": -282.71875
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -255.265625,
+              "y": 195.78125,
+              "width": 14.953125,
+              "height": 21,
+              "top": 195.78125,
+              "right": -240.3125,
+              "bottom": 216.78125,
+              "left": -255.265625
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -226.640625,
+              "y": 195.78125,
+              "width": 10.265625,
+              "height": 21,
+              "top": 195.78125,
+              "right": -216.375,
+              "bottom": 216.78125,
+              "left": -226.640625
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          }
+        ],
+        "selector_coverage": {
+          "#header": 1,
+          "#header h1": 1,
+          "#header h2": 1,
+          "#search-top-box": 1
+        },
+        "rows": [
+          {
+            "selector": "#header",
+            "pseudo": null,
+            "text": "SCP財団\n                \n                    確保、収容、保護\n                \n                \n                \n                \n                \n    \n        \n    \n\n                \n                \n                    \n                        \n\n\n\nSCPデータベース\n\n合作\nインシデント記録\nシリーズアーカイブ\nコンテストアーカイブ国際版\n\n\nJPデータベース\n\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション\n\n\nSCP和訳一覧\nSCPの世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n\n\n≡\n\n\nシリーズ\n\nEN - I (001-999)\nEN - II (1000-1999)\nEN - III (2000-2999)\nEN - IV (3000-3999)\nEN - V (4000-4999)\nEN - VI (5000-5999)\nEN - VII (6000-6999)\nEN - VIII (7000-7999)\nEN - IX (8000-8999)\nEN - X (9000-9999)\nEN - Lost (L000-L999)\nJP - I (001-999)\nJP - II (1000-1999)\nJP - III (2000-2999)\nJP - IV (3000-3999)\nJP - V (4000-4999)\nSCP和訳一覧\n\n\nデータベース\n\n合作\nシリーズアーカイブ\nコンテストアーカイブ国際版\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション-JP\n\n\n世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n    \n\n\n\n    \n    \n    \n    \n    \n\n\n\n\n    \n    \n    \n    \n                    \n                \n                アカウントを作成 または サインイン",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 452.546875,
+              "top": 0,
+              "right": 390,
+              "bottom": 452.546875,
+              "left": 0
+            },
+            "style": {
+              "display": "grid",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "390px",
+              "min-width": "0px",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h1",
+            "pseudo": null,
+            "text": "SCP財団",
+            "rect": {
+              "x": 20,
+              "y": 228.453125,
+              "width": 350,
+              "height": 33.984375,
+              "top": 228.453125,
+              "right": 370,
+              "bottom": 262.4375,
+              "left": 20
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "350px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h2",
+            "pseudo": null,
+            "text": "確保、収容、保護",
+            "rect": {
+              "x": 20,
+              "y": 262.4375,
+              "width": 350,
+              "height": 20.4375,
+              "top": 262.4375,
+              "right": 370,
+              "bottom": 282.875,
+              "left": 20
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "350px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#search-top-box",
+            "pseudo": null,
+            "text": "",
+            "rect": {
+              "x": 246.1875,
+              "y": 37.96875,
+              "width": 123.8125,
+              "height": 26,
+              "top": 37.96875,
+              "right": 370,
+              "bottom": 63.96875,
+              "left": 246.1875
+            },
+            "style": {
+              "display": "flex",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "123.812px",
+              "min-width": "auto",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          }
+        ],
+        "search": {
+          "display": "block",
+          "focused": false
+        }
+      },
+      "bounds": [
+        {
+          "left": 0,
+          "right": 390,
+          "viewport_width": 390,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 20,
+          "right": 370,
+          "viewport_width": 390,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 20,
+          "right": 370,
+          "viewport_width": 390,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 246.1875,
+          "right": 370,
+          "viewport_width": 390,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        }
+      ],
+      "interaction_error": null,
+      "pass": true,
+      "screenshot": "without-390-header-title-search-0.png",
+      "screenshot_sha256": "191c42b44d7a2c5e0445597b2cb68ef1391b61c99184d755dc4d318f470d2bc6",
+      "dom": "without-390-header-title-search-0.html.gz",
+      "dom_sha256": "6719a3c91e067d37bfe679dfd9ed5215e4be5a8dde5ba2e996066f84cdc054b5"
+    },
+    {
+      "variant": "with",
+      "width": 390,
+      "state": "header-title-search",
+      "index": 0,
+      "css_sha256": "dbe0093ff2bb7fd8bc6ba4eb5831ff13975cbc0ed7c34c564176b31500071b5b",
+      "measurement": {
+        "computed_checks": [],
+        "document_width": 390,
+        "viewport_width": 390,
+        "overlaps": [],
+        "control_occlusion": [],
+        "header_ink_rects": {
+          "#header h1": [
+            {
+              "x": 44.71875,
+              "y": 223.453125,
+              "width": 300.5625,
+              "height": 44,
+              "top": 223.453125,
+              "right": 345.28125,
+              "bottom": 267.453125,
+              "left": 44.71875
+            }
+          ],
+          "#header h2": [
+            {
+              "x": 41.171875,
+              "y": 249.15625,
+              "width": 307.65625,
+              "height": 42.453125,
+              "top": 249.15625,
+              "right": 348.828125,
+              "bottom": 291.609375,
+              "left": 41.171875
+            }
+          ]
+        },
+        "overflow_sources": [
+          {
+            "tag": "DIV",
+            "id": "side-bar",
+            "class_name": "",
+            "rect": {
+              "x": -336.328125,
+              "y": 0,
+              "width": 234.796875,
+              "height": 844,
+              "top": 0,
+              "right": -101.53125,
+              "bottom": 844,
+              "left": -336.328125
+            },
+            "parent_id": "content-wrap",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block resources",
+            "rect": {
+              "x": -336.328125,
+              "y": 0,
+              "width": 234.796875,
+              "height": 137.171875,
+              "top": 0,
+              "right": -101.53125,
+              "bottom": 137.171875,
+              "left": -336.328125
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "8px 10.8px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -325.53125,
+              "y": 8,
+              "width": 213.203125,
+              "height": 20.421875,
+              "top": 8,
+              "right": -112.328125,
+              "bottom": 28.421875,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -325.53125,
+              "y": 8,
+              "width": 213.203125,
+              "height": 19.421875,
+              "top": 8,
+              "right": -112.328125,
+              "bottom": 27.421875,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -325.53125,
+              "y": 32.421875,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 32.421875,
+              "right": -112.328125,
+              "bottom": 54.609375,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -325.53125,
+              "y": 32.421875,
+              "width": 192.375,
+              "height": 21,
+              "top": 32.421875,
+              "right": -133.15625,
+              "bottom": 53.421875,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -325.53125,
+              "y": 56.609375,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 56.609375,
+              "right": -112.328125,
+              "bottom": 78.796875,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -325.53125,
+              "y": 56.609375,
+              "width": 28.9375,
+              "height": 21,
+              "top": 56.609375,
+              "right": -296.59375,
+              "bottom": 77.609375,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -325.53125,
+              "y": 80.796875,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 80.796875,
+              "right": -112.328125,
+              "bottom": 102.984375,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -325.53125,
+              "y": 80.796875,
+              "width": 103.59375,
+              "height": 21,
+              "top": 80.796875,
+              "right": -221.9375,
+              "bottom": 101.796875,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -325.53125,
+              "y": 104.984375,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 104.984375,
+              "right": -112.328125,
+              "bottom": 127.171875,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -325.53125,
+              "y": 104.984375,
+              "width": 74,
+              "height": 21,
+              "top": 104.984375,
+              "right": -251.53125,
+              "bottom": 125.984375,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -336.328125,
+              "y": 137.171875,
+              "width": 234.796875,
+              "height": 0,
+              "top": 137.171875,
+              "right": -101.53125,
+              "bottom": 137.171875,
+              "left": -336.328125
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block",
+            "rect": {
+              "x": -336.328125,
+              "y": 137.171875,
+              "width": 234.796875,
+              "height": 938.765625,
+              "top": 137.171875,
+              "right": -101.53125,
+              "bottom": 1075.9375,
+              "left": -336.328125
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "8px 10.8px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -325.53125,
+              "y": 147.171875,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 147.171875,
+              "right": -112.328125,
+              "bottom": 169.359375,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -325.53125,
+              "y": 147.171875,
+              "width": 88.796875,
+              "height": 21,
+              "top": 147.171875,
+              "right": -236.734375,
+              "bottom": 168.171875,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -325.53125,
+              "y": 171.359375,
+              "width": 213.203125,
+              "height": 20.421875,
+              "top": 171.359375,
+              "right": -112.328125,
+              "bottom": 191.78125,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -325.53125,
+              "y": 171.359375,
+              "width": 213.203125,
+              "height": 19.421875,
+              "top": 171.359375,
+              "right": -112.328125,
+              "bottom": 190.78125,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -325.53125,
+              "y": 195.78125,
+              "width": 213.203125,
+              "height": 22.1875,
+              "top": 195.78125,
+              "right": -112.328125,
+              "bottom": 217.96875,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -325.53125,
+              "y": 195.78125,
+              "width": 4.703125,
+              "height": 21,
+              "top": 195.78125,
+              "right": -320.828125,
+              "bottom": 216.78125,
+              "left": -325.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -307.15625,
+              "y": 195.78125,
+              "width": 9.234375,
+              "height": 21,
+              "top": 195.78125,
+              "right": -297.921875,
+              "bottom": 216.78125,
+              "left": -307.15625
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -284.25,
+              "y": 195.78125,
+              "width": 13.78125,
+              "height": 21,
+              "top": 195.78125,
+              "right": -270.46875,
+              "bottom": 216.78125,
+              "left": -284.25
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -256.796875,
+              "y": 195.78125,
+              "width": 14.953125,
+              "height": 21,
+              "top": 195.78125,
+              "right": -241.84375,
+              "bottom": 216.78125,
+              "left": -256.796875
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -228.171875,
+              "y": 195.78125,
+              "width": 10.265625,
+              "height": 21,
+              "top": 195.78125,
+              "right": -217.90625,
+              "bottom": 216.78125,
+              "left": -228.171875
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          }
+        ],
+        "selector_coverage": {
+          "#header": 1,
+          "#header h1": 1,
+          "#header h2": 1,
+          "#search-top-box": 1
+        },
+        "rows": [
+          {
+            "selector": "#header",
+            "pseudo": null,
+            "text": "SCP財団\n                \n                    確保、収容、保護\n                \n                \n                \n                \n                \n    \n        \n    \n\n                \n                \n                    \n                        \n\n\n\nSCPデータベース\n\n合作\nインシデント記録\nシリーズアーカイブ\nコンテストアーカイブ国際版\n\n\nJPデータベース\n\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション\n\n\nSCP和訳一覧\nSCPの世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n\n\n≡\n\n\nシリーズ\n\nEN - I (001-999)\nEN - II (1000-1999)\nEN - III (2000-2999)\nEN - IV (3000-3999)\nEN - V (4000-4999)\nEN - VI (5000-5999)\nEN - VII (6000-6999)\nEN - VIII (7000-7999)\nEN - IX (8000-8999)\nEN - X (9000-9999)\nEN - Lost (L000-L999)\nJP - I (001-999)\nJP - II (1000-1999)\nJP - III (2000-2999)\nJP - IV (3000-3999)\nJP - V (4000-4999)\nSCP和訳一覧\n\n\nデータベース\n\n合作\nシリーズアーカイブ\nコンテストアーカイブ国際版\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション-JP\n\n\n世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n    \n\n\n\n    \n    \n    \n    \n    \n\n\n\n\n    \n    \n    \n    \n                    \n                \n                アカウントを作成 または サインイン",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 452.546875,
+              "top": 0,
+              "right": 390,
+              "bottom": 452.546875,
+              "left": 0
+            },
+            "style": {
+              "display": "grid",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "390px",
+              "min-width": "0px",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h1",
+            "pseudo": null,
+            "text": "SCP財団",
+            "rect": {
+              "x": 44.71875,
+              "y": 228.453125,
+              "width": 300.5625,
+              "height": 33.984375,
+              "top": 228.453125,
+              "right": 345.28125,
+              "bottom": 262.4375,
+              "left": 44.71875
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "300.562px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h2",
+            "pseudo": null,
+            "text": "確保、収容、保護",
+            "rect": {
+              "x": 101.8125,
+              "y": 262.4375,
+              "width": 186.375,
+              "height": 20.4375,
+              "top": 262.4375,
+              "right": 288.1875,
+              "bottom": 282.875,
+              "left": 101.8125
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "186.375px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#search-top-box",
+            "pseudo": null,
+            "text": "",
+            "rect": {
+              "x": 195,
+              "y": 37.96875,
+              "width": 130,
+              "height": 26,
+              "top": 37.96875,
+              "right": 325,
+              "bottom": 63.96875,
+              "left": 195
+            },
+            "style": {
+              "display": "flex",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "130px",
+              "min-width": "auto",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          }
+        ],
+        "search": {
+          "display": "block",
+          "focused": false
+        }
+      },
+      "bounds": [
+        {
+          "left": 0,
+          "right": 390,
+          "viewport_width": 390,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 44.71875,
+          "right": 345.28125,
+          "viewport_width": 390,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 101.8125,
+          "right": 288.1875,
+          "viewport_width": 390,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 195,
+          "right": 325,
+          "viewport_width": 390,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        }
+      ],
+      "interaction_error": null,
+      "pass": true,
+      "screenshot": "with-390-header-title-search-0.png",
+      "screenshot_sha256": "25da7834217316e85255cd9586bac9ce8b3b214bcacac60643c9c95457d7fef7",
+      "dom": "with-390-header-title-search-0.html.gz",
+      "dom_sha256": "999f2112f02bb3328162467fe44509a2a3d8da7bc3b923476befb0162395cd03"
+    },
+    {
+      "variant": "without",
+      "width": 768,
+      "state": "header-title-search",
+      "index": 0,
+      "css_sha256": "f423ac031f396201778ed960f11348f726da7f076b3bcbafa7bc32e0c00ba079",
+      "measurement": {
+        "computed_checks": [],
+        "document_width": 768,
+        "viewport_width": 768,
+        "overlaps": [],
+        "control_occlusion": [],
+        "header_ink_rects": {
+          "#header h1": [
+            {
+              "x": 195.640625,
+              "y": 187.640625,
+              "width": 376.703125,
+              "height": 56,
+              "top": 187.640625,
+              "right": 572.34375,
+              "bottom": 243.640625,
+              "left": 195.640625
+            }
+          ],
+          "#header h2": [
+            {
+              "x": 145.984375,
+              "y": 235.25,
+              "width": 476.03125,
+              "height": 28,
+              "top": 235.25,
+              "right": 622.015625,
+              "bottom": 263.25,
+              "left": 145.984375
+            }
+          ]
+        },
+        "overflow_sources": [],
+        "selector_coverage": {
+          "#header": 1,
+          "#header h1": 1,
+          "#header h2": 1,
+          "#search-top-box": 1
+        },
+        "rows": [
+          {
+            "selector": "#header",
+            "pseudo": null,
+            "text": "SCP財団\n                \n                    確保、収容、保護\n                \n                \n                \n                \n                \n    \n        \n    \n\n                \n                \n                    \n                        \n\n\n\nSCPデータベース\n\n合作\nインシデント記録\nシリーズアーカイブ\nコンテストアーカイブ国際版\n\n\nJPデータベース\n\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション\n\n\nSCP和訳一覧\nSCPの世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n\n\n≡\n\n\nシリーズ\n\nEN - I (001-999)\nEN - II (1000-1999)\nEN - III (2000-2999)\nEN - IV (3000-3999)\nEN - V (4000-4999)\nEN - VI (5000-5999)\nEN - VII (6000-6999)\nEN - VIII (7000-7999)\nEN - IX (8000-8999)\nEN - X (9000-9999)\nEN - Lost (L000-L999)\nJP - I (001-999)\nJP - II (1000-1999)\nJP - III (2000-2999)\nJP - IV (3000-3999)\nJP - V (4000-4999)\nSCP和訳一覧\n\n\nデータベース\n\n合作\nシリーズアーカイブ\nコンテストアーカイブ国際版\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション-JP\n\n\n世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n    \n\n\n\n    \n    \n    \n    \n    \n\n\n\n\n    \n    \n    \n    \n                    \n                \n                アカウントを作成 または サインイン",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 768,
+              "height": 507.359375,
+              "top": 0,
+              "right": 768,
+              "bottom": 507.359375,
+              "left": 0
+            },
+            "style": {
+              "display": "grid",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "768px",
+              "min-width": "0px",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h1",
+            "pseudo": null,
+            "text": "SCP財団",
+            "rect": {
+              "x": 20,
+              "y": 194.640625,
+              "width": 728,
+              "height": 42.609375,
+              "top": 194.640625,
+              "right": 748,
+              "bottom": 237.25,
+              "left": 20
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "728px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h2",
+            "pseudo": null,
+            "text": "確保、収容、保護",
+            "rect": {
+              "x": 20,
+              "y": 237.25,
+              "width": 728,
+              "height": 25.765625,
+              "top": 237.25,
+              "right": 748,
+              "bottom": 263.015625,
+              "left": 20
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "728px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#search-top-box",
+            "pseudo": null,
+            "text": "",
+            "rect": {
+              "x": 488.1875,
+              "y": 37.96875,
+              "width": 259.8125,
+              "height": 26,
+              "top": 37.96875,
+              "right": 748,
+              "bottom": 63.96875,
+              "left": 488.1875
+            },
+            "style": {
+              "display": "flex",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "259.812px",
+              "min-width": "auto",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          }
+        ],
+        "search": {
+          "display": "block",
+          "focused": false
+        }
+      },
+      "bounds": [
+        {
+          "left": 0,
+          "right": 768,
+          "viewport_width": 768,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 20,
+          "right": 748,
+          "viewport_width": 768,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 20,
+          "right": 748,
+          "viewport_width": 768,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 488.1875,
+          "right": 748,
+          "viewport_width": 768,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        }
+      ],
+      "interaction_error": null,
+      "pass": true,
+      "screenshot": "without-768-header-title-search-0.png",
+      "screenshot_sha256": "296879e44afbdac0b897ddcce54a66162827519a961fc5c3d5e0b19b062c82b4",
+      "dom": "without-768-header-title-search-0.html.gz",
+      "dom_sha256": "dfd5392747e31f3ac34326b3fbda2197b02341b0efc402878e7e1f56cb3c38ac"
+    },
+    {
+      "variant": "with",
+      "width": 768,
+      "state": "header-title-search",
+      "index": 0,
+      "css_sha256": "dbe0093ff2bb7fd8bc6ba4eb5831ff13975cbc0ed7c34c564176b31500071b5b",
+      "measurement": {
+        "computed_checks": [],
+        "document_width": 768,
+        "viewport_width": 768,
+        "overlaps": [],
+        "control_occlusion": [],
+        "header_ink_rects": {
+          "#header h1": [
+            {
+              "x": 195.640625,
+              "y": 187.640625,
+              "width": 376.703125,
+              "height": 56,
+              "top": 187.640625,
+              "right": 572.34375,
+              "bottom": 243.640625,
+              "left": 195.640625
+            }
+          ],
+          "#header h2": [
+            {
+              "x": 145.984375,
+              "y": 235.25,
+              "width": 476.03125,
+              "height": 28,
+              "top": 235.25,
+              "right": 622.015625,
+              "bottom": 263.25,
+              "left": 145.984375
+            }
+          ]
+        },
+        "overflow_sources": [],
+        "selector_coverage": {
+          "#header": 1,
+          "#header h1": 1,
+          "#header h2": 1,
+          "#search-top-box": 1
+        },
+        "rows": [
+          {
+            "selector": "#header",
+            "pseudo": null,
+            "text": "SCP財団\n                \n                    確保、収容、保護\n                \n                \n                \n                \n                \n    \n        \n    \n\n                \n                \n                    \n                        \n\n\n\nSCPデータベース\n\n合作\nインシデント記録\nシリーズアーカイブ\nコンテストアーカイブ国際版\n\n\nJPデータベース\n\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション\n\n\nSCP和訳一覧\nSCPの世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n\n\n≡\n\n\nシリーズ\n\nEN - I (001-999)\nEN - II (1000-1999)\nEN - III (2000-2999)\nEN - IV (3000-3999)\nEN - V (4000-4999)\nEN - VI (5000-5999)\nEN - VII (6000-6999)\nEN - VIII (7000-7999)\nEN - IX (8000-8999)\nEN - X (9000-9999)\nEN - Lost (L000-L999)\nJP - I (001-999)\nJP - II (1000-1999)\nJP - III (2000-2999)\nJP - IV (3000-3999)\nJP - V (4000-4999)\nSCP和訳一覧\n\n\nデータベース\n\n合作\nシリーズアーカイブ\nコンテストアーカイブ国際版\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション-JP\n\n\n世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n    \n\n\n\n    \n    \n    \n    \n    \n\n\n\n\n    \n    \n    \n    \n                    \n                \n                アカウントを作成 または サインイン",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 768,
+              "height": 507.359375,
+              "top": 0,
+              "right": 768,
+              "bottom": 507.359375,
+              "left": 0
+            },
+            "style": {
+              "display": "grid",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "768px",
+              "min-width": "0px",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h1",
+            "pseudo": null,
+            "text": "SCP財団",
+            "rect": {
+              "x": 20,
+              "y": 194.640625,
+              "width": 728,
+              "height": 42.609375,
+              "top": 194.640625,
+              "right": 748,
+              "bottom": 237.25,
+              "left": 20
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "728px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h2",
+            "pseudo": null,
+            "text": "確保、収容、保護",
+            "rect": {
+              "x": 20,
+              "y": 237.25,
+              "width": 728,
+              "height": 25.765625,
+              "top": 237.25,
+              "right": 748,
+              "bottom": 263.015625,
+              "left": 20
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "728px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#search-top-box",
+            "pseudo": null,
+            "text": "",
+            "rect": {
+              "x": 488.1875,
+              "y": 37.96875,
+              "width": 259.8125,
+              "height": 26,
+              "top": 37.96875,
+              "right": 748,
+              "bottom": 63.96875,
+              "left": 488.1875
+            },
+            "style": {
+              "display": "flex",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "259.812px",
+              "min-width": "auto",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          }
+        ],
+        "search": {
+          "display": "block",
+          "focused": false
+        }
+      },
+      "bounds": [
+        {
+          "left": 0,
+          "right": 768,
+          "viewport_width": 768,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 20,
+          "right": 748,
+          "viewport_width": 768,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 20,
+          "right": 748,
+          "viewport_width": 768,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 488.1875,
+          "right": 748,
+          "viewport_width": 768,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        }
+      ],
+      "interaction_error": null,
+      "pass": true,
+      "screenshot": "with-768-header-title-search-0.png",
+      "screenshot_sha256": "296879e44afbdac0b897ddcce54a66162827519a961fc5c3d5e0b19b062c82b4",
+      "dom": "with-768-header-title-search-0.html.gz",
+      "dom_sha256": "59c33f180b3c5f0f3c6eec3af4a01f1f583b205d6df74b6b6fde1c8758e40522"
+    },
+    {
+      "variant": "without",
+      "width": 1440,
+      "state": "header-title-search",
+      "index": 0,
+      "css_sha256": "f423ac031f396201778ed960f11348f726da7f076b3bcbafa7bc32e0c00ba079",
+      "measurement": {
+        "computed_checks": [],
+        "document_width": 1440,
+        "viewport_width": 1440,
+        "overlaps": [],
+        "control_occlusion": [],
+        "header_ink_rects": {
+          "#header h1": [
+            {
+              "x": 482.609375,
+              "y": 223.21875,
+              "width": 474.78125,
+              "height": 71,
+              "top": 223.21875,
+              "right": 957.390625,
+              "bottom": 294.21875,
+              "left": 482.609375
+            }
+          ],
+          "#header h2": [
+            {
+              "x": 458.453125,
+              "y": 284.90625,
+              "width": 523.09375,
+              "height": 29,
+              "top": 284.90625,
+              "right": 981.546875,
+              "bottom": 313.90625,
+              "left": 458.453125
+            }
+          ]
+        },
+        "overflow_sources": [],
+        "selector_coverage": {
+          "#header": 1,
+          "#header h1": 1,
+          "#header h2": 1,
+          "#search-top-box": 1
+        },
+        "rows": [
+          {
+            "selector": "#header",
+            "pseudo": null,
+            "text": "SCP財団\n                \n                    確保、収容、保護\n                \n                \n                \n                \n                \n    \n        \n    \n\n                \n                \n                    \n                        \n\n\n\nSCPデータベース\n\n合作\nインシデント記録\nシリーズアーカイブ\nコンテストアーカイブ国際版\n\n\nJPデータベース\n\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション\n\n\nSCP和訳一覧\nSCPの世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n\n\n≡\n\n\nシリーズ\n\nEN - I (001-999)\nEN - II (1000-1999)\nEN - III (2000-2999)\nEN - IV (3000-3999)\nEN - V (4000-4999)\nEN - VI (5000-5999)\nEN - VII (6000-6999)\nEN - VIII (7000-7999)\nEN - IX (8000-8999)\nEN - X (9000-9999)\nEN - Lost (L000-L999)\nJP - I (001-999)\nJP - II (1000-1999)\nJP - III (2000-2999)\nJP - IV (3000-3999)\nJP - V (4000-4999)\nSCP和訳一覧\n\n\nデータベース\n\n合作\nシリーズアーカイブ\nコンテストアーカイブ国際版\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション-JP\n\n\n世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n    \n\n\n\n    \n    \n    \n    \n    \n\n\n\n\n    \n    \n    \n    \n                    \n                \n                アカウントを作成 または サインイン",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 1440,
+              "height": 604.796875,
+              "top": 0,
+              "right": 1440,
+              "bottom": 604.796875,
+              "left": 0
+            },
+            "style": {
+              "display": "grid",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "1440px",
+              "min-width": "0px",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h1",
+            "pseudo": null,
+            "text": "SCP財団",
+            "rect": {
+              "x": 182,
+              "y": 232.21875,
+              "width": 1076,
+              "height": 53.6875,
+              "top": 232.21875,
+              "right": 1258,
+              "bottom": 285.90625,
+              "left": 182
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "1076px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h2",
+            "pseudo": null,
+            "text": "確保、収容、保護",
+            "rect": {
+              "x": 182,
+              "y": 285.90625,
+              "width": 1076,
+              "height": 27.5625,
+              "top": 285.90625,
+              "right": 1258,
+              "bottom": 313.46875,
+              "left": 182
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "1076px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#search-top-box",
+            "pseudo": null,
+            "text": "",
+            "rect": {
+              "x": 998.1875,
+              "y": 37.96875,
+              "width": 259.8125,
+              "height": 26,
+              "top": 37.96875,
+              "right": 1258,
+              "bottom": 63.96875,
+              "left": 998.1875
+            },
+            "style": {
+              "display": "flex",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "259.812px",
+              "min-width": "auto",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          }
+        ],
+        "search": {
+          "display": "block",
+          "focused": false
+        }
+      },
+      "bounds": [
+        {
+          "left": 0,
+          "right": 1440,
+          "viewport_width": 1440,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 182,
+          "right": 1258,
+          "viewport_width": 1440,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 182,
+          "right": 1258,
+          "viewport_width": 1440,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 998.1875,
+          "right": 1258,
+          "viewport_width": 1440,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        }
+      ],
+      "interaction_error": null,
+      "pass": true,
+      "screenshot": "without-1440-header-title-search-0.png",
+      "screenshot_sha256": "264f76883583c14065bb585b80d93907e804ebf423b070e6c23be8a4d4915d0a",
+      "dom": "without-1440-header-title-search-0.html.gz",
+      "dom_sha256": "df05c6d698dce28b61ec3dbd9e3082a90521a6adeb0698d1f32b97c7bb0d1af2"
+    },
+    {
+      "variant": "with",
+      "width": 1440,
+      "state": "header-title-search",
+      "index": 0,
+      "css_sha256": "dbe0093ff2bb7fd8bc6ba4eb5831ff13975cbc0ed7c34c564176b31500071b5b",
+      "measurement": {
+        "computed_checks": [],
+        "document_width": 1440,
+        "viewport_width": 1440,
+        "overlaps": [],
+        "control_occlusion": [],
+        "header_ink_rects": {
+          "#header h1": [
+            {
+              "x": 482.609375,
+              "y": 223.21875,
+              "width": 474.78125,
+              "height": 71,
+              "top": 223.21875,
+              "right": 957.390625,
+              "bottom": 294.21875,
+              "left": 482.609375
+            }
+          ],
+          "#header h2": [
+            {
+              "x": 458.453125,
+              "y": 284.90625,
+              "width": 523.09375,
+              "height": 29,
+              "top": 284.90625,
+              "right": 981.546875,
+              "bottom": 313.90625,
+              "left": 458.453125
+            }
+          ]
+        },
+        "overflow_sources": [],
+        "selector_coverage": {
+          "#header": 1,
+          "#header h1": 1,
+          "#header h2": 1,
+          "#search-top-box": 1
+        },
+        "rows": [
+          {
+            "selector": "#header",
+            "pseudo": null,
+            "text": "SCP財団\n                \n                    確保、収容、保護\n                \n                \n                \n                \n                \n    \n        \n    \n\n                \n                \n                    \n                        \n\n\n\nSCPデータベース\n\n合作\nインシデント記録\nシリーズアーカイブ\nコンテストアーカイブ国際版\n\n\nJPデータベース\n\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション\n\n\nSCP和訳一覧\nSCPの世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n\n\n≡\n\n\nシリーズ\n\nEN - I (001-999)\nEN - II (1000-1999)\nEN - III (2000-2999)\nEN - IV (3000-3999)\nEN - V (4000-4999)\nEN - VI (5000-5999)\nEN - VII (6000-6999)\nEN - VIII (7000-7999)\nEN - IX (8000-8999)\nEN - X (9000-9999)\nEN - Lost (L000-L999)\nJP - I (001-999)\nJP - II (1000-1999)\nJP - III (2000-2999)\nJP - IV (3000-3999)\nJP - V (4000-4999)\nSCP和訳一覧\n\n\nデータベース\n\n合作\nシリーズアーカイブ\nコンテストアーカイブ国際版\n合作-JP\n補足-JP\nアンソロジー-JP\nイベントアーカイブ-JP\n殿堂入りコレクション-JP\n\n\n世界観\n\nSCP財団とは\n財団世界観\nセキュリティ施設\n内部部門\n機動部隊\n職員・人物ファイル\n要注意団体\nセキュリティ施設-JP\n内部部門-JP\n機動部隊-JP\n職員・人物ファイル-JP\n要注意団体-JP\n要注意領域-JP\n\n\nガイド\n\nガイドハブ\nサイトルール\nライセンスガイド\n画像利用ポリシー\nVoteポリシー\n批評に関するポリシー\n\n\n\n\n    \n\n\n\n    \n    \n    \n    \n    \n\n\n\n\n    \n    \n    \n    \n                    \n                \n                アカウントを作成 または サインイン",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 1440,
+              "height": 604.796875,
+              "top": 0,
+              "right": 1440,
+              "bottom": 604.796875,
+              "left": 0
+            },
+            "style": {
+              "display": "grid",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "1440px",
+              "min-width": "0px",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h1",
+            "pseudo": null,
+            "text": "SCP財団",
+            "rect": {
+              "x": 182,
+              "y": 232.21875,
+              "width": 1076,
+              "height": 53.6875,
+              "top": 232.21875,
+              "right": 1258,
+              "bottom": 285.90625,
+              "left": 182
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "1076px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#header h2",
+            "pseudo": null,
+            "text": "確保、収容、保護",
+            "rect": {
+              "x": 182,
+              "y": 285.90625,
+              "width": 1076,
+              "height": 27.5625,
+              "top": 285.90625,
+              "right": 1258,
+              "bottom": 313.46875,
+              "left": 182
+            },
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "1076px",
+              "min-width": "auto",
+              "left": "auto",
+              "right": "auto",
+              "white-space": "normal"
+            }
+          },
+          {
+            "selector": "#search-top-box",
+            "pseudo": null,
+            "text": "",
+            "rect": {
+              "x": 998.1875,
+              "y": 37.96875,
+              "width": 259.8125,
+              "height": 26,
+              "top": 37.96875,
+              "right": 1258,
+              "bottom": 63.96875,
+              "left": 998.1875
+            },
+            "style": {
+              "display": "flex",
+              "visibility": "visible",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "259.812px",
+              "min-width": "auto",
+              "left": "0px",
+              "right": "0px",
+              "white-space": "normal"
+            }
+          }
+        ],
+        "search": {
+          "display": "block",
+          "focused": false
+        }
+      },
+      "bounds": [
+        {
+          "left": 0,
+          "right": 1440,
+          "viewport_width": 1440,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 182,
+          "right": 1258,
+          "viewport_width": 1440,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 182,
+          "right": 1258,
+          "viewport_width": 1440,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        },
+        {
+          "left": 998.1875,
+          "right": 1258,
+          "viewport_width": 1440,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        }
+      ],
+      "interaction_error": null,
+      "pass": true,
+      "screenshot": "with-1440-header-title-search-0.png",
+      "screenshot_sha256": "264f76883583c14065bb585b80d93907e804ebf423b070e6c23be8a4d4915d0a",
+      "dom": "with-1440-header-title-search-0.html.gz",
+      "dom_sha256": "8d6e22febc3abefbab4ac0956f981d2159126b1587690ef948a66e259fd90a3a"
+    }
+  ]
+}

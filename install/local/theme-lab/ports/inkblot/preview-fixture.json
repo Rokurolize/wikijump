@@ -1,7 +1,8 @@
 {
-  "source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
+  "source_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a",
   "squares_source_sha256": "85c7b8294847156d8e2ccc1dd79591d4c83db1f2cf767747d4fb59fc80ec42c0",
   "expanded_theme_squares": 0,
+  "expanded_theme_squares_css_modules": 0,
   "omitted_unseeded_includes": [
     "component:croqstyle",
     "component:interwiki-style",
@@ -18,7 +19,5 @@
     "image block",
     "footnote",
     "code"
-  ],
-  "page_assets": 1,
-  "expanded_theme_squares_css_modules": 0
+  ]
 }

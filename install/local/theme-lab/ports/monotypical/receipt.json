@@ -27,9 +27,9 @@
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/monotypical",
-  "candidate_source_hash": "9293fdfd3ee9faf3b644dc690c9abe8c2ce71f49d08fff711446edae8d45035a",
+  "candidate_source_hash": "2b1757725694a02df9618f21e2e4326f37500b6f751d005558199df72f9913e5",
   "source_candidate_path": "install/local/theme-lab/ports/monotypical/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "9293fdfd3ee9faf3b644dc690c9abe8c2ce71f49d08fff711446edae8d45035a",
+  "source_candidate_sha256": "2b1757725694a02df9618f21e2e4326f37500b6f751d005558199df72f9913e5",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -37,11 +37,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/monotypical/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "9293fdfd3ee9faf3b644dc690c9abe8c2ce71f49d08fff711446edae8d45035a",
+  "candidate_source_sha256": "2b1757725694a02df9618f21e2e4326f37500b6f751d005558199df72f9913e5",
   "human_port_candidate_path": "install/local/theme-lab/ports/monotypical/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "6fc3503aaa64888519b511186f8a9f66ffd17a482a7b52f513b2503110310798",
-  "candidate_preview_sha256": "d84b876f4f0bd8555c73541fe23e5799e3f3d2646d7ddd59485b903b41473968",
-  "candidate_css_sha256": "36571271b31534f4344673a8c4ef8f26aa4ceaeef4cd36aa22e5f0c4f14d942e",
+  "candidate_preview_sha256": "022ab49f089ee55dc5b97a01087c59b629759f6737701abf00789d41947a5ee7",
+  "candidate_css_sha256": "f2883666196dd7cad910db816eba36924273e206d35ef01c410443f3b48bfd23",
   "page_assets": [
     {
       "filename": "mono-dracula.png",

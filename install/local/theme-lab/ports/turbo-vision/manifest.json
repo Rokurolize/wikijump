@@ -137,11 +137,11 @@
     "jp_overrides": "maintenance/jp-overrides.css",
     "manifest": "maintenance/manifest.json",
     "base_sha256": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
-    "jp_overrides_sha256": "82e770c5adc01e7a7479cb8baa03596f1ea5608f7da422f26b0034c4714da354",
-    "semantic_css_sha256": "1314e7acb3a5d8a3dda03211f563397433272ca5668d3e0d934bc2b4d011daa2",
-    "canonical_override_sha256": "55ab8e632e7c250de2b5b94d81541bcfb5078b1517a4efb94d07cfe6c6c570ce",
+    "jp_overrides_sha256": "a7ec7e0af754d85f372e3c465cee1711db0079c59b11f93a0947a469be488d6d",
+    "semantic_css_sha256": "95f4bd7e84f5eac6ce51282477112331711def867cf489e9ad1addaa38b862ed",
+    "canonical_override_sha256": "dab70896a71f8b17b5a07de75e0f405fed0accd8bf5519f20ded191d8cb6876f",
     "final_source": "maintenance/final.wikidot.txt",
-    "final_source_sha256": "82173741c2d0f8cc00b0d2e3801896da7bc72b93f270970fdcbd50d79f348259",
+    "final_source_sha256": "f012d37b61c3658b9895a6aa8df05fef05187f8b118b992a8004bbbf68fdd075",
     "exact_duplicate_rules_removed": 0,
     "redundant_same_value_declarations_removed": 0,
     "empty_rules_removed": 0
@@ -151,10 +151,10 @@
       "source_path": "candidate-input.css",
       "source_sha256": "277f938a1ab759664945e72cf4d5a1a5adc249e5c7d0cc234343711ab27116e6",
       "active_tags": [],
-      "candidate_source_sha256": "7b32a6fa1b2a70349c490314ca05eaf064d2bc0c31674373fc853f167fa02d61",
+      "candidate_source_sha256": "52fb93c3d72f66f18876db66c7616a57f51ba20c325674144003a40b633a48f4",
       "candidate_active_tags": [],
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "ac24e470f5121a256b7d05b96b6d58fb113bfd35314ec367652196f770c69c0f",
+      "candidate_css_sha256": "9ed89df7215b967f7eb458e09b45454bbbcd2d5ff77cb94472aeb891042dca1c",
       "asset_receipt_path": "assets.json",
       "assets": 20,
       "imports": 6,
@@ -162,6 +162,12 @@
       "localization_transform_manifest": null,
       "missing": 0,
       "external_requests_during_build": 0
+    },
+    "source_css_includes": {
+      "manifest": "source-css-includes.json",
+      "materialized_css_sha256": "d4d80ebcc0e2afb61490420a96b3f0b4cc29dfc9de532029e062af1ee80028ae",
+      "cascade": "before-main-source-css",
+      "public_writes": 0
     }
   },
   "adaptation_authority": {

@@ -4,7 +4,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
-const tokens=/\{\{|\}\}|@@|\[\[code(?:\s+[^\]]*)?\]\]|\[\[\/code\]\]|\[\[iftags(?:\s+[^\]]+)?\]\]|\[\[\/iftags\]\]|\[\[ift\{[^}]+\}gs(?:\s+[^\]]+)?\]\]|\[\[\/ift\{[^}]+\}gs\]\]|\[\[module\s+CSS\]\]/giu;
+const tokens=/\[!--[\s\S]*?--\]|\{\{|\}\}|@@|\[\[code(?:\s+[^\]]*)?\]\]|\[\[\/code\]\]|\[\[iftags(?:\s+[^\]]+)?\]\]|\[\[\/iftags\]\]|\[\[ift\{[^}]+\}gs(?:\s+[^\]]+)?\]\]|\[\[\/ift\{[^}]+\}gs\]\]|\[\[module\s+CSS(?:\s+[^\]]*)?\]\]/giu;
 
 function findCssModuleClose(source,start){
   let string=null;
@@ -51,6 +51,7 @@ export function extractUnconditionalCssModules(source,{activeTags=[]}={}){
   let match;
   while((match=tokens.exec(source))!==null){
     const token=match[0].toLowerCase();
+    if(token.startsWith('[!--'))continue;
     if(token==='{{'){inWikidotEscape=true;continue;}
     if(token==='}}'&&inWikidotEscape){inWikidotEscape=false;continue;}
     if(inWikidotEscape)continue;
@@ -70,7 +71,7 @@ export function extractUnconditionalCssModules(source,{activeTags=[]}={}){
     }
     if(token.startsWith('[[ift{')){conditions.push(false);continue;}
     if(token==='[[/iftags]]'||token.startsWith('[[/ift{')){conditions.pop();continue;}
-    if(token==='[[module css]]'){
+    if(/^\[\[module\s+css(?:\s|\]\])/u.test(token)){
       const moduleStart=match.index+match[0].length;
       const close=findCssModuleClose(source,moduleStart);
       if(!close)throw new Error('Unterminated [[module CSS]] block');

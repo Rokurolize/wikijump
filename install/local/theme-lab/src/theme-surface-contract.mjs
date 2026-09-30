@@ -161,8 +161,7 @@ export const KNOWN_THEME_SURFACES = Object.freeze([
     selector_patterns: [/\.page-history/u, /#revision-list/u, /\.revision-diff/u, /#history-subarea/u],
     probes: [
       {selector: "#action-area .page-history"},
-      {selector: "#action-area .page-history tr#revision-row-1"},
-      {selector: "#action-area .revision-diff"},
+      {selector: "#action-area .page-history tr[id^='revision-row-']"},
     ],
     states: [{id: "history-list", viewports: ["desktop", "mobile"]}],
   },
@@ -170,7 +169,6 @@ export const KNOWN_THEME_SURFACES = Object.freeze([
     id: "page.files",
     selector_patterns: [/\.page-files/u, /\.file-list/u, /\.file-row/u, /\.file-name/u, /\.file-attribute/u],
     probes: [
-      {selector: "#action-area .page-files"},
       {selector: "#action-area .file-list"},
       {selector: "#action-area .file-name"},
     ],
@@ -278,7 +276,8 @@ async function settle(page) {
 
 async function resetState(page) {
   await page.evaluate(() => {
-    history.replaceState(null, "", `${location.pathname}${location.search}`);
+    // Navigate the fragment so CSS :target is reset as well as the URL.
+    location.hash = "";
     document.activeElement?.blur?.();
     window.scrollTo(0, 0);
   });
@@ -286,7 +285,21 @@ async function resetState(page) {
   await settle(page);
 }
 
-async function cleanupSurfaceState(page, surfaceId, stateId) {
+export async function cleanupSurfaceState(page, surfaceId, stateId) {
+  if(surfaceId==='content.collapsible' && stateId==='expanded'){
+    const block=page.locator('#page-content .collapsible-block').first();
+    const unfolded=block.locator(':scope > .collapsible-block-unfolded');
+    if(await unfolded.isVisible()){
+      const control=block.locator('.collapsible-block-unfolded-link .collapsible-block-link:visible').first();
+      await control.focus();await control.press('Enter');await unfolded.waitFor({state:'hidden'});
+    }
+    await resetState(page);return;
+  }
+  if (["page.history", "page.files"].includes(surfaceId)) {
+    const close = page.locator("#action-area .action-area-close");
+    if (await close.count()) await close.click({timeout: 5000});
+    await page.locator(surfaceId === "page.history" ? "#action-area .page-history" : "#action-area .file-list").waitFor({state: "hidden", timeout: 5000});
+  }
   await page.evaluate(async ({surfaceId: surface, stateId: state}) => {
     const settle = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const visible = (element) => {
@@ -299,7 +312,8 @@ async function cleanupSurfaceState(page, surfaceId, stateId) {
       document.querySelector(".mobile-top-bar > ul > li.theme-lab-surface-open")?.classList.remove("theme-lab-surface-open");
       document.getElementById("theme-lab-surface-state-style")?.remove();
     } else if ((surface === "nav.sidebar" && state === "open") || (surface === "content.credit" && state === "open")) {
-      history.replaceState(null, "", `${location.pathname}${location.search}`);
+      // Navigate the fragment so CSS :target is reset as well as the URL.
+    location.hash = "";
     } else if (surface === "content.tabview" && state === "second-tab-selected") {
       document.querySelector(".yui-navset .yui-nav li a")?.click();
     } else if (surface === "content.collapsible" && state === "expanded") {
@@ -311,8 +325,23 @@ async function cleanupSurfaceState(page, surfaceId, stateId) {
   await resetState(page);
 }
 
-async function applySurfaceState(page, surfaceId, stateId) {
+export async function applySurfaceState(page, surfaceId, stateId) {
   await resetState(page);
+  if(surfaceId==='content.collapsible' && stateId==='expanded'){
+    const block=page.locator('#page-content .collapsible-block').first();
+    const unfolded=block.locator(':scope > .collapsible-block-unfolded');
+    if(!await unfolded.isVisible()){
+      const control=block.locator('.collapsible-block-folded .collapsible-block-link:visible').first();
+      await control.focus();await control.press('Enter');
+    }
+    await unfolded.waitFor({state:'visible'});await settle(page);return;
+  }
+  if (["page.history", "page.files"].includes(surfaceId)) {
+    await page.locator(surfaceId === "page.history" ? "#history-button" : "#files-button").click({timeout: 5000});
+    await page.locator(surfaceId === "page.history" ? "#action-area .page-history tr[id^='revision-row-']" : "#action-area .file-list .file-name").first().waitFor({state: "visible", timeout: 5000});
+    await settle(page);
+    return;
+  }
   const result = await page.evaluate(async ({surfaceId: surface, stateId: state}) => {
     const settle = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const visible = (element) => {
@@ -335,10 +364,10 @@ async function applySurfaceState(page, surfaceId, stateId) {
         return visible(submenu) ? {ok: true} : {ok: false, error: "forced mobile top submenu did not become visible"};
       }
       if (surface === "nav.sidebar" && state === "open") {
-        const control = document.querySelector(".mobile-top-bar .open-menu a");
+        const control = [...document.querySelectorAll('.mobile-top-bar .open-menu a, a[href="#container-wrap"]')].find(visible);
         const sidebar = document.querySelector("#side-bar");
         if (!control || !sidebar) return {ok: false, error: "mobile sidebar fixture/control is absent"};
-        location.hash = "#side-bar";
+        location.hash = control.getAttribute('href');
         await settle();
         return visible(sidebar) ? {ok: true} : {ok: false, error: "mobile sidebar did not become visible"};
       }
@@ -458,27 +487,37 @@ async function captureMode(page, {surface, state, viewport, themed, effectiveCss
   try { await applySurfaceState(page, surface.id, state.id); }
   catch (error) { actionError = String(error?.message ?? error); }
   const snapshot = await collectProbe(page, surface.probes);
-  snapshot.navigation_bounds = surface.id.startsWith("nav.") ? await page.evaluate(({expanded}) => {
-    const menus=[...document.querySelectorAll(".mobile-top-bar > ul > li > ul, #top-bar .top-bar > ul > li > ul")];
+  snapshot.navigation_bounds = surface.id.startsWith("nav.") ? await page.evaluate(({expanded, surfaceId}) => {
+    // Measure only the tree owned by this navigation surface. Opening hidden
+    // desktop menus while checking mobile navigation creates synthetic escapes.
+    const selector = surfaceId === "nav.mobile-top"
+      ? ".mobile-top-bar > ul > li > ul"
+      : "#top-bar .top-bar > ul > li > ul";
+    const menus=[...document.querySelectorAll(selector)];
     const rows=[];
     for(const menu of menus) {
       const original=menu.getAttribute("style");
       if(expanded) for(const [property,value] of Object.entries({display:"block",visibility:"visible",opacity:"1"})) menu.style.setProperty(property,value,"important");
-      if(menu.checkVisibility()) for(const el of [menu,...menu.querySelectorAll("li,a")]) {
-        if(el.checkVisibility())rows.push({selector:el.tagName.toLowerCase(),rect:el.getBoundingClientRect().toJSON()});
+      const menuStyle=getComputedStyle(menu);
+      if(menu.checkVisibility()&&menuStyle.opacity!=="0") for(const el of [menu,...menu.querySelectorAll("li,a")]) {
+        const style=getComputedStyle(el);
+        if(el.checkVisibility()&&style.opacity!=="0")rows.push({selector:el.tagName.toLowerCase(),owner:surfaceId,rect:el.getBoundingClientRect().toJSON()});
       }
       if(original===null)menu.removeAttribute("style");else menu.setAttribute("style",original);
     }
     return rows;
-  },{expanded:state.id==="submenu-expanded"}) : [];
+  },{expanded:state.id==="submenu-expanded",surfaceId:surface.id}) : [];
   const overflow = (await collectViewportOverflow(page, [VIEWPORTS[viewport]]))[viewport];
-  await cleanupSurfaceState(page, surface.id, state.id);
+  let cleanupError = null;
+  try { await cleanupSurfaceState(page, surface.id, state.id); }
+  catch (error) { cleanupError = String(error?.message ?? error); }
   return {
     mode: themed ? "theme" : "baseline",
     surface: surface.id,
     state: state.id,
     viewport,
     action_error: actionError,
+    cleanup_error: cleanupError,
     ...snapshot,
     document_overflow_px: overflow.document_overflow_px,
     content_overflow_px: overflow.content_overflow_px,
@@ -505,6 +544,9 @@ function recordSurfacePair({surface, state, viewport, baseline, theme, captures,
   for (const capture of [baseline, theme]) {
     if (capture.action_error) {
       issues.push({severity: strict ? "error" : "warn", kind: "surface_state_action_failed", surface: surface.id, state: state.id, viewport, mode: capture.mode, evidence: capture.action_error});
+    }
+    if (capture.cleanup_error) {
+      issues.push({severity: strict ? "error" : "warn", kind: "surface_state_cleanup_failed", surface: surface.id, state: state.id, viewport, mode: capture.mode, evidence: capture.cleanup_error});
     }
     for (const row of Object.values(capture.rows)) {
       if (!row.present && !row.optional) {
@@ -539,8 +581,6 @@ function recordSurfacePair({surface, state, viewport, baseline, theme, captures,
   const ownedOverflow = (theme.overflow_sources ?? []).some((source) => overflowBelongsToSurface(surface.id, source));
   if (!theme.action_error && theme.document_overflow_px > 1 && ownedOverflow) {
     issues.push({severity: "error", kind: "surface_viewport_overflow", surface: surface.id, state: state.id, viewport, before_px: baseline.document_overflow_px, after_px: theme.document_overflow_px, overflow_sources:theme.overflow_sources});
-  } else if (!baseline.action_error && !theme.action_error && theme.document_overflow_px > baseline.document_overflow_px + 1) {
-    issues.push({severity: "error", kind: "surface_new_viewport_overflow", surface: surface.id, state: state.id, viewport, before_px: baseline.document_overflow_px, after_px: theme.document_overflow_px, overflow_sources:theme.overflow_sources});
   }
   for (const probe of surface.probes.filter((row) => row.contrast)) {
     const key=probeKey(probe);

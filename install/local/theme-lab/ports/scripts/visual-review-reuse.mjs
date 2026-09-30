@@ -152,6 +152,7 @@ export function applyExactVisualReviewReuse(row, index) {
       reason: 'byte-identical',
       source_screenshot_sha256: prior.screenshot_sha256,
       source_candidate_sha256: prior.candidate_sha256 ?? null,
+      source_candidate_source_sha256: prior.candidate_source_sha256 ?? null,
       source_classification: prior.classification,
       source_reviewed_at: review.review_provenance.reviewed_at,
       source_reviewer: review.review_provenance.reviewer,
@@ -159,7 +160,15 @@ export function applyExactVisualReviewReuse(row, index) {
       source_review_screenshot_sha256: review.review_provenance.screenshot_sha256
     }
   });
-  delete row.visual_review; // a replaced judgement must not shadow its new attribution
+  // The judgement belongs to the exact screenshot bytes. Bind that retained
+  // judgement to the current capture identity while keeping its original
+  // reviewer provenance and source candidate in the reuse trail. Finalizers
+  // require visual_review's candidate fields to match the current row.
+  row.visual_review = {
+    ...structuredClone(review.review_provenance),
+    candidate_sha256: row.candidate_sha256 ?? null,
+    candidate_source_sha256: row.candidate_source_sha256 ?? null
+  };
   return true;
 }
 

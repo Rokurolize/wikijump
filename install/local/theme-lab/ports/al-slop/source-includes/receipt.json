@@ -1,0 +1,17 @@
+{
+  "schema": "theme_lab_current_wikidot_source_read.v1",
+  "observed_at": "2026-09-29T23:52:24.619451+00:00",
+  "site": "scp-wiki",
+  "transport": "anonymous wikidot.py source read",
+  "public_writes": 0,
+  "edit_locks": 0,
+  "pages": [
+    {
+      "page": "component:sigma-plus",
+      "page_id": 1446205162,
+      "url": "https://scp-wiki.wikidot.com/component:sigma-plus",
+      "file": "sigma-plus.wikidot.txt",
+      "sha256": "2ee01c9b8a8b4ad082abc030944a41e4d9624d7eda46ea3ecf1dcf9046d66498"
+    }
+  ]
+}

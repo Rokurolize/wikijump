@@ -1,0 +1,7 @@
+/* SCP-JP Wikidot Scheme header correction: wrap the masthead and separate the visible JP search control. */
+@media (max-width: 767px) {
+  #header h2 { display: block; max-width: calc(100% - 200px); margin-left: 200px; padding-left: 0; }
+  #header h2::after { display: block; white-space: normal; font-size: .65em; padding: 0; }
+  #search-top-box { top: 30px; }
+}
+div#extra-div-6 { width: 100%; left: 18px; overflow-x: clip; }

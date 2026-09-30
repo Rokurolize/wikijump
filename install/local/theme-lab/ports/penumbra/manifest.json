@@ -120,12 +120,12 @@
         "_cc",
         "theme"
       ],
-      "candidate_source_sha256": "391cf19d439895bf739b604bf0a12cc6a8ced5002d6c7f12c4410f6b3e6dd08a",
+      "candidate_source_sha256": "e5ed496def3956c8bac546dabf07ab4946319182b77a04686893987ea67a6a77",
       "candidate_active_tags": [
         "テーマ"
       ],
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "8a643b3f0bfd5668c7de35cc1eb61bb7b27b852eeb4962adc5498d17cc0450ef",
+      "candidate_css_sha256": "23f14c98c7e31c112658c6e3112344ba07d8b26b1cc1a6cea7783477c38bbe44",
       "asset_receipt_path": "assets.json",
       "assets": 75,
       "imports": 2,
@@ -133,6 +133,12 @@
       "localization_transform_manifest": null,
       "missing": 0,
       "external_requests_during_build": 0
+    },
+    "source_css_includes": {
+      "manifest": "source-css-includes.json",
+      "materialized_css_sha256": "d4d80ebcc0e2afb61490420a96b3f0b4cc29dfc9de532029e062af1ee80028ae",
+      "cascade": "before-main-source-css",
+      "public_writes": 0
     }
   },
   "maintenance_source": {
@@ -140,11 +146,11 @@
     "jp_overrides": "maintenance/jp-overrides.css",
     "manifest": "maintenance/manifest.json",
     "base_sha256": "391cf19d439895bf739b604bf0a12cc6a8ced5002d6c7f12c4410f6b3e6dd08a",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "semantic_css_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "jp_overrides_sha256": "25507e8f46f788cab96ea3236daa997f86b95a54dbea3c4665d5cd385dc9b163",
+    "semantic_css_sha256": "fa38dd3a89fa25e6c68dca42617565262ab60e3f55f2bce0baadb86c6b3a5b13",
+    "canonical_override_sha256": "d95804e43b7d1f644b1747aa101b37fd6a5243080b0a6128b61138883a2b2c9f",
     "final_source": "maintenance/final.wikidot.txt",
-    "final_source_sha256": "391cf19d439895bf739b604bf0a12cc6a8ced5002d6c7f12c4410f6b3e6dd08a",
+    "final_source_sha256": "9762a8a26c3b4ee2fbb449d062ce9ca49a1cdedfd6d8904b131d01dc05fe7479",
     "exact_duplicate_rules_removed": 0,
     "redundant_same_value_declarations_removed": 0,
     "empty_rules_removed": 0

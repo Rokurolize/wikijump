@@ -1,6 +1,34 @@
 {
   "assets": [
     {
+      "sha256": "edc273e94e72c8ee4279c8406f65373d96c518e3fea9cc3f121fed51283e0e70",
+      "bytes": 178748,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sFVc.ttf",
+      "final_url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sFVc.ttf"
+    },
+    {
+      "sha256": "67941ae3787edeffd80ab437e8ba99667002d9fae22c2cbb80c1553f2d90ab79",
+      "bytes": 179384,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_NprFVc.ttf",
+      "final_url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_NprFVc.ttf"
+    },
+    {
+      "sha256": "faa24ec881e6040655c187a681d6dc496eb8aa41e1bd0652a180b3a40b457187",
+      "bytes": 34641,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wdfiles.com/local--files/component%3Acroqstyle/imgurblock.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/component%3Acroqstyle/imgurblock.png"
+    },
+    {
+      "sha256": "d545b9845df5f120e894f3f3207a147719584ed11a629c27bb29006aaa521c9a",
+      "bytes": 32912,
+      "content_type": "image/gif",
+      "original_url": "https://scp-wiki.wdfiles.com/local--files/component%3Acroqstyle/loading.gif",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/component%3Acroqstyle/loading.gif"
+    },
+    {
       "sha256": "ba826fb84c2e961578adf3a08b5778b87905d4443445d1d56d84f9f157d5ea4b",
       "bytes": 19012,
       "content_type": "font/woff2",
@@ -173,6 +201,10 @@
   "imports": [
     "https://fonts.bunny.net/css2?family=Comic+Neue&display=swap",
     "https://fonts.bunny.net/css2?family=Montserrat:wght@800&display=swap",
+    "https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700",
+    "https://scp-wiki.wdfiles.com/local--code/component%3Acroqstyle/1",
+    "https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1",
+    "https://scp-wiki.wdfiles.com/local--code/component:betterfootnotes/1",
     "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/1",
     "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/2",
     "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/3",
@@ -199,6 +231,46 @@
       "bytes": 2452,
       "content_type": "text/css",
       "asset_file": "94d644cf707265fb6aaa71c53b3b5c91fc7b4f6c298dc5120b178d0f188565d7.css",
+      "provenance_basis": "frozen-cache-exact-at-build"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700",
+      "final_url": "https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700",
+      "sha256": "c2714a976d659d0376202cd04513db747bf1e4977379b3300958c51c69398130",
+      "normalized_text_sha256": "c2714a976d659d0376202cd04513db747bf1e4977379b3300958c51c69398130",
+      "bytes": 404,
+      "content_type": "text/css",
+      "asset_file": "c2714a976d659d0376202cd04513db747bf1e4977379b3300958c51c69398130.css",
+      "provenance_basis": "frozen-cache-exact-at-build"
+    },
+    {
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/component%3Acroqstyle/1",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/component%3Acroqstyle/1",
+      "sha256": "f9a4fa40a5771a81b8b88435837fa5c3d4e72193b734ec62331a269adac0a91e",
+      "normalized_text_sha256": "f9a4fa40a5771a81b8b88435837fa5c3d4e72193b734ec62331a269adac0a91e",
+      "bytes": 10822,
+      "content_type": "text/css",
+      "asset_file": "f9a4fa40a5771a81b8b88435837fa5c3d4e72193b734ec62331a269adac0a91e.css",
+      "provenance_basis": "frozen-cache-exact-at-build"
+    },
+    {
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1",
+      "sha256": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc",
+      "normalized_text_sha256": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc",
+      "bytes": 2347,
+      "content_type": "text/css",
+      "asset_file": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc.css",
+      "provenance_basis": "frozen-cache-exact-at-build"
+    },
+    {
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/component:betterfootnotes/1",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/component:betterfootnotes/1",
+      "sha256": "4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5",
+      "normalized_text_sha256": "4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5",
+      "bytes": 2771,
+      "content_type": "text/css",
+      "asset_file": "4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5.css",
       "provenance_basis": "frozen-cache-exact-at-build"
     },
     {
@@ -258,6 +330,30 @@
   "asset_replacements": {},
   "omitted_assets": [],
   "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sFVc.ttf",
+      "sha256": "edc273e94e72c8ee4279c8406f65373d96c518e3fea9cc3f121fed51283e0e70",
+      "decision": "freeze-runtime-independent-asset"
+    },
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_NprFVc.ttf",
+      "sha256": "67941ae3787edeffd80ab437e8ba99667002d9fae22c2cbb80c1553f2d90ab79",
+      "decision": "freeze-runtime-independent-asset"
+    },
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://scp-wiki.wdfiles.com/local--files/component%3Acroqstyle/imgurblock.png",
+      "sha256": "faa24ec881e6040655c187a681d6dc496eb8aa41e1bd0652a180b3a40b457187",
+      "decision": "freeze-runtime-independent-asset"
+    },
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://scp-wiki.wdfiles.com/local--files/component%3Acroqstyle/loading.gif",
+      "sha256": "d545b9845df5f120e894f3f3207a147719584ed11a629c27bb29006aaa521c9a",
+      "decision": "freeze-runtime-independent-asset"
+    },
     {
       "resource_type": "candidate-css-asset",
       "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-800-normal.woff2",
@@ -414,6 +510,34 @@
       "source_url": "https://fonts.bunny.net/css2?family=Montserrat:wght@800&display=swap",
       "sha256": "94d644cf707265fb6aaa71c53b3b5c91fc7b4f6c298dc5120b178d0f188565d7",
       "asset_file": "94d644cf707265fb6aaa71c53b3b5c91fc7b4f6c298dc5120b178d0f188565d7.css",
+      "decision": "freeze-source-stylesheet"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700",
+      "sha256": "c2714a976d659d0376202cd04513db747bf1e4977379b3300958c51c69398130",
+      "asset_file": "c2714a976d659d0376202cd04513db747bf1e4977379b3300958c51c69398130.css",
+      "decision": "freeze-source-stylesheet"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/component%3Acroqstyle/1",
+      "sha256": "f9a4fa40a5771a81b8b88435837fa5c3d4e72193b734ec62331a269adac0a91e",
+      "asset_file": "f9a4fa40a5771a81b8b88435837fa5c3d4e72193b734ec62331a269adac0a91e.css",
+      "decision": "freeze-source-stylesheet"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1",
+      "sha256": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc",
+      "asset_file": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc.css",
+      "decision": "freeze-source-stylesheet"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/component:betterfootnotes/1",
+      "sha256": "4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5",
+      "asset_file": "4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5.css",
       "decision": "freeze-source-stylesheet"
     },
     {

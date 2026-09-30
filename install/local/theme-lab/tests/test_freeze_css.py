@@ -94,7 +94,7 @@ class PlainTextImportedCssTests(unittest.TestCase):
             self.assertNotIn("No such page", css)
             self.assertEqual(receipt["missing"][0]["reason"], "import-not-css:text/plain")
             self.assertEqual(receipt["import_provenance"], [])
-            self.assertEqual(receipt["import_provenance_status"], "complete")
+            self.assertEqual(receipt["import_provenance_status"], "incomplete")
 
 
 if __name__ == "__main__":

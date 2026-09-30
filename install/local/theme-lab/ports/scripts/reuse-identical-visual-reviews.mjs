@@ -111,8 +111,9 @@ await withAuditLock(auditPath,async()=>{
    screenshot_pixel_sha256:currentPixels,
    visual_review_reuse:{
     reason:'pixel-identical',
-    source_screenshot_sha256:prior.screenshot_sha256,
-    source_candidate_sha256:prior.candidate_sha256??null,
+   source_screenshot_sha256:prior.screenshot_sha256,
+   source_candidate_sha256:prior.candidate_sha256??null,
+   source_candidate_source_sha256:prior.candidate_source_sha256??null,
     source_classification:prior.classification,
     source_reviewed_at:review.review_provenance.reviewed_at,
     source_reviewer:review.review_provenance.reviewer,
@@ -120,7 +121,11 @@ await withAuditLock(auditPath,async()=>{
     source_review_screenshot_sha256:review.review_provenance.screenshot_sha256
    }
   });
-  delete row.visual_review;
+  row.visual_review={
+   ...structuredClone(review.review_provenance),
+   candidate_sha256:row.candidate_sha256??null,
+   candidate_source_sha256:row.candidate_source_sha256??null
+  };
   pixelIdentical++;reused++;byTheme[row.theme]=(byTheme[row.theme]??0)+1;
  }
  const summary={schema:'theme_lab_identical_visual_review_reuse.v1',dry_run:dryRun,pixel_identical_enabled:allowPixelIdentical,reused,byte_identical:byteIdentical,pixel_identical:pixelIdentical,skipped_no_prior:skippedNoPrior,skipped_changed_pixels:skippedChangedPixels,skipped_incomplete_review:skippedIncompleteReview,skipped_current_ineligible:skippedCurrentIneligible,skipped_current_file_invalid:skippedCurrentFileInvalid,skipped_prior_file_unavailable:skippedPriorFileUnavailable,by_theme:byTheme};

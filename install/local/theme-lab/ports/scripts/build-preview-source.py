@@ -14,9 +14,27 @@ import re
 from pathlib import Path
 
 
-CSS_MODULE = re.compile(r"\[\[module\s+css\s*\]\].*?\[\[/module\s*\]\]", re.I | re.S)
+CSS_MODULE = re.compile(r"\[\[module\s+css\b[^\]]*\]\].*?\[\[/module\s*\]\]", re.I | re.S)
 SQUARES_INCLUDE = re.compile(r"\[\[include\s+:scp-jp:component:theme-squares\b(.*?)\]\]", re.I | re.S)
 INCLUDE_RE = re.compile(r"\[\[include\s+(?::scp-[a-z0-9-]+:)?([^\s|\]\r\n]+)[\s\S]*?\]\]", re.I)
+
+# wikidot_page_preview does not execute PageRateWidgetModule. This local-only
+# fixture uses the exact current saved-page DOM shape retained from the
+# anonymous SCP-JP Wikidot capture at
+# ../evidence/wikidot-runtime-surface-20260930.states/scp-jp-scp-173-runtime-states-20260930-f0a25196cec6/live.dom.html; it exercises
+# CSS selectors without pretending that preview executed a rate action.
+RATE_COMPONENT_FIXTURE = '''[[div class="creditRate"]]
+[[div class="rateBox"]]
+[[div class="rate-box-with-credit-button"]]
+[[div class="page-rate-widget-box"]]
+[[span class="rate-points"]]評価: +1[[/span]]
+[[span class="rateup btn btn-default"]]+[[/span]]
+[[span class="ratedown btn btn-default"]]–[[/span]]
+[[span class="cancel btn btn-default"]]x[[/span]]
+[[/div]]
+[[/div]]
+[[/div]]
+[[/div]]'''
 
 
 def parse_arguments(body: str) -> dict[str, str]:
@@ -111,7 +129,9 @@ def build(source: str, squares_source: str = "") -> tuple[str, int, list[str]]:
     # Always render a genuine current SCP-JP rating DOM. Theme articles also
     # contain literal Rate markup in code samples, which must not satisfy this
     # runtime-surface requirement.
-    fixture.append('[[div class="creditRate"]][[div class="rateBox"]][[div class="rate-box-with-credit-button"]]\n[[module Rate]]\n[[/div]][[/div]][[/div]]')
+    # Block delimiters occupy separate lines. Combining them leaves unmatched
+    # closes as literal text and incorrectly puts the article inside creditRate.
+    fixture.append(RATE_COMPONENT_FIXTURE)
     fixture.append('[[span class="theme-lab-jp-font-probe"]]日本語の字形を確認する検体です。漢字、ひらがな、カタカナ。[[/span]]')
     fixture.extend([
         "[[toc]]",

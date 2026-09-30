@@ -24,6 +24,7 @@ import {createDeepwellPreviewClient} from "../src/deepwell-preview.mjs";
 import {ThemeLabError} from "../src/errors.mjs";
 import {ReferenceCache, defaultCacheDir} from "../src/reference-cache.mjs";
 import {startSessionServer} from "../src/session-server.mjs";
+import {loadCandidateStructure} from "../src/candidate-structure.mjs";
 
 function parseArgs(argv) {
   const args = {_positional: []};
@@ -115,6 +116,9 @@ async function serve(args) {
     referenceAssets,
     assetDir: args["asset-dir"] ? path.resolve(args["asset-dir"]) : null,
     sidebarHtml: args["sidebar-html"] ? fs.readFileSync(path.resolve(args["sidebar-html"]), "utf8") : null,
+    headerHtml: args["header-html"] ? fs.readFileSync(path.resolve(args["header-html"]), "utf8") : null,
+    baselineCss: args["baseline-css"] ? fs.readFileSync(path.resolve(args["baseline-css"]), "utf8") : null,
+    navigationHtml: args["navigation-html"] ? fs.readFileSync(path.resolve(args["navigation-html"]), "utf8") : null,
   });
   process.stdout.write(
     `${JSON.stringify({
@@ -215,6 +219,8 @@ async function main() {
     request = {
       op: "check",
       css,
+      baseCss: args["css-base"] ? fs.readFileSync(path.resolve(args["css-base"]), "utf8") : "",
+      sourceStructure: args["source-structure"] ? await loadCandidateStructure(path.dirname(path.resolve(args["source-structure"]))) : null,
       wikitext,
       pageAssets: args["page-assets"] ? JSON.parse(fs.readFileSync(path.resolve(args["page-assets"]), "utf8")).assets ?? [] : [],
       title: args.title ?? "Preview",
@@ -227,6 +233,7 @@ async function main() {
       torture: args["no-torture"] !== true && siteId !== null,
       viewports: args["no-viewports"] !== true,
       visual: args.visual === true,
+      visualReview: args["visual-review"] ? JSON.parse(fs.readFileSync(path.resolve(args["visual-review"]), "utf8")) : null,
       artifactDir: args["artifact-dir"] ? path.resolve(args["artifact-dir"]) : null,
       surfaceContract,
       verbose: args.verbose === true || args["json-full"] === true,

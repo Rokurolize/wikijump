@@ -1,3 +1,6 @@
+@import url(https://scp-wiki.wdfiles.com/local--code/component%3Acroqstyle/1);
+
+
 @import url('https://scp-wiki.wdfiles.com/local--code/theme%3Ainkblot/1');
 
 :root {
@@ -54,6 +57,14 @@
 .terminal {
   border-color: var(--inkblot-accent, grey);
 }
+
+
+
+/* SCP-JP Wikidot Inkblot navigation correction: contain the third narrow mobile submenu. */
+@media (max-width: 359px) {
+  .mobile-top-bar > ul > li:nth-child(3) > ul { left: auto; right: 0; }
+}
+
 
 @@
 :root {

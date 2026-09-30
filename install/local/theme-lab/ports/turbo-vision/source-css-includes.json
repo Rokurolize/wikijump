@@ -1,0 +1,21 @@
+{
+  "schema": "theme_lab_source_css_includes.v1",
+  "authority": "RUNTIME_INDEPENDENT",
+  "candidate_source": "candidate.wikidot.source.txt",
+  "upstream_source": "upstream-en.wikidot.txt",
+  "includes": [
+    {
+      "locator": "component:toggle-sidebar",
+      "source": {
+        "path": "source-includes/toggle-sidebar.wikidot.txt",
+        "sha256": "5e6e6bf79aa9b08344865b1209693254db4c8d1aef7d579092bc6dd9c7c55e35"
+      },
+      "kind": "unconditional-modules",
+      "css": {
+        "path": "source-includes/toggle-sidebar-input.css",
+        "sha256": "d4d80ebcc0e2afb61490420a96b3f0b4cc29dfc9de532029e062af1ee80028ae"
+      }
+    }
+  ],
+  "base_import_count": 0
+}

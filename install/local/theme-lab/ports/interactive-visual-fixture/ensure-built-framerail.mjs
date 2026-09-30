@@ -22,7 +22,7 @@ const buildInputs=[
   path.join(framerailDir,'server.js'),
   path.join(framerailDir,'svelte.config.js'),
   path.join(framerailDir,'tsconfig.json'),
-  path.join(framerailDir,'vite.config.js'),
+  path.join(framerailDir,'vite.config.ts'),
   path.join(repoRoot,'pnpm-lock.yaml')
 ];
 
@@ -74,7 +74,15 @@ async function isReady(){
 async function buildSource(fingerprint){
  const buildDir=path.join(cacheBase,fingerprint);
  const ready=path.join(buildDir,'.theme-lab-built-ready');
- try{await fs.access(ready);return{buildDir,built:false}}catch{}
+ try{
+  const recordedFingerprint=(await fs.readFile(ready,'utf8')).trim();
+  if(recordedFingerprint!==fingerprint)throw new Error('cached built capture daemon readiness identity is stale');
+  const handler=await fs.stat(path.join(buildDir,'build/handler.js'));
+  if(!handler.isFile())throw new Error('cached built capture runtime handler is missing');
+  return{buildDir,built:false};
+ }catch(error){
+  if(error.code!=='ENOENT'&&!/identity is stale|handler is missing/u.test(error.message))throw error;
+ }
  await fs.rm(buildDir,{recursive:true,force:true});
  await fs.mkdir(buildDir,{recursive:true});
  await run('rsync',['-a','--delete','--exclude','node_modules','--exclude','.svelte-kit','--exclude','build',`${framerailDir}/`,`${buildDir}/`]);
@@ -118,7 +126,10 @@ async function startContainers(fingerprint,buildDir){
    if(mount.Destination==='/pnpm'&&mount.Type==='volume')args.push('-v',`${mount.Name}:/pnpm`);
    if(mount.Destination==='/app/src/assets'&&mount.Type==='bind')args.push('-v',`${mount.Source}:/app/src/assets:ro`);
   }
-  args.push(dev.Config.Image);
+  // buildSource already produced the exact frozen bundle. The development
+  // entrypoint installs dependencies and rebuilds it, racing the readiness
+  // deadline and changing the material being measured.
+  args.push('--entrypoint','/usr/bin/env',dev.Config.Image,'HOST=0.0.0.0','PORT=3393','node','server.js');
   await run('docker',args);
   created.push(framerailContainer);
  }finally{await fs.rm(envFile,{force:true})}

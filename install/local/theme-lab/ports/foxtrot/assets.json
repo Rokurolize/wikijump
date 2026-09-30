@@ -145,7 +145,9 @@
   "imports": [
     "https://fonts.googleapis.com/css2?family=Creepster&display=swap",
     "https://fonts.googleapis.com/css2?family=Russo+One&display=swap",
-    "https://fonts.googleapis.com/css?family=Saira+Stencil+One&display=swap"
+    "https://fonts.googleapis.com/css?family=Saira+Stencil+One&display=swap",
+    "https://scp-jp.github.io/files/component/betterfootnotes/style0.css",
+    "https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1"
   ],
   "import_provenance_status": "complete",
   "import_provenance": [
@@ -177,6 +179,26 @@
       "bytes": 235,
       "content_type": "text/css",
       "asset_file": "4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe.css",
+      "provenance_basis": "frozen-cache-exact-at-build"
+    },
+    {
+      "source_url": "https://scp-jp.github.io/files/component/betterfootnotes/style0.css",
+      "final_url": "https://scp-jp.github.io/files/component/betterfootnotes/style0.css",
+      "sha256": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be",
+      "normalized_text_sha256": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be",
+      "bytes": 2469,
+      "content_type": "text/css",
+      "asset_file": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be.css",
+      "provenance_basis": "frozen-cache-exact-at-build"
+    },
+    {
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1",
+      "sha256": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc",
+      "normalized_text_sha256": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc",
+      "bytes": 2347,
+      "content_type": "text/css",
+      "asset_file": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc.css",
       "provenance_basis": "frozen-cache-exact-at-build"
     }
   ],
@@ -325,6 +347,20 @@
       "source_url": "https://fonts.googleapis.com/css?family=Saira+Stencil+One&display=swap",
       "sha256": "4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe",
       "asset_file": "4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe.css",
+      "decision": "freeze-source-stylesheet"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp.github.io/files/component/betterfootnotes/style0.css",
+      "sha256": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be",
+      "asset_file": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be.css",
+      "decision": "freeze-source-stylesheet"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1",
+      "sha256": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc",
+      "asset_file": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc.css",
       "decision": "freeze-source-stylesheet"
     }
   ]

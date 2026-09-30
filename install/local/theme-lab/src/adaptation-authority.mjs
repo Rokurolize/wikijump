@@ -11,6 +11,15 @@ export const ADAPTATION_AUTHORITIES = new Set([...PUBLISHABLE_AUTHORITIES, 'NONP
 export const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const ports = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../ports');
 
+// Independently certified corrections retain their own module/provenance boundary.
+export function composeAuthoritySource(base, css) {
+  const trimmed = css.trim();
+  if (!trimmed) return base.trimEnd() + '\n';
+  const blocks = trimmed.split('/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */').map(block => block.trim());
+  if (blocks.some(block => !block)) throw new Error('empty authority block');
+  return base.trimEnd() + '\n' + blocks.map(block => `\n[[module CSS]]\n${block}\n[[/module]]\n`).join('');
+}
+
 export function validateAuthority(row) {
   if (!ADAPTATION_AUTHORITIES.has(row.authority)) throw new Error(`missing/unsupported adaptation authority: ${row.marker}`);
   if (PUBLISHABLE_AUTHORITIES.has(row.authority)) {
@@ -84,7 +93,7 @@ export function assertPublishablePackage(name, {checkOutputs = false} = {}) {
   if (pkg.inputs['maintenance/authority-base.wikidot.txt']) {
     const base=fs.readFileSync(path.join(dir,'maintenance/authority-base.wikidot.txt'),'utf8');
     const css=fs.readFileSync(path.join(dir,'authority-overrides.css'),'utf8').trim();
-    const expected=name==='dear-dictator'?base:base.trimEnd()+'\n'+(css?`\n[[module CSS]]\n${css}\n[[/module]]\n`:'');
+    const expected=composeAuthoritySource(base,css);
     if(source!==expected) throw new Error(`${name}: candidate source is not the authority-bound composition`);
   }
   for (const block of extractSCPJPAdaptationBlocks(source)) {

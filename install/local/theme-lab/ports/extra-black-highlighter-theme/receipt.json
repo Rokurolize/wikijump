@@ -40,8 +40,8 @@
   "candidate_source_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
   "human_port_candidate_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "41599fe6d22ed63d835475a90f46f1382ed97c06f01c916415a5d649bd59e861",
-  "candidate_preview_sha256": "600a3eaf18936262443857125b69c3f033bcf41daa31bb03991e7bd75afaaeea",
-  "candidate_css_sha256": "afd8f1baaf471998ff0a135c506c7f5bb1749ca9610fd1b06468717d9e97210a",
+  "candidate_preview_sha256": "da2890818409c8d174ccd3f01d119deb2ec0e97a579184f5f878f5938af99e19",
+  "candidate_css_sha256": "23f7d059cb8b0f8302f73fc66b3d8d40ddcf82ada09e2f0ffafaee00d802bcef",
   "page_assets": [
     {
       "filename": "black-highlighter-logo.svg",
@@ -78,7 +78,7 @@
     "source_evidence": "candidate screenshots visibly rendered unresolved SCP-EN usernames against SCP-JP identity links; preserve display names and freeze upstream/human-port originals"
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/assets.json",
-  "asset_dependency_decision_count": 39,
+  "asset_dependency_decision_count": 40,
   "page_asset_dependency_decisions_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/page-assets.json",
   "historical_acceptance": {
     "status": "SUPERSEDED_CANDIDATE",

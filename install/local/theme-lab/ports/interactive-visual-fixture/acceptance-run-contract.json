@@ -7,7 +7,9 @@
   },
   "baseline_theme": {
     "name": "Sigma-9",
-    "stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css"
+    "runtime_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
+    "replacement_css_path": "../../fixtures/scp-jp-sigma9-offline.css",
+    "replacement_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba"
   },
   "fixture_contract": {
     "page_family": "run-owned SCP-JP interactive theme acceptance pages",
@@ -15,12 +17,31 @@
     "source_snapshots_directory": "source-snapshots"
   },
   "viewports": {
-    "desktop": { "width": 1440, "height": 1000 },
-    "laptop": { "width": 1024, "height": 900 },
-    "tablet": { "width": 768, "height": 1024 },
-    "mobile": { "width": 390, "height": 844 },
-    "narrow-mobile": { "width": 320, "height": 800 }
+    "desktop": {
+      "width": 1440,
+      "height": 1000
+    },
+    "laptop": {
+      "width": 1024,
+      "height": 900
+    },
+    "tablet": {
+      "width": 768,
+      "height": 1024
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844
+    },
+    "narrow-mobile": {
+      "width": 320,
+      "height": 800
+    }
   },
-  "browser_engines": ["chromium", "firefox", "webkit"],
+  "browser_engines": [
+    "chromium",
+    "firefox",
+    "webkit"
+  ],
   "network_policy": "block external requests before send"
 }
