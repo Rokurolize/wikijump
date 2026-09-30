@@ -34,11 +34,11 @@ function mockCampaign(){
  const contract={baseline_theme:{replacement_css_sha256:fixtureIdentity.baseline}};
  const runContract=write('ports/current-acceptance/run-contract.json',contract),migrationContract=write('sigma10-migration/current-campaign/run-contract.json',contract);
  const shot=write('ports/captures/test.png','controlled mock screenshot');
- const row=(theme,engine,viewport,state)=>({run_contract_sha256:runContract.sha256,baseline_theme_mode:'replacement',baseline_theme_css_sha256:fixtureIdentity.baseline,action_responses:[],theme,browser_engine:engine,viewport,surface:state.surface,state:state.state,candidate_sha256:candidateIdentity(fs.readFileSync(path.join(root,css.path)),Buffer.alloc(0)).candidateSha,candidate_source_sha256:source.sha256,classification:'PASS_NATURAL',reviewed_after_last_change:true,unconfirmed_items:[],asset_failures:[],page_errors:[],external_requests_sent:0,screenshot:'captures/test.png',screenshot_sha256:shot.sha256,visual_review:{screenshot_sha256:shot.sha256},migration_review:{screenshot_sha256:shot.sha256}});
+ const row=(theme,engine,viewport,state)=>({run_contract_sha256:runContract.sha256,baseline_theme_mode:'replacement',baseline_theme_css_sha256:fixtureIdentity.baseline,action_responses:[],theme,browser_engine:engine,viewport,surface:state.surface,state:state.state,candidate_sha256:candidateIdentity(fs.readFileSync(path.join(root,css.path)),Buffer.alloc(0)).candidateSha,candidate_source_sha256:source.sha256,classification:'PASS_NATURAL',reviewed_after_last_change:true,unconfirmed_items:[],asset_failures:[],page_errors:[],external_requests_sent:0,screenshot:'captures/test.png',screenshot_sha256:shot.sha256,visual_review:{method:'direct-image-vision-review',reviewer:'reviewer',reviewed_at:'2026-01-01T00:00:00Z',note:'Reviewed exact screenshot with no unresolved visual issue.',screenshot_sha256:shot.sha256},migration_review:{review_method:'direct-image-vision-review plus paired local contract probes',reviewer:'reviewer',reviewed_at:'2026-01-01T00:00:00Z',note:'Reviewed exact screenshot with local contract probes.',screenshot_sha256:shot.sha256}});
  const rows=(theme,normalOnly=false)=>matrix.flatMap(([engine,viewport])=>browserContract.states.filter(state=>state.applicable_viewports.includes(viewport)&&(engine==='chromium'||core.has(`${state.surface}.${state.state}`))&&(!normalOnly||state.surface==='page.normal')).map(state=>row(theme,engine,viewport,state)));
  const audit={state_applicability:browserContract.states,records:rows('testtheme')};
  const migrationAudit={state_applicability:browserContract.states,records:[...rows('testtheme',true),...rows('sigma10-baseline')]};
- const full={target_fixture_identity:fixtureIdentity,...result('pass','pass','pass'),candidate_css_sha256:css.sha256,candidate_source_sha256:source.sha256,candidate_preview_sha256:preview.sha256,verification_scope:{mode:'full',deferred:[]},viewport_status:Object.fromEntries(['desktop','laptop','tablet','mobile'].map(viewport=>[viewport,{status:'pass'}])),font_diagnostics:{status:'measured',fonts:[{glyph_count:20}]},visual:{viewports:Object.fromEntries(['desktop','laptop','tablet','mobile'].map(viewport=>[viewport,{status:'pass',candidate_path:shot.path,reference_path:shot.path,candidate_screenshot_sha256:shot.sha256,reference_screenshot_sha256:shot.sha256,review:{candidate_screenshot_sha256:shot.sha256,reference_screenshot_sha256:shot.sha256}}]))}};
+ const full={target_fixture_identity:fixtureIdentity,...result('pass','pass','pass'),candidate_css_sha256:css.sha256,candidate_source_sha256:source.sha256,candidate_preview_sha256:preview.sha256,verification_scope:{mode:'full',deferred:[]},viewport_status:Object.fromEntries(['desktop','laptop','tablet','mobile'].map(viewport=>[viewport,{status:'pass'}])),font_diagnostics:{status:'measured',fonts:[{glyph_count:20}]},visual:{viewports:Object.fromEntries(['desktop','laptop','tablet','mobile'].map(viewport=>[viewport,{status:'pass',acceptance:{status:'pass'},candidate_path:shot.path,reference_path:shot.path,candidate_screenshot_sha256:shot.sha256,reference_screenshot_sha256:shot.sha256,review:{candidate_screenshot_sha256:shot.sha256,reference_screenshot_sha256:shot.sha256,reviewer:'reviewer',reviewed_at:'2026-01-01T00:00:00Z',note:'Reviewed exact candidate and reference screenshots.'}}]))}};
  const receipt=write('package-result.json',full);
  const migrationBinding=write('migration-audit.json',migrationAudit);
  const migrationResult={overall_acceptance:{status:'pass'},browser_audit_sha256:migrationBinding.sha256};
@@ -58,7 +58,7 @@ test('promotion rejects iteration checks and missing exact paired image review',
   mock.document.packages[0].receipt=mock.write('package-result.json',mock.full);mock.save();
   const failures=checkCampaignCompletion(mock.root).failures;
   assert.ok(failures.some(value=>value.includes('full, non-deferred')));
-  assert.ok(failures.some(value=>value.includes('unbound paired image review')));
+  assert.ok(failures.some(value=>value.includes('unbound or incomplete paired image review')));
  }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
 });
 test('historical integrity cannot promote an unresolved current migration',()=>{
@@ -71,5 +71,15 @@ test('promotion rejects a omitted state even when remaining screenshots have bee
  const mock=mockCampaign();try{
   mock.audit.records.pop();mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
   assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('Missing current browser state')));
+ }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
+});
+test('promotion rejects matching screenshot hashes without attributable visual review',()=>{
+ const mock=mockCampaign();try{
+  const row=mock.audit.records[0];delete row.visual_review;
+  mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
+  assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('missing current attributable image review')));
+  const visual=mock.full.visual.viewports.desktop;delete visual.review.reviewer;
+  mock.document.packages[0].receipt=mock.write('package-result.json',mock.full);mock.save();
+  assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('unbound or incomplete paired image review')));
  }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
 });

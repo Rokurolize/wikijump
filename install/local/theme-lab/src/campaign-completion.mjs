@@ -8,6 +8,27 @@ import {overallAcceptance} from './verdict.mjs';
 
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const accepted = value => ['pass', 'warn'].includes(value);
+const reviewedImage = (review, screenshotHash) =>
+  !!review && review.method === 'direct-image-vision-review' &&
+  typeof review.reviewer === 'string' && review.reviewer.trim().length > 0 &&
+  Number.isFinite(Date.parse(review.reviewed_at)) &&
+  typeof review.note === 'string' && review.note.trim().length >= 12 &&
+  review.screenshot_sha256 === screenshotHash;
+const pairedImageReview = (visual, side) => {
+  const review = visual?.review;
+  const hash = visual?.[`${side}_screenshot_sha256`];
+  return accepted(visual?.status) &&
+    review?.[`${side}_screenshot_sha256`] === hash &&
+    typeof review?.reviewer === 'string' && review.reviewer.trim().length > 0 &&
+    Number.isFinite(Date.parse(review?.reviewed_at)) &&
+    typeof review?.note === 'string' && review.note.trim().length >= 12;
+};
+const reviewedMigrationImage = (review, screenshotHash) =>
+  !!review && review.review_method === 'direct-image-vision-review plus paired local contract probes' &&
+  typeof review.reviewer === 'string' && review.reviewer.trim().length > 0 &&
+  Number.isFinite(Date.parse(review.reviewed_at)) &&
+  typeof review.note === 'string' && review.note.trim().length >= 12 &&
+  review.screenshot_sha256 === screenshotHash;
 
 export function validateCombinedAcceptance(result, label) {
   const overall = result?.overall_acceptance;
@@ -86,7 +107,7 @@ export function checkCampaignCompletion(root) {
       }
       for(const viewport of ['desktop','laptop','tablet','mobile']){
         const visual=result.visual?.viewports?.[viewport];
-        if(!accepted(visual?.status)||visual?.review?.candidate_screenshot_sha256!==visual?.candidate_screenshot_sha256||visual?.review?.reference_screenshot_sha256!==visual?.reference_screenshot_sha256)failures.push(`${row.package}: unbound paired image review at ${viewport}`);
+        if(!accepted(visual?.status)||!pairedImageReview(visual,'candidate')||!pairedImageReview(visual,'reference'))failures.push(`${row.package}: unbound or incomplete paired image review at ${viewport}`);
         for(const side of ['candidate','reference']){
           const file=visual?.[`${side}_path`];
           // Retained captures may use absolute checkout paths; the file must
@@ -107,7 +128,8 @@ export function checkCampaignCompletion(root) {
         if (!['PASS_NATURAL', 'PASS_INTENTIONAL_DIVERGENCE'].includes(record.classification) || !record.reviewed_after_last_change || record.unconfirmed_items?.length || record.asset_failures?.length || record.page_errors?.length || record.external_requests_sent !== 0 || record.failure || record.action_responses?.some(response=>response.type==='failure'||response.status>=400||response.error_message)) failures.push(`${row.package}: unresolved browser state ${record.surface}.${record.state}`);
         if(record.candidate_sha256!==currentCandidate)failures.push(`${row.package}: superseded browser CSS identity`);
         if (record.candidate_source_sha256 !== row.inputs.source.sha256) failures.push(`${row.package}: superseded browser source identity`);
-        if (sha(bind({path: `ports/${record.screenshot}`, sha256: record.screenshot_sha256}, row.package)) !== record.visual_review?.screenshot_sha256) failures.push(`${row.package}: missing current image review`);
+        if (sha(bind({path: `ports/${record.screenshot}`, sha256: record.screenshot_sha256}, row.package)) !== record.visual_review?.screenshot_sha256 ||
+          !(reviewedImage(record.visual_review, record.screenshot_sha256) || reviewedImage(record.review_provenance, record.screenshot_sha256))) failures.push(`${row.package}: missing current attributable image review`);
       }
     } catch (error) { failures.push(error.message); }
   }
@@ -120,7 +142,7 @@ export function checkCampaignCompletion(root) {
     for(const record of audit.records??[]){
       if(record.run_contract_sha256!==currentMigrationContractSha||record.baseline_theme_mode!=='replacement'||record.baseline_theme_css_sha256!==currentMigrationSpec.baseline_theme.replacement_css_sha256)failures.push('Sigma-10 capture uses superseded baseline/contract');
       if(!Array.isArray(record.unconfirmed_items)||!Array.isArray(record.asset_failures)||!Array.isArray(record.page_errors)||!Array.isArray(record.action_responses)||record.action_responses.some(response=>response.type==='failure'||response.status>=400||response.error_message))failures.push('Sigma-10 capture lacks clean explicit safety results');
-      if(record.unconfirmed_items?.length||record.asset_failures?.length||record.page_errors?.length||record.external_requests_sent!==0||!record.reviewed_after_last_change||record.migration_review?.screenshot_sha256!==record.screenshot_sha256)failures.push(`Unresolved Sigma-10 state ${record.theme}/${record.surface}.${record.state}`);
+      if(record.unconfirmed_items?.length||record.asset_failures?.length||record.page_errors?.length||record.external_requests_sent!==0||!record.reviewed_after_last_change||!reviewedMigrationImage(record.migration_review,record.screenshot_sha256))failures.push(`Unresolved Sigma-10 state ${record.theme}/${record.surface}.${record.state}`);
       bind({path:`ports/${record.screenshot}`,sha256:record.screenshot_sha256},'Sigma-10 screenshot');
       if(!['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE','EXTERNAL_CONTRACT_UNVERIFIABLE','NOT_APPLICABLE'].includes(record.classification)&&!migration.nonblocking_observations?.some(item=>item.screenshot_sha256===record.screenshot_sha256&&item.blocker===false&&item.authority!=='WIKIDOT_RUNTIME_PARITY'))failures.push(`Unresolved Sigma-10 classification ${record.theme}/${record.surface}.${record.state}`);
     }
