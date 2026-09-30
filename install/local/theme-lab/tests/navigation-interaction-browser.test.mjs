@@ -19,13 +19,13 @@ test('sidebar close uses the source link when visible geometry is occluded', asy
   } finally { await browser.close(); }
 });
 
-test('mobile parent activates its real submenu when offscreen and overlapped', async () => {
+test('mobile parent fails closed when its control is outside the viewport', async () => {
   const browser = await chromium.launch({executablePath: '/usr/bin/google-chrome', headless: true});
   try {
     const page = await browser.newPage({viewport: {width: 390, height: 844}});
     await page.setContent('<style>.mobile-top-bar{margin-top:1000px}.mobile-top-bar > ul > li > ul{display:none}.mobile-top-bar > ul > li.open > ul{display:block;position:fixed;top:20px;left:20px}#cover{position:fixed;inset:0;z-index:99}</style><div class="mobile-top-bar"><ul><li><a href="#menu">Menu</a><ul><li><a href="#child">Child</a></li></ul></li></ul></div><div id="cover"></div><script>document.querySelector(".mobile-top-bar > ul > li > a").onclick=e=>{e.preventDefault();e.currentTarget.parentElement.classList.toggle("open")}</script>');
-    await expandMobileTopSubmenu(page);
-    assert.equal(await page.locator('.mobile-top-bar > ul > li > ul').isVisible(), true);
+    await assert.rejects(expandMobileTopSubmenu(page), /navigation parent control is outside viewport/);
+    assert.equal(await page.locator('.mobile-top-bar > ul > li > ul').isVisible(), false);
   } finally { await browser.close(); }
 });
 
@@ -49,6 +49,16 @@ test('javascript submenu source control expands from its pointer hover state', a
     await page.setContent('<style>.mobile-top-bar > ul > li > ul{display:none;position:fixed;top:60px;left:20px}.mobile-top-bar > ul > li:hover > ul{display:block}</style><div class="mobile-top-bar"><ul><li><a href="javascript:;">Menu</a><ul><li><a href="#child">Child</a></li></ul></li></ul></div>');
     await expandMobileTopSubmenu(page);
     assert.equal(await page.locator('.mobile-top-bar > ul > li > ul').evaluate(e=>e.getBoundingClientRect().top>=0), true);
+  } finally { await browser.close(); }
+});
+
+test('occluded in-viewport javascript control uses its source click and verifies submenu geometry', async () => {
+  const browser = await chromium.launch({executablePath: '/usr/bin/google-chrome', headless: true});
+  try {
+    const page = await browser.newPage({viewport: {width: 390, height: 844}});
+    await page.setContent('<style>.mobile-top-bar{position:fixed;top:20px}.mobile-top-bar > ul > li > ul{display:none;position:fixed;top:60px;left:20px}.mobile-top-bar > ul > li.open > ul{display:block}#cover{position:fixed;inset:0;z-index:99}</style><div class="mobile-top-bar"><ul><li><a href="javascript:;">Menu</a><ul><li><a href="#child">Child</a></li></ul></li></ul></div><div id="cover"></div><script>document.querySelector(".mobile-top-bar > ul > li > a").onclick=e=>{e.preventDefault();e.currentTarget.parentElement.classList.add("open")}</script>');
+    await expandMobileTopSubmenu(page);
+    assert.equal(await page.locator('.mobile-top-bar > ul > li > ul').evaluate(e=>e.getBoundingClientRect().width>0&&e.getBoundingClientRect().right>0), true);
   } finally { await browser.close(); }
 });
 

@@ -1,18 +1,23 @@
 export async function activateNavigationControl(page, anchor, submenu) {
   if (await hasRenderedSubmenuGeometry(submenu)) return;
   const href=await anchor.getAttribute('href');
-  if(href==='javascript:;'){
-    await anchor.hover({force:true});
+  const geometry = await anchor.evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    const inViewport = rect.width > 0 && rect.height > 0 && rect.right > 0 && rect.bottom > 0 && rect.left < innerWidth && rect.top < innerHeight;
+    if (!inViewport) return {inViewport: false, reachable: false};
+    const hit = document.elementFromPoint(Math.max(0, Math.min(innerWidth - 1, rect.left + rect.width / 2)), Math.max(0, Math.min(innerHeight - 1, rect.top + rect.height / 2)));
+    return {inViewport: true, reachable: !!hit && (hit === element || element.contains(hit))};
+  });
+  if (!geometry.inViewport) throw new Error('navigation parent control is outside viewport');
+  if (href === 'javascript:;' && geometry.reachable) {
+    await anchor.hover({timeout: 600});
     const hoverDeadline=Date.now()+500;
     while(Date.now()<hoverDeadline){if(await hasRenderedSubmenuGeometry(submenu))return;await page.waitForTimeout(50)}
+  } else if (geometry.reachable) {
+    await anchor.click();
+  } else {
+    await anchor.evaluate(element => element.click());
   }
-  const reachable = await anchor.evaluate(element => {
-    const rect = element.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0 || rect.right <= 0 || rect.bottom <= 0 || rect.left >= innerWidth || rect.top >= innerHeight) return false;
-    const hit = document.elementFromPoint(Math.max(0, Math.min(innerWidth - 1, rect.left + rect.width / 2)), Math.max(0, Math.min(innerHeight - 1, rect.top + rect.height / 2)));
-    return !!hit && (hit === element || element.contains(hit));
-  });
-  if (reachable) await anchor.click(); else await anchor.evaluate(element => element.click());
   const deadline=Date.now()+3000;
   while(Date.now()<deadline){if(await hasRenderedSubmenuGeometry(submenu))return;await page.waitForTimeout(50)}
   throw new Error('source navigation action did not produce rendered submenu geometry');
@@ -49,12 +54,7 @@ export async function expandTabletTopNavigation(page) {
     const item = desktop.locator('li').filter({has: page.locator(':scope > ul')}).filter({has: page.locator(':scope > a')}).first();
     const anchor = item.locator(':scope > a').first(), submenu = item.locator(':scope > ul');
     if (!(await anchor.count())) throw new Error('visible tablet desktop navigation has no submenu control');
-    const reachable = await anchor.evaluate(element => {
-      const rect = element.getBoundingClientRect(), hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
-      return rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight && !!hit && (hit === element || element.contains(hit));
-    });
-    if (reachable) await anchor.hover(); else await anchor.evaluate(element => element.click());
-    await submenu.waitFor({state: 'visible', timeout: 3000});
+    await activateNavigationControl(page, anchor, submenu);
     return;
   }
   const item = page.locator('.mobile-top-bar > ul > li').filter({has: page.locator(':scope > ul')}).first();
