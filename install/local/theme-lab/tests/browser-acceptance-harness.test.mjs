@@ -26,6 +26,7 @@ test('interactive capture pins the frozen Sigma-9 CSS and never applies capture 
  assert.match(runner,/link\.disabled=true;link\.media='not all'/u);
  assert.match(runner,/data-theme-lab-acceptance-styles/u);
  assert.match(runner,/acceptance CSS already applied/u);
+ assert.match(runner,/\.join\('\\n'\)/u);
 });
 
 test('geometry captures escape on either viewport edge and asset reuse fails closed on stale inputs',()=>{
