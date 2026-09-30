@@ -12,6 +12,14 @@ export const DEFAULT_LIMITS = Object.freeze({
   selectorRows: 30,
 });
 
+// Full-bleed content (for example a negative-margin <hr> divider) can land a
+// fraction of a pixel past the viewport edge through sub-pixel layout
+// rounding. `documentElement.scrollWidth - clientWidth` reports that as a
+// whole 1px, so a 1px document overflow is rounding noise, not a defect. Real
+// horizontal overflow (2px and above) still fails. This matches the 1px
+// tolerance already used by `viewportEscape` and the surface contract.
+export const DOCUMENT_OVERFLOW_TOLERANCE_PX = 1;
+
 function severityRank(severity) {
   return {error: 0, warn: 1, info: 2}[severity] ?? 3;
 }
@@ -80,9 +88,11 @@ export function issuesFromViewports(viewports) {
     const documentOverflow = viewport?.document_overflow_px ?? 0;
     const viewportEscape = viewport?.viewport_escape_px ?? 0;
     const overflow = Math.max(documentOverflow, viewportEscape);
-    // viewportStatus fails for either document overflow or an element crossing
-    // the left edge (which scrollWidth cannot represent).
-    if (overflow > 0) {
+    // A viewport fails only for real overflow. Sub-pixel full-bleed rounding
+    // (for example a negative-margin <hr> divider) surfaces as a whole 1px in
+    // documentOverflow or a fractional px in viewportEscape and must not become
+    // an actionable defect. Keep this boundary in sync with viewportStatus.
+    if (overflow > DOCUMENT_OVERFLOW_TOLERANCE_PX) {
       issues.push({severity: "error", kind: "viewport_overflow", viewport: id, overflow_px: overflow, document_overflow_px: documentOverflow, viewport_escape_px: viewportEscape, overflow_sources: viewport?.overflow_sources ?? []});
     }
   }
@@ -334,7 +344,7 @@ export function buildVerdict({
   const styleChanges = decisionStyleChanges.slice(0, limits.styleChanges);
   const viewportStatus = viewports
     ? Object.fromEntries(Object.entries(viewports).map(([name, result]) => [name, {
-        status: Math.max(result.document_overflow_px ?? 0, result.viewport_escape_px ?? 0) > 0 ? "fail" : "pass",
+        status: Math.max(result.document_overflow_px ?? 0, result.viewport_escape_px ?? 0) > DOCUMENT_OVERFLOW_TOLERANCE_PX ? "fail" : "pass",
         document_overflow_px: result.document_overflow_px ?? 0,
         ...(result.viewport_escape_px !== undefined ? {viewport_escape_px: result.viewport_escape_px} : {}),
         decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY",

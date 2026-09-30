@@ -12,6 +12,7 @@ import {withAuditLock} from '../scripts/audit-lock.mjs';
 import {applyExactVisualReviewReuseToRows,verifyExactReviewSources} from '../scripts/visual-review-reuse.mjs';
 import {topFixedNavigationInset} from './top-fixed-navigation-inset.mjs';
 import {loadCandidateStructure} from '../../src/candidate-structure.mjs';
+import {interactiveAcceptanceFixture} from '../../src/interactive-acceptance-fixture.mjs';
 import {openSidebar,closeSidebar} from '../../src/sidebar-interaction.mjs';
 import {dedupeCssLayers} from '../../src/css-layers.mjs';
 
@@ -260,6 +261,21 @@ const hydrationIndependentStates=new Set([
  'credit.close-back|restored'
 ]);
 const requiresSvelteHydration=spec=>!spec.surface.startsWith('credit.variant.')&&!hydrationIndependentStates.has(`${spec.surface}|${spec.state}`);
+async function setMigrationCreditTarget(page,target){
+ await page.evaluate(hash=>{location.hash=hash},`#${target}`);
+ await page.waitForFunction(id=>document.querySelector(id)?.matches(':target'),`#${target}`);
+}
+async function openCreditView(page){
+ if(migrationFixture){await setMigrationCreditTarget(page,'u-credit-view');return}
+ await page.locator('.creditButton a').first().click();
+ await page.waitForFunction(()=>location.hash==='#u-credit-view');
+}
+async function openCreditOtherwise(page){
+ if(migrationFixture){await setMigrationCreditTarget(page,'u-credit-otherwise');return}
+ await page.locator('.creditButton a').first().click();
+ await page.getByText('その他のライセンス',{exact:true}).first().click();
+ await page.waitForFunction(()=>location.hash==='#u-credit-otherwise');
+}
 async function visualDiagnostics(page,surface){
  const selectors=surface==='dialog.generic'?['#odialog-shader','#odialog-container','#odialog-container .owindow.error','#odialog-container .owindow.error .content','#odialog-container .owindow.error #modal-title','.button-bar','.button-close-message','.page-rate-widget-box','#u-credit-view']:surface.startsWith('credit.')?['#content-wrap','#main-content','#page-content','#action-area','#side-bar','.mobile-top-bar','#u-credit-view .modalcontainer','#u-credit-view .modalbox','#u-credit-view .page-rate-widget-box','#u-credit-view .page-rate-widget-box .rate-points','#u-credit-view .page-rate-widget-box .rateup','#u-credit-view .page-rate-widget-box .ratedown','#u-credit-view .page-rate-widget-box .cancel','#u-credit-otherwise .modalcontainer','#u-credit-otherwise .modalbox','#u-credit-otherwise .modalbox .credit.otherwise','#u-credit-otherwise .modalbox .credit-back','#u-credit-otherwise .modalbox .credit-back a[href="#u-credit-view"]','.page-rate-widget-box','.creditRate','.rate-box-with-credit-button','.creditButton','.creditButton a']:surface.startsWith('page.history')?['.revision-list','.page-history','.page-history tbody tr.revision-header','.page-history tbody tr.revision-row','.page-history .revision-diff','.revision-diff','.revision-diff .revision-diff-line','.page-source']:surface.startsWith('page.source')?['#action-area','#page-options-bottom','#page-options-bottom-2','.page-source','.action-area-close','.mobile-top-bar .open-menu a']:surface.startsWith('page.files')?['.file-list-scroll','.file-list','.file-row']:surface.startsWith('nav.')?['#top-bar','#top-bar .top-bar','#top-bar .top-bar a','.mobile-top-bar','.mobile-top-bar a','#side-bar','#side-bar .close-menu','#side-bar .side-block','#side-bar .collapsible-block-link','#side-bar .collapsible-block-unfolded']:surface.startsWith('shell.')?['#login-status','#footer','#license-area','.scpnet-interwiki-frame']:surface.startsWith('page.edit')?['#action-area','textarea.editor-wikitext','textarea[name="wikitext"]','#edit-page-comments']:surface==='page.normal'?['#content-wrap','#main-content','#page-title','#page-content','#action-area','#side-bar','#header','#header h1','#header h2','#extra-div-1','#extra-div-2','#search-top-box','#search-top-box-form','#search-top-box-input','#login-status','.mobile-top-bar','.yui-navset','.yui-navset .yui-nav a','.yui-navset .yui-nav a em','.yui-navset .yui-content']:['#action-area','#page-title','#page-content','.page-rate-widget-box'];
  if(surface==='shell.interwiki')selectors.push('.scpnet-interwiki-wrapper','iframe.html-block-iframe');
@@ -295,9 +311,9 @@ const states=[
   {surface:'nav.sidebar',state:'closed-after-open',viewports:['mobile','narrow-mobile'],action:async p=>{const openHash=await openSidebar(p);await closeSidebar(p,openHash)}},
   {surface:'nav.sidebar',state:'open-submenu',viewports:['mobile','narrow-mobile'],action:async p=>{await openSidebar(p);const toggle=p.locator('#side-bar .collapsible-block-link').first();if(!(await toggle.count())){/* The frozen Sigma-10 SCP-JP sidebar has no collapsible block; the state degrades to the open sidebar rather than inventing an interaction. */await p.locator('#side-bar .side-block').first().waitFor({state:'visible'});return}await toggle.click();await p.locator('#side-bar .collapsible-block-unfolded').waitFor()}},
   {surface:'credit.default',state:'normal',viewports:['desktop','mobile','narrow-mobile'],action:async()=>{}},
-  {surface:'credit.view',state:'open',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await p.locator('.creditButton a').first().click();await p.waitForFunction(()=>location.hash==='#u-credit-view')}} ,
-  {surface:'credit.otherwise',state:'open',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await p.locator('.creditButton a').first().click();await p.getByText('その他のライセンス',{exact:true}).first().click();await p.waitForFunction(()=>location.hash==='#u-credit-otherwise')}},
-  {surface:'credit.close-back',state:'restored',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await p.locator('.creditButton a').first().click();await p.goBack();await p.waitForFunction(()=>location.hash!=='#u-credit-view')}},
+   {surface:'credit.view',state:'open',viewports:['desktop','mobile','narrow-mobile'],action:openCreditView},
+   {surface:'credit.otherwise',state:'open',viewports:['desktop','mobile','narrow-mobile'],action:openCreditOtherwise},
+   {surface:'credit.close-back',state:'restored',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{if(migrationFixture)await setMigrationCreditTarget(p,'u-credit-view');else{await p.locator('.creditButton a').first().click();await p.waitForFunction(()=>location.hash==='#u-credit-view')}await p.goBack();await p.waitForFunction(()=>location.hash!=='#u-credit-view')}},
   {surface:'page.options',state:'default',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await p.locator('#page-options-bottom').scrollIntoViewIfNeeded();if(await p.evaluate(()=>innerWidth<=600))await revealBelowFixedMobileNavigation(p,'#page-options-bottom')}},
   {surface:'page.options',state:'more-expanded',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await expandMoreOptions(p);await p.locator('#page-options-bottom-2').scrollIntoViewIfNeeded();if(await p.evaluate(()=>innerWidth<=600))await revealBelowFixedMobileNavigation(p,'#page-options-bottom-2')}},
   {surface:'page.tags',state:'open',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await p.locator('#tags-button').click();await revealPagePane(p);await p.locator('#action-area input[type="text"]').first().waitFor({state:'visible'})}},
@@ -331,10 +347,10 @@ states.push(
  {surface:'content.link',state:'focused',viewports:['desktop','mobile'],action:async p=>{const link=p.locator('a[href="#fixture-link"]');await link.scrollIntoViewIfNeeded();await link.focus();if(await p.evaluate(()=>innerWidth<=600))await revealBelowFixedMobileNavigation(p,'a[href="#fixture-link"]')}},
  {surface:'content.rating',state:'focused',viewports:['desktop','mobile'],action:async p=>{await p.locator('.page-rate-widget-box a').first().focus()}},
  {surface:'page.tags',state:'input-focused',viewports:['desktop','mobile'],action:async p=>{await p.locator('#tags-button').click();await revealPagePane(p);await p.locator('#action-area input[type="text"]').first().focus()}},
- {surface:'credit.view',state:'scrolled-bottom',viewports:['desktop','mobile'],action:async p=>{await p.locator('.creditButton a').first().click();await p.waitForFunction(()=>location.hash==='#u-credit-view');await p.locator('#u-credit-view .modalbox').evaluate(e=>e.scrollTop=e.scrollHeight)}},
- {surface:'credit.otherwise',state:'scrolled-bottom',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await p.locator('.creditButton a').first().click();await p.getByText('その他のライセンス',{exact:true}).first().click();await p.waitForFunction(()=>location.hash==='#u-credit-otherwise');const copy=p.locator('#u-credit-otherwise .modalbox .credit.otherwise');await copy.evaluate(e=>e.scrollTop=e.scrollHeight);await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))}},
+  {surface:'credit.view',state:'scrolled-bottom',viewports:['desktop','mobile'],action:async p=>{await openCreditView(p);await p.locator('#u-credit-view .modalbox').evaluate(e=>e.scrollTop=e.scrollHeight)}},
+  {surface:'credit.otherwise',state:'scrolled-bottom',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await openCreditOtherwise(p);const copy=p.locator('#u-credit-otherwise .modalbox .credit.otherwise');await copy.evaluate(e=>e.scrollTop=e.scrollHeight);await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))}},
  {surface:'credit.otherwise',state:'back-control-click',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await p.locator('.creditButton a').first().click();await p.getByText('その他のライセンス',{exact:true}).first().click();await p.waitForFunction(()=>location.hash==='#u-credit-otherwise');const copy=p.locator('#u-credit-otherwise .modalbox .credit.otherwise');await copy.evaluate(e=>e.scrollTop=e.scrollHeight);const back=p.locator('#u-credit-otherwise .modalbox .credit-back a[href="#u-credit-view"]');if(await back.isVisible())await back.click();else await p.goBack();await p.waitForFunction(()=>location.hash==='#u-credit-view')}},
- {surface:'credit.otherwise',state:'back-to-view',viewports:['desktop','mobile'],action:async p=>{await p.locator('.creditButton a').first().click();await p.getByText('その他のライセンス',{exact:true}).first().click();await p.waitForFunction(()=>location.hash==='#u-credit-otherwise');await p.goBack();await p.waitForFunction(()=>location.hash==='#u-credit-view')}},
+  {surface:'credit.otherwise',state:'back-to-view',viewports:['desktop','mobile'],action:async p=>{await openCreditOtherwise(p);await p.goBack();await p.waitForFunction(()=>location.hash==='#u-credit-view')}},
  {surface:'page.source',state:'closed',viewports:['desktop','mobile'],action:async p=>{await expandMoreOptions(p);await p.locator('#view-source-button').click();await p.locator('.page-source').waitFor();await revealPagePane(p);await p.locator('.action-area-close').click();await p.locator('.page-source').waitFor({state:'detached'})}},
  {surface:'page.history',state:'historical-source',action:async p=>{await p.locator('#history-button').click();await p.locator('.page-history tr[id^="revision-row-"] .optionstd a').filter({hasText:/^S$/u}).first().click();await p.locator('#history-subarea .page-source').waitFor();await revealPagePane(p)}}
 );
@@ -655,13 +671,10 @@ async function persistBatch(batch,theme){
   const captureState=async(spec,_index,workerIndex)=>{
    const {old,reusable,fixtureSha,stateActionContract,environmentContractSha}=preflight.get(`${spec.surface}|${spec.state}`);
    if(reusable){records.push(old);themeRecords.push(old);return}
-   // Migration shell states (normal page, navigation, shell chrome) exercise the
-   // Sigma-10 SCP-JP shell, so bind them to the migration-owned main fixture
-   // instead of the retired Sigma-9 acceptance page. States with their own
-   // fixture (credit variants) keep it; content-specific states whose source is
-   // the acceptance fixture (tabs/collapsible) keep the acceptance page.
-   const migrationShellSurface=surface=>surface==='page.normal'||surface.startsWith('nav.')||surface.startsWith('shell.');
-   const effectiveFixtureSlug=spec.fixtureSlug??(migrationFixture&&migrationShellSurface(spec.surface)?migrationFixture.main_slug:null);
+    // Migration shell and base-credit states exercise Sigma-10's saved page
+    // markup. Keep explicitly named variant fixtures separate: those are
+    // historical diagnostics, not substitutes for the current credit source.
+    const effectiveFixtureSlug=interactiveAcceptanceFixture(spec,migrationFixture);
    const externalBefore=engineArg==='webkit'?webkitProxyBlocked:externalCount;const page=await workerPage(workerIndex,!!spec.guest);const stateStartedAt=performance.now();const phaseDurations={navigation:0,hydration:0,action:0,visual_settle:0,paint_and_capture:0};const errors=[];const pageErrorHandler=e=>errors.push(e.message);page.on('pageerror',pageErrorHandler);
    let shot=null,actionError=null,settledAnimationsFinished=0,baselineThemeHref=null;const actionResponses=[];const responseHandler=async response=>{if(response.url().includes('?/revisionDiff')){let body='';try{body=await response.text()}catch{}let type='unknown',errorMessage=null;try{const envelope=JSON.parse(body);type=envelope.type??type;if(type==='failure'){const detail=JSON.parse(envelope.data);errorMessage=Array.isArray(detail)?detail[1]??null:null}}catch{}actionResponses.push({status:response.status(),type,error_message:errorMessage})}};page.on('response',responseHandler);
    try{
