@@ -1,0 +1,513 @@
+{
+  "schema": "theme_lab_current_package_nonvisual_blockers.v1",
+  "package_count": 36,
+  "overall": {
+    "warn-no-actionable-issues": 21,
+    "fail": 15
+  },
+  "packages": [
+    {
+      "slug": "theme:dear-dictator (SCP-KO)",
+      "port_verdict": "fail",
+      "target_status": "fail",
+      "torture": "pass",
+      "failed_viewports": [
+        {
+          "viewport": "narrow-mobile",
+          "document_overflow_px": 0,
+          "viewport_escape_px": 160,
+          "sources": [
+            "ul"
+          ]
+        }
+      ],
+      "torture_failures": [],
+      "target_finding_kinds": {
+        "viewport_overflow": 1,
+        "surface_low_text_contrast": 2,
+        "torture_component_style_change": 9
+      },
+      "port_decision": {
+        "verdict": "fail",
+        "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+        "actionable_finding_count": 5,
+        "unresolved_finding_count": 1,
+        "unresolved_surface_ids": [
+          "unclassified-runtime-surface"
+        ]
+      },
+      "port_findings": []
+    },
+    {
+      "slug": "theme:flopstyle-dark",
+      "port_verdict": "pass",
+      "target_status": "fail",
+      "torture": "pass",
+      "failed_viewports": [
+        {
+          "viewport": "narrow-mobile",
+          "document_overflow_px": 0,
+          "viewport_escape_px": 2,
+          "sources": [
+            "span.fncon"
+          ]
+        }
+      ],
+      "torture_failures": [],
+      "target_finding_kinds": {
+        "viewport_overflow": 1,
+        "collapsed_selector": 6,
+        "surface_text_color_changed_on_image_background": 2,
+        "torture_component_style_change": 11
+      },
+      "port_decision": {
+        "verdict": "pass",
+        "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+        "actionable_finding_count": 0,
+        "unresolved_finding_count": 0,
+        "unresolved_surface_ids": []
+      },
+      "port_findings": []
+    },
+    {
+      "slug": "theme:foxtrot",
+      "port_verdict": "pass",
+      "target_status": "fail",
+      "torture": "pass",
+      "failed_viewports": [
+        {
+          "viewport": "narrow-mobile",
+          "document_overflow_px": 0,
+          "viewport_escape_px": 9.03125,
+          "sources": [
+            "div.scp-image-block.block-right",
+            "p"
+          ]
+        }
+      ],
+      "torture_failures": [],
+      "target_finding_kinds": {
+        "viewport_overflow": 1,
+        "torture_component_style_change": 8
+      },
+      "port_decision": {
+        "verdict": "pass",
+        "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+        "actionable_finding_count": 0,
+        "unresolved_finding_count": 0,
+        "unresolved_surface_ids": []
+      },
+      "port_findings": []
+    },
+    {
+      "slug": "theme:much-cool",
+      "port_verdict": "pass",
+      "target_status": "fail",
+      "torture": "pass",
+      "failed_viewports": [
+        {
+          "viewport": "narrow-mobile",
+          "document_overflow_px": 0,
+          "viewport_escape_px": 16,
+          "sources": [
+            "#top-bar",
+            "div.scp-image-block.block-right",
+            "p"
+          ]
+        }
+      ],
+      "torture_failures": [],
+      "target_finding_kinds": {
+        "viewport_overflow": 1,
+        "surface_fixture_missing": 14,
+        "surface_state_action_failed": 8,
+        "collapsed_selector": 1,
+        "expanded_selector": 1,
+        "surface_text_color_changed_on_image_background": 2
+      },
+      "port_decision": {
+        "verdict": "pass",
+        "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+        "actionable_finding_count": 0,
+        "unresolved_finding_count": 0,
+        "unresolved_surface_ids": []
+      },
+      "port_findings": []
+    },
+    {
+      "slug": "theme:night-rush-theme",
+      "port_verdict": "pass",
+      "target_status": "fail",
+      "torture": "pass",
+      "failed_viewports": [
+        {
+          "viewport": "narrow-mobile",
+          "document_overflow_px": 0,
+          "viewport_escape_px": 9.03125,
+          "sources": [
+            "div.scp-image-block.block-right",
+            "p"
+          ]
+        }
+      ],
+      "torture_failures": [],
+      "target_finding_kinds": {
+        "viewport_overflow": 1,
+        "expanded_selector": 2,
+        "surface_text_color_changed_on_image_background": 2
+      },
+      "port_decision": {
+        "verdict": "pass",
+        "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+        "actionable_finding_count": 0,
+        "unresolved_finding_count": 0,
+        "unresolved_surface_ids": []
+      },
+      "port_findings": []
+    },
+    {
+      "slug": "theme:paperstack",
+      "port_verdict": "pass",
+      "target_status": "fail",
+      "torture": "pass",
+      "failed_viewports": [
+        {
+          "viewport": "narrow-mobile",
+          "document_overflow_px": 4,
+          "viewport_escape_px": 10.625,
+          "sources": [
+            "div.scp-image-block.block-right",
+            "hr",
+            "hr",
+            "p"
+          ]
+        }
+      ],
+      "torture_failures": [],
+      "target_finding_kinds": {
+        "viewport_overflow": 1,
+        "collapsed_selector": 1,
+        "expanded_selector": 5,
+        "baseline_responsive_behavior_flattened": 1,
+        "torture_component_style_change": 10
+      },
+      "port_decision": {
+        "verdict": "pass",
+        "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+        "actionable_finding_count": 0,
+        "unresolved_finding_count": 0,
+        "unresolved_surface_ids": []
+      },
+      "port_findings": []
+    },
+    {
+      "slug": "theme:pataphysics",
+      "port_verdict": "pass",
+      "target_status": "fail",
+      "torture": "pass",
+      "failed_viewports": [
+        {
+          "viewport": "narrow-mobile",
+          "document_overflow_px": 0,
+          "viewport_escape_px": 9.03125,
+          "sources": [
+            "div.scp-image-block.block-right",
+            "p"
+          ]
+        }
+      ],
+      "torture_failures": [],
+      "target_finding_kinds": {
+        "viewport_overflow": 1,
+        "collapsed_selector": 1,
+        "expanded_selector": 3,
+        "surface_text_color_changed_on_image_background": 2
+      },
+      "port_decision": {
+        "verdict": "pass",
+        "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+        "actionable_finding_count": 0,
+        "unresolved_finding_count": 0,
+        "unresolved_surface_ids": []
+      },
+      "port_findings": []
+    },
+    {
+      "slug": "theme:quand-le-soleil-se-couche (SCP-FR)",
+      "port_verdict": "fail",
+      "target_status": "fail",
+      "torture": "pass",
+      "failed_viewports": [],
+      "torture_failures": [],
+      "target_finding_kinds": {
+        "collapsed_selector": 1,
+        "baseline_responsive_behavior_flattened": 1
+      },
+      "port_decision": {
+        "verdict": "fail",
+        "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+        "actionable_finding_count": 2,
+        "unresolved_finding_count": 0,
+        "unresolved_surface_ids": []
+      },
+      "port_findings": []
+    },
+    {
+      "slug": "theme:scheme",
+      "port_verdict": "inconclusive",
+      "target_status": "fail",
+      "torture": "pass",
+      "failed_viewports": [],
+      "torture_failures": [],
+      "target_finding_kinds": {
+        "surface_state_action_failed": 8,
+        "surface_fixture_missing": 12,
+        "surface_low_text_contrast": 1,
+        "torture_component_style_change": 1
+      },
+      "port_decision": {
+        "verdict": "inconclusive",
+        "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+        "actionable_finding_count": 0,
+        "unresolved_finding_count": 1,
+        "unresolved_surface_ids": [
+          "unclassified-runtime-surface"
+        ]
+      },
+      "port_findings": []
+    },
+    {
+      "slug": "theme:scpedia",
+      "port_verdict": "pass",
+      "target_status": "fail",
+      "torture": "fail",
+      "failed_viewports": [
+        {
+          "viewport": "narrow-mobile",
+          "document_overflow_px": 5,
+          "viewport_escape_px": 5.03125,
+          "sources": [
+            "a"
+          ]
+        }
+      ],
+      "torture_failures": [
+        {
+          "kind": "new_horizontal_overflow",
+          "component": "page",
+          "viewport": "narrow-mobile"
+        }
+      ],
+      "target_finding_kinds": {
+        "new_horizontal_overflow": 1,
+        "viewport_overflow": 1,
+        "expanded_selector": 2
+      },
+      "port_decision": {
+        "verdict": "pass",
+        "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+        "actionable_finding_count": 0,
+        "unresolved_finding_count": 0,
+        "unresolved_surface_ids": []
+      },
+      "port_findings": []
+    },
+    {
+      "slug": "theme:site",
+      "port_verdict": "pass",
+      "target_status": "fail",
+      "torture": "pass",
+      "failed_viewports": [
+        {
+          "viewport": "narrow-mobile",
+          "document_overflow_px": 0,
+          "viewport_escape_px": 13.359375,
+          "sources": [
+            "div.scp-image-block.block-right",
+            "p"
+          ]
+        }
+      ],
+      "torture_failures": [],
+      "target_finding_kinds": {
+        "viewport_overflow": 1,
+        "collapsed_selector": 1,
+        "torture_component_style_change": 11
+      },
+      "port_decision": {
+        "verdict": "pass",
+        "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+        "actionable_finding_count": 0,
+        "unresolved_finding_count": 0,
+        "unresolved_surface_ids": []
+      },
+      "port_findings": []
+    },
+    {
+      "slug": "theme:turbo-vision",
+      "port_verdict": "pass",
+      "target_status": "fail",
+      "torture": "pass",
+      "failed_viewports": [
+        {
+          "viewport": "mobile",
+          "document_overflow_px": 0,
+          "viewport_escape_px": 16,
+          "sources": [
+            "#top-bar"
+          ]
+        },
+        {
+          "viewport": "narrow-mobile",
+          "document_overflow_px": 0,
+          "viewport_escape_px": 16,
+          "sources": [
+            "#top-bar",
+            "div.scp-image-block.block-right",
+            "p"
+          ]
+        }
+      ],
+      "torture_failures": [],
+      "target_finding_kinds": {
+        "viewport_overflow": 2,
+        "expanded_selector": 2,
+        "surface_text_color_changed_on_image_background": 2,
+        "baseline_responsive_behavior_flattened": 1,
+        "torture_component_style_change": 11
+      },
+      "port_decision": {
+        "verdict": "pass",
+        "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+        "actionable_finding_count": 0,
+        "unresolved_finding_count": 0,
+        "unresolved_surface_ids": []
+      },
+      "port_findings": []
+    },
+    {
+      "slug": "theme:wikifot",
+      "port_verdict": "pass",
+      "target_status": "fail",
+      "torture": "pass",
+      "failed_viewports": [
+        {
+          "viewport": "mobile",
+          "document_overflow_px": 0,
+          "viewport_escape_px": 179.203125,
+          "sources": [
+            "#side-bar",
+            "div.side-block.resources",
+            "div",
+            "div.side-block",
+            "div"
+          ]
+        },
+        {
+          "viewport": "narrow-mobile",
+          "document_overflow_px": 0,
+          "viewport_escape_px": 179.203125,
+          "sources": [
+            "#side-bar",
+            "div.side-block.resources",
+            "div",
+            "div.side-block",
+            "div"
+          ]
+        }
+      ],
+      "torture_failures": [],
+      "target_finding_kinds": {
+        "viewport_overflow": 2,
+        "expanded_selector": 3,
+        "torture_component_style_change": 1
+      },
+      "port_decision": {
+        "verdict": "pass",
+        "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+        "actionable_finding_count": 0,
+        "unresolved_finding_count": 0,
+        "unresolved_surface_ids": []
+      },
+      "port_findings": []
+    },
+    {
+      "slug": "theme:y2k",
+      "port_verdict": "pass",
+      "target_status": "fail",
+      "torture": "pass",
+      "failed_viewports": [
+        {
+          "viewport": "narrow-mobile",
+          "document_overflow_px": 0,
+          "viewport_escape_px": 11.1875,
+          "sources": [
+            "div.scp-image-block.block-right",
+            "p"
+          ]
+        }
+      ],
+      "torture_failures": [],
+      "target_finding_kinds": {
+        "viewport_overflow": 1,
+        "expanded_selector": 2,
+        "surface_text_color_changed_on_image_background": 2,
+        "torture_component_style_change": 5
+      },
+      "port_decision": {
+        "verdict": "pass",
+        "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+        "actionable_finding_count": 0,
+        "unresolved_finding_count": 0,
+        "unresolved_surface_ids": []
+      },
+      "port_findings": []
+    },
+    {
+      "slug": "theme:yossistyle",
+      "port_verdict": "pass",
+      "target_status": "fail",
+      "torture": "pass",
+      "failed_viewports": [
+        {
+          "viewport": "narrow-mobile",
+          "document_overflow_px": 40,
+          "viewport_escape_px": 39.796875,
+          "sources": [
+            "strong",
+            "tt",
+            "span",
+            "div.scp-image-block.block-right",
+            "p"
+          ]
+        }
+      ],
+      "torture_failures": [],
+      "target_finding_kinds": {
+        "viewport_overflow": 1,
+        "expanded_selector": 2,
+        "surface_text_color_changed_on_image_background": 2
+      },
+      "port_decision": {
+        "verdict": "pass",
+        "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+        "actionable_finding_count": 0,
+        "unresolved_finding_count": 0,
+        "unresolved_surface_ids": []
+      },
+      "port_findings": []
+    }
+  ],
+  "timeouts_rerun": [
+    "aesthetic-theme",
+    "cosmonaut",
+    "extra-black-highlighter-theme",
+    "hansarp",
+    "jakstyle",
+    "minimalist-bhl",
+    "ouroborous-theme",
+    "redtape",
+    "scp-offices-theme",
+    "turbo-vision"
+  ]
+}

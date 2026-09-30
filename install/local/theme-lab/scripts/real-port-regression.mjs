@@ -4,6 +4,7 @@
 // persistent Theme Lab daemon and an already acquired offline reference.
 import fs from "node:fs";
 import {assertPublishablePackage} from "../src/adaptation-authority.mjs";
+import {PACKAGE_CHECK_TIMEOUT_MS} from "../src/package-check-policy.mjs";
 import crypto from "node:crypto";
 import path from "node:path";
 import {spawnSync} from "node:child_process";
@@ -17,6 +18,7 @@ const socket = process.env.THEME_LAB_SOCKET ?? "/tmp/theme-lab-en34.sock";
 const dearSocket = process.env.THEME_LAB_DEAR_SOCKET ?? socket;
 const siteId = process.env.THEME_LAB_SITE_ID ?? "6000003";
 const runArtifactRoot = process.env.THEME_LAB_RUN_ARTIFACT_DIR ? path.resolve(process.env.THEME_LAB_RUN_ARTIFACT_DIR) : null;
+const rawResultRoot = process.env.THEME_LAB_RAW_RESULT_DIR ? path.resolve(process.env.THEME_LAB_RAW_RESULT_DIR) : null;
 const sharedSelectors = path.join(ports, "shared-acceptance-selectors.txt");
 const lab = path.join(root, "install/local/theme-lab/scripts/theme-lab.mjs");
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
@@ -215,7 +217,11 @@ for (const item of selectedCases) {
   if (iteration) args.push("--iteration");
   const pageAssetManifest = path.join(item.directory, "page-assets.json");
   if (fs.existsSync(pageAssetManifest)) args.push("--page-assets", pageAssetManifest);
-  const result = spawnSync(process.execPath, args, {cwd: root, encoding: "utf8", timeout: 120_000, maxBuffer: 16 * 1024 * 1024});
+  const result = spawnSync(process.execPath, args, {cwd: root, encoding: "utf8", timeout: PACKAGE_CHECK_TIMEOUT_MS, maxBuffer: 16 * 1024 * 1024});
+  if (rawResultRoot && typeof result.stdout === "string") {
+    fs.mkdirSync(rawResultRoot, {recursive: true});
+    fs.writeFileSync(path.join(rawResultRoot, `${path.basename(item.directory)}.json`), result.stdout);
+  }
   let output;
   try { output = JSON.parse(result.stdout); } catch {
     failures.push({slug: item.slug, reason: result.error?.message ?? result.stderr ?? "invalid JSON output", exit_code: result.status});

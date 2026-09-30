@@ -1,0 +1,63 @@
+{
+  "schema": "theme_lab_current_package_acceptance_run.v1",
+  "head": "65a3583e4388e689c7b3cc3214707dfa90adb5d9",
+  "candidate_site": {
+    "slug": "scpaiueouiuiuiui",
+    "origin": "https://scpaiueouiuiuiui.wikijump.localhost:18443",
+    "locale": "ja"
+  },
+  "fixture_page": "https://scpaiueouiuiuiui.wikijump.localhost:18443/run-owned%3Atheme-lab-visual-acceptance-imported-20260924",
+  "browser": {
+    "executable": "/usr/bin/google-chrome",
+    "version": "154.0.8037.57",
+    "binary": "/opt/google/chrome/chrome",
+    "binary_sha256": "4d2512ae84986bf987e6ea8ef14ca1af555ae574fbaff5b5a8c78a8dd73fa36f"
+  },
+  "deepwell": {
+    "endpoint": "http://127.0.0.1:2747/jsonrpc",
+    "credential_source": "active local-development Deepwell process environment; value not recorded"
+  },
+  "fixtures": {
+    "baseline": {
+      "path": "../../fixtures/scp-jp-sigma9-offline.css",
+      "sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba"
+    },
+    "header": {
+      "path": "../../fixtures/scp-jp-header.html",
+      "sha256": "797caf30903a44c24e7cacdee3709a402a7ae9cc443194f0aa9380daf758c872"
+    },
+    "navigation": {
+      "path": "../../fixtures/scp-jp-navigation.html",
+      "sha256": "28a313884b25d4b88a9a3216ff2d4df68e2390cee3fb11ba5a88f127fdd66cf3"
+    },
+    "sidebar": {
+      "path": "../../fixtures/scp-jp-sidebar.html",
+      "sha256": "e4ec133d51cfc843e65478a80ffcb82b161c1cc8209a80a42fa7f1b31dd7e032"
+    }
+  },
+  "asset_pool": "install/local/theme-lab/ports/shared-replay-assets",
+  "asset_pool_file_count": 1045,
+  "nonvisual_results": "nonvisual/results.jsonl",
+  "visual_results": "visual/results.jsonl",
+  "raw_visual_responses": "visual/raw/",
+  "visual_screenshots": "visual/artifacts/",
+  "review_worklist": "review-worklist.json",
+  "review_status": "180 exact screenshot pairs pending direct review; no prior review qualified for identity-bound reuse",
+  "not_run": [
+    "browser-state matrices",
+    "Sigma-10 migration campaign"
+  ],
+  "daemon_launch_options": {
+    "socket_pattern": "/tmp/theme-lab-current-chrome154[-2|-3|-4].sock",
+    "candidate_url": "https://scpaiueouiuiuiui.wikijump.localhost:18443/run-owned%3Atheme-lab-visual-acceptance-imported-20260924",
+    "asset_dir": "install/local/theme-lab/ports/shared-replay-assets",
+    "baseline_css": "install/local/theme-lab/fixtures/scp-jp-sigma9-offline.css",
+    "header_html": "install/local/theme-lab/fixtures/scp-jp-header.html",
+    "navigation_html": "install/local/theme-lab/fixtures/scp-jp-navigation.html",
+    "sidebar_html": "install/local/theme-lab/fixtures/scp-jp-sidebar.html",
+    "browser_executable": "/usr/bin/google-chrome"
+  },
+  "visual_pair_count": 180,
+  "visual_review_pending": 180,
+  "completed_at": "2026-09-30T11:03:37.861Z"
+}
