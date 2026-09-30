@@ -41,8 +41,8 @@
   "candidate_source_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
   "human_port_candidate_path": "install/local/theme-lab/ports/aesthetic-theme/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "b0cfc84e09adc5da3dc37cbd9bb77765b53e302f414cc01d443d7da0480f5e22",
-  "candidate_preview_sha256": "8fe0100613178817a74b4baf52171864d5006f5f141d2f9ef1ae578e97668cc6",
-  "candidate_css_sha256": "4cfc7460b7c6f39f0426ffec763a9d37e9c474e8d96411f80d9dccac446bf6c5",
+  "candidate_preview_sha256": "e81d43c4d4d599a8e1325205ad65bfede07cffa4a8cace109c527783c0cdd390",
+  "candidate_css_sha256": "e3dce635b10c80d6adf6a741a10d3a8454880beb37fdb8609be77b00583a7043",
   "page_assets": [
     {
       "filename": "AESTHETIC_logo.svg",

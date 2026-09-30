@@ -112,3 +112,15 @@ passing adaptation authority and deterministic generation from an inconclusive
 full local port acceptance. This cleanup does not certify an unexecuted complete
 migration or reuse stale accepted screenshots. The Sigma final evidence gate
 verifies source and historical evidence integrity and reports that distinction.
+
+The Flopstyle Dark Sigma-10 credit check is separately bound to the frozen
+read-only `sigma-10:main` replay in
+`authority-evidence/flopstyle-dark-sigma10-credit-candidate-current/`. It
+applies the exact current `flopstyle-dark/candidate.css` to the current
+`.creditRateOtherwiseBottom .return-credits` target component at 320px and
+390px. That component and the document fit both widths. The shared interactive
+fixture remains the historical Sigma-9 diagnostic described in
+`interactive-visual-fixture/fixture-source.json`; its `.credit-back-link` is a
+synthetic replacement for a remote iframe control and cannot create a
+Sigma-10 port requirement. Keep those evidence tracks separate when reviewing
+future Flopstyle changes.

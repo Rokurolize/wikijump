@@ -1,0 +1,27 @@
+{
+  "schema": "theme_lab_current_package_visual_run_summary.v1",
+  "mode": "full-visual-package-check",
+  "package_count": 36,
+  "raw_check_results": 36,
+  "package_rows": 36,
+  "screenshot_png_count": 360,
+  "check_verdicts": {
+    "inconclusive": 21,
+    "fail": 15
+  },
+  "port_decisions": {
+    "pass": 34,
+    "fail": 2
+  },
+  "nonvisual_target_statuses": {
+    "warn": 21,
+    "fail": 15
+  },
+  "visual_statuses": {
+    "inconclusive": 36
+  },
+  "review_pairs": 180,
+  "review_pending": 180,
+  "qualified_prior_review_reuse": 0,
+  "runner_timeouts": 0
+}

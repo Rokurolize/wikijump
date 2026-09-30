@@ -27,9 +27,9 @@
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/foxtrot",
-  "candidate_source_hash": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
+  "candidate_source_hash": "ec9b2c338317afc18276377c77804f8e4d35a4765443278f9678f9f4ed5f73b7",
   "source_candidate_path": "install/local/theme-lab/ports/foxtrot/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
+  "source_candidate_sha256": "ec9b2c338317afc18276377c77804f8e4d35a4765443278f9678f9f4ed5f73b7",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -37,11 +37,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/foxtrot/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
+  "candidate_source_sha256": "ec9b2c338317afc18276377c77804f8e4d35a4765443278f9678f9f4ed5f73b7",
   "human_port_candidate_path": "install/local/theme-lab/ports/foxtrot/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "ef48bc7c63661a83a31aee7d8b4859f06a1db249ddb4d9ed8eda239c86f795cb",
-  "candidate_preview_sha256": "f1cdc11d2b318da881c92f9d2d81c5b94ceb13e7c1c239f77be5e973887a0341",
-  "candidate_css_sha256": "d13104886d38bd4a628f7e1b4937c498b80603110c9b371972b9f9b62085f72d",
+  "candidate_preview_sha256": "1db0dac7132f8ddf8f4a772d447c0e1dbecec9a32af400429813cdd2e9b393a7",
+  "candidate_css_sha256": "957ab5ef441f1acdcb2119be57fe8c25e5985dc35dce1c45bded9107242ce02d",
   "page_assets": [
     {
       "filename": "canada_dark-JP.png",
@@ -354,7 +354,7 @@
     "source_evidence": "candidate screenshots visibly rendered unresolved SCP-EN usernames against SCP-JP identity links; preserve display names and freeze upstream/human-port originals"
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/foxtrot/assets.json",
-  "asset_dependency_decision_count": 47,
+  "asset_dependency_decision_count": 49,
   "page_asset_dependency_decisions_path": "install/local/theme-lab/ports/foxtrot/page-assets.json",
   "historical_acceptance": {
     "status": "SUPERSEDED_CANDIDATE",

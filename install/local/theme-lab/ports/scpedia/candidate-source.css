@@ -1,1 +1,7 @@
 @import url('https://scp-wiki.wdfiles.com/local--code/theme%3Ascpedia/1');
+
+
+/* SCP-JP Wikidot SCPedia masthead correction: keep the source title inside the narrow tablet viewport. */
+@media (min-width: 768px) and (max-width: 800px) {
+ div#extra-div-2 { left: 16.75rem; }
+}

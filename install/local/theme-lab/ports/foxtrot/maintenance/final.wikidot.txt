@@ -4245,3 +4245,10 @@ table.page-history td.optionstd a,
 }
 [[/module]]
 >[[/iftags]][[/iftags]][[/iftags]]
+
+[[module CSS]]
+/* SCP-JP Wikidot Foxtrot background correction: allow the source dark body palette to show through the Sigma-9 wrapper. */
+div#container-wrap {
+  background-image: none;
+}
+[[/module]]

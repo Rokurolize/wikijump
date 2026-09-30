@@ -8,12 +8,15 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {sourceCssIncludes} from '../../src/source-css-includes.mjs';
+import {composeThemeCss} from '../../src/candidate-css-composition.mjs';
 import {assertPublishablePackage} from '../../src/adaptation-authority.mjs';
 
 const portsDir=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const themes=process.argv.slice(2).filter(arg=>arg.startsWith('--theme=')).map(arg=>arg.slice(8));
 const only=new Set(themes);
 const digest=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
+
 const cache=path.join(os.homedir(),'.cache/wikijump/theme-lab');
 const entries=await fs.readdir(portsDir,{withFileTypes:true});
 const results=[];
@@ -23,13 +26,27 @@ for(const entry of entries){
   let manifest;try{manifest=JSON.parse(await fs.readFile(path.join(dir,'manifest.json'),'utf8'))}catch{continue}
   if(!manifest.en_source_sha256)continue;
   assertPublishablePackage(entry.name);
+  const includeCss=await sourceCssIncludes(dir);
+  if(includeCss){
+    manifest.interactive_acceptance??={};
+    manifest.interactive_acceptance.source_css_includes={manifest:'source-css-includes.json',materialized_css_sha256:digest(includeCss),cascade:'before-main-source-css',public_writes:0};
+  }
   const config=manifest.interactive_acceptance?.theme_source;
   const tags=config?.active_tags??[];
   const upstream=await fs.readFile(path.join(dir,config?.path??'candidate-input.css'),'utf8');
   const candidatePath=path.join(dir,'candidate.wikidot.source.txt');
   const candidate=await fs.readFile(candidatePath,'utf8');
   const candidateTags=config?.candidate_tags??[];
-  const sourceCss=[await fs.readFile(path.join(dir,'candidate-input.css'),'utf8'),await fs.readFile(path.join(dir,'authority-overrides.css'),'utf8')].filter(x=>x.trim()).join('\n\n');
+  const mainCss=await fs.readFile(path.join(dir,'candidate-input.css'),'utf8');
+  // The candidate input prepends its site/theme base imports. Component includes
+  // follow that base and precede the theme's own declarations, as in Wikidot.
+  const baseImportCount=includeCss?JSON.parse(await fs.readFile(path.join(dir,'source-css-includes.json'))).base_import_count??0:0;
+  if(!Number.isInteger(baseImportCount)||baseImportCount<0)throw new Error('Invalid source base import count');
+  let prefix='';
+  for(let index=0;index<baseImportCount;index++){const imported=mainCss.slice(prefix.length).match(/^\s*@import\s[^;]+;/u);if(!imported)throw new Error('Missing source base import');prefix+=imported[0];}
+  const overridePlacement=manifest.interactive_acceptance?.authority_overrides_placement??'append';
+  const composedThemeCss=composeThemeCss(mainCss.slice(prefix.length),await fs.readFile(path.join(dir,'authority-overrides.css'),'utf8'),overridePlacement);
+  const sourceCss=[prefix,includeCss??'',composedThemeCss].filter(x=>x.trim()).join('\n\n');
   const sourcePath=path.join(dir,'candidate-source.css');
   await fs.writeFile(sourcePath,sourceCss);
   const outputPath=path.join(dir,'candidate.css');

@@ -1,0 +1,35 @@
+{
+  "schema": "theme_lab_source_css_includes.v1",
+  "authority": "RUNTIME_INDEPENDENT",
+  "candidate_source": "candidate.wikidot.source.txt",
+  "upstream_source": "upstream-en.wikidot.txt",
+  "includes": [
+    {
+      "locator": "component:betterfootnotes",
+      "kind": "unconditional-modules",
+      "parameters": {},
+      "source": {
+        "path": "source-includes/betterfootnotes.wikidot.txt",
+        "sha256": "a93c113949c85d818d49453d7e0271fa0a06c9eed70b0641eebd2466aab33c8c"
+      },
+      "css": {
+        "path": "source-includes/betterfootnotes-input.css",
+        "sha256": "2fc50a2c55c1c62c675b9486918a57da966d8011b9c54d483de6821efef336be"
+      }
+    },
+    {
+      "locator": "component:acs-animation",
+      "kind": "unconditional-modules",
+      "parameters": {},
+      "source": {
+        "path": "source-includes/acs-animation.wikidot.txt",
+        "sha256": "9d275b2ce4a8399a5754801e943ce8962c597d2515d9b4bd3ec8101711161de8"
+      },
+      "css": {
+        "path": "source-includes/acs-animation-input.css",
+        "sha256": "9c2d54387591ead58b15b16791039c675b87d47c268b98800b48eed8f6662690"
+      }
+    }
+  ],
+  "base_import_count": 0
+}

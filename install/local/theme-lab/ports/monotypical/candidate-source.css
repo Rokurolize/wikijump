@@ -1,2 +1,8 @@
 @import url('https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css');
 @import url('https://scp-jp.wdfiles.com/local--code/theme%3Amonotypical/5');
+
+
+
+
+/* SCP-JP Wikidot monotypical credit correction: keep the modal rating in document flow below the license control. */
+#u-credit-view .modalbox .modalbox-ratemodule { position: static; }

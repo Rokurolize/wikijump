@@ -15,10 +15,18 @@ const TYPES = {
   ".webp": "image/webp",
   ".woff": "font/woff",
   ".woff2": "font/woff2",
+  ".gif": "image/gif",
+  ".ttf": "font/ttf",
+  ".eot": "application/vnd.ms-fontobject",
 };
 
+// The deterministic freezer emits bare content-addressed filenames. Standalone
+// ports also retain the original ./assets/name form. Both resolve only in the
+// explicitly supplied asset pool; arbitrary relative URLs are not widened.
+const LOCAL_ASSET_URL = /url\(\s*["']?(?:\.\/assets\/([^)'"\s]+)|(?:\.\/)?([a-f0-9]{64}\.[a-z0-9]+))["']?\s*\)/gu;
+
 function assetNames(css) {
-  const names = [...css.matchAll(/url\(\s*["']?\.\/assets\/([^)'"\s]+)["']?\s*\)/gu)].map((match) => match[1]);
+  const names = [...css.matchAll(LOCAL_ASSET_URL)].map((match) => match[1] ?? match[2]);
   for (const name of names) {
     if (!name || name === "." || name === ".." || name.includes("..") || name.includes("/") || name.includes("\\")) {
       fail("invalid_candidate_asset", `invalid candidate asset URL: ${name}`);
@@ -55,9 +63,10 @@ export async function materializeCandidateCssAssets(css, rootDir) {
       // inspectCandidateAssets reports the missing file in the verdict.
     }
   }
-  return css.replace(/url\(\s*["']?\.\/assets\/([^)'"\s]+)["']?\s*\)/gu, (whole, name) =>
-    replacements.has(name) ? `url("${replacements.get(name)}")` : whole,
-  );
+  return css.replace(LOCAL_ASSET_URL, (whole, legacy, digest) => {
+    const name = legacy ?? digest;
+    return replacements.has(name) ? `url("${replacements.get(name)}")` : whole;
+  });
 }
 
 export async function materializeCandidatePageImages(page, attachments, rootDir) {

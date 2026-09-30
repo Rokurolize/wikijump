@@ -46,7 +46,7 @@ const registered=new Set(['dear-dictator',...manifest.themes.map(theme=>theme.sl
 const runContractPath=runContractArg?path.resolve(runContractArg):null;
 const runContract=runContractPath?JSON.parse(await fs.readFile(runContractPath,'utf8')):null;
 for(const name of Object.keys(runContract?.additional_candidates??{})){
- if(!/^[a-z0-9-]+$/u.test(name)||registered.has(name))throw new Error(`invalid or colliding additional candidate: ${name}`);
+ if(!/^[a-z0-9-]+$/u.test(name)||registered.has(name)&&runContract?.schema!=='scp_jp_sigma10_migration_run.v1')throw new Error(`invalid or colliding additional candidate: ${name}`);
  registered.add(name);
 }
 if(runContract&&!runContract.artifact_namespace?.split('/').every(segment=>/^[a-z0-9-]+$/u.test(segment)))throw new Error('custom run contract needs a valid isolated artifact namespace');
@@ -79,6 +79,7 @@ function run(command,args,{capture=false,env=process.env}={}){
   children.add(child);
   child.once('close',()=>children.delete(child));
   let stdout='',stderr='';
+  if(!capture){child.stderr?.on('data',chunk=>stderr+=chunk)}
   if(child.stdout)child.stdout.on('data',chunk=>stdout+=chunk);
   if(child.stderr)child.stderr.on('data',chunk=>stderr+=chunk);
   child.once('error',reject);
@@ -134,6 +135,9 @@ async function commitAuditShards(){
  return files.length;
 }
 
+let auditCommitChain=Promise.resolve();
+function flushAuditShards(){const next=auditCommitChain.then(commitAuditShards);auditCommitChain=next.catch(()=>{});return next;}
+
 const common=[themes.length===1?`--theme=${themes[0]}`:`--themes=${themes.join(',')}`];
 if(runContractPath)common.push(`--run-contract=${runContractPath}`);
 if(stateArg)common.push(`--state=${stateArg}`);
@@ -155,14 +159,15 @@ await Promise.all(Array.from({length:Math.min(jobsArg,matrix.length)},async()=>{
   try{
    await run(process.execPath,[captureScript,`--engine=${engine}`,`--viewport=${viewport}`,...common],{env:captureEnv});
    results.push({engine,viewport,elapsed_ms:Date.now()-childStarted});
+   await flushAuditShards();
   }catch(error){
    firstWorkerError??=error;
    return;
   }
  }
 }));
-if(firstWorkerError){await fs.rm(auditShardDir,{recursive:true,force:true});throw firstWorkerError}
-await commitAuditShards();
+await flushAuditShards();
+if(firstWorkerError)throw firstWorkerError;
 const requestedStates=stateArg?new Set(stateArg.split(',').filter(Boolean)):null;
 const isRequestedRow=row=>
  themes.includes(row.theme) &&

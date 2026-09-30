@@ -24,9 +24,9 @@ test('postprocess dry-run is immutable; exact reuse verifies current and histori
       screenshot: path.relative(ports, image), screenshot_sha256: hash(bytes),
       asset_failures: [], page_errors: [], external_requests_sent: 0,
       classification: 'UNCONFIRMED', reviewed_after_last_change: false,
-      unconfirmed_items: ['screenshot captured but awaiting image review'], candidate_sha256: 'new'
+      unconfirmed_items: ['screenshot captured but awaiting image review'], candidate_sha256: 'new', candidate_source_sha256: 'new-source'
     };
-    const prior = {...row, screenshot: path.relative(ports, old), candidate_sha256: 'old',
+    const prior = {...row, screenshot: path.relative(ports, old), candidate_sha256: 'old', candidate_source_sha256: 'old-source',
       classification: 'PASS_NATURAL', reviewed_after_last_change: true, unconfirmed_items: [],
       superseded_at: '2026-09-25', historical_screenshot_status: 'valid',
       review_provenance: {method: 'direct-image-vision-review', reviewed_at: '2026-09-25',
@@ -52,6 +52,9 @@ test('postprocess dry-run is immutable; exact reuse verifies current and histori
     const updated = JSON.parse(await fs.readFile(audit, 'utf8'));
     assert.equal(updated.records[0].candidate_sha256, 'new');
     assert.equal(updated.records[0].classification, 'PASS_NATURAL');
+    assert.equal(updated.records[0].visual_review.candidate_sha256, 'new');
+    assert.equal(updated.records[0].visual_review.candidate_source_sha256, 'new-source');
+    assert.equal(updated.records[0].visual_review_reuse.source_candidate_source_sha256, 'old-source');
     assert.equal(invoke().reused, 0);
     // A valid tEXt chunk changes bytes without changing the decoded image.
     const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j5RkAAAAASUVORK5CYII=','base64');
@@ -72,6 +75,8 @@ test('postprocess dry-run is immutable; exact reuse verifies current and histori
     const pixelResult=JSON.parse(await fs.readFile(audit,'utf8')).records[0];
     assert.equal(pixelResult.visual_review_reuse.reason,'pixel-identical');
     assert.equal(pixelResult.visual_review_reuse.source_reviewer,'test reviewer');
+    assert.equal(pixelResult.visual_review.candidate_sha256,'new');
+    assert.equal(pixelResult.visual_review.candidate_source_sha256,'new-source');
     assert.equal(pixelResult.screenshot_sha256,hash(variant));
   } finally { await fs.rm(dir, {recursive: true, force: true}); }
 });

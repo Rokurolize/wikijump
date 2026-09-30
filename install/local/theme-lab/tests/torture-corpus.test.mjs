@@ -1,7 +1,20 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import test from "node:test";
+import {fileURLToPath} from "node:url";
 
 import {TORTURE_VIEWPORTS, diffTortureStates} from "../src/torture-corpus.mjs";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+test("torture fixture uses retained real PageRateWidget DOM where preview cannot execute the module", () => {
+  const fixture = fs.readFileSync(path.join(root, "fixtures/theme-torture.wikidot.txt"), "utf8");
+  assert.match(fixture, /class="page-rate-widget-box"/u);
+  assert.match(fixture, /class="rate-points"/u);
+  assert.match(fixture, /class="rateup btn btn-default"/u);
+  assert.doesNotMatch(fixture, /\[\[module Rate\]\]/u);
+});
 
 test("torture viewports match the real-port acceptance contract", () => {
   assert.deepEqual(TORTURE_VIEWPORTS, [
@@ -9,6 +22,7 @@ test("torture viewports match the real-port acceptance contract", () => {
     {id: "laptop", width: 1024, height: 900},
     {id: "tablet", width: 768, height: 1024},
     {id: "mobile", width: 390, height: 844},
+    {id: "narrow-mobile", width: 320, height: 800},
   ]);
 });
 
@@ -62,6 +76,15 @@ test("torture diff rejects an invalid baseline fixture", () => {
   assert.equal(diff.issues[0].kind, "baseline_structure_missing");
 });
 
+test("unmaterialized Wikidot TOC is reported as unavailable, not a package failure", () => {
+  const unavailable = component({expected_present: false, unavailable_preview: true});
+  const diff = diffTortureStates(state(unavailable), state(unavailable));
+  assert.equal(diff.verdict, "warn");
+  assert.equal(diff.issues.length, 1);
+  assert.equal(diff.issues[0].kind, "preview_structure_unavailable");
+  assert.equal(diff.issues[0].severity, "warn");
+});
+
 test("torture diff catches newly hidden content", () => {
   const diff = diffTortureStates(state(), state(component({visible: false})));
   assert.equal(diff.verdict, "fail");
@@ -112,4 +135,13 @@ test("torture diff reports large geometry changes without calling them invalid",
   assert.equal(diff.changed_component_count, 1);
   assert.equal(diff.changes[0].property, "rect.width");
   assert.equal(diff.changes[0].relative, 0.5);
+});
+
+test('visible decorative overflow stays a review warning only when content geometry is safe',()=>{
+ const safe=diffTortureStates(state(),state(component({own_overflow_px:60,own_overflow_unclipped:true,content_viewport_overflow_px:0})));
+ assert.equal(safe.issues[0].severity,'warn');assert.notEqual(safe.verdict,'fail');
+ for(const fields of [{own_overflow_unclipped:false,content_viewport_overflow_px:0},{own_overflow_unclipped:true,content_viewport_overflow_px:12},{own_overflow_unclipped:true}]){
+  const unsafe=diffTortureStates(state(),state(component({own_overflow_px:60,...fields})));
+  assert.equal(unsafe.verdict,'fail');
+ }
 });

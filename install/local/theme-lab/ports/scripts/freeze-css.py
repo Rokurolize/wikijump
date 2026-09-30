@@ -192,7 +192,9 @@ class CacheCSS:
         text = self.strip_non_jp_font_faces(text)
         text = self.apply_localization_transforms(text)
         text = self.localize_urls(text, source_url)
-        return text, {"assets": list(self.asset_rows.values()), "missing": [{"url": u, "reason": r} for u, r in sorted(self.missing.items())], "imports": sorted(self.seen_imports), "import_provenance_status": "complete", "import_provenance": [self.import_rows[url] for url in sorted(self.import_rows)], "localization_transforms": self.applied_transforms, "pruned_fonts": self.pruned_fonts, "template_placeholders": self.template_placeholders, "asset_replacements": self.replacements, "omitted_assets": self.omitted_assets}
+        missing = [{"url": u, "reason": r} for u, r in sorted(self.missing.items())]
+        import_failures = [row for row in missing if "import" in row["reason"]]
+        return text, {"assets": list(self.asset_rows.values()), "missing": missing, "imports": sorted(self.seen_imports), "import_provenance_status": "incomplete" if import_failures else "complete", "import_provenance": [self.import_rows[url] for url in sorted(self.import_rows)], "localization_transforms": self.applied_transforms, "pruned_fonts": self.pruned_fonts, "template_placeholders": self.template_placeholders, "asset_replacements": self.replacements, "omitted_assets": self.omitted_assets}
 
     def strip_non_jp_font_faces(self, text: str) -> str:
         excluded = re.compile(r"(?:Noto\s+(?:Sans|Serif)\s+(?:SC|TC|KR|Thai)|Nanum\s+Gothic|Kanit)", re.I)

@@ -29,9 +29,9 @@
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/space",
-  "candidate_source_hash": "a0b7de5f1454804c2ab3f1fcce0263003a14c52227511e954a2b1c1c864dd829",
+  "candidate_source_hash": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
   "source_candidate_path": "install/local/theme-lab/ports/space/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "a0b7de5f1454804c2ab3f1fcce0263003a14c52227511e954a2b1c1c864dd829",
+  "source_candidate_sha256": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -39,11 +39,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/space/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "a0b7de5f1454804c2ab3f1fcce0263003a14c52227511e954a2b1c1c864dd829",
+  "candidate_source_sha256": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
   "human_port_candidate_path": "install/local/theme-lab/ports/space/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "b17a253456f0a733d5fcafe4f4b16c4bb06050cec2c7461b08466c58eb048589",
-  "candidate_preview_sha256": "ea5d4b6d7aa4a89f866143ae247151fbcca96a85f9acc5cadcd53a66cedcd4e3",
-  "candidate_css_sha256": "23f10fcec669f622be64a854b1b130f8f06dc4156d7ac97685350da7d6c5a105",
+  "candidate_preview_sha256": "1d7298014f1b2bfd60f993bc798885d3462aee64f315e457d7dd2a6b605ba765",
+  "candidate_css_sha256": "75d64447d5f59d4e89b45ec74bdbd42351ff3a19400dc4391bb6eedcbfa37e1b",
   "page_attachment_manifest": null,
   "existing_jp_reconciliation": {
     "previous_source_sha256": "63bee9d3876ac78335c8a587c63b719efea9d3a9ab1bf945bdd807ce1f554c5d",
@@ -66,7 +66,7 @@
     "source_evidence": "candidate screenshots visibly rendered unresolved SCP-EN usernames against SCP-JP identity links; preserve display names and freeze upstream/human-port originals"
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/space/assets.json",
-  "asset_dependency_decision_count": 21,
+  "asset_dependency_decision_count": 22,
   "page_asset_dependency_decisions_path": null,
   "historical_acceptance": {
     "status": "SUPERSEDED_CANDIDATE",

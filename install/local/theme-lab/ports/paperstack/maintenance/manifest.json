@@ -4,7 +4,7 @@
   "base_source_sha256": "39dc4c06547aa7c7e49ac6f35fe38480a35dd7687331496ac6c4f6ef54c0fd99",
   "raw_jp_overrides_sha256": "31a9d4100ea8cb3381865610e35db9af6412bf82fc383dd8d7e68ce9abf0ba2c",
   "jp_overrides_sha256": "a42e244864d10873553aa3aa20e98486c917aad02ab49075a191b142a607cfb7",
-  "semantic_css_sha256": "3ee9bb40f26a754c5626a2b94716820b21aaa0997499ec5d3369cce54c453002",
+  "semantic_css_sha256": "8b7bc6b1c3b511b83c22c420782249183f8895be702b182806b5a6a750a4ff5c",
   "canonical_override_sha256": "d95804e43b7d1f644b1747aa101b37fd6a5243080b0a6128b61138883a2b2c9f",
   "final_source": "maintenance/final.wikidot.txt",
   "final_source_sha256": "9dfaa367184c28d63b88caf37356f6c1e85f3e45852a921cfaf4bbfc9dad4da0",
@@ -294,8 +294,8 @@
       "rationale": "Per-theme real SCP-JP A/B at 320px and 390px; every submenu/item/link stays inside both viewport edges. Preserve the wrapped row, source menu widths, palette and link layout. Space also retains its separate header grid correction; Turbo bounds only the invisible masthead responsible for remaining 320px document overflow.",
       "evidence": [
         {
-          "path": "authority-evidence/paperstack-published-final/receipt.json",
-          "sha256": "e52500dead015b14f5ca5694b591d9d908e8f77845cde20f96d5f29748093f92",
+          "path": "authority-evidence/paperstack-navigation-remeasured/receipt.json",
+          "sha256": "cbc5b808883aa521fc470d087b69957831941d99f0d9c02ad140c55af06e7043",
           "decision_authority": "REAL_WIKIDOT_TARGET_AB"
         }
       ],

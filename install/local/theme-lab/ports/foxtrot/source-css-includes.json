@@ -1,0 +1,62 @@
+{
+  "schema": "theme_lab_source_css_includes.v1",
+  "authority": "RUNTIME_INDEPENDENT",
+  "candidate_source": "candidate.wikidot.source.txt",
+  "upstream_source": "upstream-en.wikidot.txt",
+  "includes": [
+    {
+      "locator": "component:toggle-sidebar",
+      "source": {
+        "path": "source-includes/toggle-sidebar.wikidot.txt",
+        "sha256": "5e6e6bf79aa9b08344865b1209693254db4c8d1aef7d579092bc6dd9c7c55e35"
+      },
+      "kind": "unconditional-modules",
+      "css": {
+        "path": "source-includes/toggle-sidebar-input.css",
+        "sha256": "d4d80ebcc0e2afb61490420a96b3f0b4cc29dfc9de532029e062af1ee80028ae"
+      }
+    },
+    {
+      "locator": "component:fade-in",
+      "kind": "unconditional-modules",
+      "parameters": {
+        "speed": "1"
+      },
+      "source": {
+        "path": "source-includes/fade-in.wikidot.txt",
+        "sha256": "69829e1b8c93c57d79254911adbb96df4ce3e0ced9285d900b01b4cfd714d95c"
+      },
+      "css": {
+        "path": "source-includes/fade-in-input.css",
+        "sha256": "5a74694f5601bc5fb2e36dc6dcaa9996091d2b3891aaa392b2e9a5715a08290d"
+      }
+    },
+    {
+      "locator": "component:betterfootnotes",
+      "kind": "unconditional-modules",
+      "parameters": {},
+      "source": {
+        "path": "source-includes/betterfootnotes.wikidot.txt",
+        "sha256": "a93c113949c85d818d49453d7e0271fa0a06c9eed70b0641eebd2466aab33c8c"
+      },
+      "css": {
+        "path": "source-includes/betterfootnotes-input.css",
+        "sha256": "2fc50a2c55c1c62c675b9486918a57da966d8011b9c54d483de6821efef336be"
+      }
+    },
+    {
+      "locator": "component:acs-animation",
+      "kind": "unconditional-modules",
+      "parameters": {},
+      "source": {
+        "path": "source-includes/acs-animation.wikidot.txt",
+        "sha256": "9d275b2ce4a8399a5754801e943ce8962c597d2515d9b4bd3ec8101711161de8"
+      },
+      "css": {
+        "path": "source-includes/acs-animation-input.css",
+        "sha256": "9c2d54387591ead58b15b16791039c675b87d47c268b98800b48eed8f6662690"
+      }
+    }
+  ],
+  "base_import_count": 0
+}

@@ -164,7 +164,7 @@
     "manifest": "maintenance/manifest.json",
     "base_sha256": "39dc4c06547aa7c7e49ac6f35fe38480a35dd7687331496ac6c4f6ef54c0fd99",
     "jp_overrides_sha256": "a42e244864d10873553aa3aa20e98486c917aad02ab49075a191b142a607cfb7",
-    "semantic_css_sha256": "3ee9bb40f26a754c5626a2b94716820b21aaa0997499ec5d3369cce54c453002",
+    "semantic_css_sha256": "8b7bc6b1c3b511b83c22c420782249183f8895be702b182806b5a6a750a4ff5c",
     "canonical_override_sha256": "d95804e43b7d1f644b1747aa101b37fd6a5243080b0a6128b61138883a2b2c9f",
     "final_source": "maintenance/final.wikidot.txt",
     "final_source_sha256": "9dfaa367184c28d63b88caf37356f6c1e85f3e45852a921cfaf4bbfc9dad4da0",

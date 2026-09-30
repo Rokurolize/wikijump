@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "a0b7de5f1454804c2ab3f1fcce0263003a14c52227511e954a2b1c1c864dd829",
+  "frozen_candidate_source_sha256": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
   "base_source_sha256": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
-  "raw_jp_overrides_sha256": "a102e9fd38b94ef4ff9992308bbf39e64234b757361873b6d18a9264c6b26aff",
-  "jp_overrides_sha256": "7179e310f38adca85d27d7747bc32f8eaa9b6d8cb10d8d0bd37ba50a740b5eac",
-  "semantic_css_sha256": "28e7f218362ea7a2ddd75ee270e0204cb1df267448ee6cb135f86f3d132af52c",
-  "canonical_override_sha256": "e5bb8b492d2561c886c2621882bb3ff7e5bb4584272a9ec12b03a6fb86027779",
+  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "semantic_css_sha256": "951fe3ff2ffedca15081cfac2d6442d33f051a44a7ec084a79c87a5d5ce80109",
+  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "24feba1dc2bdc873782087be385f67d1f0079f5b49e44897f4b3e5319fe741e6",
+  "final_source_sha256": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
   "final_source_inputs": {
     "base_sha256": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
-    "jp_overrides_sha256": "7179e310f38adca85d27d7747bc32f8eaa9b6d8cb10d8d0bd37ba50a740b5eac"
+    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
   "ordered_include_sha256": "0785ceb96c6c5b084057dd63644871f4709dbdb59c7e0f7195b6034d532e577a",
   "declaration_reviews": {},
-  "adaptation_block_count": 1,
-  "raw_override_rule_count": 5,
-  "canonical_override_rule_count": 5,
+  "adaptation_block_count": 0,
+  "raw_override_rule_count": 0,
+  "canonical_override_rule_count": 0,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -324,8 +324,8 @@
       "marker": "SCP-JP Wikidot navigation correction: space rightmost submenu anchors.",
       "sha256": "a3a321242adff7c76266d2c19e827cdb4d94e63076afdc2a6e52cd569e13c62c",
       "origin": "target-certified-replacement",
-      "authority": "TARGET_WIKIDOT_CERTIFIED",
-      "rationale": "Per-theme real SCP-JP A/B at 320px and 390px; every submenu/item/link stays inside both viewport edges. Preserve the wrapped row, source menu widths, palette and link layout. Space also retains its separate header grid correction; Turbo bounds only the invisible masthead responsible for remaining 320px document overflow.",
+      "authority": "REMOVE",
+      "rationale": "Complete source Sigma Plus include restores source header and menu geometry. Frozen SCP-JP A/B at 320/390/768/1440 passes without this historical correction; no longer publish it.",
       "evidence": [
         {
           "path": "authority-evidence/space-published-final/receipt.json",
@@ -336,9 +336,13 @@
           "path": "authority-evidence/space-header-published/receipt.json",
           "sha256": "027b529304266a4f26b4978dd59d010581832bdad6b69224abab5ffc4253ea2b",
           "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        },
+        {
+          "path": "authority-evidence/space-complete-source-header/receipt.json",
+          "sha256": "0c86f9b842b74cca14096c1a5f26c5e92612212d2e510459dd80b48722bb94ec",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
         }
       ],
-      "published_css_sha256": "23f10fcec669f622be64a854b1b130f8f06dc4156d7ac97685350da7d6c5a105",
       "scope": {
         "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
         "state": "navigation",
@@ -352,27 +356,25 @@
           ".mobile-top-bar > ul > li > ul a"
         ]
       }
+    },
+    {
+      "marker": "Resolve preserved source CSS component includes",
+      "origin": "source-css-include-resolution",
+      "authority": "RUNTIME_INDEPENDENT",
+      "sha256": "c0fae8c4897b5ee9f2b46a968be89a88ad0c22765199284d9b02d4daa8016bce",
+      "rationale": "Exact CSS from the preserved upstream include chain, materialized before main source CSS; no JP adaptation.",
+      "evidence": [
+        {
+          "path": "space/source-css-includes.json",
+          "sha256": "c0fae8c4897b5ee9f2b46a968be89a88ad0c22765199284d9b02d4daa8016bce"
+        },
+        {
+          "path": "al-slop/source-includes/receipt.json",
+          "sha256": "ec3cb6e20e0940f5a975573fa78c6aba8caa7edb29fe020c380b5bbecae1bc70"
+        }
+      ]
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": [
-    {
-      "marker": "SCP-JP Wikidot navigation correction: space rightmost submenu anchors.",
-      "rationale": "SCP-JP Wikidot Space mobile header grid: retain the distinct localized title rule.",
-      "sha256": "a3a321242adff7c76266d2c19e827cdb4d94e63076afdc2a6e52cd569e13c62c",
-      "selectors": [
-        "#header",
-        "#header h1",
-        "#header h2",
-        "#top-bar .mobile-top-bar > ul > li:last-child > ul",
-        "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul"
-      ],
-      "at_contexts": [
-        "@media (max-width: 767px)",
-        "@media (min-width: 360px) and (max-width: 767px)",
-        "@media screen and (max-width: 767px)"
-      ],
-      "authority": "TARGET_WIKIDOT_CERTIFIED"
-    }
-  ]
+  "publishable_adaptations": []
 }

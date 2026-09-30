@@ -1,0 +1,2 @@
+{"slug":"theme:scp-offices-theme","status":"error"}
+{"summary":{"total":1,"mode":"full-acceptance","verified":0,"pass":0,"warn_no_actionable_issues":0,"failed":1},"failures":[{"slug":"theme:scp-offices-theme","reason":"spawnSync /usr/bin/node ETIMEDOUT","exit_code":null}]}

@@ -220,7 +220,7 @@ materialization, an evidence-driven JP navigation repair, offline acceptance,
 paired visual review, a package-specific surface contract, preservation of the
 JP responsive header baseline, and a deterministic publishable source.
 
-The current SCP-EN 34-theme campaign uses `ports/en-theme-campaign.json`, individual port receipts, a committed deduplicated `ports/shared-replay-assets/` pool, and the sequential 35-port runner `node scripts/real-port-regression.mjs`. The runner verifies frozen EN/JP source hashes and pooled asset digests before checking each candidate. Its candidate daemon uses the shared pool; the Dear Dictator daemon uses its packaged assets/sidebar fixture. Set `THEME_LAB_SOCKET`, `THEME_LAB_DEAR_SOCKET`, and `THEME_LAB_ASSET_DIR` to their sockets/pool. It performs offline visual checks and records warning-only cases separately from errors and actionable failures. Use `--iteration` only for the normal edit loop; it is not a final acceptance run. See `ports/README.md` for replay setup.
+The current SCP-EN 34-theme campaign uses `ports/en-theme-campaign.json`, individual port receipts, a committed deduplicated `ports/shared-replay-assets/` pool, and the sequential 35-port runner `node scripts/real-port-regression.mjs`. The runner verifies frozen EN/JP source hashes and pooled asset digests before checking each candidate. Its candidate daemon uses the shared pool; the Dear Dictator daemon uses its packaged assets/sidebar fixture. Set `THEME_LAB_SOCKET`, `THEME_LAB_DEAR_SOCKET`, and `THEME_LAB_ASSET_DIR` to their sockets/pool. The runner also reads each daemon's `status.asset_dir` and fails closed when that pool does not contain a frozen asset digest, because a daemon pool older than the committed pool would otherwise report `candidate_asset_missing` for assets the package already declares and dress the gap up as a port-authoritative finding. It performs offline visual checks and records warning-only cases separately from errors and actionable failures. Use `--iteration` only for the normal edit loop; it is not a final acceptance run. See `ports/README.md` for replay setup.
 
 ## Measured performance (local dev `scpaiueouiuiuiui`, site 6000003)
 
@@ -280,3 +280,36 @@ diagnosis, a broken-CSS canary that must fail, and a zero-request offline run.
   database, Redis, and S3. The current preview reuses Deepwell's
   `wikidot_page_preview`, which is ~10–25 ms, so this is only worth doing if
   the stack dependency becomes an agent-session obstacle.
+
+## Current campaign completion
+
+Historical source and screenshot integrity can be inspected with
+`node sigma10-migration/check-final.mjs --historical-only`. This does not accept
+current candidates or authorize promotion.
+
+The final campaign gate is `node scripts/check-campaign-completion.mjs` (also
+`node sigma10-migration/check-final.mjs` with no options). Promotion requires
+both a full combined current acceptance for every maintained package and a
+separate `theme_lab_current_sigma10_acceptance.v1` receipt for the current
+Sigma-10 candidate matrix. That receipt binds the current migration run contract,
+browser audit, candidate CSS/source identities, complete browser coverage, and
+reviewed screenshots. Historical integrity and screenshots remain inspectable
+with `node sigma10-migration/check-final.mjs --historical-only`; that command's
+`evidence_integrity.status` describes only archive integrity and its
+`overall_acceptance.status` is always `inconclusive`.
+
+Current completion CLI exit codes are 0 for accepted, 1 for failed/stale
+evidence, 2 for missing or inconclusive acceptance, and 64 for invalid command
+options. The JSON `overall_acceptance.status` is authoritative; historical
+inspection success never means campaign acceptance.
+
+Paired images compare different foreign and JP articles. Pixel RMSE remains a
+diagnostic; `check --visual --visual-review review.json` binds an explicit image
+review to both exact PNGs and candidate inputs. Unreviewed images are inconclusive.
+Use `--css-base candidate-base.css` when the package declares a separate frozen
+base stylesheet. Full acceptance includes that layer.
+
+Current browser runs use `ports/current-acceptance/run-contract.json`, including
+the frozen production SCP-JP Sigma-9 baseline and hash-bound header/navigation
+markup. The runtime asset previously labelled Sigma-9 contains English Sigma-10
+CSS; its historical measurements remain archived under their original identity.

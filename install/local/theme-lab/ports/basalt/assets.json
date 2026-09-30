@@ -1666,6 +1666,7 @@
     "https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css",
     "https://fonts.bunny.net/css2?family=Sofia+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap",
     "https://rsms.me/inter/inter.css",
+    "https://scp-jp.github.io/files/component/betterfootnotes/style0.css",
     "https://scp-wiki.wdfiles.com/local--code/theme%3Abasalt/1"
   ],
   "import_provenance_status": "complete",
@@ -1708,6 +1709,16 @@
       "bytes": 11497,
       "content_type": "text/css",
       "asset_file": "46d01c7807f64a24c1b2853b756ef15f3a2facdf4a9f066eaf5d39c0c9935441.css",
+      "provenance_basis": "frozen-cache-exact-at-build"
+    },
+    {
+      "source_url": "https://scp-jp.github.io/files/component/betterfootnotes/style0.css",
+      "final_url": "https://scp-jp.github.io/files/component/betterfootnotes/style0.css",
+      "sha256": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be",
+      "normalized_text_sha256": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be",
+      "bytes": 2469,
+      "content_type": "text/css",
+      "asset_file": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be.css",
       "provenance_basis": "frozen-cache-exact-at-build"
     },
     {
@@ -3240,6 +3251,13 @@
       "source_url": "https://rsms.me/inter/inter.css",
       "sha256": "46d01c7807f64a24c1b2853b756ef15f3a2facdf4a9f066eaf5d39c0c9935441",
       "asset_file": "46d01c7807f64a24c1b2853b756ef15f3a2facdf4a9f066eaf5d39c0c9935441.css",
+      "decision": "freeze-source-stylesheet"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://scp-jp.github.io/files/component/betterfootnotes/style0.css",
+      "sha256": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be",
+      "asset_file": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be.css",
       "decision": "freeze-source-stylesheet"
     },
     {
