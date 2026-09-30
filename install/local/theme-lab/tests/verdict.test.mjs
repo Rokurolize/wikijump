@@ -37,7 +37,10 @@ test("torture and viewport issues map", () => {
   );
   assert.equal(issuesFromViewports({mobile: {document_overflow_px: 83}})[0].kind, "viewport_overflow");
   assert.equal(issuesFromViewports({mobile: {document_overflow_px: 2}})[0].severity, "error");
+  // Sub-pixel full-bleed rounding (a 1px document overflow or a fractional
+  // viewport escape) is tolerated; real overflow still fails.
   assert.equal(issuesFromViewports({mobile: {document_overflow_px: 1}}).length, 0);
+  assert.equal(issuesFromViewports({mobile: {viewport_escape_px: 0.5}}).length, 0);
   assert.equal(issuesFromViewports({mobile: {document_overflow_px: 0}}).length, 0);
   const overflow = issuesFromViewports({mobile: {document_overflow_px: 83, overflow_sources: [{selector: ".hero", overflow_px: 83}]}})[0];
   assert.equal(overflow.overflow_sources[0].selector, ".hero");
@@ -152,16 +155,39 @@ test("buildVerdict surfaces torture and reference summaries", () => {
 test("compact verdict retains each viewport's overflow status", () => {
   const verdict = buildVerdict({viewports: {
     desktop: {document_overflow_px: 0},
-    laptop: {document_overflow_px: 0},
-    tablet: {document_overflow_px: 1},
-    mobile: {document_overflow_px: 2},
+    laptop: {document_overflow_px: 1},
+    tablet: {document_overflow_px: 2},
+    mobile: {viewport_escape_px: 0.5},
   }});
   assert.deepEqual(verdict.viewport_status, {
     desktop: {status: "pass", document_overflow_px: 0, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
-    laptop: {status: "pass", document_overflow_px: 0, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
-    tablet: {status: "pass", document_overflow_px: 1, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
-    mobile: {status: "fail", document_overflow_px: 2, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
+    laptop: {status: "pass", document_overflow_px: 1, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
+    tablet: {status: "fail", document_overflow_px: 2, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
+    mobile: {status: "pass", document_overflow_px: 0, viewport_escape_px: 0.5, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
   });
+});
+
+test("full-bleed sub-pixel overflow is tolerated without hiding real overflow", () => {
+  // Paperstack's mobile <hr> divider uses `margin: 2.5em -1.25rem` to bleed
+  // edge to edge. At a 390px viewport that full-bleed box lands a fraction of
+  // a pixel past each edge, which `collectViewportOverflow` reports as a 1px
+  // document overflow plus 0.5px sources. It is a rounding artifact of the
+  // faithful upstream rule, not a defect, so it must not fail the viewport or
+  // the local target acceptance; real 2px+ overflow still must.
+  const rounding = buildVerdict({viewports: {mobile: {
+    document_overflow_px: 1,
+    viewport_escape_px: 0.5,
+    overflow_sources: [{selector: "#page-content > hr", overflow_px: 0.5}],
+  }}});
+  assert.equal(rounding.issue_count, 0);
+  assert.equal(rounding.viewport_status.mobile.status, "pass");
+  assert.equal(rounding.port_decision.verdict, "pass");
+  assert.equal(rounding.target_acceptance.status, "pass");
+
+  const realOverflow = buildVerdict({viewports: {mobile: {document_overflow_px: 2}}});
+  assert.equal(realOverflow.viewport_status.mobile.status, "fail");
+  assert.equal(realOverflow.target_acceptance.status, "fail");
+  assert.ok(realOverflow.top_issues.some((issue) => issue.kind === "viewport_overflow"));
 });
 
 test("interaction failures on uncertified runtime surfaces remain quarantined", () => {

@@ -12,9 +12,9 @@ export const DEFAULT_LIMITS = Object.freeze({
   selectorRows: 30,
 });
 
-// Fractional full-bleed edges can round to one CSS pixel of document overflow
-// while still fitting the real target viewport. Keep this aligned with the
-// surface-contract gate, which only fails overflow greater than one pixel.
+// Full-bleed/sub-pixel layout can round to one CSS pixel at a viewport edge.
+// Theme-specific geometry checks remain stricter where exact containment is
+// part of the certified contract.
 export const VIEWPORT_OVERFLOW_TOLERANCE_PX = 1;
 
 function severityRank(severity) {
@@ -84,8 +84,8 @@ export function issuesFromViewports(viewports) {
   for (const [id, viewport] of Object.entries(viewports ?? {})) {
     const documentOverflow = viewport?.document_overflow_px ?? 0;
     const viewportEscape = viewport?.viewport_escape_px ?? 0;
-    const overflow = Math.max(documentOverflow > VIEWPORT_OVERFLOW_TOLERANCE_PX ? documentOverflow : 0, viewportEscape);
-    if (overflow > 0) {
+    const overflow = Math.max(documentOverflow, viewportEscape);
+    if (overflow > VIEWPORT_OVERFLOW_TOLERANCE_PX) {
       issues.push({severity: "error", kind: "viewport_overflow", viewport: id, overflow_px: overflow, document_overflow_px: documentOverflow, viewport_escape_px: viewportEscape, overflow_sources: viewport?.overflow_sources ?? []});
     }
   }
@@ -337,7 +337,7 @@ export function buildVerdict({
   const styleChanges = decisionStyleChanges.slice(0, limits.styleChanges);
   const viewportStatus = viewports
     ? Object.fromEntries(Object.entries(viewports).map(([name, result]) => [name, {
-        status: ((result.document_overflow_px ?? 0) > VIEWPORT_OVERFLOW_TOLERANCE_PX || (result.viewport_escape_px ?? 0) > 0) ? "fail" : "pass",
+        status: Math.max(result.document_overflow_px ?? 0, result.viewport_escape_px ?? 0) > VIEWPORT_OVERFLOW_TOLERANCE_PX ? "fail" : "pass",
         document_overflow_px: result.document_overflow_px ?? 0,
         ...(result.viewport_escape_px !== undefined ? {viewport_escape_px: result.viewport_escape_px} : {}),
         decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY",
