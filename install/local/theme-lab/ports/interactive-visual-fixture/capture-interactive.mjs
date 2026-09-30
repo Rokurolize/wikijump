@@ -14,6 +14,7 @@ import {topFixedNavigationInset} from './top-fixed-navigation-inset.mjs';
 import {loadCandidateStructure} from '../../src/candidate-structure.mjs';
 import {interactiveAcceptanceFixture} from '../../src/interactive-acceptance-fixture.mjs';
 import {openSidebar,closeSidebar} from '../../src/sidebar-interaction.mjs';
+import {activateNavigationControl,expandMobileTopSubmenu,expandTabletTopNavigation} from '../../src/navigation-interaction.mjs';
 import {dedupeCssLayers} from '../../src/css-layers.mjs';
 import {resolveRunContractPath as resolveBoundRunContractPath} from '../../src/run-contract-path.mjs';
 
@@ -326,8 +327,8 @@ const states=[
   {surface:'shell.search',state:'typed-focused',viewports:['desktop','laptop','tablet'],action:async p=>{const query=p.locator('#search-top-box-input');const state=await query.evaluate(e=>({display:getComputedStyle(e).display,visibility:getComputedStyle(e).visibility,rect:(()=>{const r=e.getBoundingClientRect();return{width:r.width,height:r.height}})()}));if(state.display==='none'||state.visibility==='hidden'||!state.rect.width||!state.rect.height){await p.evaluate(value=>{window.__themeLabActionContractObservation={control:'#search-top-box-input',...value};window.__themeLabActionTrace??=[];window.__themeLabActionTrace.push({type:'target-hidden-search-control'})},state);return}const submit=p.locator('#search-top-box-form input[type="submit"]');await submit.focus();await query.fill('SCP-JP テーマ');await query.focus()}},
   {surface:'shell.search',state:'compact-submit',viewports:['mobile','narrow-mobile'],action:async p=>{await p.locator('#search-top-box-form input[type="submit"]').waitFor({state:'visible'})}},
   {surface:'nav.desktop-top',state:'submenu-hover',viewports:['desktop'],action:async p=>{const item=p.locator('#top-bar li').filter({has:p.locator('ul')}).first();await item.scrollIntoViewIfNeeded();await item.locator('a').first().hover()}},
-  {surface:'nav.tablet-top',state:'active-navigation-expanded',viewports:['tablet'],action:async p=>{const desktop=p.locator('#top-bar .top-bar');const desktopLinks=await desktop.locator('a').evaluateAll(nodes=>nodes.filter(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)>0&&r.width>0&&r.height>0}).length);if(desktopLinks){const item=desktop.locator('li').filter({has:p.locator('ul')}).filter({has:p.locator('a:visible')}).first();const parent=item.locator('a:visible').first();if(await item.count()&&await parent.count()){const isPointerTarget=await parent.evaluate(anchor=>{const r=anchor.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return !!hit&&(hit===anchor||anchor.contains(hit))});if(isPointerTarget){await parent.hover();return}}}const menu=p.locator('.mobile-top-bar > ul > li > a:visible').first();if(!(await menu.count()))throw new Error('no tablet top-navigation control is visible');await menu.click();await p.locator('.mobile-top-bar > ul > li > ul:visible').first().waitFor({state:'visible'})}},
-  {surface:'nav.mobile-top',state:'submenu-expanded',viewports:['mobile','narrow-mobile'],action:async p=>{const menu=p.locator('.mobile-top-bar > ul > li > a').first();await menu.click();await p.locator('.mobile-top-bar > ul > li > ul').first().waitFor({state:'visible'})}},
+  {surface:'nav.tablet-top',state:'active-navigation-expanded',viewports:['tablet'],action:expandTabletTopNavigation},
+  {surface:'nav.mobile-top',state:'submenu-expanded',viewports:['mobile','narrow-mobile'],action:expandMobileTopSubmenu},
   {surface:'nav.sidebar',state:'open',viewports:['mobile','narrow-mobile'],action:async p=>{await openSidebar(p);await p.locator('#side-bar').scrollIntoViewIfNeeded()}},
   {surface:'nav.sidebar',state:'closed-after-open',viewports:['mobile','narrow-mobile'],action:async p=>{const openHash=await openSidebar(p);await closeSidebar(p,openHash)}},
   {surface:'nav.sidebar',state:'open-submenu',viewports:['mobile','narrow-mobile'],action:async p=>{await openSidebar(p);const toggle=p.locator('#side-bar .collapsible-block-link').first();if(!(await toggle.count())){/* The frozen Sigma-10 SCP-JP sidebar has no collapsible block; the state degrades to the open sidebar rather than inventing an interaction. */await p.locator('#side-bar .side-block').first().waitFor({state:'visible'});return}await toggle.click();await p.locator('#side-bar .collapsible-block-unfolded').waitFor()}},
@@ -450,6 +451,9 @@ function actionContractFor(spec){
  const dependencies=actionContractDependencies(spec);
  const contract={
   action:{surface:spec.surface,state:spec.state,fixture:spec.fixtureSlug??null,guest:!!spec.guest,source:actionSource},
+  expandMobileTopSubmenu:actionSource.includes('expandMobileTopSubmenu')?expandMobileTopSubmenu.toString():null,
+  expandTabletTopNavigation:actionSource.includes('expandTabletTopNavigation')?expandTabletTopNavigation.toString():null,
+  navigationActivation:actionSource.includes('expandMobileTopSubmenu')||actionSource.includes('expandTabletTopNavigation')?activateNavigationControl.toString():null,
   waitForSvelteClickHandler:dependencies.waitForSvelteClickHandler?waitForSvelteClickHandler.toString():null,
   revealPagePane:dependencies.revealPagePane?revealPagePane.toString():null,
   revealBelowFixedMobileNavigation:dependencies.revealBelowFixedMobileNavigation?revealBelowFixedMobileNavigation.toString():null,
