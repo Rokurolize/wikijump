@@ -59,7 +59,7 @@
     },
     "al-slop": {
       "directory": "../../ports/al-slop",
-      "candidate_sha256": "dec8bced927ebe8048d20115c824bd649058c89bf4ca2bf954e728699441a72e",
+      "candidate_sha256": "9036434a9d3d7d838cf7e96c12a2734adfbd8455f0ee4609efc9a0c125f23538",
       "source_sha256": "b86654032bd696212ebb8c1a5742b34763cc28bb459546dfa90e5fa66ea1e82f"
     },
     "basalt": {
@@ -214,8 +214,8 @@
     },
     "turbo-vision": {
       "directory": "../../ports/turbo-vision",
-      "candidate_sha256": "92596135412039f70f68728c2d8892ecb620dd156cf31efa9f3d59c01b9012db",
-      "source_sha256": "7b32a6fa1b2a70349c490314ca05eaf064d2bc0c31674373fc853f167fa02d61"
+      "candidate_sha256": "9ed89df7215b967f7eb458e09b45454bbbcd2d5ff77cb94472aeb891042dca1c",
+      "source_sha256": "52fb93c3d72f66f18876db66c7616a57f51ba20c325674144003a40b633a48f4"
     },
     "wikifot": {
       "directory": "../../ports/wikifot",
@@ -292,7 +292,7 @@
     {
       "package": "al-slop",
       "directory": "../../ports/al-slop",
-      "candidate_sha256": "dec8bced927ebe8048d20115c824bd649058c89bf4ca2bf954e728699441a72e",
+      "candidate_sha256": "9036434a9d3d7d838cf7e96c12a2734adfbd8455f0ee4609efc9a0c125f23538",
       "source_sha256": "b86654032bd696212ebb8c1a5742b34763cc28bb459546dfa90e5fa66ea1e82f"
     },
     {
@@ -478,8 +478,8 @@
     {
       "package": "turbo-vision",
       "directory": "../../ports/turbo-vision",
-      "candidate_sha256": "92596135412039f70f68728c2d8892ecb620dd156cf31efa9f3d59c01b9012db",
-      "source_sha256": "7b32a6fa1b2a70349c490314ca05eaf064d2bc0c31674373fc853f167fa02d61"
+      "candidate_sha256": "9ed89df7215b967f7eb458e09b45454bbbcd2d5ff77cb94472aeb891042dca1c",
+      "source_sha256": "52fb93c3d72f66f18876db66c7616a57f51ba20c325674144003a40b633a48f4"
     },
     {
       "package": "wikifot",
