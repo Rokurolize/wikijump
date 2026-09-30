@@ -1,0 +1,1623 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja-corrections" lang="ja-corrections">
+
+<head>
+    <title>SCP-2000-JP - SCP財団</title>
+    
+    
+    
+    <script type="text/javascript" src="/o/7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387"></script>
+    <script  type="text/javascript">
+        var URL_HOST = 'www.wikidot.com';
+        var URL_DOMAIN = 'wikidot.com';
+        var USE_SSL =  true ;
+        var URL_STATIC = 'https://d3g0gp89917ko0.cloudfront.net/v--0c0da3649c4f';
+        // global request information
+        
+        var WIKIREQUEST = {};
+        WIKIREQUEST.info = {};
+        
+        WIKIREQUEST.info.domain = "scp-jp.wikidot.com";
+        WIKIREQUEST.info.siteId = 578002;
+        WIKIREQUEST.info.siteUnixName = "scp-jp";
+        WIKIREQUEST.info.categoryId = 3777353;
+        WIKIREQUEST.info.themeId = 1;
+        WIKIREQUEST.info.requestPageName = "scp-2000-jp";
+        OZONE.request.timestamp = 1790722535;
+        OZONE.request.date = new Date();
+        WIKIREQUEST.info.lang = 'ja-corrections';
+                WIKIREQUEST.info.pageUnixName = "scp-2000-jp";
+        WIKIREQUEST.info.pageId = 986522241;
+                        WIKIREQUEST.info.lang = "ja-corrections";
+        OZONE.lang = "ja-corrections";
+        var isUAMobile = !!/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    </script>
+    
+    
+
+
+    
+        <script  type="text/javascript">
+    
+        require.config({
+            baseUrl: URL_STATIC + '/common--javascript',
+            paths: {
+                'jquery.ui': 'jquery-ui.min',
+                'jquery.form': 'jquery.form'
+            }
+        });
+    
+    </script>
+    
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8"/>
+                            <meta name="robots" content="index,follow"/>
+                                <meta name="language" content="ja,jp-ja"/>
+                                                            <meta name="keywords" content="SCP,財団,SCP財団,Foundation,Wiki"/>
+                                <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0"/>
+                                <meta name="referrer" content="no-referrer-when-downgrade"/>
+                                <meta name="google-site-verification" content="XCpcYRSKk2KOx262-45XuXn3Rd3vo7ST8aB2TdPmOy8"/>
+                            
+    
+    
+    
+    
+    <meta http-equiv="content-language" content="ja,jp-ja"/>
+    <script type="text/javascript" src="/o/49bcabdb14d446bb93d261f9c967bedfa7cdf7b214807a8180974cbd00b21f11"></script>
+        
+    
+    <style type="text/css" id="internal-style">
+        
+        /* modules */
+@import url("/o/5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583");
+
+
+        
+                
+        /* theme */
+                    @import url("/o/7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c");
+                    @import url("/o/8814de07a0445f47adffed154a0cd18ed228dcf88faaebaeed1a9f71a280cd80");
+            </style>
+    
+        
+        
+    <link rel="shortcut icon" href="/o/58cab0208fa4ab61053eb9d92a99a1a1999ad6e3dc63f8fd80828e33cb069d53"/>
+    <link rel="icon" type="image/gif" href="/o/58cab0208fa4ab61053eb9d92a99a1a1999ad6e3dc63f8fd80828e33cb069d53"/>
+    
+            <link rel="apple-touch-icon" href="/missing" />
+        <link rel="apple-touch-icon" sizes="72x72" href="/o/f53bdeec5d0316301982c49cf86701d13680dc6f44efb3a8eb1ca93ca183e3ba" />
+        <link rel="apple-touch-icon" sizes="114x114" href="/o/86bfb8fa53fdca123db5feecf7e995eb6de67edbe39ca0a800134c69258c2ba1" />    
+        
+            <meta name="msapplication-TileImage" content="/local--wp8icon/wp8icon.png"/>
+                    <meta name="msapplication-TileColor" content="#00245F"/>
+                
+            <link rel="alternate" type="application/wiki" title="Edit this page" href="javascript:WIKIDOT.page.listeners.editClick()"/>
+    
+        <script type="text/javascript">
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-18234656-1']);
+        _gaq.push(['_setDomainName', 'none']);
+        _gaq.push(['_setAllowLinker', true]);
+        _gaq.push(['_trackPageview']);
+
+        _gaq.push(['old._setAccount', 'UA-68540-5']);
+        _gaq.push(['old._setDomainName', 'none']);
+        _gaq.push(['old._setAllowLinker', true]);
+        _gaq.push(['old._trackPageview']);
+
+                _gaq.push(['userTracker._setAccount', 'UA-84647256-2']);
+        _gaq.push(['userTracker._trackPageview']);
+            </script>
+    
+    <script type="text/javascript">
+        window.google_analytics_uacct = 'UA-18234656-1';
+        window.google_analytics_domain_name = 'none';
+    </script>
+    
+<style>
+div[class*="award"] + .creditRate .creditButton .fa.fa-info:before {
+content: "\f091";
+color: #fff!important;
+}
+div.award-1st ~ #u-credit-otherwise .credit.otherwise .contest {
+background-image: linear-gradient(349deg, #F7DE05, #DA8E00, #EDAC06, #F7DE05, #ECB802, #DAAF08, #B67B03);
+}
+div.award-elec ~ #u-credit-otherwise .credit.otherwise .contest {
+background-image: linear-gradient(349deg, #A5A5A5, #BABAC2, #E8E8E8, #A5A5A5, #BABAC2);
+}
+div.award-cop ~ #u-credit-otherwise .credit.otherwise .contest {
+background-image: linear-gradient(349deg, rgba(229,138,61,.9), rgba(217,139,43,.9), rgba(168,80,21,.9), rgba(260,164,79,.9));
+}
+div[class*="award"] ~ #u-credit-otherwise .credit.otherwise .contest {
+border: 1px solid transparent;
+border-radius: 1px;
+text-shadow: 1px 2px 3px rgba(0,0,0,0.35);
+}
+div[class*="award"] ~ #u-credit-otherwise .credit.otherwise .contest a {
+background-color: transparent!important;
+color: #fff!important;
+font-weight: bold;
+transition: text-shadow 0.3s;
+}
+div[class*="award"] ~ #u-credit-otherwise .creditButton a:hover,
+div[class*="award"] ~ #u-credit-otherwise .credit.otherwise .contest a:hover {
+text-decoration: none;
+text-shadow: 1px 2px 5px rgba(255,255,255,0.9);
+}
+div[class*="award"] ~ #u-credit-otherwise .credit.otherwise .contest {
+border-radius: 2px;
+border-width: 2px;
+color: #fff;
+font-family: BauhausLTDemi,Arial,sans-serif;
+font-size: 110%;
+margin: 0 0.3em;
+text-align: center;
+text-shadow: 3px 3px 5px #000;
+}
+div[class*="award"] ~ #u-credit-otherwise .credit.otherwise .contest {
+border-radius: 2px;
+border-width: 2px;
+color: #fff;
+font-family: BauhausLTDemi,Arial,sans-serif;
+font-size: 110%;
+margin: 0 0.3em;
+text-align: center;
+text-shadow: 3px 3px 5px #000;
+}
+div.award-1st ~ #u-credit-otherwise .credit.otherwise .contest span:before,
+div.award-1st ~ #u-credit-otherwise .credit.otherwise .contest span:after {
+content: "\f091";
+display: inline-block;
+font: normal normal normal 14px/1 FontAwesome;
+text-rendering: auto;
+-webkit-font-smoothing: antialiased;
+-moz-osx-font-smoothing: grayscale;
+margin: 0.3em;
+}
+div[class*="award"] ~ #u-credit-otherwise .contest {
+cursor: pointer;
+}
+div[class*="award"] ~ #u-credit-otherwise .contest p span {
+transition: font-size 0.6s 0.2s;
+text-rendering: auto;
+-webkit-font-smoothing: antialiased;
+-moz-osx-font-smoothing: grayscale;
+}
+div[class*="award"] ~ #u-credit-otherwise .contest p a,
+div[class*="award"] ~ #u-credit-otherwise .contest:hover p span {
+font-size: 1.1em;
+}
+div[class*="award"] ~ #u-credit-otherwise .contest p span {
+cursor: auto;
+}
+
+/*
+border-image is created by Woedenaz
+https://wanderers-library.wikidot.com/component:dustjacket-theme
+CC BY-SA 3.0
+*/
+div[class*="award"] ~ #u-credit-otherwise .modalbox {
+box-sizing: border-box;
+border: 2ex solid rgba(0,0,0,0.5);
+border-image: url("/o/69d997478237b769cda0f420d39f6932a9d9ce71d6c2738426aeec117a051abe") 475 round;
+border-image-width: 6;
+background: radial-gradient(rgba(255, 219, 90, 0.95) 0, #fff 100%);
+background: -webkit-radial-gradient(rgba(255, 219, 90, 0.95) 0, #fff 100%);
+}
+div.award-elec ~ #u-credit-otherwise .modalbox {
+    background: radial-gradient(rgba(165, 205, 205, 0.95) 0, #fff 100%);
+    background: -webkit-radial-gradient(rgba(165, 205, 205, 0.95) 0, #fff 100%);
+    filter: grayscale(75%);
+}
+div.award-cop ~ #u-credit-otherwise .modalbox {
+    background: radial-gradient(rgba(205, 205, 165, 0.95) 0, #fff 100%);
+    background: -webkit-radial-gradient(rgba(205, 205, 165, 0.95) 0, #fff 100%);
+    filter: grayscale(45%);
+}
+div[class*="award"] ~ #u-credit-otherwise .modalbox .modalbox-title {
+background: transparent;
+}
+div[class*="award"] ~ #u-credit-otherwise .modalbox .modalbox-title h2 {
+color: #fff;
+text-shadow: 1px 1px 3px rgba(221, 102, 17, 0.5), 1px -1px 3px rgba(221, 102, 17, 0.5), -1px 1px 3px rgba(221, 102, 17, 0.5), -1px -1px 3px rgba(221, 102, 17, 0.5);
+font-weight: bold;
+}
+div[class*="award"] ~ #u-credit-otherwise .modalbox .credit.otherwise {
+overflow: auto;
+}
+</style>
+<style>
+@import url("/o/a0eff05be5c5cce5a449c80f7a6c98cbf0be2f55c10be5ad6269ee378e9dfe18");
+
+.creditRate.no-rate .page-rate-widget-box {
+    visibility:hidden;
+}
+
+.creditRate.creditModule.no-rate ~ #u-credit-view .creditBottomRate > div:nth-of-type(2) {
+    display: none;
+}
+</style>
+<style>
+#u-shut-popup {
+    width: 100%;
+    height: 100%;
+    top: 0px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    position: fixed;
+    display: flex;
+    display: -webkit-flex;
+    display: -moz-flex;
+    display: -ms-flex;
+    display: -o-flex;
+    z-index: 10;
+}
+
+#u-shut-popup:not(:target) {
+    opacity: 0;
+    display: none;
+
+}
+#u-shut-popup:target{
+    opacity: 1;
+        animation-duration: 0.3s;
+      animation-name: fade-in;
+      -moz-animation-duration: 0.5s;
+      -moz-animation-name: fade-in;
+      -webkit-animation-duration: 0.5s;
+      -webkit-animation-name: fade-in;
+}
+
+@keyframes fade-in {
+      0% {
+        display: none;
+        opacity: 0;
+      }
+
+      1% {
+        display: block;
+        opacity: 0;
+      }
+
+      100% {
+        display: block;
+        opacity: 1;
+      }
+    }
+
+    @-moz-keyframes fade-in {
+      0% {
+        display: none;
+        opacity: 0;
+      }
+
+      1% {
+        display: block;
+        opacity: 0;
+      }
+
+      100% {
+        display: block;
+        opacity: 1;
+      }
+    }
+
+    @-webkit-keyframes fade-in {
+      0% {
+        display: none;
+        opacity: 0;
+      }
+
+      1% {
+        display: block;
+        opacity: 0;
+      }
+
+      100% {
+        display: block;
+        opacity: 1;
+      }
+    }
+
+#u-shut-popup .fader{
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.5);
+    width: 100%;
+    height: 100%;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+#u-shut-popup .fader > p >iframe,
+#u-shut-popup .fader > iframe{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+.u-shut-modalcontainer{
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 400px;
+    height: 200px;
+    margin: auto;
+}
+
+.u-shut-modalcontainer .modaltable{
+position:relative;
+width:100%;
+height:100%;
+}
+
+.u-shut-modalcontainer .modaltable > p{
+position:absolute;
+left:0;
+top:0;
+width:100%;
+height:100%;
+margin:0;
+padding:0;
+}
+
+.u-shut-modalcontainer .modaltable > p > iframe,
+.u-shut-modalcontainer .modaltable > iframe{
+position:absolute;
+width:100%;
+height:100%;
+top:0;
+left0;
+z-index:30;
+}
+
+.u-shut-modalcontainer .modaltable .modalbox{
+position:absolute;
+left:0;
+top:0;
+z-index:40;
+    min-width: 400px;
+    background: #fefefe;
+    border: #333 solid 1px;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(102, 0, 0, .5);
+    padding:0 0 0 4px;
+overflow:hidden;
+   -ms-user-select: none; /* IE 10+ */
+   -moz-user-select: -moz-none;
+   -khtml-user-select: none;
+   -webkit-user-select: none;
+   user-select: none;
+}
+
+.u-shut-modalcontainer .modaltable .modalbox .content{
+    padding: 4px;
+}
+
+.u-shut-modalcontainer .modaltable .modalbox .title{
+font-size:150%;
+text-align:center;
+margin:0;
+border-bottom:solid #000 1px;
+padding:0.4em;
+width:100%;
+
+}
+
+.u-shut-modalcontainer .modaltable .modalbox p{
+margin:0;
+padding:0;
+}
+
+.u-shut-modalcontainer .modaltable .modalbox .choicebox{
+float:right;
+padding:3px;
+}
+
+.u-shut-modalcontainer .modaltable .modalbox .confirm{
+width:100%;
+text-align:center;
+}
+
+.u-shut-modalcontainer .modaltable .modalbox .confirm a,
+.u-shut-modalcontainer .modaltable .modalbox .choicebox a{
+text-align:center;
+display:inline-block;
+border-radius:6px;
+min-width:8em;
+-moz-box-shadow: 0px 3px 3px rgba(0,0,0,0.4);
+-webkit-box-shadow: 0px 3px 3px rgba(0,0,0,0.4);
+-o-box-shadow: 0px 3px 3px rgba(0,0,0,0.4);
+-ms-box-shadow: 0px 3px 3px rgba(0,0,0,0.4);
+}
+
+.u-shut-modalcontainer .modaltable .modalbox .confirm a:hover,
+.u-shut-modalcontainer .modaltable .modalbox .choicebox a:hover{
+text-decoration:none;
+-moz-box-shadow: 0px 1px 1px rgba(0,0,0,0.4);
+-webkit-box-shadow: 0px 1px 1px rgba(0,0,0,0.4);
+-o-box-shadow: 0px 1px 1px rgba(0,0,0,0.4);
+-ms-box-shadow: 0px 1px 1px rgba(0,0,0,0.4);
+}
+
+.u-shut-modalcontainer .modaltable .modalbox .confirm a:active,
+.u-shut-modalcontainer .modaltable .modalbox .choicebox a:active{
+-moz-box-shadow: 0px 3px 3px rgba(0,0,0,0.4) inset;
+-webkit-box-shadow: 0px 3px 3px rgba(0,0,0,0.4) inset;
+-o-box-shadow: 0px 3px 3px rgba(0,0,0,0.4) inset;
+-ms-box-shadow: 0px 3px 3px rgba(0,0,0,0.4) inset;
+}
+
+.u-shut-modalcontainer .modaltable .modalbox .choicebox a{
+background: #eeeeee; /* Old browsers */
+background: -moz-linear-gradient(top, #eeeeee 0%, #cccccc 100%); /* FF3.6-15 */
+background: -webkit-linear-gradient(top, #eeeeee 0%,#cccccc 100%); /* Chrome10-25,Safari5.1-6 */
+background: linear-gradient(to bottom, #eeeeee 0%,#cccccc 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#eeeeee', endColorstr='#cccccc',GradientType=0 ); /* IE6-9 */
+padding:0.5px;
+margin:0.2em 0.5em 0 0.2em;
+color:#000;
+}
+
+.u-shut-modalcontainer .modaltable .modalbox .choicebox a:hover{
+background-color:#EEE;
+background: #d6d6d6; /* Old browsers */
+background: -moz-linear-gradient(top, #d6d6d6 0%, #b8b8b8 100%); /* FF3.6-15 */
+background: -webkit-linear-gradient(top, #d6d6d6 0%,#b8b8b8 100%); /* Chrome10-25,Safari5.1-6 */
+background: linear-gradient(to bottom, #d6d6d6 0%,#b8b8b8 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#d6d6d6', endColorstr='#b8b8b8',GradientType=0 ); /* IE6-9 */
+}
+
+.u-shut-modalcontainer .modaltable .modalbox .choicebox a:active{
+background: #cbcbcb; /* Old browsers */
+background: -moz-linear-gradient(top, #cbcbcb 0%, #afafaf 100%); /* FF3.6-15 */
+background: -webkit-linear-gradient(top, #cbcbcb 0%,#afafaf 100%); /* Chrome10-25,Safari5.1-6 */
+background: linear-gradient(to bottom, #cbcbcb 0%,#afafaf 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#cbcbcb', endColorstr='#afafaf',GradientType=0 ); /* IE6-9 */
+}
+
+.u-shut-modalcontainer .modaltable .modalbox .confirm a{
+
+padfing:8px;
+color:#fff;
+font-weight:bold;
+margin:auto;
+font-size:120%;
+
+background: #87c2fd; /* Old browsers */
+background: -moz-linear-gradient(top, #87c2fd 0%, #53a5f1 40%, #0573e1 100%); /* FF3.6-15 */
+background: -webkit-linear-gradient(top, #87c2fd 0%,#53a5f1 40%,#0573e1 100%); /* Chrome10-25,Safari5.1-6 */
+background: linear-gradient(to bottom, #87c2fd 0%,#53a5f1 40%,#0573e1 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#87c2fd', endColorstr='#0573e1',GradientType=0 ); /* IE6-9 */
+}
+
+.u-shut-modalcontainer .modaltable .modalbox .confirm a:hover{
+background: #4ea5fc; /* Old browsers */
+background: -moz-linear-gradient(top, #4ea5fc 0%, #268dee 40%, #0462c0 100%); /* FF3.6-15 */
+background: -webkit-linear-gradient(top, #4ea5fc 0%,#268dee 40%,#0462c0 100%); /* Chrome10-25,Safari5.1-6 */
+background: linear-gradient(to bottom, #4ea5fc 0%,#268dee 40%,#0462c0 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#4ea5fc', endColorstr='#0462c0',GradientType=0 ); /* IE6-9 */
+}
+
+.u-shut-modalcontainer .modaltable .modalbox .confirm a:active{
+color:#ececec;
+background: #2490fc; /* Old browsers */
+background: -moz-linear-gradient(top, #2490fc 0%, #1281e8 40%, #0460bc 100%); /* FF3.6-15 */
+background: -webkit-linear-gradient(top, #2490fc 0%,#1281e8 40%,#0460bc 100%); /* Chrome10-25,Safari5.1-6 */
+background: linear-gradient(to bottom, #2490fc 0%,#1281e8 40%,#0460bc 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#2490fc', endColorstr='#0460bc',GradientType=0 ); /* IE6-9 */
+}
+
+@media (max-width: 479px) {
+
+.u-shut-modalcontainer{
+width:90%;
+min-width:90%;
+}
+
+.u-shut-modalcontainer .modalbox{
+min-width:90%;
+}
+
+}
+
+@media (max-width: 767px) {
+#u-shut-popup {
+    height: 100%;
+    top: 0;
+}
+.u-shut-modalcontainer{
+    min-width: 300px;
+}
+
+.u-shut-modalcontainer .modaltable .modalbox{
+    min-width: 300px;
+}
+}
+</style>
+<style>
+.dog,
+#u-end:target ~div .window,
+#u-shut-popup:target ~div .window{
+display: none;
+}
+#u-end:target  ~div .dog,
+#u-shut-popup:target  ~div .dog{
+display: inline;
+}
+
+.img-top{
+width: 324px;
+pointer-events: none;
+float: right;
+margin: 0 2em 1em 2em;
+}
+
+@media (max-width: 979px) {
+.img-top{
+float: none;
+clear: both;
+margin-left: auto;
+margin-right: auto;
+}
+}
+</style>
+<style>
+.dog,
+#u-end:target ~div .window,
+#u-shut-popup:target ~div .window{
+display:none;
+}
+#u-end:target  ~* .hole{
+pointer-events: none;
+}
+</style>
+<style>
+#u-letter-popup .u-letter-modalcontainer{
+top: -100px;
+width: 450px;
+height: 250px;
+max-width: 90%;
+max-height: 80%;
+}
+
+#u-shut-popup .u-shut-modalcontainer{
+width: 300px;
+height: 50px;
+max-width: 70%;
+}
+
+#u-shut-popup .u-shut-modalcontainer .modaltable .modalbox .title{
+width: auto;
+}
+
+#u-letter-popup
+.modaltable .modalbox{
+width: 100%;
+}
+
+#u-letter-popup
+.modaltable .modalbox .content{
+padding: calc(4px + 1em);
+}
+
+#u-letter-popup
+.modaltable .modalbox .content p{
+margin-bottom: 0.5em;
+}
+
+#u-letter-popup
+.modaltable .modalbox hr{
+margin: 0 2em;
+}
+
+#u-shut-popup .modaltable .modalbox{
+min-height: auto;
+}
+
+#u-letter-popup .fader,
+#u-shut-popup .fader{
+pointer-events: none;
+}
+</style>
+<style>
+#u-letter-popup {
+    width: 100%;
+    height: 100%;
+    top: 0px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    position: fixed;
+    display: flex;
+    display: -webkit-flex;
+    display: -moz-flex;
+    display: -ms-flex;
+    display: -o-flex;
+    z-index: 10;
+}
+
+#u-letter-popup:not(:target) {
+    opacity: 0;
+    display: none;
+
+}
+#u-letter-popup:target{
+    opacity: 1;
+        animation-duration: 0.3s;
+      animation-name: fade-in;
+      -moz-animation-duration: 0.5s;
+      -moz-animation-name: fade-in;
+      -webkit-animation-duration: 0.5s;
+      -webkit-animation-name: fade-in;
+}
+
+@keyframes fade-in {
+      0% {
+        display: none;
+        opacity: 0;
+      }
+
+      1% {
+        display: block;
+        opacity: 0;
+      }
+
+      100% {
+        display: block;
+        opacity: 1;
+      }
+    }
+
+    @-moz-keyframes fade-in {
+      0% {
+        display: none;
+        opacity: 0;
+      }
+
+      1% {
+        display: block;
+        opacity: 0;
+      }
+
+      100% {
+        display: block;
+        opacity: 1;
+      }
+    }
+
+    @-webkit-keyframes fade-in {
+      0% {
+        display: none;
+        opacity: 0;
+      }
+
+      1% {
+        display: block;
+        opacity: 0;
+      }
+
+      100% {
+        display: block;
+        opacity: 1;
+      }
+    }
+
+#u-letter-popup .fader{
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.5);
+    width: 100%;
+    height: 100%;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+#u-letter-popup .fader > p >iframe,
+#u-letter-popup .fader > iframe{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+.u-letter-modalcontainer{
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 400px;
+    height: 200px;
+    margin: auto;
+}
+
+.u-letter-modalcontainer .modaltable{
+position:relative;
+width:100%;
+height:100%;
+}
+
+.u-letter-modalcontainer .modaltable > p{
+position:absolute;
+left:0;
+top:0;
+width:100%;
+height:100%;
+margin:0;
+padding:0;
+}
+
+.u-letter-modalcontainer .modaltable > p > iframe,
+.u-letter-modalcontainer .modaltable > iframe{
+position:absolute;
+width:100%;
+height:100%;
+top:0;
+left0;
+z-index:30;
+}
+
+.u-letter-modalcontainer .modaltable .modalbox{
+position:absolute;
+left:0;
+top:0;
+z-index:40;
+    min-width: 400px;
+    background: #fefefe;
+    border: #333 solid 1px;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(102, 0, 0, .5);
+    padding:0 0 0 4px;
+overflow:hidden;
+   -ms-user-select: none; /* IE 10+ */
+   -moz-user-select: -moz-none;
+   -khtml-user-select: none;
+   -webkit-user-select: none;
+   user-select: none;
+}
+
+.u-letter-modalcontainer .modaltable .modalbox .content{
+    padding: 4px;
+}
+
+.u-letter-modalcontainer .modaltable .modalbox .title{
+font-size:150%;
+text-align:center;
+margin:0;
+border-bottom:solid #000 1px;
+padding:0.4em;
+width:100%;
+
+}
+
+.u-letter-modalcontainer .modaltable .modalbox p{
+margin:0;
+padding:0;
+}
+
+.u-letter-modalcontainer .modaltable .modalbox .choicebox{
+float:right;
+padding:3px;
+}
+
+.u-letter-modalcontainer .modaltable .modalbox .confirm{
+width:100%;
+text-align:center;
+}
+
+.u-letter-modalcontainer .modaltable .modalbox .confirm a,
+.u-letter-modalcontainer .modaltable .modalbox .choicebox a{
+text-align:center;
+display:inline-block;
+border-radius:6px;
+min-width:8em;
+-moz-box-shadow: 0px 3px 3px rgba(0,0,0,0.4);
+-webkit-box-shadow: 0px 3px 3px rgba(0,0,0,0.4);
+-o-box-shadow: 0px 3px 3px rgba(0,0,0,0.4);
+-ms-box-shadow: 0px 3px 3px rgba(0,0,0,0.4);
+}
+
+.u-letter-modalcontainer .modaltable .modalbox .confirm a:hover,
+.u-letter-modalcontainer .modaltable .modalbox .choicebox a:hover{
+text-decoration:none;
+-moz-box-shadow: 0px 1px 1px rgba(0,0,0,0.4);
+-webkit-box-shadow: 0px 1px 1px rgba(0,0,0,0.4);
+-o-box-shadow: 0px 1px 1px rgba(0,0,0,0.4);
+-ms-box-shadow: 0px 1px 1px rgba(0,0,0,0.4);
+}
+
+.u-letter-modalcontainer .modaltable .modalbox .confirm a:active,
+.u-letter-modalcontainer .modaltable .modalbox .choicebox a:active{
+-moz-box-shadow: 0px 3px 3px rgba(0,0,0,0.4) inset;
+-webkit-box-shadow: 0px 3px 3px rgba(0,0,0,0.4) inset;
+-o-box-shadow: 0px 3px 3px rgba(0,0,0,0.4) inset;
+-ms-box-shadow: 0px 3px 3px rgba(0,0,0,0.4) inset;
+}
+
+.u-letter-modalcontainer .modaltable .modalbox .choicebox a{
+background: #eeeeee; /* Old browsers */
+background: -moz-linear-gradient(top, #eeeeee 0%, #cccccc 100%); /* FF3.6-15 */
+background: -webkit-linear-gradient(top, #eeeeee 0%,#cccccc 100%); /* Chrome10-25,Safari5.1-6 */
+background: linear-gradient(to bottom, #eeeeee 0%,#cccccc 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#eeeeee', endColorstr='#cccccc',GradientType=0 ); /* IE6-9 */
+padding:0.5px;
+margin:0.2em 0.5em 0 0.2em;
+color:#000;
+}
+
+.u-letter-modalcontainer .modaltable .modalbox .choicebox a:hover{
+background-color:#EEE;
+background: #d6d6d6; /* Old browsers */
+background: -moz-linear-gradient(top, #d6d6d6 0%, #b8b8b8 100%); /* FF3.6-15 */
+background: -webkit-linear-gradient(top, #d6d6d6 0%,#b8b8b8 100%); /* Chrome10-25,Safari5.1-6 */
+background: linear-gradient(to bottom, #d6d6d6 0%,#b8b8b8 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#d6d6d6', endColorstr='#b8b8b8',GradientType=0 ); /* IE6-9 */
+}
+
+.u-letter-modalcontainer .modaltable .modalbox .choicebox a:active{
+background: #cbcbcb; /* Old browsers */
+background: -moz-linear-gradient(top, #cbcbcb 0%, #afafaf 100%); /* FF3.6-15 */
+background: -webkit-linear-gradient(top, #cbcbcb 0%,#afafaf 100%); /* Chrome10-25,Safari5.1-6 */
+background: linear-gradient(to bottom, #cbcbcb 0%,#afafaf 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#cbcbcb', endColorstr='#afafaf',GradientType=0 ); /* IE6-9 */
+}
+
+.u-letter-modalcontainer .modaltable .modalbox .confirm a{
+
+padfing:8px;
+color:#fff;
+font-weight:bold;
+margin:auto;
+font-size:120%;
+
+background: #87c2fd; /* Old browsers */
+background: -moz-linear-gradient(top, #87c2fd 0%, #53a5f1 40%, #0573e1 100%); /* FF3.6-15 */
+background: -webkit-linear-gradient(top, #87c2fd 0%,#53a5f1 40%,#0573e1 100%); /* Chrome10-25,Safari5.1-6 */
+background: linear-gradient(to bottom, #87c2fd 0%,#53a5f1 40%,#0573e1 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#87c2fd', endColorstr='#0573e1',GradientType=0 ); /* IE6-9 */
+}
+
+.u-letter-modalcontainer .modaltable .modalbox .confirm a:hover{
+background: #4ea5fc; /* Old browsers */
+background: -moz-linear-gradient(top, #4ea5fc 0%, #268dee 40%, #0462c0 100%); /* FF3.6-15 */
+background: -webkit-linear-gradient(top, #4ea5fc 0%,#268dee 40%,#0462c0 100%); /* Chrome10-25,Safari5.1-6 */
+background: linear-gradient(to bottom, #4ea5fc 0%,#268dee 40%,#0462c0 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#4ea5fc', endColorstr='#0462c0',GradientType=0 ); /* IE6-9 */
+}
+
+.u-letter-modalcontainer .modaltable .modalbox .confirm a:active{
+color:#ececec;
+background: #2490fc; /* Old browsers */
+background: -moz-linear-gradient(top, #2490fc 0%, #1281e8 40%, #0460bc 100%); /* FF3.6-15 */
+background: -webkit-linear-gradient(top, #2490fc 0%,#1281e8 40%,#0460bc 100%); /* Chrome10-25,Safari5.1-6 */
+background: linear-gradient(to bottom, #2490fc 0%,#1281e8 40%,#0460bc 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#2490fc', endColorstr='#0460bc',GradientType=0 ); /* IE6-9 */
+}
+
+@media (max-width: 479px) {
+
+.u-letter-modalcontainer{
+width:90%;
+min-width:90%;
+}
+
+.u-letter-modalcontainer .modalbox{
+min-width:90%;
+}
+
+}
+
+@media (max-width: 767px) {
+#u-letter-popup {
+    height: 100%;
+    top: 0;
+}
+.u-letter-modalcontainer{
+    min-width: 300px;
+}
+
+.u-letter-modalcontainer .modaltable .modalbox{
+    min-width: 300px;
+}
+}
+</style>
+<style>
+.inuarea{
+display:none;
+}
+#u-back:target  ~.inuarea,
+#u-letter-popup:target  ~.inuarea,
+#u-close:target  ~.inuarea{
+display:block;
+}
+.inuarea > p{
+margin: 0;
+height: 100%;
+}
+iframe.html-block-iframe{
+height: 100% !important;
+pointer-events: auto;
+}
+</style>
+<script data-cfasync="false">window.nitroAds=window.nitroAds||{createAd:function(){return new Promise(e=>{window.nitroAds.queue.push(["createAd",arguments,e])})},addUserToken:function(){window.nitroAds.queue.push(["addUserToken",arguments])},queue:[]};</script>
+<script data-cfasync="false" async src="/o/c2d11cbe27c45ddd08591eeb54e50fbe199942a2448b3fc5c7ed904ce4d83172"></script>
+<script type="text/javascript" src="/o/12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941"></script>
+<script type="text/javascript" src="/o/c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc"></script>
+</head>
+<body id="html-body">
+<div id="skrollr-body">
+<a name="page-top"></a>
+
+
+
+
+
+<div id="container-wrap-wrap">
+    <div id="container-wrap">
+        <div id="container">
+            <div id="header">
+              <h1><a href="/"><span>SCP財団</span></a></h1>
+                
+                    <h2><span>確保、収容、保護</span></h2>
+                
+                
+                <!-- google_ad_section_start(weight=ignore) -->
+                
+                <div id="search-top-box" class="form-search">
+    <form id="search-top-box-form" action="dummy" class="input-append">
+        <input id="search-top-box-input" class="text empty search-query" type="text" size="15" name="query" value="サイト検索" onfocus="if(YAHOO.util.Dom.hasClass(this, 'empty')){YAHOO.util.Dom.removeClass(this,'empty'); this.value='';}"/><input class="button btn" type="submit" name="search" value="検索"/>
+    </form>
+</div>
+                
+                
+                    <div id="top-bar">
+                        
+
+<div class="top-bar">
+<ul>
+<li><a href="javascript:;">SCPデータベース</a>
+<ul>
+<li><a href="/collaboration-page-hub">合作</a></li>
+<li><a href="/incident-reports-eye-witness-interviews-and-personal-logs">インシデント記録</a></li>
+<li><a href="/series-archive">シリーズアーカイブ</a></li>
+<li><a href="/contest-archive">コンテストアーカイブ国際版</a></li>
+</ul>
+</li>
+<li><a href="javascript:;">JPデータベース</a>
+<ul>
+<li><a href="/collaboration-hub-jp">合作-JP</a></li>
+<li><a href="/supplement-hub-jp">補足-JP</a></li>
+<li><a href="/anthology-hub-jp">アンソロジー-JP</a></li>
+<li><a href="/event-archive-jp">イベントアーカイブ-JP</a></li>
+<li><a href="/heritage-collection-jp">殿堂入りコレクション</a></li>
+</ul>
+</li>
+<li><a href="/scp-international">SCP和訳一覧</a></li>
+<li><a href="javascript:;">SCPの世界観</a>
+<ul>
+<li><a href="/about-the-scp-foundation">SCP財団とは</a></li>
+<li><a href="/universe-hub">財団世界観</a></li>
+<li><a href="/secure-facilities-locations">セキュリティ施設</a></li>
+<li><a href="/departments">内部部門</a></li>
+<li><a href="/task-forces">機動部隊</a></li>
+<li><a href="/personnel-and-character-dossier">職員・人物ファイル</a></li>
+<li><a href="/groups-of-interest">要注意団体</a></li>
+<li><a href="/secure-facilities-locations-jp">セキュリティ施設-JP</a></li>
+<li><a href="/departments-jp">内部部門-JP</a></li>
+<li><a href="/task-forces-jp">機動部隊-JP</a></li>
+<li><a href="/personnel-and-character-dossier-jp">職員・人物ファイル-JP</a></li>
+<li><a href="/groups-of-interest-jp">要注意団体-JP</a></li>
+<li><a href="/locations-of-interest-jp">要注意領域-JP</a></li>
+</ul>
+</li>
+<li><a href="javascript:;">ガイド</a>
+<ul>
+<li><a href="/guide-hub">ガイドハブ</a></li>
+<li><a href="/site-rules">サイトルール</a></li>
+<li><a href="/licensing-guide">ライセンスガイド</a></li>
+<li><a href="/image-use-policy">画像利用ポリシー</a></li>
+<li><a href="/vote-policy">Voteポリシー</a></li>
+<li><a href="/criticism-policy">批評に関するポリシー</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="mobile-top-bar">
+<div class="open-menu">
+<p><a href="#side-bar">≡</a></p>
+</div>
+<ul>
+<li><a href="javascript:;">シリーズ</a>
+<ul>
+<li><a href="/scp-series">EN - I (001-999)</a></li>
+<li><a href="/scp-series-2">EN - II (1000-1999)</a></li>
+<li><a href="/scp-series-3">EN - III (2000-2999)</a></li>
+<li><a href="/scp-series-4">EN - IV (3000-3999)</a></li>
+<li><a href="/scp-series-5">EN - V (4000-4999)</a></li>
+<li><a href="/scp-series-6">EN - VI (5000-5999)</a></li>
+<li><a href="/scp-series-7">EN - VII (6000-6999)</a></li>
+<li><a href="/scp-series-8">EN - VIII (7000-7999)</a></li>
+<li><a href="/scp-series-9">EN - IX (8000-8999)</a></li>
+<li><a href="/scp-series-10">EN - X (9000-9999)</a></li>
+<li><a href="/lost-scp-series">EN - Lost (L000-L999)</a></li>
+<li><a href="/scp-series-jp">JP - I (001-999)</a></li>
+<li><a href="/scp-series-jp-2">JP - II (1000-1999)</a></li>
+<li><a href="/scp-series-jp-3">JP - III (2000-2999)</a></li>
+<li><a href="/scp-series-jp-4">JP - IV (3000-3999)</a></li>
+<li><a href="/scp-series-jp-5">JP - V (4000-4999)</a></li>
+<li><a href="/scp-international">SCP和訳一覧</a></li>
+</ul>
+</li>
+<li><a href="javascript:;">データベース</a>
+<ul>
+<li><a href="/collaboration-page-hub">合作</a></li>
+<li><a href="/series-archive">シリーズアーカイブ</a></li>
+<li><a href="/contest-archive">コンテストアーカイブ国際版</a></li>
+<li><a href="/collaboration-hub-jp">合作-JP</a></li>
+<li><a href="/supplement-hub-jp">補足-JP</a></li>
+<li><a href="/anthology-hub-jp">アンソロジー-JP</a></li>
+<li><a href="/event-archive-jp">イベントアーカイブ-JP</a></li>
+<li><a href="/heritage-collection-jp">殿堂入りコレクション-JP</a></li>
+</ul>
+</li>
+<li><a href="javascript:;">世界観</a>
+<ul>
+<li><a href="/about-the-scp-foundation">SCP財団とは</a></li>
+<li><a href="/universe-hub">財団世界観</a></li>
+<li><a href="/secure-facilities-locations">セキュリティ施設</a></li>
+<li><a href="/departments">内部部門</a></li>
+<li><a href="/task-forces">機動部隊</a></li>
+<li><a href="/personnel-and-character-dossier">職員・人物ファイル</a></li>
+<li><a href="/groups-of-interest">要注意団体</a></li>
+<li><a href="/secure-facilities-locations-jp">セキュリティ施設-JP</a></li>
+<li><a href="/departments-jp">内部部門-JP</a></li>
+<li><a href="/task-forces-jp">機動部隊-JP</a></li>
+<li><a href="/personnel-and-character-dossier-jp">職員・人物ファイル-JP</a></li>
+<li><a href="/groups-of-interest-jp">要注意団体-JP</a></li>
+<li><a href="/locations-of-interest-jp">要注意領域-JP</a></li>
+</ul>
+</li>
+<li><a href="javascript:;">ガイド</a>
+<ul>
+<li><a href="/guide-hub">ガイドハブ</a></li>
+<li><a href="/site-rules">サイトルール</a></li>
+<li><a href="/licensing-guide">ライセンスガイド</a></li>
+<li><a href="/image-use-policy">画像利用ポリシー</a></li>
+<li><a href="/vote-policy">Voteポリシー</a></li>
+<li><a href="/criticism-policy">批評に関するポリシー</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div style="width:1px;height:1px;position:absolute;pointer-events:none;opacity:0;">    
+
+
+<img src="/o/ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a" alt="analytics.png?s_id=578002&amp;fn=scp-2000-jp" class="image" />
+    
+    
+    
+    </div>
+<div class="list-pages-box">    <div class="list-pages-item">
+
+
+<p><iframe src='https://drizzles.scp-jp.org/api/v2/raven.html?site_name=scp-jp&fullname=scp-2000-jp&revisions=44&rating=1572&rating_votes=1594&created_at=<span class="odate time_1580482387 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover">31 Jan 2020 14:53</span>&updated_at=<span class="odate time_1790276363 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover">24 Sep 2026 18:59</span>&commented_at=<span class="odate time_1769077899 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover">22 Jan 2026 10:31</span>&' style="display: none"></iframe></p>
+</div>
+    
+    
+    
+    </div>
+                    </div>
+                
+                <div id="login-status"><a href="javascript:;" onclick="WIKIDOT.page.listeners.createAccount(event)" class="login-status-create-account btn">アカウントを作成</a> <span>または</span> <a href="javascript:;" onclick="WIKIDOT.page.listeners.loginClick(event)" class="login-status-sign-in btn btn-primary">サインイン</a> </div>
+                <div id="header-extra-div-1"><span></span></div><div id="header-extra-div-2"><span></span></div><div id="header-extra-div-3"><span></span></div>
+            </div>
+            
+            <div id="content-wrap">
+                
+                    <div id="side-bar">
+                        
+
+
+                        
+
+<div class="side-block resources">
+<div class="heading">
+<p>初めての方へ</p>
+</div>
+<div class="menu-item"><a href="/guide-for-newcomers">新規ユーザーのためのガイド</a></div>
+<div class="menu-item"><a href="/faq-jp">FAQ</a></div>
+<div class="menu-item"><a href="/guide-for-newbies">サイトへの参加</a></div>
+<div class="menu-item"><a href="/contact-staff">問い合わせ</a></div>
+</div>
+<div style="clear:both; height: 0px; font-size: 1px"></div>
+<div class="side-block">
+<div class="menu-item"><a href="https://scp-jp.wikidot.com/">メインページ</a></div>
+<div class="heading">
+<p>SCP-JPシリーズ</p>
+</div>
+<div class="menu-item"><a href="/scp-series-jp">I</a> | <a href="/scp-series-jp-2">II</a> | <a href="/scp-series-jp-3">III</a> | <a href="/scp-series-jp-4">IV</a> | <a href="/scp-series-jp-5">V</a></div>
+<div class="heading">
+<p>SCPシリーズ</p>
+</div>
+<div class="menu-item"><a href="/scp-series">I</a> | <a href="/scp-series-2">II</a> | <a href="/scp-series-3">III</a> | <a href="/scp-series-4">IV</a> | <a href="/scp-series-5">V</a></div>
+<div class="menu-item"><a href="/scp-series-6">VI</a> | <a href="/scp-series-7">VII</a> | <a href="/scp-series-8">VIII</a> | <a href="/scp-series-9">IX</a> | <a href="/scp-series-10">X</a></div>
+<div class="menu-item"><a href="/lost-scp-series">Lost</a></div>
+<div class="heading">
+<p>SCP-JPライブラリ</p>
+</div>
+<div class="menu-item"><a href="/goi-formats-jp">GoIフォーマット-JP</a></div>
+<div class="menu-item"><a href="/foundation-tales-jp">Tales-JP</a></div>
+<div class="menu-item"><a href="/canon-hub-jp">カノン-JP</a></div>
+<div class="menu-item"><a href="/series-hub-jp">連作-JP</a></div>
+<div class="menu-item sub-item">
+<p><a href="/artwork-jp">アートワーク-JP</a></p>
+</div>
+<div class="heading">
+<p>SCPライブラリ</p>
+</div>
+<div class="menu-item"><a href="/goi-formats">GoIフォーマット</a></div>
+<div class="menu-item"><a href="/foundation-tales">Tales</a></div>
+<div class="menu-item"><a href="/canon-hub">カノン</a></div>
+<div class="menu-item sub-item">
+<p><a href="/international-artwork">アートワーク国際版</a></p>
+</div>
+<div class="menu-item"><a href="/scp-international">SCP国際版</a></div>
+<div class="heading">
+<p>サイト</p>
+</div>
+<div class="menu-item sub-item">
+<p><a href="/most-recently-created">最近作成された記事</a></p>
+</div>
+<div class="menu-item"><a href="/system:recent-changes">最近の更新</a></div>
+<div class="menu-item"><a href="/top-rated-pages-this-month">評価の高い記事</a></div>
+<div class="menu-item"><a href="/lowest-rated-pages">評価の低い記事</a></div>
+<div class="menu-item"><a href="/random:random-page">ランダムページ</a></div>
+<div class="heading">
+<p>コミュニティ</p>
+</div>
+<div class="menu-item"><a href="/forum:start">フォーラム</a></div>
+<div class="menu-item sub-item">
+<p><a href="/forum:recent-posts">最近の投稿</a></p>
+</div>
+<div class="menu-item sub-item">
+<p><a href="https://scp-jp-sandbox3.wikidot.com/forum:recent-posts">最近の下書き批評</a></p>
+</div>
+<div class="menu-item"><a href="/discord-guideline">公式チャット</a></div>
+<div class="menu-item sub-item">
+<p><a href="/members-pages-jp">著者ページ-JP</a></p>
+</div>
+<div class="menu-item sub-item">
+<p><a href="/international-members-pages">著者ページ国際版</a></p>
+</div>
+<div class="menu-item sub-item">
+<p><a href="/news-jp">茜刺財団新聞</a></p>
+</div>
+<div class="menu-item sub-item">
+<p><a href="https://twitter.com/scpjp_announce">公式X(Twitter)</a></p>
+</div>
+<div class="heading">
+<p>リンク</p>
+</div>
+<div class="menu-item"><a href="https://scp-jp-sandbox3.wikidot.com/start" target="_blank">サンドボックス</a></div>
+<div class="menu-item"><a href="https://scp-jp-storage.wikidot.com/" target="_blank">ファイルストレージ</a></div>
+<div class="menu-item"><a href="/links">リンク集</a></div>
+</div>
+<div style="clear:both; height: 0px; font-size: 1px"></div>
+<div class="side-block">
+<div class="heading">
+<p>ユーザーリソース</p>
+</div>
+<div class="menu-item"><a href="/how-to-write:how-to-write">記事を作成するには？</a></div>
+<div class="menu-item"><a href="/wiki-syntax:startpage">Wikidot構文</a></div>
+<div class="menu-item"><a href="/tag-guide">タグガイド</a> | <a href="/tag-list">タグリスト</a></div>
+<div class="menu-item"><a href="/tag-search">タグ検索</a> | <a href="/tag-translator">タグ翻訳</a></div>
+<div class="menu-item"><a href="/authorssearch">作者検索</a></div>
+<div class="heading">
+<p>困ったときは</p>
+</div>
+<div class="menu-item"><a href="/site-rules">サイトルール</a></div>
+<div class="menu-item"><a href="/licensing-guide">ライセンスガイド</a></div>
+<div class="menu-item"><a href="/guide-hub">ガイド</a> | <a href="/other-link-hub">エッセイ</a></div>
+<div class="menu-item"><a href="https://05command-ja.wikidot.com/">スタッフサイト</a></div>
+<div class="menu-item"><a href="/meet-the-staff-jp">スタッフ一覧</a></div>
+<div class="menu-item"><a href="/contact-staff">問い合わせ</a></div>
+</div>
+<a class="close-menu" href="##"><br />
+<img src="/o/4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7" style="z-index:-1; opacity: 0.3;" alt="black.png" class="image" /><br /></a>
+<div class="scpnet-interwiki-wrapper interwiki-stylable"><div class="list-pages-box">    <div class="list-pages-item">
+
+
+<p><iframe src="//interwiki.scp-jp.org/interwikiFrame.html?lang=jp&community=scp&pagename=scp-2000-jp" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe></p>
+</div>
+    
+    
+    
+    </div></div>
+<p><iframe src="//interwiki.scp-jp.org/styleFrame.html?priority=0&theme=https://scp-jp.github.io/files/theme/sigma-9/sigma-9.min.css&css={$css}" style="display: none"></iframe></p>
+
+                        
+
+
+                    </div>
+                
+                
+                <!-- google_ad_section_end -->
+                
+                <div id="main-content">
+                    <div id="action-area-top"></div>
+                    
+                    
+                        <div id="page-title">
+                            SCP-2000-JP
+                        </div>
+                    
+
+                    
+
+                    
+
+
+
+                    <div id="page-content">
+                        
+
+
+
+
+<div class="award-1st"></div>
+
+
+
+<div class="creditRate creditModule {$mode}">
+<div class="rateBox">
+<div class="rate-box-with-credit-button"><div class="page-rate-widget-box"><span class="rate-points">評価:&nbsp;<span class="number prw54353">+1572</span></span><span class="rateup btn btn-default"><a title="好き" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)">+</a></span><span class="ratedown btn btn-default"><a title="好きじゃない" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)">&#8211;</a></span><span class="cancel btn btn-default"><a title="投票を取り消す" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)">x</a></span></div>
+<div class="creditButton"><a class="fa fa-info" style="position:relative;" href="#u-credit-view"><img src="/o/87aad0dc9ad5c1f9db2d990c6d74b34b4fefd31e27488eb827e3dfc2c3652f45" title="クレジットを表示する" style="position:absolute;height:100%;width:100%;top:0;left:0;" alt="blank.png" class="image" /></a></div>
+</div>
+</div>
+<div class="rateBox heritage-wrap" style="display:none;">
+<div class="heritage-rating-module">
+<div class="heritage-emblem"><a href="/"><img src="/o/549744a269e491a062f48d3947843e7eba635c281a195698d82283ecb18dd8a5" style="max-width: none;" alt="scp-heritage-v3.png" class="image" /></a></div>
+<div class="page-rate-widget-box"><span class="rate-points">評価:&nbsp;<span class="number prw54353">+1572</span></span><span class="rateup btn btn-default"><a title="好き" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)">+</a></span><span class="ratedown btn btn-default"><a title="好きじゃない" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)">&#8211;</a></span><span class="cancel btn btn-default"><a title="投票を取り消す" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)">x</a></span></div></div>
+<div class="creditButton"><a class="fa fa-info" style="position:relative;" href="#u-credit-view"><img src="/o/87aad0dc9ad5c1f9db2d990c6d74b34b4fefd31e27488eb827e3dfc2c3652f45" title="クレジットを表示する" style="position:absolute;height:100%;width:100%;top:0;left:0;" alt="blank.png" class="image" /></a></div>
+</div>
+</div>
+<div style="clear:both;"></div>
+<div id="u-credit-view">
+<div class="fader"><iframe src="https://scp-jp.github.io/files/util/common/credit/backmodule/start.html" align="" frameborder="" height="" scrolling="" width="" class="" style=""></iframe></div>
+<div class="modalcontainer">
+<div class="modalbox">
+<div class="modalbox-title">
+<h2><span>クレジット</span></h2>
+</div>
+<div class="credit">
+<p><strong>タイトル:</strong> SCP-2000-JP - 伝書使<br />
+<strong>著者:</strong> ©︎<span class="printuser avatarhover"><a href="https://www.wikidot.com/user:info/wagnascousin" onclick="WIKIDOT.page.listeners.userInfo(3389120); return false;"><img class="small" src="/o/089a8cf23978514adcae5f3779ac1d59fb9b969cff41f048c51ead10e94a4a85" alt="WagnasCousin" style="background-image:url("/o/a9c18d37b4b9a06a44a97d58d88a99ccd08579c9431205cf63ea0448a4b25751")" /></a><a href="https://www.wikidot.com/user:info/wagnascousin" onclick="WIKIDOT.page.listeners.userInfo(3389120); return false;">WagnasCousin</a></span>, <span class="printuser avatarhover"><a href="https://www.wikidot.com/user:info/fes-ryuukatetu" onclick="WIKIDOT.page.listeners.userInfo(4577911); return false;"><img class="small" src="/o/5bcf5b6e7c930f868ffb2c03506150b77412f84ebefc83ebe39d6d4400a30d95" alt="FeS_ryuukatetu" style="background-image:url("/o/822614447ccae3c6c12a2ab911c861d3adbaa035b34a65550619e789e420e81f")" /></a><a href="https://www.wikidot.com/user:info/fes-ryuukatetu" onclick="WIKIDOT.page.listeners.userInfo(4577911); return false;">FeS_ryuukatetu</a></span>, <span class="printuser avatarhover"><a href="https://www.wikidot.com/user:info/furabbit" onclick="WIKIDOT.page.listeners.userInfo(3198079); return false;"><img class="small" src="/o/a8741772a7b9ce304880cf3127410216ca6161a17052a4576a04d8bff1ac6c4b" alt="furabbit" style="background-image:url("/o/6700e29a4a13614fdd8b18d472aa3351bcd0d29d1d5672a66261caa6872df970")" /></a><a href="https://www.wikidot.com/user:info/furabbit" onclick="WIKIDOT.page.listeners.userInfo(3198079); return false;">furabbit</a></span><br />
+<strong>作成年:</strong> 2020</p>
+<hr />
+<p><em><a href="/author:wagnascousin">WagnasCousinの他の作品</a></em><br />
+<em><a href="/author:fes-ryuukatetu">FeS_ryuukatetuの他の作品</a></em><br />
+<em><a href="/author:furabbit">furabbitの他の作品</a></em></p>
+</div>
+<div class="credit" style="text-align:right; margin-top: 0.5em;"><a href="#u-credit-otherwise">その他のライセンス</a></div>
+<div class="Dendo">
+<div class="heritage-rating-module">
+<div class="heritage-emblem"><a href="/"><img src="/o/549744a269e491a062f48d3947843e7eba635c281a195698d82283ecb18dd8a5" style="max-width: none;" alt="scp-heritage-v3.png" class="image" /></a></div>
+<div class="page-rate-widget-box"><span class="rate-points">評価:&nbsp;<span class="number prw54353">+1572</span></span><span class="rateup btn btn-default"><a title="好き" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)">+</a></span><span class="ratedown btn btn-default"><a title="好きじゃない" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)">&#8211;</a></span><span class="cancel btn btn-default"><a title="投票を取り消す" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)">x</a></span></div></div>
+</div>
+<div class="modalbox-ratemodule"><div class="page-rate-widget-box"><span class="rate-points">評価:&nbsp;<span class="number prw54353">+1572</span></span><span class="rateup btn btn-default"><a title="好き" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)">+</a></span><span class="ratedown btn btn-default"><a title="好きじゃない" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)">&#8211;</a></span><span class="cancel btn btn-default"><a title="投票を取り消す" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)">x</a></span></div></div>
+</div>
+</div>
+</div>
+<div id="u-credit-otherwise">
+<div class="fader"><iframe src="https://scp-jp.github.io/files/util/common/credit/backmodule/otherwise.html" align="" frameborder="" height="" scrolling="" width="" class="" style=""></iframe></div>
+<div class="modalcontainer">
+<div class="modalbox">
+<div class="modalbox-title">
+<h2><span>その他</span></h2>
+</div>
+<div class="credit otherwise">
+<div class="contest">
+<p><a href="https://scp-jp.wikidot.com/scp2000jp-contest-hub" target="_blank">SCP-2000-JPコンテスト</a><br />
+<span>優勝</span></p>
+</div>
+<div class="credit-back" style="text-align: center;"><iframe src="https://scp-jp.github.io/files/util/common/credit/backmodule/end.html" align="" frameborder="" height="" scrolling="no" width="" class="" style="height:2em;width: 100%;margin: 0;padding: 0;border: 0;background: transparent;"></iframe></div>
+</div>
+<div class="creditBottomRate" style="height:30px;">
+<div class="credit-license"><a class="cc cc-by-sa" href="https://creativecommons.org/licenses/by-sa/3.0/deed.ja" target="_blank"></a></div>
+<div style="text-align: center; top: 0px;">
+<div class="Dendo">
+<div class="heritage-rating-module">
+<div class="heritage-emblem"><a href="/"><img src="/o/549744a269e491a062f48d3947843e7eba635c281a195698d82283ecb18dd8a5" style="max-width: none;" alt="scp-heritage-v3.png" class="image" /></a></div>
+<div class="page-rate-widget-box"><span class="rate-points">評価:&nbsp;<span class="number prw54353">+1572</span></span><span class="rateup btn btn-default"><a title="好き" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)">+</a></span><span class="ratedown btn btn-default"><a title="好きじゃない" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)">&#8211;</a></span><span class="cancel btn btn-default"><a title="投票を取り消す" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)">x</a></span></div></div>
+</div>
+<div><div class="page-rate-widget-box"><span class="rate-points">評価:&nbsp;<span class="number prw54353">+1572</span></span><span class="rateup btn btn-default"><a title="好き" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)">+</a></span><span class="ratedown btn btn-default"><a title="好きじゃない" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)">&#8211;</a></span><span class="cancel btn btn-default"><a title="投票を取り消す" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)">x</a></span></div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="list-pages-box">    <div class="list-pages-item">
+
+
+<div id="u-back" style="display: none;"></div>
+<div id="u-close" style="display: none;"></div>
+<div id="u-end" style="display: none;"></div>
+
+
+
+<div id="u-shut-popup">
+<div class="fader">
+<p><iframe src="http://shitake-crude-production.wikidot.com/extension:modal-script/code/1" align="" frameborder="" height="" scrolling="" width="" class="" style=""></iframe></p>
+</div>
+<div class="u-shut-modalcontainer">
+<div class="modaltable">
+<p><iframe src="http://shitake-crude-production.wikidot.com/extension:modal-script/code/1" align="" frameborder="" height="" scrolling="" width="" class="" style=""></iframe></p>
+<div class="modalbox">
+<div class="content">
+<div class="title">
+<p>SCiP.netから切断されました</p>
+</div>
+</div>
+<div style="text-align: center; padding: 5px;">
+<p><a href="https://scp-jp.wikidot.com/scp-2000-jp/offset/1/page3_limit/1">閉じる</a></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+
+<div class="img-top"><img src="/o/bad488baf42da0744ec2e7bda50eb2085ae3d9facd023636b79a2fbce4360502" class="window" alt="waku.png" /><img src="/o/f88863bab4dd399cec0548c31d1618815e150a4892986043edcb04746b3658fa" class="dog" alt="dog.png" /></div>
+<p><strong>アイテム番号:</strong> SCP-2000-JP</p>
+<p><strong>オブジェクトクラス:</strong> Thaumiel</p>
+<p><strong>特別収容プロトコル:</strong> SCP-2000-JPは現在未収容です。SCP-2000-JPは「巣」に何らかの反応があった場合「巣」へと帰還します。SCP-2000-JPは入力デバイスを通じて接触することにより一定期間「巣」の内部に留まるため、その際に「巣」が含まれるサーバーを物理的にネットワークから遮断してください。</p>
+<p><strong>説明:</strong> SCP-2000-JPはコンピュータ/ネットワーク上で活動する情報知性体です。イエイヌ(<em>Canis lupus familiaris</em>)をキャラクター化したイメージとテキストボックスから成るグラフィカルユーザーインターフェースを備え、標準的な日本語や英語、または複数のファイル形式による意思疎通およびデータの入出力が可能です。SCP-2000-JPはユーザーである人類に対して極めて友好的に振舞い、対話及び業務指示を与えられることを好みます。ウェクスラー=ネルソン式汎用知能検査によると平均的なヒト5歳児程度の思考能力を有すると示されています。</p>
+<p>SCP-2000-JPはコンピュータ/ネットワークセキュリティによる行動阻害に対し、セキュリティホールを「掘る」ことで突破する能力を有します。セキュリティホールを「掘り終わる」までの時間はセキュリティの堅牢さに比例して増加します。この際に発生したセキュリティホールはGUI上で意味を成さないテキストの集合からなるリンクとして可視化され、ユーザーはクリックなどの操作によりSCP-2000-JPによるアクセス経路を辿ることが可能です。SCP-2000-JPは自身が存在するコンピュータ/ネットワーク上の領域を自由に移動し、自身にとって最も重要な情報の所在領域を「巣」と定め、それ以外の領域から持ち帰った情報を保存する習性を持ちます。ただし、SCP-2000-JPによる情報の取扱の際には、携持した情報を「噛んでしまう」ことによる情報内容の破損が高頻度で発生するため、集められた情報および与えられた指示の遂行は信頼性に欠けるものとなります。検証実験によると指示内容・語義など言語型情報の保持率は高い一方、数量やタイムスタンプ・「巣」以外の所在アドレスなどの数値/データ型情報には非常に頻繁な破損が見られます。</p>
+
+
+
+<div class="image-container aligncenter"><a href="https://scp-jp.wikidot.com/scp-2000-jp/offset/1/page2_limit/1"><img src="/o/a2b905b894f88652f4a42b9925e1de4956676f17e0e191e44d1a595326bdb461" class="hole" alt="ana_in.png" /></a></div>
+
+
+
+
+
+<div id="u-letter-popup">
+<div class="fader">
+<p><iframe src="http://shitake-crude-production.wikidot.com/extension:modal-script/code/1" align="" frameborder="" height="" scrolling="" width="" class="" style=""></iframe></p>
+</div>
+<div class="u-letter-modalcontainer">
+<div class="modaltable">
+<p><iframe src="http://shitake-crude-production.wikidot.com/extension:modal-script/code/1" align="" frameborder="" height="" scrolling="" width="" class="" style=""></iframe></p>
+<div class="modalbox">
+<div class="content">
+<p>このメッセージを開いて読んでいると言う事は、君は新たな財団職員なのだろう。そして、我々に何が起こったのかも把握しているはずだ。</p>
+<p>我々が失敗したように、ほんの些細なきっかけから世界は崩壊してしまう。人類の歴史はその繰り返しだ。まるで世界が不条理と不可能を必要としているかのように思うかもしれない。だが、我々人類は諦める事なく全ての崩壊を乗り越え、君達はその先頭に立った。それだけは忘れないでくれ。</p>
+<p>君達はこれから様々な異常存在──新たに生まれるもの、かつての財団が対処しきれなかったものも含めて、それらと関わることになるだろう。君の目の前にいる異常存在は私がやり残した物の一つだ。報告書に記した通り、確保と収容、──そして保護をお願いしたい。</p>
+</div>
+<hr />
+<div style="text-align: center; margin: 1em;">
+<p><a href="#u-close">閉じる</a></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+
+<div class="inuarea" style="position: fixed; left: 0; bottom: 0; width: 100vw; height: 70vh; pointer-events: none;">
+<p><iframe src="/scp-2000-jp/html/4259c704f289d01767c98da4d3b5c85b057d1af8-14048975601844197657" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe></p>
+</div>
+</div>
+    
+    
+    
+    </div><div class="list-pages-box">    
+    
+    
+    
+    </div><div class="list-pages-box">    
+    
+    
+    
+    </div>
+                    </div>
+
+                            
+    
+                        <script>
+window['nitroAds'].createAd('wad-scp-jp-below-content-anchor', {
+  "refreshTime": 30,
+  "format": "anchor-v2",
+  "anchor": "bottom",
+  "anchorPersistClose": false,
+  "mediaQuery": "(min-width: 0px)",
+  "report": {
+    "enabled": true,
+    "icon": true,
+    "wording": "Report Ad",
+    "position": "bottom-right"
+  }
+  });
+</script>
+                    
+    
+
+                    
+
+
+                    
+
+
+
+                    
+                        <div class="page-tags">
+                            <span>
+                                <a href="/system:page-tags/tag/2000jp#pages">2000jp</a><a href="/system:page-tags/tag/jp#pages">jp</a><a href="/system:page-tags/tag/scp#pages">scp</a><a href="/system:page-tags/tag/thaumiel#pages">thaumiel</a><a href="/system:page-tags/tag/%E3%82%A4%E3%83%8C#pages">イヌ</a><a href="/system:page-tags/tag/%E3%82%AF%E3%83%AC%E3%83%95%E5%8D%9A%E5%A3%AB#pages">クレフ博士</a><a href="/system:page-tags/tag/%E3%82%B3%E3%83%B3%E3%83%94%E3%83%A5%E3%83%BC%E3%82%BF#pages">コンピュータ</a><a href="/system:page-tags/tag/%E3%83%A1%E3%82%BF#pages">メタ</a><a href="/system:page-tags/tag/%E5%85%B1%E8%91%97#pages">共著</a><a href="/system:page-tags/tag/%E5%8B%95%E7%89%A9#pages">動物</a><a href="/system:page-tags/tag/%E6%A9%9F%E6%A2%B0%E4%BB%95%E6%8E%9B%E3%81%91%E3%81%AE%E7%A5%9E#pages">機械仕掛けの神</a><a href="/system:page-tags/tag/%E7%9F%A5%E6%80%A7#pages">知性</a>
+                            </span>
+                        </div>
+                    
+
+                    <div id="page-info-break"></div>
+                    
+                        <div id="page-options-container">
+                            <div id="page-info">ページリビジョン: 44, 最終更新: <span class="odate time_1790276363 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20%E5%89%8D%29">24 Sep 2026 18:59</span></div>
+            <div id="page-options-bottom"  class="page-options-bottom">
+            <a href="javascript:;" class="btn btn-default" id="edit-button">編集</a>
+<a href="javascript:;" class="btn btn-default" id="pagerate-button">評価 (<span id="prw54355">+1572</span>)</a>
+<a href="javascript:;" class="btn btn-default" id="tags-button">タグ</a>
+<a href="/forum/t-12998197/scp-2000-jp" class="btn btn-default" id="discuss-button">ディスカッション (57)</a>
+<a href="javascript:;" class="btn btn-default" id="history-button">履歴</a>
+<a href="javascript:;" class="btn btn-default" id="files-button">ファイル</a>
+<a href="javascript:;" class="btn btn-default" id="print-button">印刷</a>
+<a href="javascript:;" class="btn btn-default" id="site-tools-button">サイトツール</a>
+<a href="javascript:;" class="btn btn-default" id="more-options-button">+&nbsp;オプション</a> 
+</div>
+<div id="page-options-bottom-2" class="page-options-bottom form-actions" style="display:none">
+    <a href="javascript:;" class="btn btn-default" id="edit-sections-button">セクションを編集</a>
+    <a href="javascript:;" class="btn btn-default" id="edit-append-button">追加</a>
+    <a href="javascript:;" class="btn btn-default" id="edit-meta-button">メタを編集</a>
+    <a href="javascript:;" class="btn btn-default" id="watchers-button">ウォッチャー</a> 
+    <a href="javascript:;" class="btn btn-default" id="backlinks-button">バックリンク</a> 
+    <a href="javascript:;" class="btn btn-default" id="view-source-button">ページソース</a> 
+    <a href="javascript:;" class="btn btn-default" id="parent-page-button">親ページ</a> 
+    <a href="javascript:;" class="btn btn-default" id="page-block-button">ページロック</a>    
+    <a href="javascript:;" class="btn btn-default" id="rename-move-button">リネーム</a> 
+    <a href="javascript:;" class="btn btn-default" id="delete-button">削除</a> 
+</div>
+<div id="page-options-area-bottom">
+</div>
+
+                        </div>
+                    
+                    <div id="action-area" style="display: none;"></div>
+                </div>
+            </div>
+            
+            
+            
+            <div id="footer" style="display: block; visibility: visible;">
+                <div class="options" style="display: block; visibility: visible;">
+    <a href="https://www.wikidot.com/doc" id="wikidot-help-button">ヘルプ</a>
+    &nbsp;|
+    <a href="https://www.wikidot.com/legal:terms-of-service" id="wikidot-tos-button">利用規約</a>
+    &nbsp;|
+    <a href="https://www.wikidot.com/legal:privacy-policy" id="wikidot-privacy-button">プライバシー</a>
+    &nbsp;|
+    <a href="javascript:;" id="bug-report-button" onclick="WIKIDOT.page.listeners.pageBugReport(event)">バグを報告</a>
+    &nbsp;|
+    <a href="javascript:;" id="abuse-report-button" onclick="WIKIDOT.page.listeners.flagPageObjectionable(event)">不快フラグを立てる</a>
+    <span id="consent-box" style="display:none">
+        &nbsp;|
+        <a href="javascript:;"  onclick="window.__cmp('showModal');">Update cookie settings</a>
+    </span>
+
+    <script>
+    if (window["nitroAds"] && window["nitroAds"].loaded) {
+        document.getElementById("consent-box").style.display = window["__tcfapi"] ? "" : "none";
+        } else {
+        document.addEventListener(
+                "nitroAds.loaded",
+                () =>
+                (document.getElementById("consent-box").style.display = window["__tcfapi"] ? "" : "none")
+                );
+    }
+    </script>
+</div>
+Powered by <a href="https://www.wikidot.com">Wikidot.com</a>
+            </div>
+            
+                <div id="license-area" class="license-area">
+                    
+
+特に指定がない限り、このサイトのすべてのコンテンツは<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/deed.ja">クリエイティブ・コモンズ 表示 - 継承3.0ライセンス</a> の元で利用可能です。
+                </div>
+            
+            
+            
+
+
+
+            <div id="extrac-div-1"><span></span></div><div id="extrac-div-2"><span></span></div><div id="extrac-div-3"><span></span></div>
+            
+            
+            
+            
+                
+            
+        </div>
+        
+    </div>
+<!-- These extra divs/spans may be used as catch-alls to add extra imagery. -->
+<div id="extra-div-1"><span></span></div><div id="extra-div-2"><span></span></div><div id="extra-div-3"><span></span></div>
+<div id="extra-div-4"><span></span></div><div id="extra-div-5"><span></span></div><div id="extra-div-6"><span></span></div>
+</div>
+
+
+
+
+</div>
+<div id="dummy-ondomready-block" style="display: none;" ></div>
+    <!-- Google Analytics load -->
+    <script type="text/javascript">
+        (function() {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'stats.g.doubleclick.net/dc.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+
+
+
+
+<div id="page-options-bottom-tips" style="display: none;">
+    <div id="edit-button-hovertip">
+        ページを編集するにはこのボタンをクリックしてください。    </div>
+</div>
+<div id="page-options-bottom-2-tips"  style="display: none;">
+    <div id="edit-sections-button-hovertip">
+        セクションごとの編集を切り替えるにはこのボタンをクリックしてください(ページにセクションが設定されている必要があります）。有効になった場合はセクションに&quot;編集&quot;ボタンが設置されます。    </div>
+    <div id="edit-append-button-hovertip">
+        ページのソース全体を編集せずに、コンテンツを追加します。    </div>
+    <div id="history-button-hovertip">
+        このページが過去にどのように変化したかを調べることができます。    </div>
+    <div id="discuss-button-hovertip">
+        このページについて話をしたいときは、これを使うのが一番簡単な方法です。    </div>
+    <div id="files-button-hovertip">
+        このページに添付されたファイルの閲覧や管理を行うことができます。    </div>
+    <div id="site-tools-button-hovertip">
+        サイトの管理についての便利なツール。    </div>
+    <div id="backlinks-button-hovertip">
+        このページへリンクしている、またはこのページをincludeしているページを表示します。    </div>
+    <div id="rename-move-button-hovertip">
+        このページの名前(それに伴いURLやページのカテゴリも)を変更します。    </div>
+    <div id="view-source-button-hovertip">
+        編集せずにこのページのソースコードを閲覧します。    </div>
+    <div id="parent-page-button-hovertip">  
+        親ページを設定/閲覧できます(パンくずリストの作成やサイトの構造化に用いられます)    </div>
+            <div id="abuse-report-button-hovertip">
+            管理者にページの違反を通知する。        </div>
+        <div id="bug-report-button-hovertip">
+            何か思い通りにいかないことがありますか? 何ができるか調べましょう。        </div>
+        <div id="wikidot-help-button-hovertip">
+            Wikidot.comのシステム概要とヘルプセクションです。        </div>
+        <div id="wikidot-tos-button-hovertip">
+            Wikidot 利用規約 ― 何ができるか、何をすべきでないか etc.        </div>
+        <div id="wikidot-privacy-button-hovertip">
+            Wikidot.com プライバシーポリシー          
+        </div>
+    </div>
+</body>
+</html>
