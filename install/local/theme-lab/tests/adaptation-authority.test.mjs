@@ -23,6 +23,10 @@ test('both edges fail navigation acceptance even when document width equals view
   assert.equal(viewportEscape({left:-127.5,right:200},390).pass,false);
   assert.equal(viewportEscape({left:0,right:410},390).pass,false);
   assert.equal(viewportEscape({left:0,right:390},390).pass,true);
+  // Fractional CSS box edges can overshoot by half a pixel after layout
+  // rounding; tolerate that while still rejecting a larger viewport escape.
+  assert.equal(viewportEscape({left:19.5,right:390.5},390).pass,true);
+  assert.equal(viewportEscape({left:19.5,right:391.01},390).pass,false);
   assert.equal(viewportEscape({left:NaN,right:390},390).pass,false);
 });
 
