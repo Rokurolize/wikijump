@@ -130,6 +130,7 @@ export function checkCampaignCompletion(root) {
         if (record.candidate_source_sha256 !== row.inputs.source.sha256) failures.push(`${row.package}: superseded browser source identity`);
         if (sha(bind({path: `ports/${record.screenshot}`, sha256: record.screenshot_sha256}, row.package)) !== record.visual_review?.screenshot_sha256 ||
           !(reviewedImage(record.visual_review, record.screenshot_sha256) || reviewedImage(record.review_provenance, record.screenshot_sha256))) failures.push(`${row.package}: missing current attributable image review`);
+        if (record.visual_review?.candidate_sha256 !== currentCandidate || record.visual_review?.candidate_source_sha256 !== row.inputs.source.sha256) failures.push(`${row.package}: image review is not bound to the current candidate identity`);
       }
     } catch (error) { failures.push(error.message); }
   }

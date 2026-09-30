@@ -2,6 +2,11 @@ import crypto from 'node:crypto';
 import {bindVisualAcceptance} from './visual-acceptance.mjs';
 import {overallAcceptance,summarizeVisual} from './verdict.mjs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+export function reviewCompletionTime(review){
+ const times=Object.values(review?.viewports??{}).map(row=>row?.reviewed_at).filter(value=>typeof value==='string'&&!Number.isNaN(Date.parse(value))).sort();
+ if(times.length!==4)throw new Error('Current paired review must provide a valid reviewed_at timestamp for every required viewport');
+ return times.at(-1);
+}
 // Review completes the image dimension of a captured full check. It does not
 // rerender unchanged surfaces or reinterpret any failed/unknown port dimension.
 export async function finalizeVisualAcceptance({result,review,css,baseCss='',source,preview}){
