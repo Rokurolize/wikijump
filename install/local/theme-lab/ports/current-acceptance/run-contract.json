@@ -56,6 +56,11 @@
     "path": "../../fixtures/scp-jp-sidebar.html",
     "sha256": "e4ec133d51cfc843e65478a80ffcb82b161c1cc8209a80a42fa7f1b31dd7e032"
   },
+  "interwiki_fixture": {
+    "path": "../../fixtures/scp-jp-interwiki.html",
+    "sha256": "b9c58104c2aa3e1aece7ce3eeada8b55d318075de9a67a4fbbc2ae16fcdbca0b",
+    "contract": "Local placement only; remote resize/content is bounded external."
+  },
   "artifact_namespace": "current-acceptance/sigma9",
   "audit_path": "artifacts/interactive-visual-audit.json",
   "additional_candidates": {
