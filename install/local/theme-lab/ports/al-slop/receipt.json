@@ -27,9 +27,9 @@
   "existing_jp_audit": "new-jp-candidate-verified",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/al-slop",
-  "candidate_source_hash": "1c603b5460791a94a2c82c794cfc7f8a2917c7d51e8a44364de2086be2e5fe0b",
+  "candidate_source_hash": "b86654032bd696212ebb8c1a5742b34763cc28bb459546dfa90e5fa66ea1e82f",
   "source_candidate_path": "install/local/theme-lab/ports/al-slop/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "1c603b5460791a94a2c82c794cfc7f8a2917c7d51e8a44364de2086be2e5fe0b",
+  "source_candidate_sha256": "b86654032bd696212ebb8c1a5742b34763cc28bb459546dfa90e5fa66ea1e82f",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -37,11 +37,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/al-slop/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "1c603b5460791a94a2c82c794cfc7f8a2917c7d51e8a44364de2086be2e5fe0b",
+  "candidate_source_sha256": "b86654032bd696212ebb8c1a5742b34763cc28bb459546dfa90e5fa66ea1e82f",
   "human_port_candidate_path": "install/local/theme-lab/ports/al-slop/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "f56b3eb7ae025b38d0e65b7d4042be9aa2bb92f24fff421f68504aaf34645e4b",
   "candidate_preview_sha256": "f519222a5e6c9179f9421294a5df6307240441adbb6475943deef6f9921ae898",
-  "candidate_css_sha256": "dec8bced927ebe8048d20115c824bd649058c89bf4ca2bf954e728699441a72e",
+  "candidate_css_sha256": "9036434a9d3d7d838cf7e96c12a2734adfbd8455f0ee4609efc9a0c125f23538",
   "page_attachment_manifest": null,
   "new_port_reconciliation": {
     "source_authority": "current-en-source",
