@@ -1,0 +1,261 @@
+{
+  "schema": "theme_lab_current_local_check_summary.v1",
+  "recorded_at": "2026-09-30T08:54:42.571Z",
+  "mode": "full",
+  "network": "offline Wikidot replay plus local SCP-JP runtime",
+  "candidate": {
+    "source_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a",
+    "preview_sha256": "5a4c255a614b84147debde1dbb944f2f04d6a9167157951a317f6eebb2a9f681",
+    "css_sha256": "c3dd803cfa39221bccb3379eb312c945cf3c3aae931be60da0ad9d6a386df0ff"
+  },
+  "reference": {
+    "site": "scp-wiki.wikidot.com",
+    "path": "/theme:inkblot",
+    "reference_selector_count": 19,
+    "missing": 0,
+    "collapsed": 0,
+    "expanded": 1
+  },
+  "overall_acceptance": {
+    "status": "fail",
+    "port_verdict": "pass",
+    "target_status": "fail"
+  },
+  "port_decision": {
+    "verdict": "pass",
+    "decision_authority": "WIKIDOT_RUNTIME_PARITY_AND_RUNTIME_INDEPENDENT_CHECKS",
+    "actionable_finding_count": 0,
+    "unresolved_finding_count": 0,
+    "unresolved_surface_ids": []
+  },
+  "target_acceptance": {
+    "status": "fail",
+    "issue_count": 10,
+    "style_change_count": 39,
+    "errors": [
+      {
+        "kind": "baseline_structure_missing",
+        "selector": ".tl-toc #toc",
+        "component": "toc",
+        "viewport": "desktop",
+        "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+        "port_conclusion_eligible": false
+      },
+      {
+        "kind": "baseline_structure_missing",
+        "selector": ".tl-toc #toc",
+        "component": "toc",
+        "viewport": "laptop",
+        "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+        "port_conclusion_eligible": false
+      },
+      {
+        "kind": "baseline_structure_missing",
+        "selector": ".tl-toc #toc",
+        "component": "toc",
+        "viewport": "tablet",
+        "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+        "port_conclusion_eligible": false
+      },
+      {
+        "kind": "baseline_structure_missing",
+        "selector": ".tl-toc #toc",
+        "component": "toc",
+        "viewport": "mobile",
+        "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+        "port_conclusion_eligible": false
+      },
+      {
+        "kind": "surface_navigation_viewport_escape",
+        "selector": "ul",
+        "component": null,
+        "viewport": "mobile",
+        "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+        "port_conclusion_eligible": false
+      },
+      {
+        "kind": "surface_navigation_viewport_escape",
+        "selector": "li",
+        "component": null,
+        "viewport": "mobile",
+        "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+        "port_conclusion_eligible": false
+      },
+      {
+        "kind": "surface_navigation_viewport_escape",
+        "selector": "a",
+        "component": null,
+        "viewport": "mobile",
+        "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+        "port_conclusion_eligible": false
+      }
+    ],
+    "warnings": [
+      {
+        "kind": "expanded_selector",
+        "selector": ".yui-navset",
+        "viewport": null,
+        "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY"
+      },
+      {
+        "kind": "surface_text_color_changed_on_image_background",
+        "selector": "#page-content a[href]",
+        "viewport": "desktop",
+        "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY"
+      },
+      {
+        "kind": "surface_text_color_changed_on_image_background",
+        "selector": "#page-content a[href]",
+        "viewport": "mobile",
+        "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY"
+      }
+    ]
+  },
+  "runtime_independent_checks": {
+    "candidate_assets_missing": 0,
+    "external_requests": 0,
+    "page_images": "pass",
+    "viewport_status": {
+      "desktop": {
+        "status": "pass",
+        "document_overflow_px": 0,
+        "decision_authority": "SCP_JP_TARGET_ACCEPTANCE_ONLY"
+      },
+      "laptop": {
+        "status": "pass",
+        "document_overflow_px": 0,
+        "decision_authority": "SCP_JP_TARGET_ACCEPTANCE_ONLY"
+      },
+      "tablet": {
+        "status": "pass",
+        "document_overflow_px": 0,
+        "decision_authority": "SCP_JP_TARGET_ACCEPTANCE_ONLY"
+      },
+      "mobile": {
+        "status": "pass",
+        "document_overflow_px": 0,
+        "decision_authority": "SCP_JP_TARGET_ACCEPTANCE_ONLY"
+      }
+    },
+    "torture": {
+      "verdict": "fail",
+      "issue_count": 4,
+      "issues": [
+        {
+          "severity": "error",
+          "viewport": "desktop",
+          "component": "toc",
+          "kind": "baseline_structure_missing",
+          "selector": ".tl-toc #toc"
+        },
+        {
+          "severity": "error",
+          "viewport": "laptop",
+          "component": "toc",
+          "kind": "baseline_structure_missing",
+          "selector": ".tl-toc #toc"
+        },
+        {
+          "severity": "error",
+          "viewport": "tablet",
+          "component": "toc",
+          "kind": "baseline_structure_missing",
+          "selector": ".tl-toc #toc"
+        },
+        {
+          "severity": "error",
+          "viewport": "mobile",
+          "component": "toc",
+          "kind": "baseline_structure_missing",
+          "selector": ".tl-toc #toc"
+        }
+      ]
+    },
+    "surface_contract": {
+      "touched_surfaces": [
+        "shell.container",
+        "shell.header",
+        "shell.search",
+        "shell.login",
+        "nav.top",
+        "nav.mobile-top",
+        "nav.sidebar",
+        "content.rating",
+        "content.article",
+        "content.links",
+        "content.credit",
+        "content.tabview",
+        "content.blockquote",
+        "content.code",
+        "content.footnotes",
+        "content.image-block",
+        "shell.footer-license"
+      ],
+      "issue_count": 5,
+      "parity_gate": {
+        "schema": "theme_lab_runtime_surface_parity.v2",
+        "status": "non_authoritative_target_findings_present",
+        "port_requirement_eligible_count": 0,
+        "quarantined_count": 5,
+        "target_acceptance_only_count": 5,
+        "required_uncertified_count": 0,
+        "quarantined_findings": [
+          {
+            "kind": "surface_text_color_changed_on_image_background",
+            "surface_ids": [
+              "content.article",
+              "content.link",
+              "content.links",
+              "page.normal"
+            ],
+            "selector": "#page-content a[href]",
+            "status": "INSUFFICIENT_EVIDENCE",
+            "blocks_port_conclusion": false
+          },
+          {
+            "kind": "surface_text_color_changed_on_image_background",
+            "surface_ids": [
+              "content.article",
+              "content.link",
+              "content.links",
+              "page.normal"
+            ],
+            "selector": "#page-content a[href]",
+            "status": "INSUFFICIENT_EVIDENCE",
+            "blocks_port_conclusion": false
+          },
+          {
+            "kind": "surface_navigation_viewport_escape",
+            "surface_ids": [
+              "nav.mobile-top"
+            ],
+            "selector": "ul",
+            "status": "INSUFFICIENT_EVIDENCE",
+            "blocks_port_conclusion": false
+          },
+          {
+            "kind": "surface_navigation_viewport_escape",
+            "surface_ids": [
+              "nav.mobile-top"
+            ],
+            "selector": "li",
+            "status": "INSUFFICIENT_EVIDENCE",
+            "blocks_port_conclusion": false
+          },
+          {
+            "kind": "surface_navigation_viewport_escape",
+            "surface_ids": [
+              "content.link",
+              "content.links",
+              "nav.mobile-top"
+            ],
+            "selector": "a",
+            "status": "INSUFFICIENT_EVIDENCE",
+            "blocks_port_conclusion": false
+          }
+        ]
+      }
+    }
+  },
+  "authority_boundary": "All target and runtime-surface findings above are SCP-JP local acceptance only unless independently bound by the frozen real-Wikidot A/B receipt; none authorize additional candidate CSS."
+}

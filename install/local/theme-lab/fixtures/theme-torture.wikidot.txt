@@ -62,5 +62,10 @@ x^2 + y^2 = z^2
 [[/div]]
 
 [[div class="tl-component tl-rate"]]
-[[module Rate]]
+[[div class="page-rate-widget-box"]]
+[[span class="rate-points"]]評価: +1[[/span]]
+[[span class="rateup btn btn-default"]]+[[/span]]
+[[span class="ratedown btn btn-default"]]–[[/span]]
+[[span class="cancel btn btn-default"]]x[[/span]]
+[[/div]]
 [[/div]]

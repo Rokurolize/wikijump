@@ -6056,25 +6056,54 @@
               "sha256": "38a3de3d2a1987b57615dfa215eeaddde2fe31e5ffb5d7ce4f190656c18dcee2"
             }
           ]
+        },
+        {
+          "marker": "SCP-JP Wikidot Inkblot navigation correction: contain the third narrow mobile submenu.",
+          "sha256": "09b878d5d1b22d84a37a08288cb7ba94e88e65bcf338b5581170dc026d7152b5",
+          "origin": "target-certified-replacement",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "rationale": "Read-only SCP-JP Wikidot A/B found the third mobile submenu 2.83px beyond the right viewport edge at 320px with the adaptation removed; the exact current CSS with this right-edge anchor passes all submenu, item, and link bounds at 320px and 390px.",
+          "evidence": [
+            {
+              "path": "inkblot/authority-evidence/inkblot-narrow-navigation/receipt.json",
+              "sha256": "4e63736393e73def4a023bcbe05348e294a2de190bcf77da591aea0ee0e6b840",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "published_css_sha256": "c3dd803cfa39221bccb3379eb312c945cf3c3aae931be60da0ad9d6a386df0ff",
+          "scope": {
+            "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+            "state": "navigation",
+            "viewports": [
+              320,
+              390
+            ],
+            "selectors": [
+              ".mobile-top-bar > ul > li > ul",
+              ".mobile-top-bar > ul > li > ul li",
+              ".mobile-top-bar > ul > li > ul a"
+            ]
+          }
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
         "candidate-input.css": "dd984fa9804edb30594e8322f3d478ed0196c662e950a131872a3d312b6c68f1",
-        "authority-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "authority-overrides.css": "c476100184db923edca24453a64b0a288e05cd03d02fed7eb65bbb3139bcf871",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/croqstyle.wikidot.txt": "9c8b316516f374d664c92042a1913268e9018a7eaeaaac1f5011e16546bab529",
         "source-includes/croqstyle-input.css": "0fdfceb0a44d0fb558b9c70e6e5b7677fb2cc917e9e7a4446d44e163c191f679",
-        "source-css-includes.json": "305a2efe22658437210a164b05216472fe60b93ff6d029db3f858c27b61aac6d"
+        "source-css-includes.json": "305a2efe22658437210a164b05216472fe60b93ff6d029db3f858c27b61aac6d",
+        "maintenance/jp-overrides.css": "c476100184db923edca24453a64b0a288e05cd03d02fed7eb65bbb3139bcf871"
       },
       "outputs": {
-        "candidate.css": "49d9d2fe39c30908844383098c67ddd815c64f95b5ba0bb6dd249c10294fca60",
-        "candidate-source.css": "450a11a4fc62ec0f2683bc718dab8db5f9cae3cbc6b8765cd9eb8e8999e7a1a4",
-        "candidate.wikidot.source.txt": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
-        "candidate.wikidot.txt": "0442618a6a9e3245329e467e9a26c2e5f135c994ed78f085719be9817888e3bc",
+        "candidate.css": "c3dd803cfa39221bccb3379eb312c945cf3c3aae931be60da0ad9d6a386df0ff",
+        "candidate-source.css": "dd9a2d60bda57c555fb14c53029002237a569e5400b23a574becfdc19ee5d805",
+        "candidate.wikidot.source.txt": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a",
+        "candidate.wikidot.txt": "5a4c255a614b84147debde1dbb944f2f04d6a9167157951a317f6eebb2a9f681",
         "maintenance/base.wikidot.txt": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
-        "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "maintenance/final.wikidot.txt": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f"
+        "maintenance/jp-overrides.css": "c476100184db923edca24453a64b0a288e05cd03d02fed7eb65bbb3139bcf871",
+        "maintenance/final.wikidot.txt": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",

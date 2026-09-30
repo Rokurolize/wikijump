@@ -101,6 +101,17 @@ test("surface CSS auto-discovery includes History and Files even when evidence i
   assert.equal(reviewed.surfaces.find((row) => row.id === "page.files").parity_review.may_treat_differences_as_port_requirements, false);
 });
 
+test("Inkblot picker tab selectors map to uncertified local tabview scope", () => {
+  const review = reviewRuntimeSurfaceFinding({
+    kind: "style_change",
+    selector: ":root:has(.picker li:nth-child(8).selected), .picker li:nth-child(8) em",
+  });
+  assert.deepEqual(review.surface_ids, ["content.tabview"]);
+  assert.equal(review.conclusion_resolution, "LOCAL_TARGET_ACCEPTANCE_ONLY");
+  assert.equal(review.port_conclusion_eligible, false);
+  assert.equal(review.blocks_port_conclusion, false);
+});
+
 test("uncertified and unclassified runtime findings cannot become port next-actions", () => {
   const verdict = buildVerdict({extraIssues: [
     {severity: "error", kind: "surface_fixture_missing", surface: "page.history", selector: ".page-history"},

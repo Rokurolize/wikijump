@@ -10,5 +10,8 @@ print(json.dumps(p))`],{encoding:'utf8',cwd:new URL('../../../..',import.meta.ur
  const preview=JSON.parse(run.stdout);
  assert.doesNotMatch(preview,/module\s+CSS|body\{color:red/iu);
  assert.doesNotMatch(preview,/\[\[div[^\n]*\[\[div/u);
+ assert.match(preview,/class="page-rate-widget-box"/u);
+ assert.match(preview,/class="rate-points"/u);
+ assert.doesNotMatch(preview,/module\s+Rate/iu);
  assert.match(preview,/Article/u);
 });
