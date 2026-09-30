@@ -294,8 +294,8 @@
       "rationale": "Per-theme real SCP-JP A/B at 320px and 390px; every submenu/item/link stays inside both viewport edges. Preserve the wrapped row, source menu widths, palette and link layout. Space also retains its separate header grid correction; Turbo bounds only the invisible masthead responsible for remaining 320px document overflow.",
       "evidence": [
         {
-          "path": "authority-evidence/paperstack-published-final/receipt.json",
-          "sha256": "e52500dead015b14f5ca5694b591d9d908e8f77845cde20f96d5f29748093f92",
+          "path": "authority-evidence/paperstack-navigation-remeasured/receipt.json",
+          "sha256": "cbc5b808883aa521fc470d087b69957831941d99f0d9c02ad140c55af06e7043",
           "decision_authority": "REAL_WIKIDOT_TARGET_AB"
         }
       ],

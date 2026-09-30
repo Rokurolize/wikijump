@@ -145,7 +145,10 @@ export async function runAdaptationAB({url, cacheDir, css = '', withoutCss = '',
               style:Object.fromEntries(['display','visibility','opacity','position','box-sizing','transform','margin-left','margin-right','padding-left','padding-right','content','background-size','width','min-width','left','right','inset-inline-start','inset-inline-end','white-space'].map(p=>[p,getComputedStyle(el,pseudo).getPropertyValue(p)]))})),
             search:input?{display:getComputedStyle(input).display,focused:document.activeElement===input}:null};
         }, {state,index,selectors,headerInk,computedContract});
-        const bounds = measurement.rows.map(row=>viewportEscape(row.rect, width));
+        // Compare against the browser's measured layout viewport. The requested
+        // emulation width is only an input; Chromium may report a fractional
+        // client box after scrollbar/layout rounding.
+        const bounds = measurement.rows.map(row=>viewportEscape(row.rect, measurement.viewport_width));
         const stem = `${variant}-${width}-${state}-${index}`;
         const screenshot = `${stem}.png`, dom = `${stem}.html.gz`;
         await page.screenshot({path:path.join(outputDir,screenshot),animations:'disabled'});
