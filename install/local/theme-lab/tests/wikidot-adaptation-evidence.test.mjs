@@ -77,3 +77,40 @@ test('real Sigma-10 return controls fit and saved page suppresses the preview-on
     assert.ok(row.measurement.document_width<=row.width+1);
   }
 });
+
+test('Flopstyle Dark current Sigma-10 credit acceptance uses the real return component',()=>{
+  const r=receipt('flopstyle-dark-sigma10-credit-candidate-current');
+  assert.equal(r.url,'https://pseudo-scp-jp.wikidot.com/sigma-10:main');
+  assert.equal(r.public_writes,0);
+  assert.equal(r.external_browser_requests,0);
+  assert.deepEqual([...new Set(r.rows.map(row=>row.width))],[320,390]);
+  assert.deepEqual([...new Set(r.rows.map(row=>row.state))],['credit-otherwise']);
+  const cssHash=digest(fs.readFileSync(path.join(ports,'flopstyle-dark/candidate.css')));
+  const without=r.rows.filter(row=>row.variant==='without');
+  const withTheme=r.rows.filter(row=>row.variant==='with');
+  assert.equal(without.length,2);
+  assert.equal(withTheme.length,2);
+  for(const row of [...without,...withTheme]) {
+    assert.equal(row.pass,true,`${row.variant}/${row.width}`);
+    assert.equal(row.measurement.document_width,row.width,`${row.variant}/${row.width}`);
+    assert.equal(row.measurement.selector_coverage['.creditRateOtherwiseBottom .return-credits'],1);
+    assert.equal(row.measurement.selector_coverage['.creditRateOtherwiseBottom .return-credits a'],1);
+    const dom=gunzipSync(fs.readFileSync(path.join(evidence,'flopstyle-dark-sigma10-credit-candidate-current',row.dom))).toString();
+    assert.match(dom,/class="[^"]*\breturn-credits\b/u);
+    assert.doesNotMatch(dom,/class="[^"]*\bcredit-back-link\b/u);
+  }
+  assert.ok(withTheme.every(row=>row.css_sha256===cssHash));
+  assert.ok(without.every(row=>row.css_sha256===digest(Buffer.alloc(0))));
+
+  // The shared visual fixture is intentionally historical Sigma-9 diagnostic
+  // markup. Its synthetic iframe replacement must never own Sigma-10 credit
+  // acceptance or authorize a Flopstyle source correction.
+  const fixtureDir=path.join(ports,'interactive-visual-fixture');
+  const fixture=JSON.parse(fs.readFileSync(path.join(fixtureDir,'fixture-source.json'),'utf8'));
+  assert.equal(fixture.target_version,'SIGMA9_HISTORICAL_SOURCE_WITH_SYNTHETIC_SUBSTITUTIONS');
+  assert.equal(fixture.decision_authority,'SYNTHETIC_DIAGNOSTIC_ONLY');
+  assert.equal(fixture.port_conclusion_eligible,false);
+  assert.ok(fixture.synthetic_selectors.includes('.credit-back-link'));
+  const builder=fs.readFileSync(path.join(fixtureDir,'build-fixture.mjs'),'utf8');
+  assert.match(builder,/--target=sigma10[\s\S]*?cannot represent Sigma-10/u);
+});
