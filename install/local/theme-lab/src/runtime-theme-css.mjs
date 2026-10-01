@@ -18,6 +18,26 @@ function removeExactModule(css,moduleCss){
   return {css:`${css.slice(0,index)}${css.slice(index+body.length)}`.replace(/\n{3,}/gu,'\n\n'),removed:true};
 }
 
+function removeTrailingTruncatedModule(css,moduleCss){
+  const body=moduleCss.trim();
+  const trimmed=css.trimEnd();
+  if(!body||!trimmed)return {css,removed:false};
+  // Historical authority migration preserved a few concatenated stylesheet
+  // artifacts whose final showcase module lost only its closing braces. Treat
+  // that as the same source-backed module only when the candidate ends with a
+  // unique prefix and every missing source byte is a closing brace/whitespace.
+  let matched=0;
+  const max=Math.min(body.length,trimmed.length);
+  for(let n=max;n>0;n--){
+    if(trimmed.endsWith(body.slice(0,n))){matched=n;break;}
+  }
+  if(!matched||matched===body.length||!/^[}\s]+$/u.test(body.slice(matched)))return {css,removed:false};
+  const prefix=body.slice(0,matched);
+  const index=trimmed.lastIndexOf(prefix);
+  if(index<0||trimmed.indexOf(prefix)!==index||index+prefix.length!==trimmed.length)return {css,removed:false};
+  return {css:`${trimmed.slice(0,index).trimEnd()}\n`,removed:true};
+}
+
 // Theme pages often carry presentation-only CSS under [[iftags +theme]] or
 // [[iftags +テーマ]]. Generic acceptance fixtures represent articles using the
 // reusable theme, not the theme/showcase page itself. Remove only source-backed
@@ -30,13 +50,16 @@ export function genericRuntimeThemeCss({candidateInput,candidateSource,candidate
   const runtimeIndexes=new Set(runtimeModules.map(row=>row.index));
   let css=candidateInput;
   let removed=0;
+  let removedTruncated=0;
   let unmatched=0;
   for(const module of pageModules){
     if(runtimeIndexes.has(module.index))continue;
     const result=removeExactModule(css,module.css);
-    css=result.css;
-    if(result.removed)removed+=1;
+    if(result.removed){css=result.css;removed+=1;continue;}
+    const truncated=removeTrailingTruncatedModule(css,module.css);
+    css=truncated.css;
+    if(truncated.removed)removedTruncated+=1;
     else unmatched+=1;
   }
-  return {css,removed_showcase_modules:removed,unmatched_showcase_modules:unmatched};
+  return {css,removed_showcase_modules:removed,removed_truncated_showcase_modules:removedTruncated,unmatched_showcase_modules:unmatched};
 }

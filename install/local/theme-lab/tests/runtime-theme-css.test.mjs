@@ -36,6 +36,16 @@ test('generic runtime leaves duplicate exact text untouched when its source occu
   assert.equal(result.unmatched_showcase_modules,1);
 });
 
+test('generic runtime removes a trailing showcase module truncated only by closing braces',()=>{
+  const source='[[module CSS]].base { color: black; }[[/module]][[iftags +theme]][[module CSS]]@media(max-width:1px){.showcase{display:none}}[[/module]][[/iftags]]';
+  const candidateInput='.base { color: black; }\n@media(max-width:1px){.showcase{display:none\n';
+  const result=genericRuntimeThemeCss({candidateInput,candidateSource:source,candidateTags:['theme']});
+  assert.equal(result.css,'.base { color: black; }\n');
+  assert.equal(result.removed_showcase_modules,0);
+  assert.equal(result.removed_truncated_showcase_modules,1);
+  assert.equal(result.unmatched_showcase_modules,0);
+});
+
 test('candidate page tags prefer explicit metadata, then retained JP tags, then source inference',()=>{
   assert.deepEqual(candidatePageTags({interactive_acceptance:{theme_source:{candidate_tags:['custom']}}},'[[iftags +テーマ]]'),['custom']);
   assert.deepEqual(candidatePageTags({source_identity:{jp:{tags:['en','テーマ']}}},'[[iftags +theme]]'),['en','テーマ']);
