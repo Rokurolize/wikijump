@@ -1,0 +1,200 @@
+/* greek */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/bf4cf44657f35e99e05c83f5b1e7aa39d29136dbc2e821e0425e7e6ddeb255f2") format('woff2'), url("/o/82b1abbeafde629c8f822f472dc5cab450d35787de55973407bcd134306b0cd6") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/9cf5dc4ae558b1dfb83d5700fb991b3e497f64f5dcf9d026d2640540e31100f7") format('woff2'), url("/o/0d7115a14e36370c97f44476dbacb4be9c268ffdadc83efe86ea6215fa7f7bf2") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/21058252dd24a8ac10774f96390c81677b12bb4a80954c084b46c21dd99cec63") format('woff2'), url("/o/12ba85924f6cda0bbd79ee58d1cbf2fab3b0eb865c84b8418cc7369fd789a705") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/a3fa160474fb65b5aa2d39cb0209e3a414c8bc6b9001a83c610916da117778dd") format('woff2'), url("/o/628452c600d70b92140b67ba894cf7ed56e418d867979d0bca9fe50873c674b5") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/6befe1d33cbce2c5c457934740212d2451d20912ca8e3d3e38d2af7c95b28cf3") format('woff2'), url("/o/89f735453f06758c237de1a4ba506a497b758974603bb9aab41ebe41e3af14bb") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/2a7facad5e91f16a52721eabaa09726d5452738f23499c6fafbd759b90d3d77d") format('woff2'), url("/o/e0943ba9b42510a40e2bb9b21e5a0fb0c02924bf6b13f1fcf67004306cfb680e") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/1eec0f3c2dbcd0091d91cdfec727674c88eeef46a525d29998cc0e20c13456d6") format('woff2'), url("/o/200487aa638921e09512a16c29bb570ec29a990eae477c538f8b2e8a60c33362") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/653f6bc0a372366cbba09fb1e253b82efac17988aecddc65988f9aa9079f3711") format('woff2'), url("/o/0328e6b2635f9b0d47cc4d2f7d8202c9b462ccee09656fbf4b4ec8544140afde") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/2c233b308be99b0044d6b4b6bf341f0cf0f4832181178684eeb499a7fef1612f") format('woff2'), url("/o/ffe93eae369c82f1392ed247ad59836f9cebcd09334343f6425ffed83607fdcb") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/48c3abdc969c002558d7b0d62bd9163f7e8136423b88bf1884d65672662f944c") format('woff2'), url("/o/45dadd2a99263b367c718cb252a8455fa212a28492e29d870688101cfc81ef1f") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/4f997180fe2bfdbd78bb5636995513f6b6f4289b9d90f11e39633f4ec231a0c9") format('woff2'), url("/o/4af8c9721d8c335080258ee5a5420288c6f72c458bef2dea41ea1322887db6c2") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/530c2b2550749d670a2f0cff1250452abdcd0c32659edb13a4645fdd81ab6fc2") format('woff2'), url("/o/438e9e27d839439dcaa08a0af3ad49fffd905cec9a863ebcdd8aedd8948d83ec") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/9d287b626587cdab7c06ea8b5daf5a8a7263fd12c5c4ef007feebce528b0ab95") format('woff2'), url("/o/af11f9e531511b5e27f8686809c8e6ea77339141335067fdb3dba62eb5944b1e") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/bb5d8634f36eb59b87d8e0292d10567fd62c3477c17417eec69510749ed71da5") format('woff2'), url("/o/d5ada44a86bccdc80643c18b50cb6768346967676368fc84bf50dcce0b30c15f") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/95eaee0cb4a0cc1bb2f7b0cb8cd5c80c4fd30d79d3ff743dd251f8ec82ed68be") format('woff2'), url("/o/afe1907ad2d91974dde94a0d384c93e99d3563a4aee86b4a59014095b0118e0c") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/83e1e67c6d22c8101b1658878f4ae5ab5db0ca55d2ad0b0e9c38e4cde730665b") format('woff2'), url("/o/45de90f71436bc0b8552420feae66d645e24363bc549199502c9c2ea0cab3296") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/c89cc7fc829444744c08bbcec0d5372c5647daa35736c9a5cb400717d0e241ff") format('woff2'), url("/o/90d8e5f27417a5236f9a4bb5f7d368615baa052f94757d27f9f9aa7390eae786") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/00dfc4b7efac31e7b3c99dbcce603469f5b24e2f5955ce2ee06ce8741a78c226") format('woff2'), url("/o/791b2207554a0ac169b358b22a226938bbcdb29a06f748932a80981bd963b7fd") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/e0f89acf334a6dd63eca0d5aea030b6728f475803991ca4d1ea67bcab904197b") format('woff2'), url("/o/5271f0964f09a93140aebfa007cdd2c610abd63bd65e72562f18ce2bb646df55") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Sofia Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/e831b3946435cefe836922eddfc119b82e0ff786fd2e2e4822d0040d98bc7ed4") format('woff2'), url("/o/93ecc15dfabe5bd0b8096795cbe34bbd865b680223f028924ac32ba4e232b546") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+

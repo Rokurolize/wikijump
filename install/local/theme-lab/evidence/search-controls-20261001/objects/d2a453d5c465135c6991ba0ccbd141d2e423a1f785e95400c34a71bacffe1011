@@ -1,0 +1,14 @@
+@font-face {
+  font-family: 'Nanum Gothic Coding';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/b518392d7d75ec794c208e7188cc628577652c363388d86448a2aa179785de9b") format('truetype');
+}
+@font-face {
+  font-family: 'Nanum Gothic Coding';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/o/36a90bdd3181ee0deffce180089c23ed85ebf59318070de1107da751436270b1") format('truetype');
+}

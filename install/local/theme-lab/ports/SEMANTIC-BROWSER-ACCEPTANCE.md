@@ -24,9 +24,9 @@ stale provenance and unanswered questions block completion.
 | --- | --- |
 | Current inputs and observations | Candidate/source/baseline/fixture/asset/action/runtime hashes; completion independently opens bound artifacts and checks the current inventory. |
 | Capture safety | Explicit action responses, errors, assets, network counts and exact screenshot binding. Pending image review is not an action failure. Other unknown items remain blocking. |
-| Maintained action execution | The known action contract and clean execution. This establishes execution only. A hidden query control that prevented typing remains a source-authority gap. |
+| Maintained action execution | The known action contract and clean execution. This establishes execution only. Search types/focuses a visible query; a concealed query instead requires a real visible-button native navigation request, the exact encoded current value and a current source-side action receipt. An unexercised or unbound alternative remains a source-authority gap. |
 | Document containment | Measured document and client widths with the existing one-pixel rounding tolerance. |
-| Title intersections | Geometry plus effective ancestor visibility and overflow clipping. Hidden intersections are machine facts. Missing visibility requires another measurement. Visible intersections require an explicit composition question. |
+| Title intersections | Geometry plus effective ancestor visibility and overflow clipping. Hidden intersections and menus crossing only empty title-container space are machine facts. Visible title text ranges must actually intersect the other element before a composition question is created. Missing visibility/text geometry requires another measurement. |
 | Source visual identity | One question per theme and candidate/source/base/baseline identity, binding every declared responsive normal-page observation. Review imagery, typography, palette and information hierarchy against the frozen upstream source and source rendering, explaining documented localization differences. |
 | Full package acceptance | The full five-viewport paired check, Japanese platform-font proof, CSS-derived surface checks, interactions, torture corpus, dependency/source authority and combined port/target verdict remain independently mandatory. A browser question cannot override them. |
 
@@ -82,12 +82,35 @@ or article observations.
 
 Semantic promotion recomputes the selected runtime file hashes from the
 current checkout. A syntactically valid old runtime digest is insufficient.
+It also anonymously dumps the current action/fixture contracts without opening
+a site page, then checks the exact contract for each observed state. New
+`theme_lab_action_contract.v3` captures bind action helpers separately from the
+read-only diagnostics collector. Adding an unrelated diagnostic selector does
+not alter that action contract. Legacy observations remain eligible only when
+their broad action-and-observer contract still exactly matches; unknown action
+models fail closed. Recomputing this cheap dependency graph never requires an
+unrelated screenshot recapture.
 
 Title measurements bind their producer separately from the existing action
 observer. Adding this measurement does not invalidate unrelated action
 execution. Old nonempty intersections without visibility are missing evidence,
 not inferred passes. Changed pixels alone neither prove nor disprove port
 correctness; an accepted question must retain its relevant evidence bindings.
+Supplementary title-text measurements are needed only for visible container
+intersections; already settled hidden/empty intersections retain their proof.
+Geometry producers bind composition facts/questions, while the source artistic
+identity question binds the actual rendering inputs and image. Adding a geometry
+observer does not change an unchanged source-identity image review.
+The current action proof remains independently mandatory; changing that proof
+without changing the painted normal image does not create another artistic
+identity judgment.
+
+The retained source-only search probes in `../evidence/search-controls-20261001/`
+exercise the native Wikidot submit listener against offline cached source HTML,
+CSS and JavaScript. Each theme receipt binds its source, viewport, query
+visibility, actual navigation, measurement programs and retained artifacts.
+They settle only that action alternative; recorded missing reference resources
+remain unresolved for any broader source appearance or asset obligation.
 
 ## Historical-source runtime correction
 

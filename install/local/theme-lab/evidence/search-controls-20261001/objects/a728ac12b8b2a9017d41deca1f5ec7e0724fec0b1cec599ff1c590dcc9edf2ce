@@ -1,0 +1,22 @@
+/* latin */
+@font-face {
+  font-family: 'Azeret Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/83f738bd44f3d7542f2adf6c78d2285b85c55fd349a44ded40f844fbcfbe1d81") format('woff2'), url("/o/67fbc1f3a6377543d991e314f86926a5ac3b57af3a3ab09ff1bd23909b4f5bb3") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'Azeret Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/3636903d3541fc091d909f0d307ae31059a2d5b6fdc50e1298083db4bec210ab") format('woff2'), url("/o/f35eb49d593c936ffe74ec647e862258de270a1cfcca09fffa3a092e892dda5e") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+

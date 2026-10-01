@@ -1,0 +1,112 @@
+[
+  {
+    "theme": "aesthetic-theme",
+    "url": "https://scp-wiki.wikidot.com/theme:aesthetic-theme",
+    "source_sha256": "35234ec38792ffc739258798c50bb91d993575fb23eb6b6a51c58c2d02b26efd"
+  },
+  {
+    "theme": "basalt",
+    "url": "https://scp-wiki.wikidot.com/theme:basalt",
+    "source_sha256": "df4b78d344536f5b7c363ac86b2ddc6f3c31b3647693f473169550e03fca17c5"
+  },
+  {
+    "theme": "bedrock",
+    "url": "https://scp-wiki.wikidot.com/theme:bedrock",
+    "source_sha256": "7f62a64c055d179d4b51746812fc8f288fd479661219bc3e607036c69dc86da5"
+  },
+  {
+    "theme": "black-highlighter-theme",
+    "url": "https://scp-wiki.wikidot.com/theme:black-highlighter-theme",
+    "source_sha256": "fa840cb320ea4de09864cd687aca308115f9027076d8c5712c3fb52cd5c31a58"
+  },
+  {
+    "theme": "cosmonaut",
+    "url": "https://scp-wiki.wikidot.com/theme:cosmonaut",
+    "source_sha256": "7d315826293db9af4419d47ffd594a19bfbe6bd458493de0dc410f34693a18a4"
+  },
+  {
+    "theme": "extra-black-highlighter-theme",
+    "url": "https://scp-wiki.wikidot.com/theme:extra-black-highlighter-theme",
+    "source_sha256": "7f4834eabf433320747d1334a18987e5cd9d976fba3872031e2c67cdf9ad6e31"
+  },
+  {
+    "theme": "flopstyle-dark",
+    "url": "https://scp-wiki.wikidot.com/theme:flopstyle-dark",
+    "source_sha256": "31af257ac4fde398b560f6106ee4f1e916291c40141938a9fcc5b6ef95335c46"
+  },
+  {
+    "theme": "hansarp",
+    "url": "https://scp-wiki.wikidot.com/theme:hansarp",
+    "source_sha256": "d8484393306d5ae7ded365f3a0a611258213a0dc9cb011829015802bbfbaa01e"
+  },
+  {
+    "theme": "inkblot",
+    "url": "https://scp-wiki.wikidot.com/theme:inkblot",
+    "source_sha256": "b40f3fbe59527d76b49423d9297cb30e41599b32b3b2e2912203bac066dbb0af"
+  },
+  {
+    "theme": "isolated-terminal",
+    "url": "https://scp-wiki.wikidot.com/theme:isolated-terminal",
+    "source_sha256": "120ce0a71fa1ca235d3ed1955957ebe037bdb8e4a160b7099fe810d61f17a257"
+  },
+  {
+    "theme": "jakstyle",
+    "url": "https://scp-wiki.wikidot.com/theme:jakstyle",
+    "source_sha256": "001da31e6e309460792f950ba5bcb78eba3c8a7305efb7a3e21e05365615d270"
+  },
+  {
+    "theme": "minimalist-bhl",
+    "url": "https://scp-wiki.wikidot.com/theme:minimalist-bhl",
+    "source_sha256": "d076f29e54167c0adc56808ccce19a17511162997bd4816470cb34812a7e282a"
+  },
+  {
+    "theme": "monotypical",
+    "url": "https://scp-wiki.wikidot.com/theme:monotypical",
+    "source_sha256": "7584ab59275e4e7300966646f2f8b42a2833e3087fa8353c508f26c2a8f89bc4"
+  },
+  {
+    "theme": "ouroborous-theme",
+    "url": "https://scp-wiki.wikidot.com/theme:ouroborous-theme",
+    "source_sha256": "b172231574fa6f71b41be2fb5065293aafc9c772d808a268009798e7aba4ab4f"
+  },
+  {
+    "theme": "penumbra",
+    "url": "https://scp-wiki.wikidot.com/theme:penumbra",
+    "source_sha256": "befb285563d3f8d956f49726d2272a051bdab6ac4b9a84dd0ba856490c0890b5"
+  },
+  {
+    "theme": "redtape",
+    "url": "https://scp-wiki.wikidot.com/theme:redtape",
+    "source_sha256": "7362f7971e67776bff08f0f29e39d43f0d38c03a432e063f908a4dc07ae30ea1"
+  },
+  {
+    "theme": "scp-offices-theme",
+    "url": "https://scp-wiki.wikidot.com/theme:scp-offices-theme",
+    "source_sha256": "b102a2474cef0f96202818ee1e283eab2807c83db8c69479e642b2758629a00a"
+  },
+  {
+    "theme": "scpedia",
+    "url": "https://scp-wiki.wikidot.com/theme:scpedia",
+    "source_sha256": "195a9d70bbfed2cf6cb177aec6b7f8f236c7ca161af19b040d1a653f8da16284"
+  },
+  {
+    "theme": "sigma",
+    "url": "https://scp-wiki.wikidot.com/theme:sigma",
+    "source_sha256": "e2f126ba6f6debd4cbde5f1712f04da794e2820f0180a6501b54dbe4e318639c"
+  },
+  {
+    "theme": "site",
+    "url": "https://scp-wiki.wikidot.com/theme:site",
+    "source_sha256": "17f5d83fc92f3f171fcdb790f78fe207db86203eeca1e34f508631fb36daca34"
+  },
+  {
+    "theme": "skipos",
+    "url": "https://scp-wiki.wikidot.com/theme:skipos",
+    "source_sha256": "846904b0214ea2a126cccdd984834608efc30236df82ebd3b1b86da36c8969dd"
+  },
+  {
+    "theme": "wikifot",
+    "url": "https://scp-wiki.wikidot.com/theme:wikifot",
+    "source_sha256": "406f9fdca96043830e4656383a55643885cf1bd55a2237c360ce5c1f14d85a9e"
+  }
+]

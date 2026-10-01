@@ -1,6 +1,7 @@
+#!/usr/bin/env node
+import {readCurrentBrowserContracts,observationHasCurrentActionAndFixture} from '../src/current-browser-contracts.mjs';
 import {validateSemanticSourceAuthority} from '../src/semantic-source-authority.mjs';
 import {runtimeSurfaceContractSha} from '../src/browser-runtime-contract.mjs';
-#!/usr/bin/env node
 // Complete only the exact image review dimension of a full recorded check.
 // Failed measurements, stale identities and missing interactive states remain
 // blockers. Historical receipts are never inputs to this operation.
@@ -26,6 +27,7 @@ const candidate=candidateIdentity(css,base).candidateSha;
 const subset={...audit,records:audit.records.filter(row=>row.theme===name)};
 const failures=validateBrowserCoverage(subset,[name]);
 const semantic=subset.acceptance_model===SEMANTIC_BROWSER_MODEL;
+const captureContracts=semantic?readCurrentBrowserContracts(root,'ports/current-acceptance/run-contract.json'):null;
 if(semantic){
  failures.push(...validateSemanticBrowserAcceptance(subset).failures, ...validateSemanticSourceAuthority(root,subset));
  for(const {binding,label} of semanticReviewArtifactBindings(subset)){
@@ -35,6 +37,7 @@ if(semantic){
 }
 for(const row of subset.records){
  if(semantic&&row.runtime_surface_contract_sha256!==runtimeSurfaceContractSha(path.resolve(root,'../../..'),row.surface,row.viewport))failures.push(`Stale interactive runtime: ${row.surface}.${row.state}`);
+ if(semantic&&!observationHasCurrentActionAndFixture(row,captureContracts))failures.push(`Stale interactive action/fixture: ${row.surface}.${row.state}`);
  if(row.candidate_sha256!==candidate||row.candidate_source_sha256!==sha(source))failures.push(`Stale interactive candidate: ${row.surface}.${row.state}`);
  if(!semantic && (!['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE'].includes(row.classification)||!row.reviewed_after_last_change||row.unconfirmed_items?.length||row.asset_failures?.length||row.page_errors?.length||row.external_requests_sent!==0||row.failure))failures.push(`Unaccepted interaction: ${row.surface}.${row.state}`);
  if(!semantic && row.visual_review?.screenshot_sha256!==row.screenshot_sha256)failures.push('Unbound interactive image review');

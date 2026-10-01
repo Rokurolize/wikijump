@@ -12,6 +12,7 @@ export function runtimeFilesForObservation(surface, viewport) {
           ? ['framerail/src/lib/sigma-esque/wikidot.svelte', 'framerail/src/routes/+layout.svelte']
           : ['framerail/src/routes/[slug]/[...extra]/PageView.svelte'];
   if (viewport === 'mobile' || viewport === 'narrow-mobile') files.push('framerail/src/lib/sigma-esque/wikidot.svelte');
+  if (surface === 'shell.search' && viewport !== 'mobile' && viewport !== 'narrow-mobile') files.push('framerail/src/lib/wikidot/wikidot-search.js');
   return [...new Set(files)];
 }
 

@@ -1,0 +1,35 @@
+@font-face {
+  font-family: 'Noto Sans TC';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/619662a0583f38311e92666927e5edbfd30f2a1fbe8593685660bd11bdd46a10") format('truetype');
+}
+@font-face {
+  font-family: 'Noto Sans TC';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/o/1d683cc46dc921e8e9d56bde650f2aa0ac1c736cd1ce45e3926139a945f8b964") format('truetype');
+}
+@font-face {
+  font-family: 'Noto Sans TC';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/o/110799f1350c08512b996d97d8a71170d945f1f6d2f67f80df0b8a7ad8e52108") format('truetype');
+}
+@font-face {
+  font-family: 'Noto Sans TC';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/o/33e8464f3432fd9eba5fa6ff74f5fb9ee612cad703877bd71c36e6f167c0a7e3") format('truetype');
+}
+@font-face {
+  font-family: 'Noto Sans TC';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/o/8083f3d680aca1c8a4ff04063af3019d1a33fa329dc8557c9074c30eb8725194") format('truetype');
+}

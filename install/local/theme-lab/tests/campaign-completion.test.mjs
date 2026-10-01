@@ -121,17 +121,22 @@ test('semantic completion accepts bound questions and measured facts, not a PASS
     source_snapshot:mock.document.packages[0].inputs.source,source_html:referenceHtml,source_rendering_receipt:referenceCapture,source_rendering:{path:'ports/captures/test.png',sha256:mock.audit.records[0].screenshot_sha256},
     decision_authority:'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY',port_conclusion_eligible:false}]));
   mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
-  assert.deepEqual(checkCampaignCompletion(mock.root).failures,[]);
+  assert.deepEqual(checkCampaignCompletion(mock.root,{captureContractReader:()=>new Map(browserContract.states.map(state=>[`${state.surface}.${state.state}`,{action_contract_sha256:digest('action'),legacy_action_contract_sha256:digest('action'),fixture_contract_sha256:digest('fixture')}]))}).failures,[]);
+  mock.audit.records[0].capture_state_action_contract_sha256=digest('superseded action');
+  mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
+  assert.ok(checkCampaignCompletion(mock.root,{captureContractReader:()=>new Map(browserContract.states.map(state=>[`${state.surface}.${state.state}`,{action_contract_sha256:digest('action'),legacy_action_contract_sha256:digest('action'),fixture_contract_sha256:digest('fixture')}]))}).failures.some(value=>value.includes('superseded browser action/fixture')));
+  mock.audit.records[0].capture_state_action_contract_sha256=digest('action');
+  mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
   const historyRuntime=path.join(mock.workspace,'framerail/src/lib/wikidot-history-contract.js');
   const previousRuntime=fs.readFileSync(historyRuntime);
   fs.appendFileSync(historyRuntime,' changed historical source primitive');
-  const runtimeFailures=checkCampaignCompletion(mock.root).failures;
+  const runtimeFailures=checkCampaignCompletion(mock.root,{captureContractReader:()=>new Map(browserContract.states.map(state=>[`${state.surface}.${state.state}`,{action_contract_sha256:digest('action'),legacy_action_contract_sha256:digest('action'),fixture_contract_sha256:digest('fixture')}]))}).failures;
   assert.ok(runtimeFailures.length>0);
   assert.ok(runtimeFailures.every(value=>value.includes('superseded browser runtime surface page.history')));
   fs.writeFileSync(historyRuntime,previousRuntime);
   mock.audit.records[0].visual_diagnostics.viewport.documentWidth=1500;
   mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
-  assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('machine failure document_containment')));
+  assert.ok(checkCampaignCompletion(mock.root,{captureContractReader:()=>new Map(browserContract.states.map(state=>[`${state.surface}.${state.state}`,{action_contract_sha256:digest('action'),legacy_action_contract_sha256:digest('action'),fixture_contract_sha256:digest('fixture')}]))}).failures.some(value=>value.includes('machine failure document_containment')));
  }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
 });
 
@@ -141,6 +146,6 @@ test('semantic completion rejects a candidate snapshot impersonating another ups
   const q=planBrowserAcceptance(mock.audit).visual_questions[0];
   mock.audit.semantic_reviews={[q.id]:{source_url:'https://scp-wiki.wikidot.com/theme:another',source_snapshot:mock.document.packages[0].inputs.source}};
   mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
-  assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('maintained upstream source authority')));
+  assert.ok(checkCampaignCompletion(mock.root,{captureContractReader:()=>new Map(browserContract.states.map(state=>[`${state.surface}.${state.state}`,{action_contract_sha256:digest('action'),legacy_action_contract_sha256:digest('action'),fixture_contract_sha256:digest('fixture')}]))}).failures.some(value=>value.includes('maintained upstream source authority')));
  }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
 });

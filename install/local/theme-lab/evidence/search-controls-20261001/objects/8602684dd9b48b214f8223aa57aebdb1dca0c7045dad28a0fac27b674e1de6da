@@ -1,0 +1,7 @@
+@font-face {
+  font-family: 'Secular One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/4d824c6a652946706135be99f2e11f0d2fa2203e9d8e52060e8a737d56ef5728") format('truetype');
+}

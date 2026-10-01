@@ -1,0 +1,671 @@
+{
+  "schema": "theme_lab_wikidot_search_control.v1",
+  "theme": "jakstyle",
+  "source_url": "https://scp-wiki.wikidot.com/theme:jakstyle",
+  "source_sha256": "001da31e6e309460792f950ba5bcb78eba3c8a7305efb7a3e21e05365615d270",
+  "observed_at": "2026-10-01T02:21:14.174Z",
+  "public_writes": 0,
+  "external_requests_sent": 0,
+  "offline": true,
+  "browser_version": "149.0.7827.55",
+  "browser_sha256": "2d18db9d8608b052b6a552ee00ec1e830f93692e928b65ecc67d693bd33fe801",
+  "original_html_sha256": "0930a7a9809fa2cad1fceedeb8e7279e6aeb53a30b37137fdcb589e709143514",
+  "replay_entry": "/o/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93",
+  "snapshot_sha256": "03da3d322e4c117847179665be045e70dc7cbf460343acc4d184957524ee96c4",
+  "artifacts": [
+    {
+      "path": "evidence/search-controls-20261001/objects/08173c5f173c59f3167933d82aefee0c4b8dd686e420239a65bbcadc05c90aca",
+      "sha256": "08173c5f173c59f3167933d82aefee0c4b8dd686e420239a65bbcadc05c90aca",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/0930a7a9809fa2cad1fceedeb8e7279e6aeb53a30b37137fdcb589e709143514",
+      "sha256": "0930a7a9809fa2cad1fceedeb8e7279e6aeb53a30b37137fdcb589e709143514",
+      "content_type": "text/html; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941",
+      "sha256": "12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941",
+      "content_type": "application/x-javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/1b2a6d1d2499e3861f22eaa3c5bd32f8722c6e3e2a78227ea093b4ba6c4a75a3",
+      "sha256": "1b2a6d1d2499e3861f22eaa3c5bd32f8722c6e3e2a78227ea093b4ba6c4a75a3",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/231630b39af902bf9ad98a22bd77b3c5359b18a9336b63bf599c31a76f1e08cd",
+      "sha256": "231630b39af902bf9ad98a22bd77b3c5359b18a9336b63bf599c31a76f1e08cd",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/264a84e138e9f97ca169107e0e1496fbbe1b9992645c170b435815a469a0e481",
+      "sha256": "264a84e138e9f97ca169107e0e1496fbbe1b9992645c170b435815a469a0e481",
+      "content_type": "application/javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/3c4bcaa08b5c35bda60406d30a3c0a12fa1b2df5e2aef2c0fcbcb7dd9b7bf87f",
+      "sha256": "3c4bcaa08b5c35bda60406d30a3c0a12fa1b2df5e2aef2c0fcbcb7dd9b7bf87f",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93",
+      "sha256": "47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93",
+      "content_type": "text/html; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/5421c43408f21aafd736d650414372269c8d35946ba7c5d26f60a2434bd0dbbb",
+      "sha256": "5421c43408f21aafd736d650414372269c8d35946ba7c5d26f60a2434bd0dbbb",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/565845b9046c7d6f2b52045796f3478fed5c1e482d901bf7842cd376df6acf77",
+      "sha256": "565845b9046c7d6f2b52045796f3478fed5c1e482d901bf7842cd376df6acf77",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c",
+      "sha256": "574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c",
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/5ae5709bd867a021b0f78984edd8d5d5414c47966dad4fdb0605a5f3ded1a146",
+      "sha256": "5ae5709bd867a021b0f78984edd8d5d5414c47966dad4fdb0605a5f3ded1a146",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583",
+      "sha256": "5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583",
+      "content_type": "text/css"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/635dfb450eccd5357914e89451c7f9ba3ceacffc40a21073050177f7219ab7ab",
+      "sha256": "635dfb450eccd5357914e89451c7f9ba3ceacffc40a21073050177f7219ab7ab",
+      "content_type": "application/x-javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/6d46b6f0fa89ede15b4ff437b045454b490f72a18b15b4450c77cec3439ee738",
+      "sha256": "6d46b6f0fa89ede15b4ff437b045454b490f72a18b15b4450c77cec3439ee738",
+      "content_type": "application/x-javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387",
+      "sha256": "7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387",
+      "content_type": "application/x-javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c",
+      "sha256": "7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c",
+      "content_type": "text/css"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/81bc3653a4eacbde774a64b336e511b3ca7633c48254a400a38d552b13359a0e",
+      "sha256": "81bc3653a4eacbde774a64b336e511b3ca7633c48254a400a38d552b13359a0e",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/a8ed3f79f6374f68c86fa08f75ee91b2a4cd0f17e643f72b5e57ef40ea608df7",
+      "sha256": "a8ed3f79f6374f68c86fa08f75ee91b2a4cd0f17e643f72b5e57ef40ea608df7",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc",
+      "sha256": "c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc",
+      "content_type": "application/x-javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/cead0032a013cc65a8c9917fa84e9e19744ef8021aa583d958e4faa2929736e1",
+      "sha256": "cead0032a013cc65a8c9917fa84e9e19744ef8021aa583d958e4faa2929736e1",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/d2a453d5c465135c6991ba0ccbd141d2e423a1f785e95400c34a71bacffe1011",
+      "sha256": "d2a453d5c465135c6991ba0ccbd141d2e423a1f785e95400c34a71bacffe1011",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/d7e30bc420b33c8923263e61f561f2b4b53b0a6c0935a4e859bab130ae745c14",
+      "sha256": "d7e30bc420b33c8923263e61f561f2b4b53b0a6c0935a4e859bab130ae745c14",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/d8620a74c386d50023f94c6d2cfbae8e8fcc7904ec78dec1c168eebf5c3f0b7f",
+      "sha256": "d8620a74c386d50023f94c6d2cfbae8e8fcc7904ec78dec1c168eebf5c3f0b7f",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/e7998efdd6ef4f941c4490f8dfaf463dc01472fa1999dd11cf2959593d0ae14a",
+      "sha256": "e7998efdd6ef4f941c4490f8dfaf463dc01472fa1999dd11cf2959593d0ae14a",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/e9bf71e15958bb16afa6e46e2f6d98397701599f9fb2846d9f051180ffd00a7f",
+      "sha256": "e9bf71e15958bb16afa6e46e2f6d98397701599f9fb2846d9f051180ffd00a7f",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/ed0652b49899259e10ff2b7270ffee4d9f07b4c2a46c8d95a7f86fa3e94e01d8",
+      "sha256": "ed0652b49899259e10ff2b7270ffee4d9f07b4c2a46c8d95a7f86fa3e94e01d8",
+      "content_type": "text/css; charset=utf-8"
+    }
+  ],
+  "scope": "Only the hidden header query and native visible-button search navigation. Missing reference resources remain recorded and do not certify source appearance or whole-site parity.",
+  "source_measurements": [
+    {
+      "theme": "jakstyle",
+      "url": "https://scp-wiki.wikidot.com/theme:jakstyle",
+      "viewport": "desktop",
+      "viewport_size": {
+        "width": 1440,
+        "height": 1000
+      },
+      "source_sha256": "001da31e6e309460792f950ba5bcb78eba3c8a7305efb7a3e21e05365615d270",
+      "loaded": {
+        "root_url": "https://scp-wiki.wikidot.com/theme:jakstyle",
+        "entry": "/o/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93",
+        "asset_count": 165,
+        "external_requests": 0,
+        "cache_hits": 1,
+        "failed_asset_count": 6,
+        "failed_assets": [
+          {
+            "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG-3FnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaGwHCnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaGzjCnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG1_CnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          }
+        ],
+        "browser_blocked_external_attempts": 23,
+        "browser_blocked_urls": [
+          "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+          "https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding:wght@400;700&display=swap",
+          "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+          "https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap",
+          "https://cdn.onesignal.com/sdks/OneSignalPageSDKES6.js?v=151607",
+          "http://interwiki.scpwiki.com/interwikiFrame.html?lang=en&community=scp&pagename=theme:jakstyle",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=0&theme=https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=1&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=2&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=3&theme=https://scp-wiki.wdfiles.com/local--code/theme%3Ajakstyle/1&css={$css}"
+        ],
+        "offline": true
+      },
+      "query": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "after_focus": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "button": {
+        "display": "inline-block",
+        "visibility": "visible",
+        "width": 27,
+        "height": 27
+      },
+      "handler": {
+        "search": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}",
+        "events": [
+          {
+            "type": "submit",
+            "fn": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}"
+          }
+        ]
+      },
+      "navigation": "/search:site/q/Search%20this%20site",
+      "action_error": null,
+      "original_html_sha256": "0930a7a9809fa2cad1fceedeb8e7279e6aeb53a30b37137fdcb589e709143514",
+      "replay_entry": "/o/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93",
+      "snapshot_sha256": "03da3d322e4c117847179665be045e70dc7cbf460343acc4d184957524ee96c4",
+      "public_writes": 0,
+      "external_requests_sent": 0
+    },
+    {
+      "theme": "jakstyle",
+      "url": "https://scp-wiki.wikidot.com/theme:jakstyle",
+      "viewport": "laptop",
+      "viewport_size": {
+        "width": 1024,
+        "height": 900
+      },
+      "source_sha256": "001da31e6e309460792f950ba5bcb78eba3c8a7305efb7a3e21e05365615d270",
+      "loaded": {
+        "root_url": "https://scp-wiki.wikidot.com/theme:jakstyle",
+        "entry": "/o/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93",
+        "asset_count": 165,
+        "external_requests": 0,
+        "cache_hits": 1,
+        "failed_asset_count": 6,
+        "failed_assets": [
+          {
+            "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG-3FnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaGwHCnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaGzjCnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG1_CnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          }
+        ],
+        "browser_blocked_external_attempts": 49,
+        "browser_blocked_urls": [
+          "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+          "https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding:wght@400;700&display=swap",
+          "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+          "https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap",
+          "https://cdn.onesignal.com/sdks/OneSignalPageSDKES6.js?v=151607",
+          "http://interwiki.scpwiki.com/interwikiFrame.html?lang=en&community=scp&pagename=theme:jakstyle",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=0&theme=https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=1&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=2&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=3&theme=https://scp-wiki.wdfiles.com/local--code/theme%3Ajakstyle/1&css={$css}"
+        ],
+        "offline": true
+      },
+      "query": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "after_focus": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "button": {
+        "display": "inline-block",
+        "visibility": "visible",
+        "width": 27,
+        "height": 27
+      },
+      "handler": {
+        "search": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}",
+        "events": [
+          {
+            "type": "submit",
+            "fn": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}"
+          }
+        ]
+      },
+      "navigation": "/search:site/q/Search%20this%20site",
+      "action_error": null,
+      "original_html_sha256": "0930a7a9809fa2cad1fceedeb8e7279e6aeb53a30b37137fdcb589e709143514",
+      "replay_entry": "/o/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93",
+      "snapshot_sha256": "03da3d322e4c117847179665be045e70dc7cbf460343acc4d184957524ee96c4",
+      "public_writes": 0,
+      "external_requests_sent": 0
+    },
+    {
+      "theme": "jakstyle",
+      "url": "https://scp-wiki.wikidot.com/theme:jakstyle",
+      "viewport": "tablet",
+      "viewport_size": {
+        "width": 768,
+        "height": 1024
+      },
+      "source_sha256": "001da31e6e309460792f950ba5bcb78eba3c8a7305efb7a3e21e05365615d270",
+      "loaded": {
+        "root_url": "https://scp-wiki.wikidot.com/theme:jakstyle",
+        "entry": "/o/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93",
+        "asset_count": 165,
+        "external_requests": 0,
+        "cache_hits": 1,
+        "failed_asset_count": 6,
+        "failed_assets": [
+          {
+            "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG-3FnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaGwHCnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaGzjCnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG1_CnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          }
+        ],
+        "browser_blocked_external_attempts": 726,
+        "browser_blocked_urls": [
+          "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+          "https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding:wght@400;700&display=swap",
+          "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+          "https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap",
+          "https://cdn.onesignal.com/sdks/OneSignalPageSDKES6.js?v=151607",
+          "http://interwiki.scpwiki.com/interwikiFrame.html?lang=en&community=scp&pagename=theme:aesthetic-theme",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=0&theme=https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=1&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=2&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css&css={$css}",
+          "https://floors.nitropay.com/f?s=143&c=JP&v=2"
+        ],
+        "offline": true
+      },
+      "query": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "after_focus": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "button": {
+        "display": "inline-block",
+        "visibility": "visible",
+        "width": 23.390625,
+        "height": 23.390625
+      },
+      "handler": {
+        "search": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}",
+        "events": [
+          {
+            "type": "submit",
+            "fn": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}"
+          }
+        ]
+      },
+      "navigation": "/search:site/q/Search%20this%20site",
+      "action_error": null,
+      "original_html_sha256": "0930a7a9809fa2cad1fceedeb8e7279e6aeb53a30b37137fdcb589e709143514",
+      "replay_entry": "/o/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93",
+      "snapshot_sha256": "03da3d322e4c117847179665be045e70dc7cbf460343acc4d184957524ee96c4",
+      "public_writes": 0,
+      "external_requests_sent": 0
+    }
+  ],
+  "superseded_measurements": [
+    {
+      "theme": "jakstyle",
+      "url": "https://scp-wiki.wikidot.com/theme:jakstyle",
+      "viewport": "desktop",
+      "viewport_size": {
+        "width": 1440,
+        "height": 1000
+      },
+      "source_sha256": "001da31e6e309460792f950ba5bcb78eba3c8a7305efb7a3e21e05365615d270",
+      "loaded": {
+        "root_url": "https://scp-wiki.wikidot.com/theme:jakstyle",
+        "entry_url": "http://127.0.0.1:46487/o/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93",
+        "entry": "/o/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93",
+        "asset_count": 165,
+        "external_requests": 0,
+        "cache_hits": 1,
+        "failed_asset_count": 6,
+        "failed_assets": [
+          {
+            "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG-3FnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaGwHCnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaGzjCnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG1_CnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          }
+        ],
+        "browser_blocked_external_attempts": 722,
+        "browser_blocked_urls": [
+          "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+          "https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding:wght@400;700&display=swap",
+          "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+          "https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap",
+          "https://cdn.onesignal.com/sdks/OneSignalPageSDKES6.js?v=151607",
+          "http://interwiki.scpwiki.com/interwikiFrame.html?lang=en&community=scp&pagename=theme:aesthetic-theme",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=0&theme=https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=1&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=2&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css&css={$css}",
+          "https://floors.nitropay.com/f?s=143&c=JP&v=2"
+        ],
+        "offline": true,
+        "url": "http://127.0.0.1:46487/o/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93"
+      },
+      "query": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "after_focus": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "button": {
+        "display": "inline-block",
+        "visibility": "visible",
+        "width": 27,
+        "height": 27
+      },
+      "handler": {
+        "search": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}",
+        "events": [
+          {
+            "type": "submit",
+            "fn": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}"
+          }
+        ]
+      },
+      "navigation": null,
+      "action_error": "locator.click: Timeout 1500ms exceeded.",
+      "original_html_sha256": "0930a7a9809fa2cad1fceedeb8e7279e6aeb53a30b37137fdcb589e709143514",
+      "replay_entry": "/o/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93",
+      "snapshot_sha256": "03da3d322e4c117847179665be045e70dc7cbf460343acc4d184957524ee96c4",
+      "public_writes": 0,
+      "external_requests_sent": 0
+    },
+    {
+      "theme": "jakstyle",
+      "url": "https://scp-wiki.wikidot.com/theme:jakstyle",
+      "viewport": "laptop",
+      "viewport_size": {
+        "width": 1024,
+        "height": 900
+      },
+      "source_sha256": "001da31e6e309460792f950ba5bcb78eba3c8a7305efb7a3e21e05365615d270",
+      "loaded": {
+        "root_url": "https://scp-wiki.wikidot.com/theme:jakstyle",
+        "entry_url": "http://127.0.0.1:46487/o/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93",
+        "entry": "/o/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93",
+        "asset_count": 165,
+        "external_requests": 0,
+        "cache_hits": 1,
+        "failed_asset_count": 6,
+        "failed_assets": [
+          {
+            "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG-3FnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaGwHCnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaGzjCnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG1_CnYw.ttf",
+            "code": "reference_object_too_large",
+            "message": "reference object exceeds 8388608 bytes"
+          }
+        ],
+        "browser_blocked_external_attempts": 726,
+        "browser_blocked_urls": [
+          "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+          "https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding:wght@400;700&display=swap",
+          "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+          "https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap",
+          "https://cdn.onesignal.com/sdks/OneSignalPageSDKES6.js?v=151607",
+          "http://interwiki.scpwiki.com/interwikiFrame.html?lang=en&community=scp&pagename=theme:aesthetic-theme",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=0&theme=https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=1&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=2&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css&css={$css}",
+          "https://floors.nitropay.com/f?s=143&c=JP&v=2"
+        ],
+        "offline": true,
+        "url": "http://127.0.0.1:46487/o/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93"
+      },
+      "query": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "after_focus": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "button": {
+        "display": "inline-block",
+        "visibility": "visible",
+        "width": 27,
+        "height": 27
+      },
+      "handler": {
+        "search": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}",
+        "events": [
+          {
+            "type": "submit",
+            "fn": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}"
+          }
+        ]
+      },
+      "navigation": null,
+      "action_error": "locator.click: Timeout 1500ms exceeded.",
+      "original_html_sha256": "0930a7a9809fa2cad1fceedeb8e7279e6aeb53a30b37137fdcb589e709143514",
+      "replay_entry": "/o/47f2cc914b1de4ceee422f6ce1c18cf5e41448938943c1d0ead73ab378d93f93",
+      "snapshot_sha256": "03da3d322e4c117847179665be045e70dc7cbf460343acc4d184957524ee96c4",
+      "public_writes": 0,
+      "external_requests_sent": 0
+    }
+  ],
+  "measurement_programs": [
+    {
+      "path": "evidence/search-controls-20261001/probe-frozen-search-all.mjs",
+      "sha256": "0ad62e3594f4d887f973933de98d2e65a1d99085eb1f8b253fb5e05b721705c4"
+    },
+    {
+      "path": "evidence/search-controls-20261001/probe-frozen-search-jakstyle.mjs",
+      "sha256": "095410b808a24f76f6d39e28a2fde12eb4199bfd897fcba8f194f365846d1a23"
+    }
+  ]
+}

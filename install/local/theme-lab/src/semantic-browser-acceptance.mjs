@@ -1,11 +1,13 @@
 import crypto from 'node:crypto';
 import states from '../fixtures/browser-acceptance-states.json' with {type: 'json'};
 import {measureTitleComposition} from './title-composition.mjs';
+import {measureTitleTextIntersections} from './title-text-intersections.mjs';
 
 export const SEMANTIC_BROWSER_MODEL = 'theme_lab_semantic_browser_acceptance.v1';
 const hash = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const validHash = value => /^[a-f0-9]{64}$/u.test(value ?? '');
 export const TITLE_COMPOSITION_CONTRACT_SHA256 = crypto.createHash('sha256').update(measureTitleComposition.toString()).digest('hex');
+export const TITLE_TEXT_CONTRACT_SHA256 = crypto.createHash('sha256').update(measureTitleTextIntersections.toString()).digest('hex');
 const pendingImage = 'screenshot captured but awaiting image review';
 const knownStates = new Set(states.states.map(row => `${row.surface}.${row.state}`));
 const failureResponse = response => !response || response.type === 'failure' || response.status >= 400 || response.error_message;
@@ -17,7 +19,7 @@ export const observationKey = row => JSON.stringify([row.theme, row.browser_engi
 // Unknown dependencies remain conservatively covered by the candidate/fixture
 // and surface hashes. They must not be guessed away by a selector heuristic.
 export function observationDependencies(row) {
-  return Object.fromEntries([
+  const dependencies = Object.fromEntries([
     'theme', 'candidate_sha256', 'candidate_source_sha256', 'base_css_sha256',
     'candidate_structure_sha256', 'baseline_theme_css_sha256', 'baseline_theme_mode',
     'asset_dependency_sha256', 'fixture_contract_sha256',
@@ -26,6 +28,9 @@ export function observationDependencies(row) {
     'browser_engine', 'browser_version', 'viewport', 'viewport_size',
     'surface', 'state', 'session_state', 'target_site', 'locale', 'transport_origin'
   ].map(key => [key, row[key] ?? null]));
+  if (row.title_text_contract_sha256) dependencies.title_text_contract_sha256 = row.title_text_contract_sha256;
+  if (row.action_contract_observation?.source_authority) dependencies.source_action_authority = row.action_contract_observation.source_authority;
+  return dependencies;
 }
 
 function safety(row) {
@@ -45,7 +50,14 @@ export function measuredFacts(row) {
   const viewport = row.visual_diagnostics?.viewport;
   const documentWidth = viewport?.document_width ?? viewport?.documentWidth;
   const width = viewport?.client_width ?? viewport?.width;
-  const action = row.action_contract_observation?.control === '#search-top-box-input' ? 'source-required' : knownStates.has(`${row.surface}.${row.state}`) && validHash(row.capture_state_action_contract_sha256)
+  const search = row.action_contract_observation;
+  const exercisedSearch = search?.schema === 'theme_lab_search_action.v1' &&
+    (search.mode === 'typed-focused' && search.typed_and_focused === true ||
+      search.mode === 'source-hidden-submit' && search.expected_path === search.observed_path &&
+      search.observed_path === '/search:site/q/' + encodeURIComponent(search.query?.value) &&
+      (search.query?.display === 'none' || search.query?.visibility === 'hidden' || search.query?.width === 0 || search.query?.height === 0) &&
+      typeof search.source_authority?.path === 'string' && validHash(search.source_authority?.sha256));
+  const action = search?.control === '#search-top-box-input' && !exercisedSearch ? 'source-required' : knownStates.has(`${row.surface}.${row.state}`) && validHash(row.capture_state_action_contract_sha256)
     ? safety(row) : 'missing';
   return {
     observation_identity: ['candidate_sha256', 'candidate_source_sha256', 'baseline_theme_css_sha256',
@@ -71,7 +83,12 @@ export function titleCompositionFact(row) {
   const overlaps = complete ? measurement.overlaps : diagnostics?.title_overlaps ?? diagnostics?.titleOverlaps;
   if (!Array.isArray(overlaps) || !complete && overlaps.length >= 16) return 'missing';
   if (overlaps.some(item => typeof item.effectively_visible !== 'boolean')) return 'missing';
-  return overlaps.some(item => item.effectively_visible) ? 'visual' : 'pass';
+  if (!overlaps.some(item => item.effectively_visible)) return 'pass';
+  const text = row.title_text_measurement;
+  if (text?.schema !== 'theme_lab_title_text_intersections.v1' || text.complete !== true ||
+      row.title_text_contract_sha256 !== TITLE_TEXT_CONTRACT_SHA256 || !text.title_text_rects?.length ||
+      !Array.isArray(text.intersections)) return 'missing';
+  return text.intersections.length ? 'visual' : 'pass';
 }
 
 const identityQuestion = 'Does the JP rendering preserve the frozen source theme’s intentional imagery, typography, palette and information hierarchy across the evidenced responsive layouts, allowing only documented localization differences?';
@@ -93,11 +110,20 @@ export function planBrowserAcceptance(audit) {
         base: row.base_css_sha256 ?? null, baseline: row.baseline_theme_css_sha256});
       const question = questions.get(id) ?? {id, kind: 'source_visual_identity', theme: row.theme,
         question: identityQuestion, reason: 'Computed layout cannot decide preservation of artistic source identity.', observations: []};
-      question.observations.push({key, dependencies_sha256: hash(dependencies), screenshot_sha256: row.screenshot_sha256});
+      const identityDependencies = {...dependencies};
+      // A new geometry observer cannot change the painted artistic identity.
+      // Its facts still gate completion separately and its producer remains a
+      // dependency of a composition question that uses the measurement.
+      delete identityDependencies.title_composition_contract_sha256;
+      delete identityDependencies.title_text_contract_sha256;
+      // The image binds the normal state's painted outcome. Current action
+      // execution is a separate mandatory fact, not another artistic review.
+      delete identityDependencies.capture_state_action_contract_sha256;
+      question.observations.push({key, dependencies_sha256: hash(identityDependencies), screenshot_sha256: row.screenshot_sha256});
       questions.set(id, question); required.push(id);
     }
     if (facts.title_composition === 'visual') {
-      const overlaps = (row.title_composition_measurement?.overlaps ?? row.visual_diagnostics.title_overlaps ?? row.visual_diagnostics.titleOverlaps).filter(item => item.effectively_visible);
+      const overlaps = row.title_text_measurement.intersections;
       // The obligation is the composition of these elements, not the action
       // that reached it. Geometry may vary responsively within one question;
       // every different state/image/dependency still enters its evidence set.

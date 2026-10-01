@@ -1,4 +1,5 @@
 import {runtimeSurfaceContractSha} from './browser-runtime-contract.mjs';
+import {readCurrentBrowserContracts,observationHasCurrentActionAndFixture} from './current-browser-contracts.mjs';
 import {validateSemanticSourceAuthority} from './semantic-source-authority.mjs';
 // Promotion is distinct from read-only inspection of historical evidence.
 import fs from 'node:fs';
@@ -80,13 +81,18 @@ export function validateBrowserCoverage(audit,packages,{migration=false}={}) {
  return failures;
 }
 
-export function checkCampaignCompletion(root) {
+export function checkCampaignCompletion(root, {captureContractReader = readCurrentBrowserContracts} = {}) {
   const failures = validateCurrentSigma10Contract(root);
   const runtimeHashes = new Map();
   const currentRuntime = row => {
     const key = JSON.stringify([row.surface,row.viewport]);
     if(!runtimeHashes.has(key))runtimeHashes.set(key,runtimeSurfaceContractSha(path.resolve(root,'../../..'),row.surface,row.viewport));
     return row.runtime_surface_contract_sha256===runtimeHashes.get(key);
+  };
+  const captureContracts = new Map();
+  const currentCapture = (row, contract) => {
+    if(!captureContracts.has(contract))captureContracts.set(contract,captureContractReader(root,contract));
+    return observationHasCurrentActionAndFixture(row,captureContracts.get(contract));
   };
   const read = file => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
   const bind = (binding, label) => {
@@ -180,6 +186,7 @@ export function checkCampaignCompletion(root) {
       const currentCandidate=candidateIdentity(fs.readFileSync(path.join(root,'ports',row.package,'candidate.css')),base).candidateSha;
       for (const record of records) {
         if(semantic&&!currentRuntime(record))failures.push(`${row.package}: superseded browser runtime surface ${record.surface}`);
+        if(semantic&&!currentCapture(record,'ports/current-acceptance/run-contract.json'))failures.push(`${row.package}: superseded browser action/fixture ${record.surface}.${record.state}`);
         if(!captureRunContractIsCurrent(record,currentRunSpec,currentRunContractSha)||record.baseline_theme_mode!=='replacement'||record.baseline_theme_css_sha256!==currentRunSpec.baseline_theme.replacement_css_sha256)failures.push(`${row.package}: browser capture uses superseded target baseline/contract`);
         if(!Array.isArray(record.unconfirmed_items)||!Array.isArray(record.asset_failures)||!Array.isArray(record.page_errors)||!Array.isArray(record.action_responses))failures.push(`${row.package}: browser capture lacks explicit safety results`);
         if (!semantic && (!['PASS_NATURAL', 'PASS_INTENTIONAL_DIVERGENCE'].includes(record.classification) || !record.reviewed_after_last_change || record.unconfirmed_items?.length || record.asset_failures?.length || record.page_errors?.length || record.external_requests_sent !== 0 || record.failure || record.action_responses?.some(response=>response.type==='failure'||response.status>=400||response.error_message))) failures.push(`${row.package}: unresolved browser state ${record.surface}.${record.state}`);
@@ -203,6 +210,7 @@ export function checkCampaignCompletion(root) {
     if(migration.browser_audit_sha256!==document.migration.browser_audit.sha256)failures.push('Migration decision is not bound to current browser audit');
     for(const record of audit.records??[]){
       if(semantic&&!currentRuntime(record))failures.push(`Sigma-10: superseded browser runtime surface ${record.theme}/${record.surface}`);
+      if(semantic&&!currentCapture(record,'sigma10-migration/current-campaign/run-contract.json'))failures.push(`Sigma-10: superseded browser action/fixture ${record.theme}/${record.surface}.${record.state}`);
       const expected=inventoryByName.get(record.theme);
       if(!expected||record.candidate_sha256!==expected.candidate_sha256||record.candidate_source_sha256!==expected.source_sha256)failures.push(`Sigma-10 capture uses an undeclared or superseded candidate identity: ${record.theme}`);
       if(!captureRunContractIsCurrent(record,currentMigrationSpec,currentMigrationContractSha)||record.baseline_theme_mode!=='replacement'||record.baseline_theme_css_sha256!==currentMigrationSpec.baseline_theme.replacement_css_sha256)failures.push('Sigma-10 capture uses superseded baseline/contract');

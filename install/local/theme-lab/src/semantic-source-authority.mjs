@@ -9,6 +9,46 @@ export function validateSemanticSourceAuthority(root, audit) {
   const failures = [];
   const read = file => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
   const normalize = url => new URL(url).href.replace(/^http:/u, 'https:');
+  const opened = new Map();
+  const open = binding => {
+    const file = path.resolve(root, binding?.path ?? '');
+    if (!file.startsWith(path.resolve(root) + path.sep)) throw new Error('Source artifact escapes Theme Lab');
+    if (!opened.has(file)) {
+      const bytes = fs.readFileSync(file);
+      opened.set(file, {bytes, sha256: crypto.createHash('sha256').update(bytes).digest('hex')});
+    }
+    const artifact = opened.get(file);
+    if (artifact.sha256 !== binding?.sha256) throw new Error('Stale source action artifact');
+    return artifact.bytes;
+  };
+  for (const row of audit.records ?? []) {
+    const action = row.action_contract_observation;
+    if (action?.mode !== 'source-hidden-submit') continue;
+    try {
+      const document = JSON.parse(open(action.source_authority));
+      const manifest = read(`ports/${row.theme}/manifest.json`);
+      const sourceUrl = manifest.source_url ?? manifest.reference_url;
+      const sourceHash = manifest.source_sha256 ?? manifest.en_source_sha256;
+      const source = document.source_measurements?.find(item => item.viewport === row.viewport);
+      const hidden = query => query?.display === 'none' || query?.visibility === 'hidden' || query?.width === 0 || query?.height === 0;
+      if (document.schema !== 'theme_lab_wikidot_search_control.v1' || document.theme !== row.theme ||
+          normalize(document.source_url) !== normalize(sourceUrl) || document.source_sha256 !== sourceHash ||
+          document.public_writes !== 0 || document.external_requests_sent !== 0 || document.offline !== true ||
+          source?.source_sha256 !== sourceHash || source?.original_html_sha256 !== document.original_html_sha256 ||
+          source?.loaded?.offline !== true || !(document.measurement_programs?.length >= 1) ||
+          JSON.stringify(source?.viewport_size) !== JSON.stringify(row.viewport_size) || !hidden(source?.after_focus) ||
+          source?.action_error || source?.navigation !== '/search:site/q/' + encodeURIComponent(source?.after_focus?.value) ||
+          !source?.handler?.events?.some(event => event.type === 'submit' && event.fn === source.handler.search) ||
+          !document.artifacts?.some(binding => binding.sha256 === document.original_html_sha256) ||
+          !document.artifacts?.some(binding => '/o/' + binding.sha256 === document.replay_entry)) {
+        throw new Error('Hidden query alternative lacks the matching frozen source action');
+      }
+      for (const binding of document.artifacts ?? []) open(binding);
+      for (const binding of document.measurement_programs ?? []) open(binding);
+    } catch (error) {
+      failures.push(`${row.theme}/${row.viewport}: hidden query source authority unavailable: ${error.message}`);
+    }
+  }
   for (const question of planBrowserAcceptance(audit).visual_questions) {
     const review = audit.semantic_reviews?.[question.id];
     if (!review) continue; // The question validator reports missing reviews.
