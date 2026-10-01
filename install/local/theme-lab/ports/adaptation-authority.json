@@ -2968,22 +2968,44 @@
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
             }
           ]
+        },
+        {
+          "marker": "SCP-JP Wikidot Classic mobile endpoint correction: contain the last submenu above the wrapped narrow layout.",
+          "sha256": "985d2f3995ef32767b02714495f40fb13ff969d4fd986667505025f5f0a96ded",
+          "origin": "target-certified-replacement",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "rationale": "At 390px Classic increases the real SCP-JP fourth submenu escape by 4.703125px relative to the native target. Align only that endpoint above 359px. At 320px Classic does not worsen the inherited third-menu escape, so no narrow-layout correction is authorized.",
+          "evidence": [
+            {
+              "path": "authority-evidence/classic-mobile-navigation-final-authority-20261001/receipt.json",
+              "sha256": "1672efcc03dbc8b7b877a5969be28d2af9f9834fe1bc97f97ee1cdd19fb137a2",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+            "state": "navigation-action",
+            "viewports": [
+              390
+            ]
+          },
+          "published_css_sha256": "5190a1bdb121d156ed6559f85a863b6e7be2016eddf7de18af6decdd225429a2"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
         "candidate-input.css": "1f2d3cde0f8ffde0ef454d68df3cd989008970842182d573be6210b58d1aa24c",
-        "authority-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "authority-overrides.css": "f6d05fda7ad197b381beb3d728a340b95f5bd60c1bd2e26bf60a7236fc6b59b7",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd"
       },
       "outputs": {
-        "candidate.css": "9ab11e389b581c60d6fba032ee5c72d7722533835a6cc5af5504f4f969c18a4f",
-        "candidate-source.css": "223d2174a9b6a91148adad61d11df8522c0db5a4909781282f66d7308718581a",
-        "candidate.wikidot.source.txt": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
-        "candidate.wikidot.txt": "564111bc15e97090507cf0f632a85a99e0021cc912d610d266ce125784e565bb",
+        "candidate.css": "5190a1bdb121d156ed6559f85a863b6e7be2016eddf7de18af6decdd225429a2",
+        "candidate-source.css": "44db826473f42552fb35a56c0fd7c613cdd6aa0dce32f1d4ec4062507f1ad3c9",
+        "candidate.wikidot.source.txt": "d33430be391e192927659cde039a135b2849be3cef240ed4857a1998d178dfc1",
+        "candidate.wikidot.txt": "15305ce7edc9729ef0e7de47e39ece150984ba6a18f826cd92fe9747be5b5b41",
         "maintenance/base.wikidot.txt": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
-        "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "maintenance/final.wikidot.txt": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a"
+        "maintenance/jp-overrides.css": "e1cc27ec968181bc709c367b68ef631b5ece06fa824c6d042ef06f07aa47a939",
+        "maintenance/final.wikidot.txt": "b2f1b6be54e6742c5a02bd3dab0d036dcb2308a174a6f95ce6d944fa8bbebdb2"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -5647,7 +5669,7 @@
         "source-css-includes.json": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022"
       },
       "outputs": {
-        "candidate.css": "9ca8a71a8af68a15ef4a56f429d9f008f46ebeb5263a7c2e9185897ad42b6520",
+        "candidate.css": "5419caca49caf8f0be65724001a7edcf57daa52f75a01b324c98f4a869b6c117",
         "candidate-source.css": "511b301dfd1a1108c21bba7b39d0a421c8dbe551ff8d00c251f4a61fe2bc7c96",
         "candidate.wikidot.source.txt": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
         "candidate.wikidot.txt": "e81d43c4d4d599a8e1325205ad65bfede07cffa4a8cace109c527783c0cdd390",

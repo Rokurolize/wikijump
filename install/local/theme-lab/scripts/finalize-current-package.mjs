@@ -47,6 +47,11 @@ for(const row of subset.records){
 if(failures.length)throw new Error(failures.join('\n'));
 const result=await finalizeVisualAcceptance({result:raw.result??raw,review,css:css.toString(),source:source.toString(),preview:preview.toString(),baseCss:base.toString()});
 const dimensions=validateCombinedAcceptance(result,name);if(dimensions.length)throw new Error(dimensions.join('\n'));
+for(const viewport of Object.values(result.visual?.viewports??{}))for(const side of ['candidate','reference']) {
+ const file=path.resolve(root,viewport[`${side}_path`]);
+ if(!file.startsWith(root+path.sep))throw new Error('Paired visual artifact escapes Theme Lab');
+ viewport[`${side}_path`]=path.relative(root,file);
+}
 const out=path.resolve(value('--output'));
 if(!out.startsWith(path.join(root,'ports/current-acceptance')+path.sep))throw new Error('Current acceptance outputs must be isolated from historical evidence');
 await fs.mkdir(out,{recursive:true});

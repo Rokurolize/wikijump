@@ -62,6 +62,18 @@ test('occluded in-viewport javascript control cannot certify a user action', asy
   } finally { await browser.close(); }
 });
 
+test('navigation waits for a departing overlay before using the source hover action',async()=>{
+  const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true});
+  try {
+    const page=await browser.newPage({viewport:{width:390,height:844}});
+    await page.setContent('<style>.mobile-top-bar{position:fixed;top:20px}.mobile-top-bar ul ul{display:none;position:fixed;top:60px;left:20px}.mobile-top-bar li:hover>ul{display:block}#cover{position:fixed;inset:0;z-index:99}</style><div class="mobile-top-bar"><ul><li><a href="javascript:;">Menu</a><ul><li>Child</li></ul></li></ul></div><div id="cover"></div>');
+    await page.evaluate(()=>setTimeout(()=>document.querySelector('#cover').remove(),300));
+    await expandMobileTopSubmenu(page);
+    assert.equal(await page.locator('#cover').count(),0);
+    assert.equal(await page.locator('.mobile-top-bar ul ul').isVisible(),true);
+  } finally {await browser.close();}
+});
+
 test('tablet discovers rendered desktop navigation by geometry and expands submenu', async () => {
   const browser = await chromium.launch({executablePath: '/usr/bin/google-chrome', headless: true});
   try {

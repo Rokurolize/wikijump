@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
+import {gunzipSync} from 'node:zlib';
 
 const defaultRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
@@ -19,6 +20,14 @@ export function assembleCurrentCampaign(root,{output='current-campaign-acceptanc
     const bytes=fs.readFileSync(absolute);
     return {path:path.relative(absoluteRoot,absolute),sha256:sha(bytes)};
   };
+  const bindAudit=relative=>{
+    const compressed=path.join(absoluteRoot,relative+'.gz');
+    if(!fs.existsSync(compressed))return bind(relative);
+    const bytes=fs.readFileSync(compressed),expanded=gunzipSync(bytes);
+    const native=path.join(absoluteRoot,relative);
+    if(fs.existsSync(native)&&sha(fs.readFileSync(native))!==sha(expanded))throw new Error(`Compressed audit differs from native evidence: ${relative}`);
+    return {...bind(relative+'.gz'),encoding:'gzip',uncompressed_sha256:sha(expanded)};
+  };
   const ledger=readJson('ports/adaptation-authority.json');
   const names=Object.keys(ledger.packages??{}).sort();
   if(!names.length)throw new Error('Maintained package inventory is empty');
@@ -27,10 +36,10 @@ export function assembleCurrentCampaign(root,{output='current-campaign-acceptanc
     return {package:name,
       inputs:{css:bind(`ports/${name}/candidate.css`),source:bind(`ports/${name}/${ledger.packages[name].source_file??'candidate.wikidot.source.txt'}`),preview:bind(`ports/${name}/candidate.wikidot.txt`)},
       receipt:bind(`${directory}/accepted-result.json`),
-      browser_audit:bind(`${directory}/browser-audit.json`)};
+      browser_audit:bindAudit(`${directory}/browser-audit.json`)};
   });
   const migrationDirectory='sigma10-migration/current-campaign';
-  const migration={receipt:bind(`${migrationDirectory}/accepted-result.json`),browser_audit:bind(`${migrationDirectory}/browser-audit.json`)};
+  const migration={receipt:bind(`${migrationDirectory}/accepted-result.json`),browser_audit:bindAudit(`${migrationDirectory}/browser-audit.json`)};
   const document={schema:'theme_lab_current_campaign_acceptance.v1',packages,migration};
   const target=path.resolve(absoluteRoot,output);
   if(!target.startsWith(absoluteRoot+path.sep))throw new Error('Output must remain inside Theme Lab');

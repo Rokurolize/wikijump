@@ -1,13 +1,23 @@
 export async function activateNavigationControl(page, anchor, submenu) {
   if (await hasRenderedSubmenuGeometry(submenu)) return;
   const href=await anchor.getAttribute('href');
-  const geometry = await anchor.evaluate(element => {
+  const controlGeometry = () => anchor.evaluate(element => {
     const rect = element.getBoundingClientRect();
     const inViewport = rect.width > 0 && rect.height > 0 && rect.right > 0 && rect.bottom > 0 && rect.left < innerWidth && rect.top < innerHeight;
     if (!inViewport) return {inViewport: false, reachable: false};
     const hit = document.elementFromPoint(Math.max(0, Math.min(innerWidth - 1, rect.left + rect.width / 2)), Math.max(0, Math.min(innerHeight - 1, rect.top + rect.height / 2)));
     return {inViewport: true, reachable: !!hit && (hit === element || element.contains(hit))};
   });
+  let geometry=await controlGeometry();
+  if (!geometry.inViewport) throw new Error('navigation parent control is outside viewport');
+  // A prior viewport/style transition can leave the old drawer over the
+  // control for a few frames. Wait for real hit-test reachability; never
+  // bypass an overlay or certify a control that remains occluded.
+  const reachabilityDeadline=Date.now()+3000;
+  while(!geometry.reachable&&geometry.inViewport&&Date.now()<reachabilityDeadline){
+    await page.waitForTimeout(50);
+    geometry=await controlGeometry();
+  }
   if (!geometry.inViewport) throw new Error('navigation parent control is outside viewport');
   if (!geometry.reachable) throw new Error('navigation parent control is occluded');
   if (href === 'javascript:;' && geometry.reachable) {

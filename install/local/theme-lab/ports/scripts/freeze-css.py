@@ -18,7 +18,10 @@ from pathlib import Path
 from urllib.parse import unquote, urljoin, urlparse
 
 
-IMPORT_RE = re.compile(r"@import\s+(?:url\()?\s*(['\"]?)([^\s'\")]+)\1\s*\)?\s*[^;]*;", re.I)
+# A final simple @import is terminated by EOF in native CSS even without a
+# semicolon. Preserve that module form without accepting arbitrary trailing
+# tokens as an EOF import prelude.
+IMPORT_RE = re.compile(r"@import\s+(?:url\()?\s*(['\"]?)([^\s'\")]+)\1\s*\)?(?:\s*[^;]*;|\s*\Z)", re.I)
 URL_RE = re.compile(r"url\(\s*(['\"]?)(.*?)\1\s*\)", re.I)
 
 

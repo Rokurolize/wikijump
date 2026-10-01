@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import {gzipSync} from 'node:zlib';
 import {assembleCurrentCampaign} from '../scripts/assemble-current-campaign.mjs';
 
 const digest=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
@@ -21,6 +22,15 @@ test('assembler indexes exact current artifacts without manufacturing review or 
   assert.equal(document.migration.browser_audit.sha256,digest(Buffer.from('sigma10-migration/current-campaign/browser-audit.json')));
   assert.equal(Object.hasOwn(document,'reviewer'),false);
   assert.equal(Object.hasOwn(document.migration,'status'),false);
+  const audit=path.join(root,document.migration.browser_audit.path);
+  fs.writeFileSync(audit+'.gz',gzipSync(fs.readFileSync(audit)));
+  const compressedOutput=assembleCurrentCampaign(root);
+  const compressed=JSON.parse(fs.readFileSync(path.join(root,compressedOutput.path))).migration.browser_audit;
+  assert.equal(compressed.encoding,'gzip');
+  assert.equal(compressed.uncompressed_sha256,document.migration.browser_audit.sha256);
+  assert.equal(compressed.sha256,digest(fs.readFileSync(audit+'.gz')));
+  fs.writeFileSync(audit+'.gz',gzipSync(Buffer.from('different native evidence')));
+  assert.throws(()=>assembleCurrentCampaign(root),/differs from native evidence/);
  }finally{fs.rmSync(root,{recursive:true,force:true})}
 });
 

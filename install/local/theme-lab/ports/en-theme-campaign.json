@@ -6319,7 +6319,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/aesthetic-theme/assets.json",
-      "dependency_decision_count": 40,
+      "dependency_decision_count": 66,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",

@@ -11,6 +11,7 @@ import {ACCEPTANCE_VIEWPORT_IDS} from './acceptance-viewports.mjs';
 import {overallAcceptance} from './verdict.mjs';
 import {SEMANTIC_BROWSER_MODEL, validateSemanticBrowserAcceptance, semanticReviewArtifactBindings} from './semantic-browser-acceptance.mjs';
 import {captureRunContractIsCurrent} from './scoped-run-contract.mjs';
+import {readBoundArtifact} from './artifact-binding.mjs';
 
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const accepted = value => ['pass', 'warn'].includes(value);
@@ -95,14 +96,7 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
     return observationHasCurrentActionAndFixture(row,captureContracts.get(contract));
   };
   const read = file => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
-  const bind = (binding, label) => {
-    if (!binding || typeof binding.path !== 'string' || !/^[0-9a-f]{64}$/u.test(binding.sha256 ?? '')) throw new Error(`${label}: missing exact artifact binding`);
-    const file = path.resolve(root, binding.path);
-    if (!file.startsWith(path.resolve(root) + path.sep)) throw new Error(`${label}: artifact escapes Theme Lab`);
-    const bytes = fs.readFileSync(file);
-    if (sha(bytes) !== binding.sha256) throw new Error(`${label}: stale artifact ${binding.path}`);
-    return bytes;
-  };
+  const bind = (binding, label) => readBoundArtifact(root,binding,label);
   let document;
   try { document = read('current-campaign-acceptance.json'); }
   catch { return {status: 'inconclusive', failures: ['Current campaign acceptance receipt is missing; historical integrity cannot authorize completion.',...failures]}; }
@@ -207,7 +201,7 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
       for (const artifact of semanticReviewArtifactBindings(audit)) bind(artifact.binding, artifact.label);
     }
     failures.push(...validateBrowserCoverage(audit,[...names,'sigma10-baseline'],{migration:true}));
-    if(migration.browser_audit_sha256!==document.migration.browser_audit.sha256)failures.push('Migration decision is not bound to current browser audit');
+    if(migration.browser_audit_sha256!==(document.migration.browser_audit.uncompressed_sha256??document.migration.browser_audit.sha256))failures.push('Migration decision is not bound to current browser audit');
     for(const record of audit.records??[]){
       if(semantic&&!currentRuntime(record))failures.push(`Sigma-10: superseded browser runtime surface ${record.theme}/${record.surface}`);
       if(semantic&&!currentCapture(record,'sigma10-migration/current-campaign/run-contract.json'))failures.push(`Sigma-10: superseded browser action/fixture ${record.theme}/${record.surface}.${record.state}`);

@@ -2,7 +2,30 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import {loadChromium} from '../src/browser-lab.mjs';
-import {runKnownSurfaceContract} from '../src/theme-surface-contract.mjs';
+import {runKnownSurfaceContract,applySurfaceState} from '../src/theme-surface-contract.mjs';
+
+test('page action reset leaves hover-triggered sidebar and uses a trusted click',async()=>{
+  const browser=await loadChromium().launch({headless:true});
+  try {
+    const page=await browser.newPage({viewport:{width:1440,height:1000}});
+    await page.setContent(`<!doctype html><style>
+      #side-bar{position:fixed;inset:0 auto 0 0;width:30px}
+      #side-bar:hover~#main-content::before{content:'';position:fixed;inset:0;z-index:99}
+      #main-content{margin-left:100px}
+    </style><div id="side-bar"></div><div id="main-content">
+      <button id="history-button">History</button><div id="action-area"></div></div>`);
+    await page.evaluate(()=>document.querySelector('#history-button').addEventListener('click',event=>{
+      window.historyClickTrusted=event.isTrusted;
+      document.querySelector('#action-area').innerHTML='<table class="page-history"><tr id="revision-row-1"><td>Revision</td></tr></table>';
+    }));
+    await page.mouse.move(10,10);
+    await page.waitForFunction(()=>document.querySelector('#side-bar').matches(':hover'));
+    assert.equal(await page.locator('#side-bar').evaluate(element=>element.matches(':hover')),true);
+    await applySurfaceState(page,'page.history','history-list');
+    assert.equal(await page.evaluate(()=>window.historyClickTrusted),true);
+    assert.equal(await page.locator('#side-bar').evaluate(element=>element.matches(':hover')),false);
+  } finally {await browser.close();}
+});
 
 test('navigation acceptance inspects later menus and detects off-left escape without scroll overflow',async()=>{
   const server=http.createServer((request,response)=>response.end(`<!doctype html><html><head><style>
@@ -31,5 +54,11 @@ test('navigation acceptance inspects later menus and detects off-left escape wit
         assert.ok(themed.navigation_bounds.every(row=>row.owner==='nav.mobile-top'));
       }
     }
+    await page.evaluate(()=>{document.querySelector('#navigation-bound-canary')?.remove();const style=document.createElement('style');style.textContent='.mobile-top-bar>ul>li:nth-child(2)>ul{left:400px}';document.head.append(style)});
+    const inherited=await runKnownSurfaceContract(page,{css:'.mobile-top-bar{color:rgb(1,2,3)}',styleId:'navigation-inherited',contractValue:'auto'});
+    assert.ok(inherited.captures.some(row=>row.mode==='baseline'&&row.navigation_bounds.some(bound=>bound.rect.right>row.viewport_width+1)));
+    assert.equal(inherited.issues.filter(issue=>/surface_(?:navigation_viewport_escape|(?:new_)?viewport_overflow)/u.test(issue.kind)).length,0);
+    const worsened=await runKnownSurfaceContract(page,{css:'.mobile-top-bar>ul>li:nth-child(2)>ul{left:420px}',styleId:'navigation-inherited',contractValue:'auto'});
+    assert.ok(worsened.issues.some(issue=>issue.kind==='surface_navigation_viewport_escape'&&issue.bounds.off_right_px>issue.baseline_bounds.off_right_px+1));
   } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}
 });

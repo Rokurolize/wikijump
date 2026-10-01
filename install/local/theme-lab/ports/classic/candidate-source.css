@@ -8,3 +8,9 @@
  #header h2 span::before{
      content: "To Secure, Contain, and Protect";
 }
+
+
+/* SCP-JP Wikidot Classic mobile endpoint correction: contain the last submenu above the wrapped narrow layout. */
+@media (min-width: 360px) and (max-width: 767px) {
+  #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
+}

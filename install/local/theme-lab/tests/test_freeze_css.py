@@ -60,6 +60,24 @@ class PlainTextImportedCssTests(unittest.TestCase):
             self.assertEqual(receipt["localization_transforms"][0]["id"], "jp-title-contrast")
             self.assertEqual(receipt["localization_transforms"][0]["matches"], 1)
 
+    def test_simple_import_at_eof_is_frozen_without_a_semicolon(self):
+        for text in ['@import url("https://local.invalid/theme-code")',
+                     "@import 'https://local.invalid/theme-code'\n"]:
+            with self.subTest(text=text), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                cache = root / 'cache'
+                body = b'.theme { color: #123; }'
+                digest = hashlib.sha256(body).hexdigest()
+                target = cache / 'objects' / digest[:2] / digest
+                target.parent.mkdir(parents=True)
+                target.write_bytes(body)
+                (cache / 'manifest.json').write_text(json.dumps({'urls': {'https://local.invalid/theme-code': {'digest': digest}}, 'objects': {digest: {'content_type': 'text/css'}}}))
+                css, receipt = freeze_css.CacheCSS(cache, root / 'assets').build(text, 'https://local.invalid/page')
+                self.assertIn('.theme { color: #123; }', css)
+                self.assertNotIn('@import', css)
+                self.assertEqual(receipt['missing'], [])
+                self.assertEqual(receipt['import_provenance'][0]['sha256'], digest)
+
     def test_localization_transform_fails_closed_when_anchor_changes(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

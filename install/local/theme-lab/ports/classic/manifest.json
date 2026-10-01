@@ -133,11 +133,11 @@
     "jp_overrides": "maintenance/jp-overrides.css",
     "manifest": "maintenance/manifest.json",
     "base_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "semantic_css_sha256": "6d90d7fc3a0c76b350b7bc45d14f0ceee0cbc569179eb34e095495f1ae0608d8",
-    "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "jp_overrides_sha256": "e1cc27ec968181bc709c367b68ef631b5ece06fa824c6d042ef06f07aa47a939",
+    "semantic_css_sha256": "fb4bb039957de0757e22c4c60a2f97a1fc054c78aa03a7238ee2a3e9ded914d3",
+    "canonical_override_sha256": "60a22b0e06bcaecb8cff81fc08924a41ada3a95c808be8eef59ca813ef1512d6",
     "final_source": "maintenance/final.wikidot.txt",
-    "final_source_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
+    "final_source_sha256": "b2f1b6be54e6742c5a02bd3dab0d036dcb2308a174a6f95ce6d944fa8bbebdb2",
     "exact_duplicate_rules_removed": 0,
     "redundant_same_value_declarations_removed": 0,
     "empty_rules_removed": 0
@@ -147,7 +147,7 @@
       "source_path": "candidate-input.css",
       "source_sha256": "1f2d3cde0f8ffde0ef454d68df3cd989008970842182d573be6210b58d1aa24c",
       "active_tags": [],
-      "candidate_source_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
+      "candidate_source_sha256": "d33430be391e192927659cde039a135b2849be3cef240ed4857a1998d178dfc1",
       "candidate_active_tags": [
         "en",
         "テーマ"
@@ -157,7 +157,7 @@
       "showcase_css_modules_removed_truncated": 0,
       "showcase_css_modules_unmatched": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "9ab11e389b581c60d6fba032ee5c72d7722533835a6cc5af5504f4f969c18a4f",
+      "candidate_css_sha256": "5190a1bdb121d156ed6559f85a863b6e7be2016eddf7de18af6decdd225429a2",
       "asset_receipt_path": "assets.json",
       "assets": 1,
       "imports": 1,

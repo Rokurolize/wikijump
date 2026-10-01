@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {gzipSync} from 'node:zlib';
 import {validateCombinedAcceptance,checkCampaignCompletion} from '../src/campaign-completion.mjs';
 const result=(port,target,overall)=>({verdict:overall,overall_acceptance:{status:overall,port_verdict:port,target_status:target},port_decision:{verdict:port},target_acceptance:{status:target}});
 test('completion rejects target failure despite port pass',()=>assert.ok(validateCombinedAcceptance(result('pass','fail','pass'),'port').length));
@@ -63,6 +64,23 @@ test('promotion requires current identities, complete browser coverage and accep
   assert.deepEqual(checkCampaignCompletion(mock.root).failures,[]);
   fs.appendFileSync(path.join(mock.root,'ports/testtheme/candidate.css'),' /* changed */');
   assert.equal(checkCampaignCompletion(mock.root).status,'fail');
+ }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
+});
+test('compressed browser evidence retains both physical and native acceptance bindings',()=>{
+ const mock=mockCampaign();try{
+  const compress=binding=>{
+   const bytes=fs.readFileSync(path.join(mock.root,binding.path));
+   const stored=gzipSync(bytes),target=binding.path+'.gz';
+   fs.writeFileSync(path.join(mock.root,target),stored);
+   return {path:target,sha256:digest(stored),encoding:'gzip',uncompressed_sha256:binding.sha256};
+  };
+  mock.document.packages[0].browser_audit=compress(mock.document.packages[0].browser_audit);
+  mock.document.migration.browser_audit=compress(mock.document.migration.browser_audit);mock.save();
+  assert.deepEqual(checkCampaignCompletion(mock.root).failures,[]);
+  mock.document.migration.browser_audit.uncompressed_sha256=digest('wrong native evidence');mock.save();
+  assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('stale expanded artifact')));
+  mock.document.migration.browser_audit.sha256=digest('wrong compressed evidence');mock.save();
+  assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('stale artifact')));
  }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
 });
 test('promotion rejects iteration checks and missing exact paired image review',()=>{

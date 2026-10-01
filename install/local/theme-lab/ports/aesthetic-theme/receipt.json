@@ -42,7 +42,7 @@
   "human_port_candidate_path": "install/local/theme-lab/ports/aesthetic-theme/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "b0cfc84e09adc5da3dc37cbd9bb77765b53e302f414cc01d443d7da0480f5e22",
   "candidate_preview_sha256": "e81d43c4d4d599a8e1325205ad65bfede07cffa4a8cace109c527783c0cdd390",
-  "candidate_css_sha256": "9ca8a71a8af68a15ef4a56f429d9f008f46ebeb5263a7c2e9185897ad42b6520",
+  "candidate_css_sha256": "5419caca49caf8f0be65724001a7edcf57daa52f75a01b324c98f4a869b6c117",
   "page_assets": [
     {
       "filename": "AESTHETIC_logo.svg",
@@ -91,7 +91,7 @@
     "source_evidence": "candidate screenshots visibly rendered unresolved SCP-EN usernames against SCP-JP identity links; preserve display names and freeze upstream/human-port originals"
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/aesthetic-theme/assets.json",
-  "asset_dependency_decision_count": 40,
+  "asset_dependency_decision_count": 66,
   "page_asset_dependency_decisions_path": "install/local/theme-lab/ports/aesthetic-theme/page-assets.json",
   "historical_acceptance": {
     "status": "SUPERSEDED_CANDIDATE",

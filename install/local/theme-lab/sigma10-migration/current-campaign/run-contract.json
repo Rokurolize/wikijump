@@ -54,7 +54,7 @@
   "additional_candidates": {
     "aesthetic-theme": {
       "directory": "../../ports/aesthetic-theme",
-      "candidate_sha256": "9ca8a71a8af68a15ef4a56f429d9f008f46ebeb5263a7c2e9185897ad42b6520",
+      "candidate_sha256": "5419caca49caf8f0be65724001a7edcf57daa52f75a01b324c98f4a869b6c117",
       "source_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c"
     },
     "al-slop": {
@@ -79,8 +79,8 @@
     },
     "classic": {
       "directory": "../../ports/classic",
-      "candidate_sha256": "9ab11e389b581c60d6fba032ee5c72d7722533835a6cc5af5504f4f969c18a4f",
-      "source_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a"
+      "candidate_sha256": "5190a1bdb121d156ed6559f85a863b6e7be2016eddf7de18af6decdd225429a2",
+      "source_sha256": "d33430be391e192927659cde039a135b2849be3cef240ed4857a1998d178dfc1"
     },
     "cosmonaut": {
       "directory": "../../ports/cosmonaut",
@@ -286,7 +286,7 @@
     {
       "package": "aesthetic-theme",
       "directory": "../../ports/aesthetic-theme",
-      "candidate_sha256": "9ca8a71a8af68a15ef4a56f429d9f008f46ebeb5263a7c2e9185897ad42b6520",
+      "candidate_sha256": "5419caca49caf8f0be65724001a7edcf57daa52f75a01b324c98f4a869b6c117",
       "source_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c"
     },
     {
@@ -316,8 +316,8 @@
     {
       "package": "classic",
       "directory": "../../ports/classic",
-      "candidate_sha256": "9ab11e389b581c60d6fba032ee5c72d7722533835a6cc5af5504f4f969c18a4f",
-      "source_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a"
+      "candidate_sha256": "5190a1bdb121d156ed6559f85a863b6e7be2016eddf7de18af6decdd225429a2",
+      "source_sha256": "d33430be391e192927659cde039a135b2849be3cef240ed4857a1998d178dfc1"
     },
     {
       "package": "cosmonaut",

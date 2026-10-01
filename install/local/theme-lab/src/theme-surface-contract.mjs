@@ -286,7 +286,9 @@ async function resetState(page) {
     document.activeElement?.blur?.();
     window.scrollTo(0, 0);
   });
-  await page.mouse.move(0, 0).catch(() => {});
+  // A viewport corner can be a real hover trigger (for example a collapsed
+  // sidebar). Leave the viewport so reset does not open an unrelated control.
+  await page.mouse.move(-16, -16).catch(() => {});
   await settle(page);
 }
 
@@ -491,9 +493,9 @@ async function captureMode(page, {surface, state, viewport, themed, effectiveCss
       : "#top-bar .top-bar > ul > li > ul";
     const menus=[...document.querySelectorAll(selector)];
     const rows=[];
-    for(const menu of menus) {
-      if(menu.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})) for(const el of [menu,...menu.querySelectorAll("li,a")]) {
-        if(el.checkVisibility({checkOpacity:true,checkVisibilityCSS:true}))rows.push({selector:el.tagName.toLowerCase(),owner:surfaceId,rect:el.getBoundingClientRect().toJSON()});
+    for(const [menuIndex,menu] of menus.entries()) {
+      if(menu.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})) for(const [elementIndex,el] of [menu,...menu.querySelectorAll("li,a")].entries()) {
+        if(el.checkVisibility({checkOpacity:true,checkVisibilityCSS:true}))rows.push({selector:el.tagName.toLowerCase(),owner:surfaceId,menu_index:menuIndex,element_index:elementIndex,rect:el.getBoundingClientRect().toJSON()});
       }
     }
     return rows;
@@ -574,18 +576,24 @@ function recordSurfacePair({surface, state, viewport, baseline, theme, captures,
     }
   }
   if (surface.id === "nav.mobile-top" || surface.id === "nav.top") {
-    for (const row of Object.values(theme.rows)) {
+    const navigationIssue=(row,before)=>{
+      const bounds=viewportEscape(row.rect,theme.viewport_width);
+      const baselineBounds=before?.rect?viewportEscape(before.rect,baseline.viewport_width):null;
+      if(bounds.off_left_px>(baselineBounds?.off_left_px??0)+1||bounds.off_right_px>(baselineBounds?.off_right_px??0)+1)
+        issues.push({severity:"error",kind:"surface_navigation_viewport_escape",surface:surface.id,state:state.id,viewport,selector:row.selector,bounds,baseline_bounds:baselineBounds});
+    };
+    for (const [key,row] of Object.entries(theme.rows)) {
       if (!row.present || !row.visible || !row.rect) continue;
-      const bounds = viewportEscape(row.rect, theme.viewport_width);
-      if (!bounds.pass) issues.push({severity: "error", kind: "surface_navigation_viewport_escape", surface: surface.id, state: state.id, viewport, selector: row.selector, bounds});
+      const before=baseline.rows[key];
+      navigationIssue(row,before?.present&&before.visible?before:null);
     }
     for (const row of theme.navigation_bounds ?? []) {
-      const bounds = viewportEscape(row.rect, theme.viewport_width);
-      if (!bounds.pass) issues.push({severity: "error", kind: "surface_navigation_viewport_escape", surface: surface.id, state: state.id, viewport, selector: row.selector, bounds});
+      const before=baseline.navigation_bounds?.find(other=>other.parent_index===row.parent_index&&other.menu_index===row.menu_index&&other.element_index===row.element_index);
+      navigationIssue(row,before);
     }
   }
   const ownedOverflow = (theme.overflow_sources ?? []).some((source) => overflowBelongsToSurface(surface.id, source));
-  if (!theme.action_error && theme.document_overflow_px > 1 && ownedOverflow) {
+  if (!baseline.action_error && !theme.action_error && theme.document_overflow_px > baseline.document_overflow_px + 1 && ownedOverflow) {
     issues.push({severity: "error", kind: "surface_viewport_overflow", surface: surface.id, state: state.id, viewport, before_px: baseline.document_overflow_px, after_px: theme.document_overflow_px, overflow_sources:theme.overflow_sources});
   } else if (!baseline.action_error && !theme.action_error && theme.document_overflow_px > baseline.document_overflow_px + 1) {
     issues.push({severity: "error", kind: "surface_new_viewport_overflow", surface: surface.id, state: state.id, viewport, before_px: baseline.document_overflow_px, after_px: theme.document_overflow_px, overflow_sources:theme.overflow_sources});
