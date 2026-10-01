@@ -18,7 +18,7 @@ test('acceptance shell fixtures are the current hash-bound SCP-JP header, naviga
 });
 
 test('interactive capture pins the frozen Sigma-9 CSS and never applies capture CSS twice',async()=>{
- const contract=JSON.parse(await fs.readFile(new URL('ports/interactive-visual-fixture/acceptance-run-contract.json',root),'utf8'));
+ const contract=JSON.parse(await fs.readFile(new URL('ports/current-acceptance/run-contract.json',root),'utf8'));
  const baseline=await fs.readFile(new URL('fixtures/scp-jp-sigma9-offline.css',root));
  assert.equal(contract.baseline_theme.name,'Sigma-9');
  assert.equal(contract.baseline_theme.replacement_css_sha256,sha(baseline));

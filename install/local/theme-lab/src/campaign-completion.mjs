@@ -1,10 +1,14 @@
+import {validateSemanticSourceAuthority} from './semantic-source-authority.mjs';
 // Promotion is distinct from read-only inspection of historical evidence.
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import browserContract from '../fixtures/browser-acceptance-states.json' with {type:'json'};
 import {candidateIdentity} from '../ports/scripts/candidate-identity.mjs';
+import {ACCEPTANCE_VIEWPORT_IDS} from './acceptance-viewports.mjs';
 import {overallAcceptance} from './verdict.mjs';
+import {SEMANTIC_BROWSER_MODEL, validateSemanticBrowserAcceptance, semanticReviewArtifactBindings} from './semantic-browser-acceptance.mjs';
+import {captureRunContractIsCurrent} from './scoped-run-contract.mjs';
 
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const accepted = value => ['pass', 'warn'].includes(value);
@@ -136,7 +140,7 @@ export function checkCampaignCompletion(root) {
       failures.push(...validateCombinedAcceptance(result, row.package));
       if(Object.entries(expectedTargetFixtures).some(([name,hash])=>result.target_fixture_identity?.[name]!==hash))failures.push(`${row.package}: paired check uses superseded target fixtures`);
       if(result.verification_scope?.mode!=='full'||result.verification_scope?.deferred?.length)failures.push(`${row.package}: completion requires a full, non-deferred check`);
-      if(['desktop','laptop','tablet','mobile'].some(viewport=>result.viewport_status?.[viewport]?.status!=='pass'))failures.push(`${row.package}: current viewport acceptance is incomplete`);
+      if(ACCEPTANCE_VIEWPORT_IDS.some(viewport=>result.viewport_status?.[viewport]?.status!=='pass'))failures.push(`${row.package}: current viewport acceptance is incomplete`);
       if(result.font_diagnostics?.status!=='measured'||!result.font_diagnostics?.fonts?.some(font=>font.glyph_count>0))failures.push(`${row.package}: Japanese glyph acceptance is incomplete`);
       for (const [key, filename] of [['css', 'candidate.css'], ['source', ledger.packages[row.package]?.source_file ?? 'candidate.wikidot.source.txt'], ['preview', 'candidate.wikidot.txt']]) {
         const bytes = bind(row.inputs?.[key], `${row.package}/${key}`);
@@ -145,7 +149,7 @@ export function checkCampaignCompletion(root) {
         const resultKey={css:'candidate_css_sha256',source:'candidate_source_sha256',preview:'candidate_preview_sha256'}[key];
         if(result[resultKey]!==sha(bytes))failures.push(`${row.package}: accepted result is not bound to current ${key}`);
       }
-      for(const viewport of ['desktop','laptop','tablet','mobile']){
+      for(const viewport of ACCEPTANCE_VIEWPORT_IDS){
         const visual=result.visual?.viewports?.[viewport];
         if(!accepted(visual?.status)||visual?.review?.candidate_screenshot_sha256!==visual?.candidate_screenshot_sha256||visual?.review?.reference_screenshot_sha256!==visual?.reference_screenshot_sha256)failures.push(`${row.package}: unbound paired image review at ${viewport}`);
         for(const side of ['candidate','reference']){
@@ -158,17 +162,23 @@ export function checkCampaignCompletion(root) {
         }
       }
       const audit = JSON.parse(bind(row.browser_audit, `${row.package}/browser audit`));
+      const semantic = audit.acceptance_model === SEMANTIC_BROWSER_MODEL;
+      if (semantic) {
+        failures.push(...validateSemanticBrowserAcceptance(audit).failures, ...validateSemanticSourceAuthority(root,audit));
+        for (const artifact of semanticReviewArtifactBindings(audit)) bind(artifact.binding, artifact.label);
+      }
       const records = audit.records?.filter(record => record.theme === row.package) ?? [];
       failures.push(...validateBrowserCoverage(audit,[row.package]));
       let base=Buffer.alloc(0);try{base=fs.readFileSync(path.join(root,'ports',row.package,'candidate-base.css'))}catch{}
       const currentCandidate=candidateIdentity(fs.readFileSync(path.join(root,'ports',row.package,'candidate.css')),base).candidateSha;
       for (const record of records) {
-        if(record.run_contract_sha256!==currentRunContractSha||record.baseline_theme_mode!=='replacement'||record.baseline_theme_css_sha256!==currentRunSpec.baseline_theme.replacement_css_sha256)failures.push(`${row.package}: browser capture uses superseded target baseline/contract`);
+        if(!captureRunContractIsCurrent(record,currentRunSpec,currentRunContractSha)||record.baseline_theme_mode!=='replacement'||record.baseline_theme_css_sha256!==currentRunSpec.baseline_theme.replacement_css_sha256)failures.push(`${row.package}: browser capture uses superseded target baseline/contract`);
         if(!Array.isArray(record.unconfirmed_items)||!Array.isArray(record.asset_failures)||!Array.isArray(record.page_errors)||!Array.isArray(record.action_responses))failures.push(`${row.package}: browser capture lacks explicit safety results`);
-        if (!['PASS_NATURAL', 'PASS_INTENTIONAL_DIVERGENCE'].includes(record.classification) || !record.reviewed_after_last_change || record.unconfirmed_items?.length || record.asset_failures?.length || record.page_errors?.length || record.external_requests_sent !== 0 || record.failure || record.action_responses?.some(response=>response.type==='failure'||response.status>=400||response.error_message)) failures.push(`${row.package}: unresolved browser state ${record.surface}.${record.state}`);
+        if (!semantic && (!['PASS_NATURAL', 'PASS_INTENTIONAL_DIVERGENCE'].includes(record.classification) || !record.reviewed_after_last_change || record.unconfirmed_items?.length || record.asset_failures?.length || record.page_errors?.length || record.external_requests_sent !== 0 || record.failure || record.action_responses?.some(response=>response.type==='failure'||response.status>=400||response.error_message))) failures.push(`${row.package}: unresolved browser state ${record.surface}.${record.state}`);
         if(record.candidate_sha256!==currentCandidate)failures.push(`${row.package}: superseded browser CSS identity`);
         if (record.candidate_source_sha256 !== row.inputs.source.sha256) failures.push(`${row.package}: superseded browser source identity`);
-        if (sha(bind({path: `ports/${record.screenshot}`, sha256: record.screenshot_sha256}, row.package)) !== record.visual_review?.screenshot_sha256) failures.push(`${row.package}: missing current image review`);
+        const screenshot = bind({path: `ports/${record.screenshot}`, sha256: record.screenshot_sha256}, row.package);
+        if (!semantic && sha(screenshot) !== record.visual_review?.screenshot_sha256) failures.push(`${row.package}: missing current image review`);
       }
     } catch (error) { failures.push(error.message); }
   }
@@ -176,17 +186,22 @@ export function checkCampaignCompletion(root) {
     const migration = JSON.parse(bind(document.migration?.receipt, 'Sigma-10 migration'));
     if (!accepted(migration.overall_acceptance?.status)) failures.push(`Current Sigma-10 migration acceptance is ${migration.overall_acceptance?.status ?? 'missing'}`);
     const audit = JSON.parse(bind(document.migration?.browser_audit, 'Sigma-10 migration audit'));
+    const semantic = audit.acceptance_model === SEMANTIC_BROWSER_MODEL;
+    if (semantic) {
+      failures.push(...validateSemanticBrowserAcceptance(audit).failures, ...validateSemanticSourceAuthority(root,audit));
+      for (const artifact of semanticReviewArtifactBindings(audit)) bind(artifact.binding, artifact.label);
+    }
     failures.push(...validateBrowserCoverage(audit,[...names,'sigma10-baseline'],{migration:true}));
     if(migration.browser_audit_sha256!==document.migration.browser_audit.sha256)failures.push('Migration decision is not bound to current browser audit');
     for(const record of audit.records??[]){
       const expected=inventoryByName.get(record.theme);
       if(!expected||record.candidate_sha256!==expected.candidate_sha256||record.candidate_source_sha256!==expected.source_sha256)failures.push(`Sigma-10 capture uses an undeclared or superseded candidate identity: ${record.theme}`);
-      if(record.run_contract_sha256!==currentMigrationContractSha||record.baseline_theme_mode!=='replacement'||record.baseline_theme_css_sha256!==currentMigrationSpec.baseline_theme.replacement_css_sha256)failures.push('Sigma-10 capture uses superseded baseline/contract');
+      if(!captureRunContractIsCurrent(record,currentMigrationSpec,currentMigrationContractSha)||record.baseline_theme_mode!=='replacement'||record.baseline_theme_css_sha256!==currentMigrationSpec.baseline_theme.replacement_css_sha256)failures.push('Sigma-10 capture uses superseded baseline/contract');
       if(!Array.isArray(record.unconfirmed_items)||!Array.isArray(record.asset_failures)||!Array.isArray(record.page_errors)||!Array.isArray(record.action_responses)||record.action_responses.some(response=>response.type==='failure'||response.status>=400||response.error_message))failures.push('Sigma-10 capture lacks clean explicit safety results');
-      if(record.unconfirmed_items?.length||record.asset_failures?.length||record.page_errors?.length||record.external_requests_sent!==0||!record.reviewed_after_last_change||record.migration_review?.screenshot_sha256!==record.screenshot_sha256)failures.push(`Unresolved Sigma-10 state ${record.theme}/${record.surface}.${record.state}`);
-      if(!['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE','EXTERNAL_CONTRACT_UNVERIFIABLE','NOT_APPLICABLE'].includes(record.classification)||record.migration_review?.classification!==record.classification||record.visual_review?.screenshot_sha256!==record.screenshot_sha256)failures.push(`Sigma-10 state lacks a current accepted visual review: ${record.theme}/${record.surface}.${record.state}`);
+      if(!semantic && (record.unconfirmed_items?.length||record.asset_failures?.length||record.page_errors?.length||record.external_requests_sent!==0||!record.reviewed_after_last_change||record.migration_review?.screenshot_sha256!==record.screenshot_sha256))failures.push(`Unresolved Sigma-10 state ${record.theme}/${record.surface}.${record.state}`);
+      if(!semantic && (!['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE','EXTERNAL_CONTRACT_UNVERIFIABLE','NOT_APPLICABLE'].includes(record.classification)||record.migration_review?.classification!==record.classification||record.visual_review?.screenshot_sha256!==record.screenshot_sha256))failures.push(`Sigma-10 state lacks a current accepted visual review: ${record.theme}/${record.surface}.${record.state}`);
       bind({path:`ports/${record.screenshot}`,sha256:record.screenshot_sha256},'Sigma-10 screenshot');
-      if(!['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE','EXTERNAL_CONTRACT_UNVERIFIABLE','NOT_APPLICABLE'].includes(record.classification)&&!migration.nonblocking_observations?.some(item=>item.screenshot_sha256===record.screenshot_sha256&&item.blocker===false&&item.authority!=='WIKIDOT_RUNTIME_PARITY'))failures.push(`Unresolved Sigma-10 classification ${record.theme}/${record.surface}.${record.state}`);
+      if(!semantic && !['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE','EXTERNAL_CONTRACT_UNVERIFIABLE','NOT_APPLICABLE'].includes(record.classification)&&!migration.nonblocking_observations?.some(item=>item.screenshot_sha256===record.screenshot_sha256&&item.blocker===false&&item.authority!=='WIKIDOT_RUNTIME_PARITY'))failures.push(`Unresolved Sigma-10 classification ${record.theme}/${record.surface}.${record.state}`);
     }
     for (const row of rows) {
       const records = audit.records?.filter(record => record.theme === row.package) ?? [];

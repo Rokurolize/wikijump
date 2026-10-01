@@ -10,10 +10,14 @@ import {withAuditLock} from '../scripts/audit-lock.mjs';
 const scriptDir=path.dirname(fileURLToPath(import.meta.url));
 const repoRoot=path.resolve(scriptDir,'../../../../../');
 const framerailDir=path.join(repoRoot,'framerail');
-const cacheBase=process.env.THEME_LAB_BUILT_CACHE??'/tmp/wikijump-theme-lab-built-framerail';
-const framerailContainer='wikijump-theme-lab-built-framerail';
-const caddyContainer='wikijump-theme-lab-built-caddy';
-const transportOrigin='https://scpaiueouiuiuiui.wikijump.localhost:3395';
+const namespace=process.argv.find(arg=>arg.startsWith('--namespace='))?.slice(12)??null;
+const port=Number(process.argv.find(arg=>arg.startsWith('--port='))?.slice(7)??3395);
+if(namespace!==null&&!/^[a-z][a-z0-9-]{0,40}$/u.test(namespace))throw new Error('invalid task-owned namespace');
+if(!Number.isInteger(port)||port<1024||port>65535||namespace!==null&&port===3395)throw new Error('task-owned transport needs a distinct valid port');
+const cacheBase=process.env.THEME_LAB_BUILT_CACHE??`/tmp/wikijump-theme-lab-${namespace??'built'}-framerail`;
+const framerailContainer=`wikijump-theme-lab-${namespace??'built'}-framerail`;
+const caddyContainer=`wikijump-theme-lab-${namespace??'built'}-caddy`;
+const transportOrigin=`https://scpaiueouiuiuiui.wikijump.localhost:${port}`;
 const devContainer='wikijump-local-development-framerail-1';
 const buildInputs=[
   path.join(framerailDir,'src'),
@@ -139,7 +143,7 @@ https://scpaiueouiuiuiui.wikijump.localhost {
   }
 }
 `);
- await run('docker',['run','-d','--rm','--name',caddyContainer,'--network',network,'-p','127.0.0.1:3395:443','-v',`${caddyFile}:/etc/caddy/Caddyfile:ro`,'caddy:alpine','caddy','run','--config','/etc/caddy/Caddyfile','--adapter','caddyfile']);
+ await run('docker',['run','-d','--rm','--name',caddyContainer,'--network',network,'-p',`127.0.0.1:${port}:443`,'-v',`${caddyFile}:/etc/caddy/Caddyfile:ro`,'caddy:alpine','caddy','run','--config','/etc/caddy/Caddyfile','--adapter','caddyfile']);
  created.push(caddyContainer);
 
  for(let attempt=0;attempt<60;attempt++){

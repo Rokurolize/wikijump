@@ -455,6 +455,7 @@ export function createSession({
       css = null,
       baseCss = "",
       wikitext = null,
+      source = null,
       title = "Preview",
       syntaxOnly = false,
       pageAssets = [],
@@ -687,6 +688,9 @@ export function createSession({
         };
       }
       verdict.target_fixture_identity = Object.fromEntries(Object.entries({baseline:baselineCss,sidebar:sidebarHtml,header:headerHtml,navigation:navigationHtml}).map(([name,bytes])=>[name,bytes===null?null:crypto.createHash("sha256").update(bytes).digest("hex")]));
+      for (const [key, bytes] of Object.entries({candidate_css_sha256: css, candidate_source_sha256: source, candidate_preview_sha256: wikitext, candidate_base_css_sha256: baseCss || null})) {
+        verdict[key] = typeof bytes === "string" ? crypto.createHash("sha256").update(bytes).digest("hex") : null;
+      }
       verdict.verification_scope = iteration
         ? {mode: "iteration", completed: ["reference comparison", "candidate stylesheet", "preview", "assets", "Japanese fonts", "page images"], deferred: ["all viewports", "torture", "widget interactions", "visual screenshots"]}
         : {mode: "full", completed: ["reference comparison", "candidate stylesheet", "preview", "assets", "Japanese fonts", "page images", "all viewports", "torture", "widget interactions", ...(visual ? ["visual screenshots"] : [])], deferred: []};

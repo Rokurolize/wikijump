@@ -9,7 +9,8 @@
     wikidotHistoryActionTitles,
     wikidotHistoryHeaders,
     wikidotRevisionDate,
-    wikidotRevisionFlags
+    wikidotRevisionFlags,
+    wikidotRevisionSourceHtml
   } from "$lib/wikidot-history-contract"
   import { onDestroy, tick } from "svelte"
   import { SvelteMap } from "svelte/reactivity"
@@ -87,10 +88,8 @@
         const rev: PageHistoryEntry = {
           ...rawRevision,
           history_kind: rawRevision.history_kind ?? "page",
-          history_row_id:
-            rawRevision.history_row_id ?? String(rawRevision.revision_id),
-          timeline_number:
-            rawRevision.timeline_number ?? rawRevision.revision_number,
+          history_row_id: rawRevision.history_row_id ?? String(rawRevision.revision_id),
+          timeline_number: rawRevision.timeline_number ?? rawRevision.revision_number,
           page_revision_number:
             rawRevision.page_revision_number === undefined
               ? rawRevision.history_kind === "file"
@@ -391,7 +390,7 @@
 
   {#if showRevisionSource}
     <div id="history-subarea">
-      <textarea class="page-source" readonly={true}>{revision?.wikitext ?? ""}</textarea>
+      {@html wikidotRevisionSourceHtml(revision?.wikitext ?? "")}
     </div>
   {/if}
 {:else}

@@ -20,6 +20,7 @@ test('historical integrity cannot substitute for missing current campaign accept
 import crypto from 'node:crypto';
 import browserContract from '../fixtures/browser-acceptance-states.json' with {type:'json'};
 import {candidateIdentity} from '../ports/scripts/candidate-identity.mjs';
+import {SEMANTIC_BROWSER_MODEL,planBrowserAcceptance} from '../src/semantic-browser-acceptance.mjs';
 const digest=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const matrix=[['chromium','desktop'],['chromium','laptop'],['chromium','tablet'],['chromium','mobile'],['chromium','narrow-mobile'],['firefox','desktop'],['firefox','mobile'],['webkit','desktop'],['webkit','mobile']];
 const core=new Set(['page.normal.settled','credit.view.open','page.history.list','page.source.open','nav.sidebar.open','nav.sidebar.open-submenu','shell.interwiki.visible']);
@@ -43,9 +44,10 @@ function mockCampaign(){
  const shot=write('ports/captures/test.png','controlled mock screenshot');
  const row=(theme,engine,viewport,state,runSha=runContract.sha256)=>({run_contract_sha256:runSha,baseline_theme_mode:'replacement',baseline_theme_css_sha256:fixtureIdentity.baseline,action_responses:[],theme,browser_engine:engine,viewport,surface:state.surface,state:state.state,candidate_sha256:candidateIdentity(fs.readFileSync(path.join(root,css.path)),Buffer.alloc(0)).candidateSha,candidate_source_sha256:source.sha256,classification:'PASS_NATURAL',reviewed_after_last_change:true,unconfirmed_items:[],asset_failures:[],page_errors:[],external_requests_sent:0,screenshot:'captures/test.png',screenshot_sha256:shot.sha256,visual_review:{screenshot_sha256:shot.sha256},migration_review:{classification:'PASS_NATURAL',screenshot_sha256:shot.sha256}});
  const rows=(theme,normalOnly=false,runSha=runContract.sha256)=>matrix.flatMap(([engine,viewport])=>browserContract.states.filter(state=>state.applicable_viewports.includes(viewport)&&(engine==='chromium'||core.has(`${state.surface}.${state.state}`))&&(!normalOnly||state.surface==='page.normal')).map(state=>row(theme,engine,viewport,state,runSha)));
+ write('ports/testtheme/manifest.json',{reference_url:'https://scp-wiki.wikidot.com/theme:testtheme',en_source_sha256:source.sha256});
  const audit={state_applicability:browserContract.states,records:rows('testtheme')};
  const migrationAudit={state_applicability:browserContract.states,records:[...rows('testtheme',true,migrationContract.sha256),...rows('sigma10-baseline',false,migrationContract.sha256)]};
- const full={target_fixture_identity:fixtureIdentity,...result('pass','pass','pass'),candidate_css_sha256:css.sha256,candidate_source_sha256:source.sha256,candidate_preview_sha256:preview.sha256,verification_scope:{mode:'full',deferred:[]},viewport_status:Object.fromEntries(['desktop','laptop','tablet','mobile'].map(viewport=>[viewport,{status:'pass'}])),font_diagnostics:{status:'measured',fonts:[{glyph_count:20}]},visual:{viewports:Object.fromEntries(['desktop','laptop','tablet','mobile'].map(viewport=>[viewport,{status:'pass',candidate_path:shot.path,reference_path:shot.path,candidate_screenshot_sha256:shot.sha256,reference_screenshot_sha256:shot.sha256,review:{candidate_screenshot_sha256:shot.sha256,reference_screenshot_sha256:shot.sha256}}]))}};
+ const full={target_fixture_identity:fixtureIdentity,...result('pass','pass','pass'),candidate_css_sha256:css.sha256,candidate_source_sha256:source.sha256,candidate_preview_sha256:preview.sha256,verification_scope:{mode:'full',deferred:[]},viewport_status:Object.fromEntries(['desktop','laptop','tablet','mobile','narrow-mobile'].map(viewport=>[viewport,{status:'pass'}])),font_diagnostics:{status:'measured',fonts:[{glyph_count:20}]},visual:{viewports:Object.fromEntries(['desktop','laptop','tablet','mobile','narrow-mobile'].map(viewport=>[viewport,{status:'pass',candidate_path:shot.path,reference_path:shot.path,candidate_screenshot_sha256:shot.sha256,reference_screenshot_sha256:shot.sha256,review:{candidate_screenshot_sha256:shot.sha256,reference_screenshot_sha256:shot.sha256}}]))}};
  const receipt=write('package-result.json',full);
  const migrationBinding=write('migration-audit.json',migrationAudit);
  const migrationResult={overall_acceptance:{status:'pass'},browser_audit_sha256:migrationBinding.sha256};
@@ -94,5 +96,39 @@ test('promotion rejects a omitted state even when remaining screenshots have bee
  const mock=mockCampaign();try{
   mock.audit.records.pop();mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
   assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('Missing current browser state')));
+ }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
+});
+
+test('semantic completion accepts bound questions and measured facts, not a PASS on every screenshot',()=>{
+ const mock=mockCampaign();try{
+  mock.audit.acceptance_model=SEMANTIC_BROWSER_MODEL;
+  for(const row of mock.audit.records){
+   row.classification='UNCONFIRMED';row.reviewed_after_last_change=false;delete row.visual_review;
+   row.unconfirmed_items=['screenshot captured but awaiting image review'];
+   Object.assign(row,{asset_dependency_sha256:digest('assets'),fixture_contract_sha256:digest('fixture'),
+    capture_state_action_contract_sha256:digest('action'),runtime_surface_contract_sha256:digest('runtime'),
+    visual_diagnostics:{viewport:{width:1440,documentWidth:1440},title_overlaps:[]}});
+  }
+  mock.audit.semantic_reviews=Object.fromEntries(planBrowserAcceptance(mock.audit).visual_questions.map(q=>[q.id,
+   {question:q.question,evidence_sha256:q.evidence_sha256,status:'pass',method:'direct-visual-question-review',
+    note:'Frozen source imagery and typography were compared across the declared responsive evidence.',
+    reviewer:'test',reviewed_at:'2026-10-01T00:00:00Z',source_url:'https://scp-wiki.wikidot.com/theme:testtheme',
+    source_snapshot:mock.document.packages[0].inputs.source,source_rendering:{path:'ports/captures/test.png',sha256:mock.audit.records[0].screenshot_sha256},
+    decision_authority:'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY',port_conclusion_eligible:false}]));
+  mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
+  assert.deepEqual(checkCampaignCompletion(mock.root).failures,[]);
+  mock.audit.records[0].visual_diagnostics.viewport.documentWidth=1500;
+  mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
+  assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('machine failure document_containment')));
+ }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
+});
+
+test('semantic completion rejects a candidate snapshot impersonating another upstream source',()=>{
+ const mock=mockCampaign();try{
+  mock.audit.acceptance_model=SEMANTIC_BROWSER_MODEL;
+  const q=planBrowserAcceptance(mock.audit).visual_questions[0];
+  mock.audit.semantic_reviews={[q.id]:{source_url:'https://scp-wiki.wikidot.com/theme:another',source_snapshot:mock.document.packages[0].inputs.source}};
+  mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
+  assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('maintained upstream source authority')));
  }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
 });

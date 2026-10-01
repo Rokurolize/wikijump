@@ -2,7 +2,8 @@ import {
   wikidotHistoryActionTitles,
   wikidotHistoryHeaders,
   wikidotRevisionDate,
-  wikidotRevisionFlags
+  wikidotRevisionFlags,
+  wikidotRevisionSourceHtml
 } from "../wikidot-history-contract.js"
 
 /** @param {string} value */
@@ -181,8 +182,7 @@ export const renderWikidotPageRevisionList = (revisions, locale = "en") => {
   const rows = revisions
     .map((revision, index) => {
       const revisionId = revision.revision_id
-      const actionRevisionId =
-        revision.history_action_revision_id ?? revisionId
+      const actionRevisionId = revision.history_action_revision_id ?? revisionId
       const rowId = revision.history_row_id ?? String(revisionId)
       const displayedRevisionNumber =
         (revision.timeline_number ?? revision.revision_number) + 1
@@ -204,7 +204,7 @@ export const renderWikidotPageRevisionList = (revisions, locale = "en") => {
 
 /** @param {WikidotHistoryRevision} revision */
 export const renderWikidotPageRevisionSource = (revision) =>
-  `<div class="page-source">${escapeHtml(revision.wikitext ?? "")}</div>`
+  wikidotRevisionSourceHtml(revision.wikitext ?? "")
 
 /** @param {WikidotHistoryRevision} revision */
 export const renderWikidotPageRevisionVersion = (revision) =>

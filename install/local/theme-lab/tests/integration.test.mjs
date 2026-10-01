@@ -5,6 +5,7 @@
 // No external network is used.
 
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import http from "node:http";
 import os from "node:os";
@@ -114,6 +115,17 @@ test("theme-port check fails on a missing included component in the rendered pre
       include: "component:theme-squares",
       evidence: {preview_error: 'Included page "component:theme-squares" does not exist (create it now)'},
     }]);
+  }, {previewClient});
+});
+
+test("recorded check binds the original candidate inputs before replay rewriting", async (t) => {
+  const inputs = {css: '#page-content { color: black; }', baseCss: 'body { font-size: 16px; }', source: '[[module CSS]]\n/* 日本語 */\n[[/module]]', wikitext: '日本語のプレビュー'};
+  const previewClient = {preview: async () => ({body: '<p class="theme-lab-jp-font-probe">日本語のプレビュー</p>', styles: [], legacy_actions: [], membership_actions: []})};
+  await withSession(t, async ({session}) => {
+    const result = await session.check({...inputs, siteId: 6000003, iteration: true});
+    for (const [field, key] of [['candidate_css_sha256','css'], ['candidate_base_css_sha256','baseCss'], ['candidate_source_sha256','source'], ['candidate_preview_sha256','wikitext']]) {
+      assert.equal(result[field], crypto.createHash('sha256').update(inputs[key]).digest('hex'));
+    }
   }, {previewClient});
 });
 

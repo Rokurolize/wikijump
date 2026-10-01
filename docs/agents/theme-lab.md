@@ -92,6 +92,12 @@ campaign as a separate evidence dimension.
 
 Do not infer a site migration procedure from one theme package.
 
+For current final campaign acceptance, read
+`install/local/theme-lab/ports/SEMANTIC-BROWSER-ACCEPTANCE.md`. Account for
+machine facts, failures, missing authority and specific visual questions before
+reviewing images. Exhaustive observations do not require exhaustive independent
+visual judgments; full package and runtime/source safety gates still apply.
+
 ## Authority rules
 
 - A foreign theme's **Wikidot source**, not its rendered HTML, is the source

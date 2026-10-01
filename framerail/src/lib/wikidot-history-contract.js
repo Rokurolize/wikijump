@@ -1,6 +1,21 @@
 const EN_HEADERS = ["rev.", "", "flags", "actions", "by", "date", "comments"]
 const JA_HEADERS = ["rev.", "", "フラグ", "アクション", "by", "日付", "コメント"]
 
+// Frozen anonymous history/PageSourceModule responses from SCP-EN and SCP-JP
+// use a div with escaped literal source and <br /> line boundaries. A textarea
+// acquires an intrinsic width and content-box padding under Wikidot Base CSS.
+// Keep this primitive shared by the AMC response and the Wikidot browser pane.
+/** @param {string} source */
+export const wikidotRevisionSourceHtml = (source) =>
+  `<div class="page-source">${source
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;")
+    .replaceAll("\r\n", "\n")
+    .replaceAll("\n", "<br />\n")}</div>`
+
 const FLAG_TITLES = {
   en: {
     create: "New page",

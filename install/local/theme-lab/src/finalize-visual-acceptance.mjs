@@ -4,8 +4,8 @@ import {overallAcceptance,summarizeVisual} from './verdict.mjs';
 import {ACCEPTANCE_VIEWPORT_IDS} from './acceptance-viewports.mjs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 export function reviewCompletionTime(review){
- const times=Object.values(review?.viewports??{}).map(row=>row?.reviewed_at).filter(value=>typeof value==='string'&&!Number.isNaN(Date.parse(value))).sort();
- if(times.length!==4)throw new Error('Current paired review must provide a valid reviewed_at timestamp for every required viewport');
+ const times=ACCEPTANCE_VIEWPORT_IDS.map(viewport=>review?.viewports?.[viewport]?.reviewed_at).filter(value=>typeof value==='string'&&!Number.isNaN(Date.parse(value))).sort();
+ if(times.length!==ACCEPTANCE_VIEWPORT_IDS.length)throw new Error('Current paired review must provide a valid reviewed_at timestamp for every required viewport');
  return times.at(-1);
 }
 // Review completes the image dimension of a captured full check. It does not
@@ -20,7 +20,7 @@ export async function finalizeVisualAcceptance({result,review,css,baseCss='',sou
  if(result.font_diagnostics?.status!=='measured'||!result.font_diagnostics.fonts?.some(font=>font.glyph_count>0))throw new Error('Japanese glyph acceptance is incomplete');
  if(!['pass','warn'].includes(result.port_decision?.verdict))throw new Error('Unresolved or failed port decision cannot be accepted by image review');
  if(!['pass','warn','inconclusive'].includes(target?.status)||target.status==='inconclusive'&&target.visual_status!=='inconclusive')throw new Error('Target acceptance has unresolved nonvisual work');
- if(target.findings?.some(row=>row.severity==='error')||result.next_actions||result.missing_candidate_assets||result.external_requests||result.image_diagnostics?.broken?.length||Object.values(result.viewport_status??{}).some(row=>row.status!=='pass')||Object.values(result.interaction_diagnostics??{}).some(row=>row.status==='fail')||!['pass','warn'].includes(result.torture))throw new Error('Image review cannot override failed target checks');
+ if(target.findings?.some(row=>row.severity==='error')||(Array.isArray(result.next_actions)?result.next_actions.length:result.next_actions)||result.missing_candidate_assets||result.external_requests||result.image_diagnostics?.broken?.length||Object.values(result.viewport_status??{}).some(row=>row.status!=='pass')||Object.values(result.interaction_diagnostics??{}).some(row=>row.status==='fail')||!['pass','warn'].includes(result.torture))throw new Error('Image review cannot override failed target checks');
  const captures={};
  for(const viewport of ACCEPTANCE_VIEWPORT_IDS){
   const row=result.visual?.viewports?.[viewport];if(!row?.candidate_path||!row.reference_path)throw new Error(`Missing paired visual capture: ${viewport}`);

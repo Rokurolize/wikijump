@@ -1,3 +1,4 @@
+import {validateSemanticSourceAuthority} from '../src/semantic-source-authority.mjs';
 #!/usr/bin/env node
 // Complete only the exact image review dimension of a full recorded check.
 // Failed measurements, stale identities and missing interactive states remain
@@ -9,6 +10,7 @@ import {fileURLToPath} from 'node:url';
 import {finalizeVisualAcceptance,reviewCompletionTime} from '../src/finalize-visual-acceptance.mjs';
 import {validateCombinedAcceptance,validateBrowserCoverage} from '../src/campaign-completion.mjs';
 import {candidateIdentity} from '../ports/scripts/candidate-identity.mjs';
+import {SEMANTIC_BROWSER_MODEL,validateSemanticBrowserAcceptance,semanticReviewArtifactBindings} from '../src/semantic-browser-acceptance.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const args=process.argv.slice(2),value=key=>args[args.indexOf(key)+1];
 for(const key of ['--package','--result','--review','--audit','--output'])if(!args.includes(key))throw new Error(`Missing ${key}`);
@@ -22,15 +24,23 @@ const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const candidate=candidateIdentity(css,base).candidateSha;
 const subset={...audit,records:audit.records.filter(row=>row.theme===name)};
 const failures=validateBrowserCoverage(subset,[name]);
+const semantic=subset.acceptance_model===SEMANTIC_BROWSER_MODEL;
+if(semantic){
+ failures.push(...validateSemanticBrowserAcceptance(subset).failures, ...validateSemanticSourceAuthority(root,subset));
+ for(const {binding,label} of semanticReviewArtifactBindings(subset)){
+  const file=path.resolve(root,binding?.path??'');
+  if(!file.startsWith(root+path.sep)||sha(await fs.readFile(file))!==binding?.sha256)failures.push(`Unbound source visual artifact: ${label}`);
+ }
+}
 for(const row of subset.records){
  if(row.candidate_sha256!==candidate||row.candidate_source_sha256!==sha(source))failures.push(`Stale interactive candidate: ${row.surface}.${row.state}`);
- if(!['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE'].includes(row.classification)||!row.reviewed_after_last_change||row.unconfirmed_items?.length||row.asset_failures?.length||row.page_errors?.length||row.external_requests_sent!==0||row.failure)failures.push(`Unaccepted interaction: ${row.surface}.${row.state}`);
- if(row.visual_review?.screenshot_sha256!==row.screenshot_sha256)failures.push('Unbound interactive image review');
+ if(!semantic && (!['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE'].includes(row.classification)||!row.reviewed_after_last_change||row.unconfirmed_items?.length||row.asset_failures?.length||row.page_errors?.length||row.external_requests_sent!==0||row.failure))failures.push(`Unaccepted interaction: ${row.surface}.${row.state}`);
+ if(!semantic && row.visual_review?.screenshot_sha256!==row.screenshot_sha256)failures.push('Unbound interactive image review');
  const file=path.resolve(root,'ports',row.screenshot??'');
  if(!file.startsWith(path.join(root,'ports')+path.sep)||sha(await fs.readFile(file))!==row.screenshot_sha256)failures.push('Stale interactive screenshot');
 }
 if(failures.length)throw new Error(failures.join('\n'));
-const result=await finalizeVisualAcceptance({result:raw,review,css:css.toString(),source:source.toString(),preview:preview.toString(),baseCss:base.toString()});
+const result=await finalizeVisualAcceptance({result:raw.result??raw,review,css:css.toString(),source:source.toString(),preview:preview.toString(),baseCss:base.toString()});
 const dimensions=validateCombinedAcceptance(result,name);if(dimensions.length)throw new Error(dimensions.join('\n'));
 const out=path.resolve(value('--output'));
 if(!out.startsWith(path.join(root,'ports/current-acceptance')+path.sep))throw new Error('Current acceptance outputs must be isolated from historical evidence');
