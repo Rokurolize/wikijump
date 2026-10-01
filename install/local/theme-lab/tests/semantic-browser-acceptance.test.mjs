@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {measuredFacts, titleCompositionFact, planBrowserAcceptance, validateSemanticBrowserAcceptance, TITLE_TEXT_CONTRACT_SHA256} from '../src/semantic-browser-acceptance.mjs';
+import {measuredFacts, titleCompositionFact, planBrowserAcceptance, validateSemanticBrowserAcceptance, TITLE_TEXT_CONTRACT_SHA256, observationKey} from '../src/semantic-browser-acceptance.mjs';
 const sha = 'a'.repeat(64);
 const row = overrides => ({theme: 'example', browser_engine: 'chromium', browser_version: '1',
   viewport: 'desktop', viewport_size: {width: 1440, height: 1000}, surface: 'page.normal', state: 'settled',
@@ -74,6 +74,41 @@ test('visible intersections produce a specific composition question', () => {
   const plan = planBrowserAcceptance({records: [withTextIntersections(visible)]});
   assert.equal(plan.accounting.distinct_visual_questions, 2);
   assert.match(plan.visual_questions[1].question, /layering over the page title/u);
+});
+
+test('a transient navigation overlay is machine-settled over a clean exact-context reading state', () => {
+  const overlap = {effectively_visible:true,tag:'A',id:'',class:'menu-control',text:'ガイドハブ',color:'black',background:'white',position:'absolute',z:'20',ancestors:[{tag:'LI'},{tag:'UL',position:'absolute',rect:{x:0,y:50,width:100,height:60}},{tag:'LI'}]};
+  const action = withTextIntersections(row({surface:'nav.mobile-top',state:'submenu-expanded',viewport:'mobile',viewport_size:{width:390,height:844},
+    runtime_surface_contract_sha256:'b'.repeat(64),transport_origin:'https://candidate-action.invalid',
+    visual_diagnostics:{viewport:{width:390,documentWidth:390},title_overlaps:[{...overlap,rect:{x:0,y:50,width:100,height:60}}]}}));
+  const normal = row({viewport:'mobile',viewport_size:{width:390,height:844},transport_origin:'https://candidate-reading.invalid',
+    visual_diagnostics:{viewport:{width:390,documentWidth:390},title_overlaps:[]}});
+  const plan = planBrowserAcceptance({records:[normal,action]});
+  assert.equal(plan.visual_questions.filter(q=>q.kind==='ambiguous_composition').length,0);
+  const observation = plan.observations.find(item => item.key === observationKey(action));
+  assert.equal(observation.facts.title_composition,'pass');
+  assert.match(observation.machine_explanations[0],/transient navigation overlay/u);
+});
+
+test('transient overlay settlement fails closed on context drift, unsafe actions, or a dirty reading state', () => {
+  const overlap = {effectively_visible:true,tag:'A',id:'',class:'menu-control',text:'ガイドハブ',color:'black',background:'white',position:'absolute',z:'20',ancestors:[{tag:'LI'},{tag:'UL',position:'absolute',rect:{x:0,y:50,width:100,height:60}},{tag:'LI'}]};
+  const action = withTextIntersections(row({surface:'nav.mobile-top',state:'submenu-expanded',viewport:'mobile',viewport_size:{width:390,height:844},
+    visual_diagnostics:{viewport:{width:390,documentWidth:390},title_overlaps:[{...overlap,rect:{x:0,y:50,width:100,height:60}}]}}));
+  const normal = row({viewport:'mobile',viewport_size:{width:390,height:844},visual_diagnostics:{viewport:{width:390,documentWidth:390},title_overlaps:[]}});
+  const count = records => planBrowserAcceptance({records}).visual_questions.filter(q=>q.kind==='ambiguous_composition').length;
+  assert.equal(count([{...normal,candidate_sha256:'b'.repeat(64)},action]),1);
+  assert.equal(count([normal,{...action,failure:'action failed'}]),1);
+  const overlappingNormal = withTextIntersections({...normal,
+    visual_diagnostics:{viewport:{width:390,documentWidth:390},title_overlaps:[{...overlap,rect:{x:0,y:50,width:100,height:60}}]}});
+  assert.equal(count([overlappingNormal,action]),1);
+});
+
+test('non-navigation title intersections remain visual questions even with a clean reading state', () => {
+  const overlap = {effectively_visible:true,tag:'A',id:'',class:'control',text:'Control',color:'black',background:'white',position:'absolute',z:'20'};
+  const normal = row({viewport:'mobile',viewport_size:{width:390,height:844},visual_diagnostics:{viewport:{width:390,documentWidth:390},title_overlaps:[]}});
+  const search = withTextIntersections(row({surface:'shell.search',state:'typed-focused',viewport:'mobile',viewport_size:{width:390,height:844},
+    visual_diagnostics:{viewport:{width:390,documentWidth:390},title_overlaps:[{...overlap,rect:{x:0,y:50,width:100,height:60}}]}}));
+  assert.equal(planBrowserAcceptance({records:[normal,search]}).visual_questions.filter(q=>q.kind==='ambiguous_composition').length,1);
 });
 
 test('one composition obligation binds responsive/action observations without declaring images equivalent', () => {

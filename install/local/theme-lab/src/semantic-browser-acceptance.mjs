@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import {navigationOverlayProvenance,NAVIGATION_OVERLAY_SOURCE} from './navigation-overlay-provenance.mjs';
 import states from '../fixtures/browser-acceptance-states.json' with {type: 'json'};
 import {measureTitleComposition} from './title-composition.mjs';
 import {measureTitleTextIntersections} from './title-text-intersections.mjs';
@@ -10,6 +11,14 @@ export const TITLE_COMPOSITION_CONTRACT_SHA256 = crypto.createHash('sha256').upd
 export const TITLE_TEXT_CONTRACT_SHA256 = crypto.createHash('sha256').update(measureTitleTextIntersections.toString()).digest('hex');
 const pendingImage = 'screenshot captured but awaiting image review';
 const knownStates = new Set(states.states.map(row => `${row.surface}.${row.state}`));
+const transientNavigationStates = new Set([
+  'nav.desktop-top.submenu-hover',
+  'nav.desktop-top.keyboard-focus',
+  'nav.sidebar.open',
+  'nav.sidebar.open-submenu',
+  'nav.mobile-top.submenu-expanded',
+  'nav.tablet-top.active-navigation-expanded'
+]);
 const failureResponse = response => !response || response.type === 'failure' || response.status >= 400 || response.error_message;
 export const observationKey = row => JSON.stringify([row.theme, row.browser_engine, row.viewport, row.surface, row.state]);
 
@@ -91,15 +100,38 @@ export function titleCompositionFact(row) {
   return text.intersections.length ? 'visual' : 'pass';
 }
 
+const readingContext = row => Object.fromEntries([
+  'theme', 'candidate_sha256', 'candidate_source_sha256', 'base_css_sha256',
+  'candidate_structure_sha256', 'baseline_theme_css_sha256', 'baseline_theme_mode',
+  'asset_dependency_sha256', 'fixture_contract_sha256',
+  'browser_engine', 'browser_version', 'viewport', 'viewport_size', 'session_state',
+  'target_site', 'locale'
+].map(key => [key, row[key] ?? null]));
+
+function settlesTransientNavigationOverlay(row, facts, normal) {
+  if (!transientNavigationStates.has(`${row.surface}.${row.state}`) || facts.title_composition !== 'visual' ||
+      Object.values(facts).some(value=>!['pass','visual'].includes(value)) || !navigationOverlayProvenance(row) || !normal ||
+      JSON.stringify(readingContext(row)) !== JSON.stringify(readingContext(normal))) return false;
+  const normalFacts = measuredFacts(normal);
+  return normalFacts.observation_identity === 'pass' && normalFacts.capture_safety === 'pass' &&
+    normalFacts.maintained_action_execution === 'pass' && normalFacts.document_containment === 'pass' &&
+    titleCompositionFact(normal) === 'pass';
+}
+
 const identityQuestion = 'Does the JP rendering preserve the frozen source theme’s intentional imagery, typography, palette and information hierarchy across the evidenced responsive layouts, allowing only documented localization differences?';
 
 export function planBrowserAcceptance(audit) {
   const questions = new Map();
   const observations = [];
+  const normalRows = new Map((audit.records ?? []).filter(row => row.surface === 'page.normal' && row.state === 'settled')
+    .map(row => [JSON.stringify(readingContext(row)), row]));
   for (const row of audit.records ?? []) {
     const key = observationKey(row), dependencies = observationDependencies(row);
     const facts = measuredFacts(row);
     facts.title_composition = titleCompositionFact(row);
+    const transientOverlaySettled = settlesTransientNavigationOverlay(row, facts,
+      normalRows.get(JSON.stringify(readingContext(row))));
+    if (transientOverlaySettled) facts.title_composition = 'pass';
     const required = [];
     if (row.surface === 'page.normal') {
       // One source-identity question can cite several responsive observations.
@@ -144,6 +176,9 @@ export function planBrowserAcceptance(audit) {
       required.push(id);
     }
     observations.push({key, dependencies_sha256: hash(dependencies), facts, visual_questions: required,
+      machine_explanations: transientOverlaySettled
+        ? ['title_composition: source-proven canonical transient navigation overlay over a clean exact-context reading state'] : [],
+      source_fact_authority:transientOverlaySettled?NAVIGATION_OVERLAY_SOURCE:null,
       machine_failures: Object.keys(facts).filter(name => facts[name] === 'fail'),
       additional_machine_evidence: Object.keys(facts).filter(name => facts[name] === 'missing')});
     observations.at(-1).additional_source_authority = Object.keys(facts).filter(name => facts[name] === 'source-required');

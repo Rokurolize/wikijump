@@ -85,3 +85,11 @@ test('Pataphysics generic runtime excludes its theme-page-only heritage suppress
   assert.doesNotMatch(result.css,/\.heritage-wrap\s*\{\s*display\s*:\s*none\s*!important/iu);
   assert.doesNotMatch(result.css,/#page-content\s+\.heritage-rating-module\s*\{\s*display\s*:\s*none/iu);
 });
+
+test('showcase import preservation scans repeated comments without backtracking',()=>{
+ const comments='/*'+ '*//*'.repeat(12000)+'*/';
+ const module='@import url(base.css);\n.showcase{display:none}';
+ const result=genericRuntimeThemeCss({candidateInput:comments+'\n'+module,candidateSource:'[[iftags +テーマ]]\n[[module CSS]]\n'+module+'\n[[/module]]\n[[/iftags]]',candidateTags:['テーマ']});
+ assert.equal(result.removed_showcase_modules,1);
+ assert.equal(result.css,comments+'\n@import url(base.css);');
+});

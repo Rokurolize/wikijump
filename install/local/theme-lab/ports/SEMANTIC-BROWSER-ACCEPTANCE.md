@@ -134,3 +134,20 @@ package inventory entry changes. Missing history, changed selected candidates,
 shared authority, fixtures, baseline, viewport, network policy or unknown
 future dependencies fail closed. Neither history mechanism assigns a visual
 review or changes the observation denominator.
+
+Transient navigation title intersections can be settled from structured evidence
+when the same exact candidate/source/base/assets/fixture/browser/session/site/locale
+has a clean normal reading state and both observations pass action, safety and
+containment facts. The source replay retained under
+`authority-evidence/source-navigation-overlays-20261001` demonstrates the native
+SCP-JP operation at multiple responsive widths, including clean reading states,
+actual menu actions, screenshots, DOM, browser identity and measurement programs.
+Only canonical fixture text inside a retained positioned submenu ancestry or the
+rendered drawer/side-block geometry qualifies. Unknown labels, account/search
+controls, missing ancestry, escaping menus and persistent normal-state overlap
+remain visual questions. Completion independently verifies all source artifacts;
+current action, fixture, runtime and run-contract gates still apply.
+
+This extends the reviewed isolated proposal `471a7929b1` with canonical text and
+structural provenance checks plus retained source evidence. It does not assign
+image classifications or replace paired responsive source-identity review.

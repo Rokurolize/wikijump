@@ -11,9 +11,18 @@ export function candidatePageTags(manifest,source=''){
 }
 
 function leadingImports(css){
-  let prefix='';
-  while(true){const match=css.slice(prefix.length).match(/^(?:\s|\/\*[\s\S]*?\*\/)*@import\s[^;]+;/u);if(!match)break;prefix+=match[0];}
-  return prefix;
+  let end=0,cursor=0;
+  while(cursor<css.length){
+    if(/\s/u.test(css[cursor])){cursor+=1;continue;}
+    if(css.startsWith('/*',cursor)){
+      const close=css.indexOf('*/',cursor+2);if(close<0)break;
+      cursor=close+2;continue;
+    }
+    if(!css.startsWith('@import',cursor)||! /\s/u.test(css[cursor+7]??''))break;
+    const semicolon=css.indexOf(';',cursor+8);if(semicolon<=cursor+8)break;
+    cursor=semicolon+1;end=cursor;
+  }
+  return css.slice(0,end);
 }
 
 function removeExactModule(css,moduleCss,protectedPrefix){

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {planBrowserAcceptance} from './semantic-browser-acceptance.mjs';
+import {NAVIGATION_OVERLAY_SOURCE} from './navigation-overlay-provenance.mjs';
 
 // Opening a hash-bound artifact is necessary but insufficient: a candidate
 // source or another theme's source must not impersonate the upstream oracle.
@@ -21,6 +22,17 @@ export function validateSemanticSourceAuthority(root, audit) {
     if (artifact.sha256 !== binding?.sha256) throw new Error('Stale source action artifact');
     return artifact.bytes;
   };
+  const plan=planBrowserAcceptance(audit);
+  if(plan.observations.some(row=>row.source_fact_authority)) {
+    try {
+      const proof=JSON.parse(open(NAVIGATION_OVERLAY_SOURCE));
+      const prefix=path.dirname(NAVIGATION_OVERLAY_SOURCE.path);
+      for(const row of proof.rows)for(const [name,hash]of [['screenshot','screenshot_sha256'],['dom','dom_sha256']])open({path:`${prefix}/${row[name]}`,sha256:row[hash]});
+      for(const binding of proof.archived_sources)open({path:`${prefix}/${binding.path}`,sha256:binding.sha256});
+      for(const binding of proof.fixture_bindings)open(binding);
+      for(const digest of proof.snapshot.object_digests)open({path:`ports/authority-evidence/replay/objects/${digest.slice(0,2)}/${digest}`,sha256:digest});
+    }catch(error){failures.push(`Transient navigation source authority unavailable: ${error.message}`);}
+  }
   for (const row of audit.records ?? []) {
     const action = row.action_contract_observation;
     if (action?.mode !== 'source-hidden-submit') continue;
@@ -49,7 +61,7 @@ export function validateSemanticSourceAuthority(root, audit) {
       failures.push(`${row.theme}/${row.viewport}: hidden query source authority unavailable: ${error.message}`);
     }
   }
-  for (const question of planBrowserAcceptance(audit).visual_questions) {
+  for (const question of plan.visual_questions) {
     const review = audit.semantic_reviews?.[question.id];
     if (!review) continue; // The question validator reports missing reviews.
     try {
