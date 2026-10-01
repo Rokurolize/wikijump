@@ -40,7 +40,7 @@ function findCssModuleClose(source,start){
   return null;
 }
 
-export function extractUnconditionalCssModules(source,{activeTags=[]}={}){
+export function extractCssModules(source,{activeTags=[]}={}){
   const output=[];
   const tags=new Set(activeTags.map(tag=>String(tag).toLowerCase()));
   const conditions=[];
@@ -75,13 +75,18 @@ export function extractUnconditionalCssModules(source,{activeTags=[]}={}){
       const moduleStart=match.index+match[0].length;
       const close=findCssModuleClose(source,moduleStart);
       if(!close)throw new Error('Unterminated [[module CSS]] block');
-      if(conditions.every(Boolean))output.push(source.slice(moduleStart,close.start));
+      if(conditions.every(Boolean))output.push({index:match.index,css:source.slice(moduleStart,close.start)});
       tokens.lastIndex=close.end;
       continue;
     }
   }
+  return output;
+}
+
+export function extractUnconditionalCssModules(source,{activeTags=[]}={}){
+  const output=extractCssModules(source,{activeTags});
   if(!output.length)throw new Error('No unconditional CSS modules found');
-  return output.join('\n\n').trim()+'\n';
+  return output.map(row=>row.css).join('\n\n').trim()+'\n';
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
