@@ -18,8 +18,50 @@ from pathlib import Path
 from urllib.parse import unquote, urljoin, urlparse
 
 
-IMPORT_RE = re.compile(r"@import\s+(?:url\()?\s*(['\"]?)([^\s'\")]+)\1\s*\)?\s*[^;]*;", re.I)
+# A trailing simple @import is terminated by EOF in native CSS even without a
+# semicolon. Preserve that module form without accepting arbitrary trailing
+# tokens as an EOF import prelude. The URL class must keep excluding ")" so an
+# unquoted url(https://host/path) does not swallow the closing paren into the
+# reference and miss the frozen cache.
+IMPORT_RE = re.compile(r"@import\s+(?:url\()?\s*(['\"]?)([^\s'\")]+)\1\s*\)?(?:\s*[^;]*;|\s*\Z)", re.I)
 URL_RE = re.compile(r"url\(\s*(['\"]?)(.*?)\1\s*\)", re.I)
+IMPORT_AT_RULE_RE = re.compile(r"@import\b", re.I)
+
+
+def without_css_comments_and_strings(text: str) -> str:
+    """Blank comments and quoted strings, preserving offsets.
+
+    At-rule scans must not treat documentation text such as ``/* @import */``
+    or a quoted ``content: "@import"`` as a live stylesheet import.
+    """
+    output: list[str] = []
+    index = 0
+    length = len(text)
+    while index < length:
+        char = text[index]
+        if char == "/" and index + 1 < length and text[index + 1] == "*":
+            end = text.find("*/", index + 2)
+            end = length if end < 0 else end + 2
+            output.append(" " * (end - index))
+            index = end
+        elif char in ("'", '"'):
+            quote = char
+            end = index + 1
+            while end < length:
+                if text[end] == "\\":
+                    end += 2
+                    continue
+                if text[end] == quote:
+                    end += 1
+                    break
+                end += 1
+            end = min(end, length)
+            output.append(" " * (end - index))
+            index = end
+        else:
+            output.append(char)
+            index += 1
+    return "".join(output)
 
 
 class CacheCSS:
@@ -142,6 +184,13 @@ class CacheCSS:
             text = IMPORT_RE.sub(repl, text)
             if text == old:
                 break
+        # Any surviving @import is an unflattened remote dependency. Leaving it
+        # in the frozen stylesheet would make the browser fetch it (blocked
+        # offline) while the receipt still claimed complete import provenance.
+        # Record it so flattening fails closed instead of silently omitting CSS.
+        for match in IMPORT_AT_RULE_RE.finditer(without_css_comments_and_strings(text)):
+            snippet = re.sub(r"\s+", " ", text[match.start() : match.start() + 160]).strip()
+            self.missing.setdefault(snippet, "css-import-not-flattened")
         return self.resolve_urls(text, base)
 
     @staticmethod
@@ -192,7 +241,9 @@ class CacheCSS:
         text = self.strip_non_jp_font_faces(text)
         text = self.apply_localization_transforms(text)
         text = self.localize_urls(text, source_url)
-        return text, {"assets": list(self.asset_rows.values()), "missing": [{"url": u, "reason": r} for u, r in sorted(self.missing.items())], "imports": sorted(self.seen_imports), "import_provenance_status": "complete", "import_provenance": [self.import_rows[url] for url in sorted(self.import_rows)], "localization_transforms": self.applied_transforms, "pruned_fonts": self.pruned_fonts, "template_placeholders": self.template_placeholders, "asset_replacements": self.replacements, "omitted_assets": self.omitted_assets}
+        missing = [{"url": u, "reason": r} for u, r in sorted(self.missing.items())]
+        import_failures = [row for row in missing if "import" in row["reason"]]
+        return text, {"assets": list(self.asset_rows.values()), "missing": missing, "imports": sorted(self.seen_imports), "import_provenance_status": "incomplete" if import_failures else "complete", "import_provenance": [self.import_rows[url] for url in sorted(self.import_rows)], "localization_transforms": self.applied_transforms, "pruned_fonts": self.pruned_fonts, "template_placeholders": self.template_placeholders, "asset_replacements": self.replacements, "omitted_assets": self.omitted_assets}
 
     def strip_non_jp_font_faces(self, text: str) -> str:
         excluded = re.compile(r"(?:Noto\s+(?:Sans|Serif)\s+(?:SC|TC|KR|Thai)|Nanum\s+Gothic|Kanit)", re.I)
