@@ -25,3 +25,12 @@
 
 コードブロック内には、異なるヘッダー画像など、サンドボックス向けのカスタムスタイルを含めても構いません。
 [[/div]]
+
+[[module CSS]]
+/* SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width. */
+@media (max-width: 479px) {
+  .scp-image-block.block-right {
+    max-width: calc(100% - 2em - 2px) !important;
+  }
+}
+[[/module]]

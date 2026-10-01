@@ -674,11 +674,22 @@ export async function collectViewportOverflow(page, viewports) {
         offenders.splice(index, 0, row);
         if (offenders.length > 5) offenders.pop();
       };
-      const stack = [...document.body.children].reverse().map((element) => ({element, clippingLeft: null, clippingRight: null}));
+      let initialLeft = null, initialRight = null;
+      for (const ancestor of [root, document.body]) {
+        const rect = ancestor.getBoundingClientRect(), style = getComputedStyle(ancestor);
+        if (["auto", "scroll", "hidden", "clip"].includes(style.overflowX)) {
+          if (rect.left >= -2) initialLeft = Math.max(initialLeft ?? rect.left, rect.left);
+          if (rect.right <= root.clientWidth + 2) initialRight = Math.min(initialRight ?? rect.right, rect.right);
+        }
+      }
+      const stack = [...document.body.children].reverse().map((element) => ({element, clippingLeft: initialLeft, clippingRight: initialRight}));
       while (stack.length) {
         const {element, clippingLeft, clippingRight} = stack.pop();
         const rect = element.getBoundingClientRect();
         const style = getComputedStyle(element);
+        // Hidden popup geometry is not visible viewport escape. Visibility can
+        // be restored by a child, whereas display:none and zero opacity cannot.
+        if (style.display === "none" || Number(style.opacity) === 0) continue;
         const leftOverflow = Math.max(0, -rect.left);
         const rightOverflow = Math.max(0, rect.right - root.clientWidth);
         // A fully off-canvas fixed element is commonly an intentional closed
@@ -689,7 +700,7 @@ export async function collectViewportOverflow(page, viewports) {
         const overflowPx = intersectsViewport ? Math.max(leftOverflow, rightOverflow) : rightOverflow;
         const clippedLeft = clippingLeft !== null && rect.left < clippingLeft - 2;
         const clipped = clippingRight !== null && rect.right > clippingRight + 2;
-        if (overflowPx > 0 && !clipped && !clippedLeft) keepTopFive({element, rect, style, overflow_px: overflowPx, off_left_px: leftOverflow, off_right_px: rightOverflow});
+        if (style.visibility === "visible" && overflowPx > 0 && !clipped && !clippedLeft) keepTopFive({element, rect, style, overflow_px: overflowPx, off_left_px: leftOverflow, off_right_px: rightOverflow});
         let childClippingLeft = clippingLeft;
         let childClippingRight = clippingRight;
         if (

@@ -545,8 +545,22 @@ export function createSession({
       }
 
       let viewportOverflow = null;
+      let baselineViewportOverflow = null;
       if (viewports && !iteration) {
         const step = performance.now();
+        if (typeof css === "string") {
+          // Keep the dedicated candidate style element in its exact cascade
+          // position while measuring the target baseline. Removing/reinserting
+          // it could move the candidate after a dynamically-added style and
+          // make the post-baseline measurement observe a different cascade.
+          await applyStylesheet(candidate, "", session.cssId);
+          try {
+            baselineViewportOverflow = await collectViewportOverflow(candidate, DEFAULT_VIEWPORTS);
+          } finally {
+            await applyStylesheet(candidate, effectiveCss, session.cssId);
+          }
+          full.baseline_viewports = baselineViewportOverflow;
+        }
         viewportOverflow = await collectViewportOverflow(candidate, DEFAULT_VIEWPORTS);
         timing.viewports_ms = Number((performance.now() - step).toFixed(1));
         full.viewports = viewportOverflow;
@@ -582,11 +596,13 @@ export function createSession({
         const step = performance.now();
         const customSelectors = await captureCustomSelectorCoverage(candidate, contract);
         const surfaceFixture = await fs.readFile(SURFACE_CONTRACT_FIXTURE, "utf8");
-        const rendered = await session.previewClient.preview({
+        // Anonymous preview omits both iftags bodies. Surface acceptance needs
+        // the saved article context, including the native negative tag branch.
+        const rendered = await session.previewClient.savedPage({
           siteId,
-          title: "Theme Lab SCP-JP Surface Contract",
+          page: "run-owned:theme-lab-visual-acceptance-20260924",
           wikitext: surfaceFixture,
-          syntaxOnly: false,
+          tags: ["theme-lab-visual-acceptance", "jp", "日本語"],
         });
         await applyPreview(candidate, {
           body: rendered.body,
@@ -608,6 +624,9 @@ export function createSession({
             styleId: session.cssId,
             contractValue: contract,
           });
+          known.fixture_identity = {...rendered.identity,
+            source_sha256: crypto.createHash("sha256").update(surfaceFixture).digest("hex"),
+            body_sha256: crypto.createHash("sha256").update(rendered.body).digest("hex")};
         } finally {
           // Source-owned structure is a contract probe fixture, not part of
           // the candidate page. Restore it before interaction/torture checks
@@ -645,6 +664,7 @@ export function createSession({
         reference,
         torture: tortureResult,
         viewports: viewportOverflow,
+        baselineViewports: baselineViewportOverflow,
         fontDiagnostics,
         interactionDiagnostics,
         imageDiagnostics,

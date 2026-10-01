@@ -508,13 +508,23 @@ export async function preparePackage(name,{write=false,check=false}={}){
     if(classification.schema_version!==1||!Array.isArray(classification.unmarked_adaptation_modules))throw new Error(`${name}: invalid maintenance classification`);
   }
   const {base,overlayCss:rawOverlayCss,overlays}=splitMaintainableCandidate(original,{unmarkedAdaptations:classification.unmarked_adaptation_modules});
-  assertPublishablePackage(name);
   const authority=authorityInventory(name);
   const exactCompacted=compactExactDuplicateRules(overlays);
   const declarationCompacted=canonicalizeShadowedDeclarations(exactCompacted.css);
   declarationCompacted.css=normalizeMaintenanceRationales(declarationCompacted.css);
   const overlayCss=declarationCompacted.css;
   const verification=verifyEquivalentCandidate({original,base,rawOverlayCss,overlayCss,activeTags});
+  if(write&&authority.inputs['maintenance/jp-overrides.css']){
+    // Rebinding is permitted only after the generated overlay has proved its
+    // equivalence to the authority-composed publication source.
+    await fs.writeFile(path.join(dir,'maintenance/jp-overrides.css'),overlayCss);
+    const ledgerPath=path.join(portsDir,'adaptation-authority.json');
+    const ledger=JSON.parse(await fs.readFile(ledgerPath,'utf8'));
+    ledger.packages[name].inputs['maintenance/jp-overrides.css']=sha256(overlayCss);
+    await fs.writeFile(ledgerPath,JSON.stringify(ledger,null,2)+'\n');
+    authority.inputs['maintenance/jp-overrides.css']=sha256(overlayCss);
+  }
+  assertPublishablePackage(name);
   const finalSource=composeMaintainableCandidate(base,overlayCss);
   const finalSourceSha256=sha256(finalSource);
   const history=extractSCPJPAdaptationBlocks(original);

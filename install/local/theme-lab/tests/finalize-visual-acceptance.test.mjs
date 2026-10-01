@@ -18,5 +18,7 @@ test('exact image review completes only the visual dimension and preserves targe
  await assert.rejects(finalizeVisualAcceptance({result,review,...inputs,css:'changed CSS'}),/superseded/);
  await assert.rejects(finalizeVisualAcceptance({result:{...result,port_decision:{verdict:'inconclusive'}},review,...inputs}),/dimensions disagree|port decision/);
  await assert.rejects(finalizeVisualAcceptance({result:{...result,local_target_acceptance:{...result.local_target_acceptance,status:'fail'}},review,...inputs}),/dimensions disagree|Target acceptance/);
+ const structured=await finalizeVisualAcceptance({result:{...result,torture:{verdict:'warn',changed_components:[]}},review,...inputs});assert.equal(structured.overall_acceptance.status,'warn');
+ await assert.rejects(finalizeVisualAcceptance({result:{...result,torture:{verdict:'fail'}},review,...inputs}),/failed target checks/);
  await fs.writeFile(candidate,'changed pixels');await assert.rejects(finalizeVisualAcceptance({result,review,...inputs}),/inconclusive/);
 });

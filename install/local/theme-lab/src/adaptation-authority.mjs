@@ -55,6 +55,7 @@ export function verifyEvidence(rows, root = ports) {
         if(!receipt.rows.some(r=>r.variant==='without' && !r.pass)) throw new Error(`target adaptation has no demonstrated A/B need: ${evidence.path}`);
         if (!after.length || after.some(r=>!r.pass || r.bounds.some(b=>!b.pass))) throw new Error(`failed target geometry authority: ${evidence.path}`);
         if (row.published_css_sha256 && after.some(r=>r.css_sha256!==row.published_css_sha256)) throw new Error(`authority capture has stale candidate CSS: ${evidence.path}`);
+        if (row.published_base_css_sha256 && receipt.rows.some(r=>r.base_css_sha256!==row.published_base_css_sha256)) throw new Error(`authority capture has stale candidate base CSS: ${evidence.path}`);
         for(const capture of after) if(capture.state==='sidebar-closed') {
           if(receipt.measurement_contract!=='existing-drawer-wholly-off-canvas.v1' || capture.measurement.rows.length!==1 || capture.measurement.rows[0].selector!=='#side-bar' || !closedDrawerBounds(capture.measurement.rows[0].rect,capture.measurement.viewport_width).pass) throw new Error(`invalid closed drawer authority: ${evidence.path}`);
         }
@@ -125,6 +126,7 @@ export function assertPublishablePackage(name, {checkOutputs = false} = {}) {
       if (digest(fs.readFileSync(path.join(dir,file))) !== sha) throw new Error(`${name}: stale derived candidate ${file}`);
     }
     for(const block of pkg.blocks) if(block.published_css_sha256 && block.published_css_sha256!==pkg.outputs['candidate.css']) throw new Error(`${name}: retained adaptation proof does not match current published CSS`);
+    for(const block of pkg.blocks) if(block.authority.includes('CERTIFIED') && (pkg.outputs['candidate-base.css']??null)!==(block.published_base_css_sha256??null)) throw new Error(`${name}: retained adaptation proof does not match current base CSS`);
     const receipt=JSON.parse(fs.readFileSync(path.join(dir,'receipt.json'),'utf8'));
     if(receipt.candidate_source_sha256!==pkg.outputs[pkg.source_file] || receipt.candidate_css_sha256!==pkg.outputs['candidate.css']) throw new Error(`${name}: stale current candidate receipt`);
     if(receipt.final_verdict!==receipt.overall_acceptance?.status) throw new Error(`${name}: ambiguous receipt final acceptance`);

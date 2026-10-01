@@ -64,6 +64,20 @@ export function createDeepwellPreviewClient({
 
   return {
     call,
+    async savedPage({siteId, page, wikitext, tags}) {
+      const result = await call("page_get", {
+        site_id: siteId, page, details: {wikitext: true, compiled: true},
+      });
+      if (result?.site_id !== siteId || result?.slug !== page || result?.layout !== "wikidot" ||
+          result?.wikitext !== wikitext || typeof result?.compiled_body_html !== "string" ||
+          !Array.isArray(result.tags) || !Array.isArray(tags) ||
+          JSON.stringify([...result.tags].sort()) !== JSON.stringify([...tags].sort())) {
+        throw new Error("Saved fixture does not match its site, source, layout and tag context");
+      }
+      return {body: result.compiled_body_html, styles: result.compiled_body_styles ?? [],
+        identity: {site_id: siteId, page_id: result.page_id, revision_id: result.revision_id,
+          slug: page, tags: result.tags, compiled_generator: result.compiled_generator}};
+    },
     async preview({siteId, title, wikitext, syntaxOnly = false}) {
       const result = await call("wikidot_page_preview", {
         site_id: siteId,

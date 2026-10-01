@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import {planBrowserAcceptance} from './semantic-browser-acceptance.mjs';
+import {planBrowserAcceptance, semanticSourceRenderings} from './semantic-browser-acceptance.mjs';
 import {NAVIGATION_OVERLAY_SOURCE} from './navigation-overlay-provenance.mjs';
 
 // Opening a hash-bound artifact is necessary but insufficient: a candidate
@@ -78,7 +78,8 @@ export function validateSemanticSourceAuthority(root, audit) {
           normalize(row.url) === normalize(review.source_url) && row.sha256 === review.source_snapshot?.sha256)) {
         failures.push(`${question.theme}: visual review does not bind the maintained upstream source authority`);
       }
-      const binding = review.source_rendering_receipt;
+      for (const rendering of semanticSourceRenderings(question, review)) {
+      const binding = rendering.source_rendering_receipt;
       const file = path.resolve(root, binding?.path ?? '');
       if (!file.startsWith(path.resolve(root) + path.sep)) throw new Error('Source rendering receipt escapes Theme Lab');
       const bytes = fs.readFileSync(file);
@@ -91,14 +92,16 @@ export function validateSemanticSourceAuthority(root, audit) {
         /^\/o\/[a-f0-9]{64}$/u.test(document.snapshot?.entry ?? '') &&
         document.rows?.some(row => row.variant === 'without' &&
           row.css_sha256 === crypto.createHash('sha256').update('').digest('hex') &&
-          row.dom_sha256 === review.source_html?.sha256 && row.screenshot_sha256 === review.source_rendering?.sha256);
+          row.width === (audit.records.find(row => row.theme === question.theme && row.viewport === rendering.viewport)?.viewport_size?.width) &&
+          row.dom_sha256 === rendering.source_html?.sha256 && row.screenshot_sha256 === rendering.source_rendering?.sha256);
       if (!archivedSource && (normalize(identity?.source_url) !== normalize(review.source_url) ||
           !/^[a-f0-9]{64}$/u.test(identity?.original_html_sha256 ?? '') ||
-          identity.original_html_sha256 !== review.source_html?.sha256 ||
+          identity.original_html_sha256 !== rendering.source_html?.sha256 ||
           !/^\/o\/[a-f0-9]{64}$/u.test(identity?.replay_entry ?? '') ||
           !/^[a-f0-9]{64}$/u.test(identity?.snapshot_sha256 ?? '') || identity.offline !== true ||
-          !Object.values(result.visual?.viewports ?? {}).some(row => row.reference_screenshot_sha256 === review.source_rendering?.sha256))) {
-        failures.push(`${question.theme}: source rendering lacks its exact frozen reference replay provenance`);
+          result.visual?.viewports?.[rendering.viewport]?.reference_screenshot_sha256 !== rendering.source_rendering?.sha256)) {
+        failures.push(`${question.theme}/${rendering.viewport}: source rendering lacks its exact frozen reference replay provenance`);
+      }
       }
     } catch (error) {
       failures.push(`${question.theme}: upstream source authority unavailable: ${error.message}`);

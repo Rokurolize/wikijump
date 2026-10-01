@@ -114,8 +114,8 @@
     },
     "inkblot": {
       "directory": "../../ports/inkblot",
-      "candidate_sha256": "cf7328f6b8c6abe15a05f63f5eca66b369d10bfb8d2a31d03bb4b368e0521890",
-      "source_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a"
+      "candidate_sha256": "e995e17a2c8ee18655e0af72e51bc8f98ad26868aae7adb2d1233e54e6915220",
+      "source_sha256": "be2817d74c0061befd04de1ac46d687f66b6a424d5dcb555195a5235eafbae8c"
     },
     "isolated-terminal": {
       "directory": "../../ports/isolated-terminal",
@@ -139,8 +139,8 @@
     },
     "much-cool": {
       "directory": "../../ports/much-cool",
-      "candidate_sha256": "5035640066af2471aecc489a9523afd1a4807e003392c34a0941683b2e0228db",
-      "source_sha256": "125e50c40b0349ef982256b192fa88f713db3ab7127efbacc9c1b65288304bd4"
+      "candidate_sha256": "d6232bbe6f3e7da786f975a4960754dd86b71fdf16abbbc58bd07c2052293468",
+      "source_sha256": "5b80ba7f55a5f70b6569fef18e95056bf223ec143f7c2ef549d88aba7a3d096a"
     },
     "night-rush-theme": {
       "directory": "../../ports/night-rush-theme",
@@ -154,8 +154,8 @@
     },
     "paperstack": {
       "directory": "../../ports/paperstack",
-      "candidate_sha256": "76f4a14b16d53108068e2cd2f7cf8beeb9fd7a1d46d2215de9c7b6d5677b8053",
-      "source_sha256": "269ade2ec56414c951616e92d9155865cb1365c06a8af1ad514c960d26259a85"
+      "candidate_sha256": "6f14cdb095d7468e628db41240cf54a02b37185e67273e7641852eccc426791d",
+      "source_sha256": "2ae35aa85c55534bec335d6c5cc61571c22bc4dc4543c596f87d8c39d931eb4d"
     },
     "pataphysics": {
       "directory": "../../ports/pataphysics",
@@ -199,8 +199,8 @@
     },
     "site": {
       "directory": "../../ports/site",
-      "candidate_sha256": "d64711bfe41f1f89ca04b5fd6d04ec9ceec87a5bc8e5fcd00e91e0f0f2ef47ea",
-      "source_sha256": "9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343"
+      "candidate_sha256": "ad1555633631f528eca108de519c556c3815795c0f92bec04c6b37d3b463ae36",
+      "source_sha256": "5aa82bc9e061687b59147410f9fa05f56ce98701943e0fefa23fd50dcd2d5dcd"
     },
     "skipos": {
       "directory": "../../ports/skipos",
@@ -214,18 +214,18 @@
     },
     "turbo-vision": {
       "directory": "../../ports/turbo-vision",
-      "candidate_sha256": "69ced539af60dd88d736502d74ceadb28f0363499f84e033f42a34f4c7467cfd",
-      "source_sha256": "52fb93c3d72f66f18876db66c7616a57f51ba20c325674144003a40b633a48f4"
+      "candidate_sha256": "d6179a31555c949cc38c33360d3c2a790342eb4e0a0df031b3a4f31024c1b350",
+      "source_sha256": "814267355937aac2965489af46429bbeaee59b1fe2ba953197709bbe4ce0eeee"
     },
     "wikifot": {
       "directory": "../../ports/wikifot",
-      "candidate_sha256": "5a018ea086b2033e4a4ac36729e0c402e0b9bffd2b563df7f8c61caa70af8509",
-      "source_sha256": "b9bb97bec318b700b367864fa87c2570b4231ff6b1a710f3e86f351af146ebb8"
+      "candidate_sha256": "738099d2701ec214769009074f34e060a0d05f6b7999e36aeeccc9ec833e1c9d",
+      "source_sha256": "403335fe611db4be2ef13a0349e8215dade54727318494551221bb5671cc5e55"
     },
     "y2k": {
       "directory": "../../ports/y2k",
-      "candidate_sha256": "b089eda5371a9f64bcedf7e83941da468e0e874e703fe271b97bbfd7b7527f77",
-      "source_sha256": "4bcc844de87590e4c84903b1caaf8830c99e5f2cc21ed0b7b264a634cee2abc5"
+      "candidate_sha256": "65f2796fb65882751c4b2d521878ddb78a6a542425023a9a83eea30a90a92f5e",
+      "source_sha256": "267413c5754294971d048457f9712b6929d5421ffe2d3e54dfa47c47140e8bf0"
     },
     "yossistyle": {
       "directory": "../../ports/yossistyle",
@@ -358,8 +358,8 @@
     {
       "package": "inkblot",
       "directory": "../../ports/inkblot",
-      "candidate_sha256": "cf7328f6b8c6abe15a05f63f5eca66b369d10bfb8d2a31d03bb4b368e0521890",
-      "source_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a"
+      "candidate_sha256": "e995e17a2c8ee18655e0af72e51bc8f98ad26868aae7adb2d1233e54e6915220",
+      "source_sha256": "be2817d74c0061befd04de1ac46d687f66b6a424d5dcb555195a5235eafbae8c"
     },
     {
       "package": "isolated-terminal",
@@ -388,8 +388,8 @@
     {
       "package": "much-cool",
       "directory": "../../ports/much-cool",
-      "candidate_sha256": "5035640066af2471aecc489a9523afd1a4807e003392c34a0941683b2e0228db",
-      "source_sha256": "125e50c40b0349ef982256b192fa88f713db3ab7127efbacc9c1b65288304bd4"
+      "candidate_sha256": "d6232bbe6f3e7da786f975a4960754dd86b71fdf16abbbc58bd07c2052293468",
+      "source_sha256": "5b80ba7f55a5f70b6569fef18e95056bf223ec143f7c2ef549d88aba7a3d096a"
     },
     {
       "package": "night-rush-theme",
@@ -406,8 +406,8 @@
     {
       "package": "paperstack",
       "directory": "../../ports/paperstack",
-      "candidate_sha256": "76f4a14b16d53108068e2cd2f7cf8beeb9fd7a1d46d2215de9c7b6d5677b8053",
-      "source_sha256": "269ade2ec56414c951616e92d9155865cb1365c06a8af1ad514c960d26259a85"
+      "candidate_sha256": "6f14cdb095d7468e628db41240cf54a02b37185e67273e7641852eccc426791d",
+      "source_sha256": "2ae35aa85c55534bec335d6c5cc61571c22bc4dc4543c596f87d8c39d931eb4d"
     },
     {
       "package": "pataphysics",
@@ -460,8 +460,8 @@
     {
       "package": "site",
       "directory": "../../ports/site",
-      "candidate_sha256": "d64711bfe41f1f89ca04b5fd6d04ec9ceec87a5bc8e5fcd00e91e0f0f2ef47ea",
-      "source_sha256": "9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343"
+      "candidate_sha256": "ad1555633631f528eca108de519c556c3815795c0f92bec04c6b37d3b463ae36",
+      "source_sha256": "5aa82bc9e061687b59147410f9fa05f56ce98701943e0fefa23fd50dcd2d5dcd"
     },
     {
       "package": "skipos",
@@ -478,20 +478,20 @@
     {
       "package": "turbo-vision",
       "directory": "../../ports/turbo-vision",
-      "candidate_sha256": "69ced539af60dd88d736502d74ceadb28f0363499f84e033f42a34f4c7467cfd",
-      "source_sha256": "52fb93c3d72f66f18876db66c7616a57f51ba20c325674144003a40b633a48f4"
+      "candidate_sha256": "d6179a31555c949cc38c33360d3c2a790342eb4e0a0df031b3a4f31024c1b350",
+      "source_sha256": "814267355937aac2965489af46429bbeaee59b1fe2ba953197709bbe4ce0eeee"
     },
     {
       "package": "wikifot",
       "directory": "../../ports/wikifot",
-      "candidate_sha256": "5a018ea086b2033e4a4ac36729e0c402e0b9bffd2b563df7f8c61caa70af8509",
-      "source_sha256": "b9bb97bec318b700b367864fa87c2570b4231ff6b1a710f3e86f351af146ebb8"
+      "candidate_sha256": "738099d2701ec214769009074f34e060a0d05f6b7999e36aeeccc9ec833e1c9d",
+      "source_sha256": "403335fe611db4be2ef13a0349e8215dade54727318494551221bb5671cc5e55"
     },
     {
       "package": "y2k",
       "directory": "../../ports/y2k",
-      "candidate_sha256": "b089eda5371a9f64bcedf7e83941da468e0e874e703fe271b97bbfd7b7527f77",
-      "source_sha256": "4bcc844de87590e4c84903b1caaf8830c99e5f2cc21ed0b7b264a634cee2abc5"
+      "candidate_sha256": "65f2796fb65882751c4b2d521878ddb78a6a542425023a9a83eea30a90a92f5e",
+      "source_sha256": "267413c5754294971d048457f9712b6929d5421ffe2d3e54dfa47c47140e8bf0"
     },
     {
       "package": "yossistyle",

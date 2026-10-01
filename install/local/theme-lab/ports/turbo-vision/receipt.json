@@ -27,9 +27,9 @@
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/turbo-vision",
-  "candidate_source_hash": "52fb93c3d72f66f18876db66c7616a57f51ba20c325674144003a40b633a48f4",
+  "candidate_source_hash": "814267355937aac2965489af46429bbeaee59b1fe2ba953197709bbe4ce0eeee",
   "source_candidate_path": "install/local/theme-lab/ports/turbo-vision/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "52fb93c3d72f66f18876db66c7616a57f51ba20c325674144003a40b633a48f4",
+  "source_candidate_sha256": "814267355937aac2965489af46429bbeaee59b1fe2ba953197709bbe4ce0eeee",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -37,11 +37,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/turbo-vision/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "52fb93c3d72f66f18876db66c7616a57f51ba20c325674144003a40b633a48f4",
+  "candidate_source_sha256": "814267355937aac2965489af46429bbeaee59b1fe2ba953197709bbe4ce0eeee",
   "human_port_candidate_path": "install/local/theme-lab/ports/turbo-vision/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "7419ff6d01fb1b3c732c75b7ccf223152f11f05db7df0ee2b70a2230ff703d71",
-  "candidate_preview_sha256": "0396a2bd10df784d0cf5f9b7912c1e455f477b0fcf419ae28b2c510a4f842d3a",
-  "candidate_css_sha256": "69ced539af60dd88d736502d74ceadb28f0363499f84e033f42a34f4c7467cfd",
+  "candidate_preview_sha256": "29c71743142d73c97a846f4c9ffcb4cbb591a23908a94748c62ddffac9bce56b",
+  "candidate_css_sha256": "d6179a31555c949cc38c33360d3c2a790342eb4e0a0df031b3a4f31024c1b350",
   "page_attachment_manifest": null,
   "existing_jp_reconciliation": {
     "previous_source_sha256": "325801b1dd4a3d1fb23f216c08a0ea56519d32da234638a8b5022c45a30d982c",

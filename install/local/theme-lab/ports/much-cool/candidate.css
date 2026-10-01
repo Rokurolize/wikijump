@@ -553,3 +553,10 @@ div.blockquote {
         background-size: 210px auto;
     }
 }
+
+
+
+/* SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width. */
+@media (max-width: 479px) {
+  .scp-image-block.block-right { max-width: calc(100% - 2em - 20px) !important; }
+}

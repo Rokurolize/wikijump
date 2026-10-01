@@ -2,6 +2,8 @@ import {viewportEscape} from "./viewport-bounds.mjs";
 import {parseStyleSheet} from "./css-probe.mjs";
 import {parseCssDeclarations} from "./port-maintenance.mjs";
 import {applyStylesheet, clearStylesheet, collectViewportOverflow, setViewport} from "./browser-lab.mjs";
+import {activateNavigationControl, expandMobileTopSubmenu} from "./navigation-interaction.mjs";
+import {openSidebar} from "./sidebar-interaction.mjs";
 
 export const SURFACE_CONTRACT_SCHEMA = "theme_lab_surface_contract.v1";
 
@@ -334,6 +336,12 @@ export async function cleanupSurfaceState(page, surfaceId, stateId) {
 
 export async function applySurfaceState(page, surfaceId, stateId) {
   await resetState(page);
+  if (surfaceId === "nav.mobile-top" && stateId === "submenu-expanded") {
+    await expandMobileTopSubmenu(page); await settle(page); return;
+  }
+  if (surfaceId === "nav.sidebar" && stateId === "open") {
+    await openSidebar(page); await settle(page); return;
+  }
   if(surfaceId==='content.collapsible' && stateId==='expanded'){
     const block=page.locator('#page-content .collapsible-block').first();
     const unfolded=block.locator(':scope > .collapsible-block-unfolded');
@@ -358,26 +366,6 @@ export async function applySurfaceState(page, surfaceId, stateId) {
       return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
     };
     try {
-      if (surface === "nav.mobile-top" && state === "submenu-expanded") {
-        const item = [...document.querySelectorAll(".mobile-top-bar > ul > li")].find((row) => row.querySelector(":scope > ul"));
-        const submenu = item?.querySelector(":scope > ul") ?? null;
-        if (!item || !submenu) return {ok: false, error: "mobile top navigation submenu fixture is absent"};
-        item.classList.add("theme-lab-surface-open");
-        const stateStyle=document.createElement("style");
-        stateStyle.id="theme-lab-surface-state-style";
-        stateStyle.textContent=".mobile-top-bar > ul > li.theme-lab-surface-open > ul { display:block !important; visibility:visible !important; opacity:1 !important; }";
-        document.head.append(stateStyle);
-        await settle();
-        return visible(submenu) ? {ok: true} : {ok: false, error: "forced mobile top submenu did not become visible"};
-      }
-      if (surface === "nav.sidebar" && state === "open") {
-        const control = [...document.querySelectorAll('.mobile-top-bar .open-menu a, a[href="#container-wrap"]')].find(visible);
-        const sidebar = document.querySelector("#side-bar");
-        if (!control || !sidebar) return {ok: false, error: "mobile sidebar fixture/control is absent"};
-        location.hash = control.getAttribute('href');
-        await settle();
-        return visible(sidebar) ? {ok: true} : {ok: false, error: "mobile sidebar did not become visible"};
-      }
       if (surface === "content.rating" && state === "focused") {
         const control = document.querySelector(".page-rate-widget-box a");
         if (!control) return {ok: false, error: "rating focus target is absent"};
@@ -494,7 +482,7 @@ async function captureMode(page, {surface, state, viewport, themed, effectiveCss
   try { await applySurfaceState(page, surface.id, state.id); }
   catch (error) { actionError = String(error?.message ?? error); }
   const snapshot = await collectProbe(page, surface.probes);
-  snapshot.navigation_bounds = surface.id.startsWith("nav.") ? await page.evaluate(({expanded, surfaceId}) => {
+  const navigationBounds = () => page.evaluate(({surfaceId}) => {
     // Measure only the navigation tree owned by this state. Forcing a hidden
     // desktop menu open during the mobile state creates geometry that users
     // cannot reach and can report synthetic viewport escapes.
@@ -504,15 +492,27 @@ async function captureMode(page, {surface, state, viewport, themed, effectiveCss
     const menus=[...document.querySelectorAll(selector)];
     const rows=[];
     for(const menu of menus) {
-      const original=menu.getAttribute("style");
-      if(expanded) for(const [property,value] of Object.entries({display:"block",visibility:"visible",opacity:"1"})) menu.style.setProperty(property,value,"important");
-      if(menu.checkVisibility()) for(const el of [menu,...menu.querySelectorAll("li,a")]) {
-        if(el.checkVisibility())rows.push({selector:el.tagName.toLowerCase(),owner:surfaceId,rect:el.getBoundingClientRect().toJSON()});
+      if(menu.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})) for(const el of [menu,...menu.querySelectorAll("li,a")]) {
+        if(el.checkVisibility({checkOpacity:true,checkVisibilityCSS:true}))rows.push({selector:el.tagName.toLowerCase(),owner:surfaceId,rect:el.getBoundingClientRect().toJSON()});
       }
-      if(original===null)menu.removeAttribute("style");else menu.setAttribute("style",original);
     }
     return rows;
-  },{expanded:state.id==="submenu-expanded",surfaceId:surface.id}) : [];
+  },{surfaceId:surface.id});
+  snapshot.navigation_bounds = [];
+  snapshot.navigation_actions = [];
+  if (surface.id === "nav.mobile-top" && state.id === "submenu-expanded") {
+    const parents = page.locator('.mobile-top-bar > ul > li:has(> ul)');
+    for (let index = 0; index < await parents.count(); index++) {
+      await page.mouse.move(0, 0); await settle(page);
+      const parent = parents.nth(index);
+      let error = null;
+      try {await activateNavigationControl(page, parent.locator(':scope > a').first(), parent.locator(':scope > ul'));}
+      catch (failure) {error = String(failure.message ?? failure); actionError ??= error;}
+      await settle(page);
+      snapshot.navigation_actions.push({index, action_error: error});
+      snapshot.navigation_bounds.push(...(await navigationBounds()).map(row => ({...row, parent_index: index})));
+    }
+  } else if (surface.id.startsWith("nav.")) snapshot.navigation_bounds = await navigationBounds();
   const overflow = (await collectViewportOverflow(page, [VIEWPORTS[viewport]]))[viewport];
   let cleanupError = null;
   try { await cleanupSurfaceState(page, surface.id, state.id); }

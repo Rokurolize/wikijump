@@ -22,6 +22,7 @@ import crypto from 'node:crypto';
 import browserContract from '../fixtures/browser-acceptance-states.json' with {type:'json'};
 import {candidateIdentity} from '../ports/scripts/candidate-identity.mjs';
 import {SEMANTIC_BROWSER_MODEL,planBrowserAcceptance} from '../src/semantic-browser-acceptance.mjs';
+import {BASELINE_DOCUMENT_CONTAINMENT_CONTRACT_SHA256,BASELINE_DOCUMENT_CONTAINMENT_SCHEMA} from '../src/baseline-document-containment.mjs';
 const digest=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const matrix=[['chromium','desktop'],['chromium','laptop'],['chromium','tablet'],['chromium','mobile'],['chromium','narrow-mobile'],['firefox','desktop'],['firefox','mobile'],['webkit','desktop'],['webkit','mobile']];
 const core=new Set(['page.normal.settled','credit.view.open','page.history.list','page.source.open','nav.sidebar.open','nav.sidebar.open-submenu','shell.interwiki.visible']);
@@ -113,12 +114,13 @@ test('semantic completion accepts bound questions and measured facts, not a PASS
     visual_diagnostics:{viewport:{width:1440,documentWidth:1440},title_overlaps:[]}});
   }
   const referenceHtml=mock.write('source.html','<!doctype html><p>Frozen foreign theme</p>');
-  const referenceCapture=mock.write('source-rendering.json',{reference_identity:{source_url:'https://scp-wiki.wikidot.com/theme:testtheme',original_html_sha256:referenceHtml.sha256,replay_entry:'/o/'+referenceHtml.sha256,snapshot_sha256:digest('snapshot'),offline:true},visual:{viewports:{desktop:{reference_screenshot_sha256:mock.audit.records[0].screenshot_sha256}}}});
+  const sourceViewports=[...new Set(mock.audit.records.filter(row=>row.surface==='page.normal').map(row=>row.viewport))];
+  const referenceCapture=mock.write('source-rendering.json',{reference_identity:{source_url:'https://scp-wiki.wikidot.com/theme:testtheme',original_html_sha256:referenceHtml.sha256,replay_entry:'/o/'+referenceHtml.sha256,snapshot_sha256:digest('snapshot'),offline:true},visual:{viewports:Object.fromEntries(sourceViewports.map(viewport=>[viewport,{reference_screenshot_sha256:mock.audit.records[0].screenshot_sha256}]))}});
   mock.audit.semantic_reviews=Object.fromEntries(planBrowserAcceptance(mock.audit).visual_questions.map(q=>[q.id,
    {question:q.question,evidence_sha256:q.evidence_sha256,status:'pass',method:'direct-visual-question-review',
     note:'Frozen source imagery and typography were compared across the declared responsive evidence.',
     reviewer:'test',reviewed_at:'2026-10-01T00:00:00Z',source_url:'https://scp-wiki.wikidot.com/theme:testtheme',
-    source_snapshot:mock.document.packages[0].inputs.source,source_html:referenceHtml,source_rendering_receipt:referenceCapture,source_rendering:{path:'ports/captures/test.png',sha256:mock.audit.records[0].screenshot_sha256},
+    source_snapshot:mock.document.packages[0].inputs.source,source_renderings:Object.fromEntries(sourceViewports.map(viewport=>[viewport,{source_html:referenceHtml,source_rendering_receipt:referenceCapture,source_rendering:{path:'ports/captures/test.png',sha256:mock.audit.records[0].screenshot_sha256}}])),
     decision_authority:'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY',port_conclusion_eligible:false}]));
   mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
   assert.deepEqual(checkCampaignCompletion(mock.root,{captureContractReader:()=>new Map(browserContract.states.map(state=>[`${state.surface}.${state.state}`,{action_contract_sha256:digest('action'),legacy_action_contract_sha256:digest('action'),fixture_contract_sha256:digest('fixture')}]))}).failures,[]);
@@ -135,6 +137,10 @@ test('semantic completion accepts bound questions and measured facts, not a PASS
   assert.ok(runtimeFailures.every(value=>value.includes('superseded browser runtime surface page.history')));
   fs.writeFileSync(historyRuntime,previousRuntime);
   mock.audit.records[0].visual_diagnostics.viewport.documentWidth=1500;
+  mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
+  assert.ok(checkCampaignCompletion(mock.root,{captureContractReader:()=>new Map(browserContract.states.map(state=>[`${state.surface}.${state.state}`,{action_contract_sha256:digest('action'),legacy_action_contract_sha256:digest('action'),fixture_contract_sha256:digest('fixture')}]))}).failures.some(value=>value.includes('missing structured evidence document_containment')));
+  mock.audit.records[0].baseline_document_containment_contract_sha256=BASELINE_DOCUMENT_CONTAINMENT_CONTRACT_SHA256;
+  mock.audit.records[0].baseline_document_containment_measurement={schema:BASELINE_DOCUMENT_CONTAINMENT_SCHEMA,complete:true,viewport_width:1440,document_width:1440,body_width:1440};
   mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
   assert.ok(checkCampaignCompletion(mock.root,{captureContractReader:()=>new Map(browserContract.states.map(state=>[`${state.surface}.${state.state}`,{action_contract_sha256:digest('action'),legacy_action_contract_sha256:digest('action'),fixture_contract_sha256:digest('fixture')}]))}).failures.some(value=>value.includes('machine failure document_containment')));
  }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}

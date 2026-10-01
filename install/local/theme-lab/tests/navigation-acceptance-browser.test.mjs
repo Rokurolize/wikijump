@@ -9,9 +9,9 @@ test('navigation acceptance inspects later menus and detects off-left escape wit
     body{margin:0} .mobile-top-bar>ul{display:flex;margin:0;padding:0;list-style:none}
     .mobile-top-bar>ul>li{position:relative;width:100px}
     .mobile-top-bar>ul>li>ul{position:absolute;left:0;top:20px;width:120px;padding:0;margin:0;display:none}
-    #top-bar .top-bar{display:none}.mobile-top-bar{display:block}
+    .mobile-top-bar>ul>li:hover>ul{display:block} #top-bar .top-bar{display:none}.mobile-top-bar{display:block}
     </style></head><body><div id="top-bar"><div class="top-bar"><ul><li>Desktop<ul><li><a href="#">Hidden desktop link</a></li></ul></li></ul></div><div class="mobile-top-bar"><ul>
-    ${[1,2,3].map(i=>`<li>Menu ${i}<ul><li><a href="#">Link ${i}</a></li></ul></li>`).join('')}
+    ${[1,2,3].map(i=>`<li><a href="javascript:;">Menu ${i}</a><ul><li><a href="#">Link ${i}</a></li></ul></li>`).join('')}
     </ul></div></div></body></html>`));
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const browser=await loadChromium().launch({headless:true});

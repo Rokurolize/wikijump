@@ -239,6 +239,31 @@ test("broken CSS canary fails local acceptance without certifying a parity misma
   });
 });
 
+test("full viewport acceptance does not attribute inherited preview overflow to the theme", async (t) => {
+  const previewClient = {
+    preview: async () => ({
+      body: '<div id="inherited-overflow" style="width:340px;height:20px">baseline content</div>',
+      styles: [],
+      legacy_actions: [],
+      membership_actions: [],
+    }),
+  };
+  await withSession(t, async ({session}) => {
+    const verdict = await session.check({
+      siteId: 6000003,
+      wikitext: "inherited overflow fixture",
+      css: "#inherited-overflow { color: rgb(1, 2, 3); }",
+      viewports: true,
+      torture: false,
+    });
+    const narrow = verdict.viewport_status["narrow-mobile"];
+    assert.ok(narrow.viewport_escape_px > 1);
+    assert.equal(narrow.viewport_escape_px, narrow.baseline_viewport_escape_px);
+    assert.equal(narrow.status, "pass");
+    assert.ok(!verdict.top_issues.some((issue) => issue.kind === "viewport_overflow"));
+  }, {previewClient});
+});
+
 test("second check is fully offline and makes no reference requests", async (t) => {
   await withSession(t, async ({session, fixture}) => {
     await session.check({referenceUrl: `${fixture.origin}/reference`, selectors: SELECTORS, viewports: false, torture: false});

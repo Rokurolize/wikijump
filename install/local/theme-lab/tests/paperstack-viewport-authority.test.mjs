@@ -11,11 +11,11 @@ const authority=ledger.packages.paperstack.blocks.find(row=>row.marker==='SCP-JP
 
 test('Paperstack viewport authority accepts fractional centered geometry from retained Wikidot A/B',()=>{
   validateAuthority(authority);
-  const evidencePath='authority-evidence/paperstack-navigation-remeasured/receipt.json';
+  const evidencePath=authority.evidence[0].path;
   const receiptFile=path.join(ports,evidencePath);
   const receipt=JSON.parse(fs.readFileSync(receiptFile,'utf8'));
-  const [proof]=authority.evidence;
-  verifyEvidence([{...authority,evidence:[{...proof,path:evidencePath,sha256:digest(fs.readFileSync(receiptFile))}]}]);
+  assert.equal(digest(fs.readFileSync(receiptFile)),authority.evidence[0].sha256);
+  verifyEvidence([authority]);
   const themed=receipt.rows.filter(row=>row.variant==='with');
   assert.equal(themed.length,8);
   assert.deepEqual([...new Set(themed.map(row=>row.width))],[320,390]);

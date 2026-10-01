@@ -227,6 +227,16 @@ for the fast loop. Fix only evidence-backed issues:
 - unreadable/fallback Japanese typography;
 - failed interaction states.
 
+`new horizontal overflow` means overflow introduced or worsened by the theme
+relative to the same SCP-JP target DOM/state without the candidate theme
+layers. An equal or worse overflow already present in that target baseline is
+not evidence that the port introduced a defect and cannot by itself authorize
+a theme-specific correction. Keep the inherited target issue visible in the
+diagnostics and repair the runtime/component separately when that is the real
+owner. If the theme does worsen the target baseline, fix and certify the
+theme-added regression; do not infer causality merely because a candidate-only
+CSS patch can make the shared target defect disappear.
+
 For SCP-JP navigation, longer Japanese labels frequently expose submenu
 min-content/positioning problems that do not appear on the source branch.
 `TECHNICAL-LOCALIZATION-SPEC.md` defines expanded navigation geometry as an

@@ -23,8 +23,10 @@ export async function closeSidebar(page,openHash){
   for(let index=0;index<await links.count();index++){
    const link=links.nth(index);
    if(await sidebarIsClosed(page,openHash))return;
-   const reachable=await link.evaluate(anchor=>{const r=anchor.getBoundingClientRect();if(r.width<=0||r.height<=0||r.right<=0||r.bottom<=0||r.left>=innerWidth||r.top>=innerHeight)return false;const hit=document.elementFromPoint(Math.max(0,Math.min(innerWidth-1,r.left+r.width/2)),Math.max(0,Math.min(innerHeight-1,r.top+r.height/2)));return !!hit&&(hit===anchor||anchor.contains(hit))});
-   if(reachable)await link.click();else await link.evaluate(anchor=>anchor.click());
+   const reachable=await link.evaluate(anchor=>{const r=anchor.getBoundingClientRect();if(r.width<=0||r.height<=0||r.right<=0||r.bottom<=0||r.left>=innerWidth||r.top>=innerHeight)return null;const x=Math.max(0,Math.min(innerWidth-1,r.left+r.width/2)),y=Math.max(0,Math.min(innerHeight-1,r.top+r.height/2));const hit=document.elementFromPoint(x,y);return hit&&(hit===anchor||anchor.contains(hit))?{x,y}:null});
+   // Click the viewport point actually hit-tested above. Locator.click may pick
+   // a different clipped center for a tall drawer backdrop and hit its content.
+   if(reachable)await page.mouse.click(reachable.x,reachable.y);else await link.evaluate(anchor=>anchor.click());
    await page.waitForFunction(async hash=>{
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     const side=document.querySelector('#side-bar');if(!side)return true;

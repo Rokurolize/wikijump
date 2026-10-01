@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "4bcc844de87590e4c84903b1caaf8830c99e5f2cc21ed0b7b264a634cee2abc5",
+  "frozen_candidate_source_sha256": "267413c5754294971d048457f9712b6929d5421ffe2d3e54dfa47c47140e8bf0",
   "base_source_sha256": "de3113777c594f85a686e5cff3a31f22252448db1a5fc70f980bbcce0bf263a1",
-  "raw_jp_overrides_sha256": "d64f13c102083d5fcc38a2c1c14668a89c50a1ec56a644a0983b45945a2adb81",
-  "jp_overrides_sha256": "a8a3923222f72051344e7a1fd884b7515af62ef73291390a89a2fcfb3ffc9f9b",
-  "semantic_css_sha256": "87fdb540759453d44a455be6fa5a9d99cad5ef23b6aeeddd7814b5b4c342bf87",
-  "canonical_override_sha256": "0654afe34c4ebbd2240ebe93f7623a753f48b2d2f26f90cff5f2f0fe036c43d7",
+  "raw_jp_overrides_sha256": "b210672faf63caddcb3ad82c09bafd3d2d7a4a9ecc7580d0d5c36f1385b1e5a2",
+  "jp_overrides_sha256": "9bf2bda1d7a611d947759a558600095c54e645fb1a082e29c69f8753e473c725",
+  "semantic_css_sha256": "14ccc0278bf3e337927b8c365c41d66d2fd9d4bd69a397c4aade9bfc1b994222",
+  "canonical_override_sha256": "8ea2cc39d90a2148c5f4702bc4a830f73be446d8d882cd6dc66b814c7e06e613",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "2d592c44474cadfefb1d950419363d03c69a095594fbae4c95afe06d32c9f54e",
+  "final_source_sha256": "00009eeef6e77b229e63462999bb914629c3920f6644b77add8151d9d0458b34",
   "final_source_inputs": {
     "base_sha256": "de3113777c594f85a686e5cff3a31f22252448db1a5fc70f980bbcce0bf263a1",
-    "jp_overrides_sha256": "a8a3923222f72051344e7a1fd884b7515af62ef73291390a89a2fcfb3ffc9f9b"
+    "jp_overrides_sha256": "9bf2bda1d7a611d947759a558600095c54e645fb1a082e29c69f8753e473c725"
   },
   "ordered_include_sha256": "607e1ae1fcdb25ff85a2e3035ef0ac3eb9aa8b47ae2da0cedf2f8e5a52de0925",
   "declaration_reviews": {},
-  "adaptation_block_count": 1,
-  "raw_override_rule_count": 2,
-  "canonical_override_rule_count": 2,
+  "adaptation_block_count": 2,
+  "raw_override_rule_count": 3,
+  "canonical_override_rule_count": 3,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -297,8 +297,8 @@
       "rationale": "Read-only real SCP-JP A/B demonstrates right-edge submenu escape. Anchor only each overflowing menu at its actual row endpoint; retain source menu sizing, wrapping, palette and header.",
       "evidence": [
         {
-          "path": "authority-evidence/y2k-published-current/receipt.json",
-          "sha256": "871dee96ea28f80a75a951743a44a16a821117765f8e51cc6d277f1ba2a76168",
+          "path": "authority-evidence/y2k-final-image-navigation-15-0-20261001/receipt.json",
+          "sha256": "02126ed805c95ac9b7fba2cffb92596868dfc8512be1be24dbe1e97dac9bd4f5",
           "decision_authority": "REAL_WIKIDOT_TARGET_AB"
         }
       ],
@@ -314,7 +314,38 @@
           ".mobile-top-bar > ul > li > ul a"
         ]
       },
-      "published_css_sha256": "b089eda5371a9f64bcedf7e83941da468e0e874e703fe271b97bbfd7b7527f77"
+      "published_css_sha256": "65f2796fb65882751c4b2d521878ddb78a6a542425023a9a83eea30a90a92f5e"
+    },
+    {
+      "marker": "SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width.",
+      "sha256": "7d3e8accd22b3e82aa80834b444dd208b38fe8e6931410d9c716a744b83d57e9",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "The native SCP-JP image-block component at 320px loses its caption/content past the viewport left edge. Subtract its evidenced right margin and border/padding from the available content width. Real article A/B proves containment and unchanged 390px/desktop geometry.",
+      "selectors": [
+        ".scp-image-block.block-right"
+      ],
+      "at_contexts": [
+        "@media (max-width: 479px)"
+      ],
+      "evidence": [
+        {
+          "path": "authority-evidence/y2k-image-block-authority-20261001/receipt.json",
+          "sha256": "9f87f8e838b8ae9f34c8d8ff7a8e3a4a9e086134cc8cfd1a9153caa5e0f8e988",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-1428-jp",
+        "state": "image-block",
+        "viewports": [
+          320,
+          390,
+          1440
+        ]
+      },
+      "published_css_sha256": "65f2796fb65882751c4b2d521878ddb78a6a542425023a9a83eea30a90a92f5e",
+      "published_base_css_sha256": null
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -330,6 +361,18 @@
       "at_contexts": [
         "@media (max-width: 359px)",
         "@media (min-width: 360px) and (max-width: 767px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width.",
+      "rationale": "SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width.",
+      "sha256": "7d3e8accd22b3e82aa80834b444dd208b38fe8e6931410d9c716a744b83d57e9",
+      "selectors": [
+        ".scp-image-block.block-right"
+      ],
+      "at_contexts": [
+        "@media (max-width: 479px)"
       ],
       "authority": "TARGET_WIKIDOT_CERTIFIED"
     }

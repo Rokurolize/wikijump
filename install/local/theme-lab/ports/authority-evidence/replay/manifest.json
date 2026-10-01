@@ -74,7 +74,9 @@
         "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-173-jp",
         "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-040-jp",
         "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-2000-jp",
-        "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=theme:pataphysics"
+        "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=theme:pataphysics",
+        "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-1428-jp",
+        "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-1214"
       ]
     },
     "4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7": {
@@ -2276,6 +2278,62 @@
       "bytes": 163876,
       "original_urls": [
         "https://scp-jp.wikidot.com/theme:pataphysics"
+      ]
+    },
+    "d0db466b9c08a5092c70f70a31d032a8a721f072a8f8d881a14c57c49c6c0111": {
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 50044,
+      "original_urls": [
+        "https://scp-jp.wikidot.com/scp-1428-jp"
+      ]
+    },
+    "9cb7dce5d6e4bbd7fc455be758b3f32a7c4cb5de6d4e5fa0d52e9376f53923ee": {
+      "content_type": "image/jpeg; charset=utf-8",
+      "bytes": 27111,
+      "original_urls": [
+        "https://scp-jp.wdfiles.com/local--resized-images/scp-1428-jp/s_pexels-photo-287548.jpeg/medium.jpg"
+      ]
+    },
+    "63e33b4b0ba0ae1f5cefa0705d224abbbafb05e525e53b8b21d0da7aa6f99899": {
+      "content_type": "image/jpeg; charset=utf-8",
+      "bytes": 8153,
+      "original_urls": [
+        "https://scp-jp.wdfiles.com/local--files/scp-1428-jp/195px-Mary_Poppins5.jpg"
+      ]
+    },
+    "8a74dcd95785ff4f7fdd5f4fbe1360390c9b760878b5e21fdf1607798b1a63b2": {
+      "content_type": "image/jpeg; charset=utf-8",
+      "bytes": 9639,
+      "original_urls": [
+        "https://scp-jp.wdfiles.com/local--files/scp-1428-jp/196px-Mary_Poppins4.jpg"
+      ]
+    },
+    "69188792f07b4a502f2b894b6aa777c93f26dad886c55f619645ded7e952dfd7": {
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 49923,
+      "original_urls": [
+        "https://scp-jp.wikidot.com/scp-1428-jp"
+      ]
+    },
+    "0b85747a76fd72366f795204873b157e3f5fdc130fc2a15f8d2d07e9ceda9767": {
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 45662,
+      "original_urls": [
+        "https://scp-jp.wikidot.com/scp-1214"
+      ]
+    },
+    "d62e5a8d4a6ab4e9688539ee0bc8565de7bd158ff12166f86d5254c08e1edbcf": {
+      "content_type": "image/png; charset=utf-8",
+      "bytes": 33166,
+      "original_urls": [
+        "https://scp-jp.wdfiles.com/local--files/scp-1214/RANDOM_NUMBER_TEST.png"
+      ]
+    },
+    "e5b90493071afd030fa53c593b553a53a1255c8362a9d5ad5ae28fdc220cd1e5": {
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 45587,
+      "original_urls": [
+        "https://scp-jp.wikidot.com/scp-1214"
       ]
     }
   },
@@ -4847,6 +4905,54 @@
       "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png",
       "content_type": "image/png; charset=utf-8",
       "fetched_at": "2026-10-01T03:46:33.865Z"
+    },
+    "https://scp-jp.wikidot.com/scp-1428-jp": {
+      "digest": "d0db466b9c08a5092c70f70a31d032a8a721f072a8f8d881a14c57c49c6c0111",
+      "final_url": "https://scp-jp.wikidot.com/scp-1428-jp",
+      "content_type": "text/html; charset=utf-8",
+      "fetched_at": "2026-10-01T07:34:44.935Z"
+    },
+    "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-1428-jp": {
+      "digest": "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a",
+      "final_url": "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-1428-jp",
+      "content_type": "image/png",
+      "fetched_at": "2026-10-01T07:34:45.359Z"
+    },
+    "https://scp-jp.wdfiles.com/local--resized-images/scp-1428-jp/s_pexels-photo-287548.jpeg/medium.jpg": {
+      "digest": "9cb7dce5d6e4bbd7fc455be758b3f32a7c4cb5de6d4e5fa0d52e9376f53923ee",
+      "final_url": "https://scp-jp.wdfiles.com/local--resized-images/scp-1428-jp/s_pexels-photo-287548.jpeg/medium.jpg",
+      "content_type": "image/jpeg; charset=utf-8",
+      "fetched_at": "2026-10-01T07:34:47.439Z"
+    },
+    "https://scp-jp.wdfiles.com/local--files/scp-1428-jp/195px-Mary_Poppins5.jpg": {
+      "digest": "63e33b4b0ba0ae1f5cefa0705d224abbbafb05e525e53b8b21d0da7aa6f99899",
+      "final_url": "https://scp-jp.wdfiles.com/local--files/scp-1428-jp/195px-Mary_Poppins5.jpg",
+      "content_type": "image/jpeg; charset=utf-8",
+      "fetched_at": "2026-10-01T07:34:47.709Z"
+    },
+    "https://scp-jp.wdfiles.com/local--files/scp-1428-jp/196px-Mary_Poppins4.jpg": {
+      "digest": "8a74dcd95785ff4f7fdd5f4fbe1360390c9b760878b5e21fdf1607798b1a63b2",
+      "final_url": "https://scp-jp.wdfiles.com/local--files/scp-1428-jp/196px-Mary_Poppins4.jpg",
+      "content_type": "image/jpeg; charset=utf-8",
+      "fetched_at": "2026-10-01T07:34:48.003Z"
+    },
+    "https://scp-jp.wikidot.com/scp-1214": {
+      "digest": "0b85747a76fd72366f795204873b157e3f5fdc130fc2a15f8d2d07e9ceda9767",
+      "final_url": "https://scp-jp.wikidot.com/scp-1214",
+      "content_type": "text/html; charset=utf-8",
+      "fetched_at": "2026-10-01T08:32:09.209Z"
+    },
+    "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-1214": {
+      "digest": "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a",
+      "final_url": "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-1214",
+      "content_type": "image/png",
+      "fetched_at": "2026-10-01T08:32:09.658Z"
+    },
+    "https://scp-jp.wdfiles.com/local--files/scp-1214/RANDOM_NUMBER_TEST.png": {
+      "digest": "d62e5a8d4a6ab4e9688539ee0bc8565de7bd158ff12166f86d5254c08e1edbcf",
+      "final_url": "https://scp-jp.wdfiles.com/local--files/scp-1214/RANDOM_NUMBER_TEST.png",
+      "content_type": "image/png; charset=utf-8",
+      "fetched_at": "2026-10-01T08:32:10.457Z"
     }
   },
   "snapshots": {
@@ -5825,6 +5931,148 @@
         "c775b7c83e721d6e788df2707b76046054c90dab55634af3191bebbfa87658f6",
         "a62a15a6b56287171cc9127041ea8225655529851e49501a069f1fa852037d35",
         "d1642c06980df7d8450cb2489a7d68e7cb344d64ca22a27281210bb5a23d0adc"
+      ]
+    },
+    "https://scp-jp.wikidot.com/scp-1428-jp": {
+      "entry": "/o/69188792f07b4a502f2b894b6aa777c93f26dad886c55f619645ded7e952dfd7",
+      "created_at": "2026-10-01T07:34:48.052Z",
+      "assets": 49,
+      "failed_assets": 3,
+      "failed_asset_details": [
+        {
+          "url": "https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png",
+          "code": "reference_http_error",
+          "message": "reference fetch returned HTTP 500 for https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png"
+        },
+        {
+          "url": "https://s.nitropay.com/ads-143.js",
+          "code": "ENOENT",
+          "message": "ENOENT: no such file or directory, open '/home/roku/.devspace/worktrees/theme-final-audit/install/local/theme-lab/ports/authority-evidence/replay/objects/57/574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c'"
+        },
+        {
+          "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+          "code": "reference_http_error",
+          "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+        }
+      ],
+      "replay_complete": true,
+      "object_digests": [
+        "69188792f07b4a502f2b894b6aa777c93f26dad886c55f619645ded7e952dfd7",
+        "58cab0208fa4ab61053eb9d92a99a1a1999ad6e3dc63f8fd80828e33cb069d53",
+        "f53bdeec5d0316301982c49cf86701d13680dc6f44efb3a8eb1ca93ca183e3ba",
+        "86bfb8fa53fdca123db5feecf7e995eb6de67edbe39ca0a800134c69258c2ba1",
+        "7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387",
+        "49bcabdb14d446bb93d261f9c967bedfa7cdf7b214807a8180974cbd00b21f11",
+        "12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941",
+        "c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc",
+        "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a",
+        "4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7",
+        "9cb7dce5d6e4bbd7fc455be758b3f32a7c4cb5de6d4e5fa0d52e9376f53923ee",
+        "63e33b4b0ba0ae1f5cefa0705d224abbbafb05e525e53b8b21d0da7aa6f99899",
+        "8a74dcd95785ff4f7fdd5f4fbe1360390c9b760878b5e21fdf1607798b1a63b2",
+        "5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583",
+        "dab79d3aeee7dc23243a53e417f1b8dc4cb0f397f06aa17bac4c1f373abd5ede",
+        "c893531613ca348b0217ea5976a52c4dfe7cda7ffa0ca002ef24a0980a201825",
+        "6d59328357ba699fae7fe1ce66e403bcb430c4a86fb750e2c240d483f6ff2201",
+        "8ee173565b2e771fecf3b471a79bdf072aaa1bd9dc27582cfda2b2a322beeba8",
+        "841dadb079124d00a289640d7ddae9ecd8b9e8b245d59c33593d3905863b568a",
+        "d4b09792783e799e3dfd3acc0590f59783a9875909b5baf88f43f5d384d6acd3",
+        "222902c16fcda2ffbe6acf20f48a9a3b1ce3ec1b1f37e4cea2df449c3b053ff8",
+        "2b3f53a407d5b25bc91bd9920f164b13e14d944bc95a7bf32a5138b30cef07c6",
+        "fbfecc922b34a8921eadef91c1763804baa9dc5fe8c9299ccaa94dad3bb31604",
+        "77aa03dfe99dca77dd663d465c87fa642d26267f5190208c11d5498e7c7fe697",
+        "7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c",
+        "44d631b2507c9bfceabf960599f9f3d2093a3e19f5d6f04d27d375efb8012f84",
+        "7668781daf80240168d1142c72b3502f75617be40fbbe081caae66ac7d38d571",
+        "231630b39af902bf9ad98a22bd77b3c5359b18a9336b63bf599c31a76f1e08cd",
+        "cbb644d0ee730ea57dd5fbae35ef5ba4a41d57a254a6b1215de5c9ff8a321c2d",
+        "aadc3580d2b64ff5a7e6f1425587db4e8b033efcbf8f5c332ca52a5ed580c87c",
+        "e3870de89716b72cb61a4bba0e17c75783b361cdaba35ea96961c3070bd8ca18",
+        "9e540a087924a6e64790149d735cac022640e4fa6bff6bd65f5e9f41529bf0b3",
+        "bfdef833219a6edffd9c3cbc28db72739d22bb4d20cc2e2f8d56a7a4d408a206",
+        "ed0652b49899259e10ff2b7270ffee4d9f07b4c2a46c8d95a7f86fa3e94e01d8",
+        "40723fa718237c74623d7b64ce186a02b872f7fb4b3a917013fcc8b6aec3ded6",
+        "2eb982d8faa4ab9bcc8bc39c31cad8f1d73e1d8df8e4aebd3970af1e38620841",
+        "41950d74f0aae0ee95ca1381b8096f1d19dc4154971505c8bdc3b18dce70912d",
+        "1a9b14799594702e4d0350164623d9e71261d70042ed4b3979808b08ba6e38b6",
+        "3ee20e2529a17cdd369a6c89edb23d5662ecfa9007936786d33c22c38fac14de",
+        "d8e1808c4f33e6bd075bd13b7aafc8596a1937495d5c57732322502b9c711a03",
+        "aa602c40276279d9b8e782b8c4d1e466d51e5349dbe55d1756db93976584bcab",
+        "f458790e7e2d0b83533b4d0f3669630adcb473673455815fd38c5c2496c06a46",
+        "d65d63e6581b8c1210bed42a30dc766a0f0273018cb163947fdb8c0e160f3cb5",
+        "1d7378ae112da2d33aafdf0ce83bd2bccb36d6786a5c58317444367f2b9b4604",
+        "8aab16649c61f865e40a66b550fc954c8e1e42e317c06b22970a14a5390e8123",
+        "8814de07a0445f47adffed154a0cd18ed228dcf88faaebaeed1a9f71a280cd80"
+      ]
+    },
+    "https://scp-jp.wikidot.com/scp-1214": {
+      "entry": "/o/e5b90493071afd030fa53c593b553a53a1255c8362a9d5ad5ae28fdc220cd1e5",
+      "created_at": "2026-10-01T08:32:10.472Z",
+      "assets": 47,
+      "failed_assets": 3,
+      "failed_asset_details": [
+        {
+          "url": "https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png",
+          "code": "reference_http_error",
+          "message": "reference fetch returned HTTP 500 for https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png"
+        },
+        {
+          "url": "https://s.nitropay.com/ads-143.js",
+          "code": "ENOENT",
+          "message": "ENOENT: no such file or directory, open '/home/roku/.devspace/worktrees/theme-final-audit/install/local/theme-lab/ports/authority-evidence/replay/objects/57/574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c'"
+        },
+        {
+          "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+          "code": "reference_http_error",
+          "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+        }
+      ],
+      "replay_complete": true,
+      "object_digests": [
+        "e5b90493071afd030fa53c593b553a53a1255c8362a9d5ad5ae28fdc220cd1e5",
+        "58cab0208fa4ab61053eb9d92a99a1a1999ad6e3dc63f8fd80828e33cb069d53",
+        "f53bdeec5d0316301982c49cf86701d13680dc6f44efb3a8eb1ca93ca183e3ba",
+        "86bfb8fa53fdca123db5feecf7e995eb6de67edbe39ca0a800134c69258c2ba1",
+        "7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387",
+        "49bcabdb14d446bb93d261f9c967bedfa7cdf7b214807a8180974cbd00b21f11",
+        "12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941",
+        "c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc",
+        "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a",
+        "4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7",
+        "d62e5a8d4a6ab4e9688539ee0bc8565de7bd158ff12166f86d5254c08e1edbcf",
+        "5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583",
+        "dab79d3aeee7dc23243a53e417f1b8dc4cb0f397f06aa17bac4c1f373abd5ede",
+        "c893531613ca348b0217ea5976a52c4dfe7cda7ffa0ca002ef24a0980a201825",
+        "6d59328357ba699fae7fe1ce66e403bcb430c4a86fb750e2c240d483f6ff2201",
+        "8ee173565b2e771fecf3b471a79bdf072aaa1bd9dc27582cfda2b2a322beeba8",
+        "841dadb079124d00a289640d7ddae9ecd8b9e8b245d59c33593d3905863b568a",
+        "d4b09792783e799e3dfd3acc0590f59783a9875909b5baf88f43f5d384d6acd3",
+        "222902c16fcda2ffbe6acf20f48a9a3b1ce3ec1b1f37e4cea2df449c3b053ff8",
+        "2b3f53a407d5b25bc91bd9920f164b13e14d944bc95a7bf32a5138b30cef07c6",
+        "fbfecc922b34a8921eadef91c1763804baa9dc5fe8c9299ccaa94dad3bb31604",
+        "77aa03dfe99dca77dd663d465c87fa642d26267f5190208c11d5498e7c7fe697",
+        "7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c",
+        "44d631b2507c9bfceabf960599f9f3d2093a3e19f5d6f04d27d375efb8012f84",
+        "7668781daf80240168d1142c72b3502f75617be40fbbe081caae66ac7d38d571",
+        "231630b39af902bf9ad98a22bd77b3c5359b18a9336b63bf599c31a76f1e08cd",
+        "cbb644d0ee730ea57dd5fbae35ef5ba4a41d57a254a6b1215de5c9ff8a321c2d",
+        "aadc3580d2b64ff5a7e6f1425587db4e8b033efcbf8f5c332ca52a5ed580c87c",
+        "e3870de89716b72cb61a4bba0e17c75783b361cdaba35ea96961c3070bd8ca18",
+        "9e540a087924a6e64790149d735cac022640e4fa6bff6bd65f5e9f41529bf0b3",
+        "bfdef833219a6edffd9c3cbc28db72739d22bb4d20cc2e2f8d56a7a4d408a206",
+        "ed0652b49899259e10ff2b7270ffee4d9f07b4c2a46c8d95a7f86fa3e94e01d8",
+        "40723fa718237c74623d7b64ce186a02b872f7fb4b3a917013fcc8b6aec3ded6",
+        "2eb982d8faa4ab9bcc8bc39c31cad8f1d73e1d8df8e4aebd3970af1e38620841",
+        "41950d74f0aae0ee95ca1381b8096f1d19dc4154971505c8bdc3b18dce70912d",
+        "1a9b14799594702e4d0350164623d9e71261d70042ed4b3979808b08ba6e38b6",
+        "3ee20e2529a17cdd369a6c89edb23d5662ecfa9007936786d33c22c38fac14de",
+        "d8e1808c4f33e6bd075bd13b7aafc8596a1937495d5c57732322502b9c711a03",
+        "aa602c40276279d9b8e782b8c4d1e466d51e5349dbe55d1756db93976584bcab",
+        "f458790e7e2d0b83533b4d0f3669630adcb473673455815fd38c5c2496c06a46",
+        "d65d63e6581b8c1210bed42a30dc766a0f0273018cb163947fdb8c0e160f3cb5",
+        "1d7378ae112da2d33aafdf0ce83bd2bccb36d6786a5c58317444367f2b9b4604",
+        "8aab16649c61f865e40a66b550fc954c8e1e42e317c06b22970a14a5390e8123",
+        "8814de07a0445f47adffed154a0cd18ed228dcf88faaebaeed1a9f71a280cd80"
       ]
     }
   },

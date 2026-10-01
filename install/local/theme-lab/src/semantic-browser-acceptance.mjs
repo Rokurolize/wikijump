@@ -3,6 +3,7 @@ import {navigationOverlayProvenance,NAVIGATION_OVERLAY_SOURCE} from './navigatio
 import states from '../fixtures/browser-acceptance-states.json' with {type: 'json'};
 import {measureTitleComposition} from './title-composition.mjs';
 import {measureTitleTextIntersections} from './title-text-intersections.mjs';
+import {BASELINE_DOCUMENT_CONTAINMENT_CONTRACT_SHA256,BASELINE_DOCUMENT_CONTAINMENT_SCHEMA} from './baseline-document-containment.mjs';
 
 export const SEMANTIC_BROWSER_MODEL = 'theme_lab_semantic_browser_acceptance.v1';
 const hash = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -59,6 +60,12 @@ export function measuredFacts(row) {
   const viewport = row.visual_diagnostics?.viewport;
   const documentWidth = viewport?.document_width ?? viewport?.documentWidth;
   const width = viewport?.client_width ?? viewport?.width;
+  const candidateOverflow=Number.isFinite(documentWidth)&&Number.isFinite(width)&&width>0?Math.max(0,documentWidth-width):null;
+  const baselineContainment=row.baseline_document_containment_measurement;
+  const baselineComplete=baselineContainment?.schema===BASELINE_DOCUMENT_CONTAINMENT_SCHEMA&&baselineContainment.complete===true&&
+    row.baseline_document_containment_contract_sha256===BASELINE_DOCUMENT_CONTAINMENT_CONTRACT_SHA256&&
+    Number.isFinite(baselineContainment.document_width)&&Number.isFinite(baselineContainment.viewport_width)&&baselineContainment.viewport_width>0;
+  const baselineOverflow=baselineComplete?Math.max(0,baselineContainment.document_width-baselineContainment.viewport_width):null;
   const search = row.action_contract_observation;
   const exercisedSearch = search?.schema === 'theme_lab_search_action.v1' &&
     (search.mode === 'typed-focused' && search.typed_and_focused === true ||
@@ -74,8 +81,8 @@ export function measuredFacts(row) {
       'runtime_surface_contract_sha256'].every(key => validHash(row[key])) ? 'pass' : 'missing',
     capture_safety: safety(row),
     maintained_action_execution: action,
-    document_containment: Number.isFinite(documentWidth) && Number.isFinite(width) && width > 0
-      ? documentWidth <= width + 1 ? 'pass' : 'fail' : 'missing'
+    document_containment: candidateOverflow===null?'missing':candidateOverflow<=1?'pass':
+      baselineOverflow===null?'missing':candidateOverflow<=baselineOverflow+1?'pass':'fail'
   };
 }
 
@@ -108,23 +115,74 @@ const readingContext = row => Object.fromEntries([
   'target_site', 'locale'
 ].map(key => [key, row[key] ?? null]));
 
-function settlesTransientNavigationOverlay(row, facts, normal) {
-  if (!transientNavigationStates.has(`${row.surface}.${row.state}`) || facts.title_composition !== 'visual' ||
-      Object.values(facts).some(value=>!['pass','visual'].includes(value)) || !navigationOverlayProvenance(row) || !normal ||
-      JSON.stringify(readingContext(row)) !== JSON.stringify(readingContext(normal))) return false;
-  const normalFacts = measuredFacts(normal);
-  return normalFacts.observation_identity === 'pass' && normalFacts.capture_safety === 'pass' &&
-    normalFacts.maintained_action_execution === 'pass' && normalFacts.document_containment === 'pass' &&
-    titleCompositionFact(normal) === 'pass';
+const titleReadingContext = row => Object.fromEntries([
+  'theme', 'candidate_sha256', 'candidate_source_sha256', 'base_css_sha256',
+  'candidate_structure_sha256', 'baseline_theme_css_sha256', 'baseline_theme_mode',
+  'asset_dependency_sha256', 'browser_engine', 'browser_version', 'viewport', 'viewport_size',
+  'session_state', 'target_site', 'locale'
+].map(key => [key, row[key] ?? null]));
+
+function sameMeasuredTitleComposition(row, normal) {
+  if (!normal || row.title_text_contract_sha256 !== TITLE_TEXT_CONTRACT_SHA256 ||
+      normal.title_text_contract_sha256 !== TITLE_TEXT_CONTRACT_SHA256 ||
+      row.title_composition_contract_sha256 !== TITLE_COMPOSITION_CONTRACT_SHA256 ||
+      normal.title_composition_contract_sha256 !== TITLE_COMPOSITION_CONTRACT_SHA256) return false;
+  const text = value => value?.title_text_measurement?.schema === 'theme_lab_title_text_intersections.v1' &&
+    value.title_text_measurement.complete === true ? value.title_text_measurement : null;
+  const composition = value => value?.title_composition_measurement?.schema === 'theme_lab_title_composition.v1' &&
+    value.title_composition_measurement.complete === true ? value.title_composition_measurement : null;
+  return text(row) && text(normal) && composition(row) && composition(normal) &&
+    JSON.stringify(text(row)) === JSON.stringify(text(normal)) &&
+    JSON.stringify(composition(row)) === JSON.stringify(composition(normal));
 }
 
-const identityQuestion = 'Does the JP rendering preserve the frozen source theme’s intentional imagery, typography, palette and information hierarchy across the evidenced responsive layouts, allowing only documented localization differences?';
+const sameRect = (left,right) => left && right && ['x','y','width','height'].every(key =>
+  Number.isFinite(left[key]) && Number.isFinite(right[key]) && Math.abs(left[key]-right[key]) <= 1);
+
+function samePersistentTitleIntersection(left,right) {
+  return sameRect(left?.rect,right?.rect) && ['tag','id','class','text','color','background','position','z','effectively_visible']
+    .every(key => (left?.[key] ?? null) === (right?.[key] ?? null));
+}
+
+function navigationOverlayBeyondNormalComposition(row,normal) {
+  const action=row.title_text_measurement,reading=normal?.title_text_measurement;
+  if(action?.schema!=='theme_lab_title_text_intersections.v1'||action.complete!==true||
+      reading?.schema!=='theme_lab_title_text_intersections.v1'||reading.complete!==true||
+      row.title_text_contract_sha256!==TITLE_TEXT_CONTRACT_SHA256||normal.title_text_contract_sha256!==TITLE_TEXT_CONTRACT_SHA256||
+      JSON.stringify(action.title_text_rects)!==JSON.stringify(reading.title_text_rects))return false;
+  const transient=action.intersections.filter(item=>!reading.intersections.some(existing=>samePersistentTitleIntersection(item,existing)));
+  if(!transient.length||transient.length===action.intersections.length)return false;
+  const retained=(row.visual_diagnostics?.title_overlaps??[]).filter(item=>transient.some(target=>
+    target.tag===item.tag&&target.text===item.text&&sameRect(target.rect,item.rect)));
+  return navigationOverlayProvenance({...row,
+    title_text_measurement:{...action,intersections:transient},
+    visual_diagnostics:{...row.visual_diagnostics,title_overlaps:retained}});
+}
+
+function settlesTransientNavigationOverlay(row, facts, normal) {
+  if (!transientNavigationStates.has(`${row.surface}.${row.state}`) || facts.title_composition !== 'visual' ||
+      Object.values(facts).some(value=>!['pass','visual'].includes(value)) || !normal ||
+      JSON.stringify(readingContext(row)) !== JSON.stringify(readingContext(normal))) return false;
+  const normalFacts = measuredFacts(normal);
+  return (navigationOverlayProvenance(row)||navigationOverlayBeyondNormalComposition(row,normal)) &&
+    normalFacts.observation_identity === 'pass' && normalFacts.capture_safety === 'pass' &&
+    normalFacts.maintained_action_execution === 'pass' && normalFacts.document_containment === 'pass' &&
+    ['pass','visual'].includes(titleCompositionFact(normal));
+}
+
+const identityQuestion = 'Does the JP rendering preserve the frozen source theme’s intentional imagery, typography, palette and information hierarchy across the evidenced responsive layouts, including page-title readability against persistent shell controls in normal reading states, allowing only documented localization differences?';
+
+const identityQuestionId = row => hash({kind: 'source_visual_identity', theme: row.theme,
+  candidate: row.candidate_sha256, source: row.candidate_source_sha256,
+  base: row.base_css_sha256 ?? null, baseline: row.baseline_theme_css_sha256});
 
 export function planBrowserAcceptance(audit) {
   const questions = new Map();
   const observations = [];
   const normalRows = new Map((audit.records ?? []).filter(row => row.surface === 'page.normal' && row.state === 'settled')
     .map(row => [JSON.stringify(readingContext(row)), row]));
+  const titleNormalRows = new Map((audit.records ?? []).filter(row => row.surface === 'page.normal' && row.state === 'settled')
+    .map(row => [JSON.stringify(titleReadingContext(row)), row]));
   for (const row of audit.records ?? []) {
     const key = observationKey(row), dependencies = observationDependencies(row);
     const facts = measuredFacts(row);
@@ -132,14 +190,16 @@ export function planBrowserAcceptance(audit) {
     const transientOverlaySettled = settlesTransientNavigationOverlay(row, facts,
       normalRows.get(JSON.stringify(readingContext(row))));
     if (transientOverlaySettled) facts.title_composition = 'pass';
+    const titleNormal = titleNormalRows.get(JSON.stringify(titleReadingContext(row)));
+    const identityCompositionCovered = facts.title_composition === 'visual' &&
+      (row.surface === 'page.normal' && row.state === 'settled' || sameMeasuredTitleComposition(row, titleNormal));
+    if (identityCompositionCovered) facts.title_composition = 'visual-identity';
     const required = [];
     if (row.surface === 'page.normal') {
       // One source-identity question can cite several responsive observations.
       // It requires a review of the whole declared evidence set, never an
       // unexplained representative image or screenshot-hash deduplication.
-      const id = hash({kind: 'source_visual_identity', theme: row.theme,
-        candidate: row.candidate_sha256, source: row.candidate_source_sha256,
-        base: row.base_css_sha256 ?? null, baseline: row.baseline_theme_css_sha256});
+      const id = identityQuestionId(row);
       const question = questions.get(id) ?? {id, kind: 'source_visual_identity', theme: row.theme,
         question: identityQuestion, reason: 'Computed layout cannot decide preservation of artistic source identity.', observations: []};
       const identityDependencies = {...dependencies};
@@ -154,6 +214,7 @@ export function planBrowserAcceptance(audit) {
       question.observations.push({key, dependencies_sha256: hash(identityDependencies), screenshot_sha256: row.screenshot_sha256});
       questions.set(id, question); required.push(id);
     }
+    if (identityCompositionCovered && row.surface !== 'page.normal' && titleNormal) required.push(identityQuestionId(titleNormal));
     if (facts.title_composition === 'visual') {
       const overlaps = row.title_text_measurement.intersections;
       // The obligation is the composition of these elements, not the action
@@ -176,8 +237,10 @@ export function planBrowserAcceptance(audit) {
       required.push(id);
     }
     observations.push({key, dependencies_sha256: hash(dependencies), facts, visual_questions: required,
-      machine_explanations: transientOverlaySettled
-        ? ['title_composition: source-proven canonical transient navigation overlay over a clean exact-context reading state'] : [],
+      machine_explanations: [
+        ...(transientOverlaySettled ? ['title_composition: source-proven canonical transient navigation overlay over a clean exact-context reading state whose title composition is either machine-clean or bound to source-identity review'] : []),
+        ...(identityCompositionCovered ? ['title_composition: exact measured composition is covered by the source-identity review of the corresponding normal reading state'] : []),
+      ],
       source_fact_authority:transientOverlaySettled?NAVIGATION_OVERLAY_SOURCE:null,
       machine_failures: Object.keys(facts).filter(name => facts[name] === 'fail'),
       additional_machine_evidence: Object.keys(facts).filter(name => facts[name] === 'missing')});
@@ -211,11 +274,22 @@ export function validateSemanticBrowserAcceptance(audit) {
         typeof review?.reviewer !== 'string' || !review.reviewer.trim() || !Number.isFinite(Date.parse(review?.reviewed_at)) ||
         review?.decision_authority !== 'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY' || review.port_conclusion_eligible !== false ||
         !/^https:\/\/[a-z0-9-]+\.wikidot\.com\//u.test(review?.source_url ?? '') ||
-        !['source_snapshot', 'source_html', 'source_rendering', 'source_rendering_receipt'].every(key => typeof review?.[key]?.path === 'string' && validHash(review[key].sha256))) {
+        typeof review?.source_snapshot?.path !== 'string' || !validHash(review?.source_snapshot?.sha256) ||
+        !semanticSourceRenderings(question, review).every(rendering =>
+          ['source_html', 'source_rendering', 'source_rendering_receipt'].every(key =>
+            typeof rendering?.[key]?.path === 'string' && validHash(rendering[key].sha256)))) {
       failures.push(`${question.theme}: unanswered or stale visual question ${question.id}`);
     }
   }
   return {status: failures.length ? 'inconclusive' : 'pass', failures, accounting: plan.accounting};
+}
+
+// A responsive question needs an upstream rendering for each declared viewport.
+// The singular legacy form can bind only a question with one viewport.
+export function semanticSourceRenderings(question, review) {
+  const viewports = [...new Set(question.observations.map(row => JSON.parse(row.key)[2]))];
+  return viewports.map(viewport => ({
+    ...(review?.source_renderings?.[viewport] ?? (viewports.length === 1 ? review : {})), viewport}));
 }
 
 // Question reviews do not become source authority merely by naming a digest.
@@ -223,6 +297,9 @@ export function validateSemanticBrowserAcceptance(audit) {
 export function semanticReviewArtifactBindings(audit) {
   return planBrowserAcceptance(audit).visual_questions.flatMap(question => {
     const review = audit.semantic_reviews?.[question.id];
-    return ['source_snapshot', 'source_html', 'source_rendering', 'source_rendering_receipt'].map(key => ({binding: review?.[key], label: `${question.theme}/${question.kind}/${key}`}));
+    return [{binding: review?.source_snapshot, label: `${question.theme}/${question.kind}/source_snapshot`},
+      ...semanticSourceRenderings(question, review).flatMap(rendering =>
+        ['source_html', 'source_rendering', 'source_rendering_receipt'].map(key =>
+          ({binding: rendering[key], label: `${question.theme}/${question.kind}/${rendering.viewport}/${key}`})))];
   });
 }

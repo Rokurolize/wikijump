@@ -56,3 +56,25 @@ test("preview client surfaces a JSON-RPC error", async () => {
   });
   await assert.rejects(() => client.preview({siteId: 1, title: "T", wikitext: "x"}), /boom/u);
 });
+
+test("saved fixture retains page tag context and rejects stale source or tags", async () => {
+  const source = '[[iftags -heritage]]normal[[/iftags]]';
+  const page = {site_id: 6000003, slug: 'run-owned:fixture', page_id: 42, revision_id: 43,
+    layout: 'wikidot', tags: ['jp'], wikitext: source, compiled_body_html: '<p>normal</p>',
+    compiled_body_styles: [], compiled_generator: 'test-generator'};
+  let request;
+  const client = createDeepwellPreviewClient({rpcToken: 'test-token',
+    fetchImpl: async (_url, options) => {
+      request = JSON.parse(options.body);
+      return {ok: true, async json() {return {result: page};}};
+    }});
+  const input = {siteId: 6000003, page: 'run-owned:fixture', wikitext: source, tags: ['jp']};
+  const result = await client.savedPage(input);
+  assert.equal(request.method, 'page_get');
+  assert.deepEqual(request.params.details, {wikitext: true, compiled: true});
+  assert.equal(result.body, '<p>normal</p>');
+  assert.equal(result.identity.revision_id, 43);
+  for (const changed of [{wikitext: source + 'new'}, {tags: ['heritage']}, {siteId: 7}, {page: 'other'}]) {
+    await assert.rejects(client.savedPage({...input, ...changed}), /does not match/u);
+  }
+});

@@ -82,18 +82,24 @@ export function issuesFromTorture(torture) {
   }));
 }
 
-export function issuesFromViewports(viewports) {
+export function issuesFromViewports(viewports, baselineViewports = null) {
   const issues = [];
   for (const [id, viewport] of Object.entries(viewports ?? {})) {
     const documentOverflow = viewport?.document_overflow_px ?? 0;
     const viewportEscape = viewport?.viewport_escape_px ?? 0;
     const overflow = Math.max(documentOverflow, viewportEscape);
+    const baseline = baselineViewports?.[id] ?? null;
+    const baselineDocumentOverflow = baseline?.document_overflow_px ?? 0;
+    const baselineViewportEscape = baseline?.viewport_escape_px ?? 0;
+    const baselineOverflow = Math.max(baselineDocumentOverflow, baselineViewportEscape);
     // A viewport fails only for real overflow. Sub-pixel full-bleed rounding
     // (for example a negative-margin <hr> divider) surfaces as a whole 1px in
     // documentOverflow or a fractional px in viewportEscape and must not become
     // an actionable defect. Keep this boundary in sync with viewportStatus.
-    if (overflow > DOCUMENT_OVERFLOW_TOLERANCE_PX) {
-      issues.push({severity: "error", kind: "viewport_overflow", viewport: id, overflow_px: overflow, document_overflow_px: documentOverflow, viewport_escape_px: viewportEscape, overflow_sources: viewport?.overflow_sources ?? []});
+    if (overflow > baselineOverflow + DOCUMENT_OVERFLOW_TOLERANCE_PX) {
+      issues.push({severity: "error", kind: "viewport_overflow", viewport: id, overflow_px: overflow, document_overflow_px: documentOverflow, viewport_escape_px: viewportEscape,
+        baseline_overflow_px: baselineOverflow, baseline_document_overflow_px: baselineDocumentOverflow, baseline_viewport_escape_px: baselineViewportEscape,
+        overflow_sources: viewport?.overflow_sources ?? []});
     }
   }
   return issues;
@@ -282,6 +288,7 @@ export function buildVerdict({
   reference = null,
   torture = null,
   viewports = null,
+  baselineViewports = null,
   fontDiagnostics = null,
   interactionDiagnostics = null,
   imageDiagnostics = null,
@@ -297,7 +304,7 @@ export function buildVerdict({
   const rawIssues = [
     ...issuesFromSelectorDiagnosis(reference?.diagnosis),
     ...issuesFromTorture(torture),
-    ...issuesFromViewports(viewports),
+    ...issuesFromViewports(viewports, baselineViewports),
     ...issuesFromPreview(preview),
     ...issuesFromInteractions(interactionDiagnostics),
     ...(imageDiagnostics?.broken ?? []).map((image) => ({
@@ -344,9 +351,14 @@ export function buildVerdict({
   const styleChanges = decisionStyleChanges.slice(0, limits.styleChanges);
   const viewportStatus = viewports
     ? Object.fromEntries(Object.entries(viewports).map(([name, result]) => [name, {
-        status: Math.max(result.document_overflow_px ?? 0, result.viewport_escape_px ?? 0) > DOCUMENT_OVERFLOW_TOLERANCE_PX ? "fail" : "pass",
+        status: Math.max(result.document_overflow_px ?? 0, result.viewport_escape_px ?? 0) >
+          Math.max(baselineViewports?.[name]?.document_overflow_px ?? 0, baselineViewports?.[name]?.viewport_escape_px ?? 0) + DOCUMENT_OVERFLOW_TOLERANCE_PX ? "fail" : "pass",
         document_overflow_px: result.document_overflow_px ?? 0,
         ...(result.viewport_escape_px !== undefined ? {viewport_escape_px: result.viewport_escape_px} : {}),
+        ...(baselineViewports?.[name] ? {
+          baseline_document_overflow_px: baselineViewports[name].document_overflow_px ?? 0,
+          ...(baselineViewports[name].viewport_escape_px !== undefined ? {baseline_viewport_escape_px: baselineViewports[name].viewport_escape_px} : {}),
+        } : {}),
         decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY",
       }]))
     : null;

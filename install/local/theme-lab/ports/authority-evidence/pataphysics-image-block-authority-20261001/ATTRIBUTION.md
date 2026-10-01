@@ -1,0 +1,1 @@
+This capture is retained as a diagnostic of the native SCP-JP image block. Candidate and same-content no-theme baseline both escaped by 9.03125px at 320px. The module improved a shared inherited defect and has been removed from this theme package and its active authority inventory. This A/B does not authorize a theme-specific correction.

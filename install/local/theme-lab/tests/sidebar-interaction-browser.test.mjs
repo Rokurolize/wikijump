@@ -55,3 +55,14 @@ test('an occluded source opener cannot certify a user action',async()=>{
   assert.equal(await page.locator('#side-bar').isVisible(),false);
  }finally{await browser.close()}
 });
+
+test('a tall close backdrop clicks its measured reachable viewport point',async()=>{
+ const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true});
+ try{
+  const page=await browser.newPage({viewport:{width:390,height:844}});
+  await page.setContent('<style>#side-bar{display:none}#container-wrap:target #side-bar{display:block}.close-menu{position:fixed;inset:0 0 auto;height:2000px;z-index:1}#cover{position:fixed;inset:0 0 auto;height:600px;z-index:2}</style><div id="container-wrap"><a href="#container-wrap">Menu</a><div id="side-bar">Sidebar<a class="close-menu" href="##"></a><div id="cover">content</div></div></div><script>window.trustedClose=false;document.querySelector(".close-menu").onclick=e=>window.trustedClose=e.isTrusted</script>');
+  const hash=await openSidebar(page);await closeSidebar(page,hash);
+  assert.equal(await page.evaluate(()=>window.trustedClose),true);
+  assert.equal(await page.locator('#side-bar').isVisible(),false);
+ }finally{await browser.close()}
+});

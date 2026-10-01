@@ -47,11 +47,11 @@ test('retained unmodified source captures are reusable; patched or mutating capt
   try {
     fs.mkdirSync(path.join(root, 'ports/example'), {recursive: true});
     fs.writeFileSync(path.join(root, 'ports/example/manifest.json'), JSON.stringify({reference_url: url, en_source_sha256: source}));
-    const audit = {records: [{theme: 'example', surface: 'page.normal', state: 'settled'}]};
+    const audit = {records: [{theme: 'example', viewport: 'desktop', viewport_size: {width: 1440, height: 1000}, surface: 'page.normal', state: 'settled'}]};
     const question = planBrowserAcceptance(audit).visual_questions[0];
     const receipt = {schema: 'theme_lab_wikidot_adaptation_ab.v1', url, public_writes: 0, external_browser_requests: 0,
       snapshot: {replay_complete: true, entry: '/o/' + html},
-      rows: [{variant: 'without', css_sha256: sha(''), dom_sha256: html, screenshot_sha256: image}]};
+      rows: [{variant: 'without', width: 1440, css_sha256: sha(''), dom_sha256: html, screenshot_sha256: image}]};
     const save = () => {
       const bytes = JSON.stringify(receipt); fs.writeFileSync(path.join(root, 'source-capture.json'), bytes);
       audit.semantic_reviews = {[question.id]: {source_url: url, source_snapshot: {sha256: source}, source_html: {sha256: html}, source_rendering: {sha256: image},
@@ -63,5 +63,33 @@ test('retained unmodified source captures are reusable; patched or mutating capt
     }
     receipt.rows[0].css_sha256 = sha('candidate diagnostic CSS'); save(); assert.ok(validateSemanticSourceAuthority(root, audit).length);
     receipt.rows[0].css_sha256 = sha(''); receipt.rows[0].variant = 'with'; save(); assert.ok(validateSemanticSourceAuthority(root, audit).length);
+  } finally {fs.rmSync(root, {recursive: true, force: true});}
+});
+
+test('responsive source identity requires an oracle for every named viewport', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'semantic-responsive-source-'));
+  const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+  const source = 'a'.repeat(64), html = 'b'.repeat(64), desktop = 'c'.repeat(64), mobile = 'd'.repeat(64);
+  const url = 'https://scp-wiki.wikidot.com/theme:example';
+  try {
+    fs.mkdirSync(path.join(root, 'ports/example'), {recursive: true});
+    fs.writeFileSync(path.join(root, 'ports/example/manifest.json'), JSON.stringify({reference_url: url, en_source_sha256: source}));
+    const audit = {records: ['desktop', 'mobile'].map(viewport => ({theme: 'example', viewport, surface: 'page.normal', state: 'settled'}))};
+    const question = planBrowserAcceptance(audit).visual_questions[0];
+    const receipt = {result: {reference_identity: {source_url: url, original_html_sha256: html,
+      replay_entry: '/o/' + html, snapshot_sha256: 'e'.repeat(64), offline: true},
+      visual: {viewports: {desktop: {reference_screenshot_sha256: desktop}, mobile: {reference_screenshot_sha256: mobile}}}}};
+    const bytes = JSON.stringify(receipt);
+    fs.writeFileSync(path.join(root, 'source-capture.json'), bytes);
+    const rendering = image => ({source_html: {sha256: html}, source_rendering: {sha256: image}, source_rendering_receipt: {path: 'source-capture.json', sha256: sha(bytes)}});
+    const review = {source_url: url, source_snapshot: {sha256: source}, ...rendering(desktop)};
+    audit.semantic_reviews = {[question.id]: review};
+    assert.ok(validateSemanticSourceAuthority(root, audit).length);
+    review.source_renderings = {desktop: rendering(desktop), mobile: rendering(desktop)};
+    assert.ok(validateSemanticSourceAuthority(root, audit).length);
+    review.source_renderings.mobile = rendering(mobile);
+    assert.deepEqual(validateSemanticSourceAuthority(root, audit), []);
+    delete review.source_renderings.desktop;
+    assert.ok(validateSemanticSourceAuthority(root, audit).length);
   } finally {fs.rmSync(root, {recursive: true, force: true});}
 });

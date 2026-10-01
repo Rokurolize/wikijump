@@ -45,6 +45,11 @@ test("torture and viewport issues map", () => {
   const overflow = issuesFromViewports({mobile: {document_overflow_px: 83, overflow_sources: [{selector: ".hero", overflow_px: 83}]}})[0];
   assert.equal(overflow.overflow_sources[0].selector, ".hero");
   assert.equal(nextActions([overflow])[0].overflow_sources[0].selector, ".hero");
+  assert.equal(issuesFromViewports({mobile: {viewport_escape_px: 9}}, {mobile: {viewport_escape_px: 9}}).length, 0);
+  assert.equal(issuesFromViewports({mobile: {viewport_escape_px: 10}}, {mobile: {viewport_escape_px: 9}}).length, 0);
+  const worsened = issuesFromViewports({mobile: {viewport_escape_px: 11}}, {mobile: {viewport_escape_px: 9}})[0];
+  assert.equal(worsened.kind, "viewport_overflow");
+  assert.equal(worsened.baseline_overflow_px, 9);
 });
 
 test("unresolved Wikidot includes become actionable preview errors", () => {
@@ -165,6 +170,24 @@ test("compact verdict retains each viewport's overflow status", () => {
     tablet: {status: "fail", document_overflow_px: 2, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
     mobile: {status: "pass", document_overflow_px: 0, viewport_escape_px: 0.5, decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY"},
   });
+});
+
+test("viewport acceptance fails only for overflow introduced beyond the target baseline", () => {
+  const inherited = buildVerdict({
+    viewports: {mobile: {viewport_escape_px: 9}},
+    baselineViewports: {mobile: {viewport_escape_px: 9}},
+  });
+  assert.equal(inherited.viewport_status.mobile.status, "pass");
+  assert.equal(inherited.viewport_status.mobile.baseline_viewport_escape_px, 9);
+  assert.equal(inherited.target_acceptance.status, "pass");
+
+  const worsened = buildVerdict({
+    viewports: {mobile: {viewport_escape_px: 12}},
+    baselineViewports: {mobile: {viewport_escape_px: 9}},
+  });
+  assert.equal(worsened.viewport_status.mobile.status, "fail");
+  assert.equal(worsened.target_acceptance.status, "fail");
+  assert.equal(worsened.top_issues.find(issue => issue.kind === "viewport_overflow")?.baseline_overflow_px, 9);
 });
 
 test("full-bleed sub-pixel overflow is tolerated without hiding real overflow", () => {
