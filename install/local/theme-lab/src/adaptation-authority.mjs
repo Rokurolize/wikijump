@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {extractSCPJPAdaptationBlocks} from './port-maintenance.mjs';
+import {closedDrawerBounds} from './viewport-bounds.mjs';
 
 export const PUBLISHABLE_AUTHORITIES = new Set([
   'SOURCE_THEME', 'SOURCE_AND_TARGET_CERTIFIED', 'TARGET_WIKIDOT_CERTIFIED', 'RUNTIME_INDEPENDENT',
@@ -36,6 +37,8 @@ export function verifyEvidence(rows, root = ports) {
   for (const row of rows) {
     validateAuthority(row);
     if (!PUBLISHABLE_AUTHORITIES.has(row.authority)) continue;
+    const requiredStates=row.scope?.states??(row.scope?.state?[row.scope.state]:[]);
+    const observedStates=new Set();
     for (const evidence of row.evidence) {
       const file = path.resolve(root, evidence.path);
       if (!file.startsWith(root + path.sep)) throw new Error('authority evidence must be frozen inside the package tree');
@@ -47,17 +50,27 @@ export function verifyEvidence(rows, root = ports) {
         if(!/^https:\/\/[a-z0-9-]+\.wikidot\.com\//u.test(receipt.url) || receipt.site!==new URL(receipt.url).hostname || receipt.external_browser_requests!==0) throw new Error(`invalid public read-only Wikidot identity: ${evidence.path}`);
         if(row.scope?.target_url && receipt.url!==row.scope.target_url) throw new Error(`wrong target authority: ${evidence.path}`);
         if(row.scope?.viewports?.some(width=>!after.some(r=>r.width===width))) throw new Error(`incomplete authority viewport coverage: ${evidence.path}`);
+        for(const capture of after)observedStates.add(capture.state);
+        if(requiredStates.length && after.some(r=>!requiredStates.includes(r.state))) throw new Error(`wrong authority state coverage: ${evidence.path}`);
         if(!receipt.rows.some(r=>r.variant==='without' && !r.pass)) throw new Error(`target adaptation has no demonstrated A/B need: ${evidence.path}`);
         if (!after.length || after.some(r=>!r.pass || r.bounds.some(b=>!b.pass))) throw new Error(`failed target geometry authority: ${evidence.path}`);
         if (row.published_css_sha256 && after.some(r=>r.css_sha256!==row.published_css_sha256)) throw new Error(`authority capture has stale candidate CSS: ${evidence.path}`);
+        for(const capture of after) if(capture.state==='sidebar-closed') {
+          if(receipt.measurement_contract!=='existing-drawer-wholly-off-canvas.v1' || capture.measurement.rows.length!==1 || capture.measurement.rows[0].selector!=='#side-bar' || !closedDrawerBounds(capture.measurement.rows[0].rect,capture.measurement.viewport_width).pass) throw new Error(`invalid closed drawer authority: ${evidence.path}`);
+        }
         for(const capture of receipt.rows) for(const [fileKey,hashKey] of [['screenshot','screenshot_sha256'],['dom','dom_sha256']]) {
           if(digest(fs.readFileSync(path.join(path.dirname(file),capture[fileKey])))!==capture[hashKey]) throw new Error(`corrupt authority artifact: ${capture[fileKey]}`);
+        }
+        for(const source of receipt.archived_sources??[]) {
+          const sourcePath=path.resolve(path.dirname(file),source.path);
+          if(!sourcePath.startsWith(root+path.sep) || digest(fs.readFileSync(sourcePath))!==source.sha256) throw new Error(`corrupt authority measurement source: ${source.path}`);
         }
         for(const hash of receipt.snapshot.object_digests) {
           if(digest(fs.readFileSync(path.join(root,'authority-evidence/replay/objects',hash.slice(0,2),hash)))!==hash) throw new Error(`corrupt frozen Wikidot replay object: ${hash}`);
         }
       }
     }
+    if(row.authority.includes('CERTIFIED') && requiredStates.some(state=>!observedStates.has(state))) throw new Error(`incomplete authority state coverage: ${row.marker}`);
   }
 }
 
@@ -96,7 +109,9 @@ export function assertPublishablePackage(name, {checkOutputs = false} = {}) {
     const expected=composeAuthoritySource(base,css);
     if(source!==expected) throw new Error(`${name}: candidate source is not the authority-bound composition`);
   }
-  for (const block of extractSCPJPAdaptationBlocks(source)) {
+  const publicationSources=[source];
+  if(checkOutputs && name==='quand-le-soleil-se-couche')publicationSources.push(fs.readFileSync(path.join(dir,'publishable-theme.wikidot.txt'),'utf8'));
+  for (const block of publicationSources.flatMap(extractSCPJPAdaptationBlocks)) {
     const disposition = pkg.blocks.find(r=>r.sha256===block.sha256 && r.marker===block.marker);
     if (!disposition || !PUBLISHABLE_AUTHORITIES.has(disposition.authority)) throw new Error(`${name}: unauthorized publishable adaptation: ${block.marker}`);
   }

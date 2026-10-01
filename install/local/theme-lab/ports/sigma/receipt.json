@@ -40,7 +40,7 @@
   "human_port_candidate_path": "install/local/theme-lab/ports/sigma/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "27f801438ceff7dbf077e9c724338ac69639c0284bacad60c0bc238d20fe0714",
   "candidate_preview_sha256": "b78ba5c0fd523f733055d00b6dc2da1f3d23d912b594dfd0817ef185b40dc9be",
-  "candidate_css_sha256": "c7387bd0e72161e47fa8df5e55d57dbba572a3b08666b7cc05fa939825906f48",
+  "candidate_css_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
   "page_attachment_manifest": null,
   "new_port_reconciliation": {
     "source_authority": "current-en-source",

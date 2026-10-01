@@ -9,14 +9,13 @@ export async function activateNavigationControl(page, anchor, submenu) {
     return {inViewport: true, reachable: !!hit && (hit === element || element.contains(hit))};
   });
   if (!geometry.inViewport) throw new Error('navigation parent control is outside viewport');
+  if (!geometry.reachable) throw new Error('navigation parent control is occluded');
   if (href === 'javascript:;' && geometry.reachable) {
     await anchor.hover({timeout: 600});
     const hoverDeadline=Date.now()+500;
     while(Date.now()<hoverDeadline){if(await hasRenderedSubmenuGeometry(submenu))return;await page.waitForTimeout(50)}
-  } else if (geometry.reachable) {
-    await anchor.click();
   } else {
-    await anchor.evaluate(element => element.click());
+    await anchor.click();
   }
   const deadline=Date.now()+3000;
   while(Date.now()<deadline){if(await hasRenderedSubmenuGeometry(submenu))return;await page.waitForTimeout(50)}

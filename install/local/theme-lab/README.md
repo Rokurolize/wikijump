@@ -67,6 +67,11 @@ Use `scripts/wikidot-adaptation-ab.mjs` with frozen read-only Wikidot replay to
 prove a target correction. Its receipts bind both viewport edges, every submenu
 and link, the exact CSS, DOM, screenshots and acquisition identity. Generation
 rejects missing dispositions, stale evidence and non-publishable quarantine.
+Use `--state navigation-action` to exercise the production navigation helper
+without revealing submenu CSS. Use `--state sidebar-closed --selectors '#side-bar'`
+to require a nonempty drawer wholly off-canvas, and pair it with `sidebar-open`
+to prove the actual open control exposes a contained drawer. A closed drawer
+cannot be judged by the ordinary inside-viewport geometry contract.
 
 For a normal full check with both `--site-id` and candidate CSS, Theme Lab also
 runs the SCP-JP runtime **surface contract** by default. It parses the

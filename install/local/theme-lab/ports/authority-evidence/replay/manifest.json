@@ -73,7 +73,8 @@
       "original_urls": [
         "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-173-jp",
         "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-040-jp",
-        "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-2000-jp"
+        "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-2000-jp",
+        "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=theme:pataphysics"
       ]
     },
     "4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7": {
@@ -1475,7 +1476,8 @@
       "content_type": "image/png",
       "bytes": 310,
       "original_urls": [
-        "https://www.wikidot.com/userkarma.php?u=3198079"
+        "https://www.wikidot.com/userkarma.php?u=3198079",
+        "https://www.wikidot.com/userkarma.php?u=2320004"
       ]
     },
     "69d997478237b769cda0f420d39f6932a9d9ce71d6c2738426aeec117a051abe": {
@@ -1814,7 +1816,8 @@
         "https://www.wikidot.com/avatar.php?userid=1735419&amp;amp;size=small&amp;amp;timestamp=1781455762",
         "https://www.wikidot.com/avatar.php?userid=1735419&amp;amp;size=small&amp;amp;timestamp=1790129365",
         "https://www.wikidot.com/avatar.php?userid=1735419&amp;amp;size=small&amp;amp;timestamp=1788316490",
-        "https://www.wikidot.com/avatar.php?userid=1735419&amp;amp;size=small&amp;amp;timestamp=1788316491"
+        "https://www.wikidot.com/avatar.php?userid=1735419&amp;amp;size=small&amp;amp;timestamp=1788316491",
+        "https://www.wikidot.com/avatar.php?userid=1735419&amp;amp;size=small&amp;amp;timestamp=1790397335"
       ]
     },
     "c5a79a414173aa6ccd5013fea65aae666b35826b53c30e0a20b4534f475e5a6f": {
@@ -2204,6 +2207,76 @@
       "content_type": "text/css; charset=utf-8",
       "bytes": 110,
       "original_urls": []
+    },
+    "38ce332fde1fdf9957949cabc230e6b4f9498135a1fdc6d3e744ca67339d7170": {
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 164085,
+      "original_urls": [
+        "https://scp-jp.wikidot.com/theme:pataphysics"
+      ]
+    },
+    "610ad41311e272511415cef5ff32481e8b4a3b10ae33ea850632999b981ddbe0": {
+      "content_type": "image/png",
+      "bytes": 16663,
+      "original_urls": [
+        "https://www.wikidot.com/avatar.php?userid=2320004&amp;amp;size=small&amp;amp;timestamp=1790397335"
+      ]
+    },
+    "61b8c5fe02a75b6a9723852eaea0672b214a2e20efac288d7c279d77e1d33581": {
+      "content_type": "image/png; charset=utf-8",
+      "bytes": 5656,
+      "original_urls": [
+        "https://scp-jp.wdfiles.com/local--files/theme:pataphysics/pata-logo.png"
+      ]
+    },
+    "96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922": {
+      "content_type": "text/css; charset=utf-8",
+      "bytes": 15970,
+      "original_urls": [
+        "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1"
+      ]
+    },
+    "1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df": {
+      "content_type": "text/css; charset=utf-8",
+      "bytes": 223,
+      "original_urls": [
+        "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap"
+      ]
+    },
+    "ae17feb6f10d68546a191a8d9419d5bef76ad13785c9b5d7aa1492c8428e648b": {
+      "content_type": "font/ttf",
+      "bytes": 39204,
+      "original_urls": [
+        "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD.ttf"
+      ]
+    },
+    "c775b7c83e721d6e788df2707b76046054c90dab55634af3191bebbfa87658f6": {
+      "content_type": "text/css; charset=utf-8",
+      "bytes": 214,
+      "original_urls": [
+        "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap"
+      ]
+    },
+    "a62a15a6b56287171cc9127041ea8225655529851e49501a069f1fa852037d35": {
+      "content_type": "image/png; charset=utf-8",
+      "bytes": 27411,
+      "original_urls": [
+        "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png"
+      ]
+    },
+    "d1642c06980df7d8450cb2489a7d68e7cb344d64ca22a27281210bb5a23d0adc": {
+      "content_type": "text/css; charset=utf-8",
+      "bytes": 15851,
+      "original_urls": [
+        "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1"
+      ]
+    },
+    "0e8d0832f27a9e43c2622007745bdc6401ab7b7fff53ea313e4bc0cc04861e0a": {
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 163876,
+      "original_urls": [
+        "https://scp-jp.wikidot.com/theme:pataphysics"
+      ]
     }
   },
   "urls": {
@@ -4714,6 +4787,66 @@
       "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file:7657035-48-7ahr/base_image_frame.png",
       "content_type": "image/png; charset=utf-8",
       "fetched_at": "2026-09-23T05:53:29.476Z"
+    },
+    "https://scp-jp.wikidot.com/theme:pataphysics": {
+      "digest": "38ce332fde1fdf9957949cabc230e6b4f9498135a1fdc6d3e744ca67339d7170",
+      "final_url": "https://scp-jp.wikidot.com/theme:pataphysics",
+      "content_type": "text/html; charset=utf-8",
+      "fetched_at": "2026-10-01T03:46:30.203Z"
+    },
+    "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=theme:pataphysics": {
+      "digest": "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a",
+      "final_url": "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=theme:pataphysics",
+      "content_type": "image/png",
+      "fetched_at": "2026-10-01T03:46:31.214Z"
+    },
+    "https://www.wikidot.com/avatar.php?userid=1735419&amp;amp;size=small&amp;amp;timestamp=1790397335": {
+      "digest": "b2ff5ba9cff45a63d8183274fe42c42e83435de06dfa1eda9be38e3c412da363",
+      "final_url": "https://d2qhngyckgiutd.cloudfront.net/84c401bb6a223efe5ae29b54fe660b6b",
+      "content_type": "image/png",
+      "fetched_at": "2026-10-01T03:46:31.923Z"
+    },
+    "https://www.wikidot.com/avatar.php?userid=2320004&amp;amp;size=small&amp;amp;timestamp=1790397335": {
+      "digest": "610ad41311e272511415cef5ff32481e8b4a3b10ae33ea850632999b981ddbe0",
+      "final_url": "https://d2qhngyckgiutd.cloudfront.net/4f5fa3200c0b6dc8757d2fedd3d12fb9",
+      "content_type": "image/png",
+      "fetched_at": "2026-10-01T03:46:32.103Z"
+    },
+    "https://scp-jp.wdfiles.com/local--files/theme:pataphysics/pata-logo.png": {
+      "digest": "61b8c5fe02a75b6a9723852eaea0672b214a2e20efac288d7c279d77e1d33581",
+      "final_url": "https://scp-jp.wdfiles.com/local--files/theme:pataphysics/pata-logo.png",
+      "content_type": "image/png; charset=utf-8",
+      "fetched_at": "2026-10-01T03:46:32.610Z"
+    },
+    "https://www.wikidot.com/userkarma.php?u=2320004": {
+      "digest": "6700e29a4a13614fdd8b18d472aa3351bcd0d29d1d5672a66261caa6872df970",
+      "final_url": "https://www.wikidot.com/userkarma.php?u=2320004",
+      "content_type": "image/png",
+      "fetched_at": "2026-10-01T03:46:32.774Z"
+    },
+    "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1": {
+      "digest": "96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922",
+      "final_url": "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1",
+      "content_type": "text/css; charset=utf-8",
+      "fetched_at": "2026-10-01T03:46:32.949Z"
+    },
+    "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap": {
+      "digest": "1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df",
+      "final_url": "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap",
+      "content_type": "text/css; charset=utf-8",
+      "fetched_at": "2026-10-01T03:46:33.052Z"
+    },
+    "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD.ttf": {
+      "digest": "ae17feb6f10d68546a191a8d9419d5bef76ad13785c9b5d7aa1492c8428e648b",
+      "final_url": "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD.ttf",
+      "content_type": "font/ttf",
+      "fetched_at": "2026-10-01T03:46:33.178Z"
+    },
+    "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png": {
+      "digest": "a62a15a6b56287171cc9127041ea8225655529851e49501a069f1fa852037d35",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png",
+      "content_type": "image/png; charset=utf-8",
+      "fetched_at": "2026-10-01T03:46:33.865Z"
     }
   },
   "snapshots": {
@@ -5602,6 +5735,97 @@
         "79b2208eafbedb7482d397b8d2a2e9a1f8e715e0a3acbbd1ec02095e326f6bac",
         "3c485d0ff9bb1ecc465881f6d01916b2e32b0790284fb69a5605edc4da47342d"
       ]
+    },
+    "https://scp-jp.wikidot.com/theme:pataphysics": {
+      "entry": "/o/0e8d0832f27a9e43c2622007745bdc6401ab7b7fff53ea313e4bc0cc04861e0a",
+      "created_at": "2026-10-01T03:46:34.047Z",
+      "assets": 60,
+      "failed_assets": 5,
+      "failed_asset_details": [
+        {
+          "url": "https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png",
+          "code": "reference_http_error",
+          "message": "reference fetch returned HTTP 500 for https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png"
+        },
+        {
+          "url": "https://s.nitropay.com/ads-143.js",
+          "code": "ENOENT",
+          "message": "ENOENT: no such file or directory, open '/home/roku/.devspace/worktrees/theme-final-audit/install/local/theme-lab/ports/authority-evidence/replay/objects/57/574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c'"
+        },
+        {
+          "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+          "code": "reference_http_error",
+          "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+        },
+        {
+          "url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg",
+          "code": "reference_http_error",
+          "message": "reference fetch returned HTTP 500 for https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg"
+        },
+        {
+          "url": "https://scp-jp.github.io/files/util/common/credit/style/style.css",
+          "code": "ENOENT",
+          "message": "ENOENT: no such file or directory, open '/home/roku/.devspace/worktrees/theme-final-audit/install/local/theme-lab/ports/authority-evidence/replay/objects/f2/f27a7eb696b6195c1dd3ba328f0b9459808a55c21edb3286b60c6a953bb368b5'"
+        }
+      ],
+      "replay_complete": true,
+      "object_digests": [
+        "0e8d0832f27a9e43c2622007745bdc6401ab7b7fff53ea313e4bc0cc04861e0a",
+        "58cab0208fa4ab61053eb9d92a99a1a1999ad6e3dc63f8fd80828e33cb069d53",
+        "f53bdeec5d0316301982c49cf86701d13680dc6f44efb3a8eb1ca93ca183e3ba",
+        "86bfb8fa53fdca123db5feecf7e995eb6de67edbe39ca0a800134c69258c2ba1",
+        "7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387",
+        "49bcabdb14d446bb93d261f9c967bedfa7cdf7b214807a8180974cbd00b21f11",
+        "12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941",
+        "c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc",
+        "635dfb450eccd5357914e89451c7f9ba3ceacffc40a21073050177f7219ab7ab",
+        "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a",
+        "4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7",
+        "87aad0dc9ad5c1f9db2d990c6d74b34b4fefd31e27488eb827e3dfc2c3652f45",
+        "549744a269e491a062f48d3947843e7eba635c281a195698d82283ecb18dd8a5",
+        "b2ff5ba9cff45a63d8183274fe42c42e83435de06dfa1eda9be38e3c412da363",
+        "610ad41311e272511415cef5ff32481e8b4a3b10ae33ea850632999b981ddbe0",
+        "61b8c5fe02a75b6a9723852eaea0672b214a2e20efac288d7c279d77e1d33581",
+        "822614447ccae3c6c12a2ab911c861d3adbaa035b34a65550619e789e420e81f",
+        "6700e29a4a13614fdd8b18d472aa3351bcd0d29d1d5672a66261caa6872df970",
+        "5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583",
+        "dab79d3aeee7dc23243a53e417f1b8dc4cb0f397f06aa17bac4c1f373abd5ede",
+        "c893531613ca348b0217ea5976a52c4dfe7cda7ffa0ca002ef24a0980a201825",
+        "6d59328357ba699fae7fe1ce66e403bcb430c4a86fb750e2c240d483f6ff2201",
+        "8ee173565b2e771fecf3b471a79bdf072aaa1bd9dc27582cfda2b2a322beeba8",
+        "841dadb079124d00a289640d7ddae9ecd8b9e8b245d59c33593d3905863b568a",
+        "d4b09792783e799e3dfd3acc0590f59783a9875909b5baf88f43f5d384d6acd3",
+        "222902c16fcda2ffbe6acf20f48a9a3b1ce3ec1b1f37e4cea2df449c3b053ff8",
+        "2b3f53a407d5b25bc91bd9920f164b13e14d944bc95a7bf32a5138b30cef07c6",
+        "fbfecc922b34a8921eadef91c1763804baa9dc5fe8c9299ccaa94dad3bb31604",
+        "77aa03dfe99dca77dd663d465c87fa642d26267f5190208c11d5498e7c7fe697",
+        "7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c",
+        "44d631b2507c9bfceabf960599f9f3d2093a3e19f5d6f04d27d375efb8012f84",
+        "7668781daf80240168d1142c72b3502f75617be40fbbe081caae66ac7d38d571",
+        "231630b39af902bf9ad98a22bd77b3c5359b18a9336b63bf599c31a76f1e08cd",
+        "cbb644d0ee730ea57dd5fbae35ef5ba4a41d57a254a6b1215de5c9ff8a321c2d",
+        "aadc3580d2b64ff5a7e6f1425587db4e8b033efcbf8f5c332ca52a5ed580c87c",
+        "e3870de89716b72cb61a4bba0e17c75783b361cdaba35ea96961c3070bd8ca18",
+        "9e540a087924a6e64790149d735cac022640e4fa6bff6bd65f5e9f41529bf0b3",
+        "bfdef833219a6edffd9c3cbc28db72739d22bb4d20cc2e2f8d56a7a4d408a206",
+        "ed0652b49899259e10ff2b7270ffee4d9f07b4c2a46c8d95a7f86fa3e94e01d8",
+        "40723fa718237c74623d7b64ce186a02b872f7fb4b3a917013fcc8b6aec3ded6",
+        "2eb982d8faa4ab9bcc8bc39c31cad8f1d73e1d8df8e4aebd3970af1e38620841",
+        "41950d74f0aae0ee95ca1381b8096f1d19dc4154971505c8bdc3b18dce70912d",
+        "1a9b14799594702e4d0350164623d9e71261d70042ed4b3979808b08ba6e38b6",
+        "3ee20e2529a17cdd369a6c89edb23d5662ecfa9007936786d33c22c38fac14de",
+        "d8e1808c4f33e6bd075bd13b7aafc8596a1937495d5c57732322502b9c711a03",
+        "aa602c40276279d9b8e782b8c4d1e466d51e5349dbe55d1756db93976584bcab",
+        "f458790e7e2d0b83533b4d0f3669630adcb473673455815fd38c5c2496c06a46",
+        "d65d63e6581b8c1210bed42a30dc766a0f0273018cb163947fdb8c0e160f3cb5",
+        "1d7378ae112da2d33aafdf0ce83bd2bccb36d6786a5c58317444367f2b9b4604",
+        "8aab16649c61f865e40a66b550fc954c8e1e42e317c06b22970a14a5390e8123",
+        "8814de07a0445f47adffed154a0cd18ed228dcf88faaebaeed1a9f71a280cd80",
+        "ae17feb6f10d68546a191a8d9419d5bef76ad13785c9b5d7aa1492c8428e648b",
+        "c775b7c83e721d6e788df2707b76046054c90dab55634af3191bebbfa87658f6",
+        "a62a15a6b56287171cc9127041ea8225655529851e49501a069f1fa852037d35",
+        "d1642c06980df7d8450cb2489a7d68e7cb344d64ca22a27281210bb5a23d0adc"
+      ]
     }
   },
   "failures": {
@@ -5636,6 +5860,18 @@
     "https://scp-jp.github.io/files/util/common/media/_default/heritage-collection-jp/heritage-emblem.png": {
       "code": "reference_http_error",
       "message": "reference fetch returned HTTP 404 for https://scp-jp.github.io/files/util/common/media/_default/heritage-collection-jp/heritage-emblem.png"
+    },
+    "https://s.nitropay.com/ads-143.js": {
+      "code": "ENOENT",
+      "message": "ENOENT: no such file or directory, open '/home/roku/.devspace/worktrees/theme-final-audit/install/local/theme-lab/ports/authority-evidence/replay/objects/57/574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c'"
+    },
+    "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg": {
+      "code": "reference_http_error",
+      "message": "reference fetch returned HTTP 500 for https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg"
+    },
+    "https://scp-jp.github.io/files/util/common/credit/style/style.css": {
+      "code": "ENOENT",
+      "message": "ENOENT: no such file or directory, open '/home/roku/.devspace/worktrees/theme-final-audit/install/local/theme-lab/ports/authority-evidence/replay/objects/f2/f27a7eb696b6195c1dd3ba328f0b9459808a55c21edb3286b60c6a953bb368b5'"
     }
   }
 }

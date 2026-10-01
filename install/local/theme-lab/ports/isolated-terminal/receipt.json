@@ -41,7 +41,7 @@
   "human_port_candidate_path": "install/local/theme-lab/ports/isolated-terminal/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "2369e4b38fe1f4bf34c955a7632b35c7183be9d606ef93de658c03532ef29491",
   "candidate_preview_sha256": "5ce795e7e6a9d28dc09403c82854da33b9f736556245b258ea3783631c72d46f",
-  "candidate_css_sha256": "9c26c4e104b4aaa17357a0366036e004a72b8aa295a65e316e0c0c619b84ca53",
+  "candidate_css_sha256": "82d2b9d5d93bc57a58acc320225b6f779f98fc6b91584d9edb1c937cc479f5ed",
   "page_assets": [
     {
       "filename": "black-highlighter-logo.svg",

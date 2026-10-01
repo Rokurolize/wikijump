@@ -26,9 +26,9 @@
   "existing_jp_audit": "new-jp-candidate-verified",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/wikifot",
-  "candidate_source_hash": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45",
+  "candidate_source_hash": "b9bb97bec318b700b367864fa87c2570b4231ff6b1a710f3e86f351af146ebb8",
   "source_candidate_path": "install/local/theme-lab/ports/wikifot/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45",
+  "source_candidate_sha256": "b9bb97bec318b700b367864fa87c2570b4231ff6b1a710f3e86f351af146ebb8",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -36,11 +36,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/wikifot/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45",
+  "candidate_source_sha256": "b9bb97bec318b700b367864fa87c2570b4231ff6b1a710f3e86f351af146ebb8",
   "human_port_candidate_path": "install/local/theme-lab/ports/wikifot/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "550fa3c183832d172679901732716aabebaa8e68a9d4f259582c43de263198bc",
-  "candidate_preview_sha256": "eb8d79cf5d8c008b06fce4db4b928495f8e4a645a60a5e5451879db7c98c4ce5",
-  "candidate_css_sha256": "db9c78dff364e2e87a17ee86e79a8a37d6e16ff4442a37e8b8561e61621edce3",
+  "candidate_preview_sha256": "b29a3c33f589ab061078df40a169c5379fefd92429b8e4baaa82efbb7f1b7f10",
+  "candidate_css_sha256": "5a018ea086b2033e4a4ac36729e0c402e0b9bffd2b563df7f8c61caa70af8509",
   "page_assets": [
     {
       "filename": "table.png",

@@ -501,24 +501,5 @@
 
 
 
-.scp-image-block.block-right {
-    margin: 1em 0 1em 2em;
-}
-
-.scp-image-block a {
-    background: var(--gradient-header);
-}
-
-.scp-image-block img {
-    --drop-shadow: rgb(var(--pale-gray-monochrome));
-    min-width: 100%;
-    border: 0.5rem solid rgba(var(--black-monochrome));
-    -webkit-box-sizing: border-box;
-       -moz-box-sizing: border-box;
-            box-sizing: border-box;
-    padding: 0.5em;
-    -webkit-filter: drop-shadow(-0.125rem 0.125rem 0rem var(--drop-shadow));
-    filter: drop-shadow(-0.125rem 0.125rem 0rem var(--drop-shadow));
-}
 
 @import url("https://scp-jp.wdfiles.com/local--code/theme%3Aaesthetic-theme/1")

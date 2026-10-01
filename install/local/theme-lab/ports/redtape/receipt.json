@@ -42,7 +42,7 @@
   "human_port_candidate_path": "install/local/theme-lab/ports/redtape/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "c0dab5aed78cfb4688cd7b452e8cbc5dfdcd4b4da6f4a3eb94ee13cf3970a0d6",
   "candidate_preview_sha256": "770aa44e13226adf2acb3091effcb034e42bf8eb1f87ae3cbeef09ed40ffca81",
-  "candidate_css_sha256": "67c2a9df3c1d6aa47aa75b17314e44110bb6440a6dbb5da222c596263f3e281a",
+  "candidate_css_sha256": "148094fb643ed7bc5bf743e0d85aa94a0793072867ff94ff8702e55e6dca6f34",
   "page_assets": [
     {
       "filename": "black-highlighter-logo.svg",

@@ -44,3 +44,14 @@ test('source opener is accepted as a sidebar toggle only when its event closes',
   assert.equal(await page.locator('#side-bar').evaluate(e=>e.classList.contains('open')),false);
  }finally{await browser.close()}
 });
+
+test('an occluded source opener cannot certify a user action',async()=>{
+ const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true});
+ try{
+  const page=await browser.newPage({viewport:{width:390,height:844}});
+  await page.setContent('<style>#side-bar{display:none}#container-wrap:target #side-bar{display:block}#cover{position:fixed;inset:0;z-index:99}</style><div id="container-wrap"><a href="#container-wrap">Menu</a><div id="side-bar">JP sidebar</div></div><div id="cover"></div>');
+  await assert.rejects(openSidebar(page),/No reachable ordinary or source-owned sidebar control/);
+  assert.equal(await page.evaluate(()=>location.hash),'');
+  assert.equal(await page.locator('#side-bar').isVisible(),false);
+ }finally{await browser.close()}
+});

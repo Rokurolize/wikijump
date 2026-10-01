@@ -1017,6 +1017,8 @@ blockquote, div.blockquote {
 [[module CSS]]
 /* SCP-JP Wikidot Inkblot navigation correction: contain the third narrow mobile submenu. */
 @media (max-width: 359px) {
-  .mobile-top-bar > ul > li:nth-child(3) > ul { left: auto; right: 0; }
+  .mobile-top-bar > ul > li:nth-child(3) > ul {
+    left: auto; right: 0;
+  }
 }
 [[/module]]

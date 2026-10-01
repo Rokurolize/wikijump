@@ -38,7 +38,7 @@
   "human_port_candidate_path": "install/local/theme-lab/ports/inkblot/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "eb4f0d31324c9b7949043c9a42a415d42e26230c144829a7eba7b118269d79c9",
   "candidate_preview_sha256": "5a4c255a614b84147debde1dbb944f2f04d6a9167157951a317f6eebb2a9f681",
-  "candidate_css_sha256": "c3dd803cfa39221bccb3379eb312c945cf3c3aae931be60da0ad9d6a386df0ff",
+  "candidate_css_sha256": "cf7328f6b8c6abe15a05f63f5eca66b369d10bfb8d2a31d03bb4b368e0521890",
   "page_assets": [
     {
       "filename": "pancakes.png",
@@ -92,12 +92,10 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "fail",
-    "reason": "Wikidot adaptation authority passes with zero unresolved findings. Fresh full local target acceptance fails only on a TOC fixture that the current preview path does not render and local-only mobile navigation/color observations; these do not authorize further CSS."
+    "status": "inconclusive",
+    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
   },
   "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "fail",
-  "final_status": "current-target-acceptance-fail-authority-pass",
   "current_wikidot_authority": {
     "path": "authority-evidence/inkblot-narrow-navigation/receipt.json",
     "sha256": "4e63736393e73def4a023bcbe05348e294a2de190bcf77da591aea0ee0e6b840",
@@ -117,5 +115,7 @@
     "candidate_css_sha256": "c3dd803cfa39221bccb3379eb312c945cf3c3aae931be60da0ad9d6a386df0ff",
     "port_verdict": "pass",
     "target_status": "fail"
-  }
+  },
+  "final_verdict": "inconclusive",
+  "final_status": "adaptation-authority-cleaned"
 }

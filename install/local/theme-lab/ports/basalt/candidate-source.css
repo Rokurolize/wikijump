@@ -233,13 +233,3 @@ div.diamond-part {
 
 :root {
     --main-content-width: 70rem;
-    --posX: 4vw;
-}
-
-#page-title {
-    display: none;
-}
-
-.noclick {
-    user-select: none;
-}

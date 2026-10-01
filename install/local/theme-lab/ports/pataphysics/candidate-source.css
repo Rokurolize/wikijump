@@ -1,12 +1,1 @@
 @import url("https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1");
-
-/* ---- PRESENTATION ---- */
- .unmargined,.unmargined+hr{filter:hue-rotate(268deg) saturate(50%)}
- .unmargined>div:first-of-type{display:none}
- .heritage-wrap{display:none!important}
- .templateInfo{margin:1em 0;padding:0 1em;background:hsl(0,0%,100%);border:1px solid hsl(0,0%,87%)}
-
-/* JP ONLY */
-#page-content .heritage-rating-module {
-  display: none;
-}

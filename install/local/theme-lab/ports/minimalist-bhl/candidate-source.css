@@ -502,11 +502,6 @@
 
 
 
->> :root {
->> @<    >@ @@--header-title: "ここにタイトル";@@
->> @<    >@ @@--header-subtitle: "ここにサブタイトル";@@
->> @<    >@ @@--lgurl: url('ここにURL');@@
->> }
->>
+
 
 @import url("https://scp-jp.wdfiles.com/local--code/theme%3Aminimalist-bhl/1")

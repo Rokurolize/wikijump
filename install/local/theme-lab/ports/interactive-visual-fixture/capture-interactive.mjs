@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import {measureTitleTextIntersections} from '../../src/title-text-intersections.mjs';
+import {legacyEquivalentContractHashes} from '../../src/legacy-action-contracts.mjs';
 import {exerciseHeaderSearch} from '../../src/search-control-action.mjs';
 import {runtimeSurfaceContractSha} from '../../src/browser-runtime-contract.mjs';
 import crypto from 'node:crypto';
@@ -449,7 +450,7 @@ function actionContractDependencies(spec){
   visualDiagnostics:true
  };
 }
-function actionContractFor(spec,{legacy=false}={}){
+function buildActionContract(spec){
  const retainPointer=/(?:hover|pointerover|expanded)/iu.test(spec.state)||spec.surface==='nav.mobile-top';
  const actionSource=spec.action.toString();
  const dependencies=actionContractDependencies(spec);
@@ -471,10 +472,16 @@ function actionContractFor(spec,{legacy=false}={}){
  if(actionSource.includes('openSidebar')){contract.openSidebar=openSidebar.toString();contract.sidebarOccupiesViewport=sidebarOccupiesViewport.toString()}
  if(actionSource.includes('closeSidebar')){contract.closeSidebar=closeSidebar.toString();contract.sidebarIsClosed=sidebarIsClosed.toString();contract.sidebarOccupiesViewport=sidebarOccupiesViewport.toString()}
  if(actionSource.includes('exerciseHeaderSearch'))contract.exerciseHeaderSearch=exerciseHeaderSearch.toString();
+ if(actionSource.includes('openCreditView'))contract.openCreditView=openCreditView.toString();
+ if(actionSource.includes('openCreditOtherwise'))contract.openCreditOtherwise=openCreditOtherwise.toString();
+ return contract;
+}
+function actionContractFor(spec,{legacy=false}={}){
+ const contract=buildActionContract(spec);
  if(!legacy)delete contract.visualDiagnostics;
  return crypto.createHash('sha256').update(JSON.stringify(contract)).digest('hex');
 }
-if(process.argv.includes('--dump-contracts')){console.log(JSON.stringify({schema:'scp_jp_interactive_capture_contracts.v2',browser_engine:engineArg,browser_version:browser.version(),run_contract_sha256:runContractSha,runtime_surface_contracts:runtimeSurfaceContracts,states:await Promise.all(states.map(async spec=>({surface:spec.surface,state:spec.state,fixture_slug:spec.fixtureSlug??null,fixture_contract_sha256:await fixtureContractSha(spec),guest:!!spec.guest,applicable_viewports:spec.viewports??defaultInteractionViewports,action_contract_sha256:actionContractFor(spec),legacy_action_contract_sha256:actionContractFor(spec,{legacy:true}),action_contract_dependencies:actionContractDependencies(spec)})))},null,2));await browser.close();if(authBrowser)await authBrowser.close();process.exit(0)}
+if(process.argv.includes('--dump-contracts')){console.log(JSON.stringify({schema:'scp_jp_interactive_capture_contracts.v2',browser_engine:engineArg,browser_version:browser.version(),run_contract_sha256:runContractSha,runtime_surface_contracts:runtimeSurfaceContracts,states:await Promise.all(states.map(async spec=>({surface:spec.surface,state:spec.state,fixture_slug:spec.fixtureSlug??null,fixture_contract_sha256:await fixtureContractSha(spec),guest:!!spec.guest,applicable_viewports:spec.viewports??defaultInteractionViewports,action_contract_sha256:actionContractFor(spec),legacy_action_contract_sha256:actionContractFor(spec,{legacy:true}),legacy_action_contract_alternatives:legacyEquivalentContractHashes(buildActionContract(spec)),action_contract_dependencies:actionContractDependencies(spec)})))},null,2));await browser.close();if(authBrowser)await authBrowser.close();process.exit(0)}
 async function mapLimit(items,limit,mapper){let next=0;const workers=Array.from({length:Math.min(limit,items.length)},(_,workerIndex)=>async()=>{while(true){const index=next++;if(index>=items.length)return;await mapper(items[index],index,workerIndex)}});await Promise.all(workers.map(worker=>worker()))}
 let initialAuditDocument={};try{initialAuditDocument=JSON.parse(await fs.readFile(auditPath,'utf8'))}catch{}
 const priorRows=initialAuditDocument.records??[];
@@ -677,7 +684,7 @@ async function persistBatch(batch,theme){
   const preflight=new Map();
   for(const spec of applicable){
    const key=`${theme}|${engineArg}|${viewportArg}|${spec.surface}|${spec.state}`;const old=priorRowsByKey.get(key);const fixtureSha=await fixtureContractSha(spec);const stateActionContract=actionContractFor(spec);const scopedContractSha=scopedRunContractSha(runContract,{theme,viewport:viewportArg,browser_engine:engineArg});const environmentInputs={fixtureSha,site:runContract.target_site,transportOrigin:origin,baselineTheme:runContract.baseline_theme,browserEngine:engineArg,browserVersion:browser.version(),viewportName:viewportArg,viewportSize:viewports[viewportArg],assetDependencySha,...(candidateStructure?{candidate_structure_sha256:candidateStructure.sha256}:{})};const environmentContractSha=crypto.createHash('sha256').update(JSON.stringify({scopedContractSha,...environmentInputs})).digest('hex');const legacyEnvironmentSha=crypto.createHash('sha256').update(JSON.stringify({runContractSha,...environmentInputs})).digest('hex');let reusable=false;
-   if(!forceCapture&&old&&old.candidate_sha256===candidateSha&&old.candidate_source_sha256===candidateSourceSha&&old.asset_dependency_sha256===assetDependencySha&&old.fixture_contract_sha256===fixtureSha&&captureRunContractIsCurrent(old,runContract,runContractSha)&&(old.environment_contract_sha256===environmentContractSha||old.run_contract_sha256===runContractSha&&old.environment_contract_sha256===legacyEnvironmentSha)&&(old.action_contract_observation?.mode!=='source-hidden-submit'||JSON.stringify(old.action_contract_observation.source_authority)===JSON.stringify(searchSourceAuthority))&&old.capture_state_action_contract_sha256===(old.capture_action_model==='theme_lab_action_contract.v3'?stateActionContract:actionContractFor(spec,{legacy:true}))&&old.runtime_surface_contract_sha256===runtimeSurfaceContracts[spec.surface]&&old.browser_version===browser.version()&&old.session_state===(anonymousArg||spec.guest?'logged_out':'administrator')&&old.screenshot&&!old.failure&&old.external_requests_sent===0&&Array.isArray(old.asset_failures)&&old.asset_failures.length===0&&Array.isArray(old.page_errors)&&old.page_errors.length===0&&!old.unconfirmed_items?.some(x=>x.startsWith('action/capture failed'))){try{const oldBytes=await fs.readFile(path.join(portsDir,old.screenshot));reusable=crypto.createHash('sha256').update(oldBytes).digest('hex')===old.screenshot_sha256}catch{}}
+   if(!forceCapture&&old&&old.candidate_sha256===candidateSha&&old.candidate_source_sha256===candidateSourceSha&&old.asset_dependency_sha256===assetDependencySha&&old.fixture_contract_sha256===fixtureSha&&captureRunContractIsCurrent(old,runContract,runContractSha)&&(old.environment_contract_sha256===environmentContractSha||old.run_contract_sha256===runContractSha&&old.environment_contract_sha256===legacyEnvironmentSha)&&(old.action_contract_observation?.mode!=='source-hidden-submit'||JSON.stringify(old.action_contract_observation.source_authority)===JSON.stringify(searchSourceAuthority))&&old.capture_state_action_contract_sha256===(old.capture_action_model==='theme_lab_action_contract.v3'?stateActionContract:legacyEquivalentContractHashes(buildActionContract(spec)).find(hash=>hash===old.capture_state_action_contract_sha256))&&old.runtime_surface_contract_sha256===runtimeSurfaceContracts[spec.surface]&&old.browser_version===browser.version()&&old.session_state===(anonymousArg||spec.guest?'logged_out':'administrator')&&old.screenshot&&!old.failure&&old.external_requests_sent===0&&Array.isArray(old.asset_failures)&&old.asset_failures.length===0&&Array.isArray(old.page_errors)&&old.page_errors.length===0&&!old.unconfirmed_items?.some(x=>x.startsWith('action/capture failed'))){try{const oldBytes=await fs.readFile(path.join(portsDir,old.screenshot));reusable=crypto.createHash('sha256').update(oldBytes).digest('hex')===old.screenshot_sha256}catch{}}
    preflight.set(`${spec.surface}|${spec.state}`,{old,reusable,fixtureSha,stateActionContract,environmentContractSha,scopedContractSha});
   }
   const freshStates=applicable.filter(spec=>!preflight.get(`${spec.surface}|${spec.state}`).reusable);

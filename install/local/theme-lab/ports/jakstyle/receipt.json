@@ -42,7 +42,7 @@
   "human_port_candidate_path": "install/local/theme-lab/ports/jakstyle/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "e90739b02bf2ff8e314c0d0481936260fe9e0d3db8ccb646bd6025fee91f463d",
   "candidate_preview_sha256": "d09eba82045540c4df285ede15750a2d074e4be1a509d425f8660502c0de3d16",
-  "candidate_css_sha256": "27f126a6ad3b03cf1c46a26440fcc4475327a31185e0f44e4bbf71ab38e69d6d",
+  "candidate_css_sha256": "54e1622ad4ae34084c6eefc85355178fae005d29e17015d6025d7beebfb9e405",
   "page_attachment_manifest": null,
   "existing_jp_reconciliation": {
     "previous_source_sha256": "043a9ecd102a053c1d7daa538e293a147117f722cfe6e232c694f6107c48dae2",

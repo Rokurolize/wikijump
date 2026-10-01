@@ -3,8 +3,8 @@ import test from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {validateAuthority, assertPublishablePackage, PUBLISHABLE_AUTHORITIES} from '../src/adaptation-authority.mjs';
-import {viewportEscape} from '../src/viewport-bounds.mjs';
+import {validateAuthority, assertPublishablePackage, verifyEvidence, PUBLISHABLE_AUTHORITIES} from '../src/adaptation-authority.mjs';
+import {viewportEscape, closedDrawerBounds} from '../src/viewport-bounds.mjs';
 import {removeNamedBlock} from '../scripts/wikidot-adaptation-ab.mjs';
 
 test('adaptation authority rejects absent, local-only, synthetic and unbound evidence',()=>{
@@ -36,6 +36,25 @@ test('named A/B removal preserves the distinct next header block',()=>{
   assert.doesNotMatch(without,/right:2rem/);
   assert.match(without,/#header \{display:grid\}/);
   assert.throws(()=>removeNamedBlock(css,'missing'),/missing/);
+});
+
+test('closed drawer authority requires nonempty geometry wholly outside the viewport',()=>{
+  const rect={left:-218,right:0,width:218,height:844};
+  assert.equal(closedDrawerBounds(rect,390).pass,true);
+  assert.equal(viewportEscape(rect,390).pass,false);
+  assert.equal(closedDrawerBounds({...rect,right:64},390).pass,false);
+  assert.equal(closedDrawerBounds({...rect,width:0},390).pass,false);
+  assert.equal(closedDrawerBounds({...rect,height:0},390).pass,false);
+  assert.equal(closedDrawerBounds({...rect,left:NaN},390).pass,false);
+});
+
+test('drawer authority cannot substitute another state or omit required open proof',()=>{
+  const ports=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../ports');
+  const ledger=JSON.parse(fs.readFileSync(path.join(ports,'adaptation-authority.json'),'utf8'));
+  const row=ledger.packages.wikifot.blocks.find(block=>block.scope?.states?.includes('sidebar-closed'));
+  assert.ok(row);
+  assert.throws(()=>verifyEvidence([{...row,scope:{...row.scope,states:['normal']}}],ports),/wrong authority state coverage/);
+  assert.throws(()=>verifyEvidence([{...row,evidence:row.evidence.slice(0,1)}],ports),/incomplete authority state coverage/);
 });
 
 test('all publishable package inputs and generated artifacts have authority',()=>{

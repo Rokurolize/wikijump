@@ -705,11 +705,6 @@
 
 
 
->> :root {
->> @<    >@ @@--header-title: "ここにタイトル";@@
->> @<    >@ @@--header-subtitle: "ここにサブタイトル";@@
->> @<    >@ @@--lgurl: url("data:,");@@
->> }
->>
+
 
 @import url("992bcfa0d7f061688b2376712dba3b9f90fbe42ad56763ea98f4109770ca818d.css")

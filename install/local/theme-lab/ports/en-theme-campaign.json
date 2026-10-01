@@ -9812,7 +9812,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/scp-offices-theme/assets.json",
-      "dependency_decision_count": 41,
+      "dependency_decision_count": 40,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",

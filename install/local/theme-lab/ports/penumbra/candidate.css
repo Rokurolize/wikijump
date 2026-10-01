@@ -1688,3 +1688,12 @@ table.page-history td.optionstd a {
 @media (min-width: 360px) and (max-width: 767px) {
  #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
 }
+
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Penumbra desktop navigation correction: keep the empty mobile overlay from intercepting desktop controls. */
+@media (min-width: 768px) {
+  #top-bar .mobile-top-bar { pointer-events: none; }
+  #top-bar .mobile-top-bar .open-menu a { pointer-events: auto; }
+}

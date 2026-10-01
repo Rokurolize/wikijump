@@ -16,7 +16,7 @@ export function observationHasCurrentActionAndFixture(row, contracts) {
   if (row.capture_action_model != null && row.capture_action_model !== 'theme_lab_action_contract.v3') return false;
   const current = contracts.get(`${row.surface}.${row.state}`);
   const expected = row.capture_action_model === 'theme_lab_action_contract.v3'
-    ? current?.action_contract_sha256 : current?.legacy_action_contract_sha256;
-  return typeof expected === 'string' && row.capture_state_action_contract_sha256 === expected &&
+    ? [current?.action_contract_sha256] : current?.legacy_action_contract_alternatives ?? [current?.legacy_action_contract_sha256];
+  return expected.some(value => typeof value === 'string' && row.capture_state_action_contract_sha256 === value) &&
     row.fixture_contract_sha256 === current.fixture_contract_sha256;
 }

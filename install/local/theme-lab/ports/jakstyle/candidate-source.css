@@ -502,16 +502,6 @@
 
 
 
-.creditModule {
-	justify-content: center;
-	width: 100%;
-}
 
-> :root {
->      @@--header-title: "タイトルはここ";@@
->      @@--header-subtitle: "サブタイトルはここ";@@
->      @@--lgurl: url("URLはここ");@@
-> }
->
 
 @import url("https://scp-jp.wdfiles.com/local--code/theme%3Ajakstyle/1")

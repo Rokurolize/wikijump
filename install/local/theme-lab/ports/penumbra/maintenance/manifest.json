@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "e5ed496def3956c8bac546dabf07ab4946319182b77a04686893987ea67a6a77",
+  "frozen_candidate_source_sha256": "439b21910d1a4363c35845490fdc2585a286b26577c2d692f130c2f790681b9e",
   "base_source_sha256": "391cf19d439895bf739b604bf0a12cc6a8ced5002d6c7f12c4410f6b3e6dd08a",
-  "raw_jp_overrides_sha256": "3818996310c0c8aaf0958f33173f6cbd34789d340d84b1e909833e3ae7cc9a0e",
-  "jp_overrides_sha256": "25507e8f46f788cab96ea3236daa997f86b95a54dbea3c4665d5cd385dc9b163",
-  "semantic_css_sha256": "fa38dd3a89fa25e6c68dca42617565262ab60e3f55f2bce0baadb86c6b3a5b13",
-  "canonical_override_sha256": "d95804e43b7d1f644b1747aa101b37fd6a5243080b0a6128b61138883a2b2c9f",
+  "raw_jp_overrides_sha256": "9f2a1c074738ddcd783cd3ccc1d4c6e46e67172941c59d32cb122e8df1f2bfb0",
+  "jp_overrides_sha256": "6069e2d0c6e032e781ceb1f83787a41c07c1d91307721882d0dabb5a028410e0",
+  "semantic_css_sha256": "966dced8ac45b90ebbfd3a3cc68bf5c20eee787065ae3b9f3bfc69d8f4182d33",
+  "canonical_override_sha256": "caebda19833d428725afe18e580bdafd268baa678be4e108b08ffd863a111dc9",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "9762a8a26c3b4ee2fbb449d062ce9ca49a1cdedfd6d8904b131d01dc05fe7479",
+  "final_source_sha256": "5a33801752bb7e831cd7a34bb2e73a3c8cfec0555b6feb48a447ee707cb086da",
   "final_source_inputs": {
     "base_sha256": "391cf19d439895bf739b604bf0a12cc6a8ced5002d6c7f12c4410f6b3e6dd08a",
-    "jp_overrides_sha256": "25507e8f46f788cab96ea3236daa997f86b95a54dbea3c4665d5cd385dc9b163"
+    "jp_overrides_sha256": "6069e2d0c6e032e781ceb1f83787a41c07c1d91307721882d0dabb5a028410e0"
   },
   "ordered_include_sha256": "31483262165f85f8e11bf9e5dffc8223bb046d4adc3f32f770f7508af58f210b",
   "declaration_reviews": {},
-  "adaptation_block_count": 1,
-  "raw_override_rule_count": 2,
-  "canonical_override_rule_count": 2,
+  "adaptation_block_count": 2,
+  "raw_override_rule_count": 4,
+  "canonical_override_rule_count": 4,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -354,8 +354,8 @@
       "rationale": "Frozen real SCP-JP A/B establishes this specific target regression and verifies the minimum correction. Source styling, palette, dimensions, and unrelated menus remain owned by the imported theme.",
       "evidence": [
         {
-          "path": "authority-evidence/penumbra-complete-source-current/receipt.json",
-          "sha256": "b0a4f24530a529aafb37e4e44a217b94563ce4ace0fe9589f7817e61c5b63076",
+          "path": "authority-evidence/penumbra-final-navigation-navigation-18-0-20261001/receipt.json",
+          "sha256": "047082c8f2325f84cd56c5a2a283a6ff96bd24ece498095baf6556c7853e20e2",
           "decision_authority": "REAL_WIKIDOT_TARGET_AB"
         }
       ],
@@ -371,7 +371,7 @@
           "sha256": "befb285563d3f8d956f49726d2272a051bdab6ac4b9a84dd0ba856490c0890b5"
         }
       },
-      "published_css_sha256": "23f14c98c7e31c112658c6e3112344ba07d8b26b1cc1a6cea7783477c38bbe44"
+      "published_css_sha256": "2d8436acd87691323a742583e715e7f69c96bfd53c355dac5b2fe27b8ceeb5da"
     },
     {
       "marker": "Resolve preserved source CSS component includes",
@@ -389,6 +389,30 @@
           "sha256": "ff7d52196adb6c816a08d813e1182cda1daf93eed288115cea72aa8ae74a5cc2"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot Penumbra desktop navigation correction: keep the empty mobile overlay from intercepting desktop controls.",
+      "sha256": "0e34be26946a67e963b97e76e8065d2b003340dfbdbdb2eb114934568334d291",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "The source desktop collapsible-sidebar component displays an empty mobile overlay over desktop parent anchors. Disable pointer interception on that empty layer while retaining pointer input on the actual drawer opener. The settled sidebar already closes correctly; no drawer-position override is authorized.",
+      "evidence": [
+        {
+          "path": "authority-evidence/penumbra-desktop-navigation-authority-20261001/receipt.json",
+          "sha256": "2c6c803e15ccedc8f511ae9fb9a06ba99cdcc77dad6d96d55482bb95486471d4",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "state": "desktop-navigation",
+        "viewports": [
+          768,
+          1024,
+          1440
+        ]
+      },
+      "published_css_sha256": "2d8436acd87691323a742583e715e7f69c96bfd53c355dac5b2fe27b8ceeb5da"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -404,6 +428,19 @@
       "at_contexts": [
         "@media (max-width: 767px)",
         "@media (min-width: 360px) and (max-width: 767px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot Penumbra desktop navigation correction: keep the empty mobile overlay from intercepting desktop controls.",
+      "rationale": "SCP-JP Wikidot Penumbra desktop navigation correction: keep the empty mobile overlay from intercepting desktop controls.",
+      "sha256": "0e34be26946a67e963b97e76e8065d2b003340dfbdbdb2eb114934568334d291",
+      "selectors": [
+        "#top-bar .mobile-top-bar",
+        "#top-bar .mobile-top-bar .open-menu a"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px)"
       ],
       "authority": "TARGET_WIKIDOT_CERTIFIED"
     }

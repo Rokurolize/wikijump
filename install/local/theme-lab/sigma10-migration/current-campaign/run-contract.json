@@ -54,7 +54,7 @@
   "additional_candidates": {
     "aesthetic-theme": {
       "directory": "../../ports/aesthetic-theme",
-      "candidate_sha256": "e3dce635b10c80d6adf6a741a10d3a8454880beb37fdb8609be77b00583a7043",
+      "candidate_sha256": "9ca8a71a8af68a15ef4a56f429d9f008f46ebeb5263a7c2e9185897ad42b6520",
       "source_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c"
     },
     "al-slop": {
@@ -64,22 +64,22 @@
     },
     "basalt": {
       "directory": "../../ports/basalt",
-      "candidate_sha256": "deff9268cc43697bc404182a9679e90bffab0c6ac04e4c9456de1c6f497683b8",
+      "candidate_sha256": "78b8bd21dce4bb8130ae89f7e9b825163ddbcd7abab6ff33a621a0d7293ae581",
       "source_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df"
     },
     "bedrock": {
       "directory": "../../ports/bedrock",
-      "candidate_sha256": "9e7e79c109fcefe79b31bf7b351f79beac28b4b047795a177ff00180f6c5129b",
+      "candidate_sha256": "210621c337510276613df2496a6fcc1ee98843d5175b0cc07404d82c416236ea",
       "source_sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423"
     },
     "black-highlighter-theme": {
       "directory": "../../ports/black-highlighter-theme",
-      "candidate_sha256": "6f0e9913498dfadabaff54fae9ce131e3399ddd22949fd2ce2edf3dadf80dbd7",
+      "candidate_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
       "source_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427"
     },
     "classic": {
       "directory": "../../ports/classic",
-      "candidate_sha256": "447015860c880f261854f7e0a46536ff126f02e44f1da7cd7b51eb90f58b2c27",
+      "candidate_sha256": "9ab11e389b581c60d6fba032ee5c72d7722533835a6cc5af5504f4f969c18a4f",
       "source_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a"
     },
     "cosmonaut": {
@@ -89,12 +89,12 @@
     },
     "dear-dictator": {
       "directory": "../../ports/dear-dictator",
-      "candidate_sha256": "b3e486689dd74a77e432fd06a3444281a7c75659042db02853494454b727ee67",
-      "source_sha256": "f7e527344421713247e5e0121c2d98f1fc5413b142e35537be9662f65e552c65"
+      "candidate_sha256": "65243e70234f596b4bb022f96a08c659b117a5a4b3415b9db75b31c5999e04f2",
+      "source_sha256": "4d547ad7d87c7efab4a35decf68a7c684269cedd4a4a4437b86fa4361300a5c0"
     },
     "extra-black-highlighter-theme": {
       "directory": "../../ports/extra-black-highlighter-theme",
-      "candidate_sha256": "23f7d059cb8b0f8302f73fc66b3d8d40ddcf82ada09e2f0ffafaee00d802bcef",
+      "candidate_sha256": "a551fbd0df47a904de211d625e1f1c4fdd6cb6b0dd3c75688de41e1f444f0ca7",
       "source_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a"
     },
     "flopstyle-dark": {
@@ -104,8 +104,8 @@
     },
     "foxtrot": {
       "directory": "../../ports/foxtrot",
-      "candidate_sha256": "957ab5ef441f1acdcb2119be57fe8c25e5985dc35dce1c45bded9107242ce02d",
-      "source_sha256": "ec9b2c338317afc18276377c77804f8e4d35a4765443278f9678f9f4ed5f73b7"
+      "candidate_sha256": "16d20dd41d1c6610da31afb4bb3b667efebeadab21c146d1966d6deb06fb7aca",
+      "source_sha256": "bb5cb179a2d565e4874f57e9490cbb75fa8ebc20f01d0287bf83135a240aff72"
     },
     "hansarp": {
       "directory": "../../ports/hansarp",
@@ -114,22 +114,22 @@
     },
     "inkblot": {
       "directory": "../../ports/inkblot",
-      "candidate_sha256": "c3dd803cfa39221bccb3379eb312c945cf3c3aae931be60da0ad9d6a386df0ff",
+      "candidate_sha256": "cf7328f6b8c6abe15a05f63f5eca66b369d10bfb8d2a31d03bb4b368e0521890",
       "source_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a"
     },
     "isolated-terminal": {
       "directory": "../../ports/isolated-terminal",
-      "candidate_sha256": "9c26c4e104b4aaa17357a0366036e004a72b8aa295a65e316e0c0c619b84ca53",
+      "candidate_sha256": "82d2b9d5d93bc57a58acc320225b6f779f98fc6b91584d9edb1c937cc479f5ed",
       "source_sha256": "e2a79c2965b4558f59b4a0884fc18563a7ee8c6ad17d27d6e5f219856044459c"
     },
     "jakstyle": {
       "directory": "../../ports/jakstyle",
-      "candidate_sha256": "27f126a6ad3b03cf1c46a26440fcc4475327a31185e0f44e4bbf71ab38e69d6d",
+      "candidate_sha256": "54e1622ad4ae34084c6eefc85355178fae005d29e17015d6025d7beebfb9e405",
       "source_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869"
     },
     "minimalist-bhl": {
       "directory": "../../ports/minimalist-bhl",
-      "candidate_sha256": "5c16674db89cb21d546a1c8c81c9a298c4628db38d1c7e0d97be52ad1c88ddf0",
+      "candidate_sha256": "b9b3b2d6fa0c496ea5b858a02cca722eea666988f1db1fdba5148fc89aa207b7",
       "source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5"
     },
     "monotypical": {
@@ -149,7 +149,7 @@
     },
     "ouroborous-theme": {
       "directory": "../../ports/ouroborous-theme",
-      "candidate_sha256": "7607562cc3c4be9caba5d23f3855214ed78fd3e0332a17626c01dfde99b150c7",
+      "candidate_sha256": "3a0e10e723d0e231e62e8c2ca65994265257429fd5a354059e8acf507bd15f22",
       "source_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f"
     },
     "paperstack": {
@@ -159,32 +159,32 @@
     },
     "pataphysics": {
       "directory": "../../ports/pataphysics",
-      "candidate_sha256": "df264c1927fbe7bc8fe3e3f6f7fa594293d814f1e3d90386a03bfe475f6c02de",
+      "candidate_sha256": "98f233f2f3161e085fe9c764c87a2e07b95501977e69702236582d1e39923b17",
       "source_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b"
     },
     "penumbra": {
       "directory": "../../ports/penumbra",
-      "candidate_sha256": "23f14c98c7e31c112658c6e3112344ba07d8b26b1cc1a6cea7783477c38bbe44",
-      "source_sha256": "e5ed496def3956c8bac546dabf07ab4946319182b77a04686893987ea67a6a77"
+      "candidate_sha256": "2d8436acd87691323a742583e715e7f69c96bfd53c355dac5b2fe27b8ceeb5da",
+      "source_sha256": "439b21910d1a4363c35845490fdc2585a286b26577c2d692f130c2f790681b9e"
     },
     "quand-le-soleil-se-couche": {
       "directory": "../../ports/quand-le-soleil-se-couche",
-      "candidate_sha256": "0cd8dffde70ca3dbaa998d5b92702420df469507b82d220f543aa43854ed7a0b",
+      "candidate_sha256": "6b82140e1f875394bb5ceb7e2e6be6e9805157dd18c04fc7c63c6eea72eb49a8",
       "source_sha256": "6020687f316cb450c479f5bc74dfcad54b143c88a1d922132cc61708f8d2dbb5"
     },
     "redtape": {
       "directory": "../../ports/redtape",
-      "candidate_sha256": "67c2a9df3c1d6aa47aa75b17314e44110bb6440a6dbb5da222c596263f3e281a",
+      "candidate_sha256": "148094fb643ed7bc5bf743e0d85aa94a0793072867ff94ff8702e55e6dca6f34",
       "source_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892"
     },
     "scheme": {
       "directory": "../../ports/scheme",
-      "candidate_sha256": "a3e782d4706c04d4bd8a11bd6024ac04519a6904b25bc080cb9388e6fd9a4c54",
-      "source_sha256": "e820232ea1db7f10f31362cee5c5e539417a7d3b826d19a033d2918a502fef35"
+      "candidate_sha256": "13b6176aa6fddeeaeaf1a8e493163fe1fa6c8f72888e27d9631a66dfc0950fce",
+      "source_sha256": "292624abd9238b7a3c0cca9fe0f603fbd18476610740084e2b5315a01e8348fc"
     },
     "scp-offices-theme": {
       "directory": "../../ports/scp-offices-theme",
-      "candidate_sha256": "57c4819dd215211e62d3f35fe92ed2a106a345434d5fac5e2a943153beeb59e6",
+      "candidate_sha256": "3948ce93c88a3e89cd6279c5ce88bb882cfabd37f02fd79ab54122bcf181a6c1",
       "source_sha256": "1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8"
     },
     "scpedia": {
@@ -194,7 +194,7 @@
     },
     "sigma": {
       "directory": "../../ports/sigma",
-      "candidate_sha256": "c7387bd0e72161e47fa8df5e55d57dbba572a3b08666b7cc05fa939825906f48",
+      "candidate_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
       "source_sha256": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23"
     },
     "site": {
@@ -214,13 +214,13 @@
     },
     "turbo-vision": {
       "directory": "../../ports/turbo-vision",
-      "candidate_sha256": "9ed89df7215b967f7eb458e09b45454bbbcd2d5ff77cb94472aeb891042dca1c",
+      "candidate_sha256": "69ced539af60dd88d736502d74ceadb28f0363499f84e033f42a34f4c7467cfd",
       "source_sha256": "52fb93c3d72f66f18876db66c7616a57f51ba20c325674144003a40b633a48f4"
     },
     "wikifot": {
       "directory": "../../ports/wikifot",
-      "candidate_sha256": "db9c78dff364e2e87a17ee86e79a8a37d6e16ff4442a37e8b8561e61621edce3",
-      "source_sha256": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45"
+      "candidate_sha256": "5a018ea086b2033e4a4ac36729e0c402e0b9bffd2b563df7f8c61caa70af8509",
+      "source_sha256": "b9bb97bec318b700b367864fa87c2570b4231ff6b1a710f3e86f351af146ebb8"
     },
     "y2k": {
       "directory": "../../ports/y2k",
@@ -286,7 +286,7 @@
     {
       "package": "aesthetic-theme",
       "directory": "../../ports/aesthetic-theme",
-      "candidate_sha256": "e3dce635b10c80d6adf6a741a10d3a8454880beb37fdb8609be77b00583a7043",
+      "candidate_sha256": "9ca8a71a8af68a15ef4a56f429d9f008f46ebeb5263a7c2e9185897ad42b6520",
       "source_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c"
     },
     {
@@ -298,25 +298,25 @@
     {
       "package": "basalt",
       "directory": "../../ports/basalt",
-      "candidate_sha256": "deff9268cc43697bc404182a9679e90bffab0c6ac04e4c9456de1c6f497683b8",
+      "candidate_sha256": "78b8bd21dce4bb8130ae89f7e9b825163ddbcd7abab6ff33a621a0d7293ae581",
       "source_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df"
     },
     {
       "package": "bedrock",
       "directory": "../../ports/bedrock",
-      "candidate_sha256": "9e7e79c109fcefe79b31bf7b351f79beac28b4b047795a177ff00180f6c5129b",
+      "candidate_sha256": "210621c337510276613df2496a6fcc1ee98843d5175b0cc07404d82c416236ea",
       "source_sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423"
     },
     {
       "package": "black-highlighter-theme",
       "directory": "../../ports/black-highlighter-theme",
-      "candidate_sha256": "6f0e9913498dfadabaff54fae9ce131e3399ddd22949fd2ce2edf3dadf80dbd7",
+      "candidate_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
       "source_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427"
     },
     {
       "package": "classic",
       "directory": "../../ports/classic",
-      "candidate_sha256": "447015860c880f261854f7e0a46536ff126f02e44f1da7cd7b51eb90f58b2c27",
+      "candidate_sha256": "9ab11e389b581c60d6fba032ee5c72d7722533835a6cc5af5504f4f969c18a4f",
       "source_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a"
     },
     {
@@ -328,13 +328,13 @@
     {
       "package": "dear-dictator",
       "directory": "../../ports/dear-dictator",
-      "candidate_sha256": "b3e486689dd74a77e432fd06a3444281a7c75659042db02853494454b727ee67",
-      "source_sha256": "f7e527344421713247e5e0121c2d98f1fc5413b142e35537be9662f65e552c65"
+      "candidate_sha256": "65243e70234f596b4bb022f96a08c659b117a5a4b3415b9db75b31c5999e04f2",
+      "source_sha256": "4d547ad7d87c7efab4a35decf68a7c684269cedd4a4a4437b86fa4361300a5c0"
     },
     {
       "package": "extra-black-highlighter-theme",
       "directory": "../../ports/extra-black-highlighter-theme",
-      "candidate_sha256": "23f7d059cb8b0f8302f73fc66b3d8d40ddcf82ada09e2f0ffafaee00d802bcef",
+      "candidate_sha256": "a551fbd0df47a904de211d625e1f1c4fdd6cb6b0dd3c75688de41e1f444f0ca7",
       "source_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a"
     },
     {
@@ -346,8 +346,8 @@
     {
       "package": "foxtrot",
       "directory": "../../ports/foxtrot",
-      "candidate_sha256": "957ab5ef441f1acdcb2119be57fe8c25e5985dc35dce1c45bded9107242ce02d",
-      "source_sha256": "ec9b2c338317afc18276377c77804f8e4d35a4765443278f9678f9f4ed5f73b7"
+      "candidate_sha256": "16d20dd41d1c6610da31afb4bb3b667efebeadab21c146d1966d6deb06fb7aca",
+      "source_sha256": "bb5cb179a2d565e4874f57e9490cbb75fa8ebc20f01d0287bf83135a240aff72"
     },
     {
       "package": "hansarp",
@@ -358,25 +358,25 @@
     {
       "package": "inkblot",
       "directory": "../../ports/inkblot",
-      "candidate_sha256": "c3dd803cfa39221bccb3379eb312c945cf3c3aae931be60da0ad9d6a386df0ff",
+      "candidate_sha256": "cf7328f6b8c6abe15a05f63f5eca66b369d10bfb8d2a31d03bb4b368e0521890",
       "source_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a"
     },
     {
       "package": "isolated-terminal",
       "directory": "../../ports/isolated-terminal",
-      "candidate_sha256": "9c26c4e104b4aaa17357a0366036e004a72b8aa295a65e316e0c0c619b84ca53",
+      "candidate_sha256": "82d2b9d5d93bc57a58acc320225b6f779f98fc6b91584d9edb1c937cc479f5ed",
       "source_sha256": "e2a79c2965b4558f59b4a0884fc18563a7ee8c6ad17d27d6e5f219856044459c"
     },
     {
       "package": "jakstyle",
       "directory": "../../ports/jakstyle",
-      "candidate_sha256": "27f126a6ad3b03cf1c46a26440fcc4475327a31185e0f44e4bbf71ab38e69d6d",
+      "candidate_sha256": "54e1622ad4ae34084c6eefc85355178fae005d29e17015d6025d7beebfb9e405",
       "source_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869"
     },
     {
       "package": "minimalist-bhl",
       "directory": "../../ports/minimalist-bhl",
-      "candidate_sha256": "5c16674db89cb21d546a1c8c81c9a298c4628db38d1c7e0d97be52ad1c88ddf0",
+      "candidate_sha256": "b9b3b2d6fa0c496ea5b858a02cca722eea666988f1db1fdba5148fc89aa207b7",
       "source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5"
     },
     {
@@ -400,7 +400,7 @@
     {
       "package": "ouroborous-theme",
       "directory": "../../ports/ouroborous-theme",
-      "candidate_sha256": "7607562cc3c4be9caba5d23f3855214ed78fd3e0332a17626c01dfde99b150c7",
+      "candidate_sha256": "3a0e10e723d0e231e62e8c2ca65994265257429fd5a354059e8acf507bd15f22",
       "source_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f"
     },
     {
@@ -412,37 +412,37 @@
     {
       "package": "pataphysics",
       "directory": "../../ports/pataphysics",
-      "candidate_sha256": "df264c1927fbe7bc8fe3e3f6f7fa594293d814f1e3d90386a03bfe475f6c02de",
+      "candidate_sha256": "98f233f2f3161e085fe9c764c87a2e07b95501977e69702236582d1e39923b17",
       "source_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b"
     },
     {
       "package": "penumbra",
       "directory": "../../ports/penumbra",
-      "candidate_sha256": "23f14c98c7e31c112658c6e3112344ba07d8b26b1cc1a6cea7783477c38bbe44",
-      "source_sha256": "e5ed496def3956c8bac546dabf07ab4946319182b77a04686893987ea67a6a77"
+      "candidate_sha256": "2d8436acd87691323a742583e715e7f69c96bfd53c355dac5b2fe27b8ceeb5da",
+      "source_sha256": "439b21910d1a4363c35845490fdc2585a286b26577c2d692f130c2f790681b9e"
     },
     {
       "package": "quand-le-soleil-se-couche",
       "directory": "../../ports/quand-le-soleil-se-couche",
-      "candidate_sha256": "0cd8dffde70ca3dbaa998d5b92702420df469507b82d220f543aa43854ed7a0b",
+      "candidate_sha256": "6b82140e1f875394bb5ceb7e2e6be6e9805157dd18c04fc7c63c6eea72eb49a8",
       "source_sha256": "6020687f316cb450c479f5bc74dfcad54b143c88a1d922132cc61708f8d2dbb5"
     },
     {
       "package": "redtape",
       "directory": "../../ports/redtape",
-      "candidate_sha256": "67c2a9df3c1d6aa47aa75b17314e44110bb6440a6dbb5da222c596263f3e281a",
+      "candidate_sha256": "148094fb643ed7bc5bf743e0d85aa94a0793072867ff94ff8702e55e6dca6f34",
       "source_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892"
     },
     {
       "package": "scheme",
       "directory": "../../ports/scheme",
-      "candidate_sha256": "a3e782d4706c04d4bd8a11bd6024ac04519a6904b25bc080cb9388e6fd9a4c54",
-      "source_sha256": "e820232ea1db7f10f31362cee5c5e539417a7d3b826d19a033d2918a502fef35"
+      "candidate_sha256": "13b6176aa6fddeeaeaf1a8e493163fe1fa6c8f72888e27d9631a66dfc0950fce",
+      "source_sha256": "292624abd9238b7a3c0cca9fe0f603fbd18476610740084e2b5315a01e8348fc"
     },
     {
       "package": "scp-offices-theme",
       "directory": "../../ports/scp-offices-theme",
-      "candidate_sha256": "57c4819dd215211e62d3f35fe92ed2a106a345434d5fac5e2a943153beeb59e6",
+      "candidate_sha256": "3948ce93c88a3e89cd6279c5ce88bb882cfabd37f02fd79ab54122bcf181a6c1",
       "source_sha256": "1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8"
     },
     {
@@ -454,7 +454,7 @@
     {
       "package": "sigma",
       "directory": "../../ports/sigma",
-      "candidate_sha256": "c7387bd0e72161e47fa8df5e55d57dbba572a3b08666b7cc05fa939825906f48",
+      "candidate_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
       "source_sha256": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23"
     },
     {
@@ -478,14 +478,14 @@
     {
       "package": "turbo-vision",
       "directory": "../../ports/turbo-vision",
-      "candidate_sha256": "9ed89df7215b967f7eb458e09b45454bbbcd2d5ff77cb94472aeb891042dca1c",
+      "candidate_sha256": "69ced539af60dd88d736502d74ceadb28f0363499f84e033f42a34f4c7467cfd",
       "source_sha256": "52fb93c3d72f66f18876db66c7616a57f51ba20c325674144003a40b633a48f4"
     },
     {
       "package": "wikifot",
       "directory": "../../ports/wikifot",
-      "candidate_sha256": "db9c78dff364e2e87a17ee86e79a8a37d6e16ff4442a37e8b8561e61621edce3",
-      "source_sha256": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45"
+      "candidate_sha256": "5a018ea086b2033e4a4ac36729e0c402e0b9bffd2b563df7f8c61caa70af8509",
+      "source_sha256": "b9bb97bec318b700b367864fa87c2570b4231ff6b1a710f3e86f351af146ebb8"
     },
     {
       "package": "y2k",

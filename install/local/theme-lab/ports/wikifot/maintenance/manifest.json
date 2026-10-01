@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45",
+  "frozen_candidate_source_sha256": "b9bb97bec318b700b367864fa87c2570b4231ff6b1a710f3e86f351af146ebb8",
   "base_source_sha256": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "142bc69a3dd7fad4340296829c9bd2f69edc98f4cd265acc5da376dbcc2ff0fa",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "5c8608ff22de8077619437bf798e89c162d4066f1bb2b759efb3784e0f11f690",
+  "jp_overrides_sha256": "b17eb45e4fb3e96edd8c44fed1c18a231fad3c4acec8bc953ae015a163a46b27",
+  "semantic_css_sha256": "ff54616823c43e9d12bbb5cbbb51e4ee28d7dfd03503c7dc82197ac9b1ab0b8d",
+  "canonical_override_sha256": "aae8034818fad27843db75e5d159e8505cafcab61a73dd411d50117ceba4569f",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45",
+  "final_source_sha256": "5ce985f94e46222f21f08d120c0477005c5c05263b94231c58a9763c70b8d945",
   "final_source_inputs": {
     "base_sha256": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "b17eb45e4fb3e96edd8c44fed1c18a231fad3c4acec8bc953ae015a163a46b27"
   },
   "ordered_include_sha256": "dfb56b2fba2d3bfa788617312a8e573cdf5dade711874e653f86a2085690997b",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 1,
+  "raw_override_rule_count": 2,
+  "canonical_override_rule_count": 2,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -223,8 +223,53 @@
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot Wikifot mobile drawer correction: fully hide the closed drawer at its rendered width.",
+      "sha256": "7e4b3502cbd50728aae20bde745e9e70cabba38e43d57355d7ad9d656c333772",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "Real SCP-JP reproduces a 63.98px closed drawer strip which intercepts article and open-menu controls. Reset only the mobile left margin and translate the closed drawer by its measured width; preserve the open target and bound its width.",
+      "evidence": [
+        {
+          "path": "authority-evidence/wikifot-drawer-closed-current/receipt.json",
+          "sha256": "22455a21d8ef113a83164cf64b40c63604abed0b102f7a97e24b99ae522973b7",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        },
+        {
+          "path": "authority-evidence/wikifot-drawer-open-current/receipt.json",
+          "sha256": "a35d4dade761b5586bcbfbc02050b37ba710446eb29e4f6e30fbd611ddb13980",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "states": [
+          "sidebar-closed",
+          "sidebar-open"
+        ],
+        "viewports": [
+          320,
+          390
+        ]
+      },
+      "published_css_sha256": "5a018ea086b2033e4a4ac36729e0c402e0b9bffd2b563df7f8c61caa70af8509"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot Wikifot mobile drawer correction: fully hide the closed drawer at its rendered width.",
+      "rationale": "SCP-JP Wikidot Wikifot mobile drawer correction: fully hide the closed drawer at its rendered width.",
+      "sha256": "7e4b3502cbd50728aae20bde745e9e70cabba38e43d57355d7ad9d656c333772",
+      "selectors": [
+        "#side-bar",
+        "#side-bar:target"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    }
+  ]
 }

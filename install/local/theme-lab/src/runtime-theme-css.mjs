@@ -10,15 +10,26 @@ export function candidatePageTags(manifest,source=''){
   return [];
 }
 
-function removeExactModule(css,moduleCss){
+function leadingImports(css){
+  let prefix='';
+  while(true){const match=css.slice(prefix.length).match(/^(?:\s|\/\*[\s\S]*?\*\/)*@import\s[^;]+;/u);if(!match)break;prefix+=match[0];}
+  return prefix;
+}
+
+function removeExactModule(css,moduleCss,protectedPrefix){
   const body=moduleCss.trim();
   if(!body)return {css,removed:false};
   const index=css.indexOf(body);
   if(index<0||css.indexOf(body,index+body.length)>=0)return {css,removed:false};
-  return {css:`${css.slice(0,index)}${css.slice(index+body.length)}`.replace(/\n{3,}/gu,'\n\n'),removed:true};
+  // Leading imports are the preserved deliverable's dependency chain. A theme
+  // page can conditionally load that chain alongside its presentation styles;
+  // excluding presentation must not strip the theme's own base stylesheet.
+  const preserve=css.startsWith(protectedPrefix)&&index<protectedPrefix.length
+    ? css.slice(index,Math.min(index+body.length,protectedPrefix.length)):'';
+  return {css:`${css.slice(0,index)}${preserve}${css.slice(index+body.length)}`,removed:true};
 }
 
-function removeTrailingTruncatedModule(css,moduleCss){
+function removeTrailingTruncatedModule(css,moduleCss,protectedPrefix){
   const body=moduleCss.trim();
   const trimmed=css.trimEnd();
   if(!body||!trimmed)return {css,removed:false};
@@ -35,7 +46,8 @@ function removeTrailingTruncatedModule(css,moduleCss){
   const prefix=body.slice(0,matched);
   const index=trimmed.lastIndexOf(prefix);
   if(index<0||trimmed.indexOf(prefix)!==index||index+prefix.length!==trimmed.length)return {css,removed:false};
-  return {css:`${trimmed.slice(0,index).trimEnd()}\n`,removed:true};
+  const preserve=css.startsWith(protectedPrefix)&&index<protectedPrefix.length?css.slice(index,Math.min(trimmed.length,protectedPrefix.length)):'';
+  return {css:`${(trimmed.slice(0,index)+preserve).trimEnd()}\n`,removed:true};
 }
 
 // Theme pages often carry presentation-only CSS under [[iftags +theme]] or
@@ -49,14 +61,15 @@ export function genericRuntimeThemeCss({candidateInput,candidateSource,candidate
   const runtimeModules=extractCssModules(candidateSource,{activeTags:[]});
   const runtimeIndexes=new Set(runtimeModules.map(row=>row.index));
   let css=candidateInput;
+  const protectedPrefix=leadingImports(candidateInput);
   let removed=0;
   let removedTruncated=0;
   let unmatched=0;
   for(const module of pageModules){
     if(runtimeIndexes.has(module.index))continue;
-    const result=removeExactModule(css,module.css);
+    const result=removeExactModule(css,module.css,protectedPrefix);
     if(result.removed){css=result.css;removed+=1;continue;}
-    const truncated=removeTrailingTruncatedModule(css,module.css);
+    const truncated=removeTrailingTruncatedModule(css,module.css,protectedPrefix);
     css=truncated.css;
     if(truncated.removed)removedTruncated+=1;
     else unmatched+=1;

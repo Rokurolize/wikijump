@@ -20,5 +20,14 @@
     "path": "upstream-ko.css",
     "sha256": "7e0c7e90b481a27442a9c6a98820b0355d0b8042dfca59c639ba69b7efe22bd2"
   },
-  "scope": "Freezes the existing port’s retained public corpus source and evidenced CSS import. No source refresh, browser parity certification or candidate rewrite."
+  "scope": "Freezes the existing port’s retained public corpus source and evidenced CSS import. No source refresh, browser parity certification or candidate rewrite.",
+  "final_verdict": "inconclusive",
+  "overall_acceptance": {
+    "status": "inconclusive",
+    "reason": "Historical candidate acceptance superseded"
+  },
+  "adaptation_authority": {
+    "ledger": "../adaptation-authority.json",
+    "publishable_without_authority": 0
+  }
 }

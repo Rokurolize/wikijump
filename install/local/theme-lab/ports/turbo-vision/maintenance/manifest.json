@@ -203,20 +203,19 @@
       "rationale": "Per-theme real SCP-JP A/B at 320px and 390px; every submenu/item/link stays inside both viewport edges. Preserve the wrapped row, source menu widths, palette and link layout. Space also retains its separate header grid correction; Turbo bounds only the invisible masthead responsible for remaining 320px document overflow.",
       "evidence": [
         {
-          "path": "authority-evidence/turbo-navigation-current/receipt.json",
-          "sha256": "a228a9765b36a2b556a4f89c831b36b3263ba24cc61615627ab6a7ab3ed7f5b2",
+          "path": "authority-evidence/turbo-vision-generic-runtime-navigation-11-0-20261001/receipt.json",
+          "sha256": "bca90b8c676c4ef33c1f9711b6e257f9420d9290c47054e821880c4b64200bc1",
           "decision_authority": "REAL_WIKIDOT_TARGET_AB"
         },
         {
-          "path": "authority-evidence/turbo-header-current/receipt.json",
-          "sha256": "06556a14216923b90f6a7f412dc5bfd2b8347e465bfce7e38e275f713dd2e9a6",
+          "path": "authority-evidence/turbo-vision-generic-runtime-header-title-search-11-1-20261001/receipt.json",
+          "sha256": "e49ff67b03adfa2270b621d83717f17b9b614e46cd5c524444ff757be6ffcb17",
           "decision_authority": "REAL_WIKIDOT_TARGET_AB"
         }
       ],
-      "published_css_sha256": "9ed89df7215b967f7eb458e09b45454bbbcd2d5ff77cb94472aeb891042dca1c",
+      "published_css_sha256": "69ced539af60dd88d736502d74ceadb28f0363499f84e033f42a34f4c7467cfd",
       "scope": {
         "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
-        "state": "navigation",
         "viewports": [
           320,
           390
@@ -225,6 +224,10 @@
           ".mobile-top-bar > ul > li > ul",
           ".mobile-top-bar > ul > li > ul li",
           ".mobile-top-bar > ul > li > ul a"
+        ],
+        "states": [
+          "navigation",
+          "header-title-search"
         ]
       }
     },
@@ -252,8 +255,8 @@
       "rationale": "The complete Turbo Vision source CSS inherits Sigma positioning that places the real SCP-JP desktop top-bar 16px off the left edge. A bounded per-theme inset fixes the left edge while keeping the existing 16px right inset and leaves document width at the viewport at 768px, 1024px, and 1440px.",
       "evidence": [
         {
-          "path": "authority-evidence/turbo-desktop-topbar-current/receipt.json",
-          "sha256": "75eed1c4034750a883063dbf9ad1e5c320cf18eaeab3aa158a58dc43fdb22f02",
+          "path": "authority-evidence/turbo-vision-generic-runtime-normal-13-0-20261001/receipt.json",
+          "sha256": "75b7e57be92882fd5f9c64caee4428be8f95b6bd86da8a7521fe1a86b671b719",
           "decision_authority": "REAL_WIKIDOT_TARGET_AB"
         }
       ],
@@ -271,7 +274,7 @@
           "#top-bar .top-bar"
         ]
       },
-      "published_css_sha256": "9ed89df7215b967f7eb458e09b45454bbbcd2d5ff77cb94472aeb891042dca1c",
+      "published_css_sha256": "69ced539af60dd88d736502d74ceadb28f0363499f84e033f42a34f4c7467cfd",
       "sha256": "1815af33b6b70ad3ae2e97b5b850c3e5ffc24bd6c8ea04f332f52ba06252ed5f"
     }
   ],

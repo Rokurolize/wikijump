@@ -1,0 +1,7 @@
+@font-face {
+  font-family: 'Carrois Gothic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/ae17feb6f10d68546a191a8d9419d5bef76ad13785c9b5d7aa1492c8428e648b") format('truetype');
+}

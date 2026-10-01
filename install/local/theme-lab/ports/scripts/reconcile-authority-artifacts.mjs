@@ -9,10 +9,12 @@ import {validateCombinedAcceptance} from '../../src/campaign-completion.mjs';
 const ports=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const ledgerPath=path.join(ports,'adaptation-authority.json');
 const ledger=JSON.parse(await fs.readFile(ledgerPath,'utf8'));
+const selected=new Set(process.argv.slice(2).filter(arg=>arg.startsWith('--theme=')).map(arg=>arg.slice(8)));
 const exists=async file=>fs.access(file).then(()=>true,error=>{if(error.code==='ENOENT')return false;throw error});
 const retainedAcceptances=new Map();
 const acceptanceKeys=['final_verdict','final_status','theme_lab_findings','theme_lab_checks','final_theme_lab_check','font_diagnostics','viewport_status','torture_status','visual_status','interaction_status','warnings','intentional_style_differences','screenshots','interaction_diagnostics','visual_review','final_check','manual_visual_review','surface_contract','asset_status','offline_external_request_count','theme_lab_css_iteration_benchmark','image_diagnostics','page_image_assets','technical_requirements','interactive_visual_findings','initial_actionable_finding','inline_css_bytes','check_count','edit_iterations','manual_devtools_fallback_count','manual_visual_inspection_count','theme_lab_final_check_count','check_count_note','edit_iterations_note'];
 for(const [name,pkg] of Object.entries(ledger.packages)) {
+  if(selected.size&&!selected.has(name))continue;
   const dir=path.join(ports,name);
   if(name==='dear-dictator') await fs.writeFile(path.join(dir,'candidate.css'),[await fs.readFile(path.join(dir,'candidate-input.css'),'utf8'),await fs.readFile(path.join(dir,'authority-overrides.css'),'utf8')].filter(css=>css.trim()).join('\n\n'));
   pkg.outputs={};
@@ -110,6 +112,7 @@ await fs.writeFile(ledgerPath,JSON.stringify(ledger,null,2)+'\n');
 const campaignFile=path.join(ports,'en-theme-campaign.json');
 const campaign=JSON.parse(await fs.readFile(campaignFile,'utf8'));
 for(const theme of campaign.themes) {
+  if(selected.size&&!selected.has(theme.slug.replace(/^theme:/u,'')))continue;
   const retained=retainedAcceptances.get(theme.slug.replace(/^theme:/u,''));
   if(retained){theme.final_verdict=retained.status;theme.overall_acceptance=retained;continue;}
   const historical={};

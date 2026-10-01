@@ -41,7 +41,7 @@
   "human_port_candidate_path": "install/local/theme-lab/ports/turbo-vision/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "7419ff6d01fb1b3c732c75b7ccf223152f11f05db7df0ee2b70a2230ff703d71",
   "candidate_preview_sha256": "0396a2bd10df784d0cf5f9b7912c1e455f477b0fcf419ae28b2c510a4f842d3a",
-  "candidate_css_sha256": "9ed89df7215b967f7eb458e09b45454bbbcd2d5ff77cb94472aeb891042dca1c",
+  "candidate_css_sha256": "69ced539af60dd88d736502d74ceadb28f0363499f84e033f42a34f4c7467cfd",
   "page_attachment_manifest": null,
   "existing_jp_reconciliation": {
     "previous_source_sha256": "325801b1dd4a3d1fb23f216c08a0ea56519d32da234638a8b5022c45a30d982c",

@@ -225,13 +225,6 @@
       "final_url": "https://scp-jp.github.io/Black-Highlighter/img/logo.svg"
     },
     {
-      "sha256": "83529fbd5981bfa3e339b2487469def8c31b242e89154f5af95a7798e01b6706",
-      "bytes": 9665,
-      "content_type": "image/svg+xml",
-      "original_url": "https://scp-jp.wdfiles.com/local--files/theme%3Ascp-offices-theme/scpoffices_logo.svg",
-      "final_url": "https://scp-jp.wdfiles.com/local--files/theme%3Ascp-offices-theme/scpoffices_logo.svg"
-    },
-    {
       "sha256": "abf3e9eff348c566f9dd665e58da4131872a64ec0c8ec85bce6664369c53570f",
       "bytes": 6592,
       "content_type": "text/css",
@@ -496,12 +489,6 @@
       "resource_type": "candidate-css-asset",
       "source_url": "https://scp-jp.github.io/Black-Highlighter/img/logo.svg",
       "sha256": "4fd56d634f1b30b24e2c695a0577eefccf6fee56efb67feaac6fa00e96fc1c94",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-jp.wdfiles.com/local--files/theme%3Ascp-offices-theme/scpoffices_logo.svg",
-      "sha256": "83529fbd5981bfa3e339b2487469def8c31b242e89154f5af95a7798e01b6706",
       "decision": "freeze-runtime-independent-asset"
     },
     {

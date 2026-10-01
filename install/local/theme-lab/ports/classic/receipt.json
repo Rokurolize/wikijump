@@ -43,7 +43,7 @@
   "human_port_candidate_path": "install/local/theme-lab/ports/classic/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "4993fb2a8fbbc1b3f44ce7aba357e9c5ca70cbf7e915450cdfcc23b16e9cb512",
   "candidate_preview_sha256": "564111bc15e97090507cf0f632a85a99e0021cc912d610d266ce125784e565bb",
-  "candidate_css_sha256": "447015860c880f261854f7e0a46536ff126f02e44f1da7cd7b51eb90f58b2c27",
+  "candidate_css_sha256": "9ab11e389b581c60d6fba032ee5c72d7722533835a6cc5af5504f4f969c18a4f",
   "page_assets": [
     {
       "filename": "base_image_frame.png",

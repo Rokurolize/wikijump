@@ -705,16 +705,6 @@
 
 
 
-.creditModule {
-	justify-content: center;
-	width: 100%;
-}
 
-> :root {
->      @@--header-title: "タイトルはここ";@@
->      @@--header-subtitle: "サブタイトルはここ";@@
->      @@--lgurl: url("data:,");@@
-> }
->
 
 @import url("f062a80a904e0e160c4a69aed243c08ba02d52760461130ac9ab6c2b4ffa4bef.css")

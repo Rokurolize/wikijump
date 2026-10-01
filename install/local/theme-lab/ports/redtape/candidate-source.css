@@ -502,19 +502,7 @@
 
 
 
-#page-content .wikisys--template-dialog a {
-    color: rgb(var(--newpage-color));
-}
 
-.cc4-caution {
-    background: rgb(var(--bright-accent));
-    color: #fff;
-    margin: auto;
-    padding: 3%;
-}
-.cc4-caution a {
-    color: rgb(var(--newpage-color));
-}
 
 @import url("https://scp-jp.wdfiles.com/local--code/theme%3Aredtape/1")
 

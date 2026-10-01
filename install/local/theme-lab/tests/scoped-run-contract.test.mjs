@@ -26,3 +26,14 @@ test('legacy captures remain reusable only under their exact retained run contra
   assert.equal(captureRunContractIsCurrent({...row, run_contract_sha256: 'old'}, contract, 'old'), true);
   assert.equal(captureRunContractIsCurrent({...row, scoped_run_contract_sha256: scopedRunContractSha(contract, row)}, contract, 'new'), true);
 });
+
+test('an exact retained legacy contract proves unrelated changes without inferring changed dependencies',()=>{
+  const history=new Map([['old',contract]]),old={...row,run_contract_sha256:'old'};
+  const changed=structuredClone(contract);changed.additional_candidates.b.sha256='new';
+  assert.equal(captureRunContractIsCurrent(old,changed,'new',history),true);
+  for(const mutate of [c=>c.additional_candidates.a.sha256='new',c=>c.baseline_theme.sha256='new',c=>c.future_dependency='new',c=>c.viewports.desktop.width=1000]){
+    const actual=structuredClone(changed);mutate(actual);
+    assert.equal(captureRunContractIsCurrent(old,actual,'new',history),false);
+  }
+  assert.equal(captureRunContractIsCurrent({...old,run_contract_sha256:'unretained'},changed,'new',history),false);
+});

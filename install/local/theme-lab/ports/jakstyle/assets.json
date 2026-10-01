@@ -295,12 +295,7 @@
   ],
   "localization_transforms": [],
   "pruned_fonts": [],
-  "template_placeholders": [
-    {
-      "url": "https://scp-wiki.wikidot.com/URLはここ",
-      "reason": "documentation template placeholder, not a runtime asset"
-    }
-  ],
+  "template_placeholders": [],
   "asset_replacements": {},
   "omitted_assets": [],
   "dependency_decisions": [

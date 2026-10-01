@@ -39,7 +39,7 @@
   "human_port_candidate_path": "install/local/theme-lab/ports/basalt/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "bebdfef76f8d55d398d36bc71927978f55f5821ab4401252ff942ca81457aa1e",
   "candidate_preview_sha256": "4a266040a4c16b6ffd7e281a8615d476680872c057c0d5a4078a07fecb9110ae",
-  "candidate_css_sha256": "deff9268cc43697bc404182a9679e90bffab0c6ac04e4c9456de1c6f497683b8",
+  "candidate_css_sha256": "78b8bd21dce4bb8130ae89f7e9b825163ddbcd7abab6ff33a621a0d7293ae581",
   "page_assets": [
     {
       "filename": "basalt-theme-logo.svg",

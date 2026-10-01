@@ -1,12 +1,6 @@
 @import url("https://scp-jp.github.io/files/theme/classic/style0.css");
 
-/* ---- PRESENTATION ---- */
-.templateInfo {
-	margin: 1em 0;
-	padding: 0 1em;
-	background: hsl(0, 0%, 100%);
-	border: 1px solid hsl(0, 0%, 87%);
-}
+
 
 #header h1 a::before{
      content: "The SCP Foundation";

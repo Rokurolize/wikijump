@@ -11,6 +11,9 @@ export function runtimeFilesForObservation(surface, viewport) {
         : surface.startsWith('nav.') || surface.startsWith('shell.')
           ? ['framerail/src/lib/sigma-esque/wikidot.svelte', 'framerail/src/routes/+layout.svelte']
           : ['framerail/src/routes/[slug]/[...extra]/PageView.svelte'];
+  // Normal-page identity measures the header/login shell as well as article
+  // content. Changes to that shell cannot reuse an older normal screenshot.
+  if (surface === 'page.normal') files.push('framerail/src/lib/sigma-esque/wikidot.svelte', 'framerail/src/routes/+layout.svelte');
   if (viewport === 'mobile' || viewport === 'narrow-mobile') files.push('framerail/src/lib/sigma-esque/wikidot.svelte');
   if (surface === 'shell.search' && viewport !== 'mobile' && viewport !== 'narrow-mobile') files.push('framerail/src/lib/wikidot/wikidot-search.js');
   return [...new Set(files)];

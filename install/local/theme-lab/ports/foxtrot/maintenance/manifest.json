@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "ec9b2c338317afc18276377c77804f8e4d35a4765443278f9678f9f4ed5f73b7",
+  "frozen_candidate_source_sha256": "bb5cb179a2d565e4874f57e9490cbb75fa8ebc20f01d0287bf83135a240aff72",
   "base_source_sha256": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
-  "raw_jp_overrides_sha256": "61cfa7d34f34c9ab317e402e76b2a92324ac0f8d7d7fd0b0fd0d2123750a3ab3",
-  "jp_overrides_sha256": "7b4755ab1d719f39e576806029a424ad197d30f7969bcbafe8db53509a1c95b2",
-  "semantic_css_sha256": "18c36439d5ff35924ce2a2276e0d1571e7548dbba74a5edf552b11d30ee5dada",
-  "canonical_override_sha256": "1086ba671683281012611d1908d723d3936d2b7c9e3c8bcb95c17645e804082f",
+  "raw_jp_overrides_sha256": "1d3aff6a29d490d6e606ca41dac1ee3ffd417e18e414ed6ac89233e78783b2cb",
+  "jp_overrides_sha256": "2fbcc8171099e0a9a115d694d792ededd663f8b62e2bebab0961e98c328d73eb",
+  "semantic_css_sha256": "efa30baf5075c98820e1e1153974b6f9305f4bc4799c3b1bf12448aee117aae2",
+  "canonical_override_sha256": "b34325fe1c05257c6cce876ea6eea9bfb94f82004586c1fc1100a5aeb0dd1788",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "4a4c192e973d0a08c71c0b119d6f4925f7eff7e563b2097e88f1f802dd9a8c44",
+  "final_source_sha256": "6399526f2d1ae714f74a0772510ecf7e2e42b3bfda25c3007e9f845e9bb03a41",
   "final_source_inputs": {
     "base_sha256": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
-    "jp_overrides_sha256": "7b4755ab1d719f39e576806029a424ad197d30f7969bcbafe8db53509a1c95b2"
+    "jp_overrides_sha256": "2fbcc8171099e0a9a115d694d792ededd663f8b62e2bebab0961e98c328d73eb"
   },
   "ordered_include_sha256": "839fef7ae721bb851ef23cb3c782a6435f953785942a2f2c58e733a10e71c852",
   "declaration_reviews": {},
-  "adaptation_block_count": 1,
-  "raw_override_rule_count": 1,
-  "canonical_override_rule_count": 1,
+  "adaptation_block_count": 2,
+  "raw_override_rule_count": 4,
+  "canonical_override_rule_count": 4,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -390,8 +390,8 @@
       "rationale": "The frozen source CSS intentionally paints a dark body with light text. Real SCP-JP Sigma-9 adds a light wrapper background absent from that intent, obscuring the light text. Clear only that image; four widths verify the computed layer and retain source colors.",
       "evidence": [
         {
-          "path": "authority-evidence/foxtrot-background-complete-source-current/receipt.json",
-          "sha256": "32322e09d3b0e29acc12fd6d1103f3d0552e2162543659e4e642b9d88a3bebb3",
+          "path": "authority-evidence/foxtrot-final-navigation-readable-body-20-0-20261001/receipt.json",
+          "sha256": "f7c09ca8c75c85d7206f76ae52a5695f464fe8e4213f2423c5a7ce73a0807bfd",
           "decision_authority": "REAL_WIKIDOT_TARGET_AB"
         }
       ],
@@ -409,7 +409,7 @@
           "sha256": "04407aa0cfb8cf27b6066cd994b7b1ae7d2c867f187aacbd90639423f7c78b5d"
         }
       },
-      "published_css_sha256": "957ab5ef441f1acdcb2119be57fe8c25e5985dc35dce1c45bded9107242ce02d"
+      "published_css_sha256": "16d20dd41d1c6610da31afb4bb3b667efebeadab21c146d1966d6deb06fb7aca"
     },
     {
       "marker": "Resolve preserved source CSS component includes",
@@ -427,6 +427,29 @@
           "sha256": "6ed5d876df05625082ce9c92fc69abe7eac6fa4b787b48eeccd9cd7b9b3b1676"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot Foxtrot navigation correction: separate the drawer toggle from the header menu and contain row endpoint submenus.",
+      "sha256": "0038b036c90e6c41c068bb653eac94bf6ee7f85ed813d2c36c6103ddf80127dd",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "The source header containing block places the drawer toggle over the first parent. Separate the toggle from that menu and anchor only the evidenced overflow endpoints, preserving header flow and source menu dimensions.",
+      "evidence": [
+        {
+          "path": "authority-evidence/foxtrot-navigation-action-authority-20261001/receipt.json",
+          "sha256": "37000ecc3858efa6c68c62093c4299956519a9823a78171028129105e60a9ea9",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "state": "navigation-action",
+        "viewports": [
+          320,
+          390
+        ]
+      },
+      "published_css_sha256": "16d20dd41d1c6610da31afb4bb3b667efebeadab21c146d1966d6deb06fb7aca"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -439,6 +462,21 @@
         "div#container-wrap"
       ],
       "at_contexts": [],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot Foxtrot navigation correction: separate the drawer toggle from the header menu and contain row endpoint submenus.",
+      "rationale": "SCP-JP Wikidot Foxtrot navigation correction: separate the drawer toggle from the header menu and contain row endpoint submenus.",
+      "sha256": "0038b036c90e6c41c068bb653eac94bf6ee7f85ed813d2c36c6103ddf80127dd",
+      "selectors": [
+        "#top-bar .mobile-top-bar > ul > li:last-child > ul",
+        "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul",
+        "#top-bar .open-menu a"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)",
+        "@media (min-width: 360px) and (max-width: 767px)"
+      ],
       "authority": "TARGET_WIKIDOT_CERTIFIED"
     }
   ]

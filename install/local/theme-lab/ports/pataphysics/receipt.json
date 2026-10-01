@@ -42,8 +42,8 @@
   "candidate_source_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b",
   "human_port_candidate_path": "install/local/theme-lab/ports/pataphysics/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "2e04ee0458e97fd36c12cab2e40aab0bf77d846beb0064018efa5c32650e87fb",
-  "candidate_preview_sha256": "e997781cf4ece10c9914c678d786db3cb121bef8388177ca87e9a0302c0790cc",
-  "candidate_css_sha256": "df264c1927fbe7bc8fe3e3f6f7fa594293d814f1e3d90386a03bfe475f6c02de",
+  "candidate_preview_sha256": "3f6aae40dabedb436984739f00c357ff88c8803f576a4fc7e507fb558386ab48",
+  "candidate_css_sha256": "98f233f2f3161e085fe9c764c87a2e07b95501977e69702236582d1e39923b17",
   "page_attachment_manifest": null,
   "existing_jp_reconciliation": {
     "previous_source_sha256": "c2de53df254304f9cc88cb9955003855ecaafb336b24a11355dbd51ae832796b",

@@ -704,24 +704,5 @@
 
 
 
-.scp-image-block.block-right {
-    margin: 1em 0 1em 2em;
-}
-
-.scp-image-block a {
-    background: var(--gradient-header);
-}
-
-.scp-image-block img {
-    --drop-shadow: rgb(var(--pale-gray-monochrome));
-    min-width: 100%;
-    border: 0.5rem solid rgba(var(--black-monochrome));
-    -webkit-box-sizing: border-box;
-       -moz-box-sizing: border-box;
-            box-sizing: border-box;
-    padding: 0.5em;
-    -webkit-filter: drop-shadow(-0.125rem 0.125rem 0rem var(--drop-shadow));
-    filter: drop-shadow(-0.125rem 0.125rem 0rem var(--drop-shadow));
-}
 
 @import url("89f4fd1f540c111732a53b93ed20888fc003cfdfb34b27fd348fd27e252a5f5c.css")

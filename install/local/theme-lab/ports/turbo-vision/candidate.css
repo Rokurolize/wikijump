@@ -1269,13 +1269,7 @@ LICENSE
 }
 
 
-.mobile-only {
-  display: none;
-}
-@media (max-width: 600px) {
-  .mobile-only { display: block }
-  .desktop-only { display: none }
-}
+
 
 
 /* SCP-JP Wikidot navigation correction: turbo-vision rightmost submenu anchors. */

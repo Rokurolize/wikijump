@@ -46,6 +46,25 @@ test('generic runtime removes a trailing showcase module truncated only by closi
   assert.equal(result.unmatched_showcase_modules,0);
 });
 
+test('truncated showcase removal rejects transformed text and duplicate prefixes',()=>{
+  const source='[[iftags +theme]][[module CSS]].showcase{display:none}[[/module]][[/iftags]]';
+  for(const candidateInput of ['.showcase{display:non','.showcase{display:none\n.showcase{display:none']){
+    const result=genericRuntimeThemeCss({candidateInput,candidateSource:source,candidateTags:['theme']});
+    assert.equal(result.css,candidateInput);
+    assert.equal(result.removed_truncated_showcase_modules,0);
+    assert.equal(result.unmatched_showcase_modules,1);
+  }
+});
+
+test('generic runtime preserves leading theme dependencies loaded by the showcase guard',()=>{
+  const imports='@import url("base.css");\n@import url("theme.css");';
+  const source=`[[iftags +theme]][[module CSS]]${imports}\n.showcase{display:none}[[/module]][[/iftags]][[module CSS]].article{color:red}[[/module]]`;
+  const result=genericRuntimeThemeCss({candidateInput:imports+'\n.showcase{display:none}\n.article{color:red}',candidateSource:source,candidateTags:['theme']});
+  assert.equal(result.css,imports+'\n.article{color:red}');
+  assert.equal(result.removed_showcase_modules,1);
+  assert.equal(result.unmatched_showcase_modules,0);
+});
+
 test('candidate page tags prefer explicit metadata, then retained JP tags, then source inference',()=>{
   assert.deepEqual(candidatePageTags({interactive_acceptance:{theme_source:{candidate_tags:['custom']}}},'[[iftags +テーマ]]'),['custom']);
   assert.deepEqual(candidatePageTags({source_identity:{jp:{tags:['en','テーマ']}}},'[[iftags +theme]]'),['en','テーマ']);

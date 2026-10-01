@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
+  "frozen_candidate_source_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a",
   "base_source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "c476100184db923edca24453a64b0a288e05cd03d02fed7eb65bbb3139bcf871",
-  "semantic_css_sha256": "d98e7ac63bf4c6aaf180fe1e2b0e2bb0f2e20d0ed9ebdc56255a67fde0230692",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "57f65a704655bd072ef2133634cb45f5911325f5102ead53fd634e725727e196",
+  "jp_overrides_sha256": "3223bea6764478b7047a44dcf7ecedddf14b8de573d07f9538a33943a08a1cb3",
+  "semantic_css_sha256": "24749a03e79d0a1a4d18d0ae6a6e44a89a850fb4e8092107549c86df41c9acff",
+  "canonical_override_sha256": "7834a04c53faa7a24ccf21e57c2c29625d06c65b8f7e6ab2505d7574eb3f2bc3",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "34cf03269289454848d20237fd39d0ca8acae6ede12f03b58e19055994ece01a",
+  "final_source_sha256": "28ac7c0b6074ca0091b94448a8254ae87be82642bd165c056da12934b398747e",
   "final_source_inputs": {
     "base_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "3223bea6764478b7047a44dcf7ecedddf14b8de573d07f9538a33943a08a1cb3"
   },
   "ordered_include_sha256": "e279447da3763ae59e4c906da90e934bffefd431ad6faf8183aba9231e1fd1e7",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 1,
+  "raw_override_rule_count": 1,
+  "canonical_override_rule_count": 1,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -231,8 +231,49 @@
           "sha256": "38a3de3d2a1987b57615dfa215eeaddde2fe31e5ffb5d7ce4f190656c18dcee2"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot Inkblot navigation correction: contain the third narrow mobile submenu.",
+      "sha256": "09b878d5d1b22d84a37a08288cb7ba94e88e65bcf338b5581170dc026d7152b5",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "Read-only SCP-JP Wikidot A/B found the third mobile submenu 2.83px beyond the right viewport edge at 320px with the adaptation removed; the exact current CSS with this right-edge anchor passes all submenu, item, and link bounds at 320px and 390px.",
+      "evidence": [
+        {
+          "path": "authority-evidence/inkblot-generic-runtime-navigation-14-0-20261001/receipt.json",
+          "sha256": "c5983ab396a7cfabd5a079fa550ff9bf312f1bda4346b626ed032c1f7ae2c31a",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "published_css_sha256": "cf7328f6b8c6abe15a05f63f5eca66b369d10bfb8d2a31d03bb4b368e0521890",
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "state": "navigation",
+        "viewports": [
+          320,
+          390
+        ],
+        "selectors": [
+          ".mobile-top-bar > ul > li > ul",
+          ".mobile-top-bar > ul > li > ul li",
+          ".mobile-top-bar > ul > li > ul a"
+        ]
+      }
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot Inkblot navigation correction: contain the third narrow mobile submenu.",
+      "rationale": "SCP-JP Wikidot Inkblot navigation correction: contain the third narrow mobile submenu.",
+      "sha256": "09b878d5d1b22d84a37a08288cb7ba94e88e65bcf338b5581170dc026d7152b5",
+      "selectors": [
+        ".mobile-top-bar > ul > li:nth-child(3) > ul"
+      ],
+      "at_contexts": [
+        "@media (max-width: 359px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    }
+  ]
 }

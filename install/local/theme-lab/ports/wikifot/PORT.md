@@ -1,6 +1,6 @@
 <!-- adaptation-authority-current -->
 Current publication inputs have passed the adaptation-authority gate. Historical campaign/local-runtime screenshots describe the superseded candidate; they are not acceptance for this CSS. See ../ADAPTATION-AUTHORITY-AUDIT.md and maintenance/historical-receipt.json where present.
-Current source SHA-256: 9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45; CSS SHA-256: db9c78dff364e2e87a17ee86e79a8a37d6e16ff4442a37e8b8561e61621edce3. Full port acceptance remains a separate combined result.
+Current source SHA-256: b9bb97bec318b700b367864fa87c2570b4231ff6b1a710f3e86f351af146ebb8; CSS SHA-256: 5a018ea086b2033e4a4ac36729e0c402e0b9bffd2b563df7f8c61caa70af8509. Full port acceptance remains a separate combined result.
 <!-- adaptation-authority-end -->
 
 # SCP-EN → SCP-JP port: `theme:wikifot`

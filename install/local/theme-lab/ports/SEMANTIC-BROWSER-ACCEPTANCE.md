@@ -123,3 +123,14 @@ CSS. The shared AMC/browser primitive now uses the observed div and inert
 escaped text. This is a runtime correction; no theme CSS workaround is added.
 These bounded responses do not certify History's complete responsive layout,
 heading, timeline, hover, pagination or other action outcomes.
+
+Historical serialization evidence in
+`../evidence/browser-action-contract-formats/` permits only the known omission
+of unused null navigation fields. Changed actions, active navigation helpers
+and required credit/sidebar helpers still invalidate their own states.
+`../evidence/browser-run-contract-history/` retains exact complete contracts,
+so a legacy observation can derive its unchanged dependency scope when another
+package inventory entry changes. Missing history, changed selected candidates,
+shared authority, fixtures, baseline, viewport, network policy or unknown
+future dependencies fail closed. Neither history mechanism assigns a visual
+review or changes the observation denominator.

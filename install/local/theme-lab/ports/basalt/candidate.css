@@ -2541,14 +2541,3 @@ sup {
 /*-------------------------------------------------*/
 /*----- END OF DEFAULT STYLING ("LIGHT MODE") -----*/
 /*-------------------------------------------------*/
-
-    --posX: 4vw;
-}
-
-#page-title {
-    display: none;
-}
-
-.noclick {
-    user-select: none;
-}

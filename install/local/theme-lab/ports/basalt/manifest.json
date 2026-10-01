@@ -157,9 +157,15 @@
       "source_sha256": "0a40d1b821a9f77c875da059e36c9d089a1250b9911d50d4ea6e944098baa7d0",
       "active_tags": [],
       "candidate_source_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
-      "candidate_active_tags": [],
+      "candidate_active_tags": [
+        "theme"
+      ],
+      "runtime_active_tags": [],
+      "showcase_css_modules_removed_exact": 1,
+      "showcase_css_modules_removed_truncated": 0,
+      "showcase_css_modules_unmatched": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "deff9268cc43697bc404182a9679e90bffab0c6ac04e4c9456de1c6f497683b8",
+      "candidate_css_sha256": "78b8bd21dce4bb8130ae89f7e9b825163ddbcd7abab6ff33a621a0d7293ae581",
       "asset_receipt_path": "assets.json",
       "assets": 237,
       "imports": 6,

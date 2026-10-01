@@ -49,7 +49,7 @@ for(const entry of entries){
   for(let index=0;index<baseImportCount;index++){const imported=mainCss.slice(prefix.length).match(/^\s*@import\s[^;]+;/u);if(!imported)throw new Error('Missing source base import');prefix+=imported[0];}
   const overridePlacement=manifest.interactive_acceptance?.authority_overrides_placement??'append';
   const composedThemeCss=composeThemeCss(mainCss.slice(prefix.length),await fs.readFile(path.join(dir,'authority-overrides.css'),'utf8'),overridePlacement);
-  const sourceCss=[prefix,includeCss??'',composedThemeCss].filter(x=>x.trim()).join('\n\n');
+  const sourceCss=[prefix,includeCss??'',composedThemeCss].filter(x=>x.trim()).join('\n\n').trimEnd()+'\n';
   const sourcePath=path.join(dir,'candidate-source.css');
   await fs.writeFile(sourcePath,sourceCss);
   const outputPath=path.join(dir,'candidate.css');

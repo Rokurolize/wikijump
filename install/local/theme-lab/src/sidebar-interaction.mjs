@@ -8,13 +8,14 @@ export async function openSidebar(page){
    const hash=await link.getAttribute('href');
    if(await sidebarOccupiesViewport(page))return hash;
    const reachable=await link.evaluate(anchor=>{const r=anchor.getBoundingClientRect();if(r.width<=0||r.height<=0||r.right<=0||r.bottom<=0||r.left>=innerWidth||r.top>=innerHeight)return false;const hit=document.elementFromPoint(Math.max(0,Math.min(innerWidth-1,r.left+r.width/2)),Math.max(0,Math.min(innerHeight-1,r.top+r.height/2)));return !!hit&&(hit===anchor||anchor.contains(hit))});
-   if(reachable)await link.click();else await link.evaluate(anchor=>anchor.click());
+   if(!reachable)continue;
+   await link.click();
    await page.waitForFunction(hash=>location.hash===hash,hash);
    await page.locator('#side-bar').waitFor({state:'visible'});
    return await page.evaluate(()=>location.hash);
   }
  }
- throw new Error('No visible ordinary or source-owned sidebar control');
+ throw new Error('No reachable ordinary or source-owned sidebar control');
 }
 export async function closeSidebar(page,openHash){
  for(const selector of ['#side-bar .close-menu','a[href="##"]']){
