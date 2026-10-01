@@ -1,3 +1,4 @@
+import {runtimeFilesForObservation,runtimeSurfaceContractSha} from '../src/browser-runtime-contract.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -25,7 +26,9 @@ const digest=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const matrix=[['chromium','desktop'],['chromium','laptop'],['chromium','tablet'],['chromium','mobile'],['chromium','narrow-mobile'],['firefox','desktop'],['firefox','mobile'],['webkit','desktop'],['webkit','mobile']];
 const core=new Set(['page.normal.settled','credit.view.open','page.history.list','page.source.open','nav.sidebar.open','nav.sidebar.open-submenu','shell.interwiki.visible']);
 function mockCampaign(){
- const root=fs.mkdtempSync(path.join(os.tmpdir(),'theme-lab-current-campaign-'));
+ const workspace=fs.mkdtempSync(path.join(os.tmpdir(),'theme-lab-current-campaign-'));
+ const root=path.join(workspace,'install/local/theme-lab');fs.mkdirSync(root,{recursive:true});
+ for(const surface of new Set(browserContract.states.map(row=>row.surface)))for(const viewport of ['desktop','mobile'])for(const file of runtimeFilesForObservation(surface,viewport)){const target=path.join(workspace,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,'mock runtime input');}
  const write=(name,content)=>{const bytes=typeof content==='string'?content:JSON.stringify(content);const file=path.join(root,name);fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,bytes);return {path:name,sha256:digest(bytes)}};
  write('ports/adaptation-authority.json',{packages:{testtheme:{}}});
  const css=write('ports/testtheme/candidate.css','body { color: black; }');
@@ -52,14 +55,14 @@ function mockCampaign(){
  const migrationBinding=write('migration-audit.json',migrationAudit);
  const migrationResult={overall_acceptance:{status:'pass'},browser_audit_sha256:migrationBinding.sha256};
  const document={schema:'theme_lab_current_campaign_acceptance.v1',packages:[{package:'testtheme',inputs:{css,source,preview},receipt,browser_audit:write('package-audit.json',audit)}],migration:{receipt:write('migration-result.json',migrationResult),browser_audit:migrationBinding}};
- const save=()=>write('current-campaign-acceptance.json',document);save();return{root,document,write,save,audit,migrationResult,full};
+ const save=()=>write('current-campaign-acceptance.json',document);save();return{root,workspace,document,write,save,audit,migrationResult,full};
 }
 test('promotion requires current identities, complete browser coverage and accepted migration',()=>{
  const mock=mockCampaign();try{
   assert.deepEqual(checkCampaignCompletion(mock.root).failures,[]);
   fs.appendFileSync(path.join(mock.root,'ports/testtheme/candidate.css'),' /* changed */');
   assert.equal(checkCampaignCompletion(mock.root).status,'fail');
- }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
+ }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
 });
 test('promotion rejects iteration checks and missing exact paired image review',()=>{
  const mock=mockCampaign();try{
@@ -68,20 +71,20 @@ test('promotion rejects iteration checks and missing exact paired image review',
   const failures=checkCampaignCompletion(mock.root).failures;
   assert.ok(failures.some(value=>value.includes('full, non-deferred')));
   assert.ok(failures.some(value=>value.includes('unbound paired image review')));
- }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
+ }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
 });
 test('historical integrity cannot promote an unresolved current migration',()=>{
  const mock=mockCampaign();try{
   mock.migrationResult.overall_acceptance.status='inconclusive';mock.document.migration.receipt=mock.write('migration-result.json',mock.migrationResult);mock.save();
   assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('migration acceptance is inconclusive')));
- }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
+ }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
 });
 test('current Sigma-10 contract must enumerate maintained candidates and baseline',()=>{
  const mock=mockCampaign();try{
   const contract=JSON.parse(fs.readFileSync(path.join(mock.root,'sigma10-migration/current-campaign/run-contract.json'),'utf8'));
   contract.current_candidate_inventory.pop();mock.write('sigma10-migration/current-campaign/run-contract.json',contract);
   assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('Sigma-10 current candidate inventory')));
- }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
+ }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
 });
 test('current Sigma-10 completion rejects a capture without a bound current visual review',()=>{
  const mock=mockCampaign();try{
@@ -90,13 +93,13 @@ test('current Sigma-10 completion rejects a capture without a bound current visu
   mock.document.migration.browser_audit=binding;mock.migrationResult.browser_audit_sha256=binding.sha256;
   mock.document.migration.receipt=mock.write('migration-result.json',mock.migrationResult);mock.save();
   assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('current accepted visual review')));
- }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
+ }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
 });
 test('promotion rejects a omitted state even when remaining screenshots have been reviewed',()=>{
  const mock=mockCampaign();try{
   mock.audit.records.pop();mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
   assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('Missing current browser state')));
- }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
+ }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
 });
 
 test('semantic completion accepts bound questions and measured facts, not a PASS on every screenshot',()=>{
@@ -106,21 +109,30 @@ test('semantic completion accepts bound questions and measured facts, not a PASS
    row.classification='UNCONFIRMED';row.reviewed_after_last_change=false;delete row.visual_review;
    row.unconfirmed_items=['screenshot captured but awaiting image review'];
    Object.assign(row,{asset_dependency_sha256:digest('assets'),fixture_contract_sha256:digest('fixture'),
-    capture_state_action_contract_sha256:digest('action'),runtime_surface_contract_sha256:digest('runtime'),
+    capture_state_action_contract_sha256:digest('action'),runtime_surface_contract_sha256:runtimeSurfaceContractSha(mock.workspace,row.surface,row.viewport),
     visual_diagnostics:{viewport:{width:1440,documentWidth:1440},title_overlaps:[]}});
   }
+  const referenceHtml=mock.write('source.html','<!doctype html><p>Frozen foreign theme</p>');
+  const referenceCapture=mock.write('source-rendering.json',{reference_identity:{source_url:'https://scp-wiki.wikidot.com/theme:testtheme',original_html_sha256:referenceHtml.sha256,replay_entry:'/o/'+referenceHtml.sha256,snapshot_sha256:digest('snapshot'),offline:true},visual:{viewports:{desktop:{reference_screenshot_sha256:mock.audit.records[0].screenshot_sha256}}}});
   mock.audit.semantic_reviews=Object.fromEntries(planBrowserAcceptance(mock.audit).visual_questions.map(q=>[q.id,
    {question:q.question,evidence_sha256:q.evidence_sha256,status:'pass',method:'direct-visual-question-review',
     note:'Frozen source imagery and typography were compared across the declared responsive evidence.',
     reviewer:'test',reviewed_at:'2026-10-01T00:00:00Z',source_url:'https://scp-wiki.wikidot.com/theme:testtheme',
-    source_snapshot:mock.document.packages[0].inputs.source,source_rendering:{path:'ports/captures/test.png',sha256:mock.audit.records[0].screenshot_sha256},
+    source_snapshot:mock.document.packages[0].inputs.source,source_html:referenceHtml,source_rendering_receipt:referenceCapture,source_rendering:{path:'ports/captures/test.png',sha256:mock.audit.records[0].screenshot_sha256},
     decision_authority:'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY',port_conclusion_eligible:false}]));
   mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
   assert.deepEqual(checkCampaignCompletion(mock.root).failures,[]);
+  const historyRuntime=path.join(mock.workspace,'framerail/src/lib/wikidot-history-contract.js');
+  const previousRuntime=fs.readFileSync(historyRuntime);
+  fs.appendFileSync(historyRuntime,' changed historical source primitive');
+  const runtimeFailures=checkCampaignCompletion(mock.root).failures;
+  assert.ok(runtimeFailures.length>0);
+  assert.ok(runtimeFailures.every(value=>value.includes('superseded browser runtime surface page.history')));
+  fs.writeFileSync(historyRuntime,previousRuntime);
   mock.audit.records[0].visual_diagnostics.viewport.documentWidth=1500;
   mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
   assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('machine failure document_containment')));
- }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
+ }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
 });
 
 test('semantic completion rejects a candidate snapshot impersonating another upstream source',()=>{
@@ -130,5 +142,5 @@ test('semantic completion rejects a candidate snapshot impersonating another ups
   mock.audit.semantic_reviews={[q.id]:{source_url:'https://scp-wiki.wikidot.com/theme:another',source_snapshot:mock.document.packages[0].inputs.source}};
   mock.document.packages[0].browser_audit=mock.write('package-audit.json',mock.audit);mock.save();
   assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('maintained upstream source authority')));
- }finally{fs.rmSync(mock.root,{recursive:true,force:true})}
+ }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
 });

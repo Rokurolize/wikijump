@@ -98,11 +98,23 @@ export function planBrowserAcceptance(audit) {
     }
     if (facts.title_composition === 'visual') {
       const overlaps = (row.title_composition_measurement?.overlaps ?? row.visual_diagnostics.title_overlaps ?? row.visual_diagnostics.titleOverlaps).filter(item => item.effectively_visible);
-      const id = hash({kind: 'ambiguous_title_composition', dependencies, overlaps});
-      questions.set(id, {id, kind: 'ambiguous_composition', theme: row.theme,
-        question: 'Is the measured visible intersection with the page title an intentional source composition, and does it preserve readable title text and usable intersecting controls?',
+      // The obligation is the composition of these elements, not the action
+      // that reached it. Geometry may vary responsively within one question;
+      // every different state/image/dependency still enters its evidence set.
+      // This does not declare the images equivalent or reuse a PASS by pixels.
+      const elements = overlaps.map(item => Object.fromEntries(['tag','id','class','text','color','background','position','z'].map(key => [key,item[key]??null])))
+        .sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
+      const id = hash({kind: 'ambiguous_title_composition', theme:row.theme,
+        candidate:row.candidate_sha256, source:row.candidate_source_sha256,
+        base:row.base_css_sha256??null, baseline:row.baseline_theme_css_sha256,
+        fixture:row.fixture_contract_sha256, elements});
+      const labels = [...new Set(elements.map(item=>item.id?`#${item.id}`:item.class?`${item.tag}.${item.class}`:`${item.tag}: ${String(item.text??'').slice(0,80)}`))].join('; ');
+      const question = questions.get(id) ?? {id, kind: 'ambiguous_composition', theme: row.theme, intersecting_elements: elements,
+        question: `For ${labels}, is the measured layering over the page title an intentional source composition across the declared responsive/action states, with the title readable in its intended reading state and intersecting controls usable in their action states?`,
         reason: 'Visibility and geometry establish an intersection; its intended composition requires source and visual interpretation.',
-        observations: [{key, dependencies_sha256: hash(dependencies), screenshot_sha256: row.screenshot_sha256}]});
+        observations: []};
+      question.observations.push({key, dependencies_sha256: hash(dependencies), screenshot_sha256: row.screenshot_sha256});
+      questions.set(id,question);
       required.push(id);
     }
     observations.push({key, dependencies_sha256: hash(dependencies), facts, visual_questions: required,
@@ -138,7 +150,7 @@ export function validateSemanticBrowserAcceptance(audit) {
         typeof review?.reviewer !== 'string' || !review.reviewer.trim() || !Number.isFinite(Date.parse(review?.reviewed_at)) ||
         review?.decision_authority !== 'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY' || review.port_conclusion_eligible !== false ||
         !/^https:\/\/[a-z0-9-]+\.wikidot\.com\//u.test(review?.source_url ?? '') ||
-        !['source_snapshot', 'source_rendering'].every(key => typeof review?.[key]?.path === 'string' && validHash(review[key].sha256))) {
+        !['source_snapshot', 'source_html', 'source_rendering', 'source_rendering_receipt'].every(key => typeof review?.[key]?.path === 'string' && validHash(review[key].sha256))) {
       failures.push(`${question.theme}: unanswered or stale visual question ${question.id}`);
     }
   }
@@ -150,6 +162,6 @@ export function validateSemanticBrowserAcceptance(audit) {
 export function semanticReviewArtifactBindings(audit) {
   return planBrowserAcceptance(audit).visual_questions.flatMap(question => {
     const review = audit.semantic_reviews?.[question.id];
-    return ['source_snapshot', 'source_rendering'].map(key => ({binding: review?.[key], label: `${question.theme}/${question.kind}/${key}`}));
+    return ['source_snapshot', 'source_html', 'source_rendering', 'source_rendering_receipt'].map(key => ({binding: review?.[key], label: `${question.theme}/${question.kind}/${key}`}));
   });
 }

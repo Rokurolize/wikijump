@@ -1,0 +1,886 @@
+[[iftags +테마]]
+
+[[>]]
+[[module Rate]]
+[[/>]]
+
+[[include :scpko:info:start]]
+**경애하는 독재자 꾸밈양식**
+**제작:** [[*user thd-glasses]]
+
+**출처**
+# https://noonnu.cc/font_page/678
+# https://noonnu.cc/font_page/1235
+# https://noonnu.cc/font_page/1279
+# https://pixabay.com/ko/illustrations/%EA%B9%A8%EC%A7%84-%EC%A1%B0%EC%A7%81-%EC%9C%84%EC%97%90-%EA%B9%8C%EB%8A%94-%EA%B2%83-1975573/
+* 사용된 모든 이미지는 [[*user thd-glasses]]가 직접 제작, 편집함.
+
+[[div style="border-radius: 15px; border:solid 3px var(--red); background-color: var(--paper); width: 250px; margin: 10px auto; padding: 0px; text-align: center;"]]
++++++ [[[thd-glasses-hub|thd-glasses의 작품 더 보기]]]
+[[/div]]
+
+[[include :scpko:info:end]]
+
+[[module CSS]]
+
+#extra-div-4 {
+  top: 2000px !important;
+}
+
+[[/module]]
+
+> [[=]]
+> + 도입하기 전에
+> [[/=]]
+> ----
+> 
+> 이 테마는 SCP 재단 세계관의 북한을 묘사하기 위한 문학적 장치입니다. 실제 북한을 찬양고무할 목적으로 개발되지 [[span class="kim"]]않았으며[[/span]], 본래의 개발 목적 외에 실정법에 반하는 용도로 사용하는 것은 허용되지 않습니다.
+> 
+> 이 테마를 사용하는 페이지에는 하단바와 평가모듈에 주의문이 부착됩니다.
+> 
+> This is a parody theme about North Korea in the Foundation universe. This article is in [[span class="kim"]]NO WAY[[/span]] intended to support or praise North Korea and its politics. Proper warning labels will be attatched to the bottom bar and rating module of all articles which adopt this theme.
+
+@@@@
+@@@@
+
+[[=image https://scpko.wdfiles.com/local--files/npes-hub/AEB.png width="50%"]]
+
+[[div class="chapter"]]
+경애하는 독재자 종속형꾸밈마당 양식
+[[/div]]
+
+[[=]]
+이 꾸밈양식은 공화국 단체 "이상교화국"을 위하야 특수 제작된 전용 양식이다.
+누구든 이 양식으로 웨브페지를 꾸미려는 자는 아래 명령문을 똑같이 옮겨 적어야 한다.
+
+> @@[[include :scpko:theme:dear-dictator]]@@
+[[/=]]
+
+@@@@
+@@@@
+@@@@
+@@@@
+
+[[=]]
++ 색상 꾸러미
+[[/=]]
+
+[[table style="max-width: 650px; width: 100%; margin: 3em auto; font-family: 'ONE-Mobile-Title', san-serif; border-spacing: 15px; vertical-align: bottom; text-align: center;"]]
+
+[[row style="width: 100%;"]]
+
+[[cell style="width: 50%; height: 150px; background: var(--red); color: var(--bg); vertical-align: bottom; text-align: center; box-shadow: 0 0 5px var(--text);" colspan="2"]]
++ ##FFF|주체[[span style="white-space: nowrap"]]붉은색[[/span]]##
+@@--red@@
+#892B21
+[[/cell]]
+
+[[cell style="width: 50%; height: 150px; background: var(--gold); color: var(--text); vertical-align: bottom; text-align: center; box-shadow: 0 0 5px var(--text);" colspan="2"]]
++ 태양[[span style="white-space: nowrap"]]금색[[/span]]
+@@--gold@@
+#C6AF5F
+[[/cell]]
+
+[[/row]]
+
+[[row style="width: 100%;"]]
+
+[[cell style="width: 25%; height: 100px; background: var(--bg); color: var(--text); vertical-align: bottom; text-align: center; box-shadow: 0 0 5px var(--text);"]]
++ 백두[[span style="white-space: nowrap"]]흰색[[/span]]
+@@--bg@@
+#FFF
+[[/cell]]
+
+[[cell style="width: 25%; height: 100px; background: var(--brown); color: var(--bg); vertical-align: bottom; text-align: center; box-shadow: 0 0 5px var(--text);"]]
++ ##FFF|선군[[span style="white-space: nowrap"]]갈색[[/span]]##
+@@--brown@@
+#362622
+[[/cell]]
+
+[[cell style="width: 25%; height: 100px; background: var(--text); color: var(--bg); vertical-align: bottom; text-align: center; box-shadow: 0 0 5px var(--text);"]]
++ ##FFF|보위[[span style="white-space: nowrap"]]흑색[[/span]]##
+@@--text@@
+#222
+[[/cell]]
+
+[[cell style="width: 25%; height: 100px; background: var(--paper); color: var(--text); vertical-align: bottom; text-align: center; box-shadow: 0 0 5px var(--text);"]]
++ 비날[[span style="white-space: nowrap"]]론색[[/span]]
+@@--paper@@
+#EDEDEA
+[[/cell]]
+
+[[/row]]
+
+[[/table]]
+
+@@@@
+@@@@
+
+[[=]]
++ 글꼴 꾸러미
+
+[[div style="font-size: 110%;"]]
+혁명적 제목은 [[span style="font-family: 'GapyeongHanseokbong-Bold'; font-size: 120%; color: var(--red); text-shadow: 0 0 1px var(--red);"]]**가평 한석봉 큰붓**[[/span]]을 사용하였다.
+웨브페지 제목은 [[span style="font-family: 'ONE-Mobile-Title'; color: var(--gold);"]]하나장마당 손전화고직 제목꼴[[/span]]을 사용하였다.
+본문 글귀는 ##var(--brown)|**전주공예고직체**##를 사용하였다.
+[[/div]]
+[[/=]]
+
+@@@@
+@@@@
+@@@@
+@@@@
+
+[[=]]
++ 보통 도구 꾸러미
+[[/=]]
+
+[[tabview]]
+[[tab 문서철 1호]]
+
+주체 113년 5월 6일 위대한 어버이 수령 [[span class="kim"]]김정은[[/span]] 동지께서 이상교화국 꾸밈양식 배포작업 최전연을 시찰하시고 다음과 같이 교시하시었다.
+
+> "문서철은 여러 정보를 병렬하여 제시할 수 있으니 몹시 혁명적입네다. 이 외에도 많은 보통 도구가 웨브페지 작성에 역할을 다할 것으로 기대합네다."
+
+[[include :scpko:component:image-block
+|name=https://scpko.wdfiles.com/local--files/npes-hub/AEB.png
+|caption=이상교화국 심볼
+|width=150px
+]]
+
+우리 조선말지부 웨브페지 개발군 일동은 5·6 교시의 말씀을 인용구 액자에 담아 걸고, 그 뜻을 받들어 //경애하는 독재자 꾸밈양식//에 탑재된 보통 도구 일체를 여기에 정리하여 두었다.
+
++ 제목 제1단
+++ 제목 제2단
++++ 제목 제3단
+
+||||위대하신 령도자||
+||어버이||= 수령||
+||~ [[span class="kim"]]김정은[[/span]]||장군님||
+
+장군님께선 솔잎 4개(@@----@@)를 놓아 장벽을 세우실 수 있다//!//
+----
+
+[[collapsible show="+ 보이라" hide="- 숨기라"]]
+일없습네다.
+[[/collapsible]]
+
+> 문서철 1호는 공화국 웨브페지 기술의 찬연한 승리의 증표이다//!// 그리고 문서철 2호야말로 간악한 미제와 괴뢰 대한민국 정권을 무너뜨릴 결정적인 공격전의 첨단이 될 것이다//!//
+
+~~~~
+
+[[/tab]]
+[[tab 문서철 2호]]
+
+어, 군관 동지. 여기는 오시면 안 됩네다. 문서철을 시연해야 하는데 물자가 모자라서 문서철만 세우고 내용을 채우지 못하였습네다. 예? 요, 용서해주십시오, 군관 동지! 집에 홀어머니가 굶고 계십네다! 용서해주십시오, 동지!
+
+[[/tab]]
+[[/tabview]]
+
+@@@@
+@@@@
+@@@@
+@@@@
+
+
+[[=]]
++ 고유 도구 꾸러미
+[[/=]]
+
+[[div class="blockquote"]]
+
+[[div class="chapter"]]
+혁명적 단락 소제목 도구
+[[/div]]
+
+[[div class="blockquote"]]
+@@[[div class="chapter"]]@@
+혁명적 단락 소제목 도구
+@@[[/div]]@@
+[[/div]]
+
+[[/div]]
+
+[[div class="blockquote"]]
+
+[[div class="chapter"]]
+주체적 제목 다시쓰기 도구
+[[/div]]
+
+[[div class="blockquote"]]
+@@[[module CSS]]@@
+:root {
+  @@--@@slogan1: "**(이상교화전선을 철저구축하여)**";
+  @@--@@slogan2: "**(조국주체혁명에 보탬이 되자!!)**";
+  @@--@@slogan1m: "**(이상교화전선을)**";
+  @@--@@slogan2m: "**(철저구축하자!!)**";
+}
+@@[[/module]]@@
+[[/div]]
+
+[[/div]]
+
+[[div class="blockquote"]]
+
+[[div class="chapter"]]
+백두산절세위인 입력 도구
+[[/div]]
+
+[[div class="blockquote"]]
+@@[[span class="kim"]]@@[[span class="kim"]]김일성[[/span]]@@[[/span]]@@
+@@[[span class="kim"]]@@[[span class="kim"]]김정일[[/span]]@@[[/span]]@@
+@@[[span class="kim"]]@@[[span class="kim"]]김정은[[/span]]@@[[/span]]@@
+[[/div]]
+
+[[/div]]
+
+@@@@
+@@@@
+@@@@
+@@@@
+
+> 저, 정전입네다! 전력이 부족합네다, 군관 동지!
+
+> 에미나이, 저기 발전답판이 보이지 않간?
+
+@@@@
+@@@@
+
++ 꾸밈양식 명령묶음
+
+[[collapsible show="+ 명령묶음 보이라" hide="- 명령묶음 숨기라"]]
+
+
+[[code type="CSS"]]
+@font-face {
+    font-family: 'GapyeongHanseokbong-Bold';
+    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2312-1@1.1/GapyeongHanseokbong-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'ONE-Mobile-Title';
+    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/ONE-Mobile-Title.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'JeonjuCraftGoR';
+    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2310@1.0/JeonjuCraftGoR.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+:root {
+  --towerleft: max(calc(50% - 675px), -40px);
+  --towerwidth: 280px;
+  --slogan1: "이상교화전선을 철저구축하여";
+  --slogan2: "조국주체혁명에 보탬이 되자!!";
+  --slogan1m: "이상교화전선을";
+  --slogan2m: "철저구축하자!!";
+
+  --text: #222;
+  --red: #892B21;
+  --gold: #C6AF5F;
+  --bg: #FFF;
+  --paper: #EDEDEA;
+  --brown: #362622;
+}
+
+body, html, #container {
+  overflow-x: hidden;
+}
+
+body, h2, h3, h4, h5, h6 {
+  font-family: 'JeonjuCraftGoR', san-serif;
+  color: var(--text);
+}
+
+a, a:visited, a.newpage, #side-bar a {
+  color: var(--gold); text-shadow: 0 0 1px var(--gold);
+}
+
+div#container-wrap { background: none; }
+#container { margin-bottom: 26px; }
+#footer, #footer a { background: none; color: var(--text); }
+#license-area { display: none; }
+#content-wrap, #main-content { position: static; }
+
+#header { background: none; height: 200px; }
+
+#header h1 {
+  margin-left: 0;
+  width: 100%;
+  text-align: center;
+}
+
+#header h1 a {
+  color: transparent;
+  text-shadow: none;
+  transform: scaleX(1.2) rotate(-5deg); }
+
+#header h1 a::before {
+  content: var(--slogan1) "　\A　" var(--slogan2) "\A";
+  color: var(--red);
+  text-shadow: 3px 3px var(--gold), 2px 2px 2px var(--bg), 2px -2px 2px var(--bg), -2px 2px 2px var(--bg), -2px -2px 2px var(--bg), 3px 0 2px var(--bg), 0 3px 2px var(--bg), -3px 0 2px var(--bg), 0 -3px 2px var(--bg), 5px 5px 2px var(--bg), 5px 1px 2px var(--bg), 1px 5px 2px var(--bg), 1px 1px 2px var(--bg), 6px 3px 2px var(--bg), 3px 6px 2px var(--bg), 0 3px 2px var(--bg), 3px 0 2px var(--bg);
+  font-family: 'GapyeongHanseokbong-Bold', serif;
+  font-style: italic;
+  white-space: pre;
+  line-height: 1.1;
+}
+
+#header h2 { display: none; }
+
+#login-status { position: fixed; right: unset; top: -3px; left: 10px; z-index: 14; font-size: 100%; }
+#login-status, #login-status a { color: var(--bg); }
+
+#login-status .printuser { font-size: 0; }
+#login-status .printuser img.small { transform: translate(5px, 5px); }
+
+#account-options { right: unset; left: 0; }
+#account-options li a:hover { color: var(--gold); }
+
+#top-bar { position: fixed; top: 0; right: unset; z-index: 13; font-size: 100%; }
+#top-bar .top-bar, #top-bar .mobile-top-bar { justify-content: center; width: 100%; }
+#top-bar ul { float: none !important; }
+
+#top-bar ul li.sfhover a, #top-bar ul li:hover a, #login-status ul a {
+  background: var(--red);
+  color: var(--bg);
+}
+ 
+#top-bar ul li:hover a:hover {
+  background: var(--gold);
+  color: var(--bg);
+}
+
+.c_topbar_arrow {
+  color: var(--gold);
+}
+
+#search-top-box { position: fixed; top: 0; z-index: 14;}
+#search-top-box-form input[type="submit"],
+#search-top-box-form input[type="submit"]:hover,
+#search-top-box-form input[type="submit"]:focus {
+  background: var(--red);
+  border: 2px solid var(--gold);
+  color: var(--bg);
+  box-shadow: none;
+  font-size: 100%;
+}
+
+#header-extra-div-1, #extra-div-1 {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 21px;
+  background: var(--red);
+  border: solid var(--gold);
+}
+
+#header-extra-div-1 {
+  top: 0;
+  border-width: 0 0 5px 0;
+  z-index: 12;
+}
+#extra-div-1 {
+  bottom: 0;
+  border-width: 5px 0 0 0;
+  z-index: 15;
+}
+#extra-div-1::before {
+  content: "⚠️: 15세 이용가, 정치적 풍자, CC BY-SA 3.0";
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  color: var(--bg);
+}
+#extra-div-1::after {
+  content: "🈲: SCP 재단의 모든 컨텐츠는 15세 미만의 어린이 혹은 청소년이 시청하기에 부적절합니다.\A따로 명시하지 않는 한 이 사이트의 모든 콘텐츠는 크리에이티브 커먼즈 저작자표시-동일조건변경허락 3.0 라이선스를 따릅니다.\A이 페이지의 내용은 순수한 문예 창작물이며 북한을 찬양고무할 의도가 전혀 없음을 밝힙니다.\AThis article is in no way intended to support or praise North Korea and its politics.";
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  padding: 0.5em 1em;
+  box-sizing: border-box;
+  transform: scaleY(0) translateX(-50%);
+  transform-origin: bottom;
+  background: var(--red);
+  color: var(--bg);
+  text-align: center;
+  white-space: pre-wrap;
+  transition: all 0.3s;
+}
+#extra-div-1:hover::after {
+  transform: scaleY(1) translateX(-50%);
+  transition: all 0.3s;
+}
+
+#extra-div-2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1000px;
+  background: linear-gradient(var(--bg) 80%, transparent);
+  z-index: -1;
+}
+
+#extra-div-3 {
+  position: absolute;
+  inset: 0;
+  background: url('https://scpko.wdfiles.com/local--files/theme:dear-dictator/AEB-bg.png') right/100% repeat-y;
+  z-index: -2;
+}
+
+#extra-div-4 {
+  position: absolute;
+  top: 800px;
+  left: 0;
+  right: 0;
+  bottom: -26px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.15) 800px);
+  z-index: 20;
+  pointer-events: none;
+}
+
+#page-title, h1, #header, #search-top-box-form input[type="submit"], #side-bar, #extra-div-1::before, .yui-navset .yui-nav a {
+  font-family: 'ONE-Mobile-Title', san-serif;
+}
+
+#side-bar .heading {
+  font-weight: normal;
+}
+
+#side-bar .side-block .menu-item {
+  letter-spacing: 0.5px !important;
+}
+
+#side-bar a, #side-bar .collapsible-block-link, #side-bar div.menu-item a {
+  text-shadow: 1px 1px 1px var(--text), 1px -1px 1px var(--text), -1px 1px 1px var(--text), -1px -1px 1px var(--text);
+  font-weight: normal;
+}
+
+#page-title, h1 {
+  font-weight: 700;
+}
+
+h1 { color: var(--text); }
+
+.page-rate-widget-box {
+  filter: brightness(1.2) saturate(1.2);
+  line-height: 1;
+  margin-bottom: 40px;
+}
+
+#page-content .rate-box-with-credit-button {
+  background-color: var(--red);
+  border-color: var(--red);
+  margin-bottom: 40px;
+}
+
+#page-content .creditButton p a:hover {
+  color: var(--gold);
+}
+
+#page-content .page-rate-widget-box::after {
+  content: "표현물 경고 ⚠️";
+  position: absolute;
+  top: 20px;
+  right: 0;
+  width: max-content;
+}
+#page-content .rate-box-with-credit-button .page-rate-widget-box::after { right: -20px; }
+#page-content .creditBottomRate .page-rate-widget-box::after { content: none; }
+
+#page-content .creditBottomRate { height: 70px; }
+#page-content .creditBottomRate::before {
+  content: "⚠️ 이 페이지의 내용은 순수한 문예 창작물이며\A북한을 찬양고무할 의도가 전혀 없음을 밝힙니다.";
+  white-space: pre-wrap;
+  line-height: 1.4;
+  position: absolute;
+  text-align: center;
+  bottom: 5px;
+  left: 0;
+  right: 0;
+}
+
+#u-credit-view { z-index: 20; }
+
+.chapter {
+  margin: 0.25em;
+  text-align: center;
+  font-size: 2.5em;
+  color: var(--red);
+  text-shadow: 2px 2px var(--gold);
+  font-family: 'GapyeongHanseokbong-Bold', serif;
+  font-style: italic;
+  word-break: keep-all;
+}
+
+span.kim {
+  display: inline-block;
+  font-size: 101%;
+  font-weight: 500;
+  font-family: 'ONE-Mobile-Title', san-serif;
+  white-space: nowrap;
+}
+
+div.tower, div.towerline {
+  position: fixed;
+  top: calc(var(--towerwidth) + 25px);
+  left: var(--towerleft);
+  width: var(--towerwidth);
+  height: 650px;
+}
+
+div.tower {
+  clip-path: polygon(0% 0%, 0% 100%, 2% 100%, 2% 86.5%, 1% 86.5%, 1% 84.5%, 4% 84.5%, 4% 70.5%, 3% 70.5%, 3% 68.5%, 6% 68.5%, 6% 53.5%, 5% 53.5%, 5% 51.5%, 8% 51.5%, 8% 36.5%, 7% 36.5%, 7% 34.5%, 10% 34.5%, 10% 19.5%, 9% 19.5%, 9% 17.5%, 12% 17.5%, 12% 2.5%, 11% 2.5%, 11% 0.5%, 89% 0.5%, 89% 2.5%, 88% 2.5%, 88% 17.5%, 91% 17.5%, 91% 19.5%, 90% 19.5%, 90% 34.5%, 93% 34.5%, 93% 36.5%, 92% 36.5%, 92% 51.5%, 95% 51.5%, 95% 53.5%, 94% 53.5%, 94% 68.5%, 97% 68.5%, 97% 70.5%, 96% 70.5%, 96% 84.5%, 99% 84.5%, 99% 86.5%, 98% 86.5%, 98% 100%, 100% 100%, 100% 0%);
+
+  background: var(--bg);
+  z-index: 8;
+}
+
+div.towerline {
+  clip-path: polygon(0.5% 0.5%, 0.5% 100%, 3% 100%, 3% 86%, 2% 86%, 2% 85%, 5% 85%, 5% 70%, 4% 70%, 4% 69%, 7% 69%, 7% 53%, 6% 53%, 6% 52%, 9% 52%, 9% 36%, 8% 36%, 8% 35%, 11% 35%, 11% 19%, 10% 19%, 10% 18%, 13% 18%, 13% 2%, 12% 2%, 12% 1%, 88% 1%, 88% 2%, 87% 2%, 87% 18%, 90% 18%, 90% 19%, 89% 19%, 89% 35%, 92% 35%, 92% 36%, 91% 36%, 91% 52%, 94% 52%, 94% 53%, 93% 53%, 93% 69%, 96% 69%, 96% 70%, 95% 70%, 95% 85%, 98% 85%, 98% 86%, 97% 86%, 97% 100%, 99.5% 100%, 99.5% 0.5%);
+
+  background: var(--text);
+  z-index: 7;
+}
+
+div.toweron, div.toweroff {
+  top: calc(var(--towerwidth) + 25px);
+  left: calc(var(--towerleft) + 1px);
+  width: calc(var(--towerwidth) - 2px);
+}
+
+div.toweron {
+  position: absolute;
+  height: 120vh;
+  background: rgba(255,255,200,0.6);
+  backdrop-filter: brightness(2) blur(2px);
+  mask: linear-gradient(rgb(0, 0, 0) 20%, transparent);
+  z-index: 3;
+}
+
+div.toweroff {
+  position: fixed;
+  height: 650px;
+  background: #555;
+  z-index: 1;
+}
+
+div.light {
+  position: fixed;
+  top: 26px;
+  left: var(--towerleft);
+  width: var(--towerwidth);
+  height: var(--towerwidth);
+  background: url(https://scpko.wdfiles.com/local--files/theme:dear-dictator/AEB-header.png) center/cover no-repeat;
+  z-index: 9;
+}
+
+div.lighton {
+  position: absolute;
+  top: 27px;
+  left: calc(var(--towerleft) + 1px);
+  width: calc(var(--towerwidth) - 2px);
+  height: calc(var(--towerwidth) - 2px);
+  mask: linear-gradient(var(--text) 50%, transparent);
+  backdrop-filter: brightness(1.2) saturate(1.8) contrast(2);
+  z-index: 5;
+}
+
+div.lightoff {
+  position: fixed;
+  top: 27px;
+  left: calc(var(--towerleft) + 1px);
+  width: calc(var(--towerwidth) - 2px);
+  height: calc(var(--towerwidth) - 2px);
+  background: url(https://scpko.wdfiles.com/local--files/theme:dear-dictator/AEB-headerbg.png) center/contain no-repeat;
+  z-index: 4;
+}
+
+blockquote, div.blockquote {
+  border: 2px solid var(--text);
+  box-size: border-box;
+  background: var(--paper);
+}
+
+.yui-navset .yui-nav {
+  border: none;
+}
+
+.yui-navset .yui-nav a,
+.yui-navset .yui-nav a em,
+.yui-navset .yui-nav .selected a, .yui-navset .yui-nav .selected a em {
+  border: none;
+}
+
+.yui-navset .yui-nav a {
+  background: var(--gold);
+  padding: 0.25em 1.25em;
+  filter: brightness(1.1);
+  clip-path: polygon(10px 0%, 0% 100%, 100% 100%, calc(100% - 10px) 0%);
+  font-size: 110%;
+  color: var(--text);
+  position: relative;
+}
+
+.yui-navset .yui-nav .selected,
+.yui-navset .yui-nav li {
+  margin: -1px -0.5em -1px 0;
+  max-width: 100%;
+}
+
+.yui-navset .yui-nav a:hover, .yui-navset .yui-nav a:focus {
+  background: var(--gold);
+  filter: brightness(1.2);
+  z-index: 1;
+}
+
+.yui-navset .yui-nav .selected a, .yui-navset .yui-nav .selected a:focus, .yui-navset .yui-nav .selected a:hover {
+  background: var(--gold);
+  filter: brightness(1);
+  color: var(--red);
+  z-index: 2;
+}
+
+.yui-navset .yui-content {
+  border: 7px solid var(--gold);
+  box-size: border-box;
+  background: var(--paper);
+  padding: 0.5em 1em;
+  z-index: 3;
+}
+
+.yui-content blockquote,
+.yui-content div.blockquote,
+blockquote blockquote,
+blockquote div.blockquote,
+div.blockquote blockquote,
+div.blockquote div.blockquote {
+  background: #E5E5E2;
+}
+
+.yui-content a, blockquote a, div.blockquote a {
+  filter: brightness(0.9);
+}
+
+table.wiki-content-table th {
+  background-color: var(--gold);
+  color: var(--red);
+  font-family: 'ONE-Mobile-Title', san-serif;
+}
+
+.thread-container .post .head {
+  background: var(--red);
+  color: var(--bg);
+}
+
+.thread-container .post .options a {
+  color: var(--gold);
+}
+
+@media (min-width: 768px) and (max-width: 979px) {
+  #top-bar ul li.sfhover ul li a, #top-bar ul li:hover ul li a {
+    width: 150px;
+  }
+  #top-bar ul li ul li ul {
+    left: 173px;
+  }
+}
+
+@media(min-width: 768px) {
+  #header h1 {
+    box-sizing: border-box;
+    padding-left: 10vw;
+  }
+
+  #top-bar .top-bar { display: flex; }
+
+  #top-bar .top-bar > ul > li:nth-child(5) > a { font-size: 0; padding: 10px 1rem; }
+  #top-bar .top-bar > ul > li:nth-child(5) > a::before { content: "SCP 인터나쇼날"; font-size: 0.8rem; }
+
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(1) > a,
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(2) > a,
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(5) > a,
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(6) > a,
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(7) > a,
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(9) > a,
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(10) > a,
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(12) > a,
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(13) > a,
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(15) > a {
+    font-size: 0;
+    width: 144px;
+    padding: 0.6rem 1.2rem 0.4rem 0.76rem;
+  }
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li > a::before { font-size: 0.8rem; }
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(1) > a::before {
+     content: "SCP 인터나쇼날 허브";
+  }
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(2) > a::before {
+     content: "로씨야 SCP";
+  }
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(5) > a::before {
+     content: "뽈스까 SCP";
+  }
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(6) > a::before {
+     content: "에스빠냐 SCP";
+  }
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(7) > a::before {
+     content: "타이 SCP";
+  }
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(9) > a::before {
+     content: "도이췰란드 SCP";
+  }
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(10) > a::before {
+     content: "이딸리아 SCP";
+  }
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(12) > a::before {
+     content: "뽀르뚜갈 SCP";
+  }
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(13) > a::before {
+     content: "체스꼬·슬로벤스꼬 SCP";
+  }
+  #top-bar .top-bar > ul > li:nth-child(5) > ul > li:nth-child(15) > a::before {
+     content: "윁남 SCP";
+  }
+
+  #side-bar {
+    position: fixed;
+    z-index: 1;
+    top: 315px;
+    left: var(--towerleft);
+    bottom: 15px;
+    margin-left: 31px;
+    overflow-y: scroll;
+    z-index: 15;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  #side-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  #side-bar .side-block, #side-bar .red, #side-bar .green, #side-bar .blue {
+    background: none;
+    box-shadow: none;
+    border: none;
+    filter: brightness(1.2);
+  }
+
+  #page-content {
+    font-size: 105%;
+  }
+}
+
+@media(max-width: 767px) {
+  :root {
+    --towerleft: -100px;
+    --towerwidth: 160px;
+  }
+
+  #top-bar .mobile-top-bar > ul > li:nth-child(3) > ul > li:nth-child(1) > a {
+    font-size: 0;
+    width: 144px;
+    padding: 0.6rem 1.2rem 0.4rem 0.76rem;
+  }
+  #top-bar .mobile-top-bar > ul > li:nth-child(3) > ul > li > a::before { font-size: 0.8rem; }
+  #top-bar .mobile-top-bar > ul > li:nth-child(3) > ul > li:nth-child(1) > a::before {
+     content: "SCP 인터나쇼날 허브";
+  }
+
+  #header h1 a::before {
+    content: var(--slogan1m) "　\A　" var(--slogan2m) "\A";
+    font-size: 150%;
+  }
+
+  #login-status, #login-status a { font-size: 0; }
+  #account-topbutton { display: none; }
+
+  #main-content {
+    padding-left: 50px;
+  }
+
+  #top-bar .mobile-top-bar { display: flex; }
+  #top-bar .open-menu a {
+    bottom: 1em;
+    left: 0.3em;
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  #side-bar:target { z-index: 20; }
+
+  #side-bar, #side-bar .side-block, #side-bar .red, #side-bar .green, #side-bar .blue {
+    background: var(--red);
+  }
+
+  #extra-div-1::after {
+    width: 100vw;
+  }
+
+  div.light {
+    background-position: 20px center;
+  }
+}
+
+@media (max-width: 580px) {
+  #header h1 a {
+    padding: 65px 0 25px;
+  }
+  #header {
+    height: 170px;
+  }
+}
+
+@media (max-width: 479px) {
+  #header h1 a {
+    font-size: 100%;
+  }
+  #header {
+    height: 150px;
+  }
+}
+
+@media (max-width: 385px) {
+  #top-bar .mobile-top-bar > ul > li:nth-child(3) > ul > li:nth-child(1) > a {
+    padding: 0.6rem 0.8rem 0.3rem 0.4rem;
+  }
+}
+
+@media (min-height: 932px) {
+  div.tower, div.towerline, div.toweroff {
+    height: unset;
+    min-height: 600px;
+    bottom: 0;
+  }
+}
+[[/code]]
+
+[[/collapsible]]
+
+[[/iftags]]
+
+[[module CSS]]
+@import url("https://scpko.wdfiles.com/local--code/theme:dear-dictator/1");
+[[/module]]
+
+[[div class="tower"]]
+[[/div]]
+[[div class="towerline"]]
+[[/div]]
+[[div class="toweron"]]
+[[/div]]
+[[div class="toweroff"]]
+[[image https://scpko.wdfiles.com/local--files/theme:dear-dictator/AEB-tower.png style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; filter: brightness(0.5);"]]
+[[/div]]
+[[div class="light"]]
+[[/div]]
+[[div class="lighton"]]
+[[/div]]
+[[div class="lightoff"]]
+[[/div]]

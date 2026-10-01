@@ -39,11 +39,29 @@ measurements determine which intersections are actually visible.
 
 A semantic question review records the exact question, evidence digest,
 concrete conclusion, reviewer/time, source URL and bound source/rendering
-artifacts. Completion also matches the snapshot to the maintained upstream
-source authority. Every declared evidence item belongs to the review; an
+artifacts, original reference HTML and the reference rendering receipt.
+Completion matches the snapshot to maintained upstream source authority and
+the source image to the receipt's exact frozen, offline reference replay.
+Naming an arbitrary source URL beside a candidate screenshot is insufficient.
+Every declared evidence item belongs to the review; an
 unexplained representative screenshot is insufficient. These decisions remain
 `SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY`, never source parity certificates.
 Historical audits retain their original strict review semantics.
+
+Composition questions name the intersecting elements. A single obligation can
+cover their composition across responsive/action observations, just as a source
+identity question spans responsive layouts. Its evidence digest binds every
+state, image and dependency; different images are not declared equivalent and
+no status is copied between them. A change within that evidence set makes the
+review stale. Grouping the question is not permission to leave a member's
+failure or unexplained composition unresolved.
+
+Previously retained `theme_lab_wikidot_adaptation_ab.v1` source evidence also
+qualifies when its source URL is current, public writes and browser external
+requests are zero, replay is complete, and the exact DOM/image pair comes from
+the `without` variant with an empty CSS intervention. A patched `with` variant
+is never source rendering authority. This preserves usable source evidence
+without refreshing an unrelated acquisition.
 
 ## Reuse and invalidation
 
@@ -61,6 +79,9 @@ The completion denominator still checks the entire current inventory and
 matrix. Action helpers and runtime files remain selected by the exercised
 surface. The historical-source primitive affects History, not unrelated shell
 or article observations.
+
+Semantic promotion recomputes the selected runtime file hashes from the
+current checkout. A syntactically valid old runtime digest is insufficient.
 
 Title measurements bind their producer separately from the existing action
 observer. Adding this measurement does not invalidate unrelated action

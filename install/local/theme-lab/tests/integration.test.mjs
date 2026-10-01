@@ -129,6 +129,19 @@ test("recorded check binds the original candidate inputs before replay rewriting
   }, {previewClient});
 });
 
+test("recorded reference identity binds original HTML and its distinct local replay", async (t) => {
+  await withSession(t, async ({session, fixture}) => {
+    const result = await session.check({referenceUrl: `${fixture.origin}/reference`, css: FOREIGN_CSS, iteration: true});
+    const identity = result.reference_identity;
+    assert.equal(identity.source_url, `${fixture.origin}/reference`);
+    assert.equal(identity.original_html_sha256, crypto.createHash('sha256').update(REFERENCE_HTML).digest('hex'));
+    assert.match(identity.replay_entry, /^\/o\/[a-f0-9]{64}$/u);
+    assert.match(identity.snapshot_sha256, /^[a-f0-9]{64}$/u);
+    assert.equal(identity.offline, false);
+    assert.ok(result.reference.url.endsWith(identity.replay_entry));
+  });
+});
+
 test("theme-port check retains a target-only selector suggestion without a parity action", async (t) => {
   await withSession(t, async ({session, fixture}) => {
     const verdict = await session.check({

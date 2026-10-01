@@ -58,7 +58,19 @@ test('hidden intersections are machine facts; unmeasured visibility requires a p
 test('visible intersections produce a specific composition question', () => {
   const plan = planBrowserAcceptance({records: [row({visual_diagnostics: {title_overlaps: [{effectively_visible: true, text: 'menu'}]}})]});
   assert.equal(plan.accounting.distinct_visual_questions, 2);
-  assert.match(plan.visual_questions[1].question, /intersection with the page title/u);
+  assert.match(plan.visual_questions[1].question, /layering over the page title/u);
+});
+
+test('one composition obligation binds responsive/action observations without declaring images equivalent', () => {
+  const overlap = {effectively_visible:true,tag:'A',id:'',class:'menu-control',text:'Menu',color:'black',background:'white',position:'absolute',z:'20'};
+  const first = row({visual_diagnostics:{viewport:{width:1440,documentWidth:1440},title_overlaps:[{...overlap,rect:{x:20,y:100,width:200,height:30}}]}});
+  const second = row({viewport:'mobile',state:'different-action',screenshot_sha256:'b'.repeat(64),capture_state_action_contract_sha256:'c'.repeat(64),
+    visual_diagnostics:{viewport:{width:390,documentWidth:390},title_overlaps:[{...overlap,rect:{x:0,y:50,width:100,height:60}}]}});
+  const before = planBrowserAcceptance({records:[first]}).visual_questions.find(q=>q.kind==='ambiguous_composition');
+  const after = planBrowserAcceptance({records:[first,second]}).visual_questions.filter(q=>q.kind==='ambiguous_composition');
+  assert.equal(after.length,1);assert.equal(after[0].id,before.id);
+  assert.equal(after[0].observations.length,2);assert.notEqual(after[0].evidence_sha256,before.evidence_sha256);
+  assert.match(after[0].question,/A.menu-control/u);
 });
 
 test('question identities and evidence depend on relevant observations, not unrelated audit changes', () => {
@@ -76,7 +88,7 @@ test('a concrete visual question review binds every declared evidence item and c
   audit.semantic_reviews = {[q.id]: {question: q.question, evidence_sha256: q.evidence_sha256,
     method: 'direct-visual-question-review', status: 'pass', note: 'Source typography, palette and artwork compared across the listed evidence.',
     reviewer: 'test', reviewed_at: '2026-10-01T00:00:00Z', decision_authority: 'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY', port_conclusion_eligible: false,
-    source_url: 'https://scp-wiki.wikidot.com/theme:example', source_snapshot: {path: 'source.txt', sha256: sha}, source_rendering: {path: 'source.png', sha256: sha}}};
+    source_url: 'https://scp-wiki.wikidot.com/theme:example', source_snapshot: {path: 'source.txt', sha256: sha}, source_html: {path: 'source.html', sha256: sha}, source_rendering: {path: 'source.png', sha256: sha}, source_rendering_receipt: {path: 'source-capture.json', sha256: sha}}};
   assert.equal(validateSemanticBrowserAcceptance(audit).status, 'pass');
   audit.records.push(row({viewport: 'mobile'}));
   assert.match(validateSemanticBrowserAcceptance(audit).failures.at(-1), /unanswered or stale/u);

@@ -1,0 +1,84 @@
+{
+  "schema": "theme_lab_historical_source_runtime_proof.v1",
+  "decision_authority": "LOCAL_RUNTIME_CORRECTION_ONLY",
+  "port_conclusion_eligible": false,
+  "public_writes": 0,
+  "source_commit": "82306c143e",
+  "runtime": {
+    "schema": "theme_lab_built_framerail.v1",
+    "transport_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3396",
+    "source_sha256": "d94d2d3270300b0c822db790b3e5b40e168eff86ebbb357babf44878dbf7f06a",
+    "built": true,
+    "restarted": true,
+    "attempts": 1,
+    "elapsed_ms": 16254
+  },
+  "source_observation": {
+    "path": "evidence/wikidot-revision-source-20261001.json",
+    "sha256": "cb3c8890d34a02e05ab3fca14464bd07eac6a0ac6d359e2873127cfb293f1c5e"
+  },
+  "before": {
+    "source_audit_sha256": "49a7a6b0a877cd7496b008b1fabc5393dbaf9240711926a958b40d048669c9db",
+    "observation": [
+      "classic",
+      "chromium",
+      "mobile",
+      "page.history",
+      "historical-source"
+    ],
+    "runtime_surface_contract_sha256": "521634d5cd9bf2ce912e13399147a083ff8ca6256287fecbf527a7fa35f56fe0",
+    "screenshot_sha256": "3d0ace0dcf8853d367746e7f4cb9c1b4fa0f655fc7c473607f8d37e99e76486a",
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "documentWidth": 424,
+      "scrollX": 0,
+      "scrollY": 1022
+    },
+    "source_pane_rect": {
+      "x": 20,
+      "y": 296,
+      "width": 404,
+      "height": 534
+    },
+    "record": {
+      "path": "evidence/revision-source-runtime-20261001/before-record.json",
+      "sha256": "d5496549d6927d3496618dd281fc12903023ac4ba758f0cee189f655c645cfbd"
+    },
+    "screenshot": {
+      "path": "evidence/revision-source-runtime-20261001/before.png",
+      "sha256": "3d0ace0dcf8853d367746e7f4cb9c1b4fa0f655fc7c473607f8d37e99e76486a"
+    }
+  },
+  "after": {
+    "audit": {
+      "path": "evidence/revision-source-runtime-20261001/after-audit.json",
+      "sha256": "1a80c6aa7d2545f8ac96b3e59929cb5cb1c65489341d3d6268ec2f1f48b44ca4"
+    },
+    "screenshot": {
+      "path": "evidence/revision-source-runtime-20261001/after.png",
+      "sha256": "9179fd4afc2d8ba9da3943c015549664b40404f191d706d5fd8e5bfd6a8517b8"
+    },
+    "facts": {
+      "observation_identity": "pass",
+      "capture_safety": "pass",
+      "maintained_action_execution": "pass",
+      "document_containment": "pass",
+      "title_composition": "pass"
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "documentWidth": 390,
+      "scrollX": 0,
+      "scrollY": 1022
+    },
+    "source_pane_rect": {
+      "x": 20,
+      "y": 296,
+      "width": 351,
+      "height": 463
+    }
+  },
+  "scope": "One real Classic mobile historical-source action on the sealed task-owned runtime; does not certify complete History parity or accept the campaign."
+}

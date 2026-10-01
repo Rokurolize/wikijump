@@ -1,4 +1,5 @@
 import {validateSemanticSourceAuthority} from '../src/semantic-source-authority.mjs';
+import {runtimeSurfaceContractSha} from '../src/browser-runtime-contract.mjs';
 #!/usr/bin/env node
 // Complete only the exact image review dimension of a full recorded check.
 // Failed measurements, stale identities and missing interactive states remain
@@ -33,6 +34,7 @@ if(semantic){
  }
 }
 for(const row of subset.records){
+ if(semantic&&row.runtime_surface_contract_sha256!==runtimeSurfaceContractSha(path.resolve(root,'../../..'),row.surface,row.viewport))failures.push(`Stale interactive runtime: ${row.surface}.${row.state}`);
  if(row.candidate_sha256!==candidate||row.candidate_source_sha256!==sha(source))failures.push(`Stale interactive candidate: ${row.surface}.${row.state}`);
  if(!semantic && (!['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE'].includes(row.classification)||!row.reviewed_after_last_change||row.unconfirmed_items?.length||row.asset_failures?.length||row.page_errors?.length||row.external_requests_sent!==0||row.failure))failures.push(`Unaccepted interaction: ${row.surface}.${row.state}`);
  if(!semantic && row.visual_review?.screenshot_sha256!==row.screenshot_sha256)failures.push('Unbound interactive image review');

@@ -1,0 +1,1986 @@
+{
+  "source_audit_sha256": "49a7a6b0a877cd7496b008b1fabc5393dbaf9240711926a958b40d048669c9db",
+  "record": {
+    "theme": "classic",
+    "session_state": "administrator",
+    "target_site": "scpaiueouiuiuiui",
+    "transport_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3395",
+    "locale": "ja",
+    "baseline_theme": "Sigma-9",
+    "baseline_theme_css_href": "../../fixtures/scp-jp-sigma9-offline.css",
+    "baseline_theme_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
+    "runtime_baseline_theme_css_href": "/wikidot/styles/sigma-fe5388a32e12.css",
+    "baseline_theme_mode": "replacement",
+    "browser_engine": "chromium",
+    "browser_version": "153.0.8010.12",
+    "viewport": "mobile",
+    "viewport_size": {
+      "width": 390,
+      "height": 844
+    },
+    "surface": "page.history",
+    "state": "historical-source",
+    "fixture": "run-owned:theme-lab-visual-acceptance-imported-20260924",
+    "candidate_source_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
+    "base_css_path": null,
+    "base_css_sha256": null,
+    "asset_dependency_sha256": "ae21a458932ae350f0b0cc4fd3ae1dd72093aa01b850f9f5a07f0a4a9499b987",
+    "fixture_contract_sha256": "f1ace452cf2935cfdcf797c84ad456ad61e3c175d16a3c625f8ca49408f1b152",
+    "run_contract_sha256": "220dae88647313b0f3f58b0303dea330a6593da5d7ed9d2117c5a725fb00339d",
+    "environment_contract_sha256": "366ed58978dda2f2232fbb9e034dbf4f33f59d34e261cc28bed340b03a0e139b",
+    "capture_state_action_contract_sha256": "c923243e1c09a55e86fed29b299e5725415000bb01b561d4c6ab89fa2f6d4126",
+    "settled_animations_finished": 0,
+    "runtime_surface_contract_sha256": "521634d5cd9bf2ce912e13399147a083ff8ca6256287fecbf527a7fa35f56fe0",
+    "duration_ms": 2328,
+    "phase_durations_ms": {
+      "navigation": 320,
+      "hydration": 14,
+      "action": 1208,
+      "visual_settle": 32,
+      "paint_and_capture": 89
+    },
+    "action_contract_observation": null,
+    "screenshot": "current-acceptance/sigma9/classic/artifacts/interactive/chromium/mobile/page-history-historical-source-mobile-3d0ace0dcf8853d367746e7f4cb9c1b4fa0f655fc7c473607f8d37e99e76486a.png",
+    "screenshot_sha256": "3d0ace0dcf8853d367746e7f4cb9c1b4fa0f655fc7c473607f8d37e99e76486a",
+    "candidate_sha256": "447015860c880f261854f7e0a46536ff126f02e44f1da7cd7b51eb90f58b2c27",
+    "classification": "UNCONFIRMED",
+    "visual_findings": [],
+    "intentional_differences": [],
+    "unconfirmed_items": [
+      "screenshot captured but awaiting image review"
+    ],
+    "reviewed_after_last_change": false,
+    "external_requests_sent": 0,
+    "external_requests_blocked": 12,
+    "asset_failures": [],
+    "page_errors": [],
+    "action_responses": [],
+    "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY",
+    "port_conclusion_eligible": false,
+    "asset_dependency_count": 2,
+    "visual_diagnostics": {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "documentWidth": 424,
+        "scrollX": 0,
+        "scrollY": 1022
+      },
+      "top_fixed_navigation_inset": 0,
+      "elements": {
+        ".page-history": {
+          "text": "rev. \u30d5\u30e9\u30b0 \u30a2\u30af\u30b7\u30e7\u30f3 by \u65e5\u4ed8 \u30b3\u30e1\u30f3\u30c8 3. S V S Administrator Create after-state for revision comparison 2. S V S R Administrator Create before-state for revision comparison 1. N V S R Administ",
+          "value": null,
+          "children": [
+            {
+              "tag": "TBODY",
+              "id": "",
+              "class": "",
+              "text": "rev. \u30d5\u30e9\u30b0 \u30a2\u30af\u30b7\u30e7\u30f3 by \u65e5\u4ed8 \u30b3\u30e1\u30f3\u30c8 3. S V S Administrator Create after-state for revision compariso",
+              "rect": {
+                "x": 22,
+                "y": 113,
+                "width": 347,
+                "height": 181
+              },
+              "font": "verdana, arial, helvetica, sans-serif",
+              "position": "static",
+              "transform": "none",
+              "before": "none",
+              "after": "none"
+            }
+          ],
+          "rect": {
+            "x": 20,
+            "y": 111,
+            "width": 351,
+            "height": 185
+          },
+          "display": "table",
+          "visibility": "visible",
+          "position": "static",
+          "z": "auto",
+          "color": "rgb(13, 13, 13)",
+          "background": "rgba(0, 0, 0, 0)",
+          "backgroundImage": "none",
+          "backgroundPosition": "0% 0%",
+          "backgroundSize": "auto",
+          "font": "verdana, arial, helvetica, sans-serif",
+          "fontSize": "12.8px",
+          "fontWeight": "400",
+          "lineHeight": "normal",
+          "letterSpacing": "normal",
+          "textShadow": "none",
+          "textStroke": "0px rgb(13, 13, 13)",
+          "textFill": "rgb(13, 13, 13)",
+          "filter": "none",
+          "before": {
+            "content": "none",
+            "display": "inline",
+            "position": "static",
+            "color": "rgb(13, 13, 13)",
+            "background_color": "rgba(0, 0, 0, 0)",
+            "font_size": "12.8px",
+            "line_height": "normal",
+            "text_shadow": "none",
+            "transform": "none",
+            "top": "auto",
+            "left": "auto",
+            "width": "auto",
+            "height": "auto"
+          },
+          "after": {
+            "content": "none",
+            "display": "inline",
+            "position": "static",
+            "color": "rgb(13, 13, 13)",
+            "background_color": "rgba(0, 0, 0, 0)",
+            "font_size": "12.8px",
+            "line_height": "normal",
+            "text_shadow": "none",
+            "transform": "none",
+            "top": "auto",
+            "left": "auto",
+            "width": "auto",
+            "height": "auto"
+          },
+          "overflowX": "visible",
+          "scrollWidth": 351,
+          "clientWidth": 351
+        },
+        ".revision-diff": null,
+        ".page-source": {
+          "text": "",
+          "value": "[[module Rate]]\n\n+ Revision comparison fixture\n\nThis compact SCP-JP history fixture supports a bounded real revision diff.\n\nAn unchanged Japanese anchor line.\n\n\u6539\u8a02\u5f8c\u306e\u9577\u3044\u65e5\u672c\u8a9e\u884c\n\n* [https://scp-jp.wikidot.com/ \u65e5\u672c\u8a9e link-like source]\n\n||~ \u9805\u76ee ||~ \u72b6\u614b ",
+          "children": [],
+          "rect": {
+            "x": 20,
+            "y": 296,
+            "width": 404,
+            "height": 534
+          },
+          "display": "inline-block",
+          "visibility": "visible",
+          "position": "static",
+          "z": "auto",
+          "color": "rgb(0, 0, 0)",
+          "background": "rgb(255, 255, 255)",
+          "backgroundImage": "none",
+          "backgroundPosition": "0% 0%",
+          "backgroundSize": "auto",
+          "font": "verdana, arial, helvetica, sans-serif",
+          "fontSize": "12.8px",
+          "fontWeight": "400",
+          "lineHeight": "normal",
+          "letterSpacing": "normal",
+          "textShadow": "none",
+          "textStroke": "0px rgb(0, 0, 0)",
+          "textFill": "rgb(0, 0, 0)",
+          "filter": "none",
+          "before": {
+            "content": "none",
+            "display": "inline",
+            "position": "static",
+            "color": "rgb(0, 0, 0)",
+            "background_color": "rgba(0, 0, 0, 0)",
+            "font_size": "12.8px",
+            "line_height": "normal",
+            "text_shadow": "none",
+            "transform": "none",
+            "top": "auto",
+            "left": "auto",
+            "width": "auto",
+            "height": "auto"
+          },
+          "after": {
+            "content": "none",
+            "display": "inline",
+            "position": "static",
+            "color": "rgb(0, 0, 0)",
+            "background_color": "rgba(0, 0, 0, 0)",
+            "font_size": "12.8px",
+            "line_height": "normal",
+            "text_shadow": "none",
+            "transform": "none",
+            "top": "auto",
+            "left": "auto",
+            "width": "auto",
+            "height": "auto"
+          },
+          "overflowX": "auto",
+          "scrollWidth": 402,
+          "clientWidth": 402
+        }
+      },
+      "history": {
+        "tables": 1,
+        "rows": 4,
+        "rect": {
+          "x": 20,
+          "y": 111,
+          "width": 351,
+          "height": 185
+        },
+        "layout": [
+          {
+            "row": "rev. \u30d5\u30e9\u30b0 \u30a2\u30af\u30b7\u30e7\u30f3 by \u65e5\u4ed8 \u30b3\u30e1\u30f3\u30c8",
+            "rect": {
+              "x": 22,
+              "y": 113,
+              "width": 347,
+              "height": 47
+            },
+            "cells": [
+              {
+                "name": "",
+                "text": "rev.",
+                "rect": {
+                  "x": 22,
+                  "y": 113,
+                  "width": 22,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "",
+                "rect": {
+                  "x": 46,
+                  "y": 113,
+                  "width": 30,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "\u30d5\u30e9\u30b0",
+                "rect": {
+                  "x": 78,
+                  "y": 113,
+                  "width": 14,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "\u30a2\u30af\u30b7\u30e7\u30f3",
+                "rect": {
+                  "x": 94,
+                  "y": 113,
+                  "width": 27,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "by",
+                "rect": {
+                  "x": 123,
+                  "y": 113,
+                  "width": 95,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "\u65e5\u4ed8",
+                "rect": {
+                  "x": 220,
+                  "y": 113,
+                  "width": 29,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "\u30b3\u30e1\u30f3\u30c8",
+                "rect": {
+                  "x": 251,
+                  "y": 113,
+                  "width": 117,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              }
+            ]
+          },
+          {
+            "row": "3. S V S Administrator Create after-state for revision comparison",
+            "rect": {
+              "x": 22,
+              "y": 162,
+              "width": 347,
+              "height": 34
+            },
+            "cells": [
+              {
+                "name": "",
+                "text": "3.",
+                "rect": {
+                  "x": 22,
+                  "y": 162,
+                  "width": 22,
+                  "height": 34
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "",
+                "rect": {
+                  "x": 46,
+                  "y": 162,
+                  "width": 30,
+                  "height": 34
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "S",
+                "rect": {
+                  "x": 78,
+                  "y": 162,
+                  "width": 14,
+                  "height": 34
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "optionstd",
+                "text": "V S",
+                "rect": {
+                  "x": 94,
+                  "y": 162,
+                  "width": 27,
+                  "height": 34
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "Administrator",
+                "rect": {
+                  "x": 123,
+                  "y": 162,
+                  "width": 95,
+                  "height": 34
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "",
+                "rect": {
+                  "x": 220,
+                  "y": 162,
+                  "width": 29,
+                  "height": 34
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "Create after-state for revision comparison",
+                "rect": {
+                  "x": 251,
+                  "y": 162,
+                  "width": 117,
+                  "height": 34
+                },
+                "display": "table-cell",
+                "font_size": "11.52px",
+                "line_height": "normal"
+              }
+            ]
+          },
+          {
+            "row": "2. S V S R Administrator Create before-state for revision comparison",
+            "rect": {
+              "x": 22,
+              "y": 198,
+              "width": 347,
+              "height": 47
+            },
+            "cells": [
+              {
+                "name": "",
+                "text": "2.",
+                "rect": {
+                  "x": 22,
+                  "y": 198,
+                  "width": 22,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "",
+                "rect": {
+                  "x": 46,
+                  "y": 198,
+                  "width": 30,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "S",
+                "rect": {
+                  "x": 78,
+                  "y": 198,
+                  "width": 14,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "optionstd",
+                "text": "V S R",
+                "rect": {
+                  "x": 94,
+                  "y": 198,
+                  "width": 27,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "Administrator",
+                "rect": {
+                  "x": 123,
+                  "y": 198,
+                  "width": 95,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "",
+                "rect": {
+                  "x": 220,
+                  "y": 198,
+                  "width": 29,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "Create before-state for revision comparison",
+                "rect": {
+                  "x": 251,
+                  "y": 198,
+                  "width": 117,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "11.52px",
+                "line_height": "normal"
+              }
+            ]
+          },
+          {
+            "row": "1. N V S R Administrator Create compact revision-diff fixture",
+            "rect": {
+              "x": 22,
+              "y": 247,
+              "width": 347,
+              "height": 47
+            },
+            "cells": [
+              {
+                "name": "",
+                "text": "1.",
+                "rect": {
+                  "x": 22,
+                  "y": 247,
+                  "width": 22,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "",
+                "rect": {
+                  "x": 46,
+                  "y": 247,
+                  "width": 30,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "N",
+                "rect": {
+                  "x": 78,
+                  "y": 247,
+                  "width": 14,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "optionstd",
+                "text": "V S R",
+                "rect": {
+                  "x": 94,
+                  "y": 247,
+                  "width": 27,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "Administrator",
+                "rect": {
+                  "x": 123,
+                  "y": 247,
+                  "width": 95,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "",
+                "rect": {
+                  "x": 220,
+                  "y": 247,
+                  "width": 29,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "12.8px",
+                "line_height": "normal"
+              },
+              {
+                "name": "",
+                "text": "Create compact revision-diff fixture",
+                "rect": {
+                  "x": 251,
+                  "y": 247,
+                  "width": 117,
+                  "height": 47
+                },
+                "display": "table-cell",
+                "font_size": "11.52px",
+                "line_height": "normal"
+              }
+            ]
+          }
+        ]
+      },
+      "title_overlaps": [],
+      "header_text": [
+        {
+          "tag": "SPAN",
+          "id": "",
+          "class": "",
+          "text": "SCP\u8ca1\u56e3",
+          "rect": {
+            "x": 258,
+            "y": -956,
+            "width": 98,
+            "height": 27
+          },
+          "color": "rgba(0, 0, 0, 0)",
+          "background": "rgba(0, 0, 0, 0)",
+          "ancestors": [
+            {
+              "tag": "A",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 20,
+                "y": -1022,
+                "width": 337,
+                "height": 105
+              }
+            },
+            {
+              "tag": "H1",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 20,
+                "y": -1022,
+                "width": 337,
+                "height": 105
+              }
+            }
+          ]
+        },
+        {
+          "tag": "SPAN",
+          "id": "",
+          "class": "",
+          "text": "\u78ba\u4fdd\u3001\u53ce\u5bb9\u3001\u4fdd\u8b77",
+          "rect": {
+            "x": 20,
+            "y": -917,
+            "width": 334,
+            "height": 38
+          },
+          "color": "rgba(0, 0, 0, 0)",
+          "background": "rgba(0, 0, 0, 0)",
+          "ancestors": [
+            {
+              "tag": "H2",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 20,
+                "y": -917,
+                "width": 334,
+                "height": 38
+              }
+            },
+            {
+              "tag": "DIV",
+              "id": "header",
+              "class": "",
+              "rect": {
+                "x": 20,
+                "y": -1022,
+                "width": 351,
+                "height": 162
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "SCP\u30c7\u30fc\u30bf\u30d9\u30fc\u30b9",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "\u5408\u4f5c",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(170, 0, 17)",
+          "background": "rgb(255, 255, 255)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "\u30a4\u30f3\u30b7\u30c7\u30f3\u30c8\u8a18\u9332",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(170, 0, 17)",
+          "background": "rgb(255, 255, 255)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "\u30b7\u30ea\u30fc\u30ba\u30a2\u30fc\u30ab\u30a4\u30d6",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(170, 0, 17)",
+          "background": "rgb(255, 255, 255)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "\u30b3\u30f3\u30c6\u30b9\u30c8\u30a2\u30fc\u30ab\u30a4\u30d6\u56fd\u969b\u7248",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(170, 0, 17)",
+          "background": "rgb(255, 255, 255)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "JP\u30c7\u30fc\u30bf\u30d9\u30fc\u30b9",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "\u5408\u4f5c-JP",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(170, 0, 17)",
+          "background": "rgb(255, 255, 255)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "\u88dc\u8db3-JP",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(170, 0, 17)",
+          "background": "rgb(255, 255, 255)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "\u30a2\u30f3\u30bd\u30ed\u30b8\u30fc-JP",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(170, 0, 17)",
+          "background": "rgb(255, 255, 255)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "\u30a4\u30d9\u30f3\u30c8\u30a2\u30fc\u30ab\u30a4\u30d6-JP",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(170, 0, 17)",
+          "background": "rgb(255, 255, 255)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "\u6bbf\u5802\u5165\u308a\u30b3\u30ec\u30af\u30b7\u30e7\u30f3",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(170, 0, 17)",
+          "background": "rgb(255, 255, 255)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "SCP\u548c\u8a33\u4e00\u89a7",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "SCP\u306e\u4e16\u754c\u89b3",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "SCP\u8ca1\u56e3\u3068\u306f",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(170, 0, 17)",
+          "background": "rgb(255, 255, 255)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "\u8ca1\u56e3\u4e16\u754c\u89b3",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(170, 0, 17)",
+          "background": "rgb(255, 255, 255)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "\u30bb\u30ad\u30e5\u30ea\u30c6\u30a3\u65bd\u8a2d",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(170, 0, 17)",
+          "background": "rgb(255, 255, 255)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "\u5185\u90e8\u90e8\u9580",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(170, 0, 17)",
+          "background": "rgb(255, 255, 255)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "class": "",
+          "text": "\u6a5f\u52d5\u90e8\u968a",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "color": "rgb(170, 0, 17)",
+          "background": "rgb(255, 255, 255)",
+          "ancestors": [
+            {
+              "tag": "LI",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            },
+            {
+              "tag": "UL",
+              "id": "",
+              "class": "",
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0
+              }
+            }
+          ]
+        }
+      ],
+      "header_children": [
+        {
+          "tag": "H1",
+          "id": "",
+          "class_name": "",
+          "text": "SCP\u8ca1\u56e3",
+          "rect": {
+            "x": 20,
+            "y": -1022,
+            "width": 337,
+            "height": 105
+          },
+          "display": "block",
+          "position": "static",
+          "float": "left",
+          "order": "0",
+          "margin": "0px"
+        },
+        {
+          "tag": "H2",
+          "id": "",
+          "class_name": "",
+          "text": "\u78ba\u4fdd\u3001\u53ce\u5bb9\u3001\u4fdd\u8b77",
+          "rect": {
+            "x": 20,
+            "y": -917,
+            "width": 334,
+            "height": 38
+          },
+          "display": "block",
+          "position": "static",
+          "float": "left",
+          "order": "0",
+          "margin": "0px"
+        },
+        {
+          "tag": "DIV",
+          "id": "search-top-box",
+          "class_name": "form-search",
+          "text": "",
+          "rect": {
+            "x": 112,
+            "y": -943,
+            "width": 250,
+            "height": 21
+          },
+          "display": "block",
+          "position": "absolute",
+          "float": "none",
+          "order": "0",
+          "margin": "0px"
+        },
+        {
+          "tag": "DIV",
+          "id": "top-bar",
+          "class_name": "",
+          "text": "\u2261 \u30b7\u30ea\u30fc\u30ba \u30c7\u30fc\u30bf\u30d9\u30fc\u30b9 \u4e16\u754c\u89b3 \u30ac\u30a4\u30c9",
+          "rect": {
+            "x": 8,
+            "y": -882,
+            "width": 351,
+            "height": 21
+          },
+          "display": "block",
+          "position": "absolute",
+          "float": "none",
+          "order": "0",
+          "margin": "0px"
+        },
+        {
+          "tag": "DIV",
+          "id": "login-status",
+          "class_name": "",
+          "text": "Administrator Administrator",
+          "rect": {
+            "x": 222,
+            "y": -1012,
+            "width": 138,
+            "height": 12
+          },
+          "display": "block",
+          "position": "absolute",
+          "float": "none",
+          "order": "0",
+          "margin": "0px"
+        },
+        {
+          "tag": "DIV",
+          "id": "header-extra-div-1",
+          "class_name": "",
+          "text": "",
+          "rect": {
+            "x": 20,
+            "y": -1022,
+            "width": 351,
+            "height": 0
+          },
+          "display": "block",
+          "position": "static",
+          "float": "none",
+          "order": "0",
+          "margin": "0px"
+        },
+        {
+          "tag": "DIV",
+          "id": "header-extra-div-2",
+          "class_name": "",
+          "text": "",
+          "rect": {
+            "x": 20,
+            "y": -1022,
+            "width": 351,
+            "height": 0
+          },
+          "display": "block",
+          "position": "static",
+          "float": "none",
+          "order": "0",
+          "margin": "0px"
+        },
+        {
+          "tag": "DIV",
+          "id": "header-extra-div-3",
+          "class_name": "",
+          "text": "",
+          "rect": {
+            "x": 20,
+            "y": -1022,
+            "width": 351,
+            "height": 0
+          },
+          "display": "block",
+          "position": "static",
+          "float": "none",
+          "order": "0",
+          "margin": "0px"
+        }
+      ],
+      "horizontal_overflow": [
+        {
+          "tag": "DIV",
+          "id": "skrollr-body",
+          "class": "",
+          "rect": {
+            "x": 0,
+            "y": -1022,
+            "width": 390,
+            "height": 2565
+          },
+          "right_overflow": 0,
+          "self_overflow": 34,
+          "reachable_right": 424,
+          "position": "static",
+          "display": "block",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "390px",
+          "text": "SCP\u8ca1\u56e3 \u78ba\u4fdd\u3001\u53ce\u5bb9\u3001\u4fdd\u8b77 \u2261 \u30b7\u30ea\u30fc\u30ba \u30c7\u30fc\u30bf\u30d9\u30fc\u30b9 \u4e16\u754c\u89b3 \u30ac\u30a4\u30c9 Administrator Administrator \u521d\u3081\u3066\u306e\u65b9\u3078 \u65b0\u898f\u30e6\u30fc\u30b6\u30fc\u306e\u305f"
+        },
+        {
+          "tag": "DIV",
+          "id": "container-wrap-wrap",
+          "class": "",
+          "rect": {
+            "x": 0,
+            "y": -1022,
+            "width": 390,
+            "height": 2565
+          },
+          "right_overflow": 0,
+          "self_overflow": 34,
+          "reachable_right": 424,
+          "position": "relative",
+          "display": "block",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "390px",
+          "text": "SCP\u8ca1\u56e3 \u78ba\u4fdd\u3001\u53ce\u5bb9\u3001\u4fdd\u8b77 \u2261 \u30b7\u30ea\u30fc\u30ba \u30c7\u30fc\u30bf\u30d9\u30fc\u30b9 \u4e16\u754c\u89b3 \u30ac\u30a4\u30c9 Administrator Administrator \u521d\u3081\u3066\u306e\u65b9\u3078 \u65b0\u898f\u30e6\u30fc\u30b6\u30fc\u306e\u305f"
+        },
+        {
+          "tag": "DIV",
+          "id": "container-wrap",
+          "class": "",
+          "rect": {
+            "x": 0,
+            "y": -1022,
+            "width": 390,
+            "height": 2565
+          },
+          "right_overflow": 0,
+          "self_overflow": 34,
+          "reachable_right": 424,
+          "position": "static",
+          "display": "block",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "390px",
+          "text": "SCP\u8ca1\u56e3 \u78ba\u4fdd\u3001\u53ce\u5bb9\u3001\u4fdd\u8b77 \u2261 \u30b7\u30ea\u30fc\u30ba \u30c7\u30fc\u30bf\u30d9\u30fc\u30b9 \u4e16\u754c\u89b3 \u30ac\u30a4\u30c9 Administrator Administrator \u521d\u3081\u3066\u306e\u65b9\u3078 \u65b0\u898f\u30e6\u30fc\u30b6\u30fc\u306e\u305f"
+        },
+        {
+          "tag": "DIV",
+          "id": "container",
+          "class": "",
+          "rect": {
+            "x": 0,
+            "y": -1022,
+            "width": 390,
+            "height": 2565
+          },
+          "right_overflow": 0,
+          "self_overflow": 34,
+          "reachable_right": 424,
+          "position": "static",
+          "display": "block",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "390px",
+          "text": "SCP\u8ca1\u56e3 \u78ba\u4fdd\u3001\u53ce\u5bb9\u3001\u4fdd\u8b77 \u2261 \u30b7\u30ea\u30fc\u30ba \u30c7\u30fc\u30bf\u30d9\u30fc\u30b9 \u4e16\u754c\u89b3 \u30ac\u30a4\u30c9 Administrator Administrator \u521d\u3081\u3066\u306e\u65b9\u3078 \u65b0\u898f\u30e6\u30fc\u30b6\u30fc\u306e\u305f"
+        },
+        {
+          "tag": "DIV",
+          "id": "content-wrap",
+          "class": "",
+          "rect": {
+            "x": 0,
+            "y": -834,
+            "width": 390,
+            "height": 2300
+          },
+          "right_overflow": 0,
+          "self_overflow": 34,
+          "reachable_right": 424,
+          "position": "relative",
+          "display": "block",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "390px",
+          "text": "\u521d\u3081\u3066\u306e\u65b9\u3078 \u65b0\u898f\u30e6\u30fc\u30b6\u30fc\u306e\u305f\u3081\u306e\u30ac\u30a4\u30c9 FAQ \u30b5\u30a4\u30c8\u3078\u306e\u53c2\u52a0 \u554f\u3044\u5408\u308f\u305b \u30e1\u30a4\u30f3\u30da\u30fc\u30b8 SCP-JP\u30b7\u30ea\u30fc\u30ba I | II | III | IV | V S"
+        },
+        {
+          "tag": "TEXTAREA",
+          "id": "",
+          "class": "page-source",
+          "rect": {
+            "x": 20,
+            "y": 296,
+            "width": 404,
+            "height": 534
+          },
+          "right_overflow": 34,
+          "self_overflow": 0,
+          "reachable_right": 424,
+          "position": "static",
+          "display": "inline-block",
+          "visibility": "visible",
+          "white_space": "pre-wrap",
+          "overflow_x": "auto",
+          "min_width": "0px",
+          "width": "351px",
+          "text": ""
+        },
+        {
+          "tag": "DIV",
+          "id": "main-content",
+          "class": "",
+          "rect": {
+            "x": 20,
+            "y": -834,
+            "width": 351,
+            "height": 1767
+          },
+          "right_overflow": -19,
+          "self_overflow": 53,
+          "reachable_right": 424,
+          "position": "relative",
+          "display": "block",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "351px",
+          "text": "SCP-JP Theme Lab Revision History Fixture \u8a55\u4fa1: 0+\u2013x Revision comparison fixture T"
+        },
+        {
+          "tag": "DIV",
+          "id": "action-area",
+          "class": "",
+          "rect": {
+            "x": 20,
+            "y": 69,
+            "width": 351,
+            "height": 864
+          },
+          "right_overflow": -19,
+          "self_overflow": 53,
+          "reachable_right": 424,
+          "position": "static",
+          "display": "block",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "351px",
+          "text": "Close Page revision history rev. \u30d5\u30e9\u30b0 \u30a2\u30af\u30b7\u30e7\u30f3 by \u65e5\u4ed8 \u30b3\u30e1\u30f3\u30c8 3. S V S Administrator Cre"
+        },
+        {
+          "tag": "DIV",
+          "id": "history-subarea",
+          "class": "",
+          "rect": {
+            "x": 20,
+            "y": 296,
+            "width": 351,
+            "height": 534
+          },
+          "right_overflow": -19,
+          "self_overflow": 53,
+          "reachable_right": 424,
+          "position": "static",
+          "display": "block",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "351px",
+          "text": ""
+        },
+        {
+          "tag": "DIV",
+          "id": "top-bar",
+          "class": "",
+          "rect": {
+            "x": 8,
+            "y": -882,
+            "width": 351,
+            "height": 21
+          },
+          "right_overflow": -31,
+          "self_overflow": 25,
+          "reachable_right": 384,
+          "position": "absolute",
+          "display": "block",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "351px",
+          "text": "\u2261 \u30b7\u30ea\u30fc\u30ba \u30c7\u30fc\u30bf\u30d9\u30fc\u30b9 \u4e16\u754c\u89b3 \u30ac\u30a4\u30c9"
+        },
+        {
+          "tag": "DIV",
+          "id": "",
+          "class": "mobile-top-bar",
+          "rect": {
+            "x": 8,
+            "y": -893,
+            "width": 295,
+            "height": 33
+          },
+          "right_overflow": -87,
+          "self_overflow": 81,
+          "reachable_right": 384,
+          "position": "absolute",
+          "display": "block",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "294.75px",
+          "text": "\u2261 \u30b7\u30ea\u30fc\u30ba \u30c7\u30fc\u30bf\u30d9\u30fc\u30b9 \u4e16\u754c\u89b3 \u30ac\u30a4\u30c9"
+        },
+        {
+          "tag": "UL",
+          "id": "",
+          "class": "",
+          "rect": {
+            "x": 8,
+            "y": -881,
+            "width": 295,
+            "height": 21
+          },
+          "right_overflow": -87,
+          "self_overflow": 81,
+          "reachable_right": 384,
+          "position": "static",
+          "display": "block",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "294.75px",
+          "text": "\u30b7\u30ea\u30fc\u30ba \u30c7\u30fc\u30bf\u30d9\u30fc\u30b9 \u4e16\u754c\u89b3 \u30ac\u30a4\u30c9"
+        },
+        {
+          "tag": "DIV",
+          "id": "header",
+          "class": "",
+          "rect": {
+            "x": 20,
+            "y": -1022,
+            "width": 351,
+            "height": 162
+          },
+          "right_overflow": -19,
+          "self_overflow": 13,
+          "reachable_right": 384,
+          "position": "relative",
+          "display": "block",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "351px",
+          "text": "SCP\u8ca1\u56e3 \u78ba\u4fdd\u3001\u53ce\u5bb9\u3001\u4fdd\u8b77 \u2261 \u30b7\u30ea\u30fc\u30ba \u30c7\u30fc\u30bf\u30d9\u30fc\u30b9 \u4e16\u754c\u89b3 \u30ac\u30a4\u30c9 Administrator Administrator"
+        },
+        {
+          "tag": "LI",
+          "id": "",
+          "class": "",
+          "rect": {
+            "x": 243,
+            "y": -881,
+            "width": 59,
+            "height": 21
+          },
+          "right_overflow": -87,
+          "self_overflow": 81,
+          "reachable_right": 383,
+          "position": "relative",
+          "display": "list-item",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "59.4375px",
+          "text": "\u30ac\u30a4\u30c9"
+        },
+        {
+          "tag": "INPUT",
+          "id": "search-top-box-input",
+          "class": "text empty search-query",
+          "rect": {
+            "x": 234,
+            "y": -942,
+            "width": 70,
+            "height": 19
+          },
+          "right_overflow": -86,
+          "self_overflow": 24,
+          "reachable_right": 326,
+          "position": "static",
+          "display": "inline-block",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "clip",
+          "min_width": "0px",
+          "width": "64px",
+          "text": ""
+        },
+        {
+          "tag": "LI",
+          "id": "",
+          "class": "",
+          "rect": {
+            "x": 177,
+            "y": -881,
+            "width": 66,
+            "height": 21
+          },
+          "right_overflow": -147,
+          "self_overflow": 74,
+          "reachable_right": 317,
+          "position": "relative",
+          "display": "list-item",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "66.4375px",
+          "text": "\u4e16\u754c\u89b3"
+        },
+        {
+          "tag": "LI",
+          "id": "",
+          "class": "",
+          "rect": {
+            "x": 80,
+            "y": -881,
+            "width": 96,
+            "height": 21
+          },
+          "right_overflow": -213,
+          "self_overflow": 44,
+          "reachable_right": 220,
+          "position": "relative",
+          "display": "list-item",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "96.4375px",
+          "text": "\u30c7\u30fc\u30bf\u30d9\u30fc\u30b9"
+        },
+        {
+          "tag": "LI",
+          "id": "",
+          "class": "",
+          "rect": {
+            "x": 8,
+            "y": -881,
+            "width": 72,
+            "height": 21
+          },
+          "right_overflow": -310,
+          "self_overflow": 68,
+          "reachable_right": 148,
+          "position": "relative",
+          "display": "list-item",
+          "visibility": "visible",
+          "white_space": "normal",
+          "overflow_x": "visible",
+          "min_width": "0px",
+          "width": "72.4375px",
+          "text": "\u30b7\u30ea\u30fc\u30ba"
+        }
+      ]
+    },
+    "action_sequence": [
+      {
+        "type": "pointerover",
+        "target": "#history-button"
+      },
+      {
+        "type": "mouseover",
+        "target": "#history-button"
+      },
+      {
+        "type": "pointerdown",
+        "target": "#history-button"
+      },
+      {
+        "type": "focusin",
+        "target": "#history-button"
+      },
+      {
+        "type": "click",
+        "target": "#history-button"
+      },
+      {
+        "type": "pointerover",
+        "target": "a"
+      },
+      {
+        "type": "mouseover",
+        "target": "a"
+      },
+      {
+        "type": "pointerdown",
+        "target": "a"
+      },
+      {
+        "type": "focusin",
+        "target": "a"
+      },
+      {
+        "type": "click",
+        "target": "a"
+      },
+      {
+        "type": "pointerover",
+        "target": "textarea.page-source"
+      },
+      {
+        "type": "mouseover",
+        "target": "textarea.page-source"
+      }
+    ]
+  }
+}

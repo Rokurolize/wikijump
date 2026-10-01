@@ -688,6 +688,13 @@ export function createSession({
         };
       }
       verdict.target_fixture_identity = Object.fromEntries(Object.entries({baseline:baselineCss,sidebar:sidebarHtml,header:headerHtml,navigation:navigationHtml}).map(([name,bytes])=>[name,bytes===null?null:crypto.createHash("sha256").update(bytes).digest("hex")]));
+      if (loadedReference) {
+        const manifest = await session.referenceAssets.load();
+        verdict.reference_identity = {source_url: loadedReference.root_url,
+          original_html_sha256: manifest.urls[loadedReference.root_url]?.digest ?? null,
+          replay_entry: loadedReference.entry, offline: loadedReference.offline,
+          snapshot_sha256: crypto.createHash('sha256').update(JSON.stringify(manifest.snapshots[loadedReference.root_url])).digest('hex')};
+      }
       for (const [key, bytes] of Object.entries({candidate_css_sha256: css, candidate_source_sha256: source, candidate_preview_sha256: wikitext, candidate_base_css_sha256: baseCss || null})) {
         verdict[key] = typeof bytes === "string" ? crypto.createHash("sha256").update(bytes).digest("hex") : null;
       }
