@@ -674,15 +674,41 @@ export async function collectViewportOverflow(page, viewports) {
         offenders.splice(index, 0, row);
         if (offenders.length > 5) offenders.pop();
       };
-      const stack = [...document.body.children].reverse().map((element) => ({element, clippingRight: null}));
+      let initialLeft = null, initialRight = null;
+      for (const ancestor of [root, document.body]) {
+        const rect = ancestor.getBoundingClientRect(), style = getComputedStyle(ancestor);
+        if (["auto", "scroll", "hidden", "clip"].includes(style.overflowX)) {
+          if (rect.left >= -2) initialLeft = Math.max(initialLeft ?? rect.left, rect.left);
+          if (rect.right <= root.clientWidth + 2) initialRight = Math.min(initialRight ?? rect.right, rect.right);
+        }
+      }
+      const stack = [...document.body.children].reverse().map((element) => ({element, clippingLeft: initialLeft, clippingRight: initialRight}));
       while (stack.length) {
-        const {element, clippingRight} = stack.pop();
+        const {element, clippingLeft, clippingRight} = stack.pop();
         const rect = element.getBoundingClientRect();
         const style = getComputedStyle(element);
-        const overflowPx = Math.max(0, rect.right - root.clientWidth);
+        // Hidden popup geometry is not visible viewport escape. Visibility can
+        // be restored by a child, whereas display:none and zero opacity cannot.
+        if (style.display === "none" || Number(style.opacity) === 0) continue;
+        const leftOverflow = Math.max(0, -rect.left);
+        const rightOverflow = Math.max(0, rect.right - root.clientWidth);
+        // A fully off-canvas fixed element is commonly an intentional closed
+        // drawer. It cannot contribute to document width, so only report an
+        // edge escape when the box intersects the viewport or crosses the
+        // right edge as before.
+        const intersectsViewport = rect.right > 0 && rect.left < root.clientWidth;
+        const overflowPx = intersectsViewport ? Math.max(leftOverflow, rightOverflow) : rightOverflow;
+        const clippedLeft = clippingLeft !== null && rect.left < clippingLeft - 2;
         const clipped = clippingRight !== null && rect.right > clippingRight + 2;
-        if (overflowPx > 0.5 && !clipped) keepTopFive({element, rect, style, overflow_px: overflowPx});
+        if (style.visibility === "visible" && overflowPx > 0 && !clipped && !clippedLeft) keepTopFive({element, rect, style, overflow_px: overflowPx, off_left_px: leftOverflow, off_right_px: rightOverflow});
+        let childClippingLeft = clippingLeft;
         let childClippingRight = clippingRight;
+        if (
+          ["auto", "scroll", "hidden", "clip"].includes(style.overflowX) &&
+          rect.left >= -2
+        ) {
+          childClippingLeft = childClippingLeft === null ? rect.left : Math.max(childClippingLeft, rect.left);
+        }
         if (
           ["auto", "scroll", "hidden", "clip"].includes(style.overflowX) &&
           rect.right <= root.clientWidth + 2
@@ -691,11 +717,11 @@ export async function collectViewportOverflow(page, viewports) {
         }
         const children = element.children;
         for (let index = children.length - 1; index >= 0; index -= 1) {
-          stack.push({element: children[index], clippingRight: childClippingRight});
+          stack.push({element: children[index], clippingLeft: childClippingLeft, clippingRight: childClippingRight});
         }
       }
       const overflowSources = offenders
-        .map(({element, rect, overflow_px}) => {
+        .map(({element, rect, overflow_px, off_left_px, off_right_px}) => {
           const style = getComputedStyle(element);
           const selector = element.id ? `#${CSS.escape(element.id)}` :
             `${element.tagName.toLowerCase()}${[...element.classList].slice(0, 3).map((name) => `.${CSS.escape(name)}`).join("")}`;
@@ -715,11 +741,14 @@ export async function collectViewportOverflow(page, viewports) {
             ancestors,
             rect: {left: Math.round(rect.left * 10) / 10, right: Math.round(rect.right * 10) / 10, width: Math.round(rect.width * 10) / 10},
             overflow_px: Math.round(overflow_px * 10) / 10,
+            off_left_px: Math.round((off_left_px ?? 0) * 10) / 10,
+            off_right_px: Math.round((off_right_px ?? 0) * 10) / 10,
             computed: {width: style.width, min_width: style.minWidth, max_width: style.maxWidth, position: style.position, overflow_x: style.overflowX},
           };
         });
       const measurement = {
         document_overflow_px: Math.max(0, root.scrollWidth - root.clientWidth),
+        viewport_escape_px: offenders.reduce((maximum, row) => Math.max(maximum, row.overflow_px), 0),
         content_overflow_px: content ? Math.max(0, content.scrollWidth - content.clientWidth) : null,
         overflow_sources: overflowSources,
       };

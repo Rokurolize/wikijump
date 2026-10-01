@@ -120,9 +120,16 @@
       "source_sha256": "d4f90bec162a7965470c368d1b551a152d837540ebf325be5961e6e9157b8fa4",
       "active_tags": [],
       "candidate_source_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b",
-      "candidate_active_tags": [],
+      "candidate_active_tags": [
+        "en",
+        "テーマ"
+      ],
+      "runtime_active_tags": [],
+      "showcase_css_modules_removed_exact": 1,
+      "showcase_css_modules_removed_truncated": 0,
+      "showcase_css_modules_unmatched": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "df264c1927fbe7bc8fe3e3f6f7fa594293d814f1e3d90386a03bfe475f6c02de",
+      "candidate_css_sha256": "98f233f2f3161e085fe9c764c87a2e07b95501977e69702236582d1e39923b17",
       "asset_receipt_path": "assets.json",
       "assets": 3,
       "imports": 2,

@@ -1,59 +1,29 @@
+@import url(https://scp-wiki.wdfiles.com/local--code/component%3Acroqstyle/1);
+
+
 @import url('https://scp-wiki.wdfiles.com/local--code/theme%3Ainkblot/1');
 
 :root {
   --inkblot-accent: {$accent};
 }
 
-:root {
-  --inkblot-accent: coral;
-  --header-title: "WALDON STUDIO";
-  --header-subtitle: "我ら未知を鑑定する者";
-  --debug-colour: blue;
-}
-:root:has(.picker li:nth-child(1).selected), .picker li:nth-child(1) em {
-  --inkblot-accent: coral;
-}
-:root:has(.picker li:nth-child(2).selected), .picker li:nth-child(2) em {
-  --inkblot-accent: rgb(203, 136, 154);
-}
-:root:has(.picker li:nth-child(3).selected), .picker li:nth-child(3) em {
-  --inkblot-accent: royalblue;
-}
-:root:has(.picker li:nth-child(4).selected), .picker li:nth-child(4) em {
-  --inkblot-accent: yellowgreen;
-}
-:root:has(.picker li:nth-child(5).selected), .picker li:nth-child(5) em {
-  --inkblot-accent: red;
-}
-:root:has(.picker li:nth-child(6).selected), .picker li:nth-child(6) em {
-  --inkblot-accent: magenta;
-}
-:root:has(.picker li:nth-child(7).selected), .picker li:nth-child(7) em {
-  --inkblot-accent: teal;
-}
-:root:has(.picker li:nth-child(8).selected), .picker li:nth-child(8) em {
-  --inkblot-accent: gold;
+
+
+
+
+/* SCP-JP Wikidot Inkblot navigation correction: contain the third narrow mobile submenu. */
+@media (max-width: 359px) {
+  .mobile-top-bar > ul > li:nth-child(3) > ul { left: auto; right: 0; }
 }
 
-.picker .yui-navset * {
-  display: contents !important;
-}
-.picker .yui-navset em {
-  display: inline-block !important;
-  color: color-mix(in srgb, black 25%, var(--inkblot-accent, red)) !important;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  text-underline-offset: 0.25rem;
-  border: none !important;
-}
-.picker .yui-navset .selected em {
-  font-weight: 900;
-  text-decoration: none;
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Inkblot mobile endpoint correction: contain the last submenu at its parent right edge. */
+@media (min-width: 360px) and (max-width: 767px) {
+  #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
 }
 
-.terminal {
-  border-color: var(--inkblot-accent, grey);
-}
 
 @@
 :root {

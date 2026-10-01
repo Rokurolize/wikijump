@@ -38,8 +38,8 @@
   "candidate_source_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
   "human_port_candidate_path": "install/local/theme-lab/ports/basalt/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "bebdfef76f8d55d398d36bc71927978f55f5821ab4401252ff942ca81457aa1e",
-  "candidate_preview_sha256": "ab114c68b84d2100835b2df0465bb70bc4122e44faf6d9e6bcac012d937b5448",
-  "candidate_css_sha256": "d8cb23317304728ccb6eaf77ade4e4efaeef328a18306d928525d6635d057d52",
+  "candidate_preview_sha256": "4a266040a4c16b6ffd7e281a8615d476680872c057c0d5a4078a07fecb9110ae",
+  "candidate_css_sha256": "78b8bd21dce4bb8130ae89f7e9b825163ddbcd7abab6ff33a621a0d7293ae581",
   "page_assets": [
     {
       "filename": "basalt-theme-logo.svg",
@@ -67,7 +67,7 @@
     "source_evidence": "candidate screenshots visibly rendered unresolved SCP-EN usernames against SCP-JP identity links; preserve display names and freeze upstream/human-port originals"
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/basalt/assets.json",
-  "asset_dependency_decision_count": 243,
+  "asset_dependency_decision_count": 244,
   "page_asset_dependency_decisions_path": "install/local/theme-lab/ports/basalt/page-assets.json",
   "historical_acceptance": {
     "status": "SUPERSEDED_CANDIDATE",

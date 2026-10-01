@@ -1,42 +1,9 @@
 @import url("https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css");
 @import url("https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css");
-#page-title, #breadcrumbs {
-    text-align: center !important;
-}
 
-#page-title {
-    --wght: 900;
-    font-family: var(--header-font);
-    font-weight: 900;
-}
+@import url("https://scp-jp.github.io/files/component/bhl-dark-sidebar/style0.css");
 
-.scp-image-block.block-right {
-    margin: 1em 0 1em 2em;
-}
 
-.scp-image-block > a:first-of-type {
-    background: var(--gradient-header);
-}
 
-.scp-image-block .printuser img.small {
-    width: initial;
-}
-
-.scp-image-block img {
-    min-width: 100%;
-    -webkit-box-sizing: border-box;
-       -moz-box-sizing: border-box;
-            box-sizing: border-box;
-    padding: 0.5em;
-}
-
-#page-content .wikisys--template-dialog div {
-    color: rgb(213,43,38) !important;
-}
-
-div.wikisys--template-dialog-footer > a {
-    color: rgb(198,14,9) !important;
-
-}
 
 @import url("https://pseudo-scp-jp.wdfiles.com/local--code/theme%3Aextra-black-highlighter-theme/1")

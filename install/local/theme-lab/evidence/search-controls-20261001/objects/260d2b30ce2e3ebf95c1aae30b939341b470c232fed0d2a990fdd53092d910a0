@@ -1,0 +1,7 @@
+@font-face {
+  font-family: 'Telex';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/9761bc73f88808160ea0a852c2a82cf1abdca363147913caab74c4f06a1a8ace") format('truetype');
+}

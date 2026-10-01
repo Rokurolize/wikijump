@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
+  "frozen_candidate_source_sha256": "be2817d74c0061befd04de1ac46d687f66b6a424d5dcb555195a5235eafbae8c",
   "base_source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "d98e7ac63bf4c6aaf180fe1e2b0e2bb0f2e20d0ed9ebdc56255a67fde0230692",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "6c6e02ba2f770aaa0b7e63580d92d55cd2915e417170219b18d1df169ee74e59",
+  "jp_overrides_sha256": "1b3a95a688d28be0125534870f4fc182ff75d85fe2097ab98da83817e277bc25",
+  "semantic_css_sha256": "3ec1c424d818b01bb7e0d44fa8baf8061da9c044f7c5a6dc3b2bd0ab227552fc",
+  "canonical_override_sha256": "5e1dbb57df3be074e52649fd7f2370cec8377e74f55b264e988f428bed99733a",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
+  "final_source_sha256": "c94dfdfe040f9f5dbd7ac354c55030e771748f277496c92e6341f223e96ea828",
   "final_source_inputs": {
     "base_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "1b3a95a688d28be0125534870f4fc182ff75d85fe2097ab98da83817e277bc25"
   },
   "ordered_include_sha256": "e279447da3763ae59e4c906da90e934bffefd431ad6faf8183aba9231e1fd1e7",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 2,
+  "raw_override_rule_count": 2,
+  "canonical_override_rule_count": 2,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -214,8 +214,101 @@
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]
+    },
+    {
+      "marker": "Resolve preserved source CSS component includes",
+      "origin": "source-css-include-resolution",
+      "authority": "RUNTIME_INDEPENDENT",
+      "sha256": "305a2efe22658437210a164b05216472fe60b93ff6d029db3f858c27b61aac6d",
+      "rationale": "Exact source-owned include CSS and literal source parameters, materialized after site base imports before source theme declarations.",
+      "evidence": [
+        {
+          "path": "inkblot/source-css-includes.json",
+          "sha256": "305a2efe22658437210a164b05216472fe60b93ff6d029db3f858c27b61aac6d"
+        },
+        {
+          "path": "shared-fixtures/current-source-components/receipt.json",
+          "sha256": "38a3de3d2a1987b57615dfa215eeaddde2fe31e5ffb5d7ce4f190656c18dcee2"
+        }
+      ]
+    },
+    {
+      "marker": "SCP-JP Wikidot Inkblot navigation correction: contain the third narrow mobile submenu.",
+      "sha256": "09b878d5d1b22d84a37a08288cb7ba94e88e65bcf338b5581170dc026d7152b5",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "Read-only SCP-JP Wikidot A/B found the third mobile submenu 2.83px beyond the right viewport edge at 320px with the adaptation removed; the exact current CSS with this right-edge anchor passes all submenu, item, and link bounds at 320px and 390px.",
+      "evidence": [
+        {
+          "path": "authority-evidence/inkblot-final-mobile-navigation-14-0-20261001/receipt.json",
+          "sha256": "9444d75f330327973ee0222348c7b66da7a0b7db7919cef61831ade75a6ae063",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "published_css_sha256": "e995e17a2c8ee18655e0af72e51bc8f98ad26868aae7adb2d1233e54e6915220",
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "state": "navigation",
+        "viewports": [
+          320,
+          390
+        ],
+        "selectors": [
+          ".mobile-top-bar > ul > li > ul",
+          ".mobile-top-bar > ul > li > ul li",
+          ".mobile-top-bar > ul > li > ul a"
+        ]
+      }
+    },
+    {
+      "marker": "SCP-JP Wikidot Inkblot mobile endpoint correction: contain the last submenu at its parent right edge.",
+      "sha256": "33d8453b1fcdb22800877bff6a0b8e352d14d468b5108d41fa01589fe386afc3",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "The real target fourth menu escapes at 390px. Align only that row endpoint above 359px; the wrapped last parent at 320px must preserve its left alignment.",
+      "evidence": [
+        {
+          "path": "authority-evidence/inkblot-final-mobile-navigation-action-15-0-20261001/receipt.json",
+          "sha256": "c5b72eacae7ecdb6c75c28884ac469c9ede12a32c886c3457ef43968e7a1c7d5",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "state": "navigation-action",
+        "viewports": [
+          320,
+          390
+        ]
+      },
+      "published_css_sha256": "e995e17a2c8ee18655e0af72e51bc8f98ad26868aae7adb2d1233e54e6915220"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot Inkblot navigation correction: contain the third narrow mobile submenu.",
+      "rationale": "SCP-JP Wikidot Inkblot navigation correction: contain the third narrow mobile submenu.",
+      "sha256": "09b878d5d1b22d84a37a08288cb7ba94e88e65bcf338b5581170dc026d7152b5",
+      "selectors": [
+        ".mobile-top-bar > ul > li:nth-child(3) > ul"
+      ],
+      "at_contexts": [
+        "@media (max-width: 359px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot Inkblot mobile endpoint correction: contain the last submenu at its parent right edge.",
+      "rationale": "SCP-JP Wikidot Inkblot mobile endpoint correction: contain the last submenu at its parent right edge.",
+      "sha256": "33d8453b1fcdb22800877bff6a0b8e352d14d468b5108d41fa01589fe386afc3",
+      "selectors": [
+        "#top-bar .mobile-top-bar > ul > li:last-child > ul"
+      ],
+      "at_contexts": [
+        "@media (min-width: 360px) and (max-width: 767px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    }
+  ]
 }

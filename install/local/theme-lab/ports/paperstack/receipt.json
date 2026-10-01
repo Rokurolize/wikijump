@@ -29,9 +29,9 @@
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/paperstack",
-  "candidate_source_hash": "269ade2ec56414c951616e92d9155865cb1365c06a8af1ad514c960d26259a85",
+  "candidate_source_hash": "2ae35aa85c55534bec335d6c5cc61571c22bc4dc4543c596f87d8c39d931eb4d",
   "source_candidate_path": "install/local/theme-lab/ports/paperstack/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "269ade2ec56414c951616e92d9155865cb1365c06a8af1ad514c960d26259a85",
+  "source_candidate_sha256": "2ae35aa85c55534bec335d6c5cc61571c22bc4dc4543c596f87d8c39d931eb4d",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -39,11 +39,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/paperstack/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "269ade2ec56414c951616e92d9155865cb1365c06a8af1ad514c960d26259a85",
+  "candidate_source_sha256": "2ae35aa85c55534bec335d6c5cc61571c22bc4dc4543c596f87d8c39d931eb4d",
   "human_port_candidate_path": "install/local/theme-lab/ports/paperstack/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "ae89b529a8182a14fcb9bd4022d431aba0d432da2bf31c4b42d228e27a1f55d6",
-  "candidate_preview_sha256": "50b8ed05590ec5f84177cb992e7fcccd9937ceed87ed0532f0683b1d09af7e0b",
-  "candidate_css_sha256": "76f4a14b16d53108068e2cd2f7cf8beeb9fd7a1d46d2215de9c7b6d5677b8053",
+  "candidate_preview_sha256": "865c100fbfb76fa60f7539ca5a66db5287ab45aef75a3ec78013fb28cadbbd31",
+  "candidate_css_sha256": "6f14cdb095d7468e628db41240cf54a02b37185e67273e7641852eccc426791d",
   "page_assets": [
     {
       "filename": "lgtrans.png",

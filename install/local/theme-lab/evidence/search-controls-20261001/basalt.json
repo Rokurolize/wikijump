@@ -1,0 +1,411 @@
+{
+  "schema": "theme_lab_wikidot_search_control.v1",
+  "theme": "basalt",
+  "source_url": "https://scp-wiki.wikidot.com/theme:basalt",
+  "source_sha256": "df4b78d344536f5b7c363ac86b2ddc6f3c31b3647693f473169550e03fca17c5",
+  "observed_at": "2026-10-01T02:21:13.905Z",
+  "public_writes": 0,
+  "external_requests_sent": 0,
+  "offline": true,
+  "browser_version": "149.0.7827.55",
+  "browser_sha256": "2d18db9d8608b052b6a552ee00ec1e830f93692e928b65ecc67d693bd33fe801",
+  "original_html_sha256": "2400015139cdc0c0fa3ae4913c142f09d8d710d8927417b4a668bd53ab512804",
+  "replay_entry": "/o/df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484",
+  "snapshot_sha256": "aca6913d3d69f5413a41eea4c3a632841218ec535b5cf8307d46a2cc451f29f0",
+  "artifacts": [
+    {
+      "path": "evidence/search-controls-20261001/objects/12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941",
+      "sha256": "12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941",
+      "content_type": "application/x-javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/231630b39af902bf9ad98a22bd77b3c5359b18a9336b63bf599c31a76f1e08cd",
+      "sha256": "231630b39af902bf9ad98a22bd77b3c5359b18a9336b63bf599c31a76f1e08cd",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/2400015139cdc0c0fa3ae4913c142f09d8d710d8927417b4a668bd53ab512804",
+      "sha256": "2400015139cdc0c0fa3ae4913c142f09d8d710d8927417b4a668bd53ab512804",
+      "content_type": "text/html; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/264a84e138e9f97ca169107e0e1496fbbe1b9992645c170b435815a469a0e481",
+      "sha256": "264a84e138e9f97ca169107e0e1496fbbe1b9992645c170b435815a469a0e481",
+      "content_type": "application/javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/3333b4613971fb7589b20202c24f6d62b9ce46e5e2f2d08fb3e0c24f41a5d8e5",
+      "sha256": "3333b4613971fb7589b20202c24f6d62b9ce46e5e2f2d08fb3e0c24f41a5d8e5",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/40fc2a0d71accb73dcdbb6b8e028098edde9ec939685b59a5e1aabf01b6fce89",
+      "sha256": "40fc2a0d71accb73dcdbb6b8e028098edde9ec939685b59a5e1aabf01b6fce89",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5",
+      "sha256": "4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c",
+      "sha256": "574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c",
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583",
+      "sha256": "5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583",
+      "content_type": "text/css"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/635dfb450eccd5357914e89451c7f9ba3ceacffc40a21073050177f7219ab7ab",
+      "sha256": "635dfb450eccd5357914e89451c7f9ba3ceacffc40a21073050177f7219ab7ab",
+      "content_type": "application/x-javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/6d46b6f0fa89ede15b4ff437b045454b490f72a18b15b4450c77cec3439ee738",
+      "sha256": "6d46b6f0fa89ede15b4ff437b045454b490f72a18b15b4450c77cec3439ee738",
+      "content_type": "application/x-javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9",
+      "sha256": "6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/6f7b16897ff0590cf90a67f984ae30e48faecd25b99d3ee440ac8b64f9b40aba",
+      "sha256": "6f7b16897ff0590cf90a67f984ae30e48faecd25b99d3ee440ac8b64f9b40aba",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387",
+      "sha256": "7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387",
+      "content_type": "application/x-javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c",
+      "sha256": "7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c",
+      "content_type": "text/css"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/87bfd7a10336d6452797459f8e319314aa1198c793d2e9522b93c298a2e4d6de",
+      "sha256": "87bfd7a10336d6452797459f8e319314aa1198c793d2e9522b93c298a2e4d6de",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/a8ed3f79f6374f68c86fa08f75ee91b2a4cd0f17e643f72b5e57ef40ea608df7",
+      "sha256": "a8ed3f79f6374f68c86fa08f75ee91b2a4cd0f17e643f72b5e57ef40ea608df7",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/a9232a1d01be66ac90d922df55bc5edfd38f2457fad6e83e10c7f818ab08d09d",
+      "sha256": "a9232a1d01be66ac90d922df55bc5edfd38f2457fad6e83e10c7f818ab08d09d",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc",
+      "sha256": "c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc",
+      "content_type": "application/x-javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484",
+      "sha256": "df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484",
+      "content_type": "text/html; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/e9bf71e15958bb16afa6e46e2f6d98397701599f9fb2846d9f051180ffd00a7f",
+      "sha256": "e9bf71e15958bb16afa6e46e2f6d98397701599f9fb2846d9f051180ffd00a7f",
+      "content_type": "text/css; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/ed0652b49899259e10ff2b7270ffee4d9f07b4c2a46c8d95a7f86fa3e94e01d8",
+      "sha256": "ed0652b49899259e10ff2b7270ffee4d9f07b4c2a46c8d95a7f86fa3e94e01d8",
+      "content_type": "text/css; charset=utf-8"
+    }
+  ],
+  "scope": "Only the hidden header query and native visible-button search navigation. Missing reference resources remain recorded and do not certify source appearance or whole-site parity.",
+  "source_measurements": [
+    {
+      "theme": "basalt",
+      "url": "https://scp-wiki.wikidot.com/theme:basalt",
+      "viewport": "desktop",
+      "viewport_size": {
+        "width": 1440,
+        "height": 1000
+      },
+      "source_sha256": "df4b78d344536f5b7c363ac86b2ddc6f3c31b3647693f473169550e03fca17c5",
+      "loaded": {
+        "root_url": "https://scp-wiki.wikidot.com/theme:basalt",
+        "entry": "/o/df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484",
+        "asset_count": 320,
+        "external_requests": 0,
+        "cache_hits": 1,
+        "failed_asset_count": 4,
+        "failed_assets": [
+          {
+            "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+          },
+          {
+            "url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NanumGothic-Regular.woff2",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 403 for https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NanumGothic-Regular.woff2"
+          },
+          {
+            "url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NanumGothic-Bold.woff2",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 403 for https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NanumGothic-Bold.woff2"
+          },
+          {
+            "url": "https://scp-wiki.wikidot.com/local--files/theme:basalt/CLASSIFICATION_LIGHTLOGO.png",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 500 for https://scp-wiki.wdfiles.com/local--files/theme%3Abasalt/CLASSIFICATION_LIGHTLOGO.png"
+          }
+        ],
+        "browser_blocked_external_attempts": 98,
+        "browser_blocked_urls": [
+          "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+          "https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding:wght@400;700&display=swap",
+          "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+          "https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap",
+          "https://cdn.onesignal.com/sdks/OneSignalPageSDKES6.js?v=151607",
+          "http://interwiki.scpwiki.com/interwikiFrame.html?lang=en&community=scp&pagename=theme:aesthetic-theme",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=0&theme=https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=1&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=2&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css&css={$css}",
+          "https://floors.nitropay.com/f?s=143&c=JP&v=2"
+        ],
+        "offline": true
+      },
+      "query": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "after_focus": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "button": {
+        "display": "block",
+        "visibility": "visible",
+        "width": 32,
+        "height": 59.28125
+      },
+      "handler": {
+        "search": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}",
+        "events": [
+          {
+            "type": "submit",
+            "fn": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}"
+          }
+        ]
+      },
+      "navigation": "/search:site/q/Search%20this%20site",
+      "action_error": null,
+      "original_html_sha256": "2400015139cdc0c0fa3ae4913c142f09d8d710d8927417b4a668bd53ab512804",
+      "replay_entry": "/o/df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484",
+      "snapshot_sha256": "aca6913d3d69f5413a41eea4c3a632841218ec535b5cf8307d46a2cc451f29f0",
+      "public_writes": 0,
+      "external_requests_sent": 0
+    },
+    {
+      "theme": "basalt",
+      "url": "https://scp-wiki.wikidot.com/theme:basalt",
+      "viewport": "laptop",
+      "viewport_size": {
+        "width": 1024,
+        "height": 900
+      },
+      "source_sha256": "df4b78d344536f5b7c363ac86b2ddc6f3c31b3647693f473169550e03fca17c5",
+      "loaded": {
+        "root_url": "https://scp-wiki.wikidot.com/theme:basalt",
+        "entry": "/o/df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484",
+        "asset_count": 320,
+        "external_requests": 0,
+        "cache_hits": 1,
+        "failed_asset_count": 4,
+        "failed_assets": [
+          {
+            "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+          },
+          {
+            "url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NanumGothic-Regular.woff2",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 403 for https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NanumGothic-Regular.woff2"
+          },
+          {
+            "url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NanumGothic-Bold.woff2",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 403 for https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NanumGothic-Bold.woff2"
+          },
+          {
+            "url": "https://scp-wiki.wikidot.com/local--files/theme:basalt/CLASSIFICATION_LIGHTLOGO.png",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 500 for https://scp-wiki.wdfiles.com/local--files/theme%3Abasalt/CLASSIFICATION_LIGHTLOGO.png"
+          }
+        ],
+        "browser_blocked_external_attempts": 121,
+        "browser_blocked_urls": [
+          "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+          "https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding:wght@400;700&display=swap",
+          "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+          "https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap",
+          "https://cdn.onesignal.com/sdks/OneSignalPageSDKES6.js?v=151607",
+          "http://interwiki.scpwiki.com/interwikiFrame.html?lang=en&community=scp&pagename=theme:aesthetic-theme",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=0&theme=https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=1&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=2&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css&css={$css}",
+          "https://floors.nitropay.com/f?s=143&c=JP&v=2"
+        ],
+        "offline": true
+      },
+      "query": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "after_focus": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "button": {
+        "display": "block",
+        "visibility": "visible",
+        "width": 32,
+        "height": 57.28125
+      },
+      "handler": {
+        "search": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}",
+        "events": [
+          {
+            "type": "submit",
+            "fn": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}"
+          }
+        ]
+      },
+      "navigation": "/search:site/q/Search%20this%20site",
+      "action_error": null,
+      "original_html_sha256": "2400015139cdc0c0fa3ae4913c142f09d8d710d8927417b4a668bd53ab512804",
+      "replay_entry": "/o/df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484",
+      "snapshot_sha256": "aca6913d3d69f5413a41eea4c3a632841218ec535b5cf8307d46a2cc451f29f0",
+      "public_writes": 0,
+      "external_requests_sent": 0
+    },
+    {
+      "theme": "basalt",
+      "url": "https://scp-wiki.wikidot.com/theme:basalt",
+      "viewport": "tablet",
+      "viewport_size": {
+        "width": 768,
+        "height": 1024
+      },
+      "source_sha256": "df4b78d344536f5b7c363ac86b2ddc6f3c31b3647693f473169550e03fca17c5",
+      "loaded": {
+        "root_url": "https://scp-wiki.wikidot.com/theme:basalt",
+        "entry": "/o/df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484",
+        "asset_count": 320,
+        "external_requests": 0,
+        "cache_hits": 1,
+        "failed_asset_count": 4,
+        "failed_assets": [
+          {
+            "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+          },
+          {
+            "url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NanumGothic-Regular.woff2",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 403 for https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NanumGothic-Regular.woff2"
+          },
+          {
+            "url": "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NanumGothic-Bold.woff2",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 403 for https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/basalt/fonts/NanumGothic-Bold.woff2"
+          },
+          {
+            "url": "https://scp-wiki.wikidot.com/local--files/theme:basalt/CLASSIFICATION_LIGHTLOGO.png",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 500 for https://scp-wiki.wdfiles.com/local--files/theme%3Abasalt/CLASSIFICATION_LIGHTLOGO.png"
+          }
+        ],
+        "browser_blocked_external_attempts": 133,
+        "browser_blocked_urls": [
+          "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+          "https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding:wght@400;700&display=swap",
+          "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+          "https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap",
+          "https://cdn.onesignal.com/sdks/OneSignalPageSDKES6.js?v=151607",
+          "http://interwiki.scpwiki.com/interwikiFrame.html?lang=en&community=scp&pagename=theme:aesthetic-theme",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=0&theme=https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=1&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=2&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css&css={$css}",
+          "https://floors.nitropay.com/f?s=143&c=JP&v=2"
+        ],
+        "offline": true
+      },
+      "query": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "after_focus": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "button": {
+        "display": "block",
+        "visibility": "visible",
+        "width": 32,
+        "height": 57.28125
+      },
+      "handler": {
+        "search": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}",
+        "events": [
+          {
+            "type": "submit",
+            "fn": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}"
+          }
+        ]
+      },
+      "navigation": "/search:site/q/Search%20this%20site",
+      "action_error": null,
+      "original_html_sha256": "2400015139cdc0c0fa3ae4913c142f09d8d710d8927417b4a668bd53ab512804",
+      "replay_entry": "/o/df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484",
+      "snapshot_sha256": "aca6913d3d69f5413a41eea4c3a632841218ec535b5cf8307d46a2cc451f29f0",
+      "public_writes": 0,
+      "external_requests_sent": 0
+    }
+  ],
+  "superseded_measurements": [],
+  "measurement_programs": [
+    {
+      "path": "evidence/search-controls-20261001/probe-frozen-search-all.mjs",
+      "sha256": "0ad62e3594f4d887f973933de98d2e65a1d99085eb1f8b253fb5e05b721705c4"
+    },
+    {
+      "path": "evidence/search-controls-20261001/probe-frozen-search-jakstyle.mjs",
+      "sha256": "095410b808a24f76f6d39e28a2fde12eb4199bfd897fcba8f194f365846d1a23"
+    }
+  ]
+}

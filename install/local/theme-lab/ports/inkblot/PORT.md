@@ -1,6 +1,6 @@
 <!-- adaptation-authority-current -->
 Current publication inputs have passed the adaptation-authority gate. Historical campaign/local-runtime screenshots describe the superseded candidate; they are not acceptance for this CSS. See ../ADAPTATION-AUTHORITY-AUDIT.md and maintenance/historical-receipt.json where present.
-Current source SHA-256: ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f; CSS SHA-256: e48e98fdfc4cf721747ae8ca79d787e813e3359e9700a308be276c7f7c84d2a3. Full port acceptance remains a separate combined result.
+Current source SHA-256: be2817d74c0061befd04de1ac46d687f66b6a424d5dcb555195a5235eafbae8c; CSS SHA-256: e995e17a2c8ee18655e0af72e51bc8f98ad26868aae7adb2d1233e54e6915220. Full port acceptance remains a separate combined result.
 <!-- adaptation-authority-end -->
 
 # SCP-EN → SCP-JP port: `theme:inkblot`
@@ -17,7 +17,7 @@ State: **verified local candidate; not published**. Current upstream source is f
 
 The evidence-backed rules in `../TECHNICAL-LOCALIZATION-SPEC.md` apply; the final local DOM, rating, interaction, asset, viewport, and offline checks are bound below and in `receipt.json`.
 
-## Bound final evidence
+## Historical evidence (superseded; no current acceptance authority)
 
 - EN source identity: `b40f3fbe59527d76b49423d9297cb30e41599b32b3b2e2912203bac066dbb0af`; updated `2026-04-12T05:05:15+00:00`.
 - JP baseline: No public JP counterpart existed after the targeted XML-RPC absence check.
@@ -40,3 +40,9 @@ The evidence-backed rules in `../TECHNICAL-LOCALIZATION-SPEC.md` apply; the fina
 - `1` unconfirmed SCP-EN site-local author identity links were localized to visible credit text; upstream EN and the original human-port source retain their link markup. The local SCP-JP account namespace is not assumed to contain foreign identities.
 - Local preview fixture expanded current JP `theme-squares` markup and `0` component CSS modules where used; `preview-fixture.json` binds its source hashes.
 - When present, named Wikidot page attachments and their hashes are in `page-assets.json` and `page-assets/`; publish the named files with the candidate source.
+
+## Current authoritative correction
+
+- Frozen read-only SCP-JP A/B at [authority-evidence/inkblot-narrow-navigation/receipt.json](authority-evidence/inkblot-narrow-navigation/receipt.json) showed the third mobile navigation submenu overflowing by 2.83px at 320px with the correction removed. The current CSS with the narrow right-edge anchor passes every submenu, item, and link at 320px and 390px.
+- The correction is limited to that submenu below 360px; its source rule is retained in `authority-overrides.css`.
+- Fresh full offline local acceptance is recorded in [artifacts/current-acceptance/current-local-check.json](artifacts/current-acceptance/current-local-check.json): port verdict `pass` with zero unresolved findings; target acceptance `fail` because local torture cannot render the TOC module and the mobile-navigation surface has a local-only measured overflow. Link-color observations are also local-only. These findings cannot authorize candidate CSS. The static rating fixture comes from the retained current SCP-JP rating DOM and is used only for local selector coverage.

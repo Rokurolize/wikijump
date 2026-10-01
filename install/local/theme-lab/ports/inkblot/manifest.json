@@ -93,17 +93,17 @@
   "final_verdict": "inconclusive",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/inkblot/assets.json",
-  "asset_dependency_decision_count": 47,
+  "asset_dependency_decision_count": 53,
   "maintenance_source": {
     "base": "maintenance/base.wikidot.txt",
     "jp_overrides": "maintenance/jp-overrides.css",
     "manifest": "maintenance/manifest.json",
     "base_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "semantic_css_sha256": "d98e7ac63bf4c6aaf180fe1e2b0e2bb0f2e20d0ed9ebdc56255a67fde0230692",
-    "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "jp_overrides_sha256": "1b3a95a688d28be0125534870f4fc182ff75d85fe2097ab98da83817e277bc25",
+    "semantic_css_sha256": "3ec1c424d818b01bb7e0d44fa8baf8061da9c044f7c5a6dc3b2bd0ab227552fc",
+    "canonical_override_sha256": "5e1dbb57df3be074e52649fd7f2370cec8377e74f55b264e988f428bed99733a",
     "final_source": "maintenance/final.wikidot.txt",
-    "final_source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
+    "final_source_sha256": "c94dfdfe040f9f5dbd7ac354c55030e771748f277496c92e6341f223e96ea828",
     "exact_duplicate_rules_removed": 0,
     "redundant_same_value_declarations_removed": 0,
     "empty_rules_removed": 0
@@ -113,13 +113,19 @@
       "source_path": "candidate-input.css",
       "source_sha256": "dd984fa9804edb30594e8322f3d478ed0196c662e950a131872a3d312b6c68f1",
       "active_tags": [],
-      "candidate_source_sha256": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
-      "candidate_active_tags": [],
+      "candidate_source_sha256": "be2817d74c0061befd04de1ac46d687f66b6a424d5dcb555195a5235eafbae8c",
+      "candidate_active_tags": [
+        "theme"
+      ],
+      "runtime_active_tags": [],
+      "showcase_css_modules_removed_exact": 1,
+      "showcase_css_modules_removed_truncated": 0,
+      "showcase_css_modules_unmatched": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "e48e98fdfc4cf721747ae8ca79d787e813e3359e9700a308be276c7f7c84d2a3",
+      "candidate_css_sha256": "e995e17a2c8ee18655e0af72e51bc8f98ad26868aae7adb2d1233e54e6915220",
       "asset_receipt_path": "assets.json",
-      "assets": 42,
-      "imports": 4,
+      "assets": 46,
+      "imports": 6,
       "localization_transforms": 0,
       "localization_transform_manifest": {
         "path": "localization-transforms.json",
@@ -127,7 +133,14 @@
       },
       "missing": 0,
       "external_requests_during_build": 0
-    }
+    },
+    "source_css_includes": {
+      "manifest": "source-css-includes.json",
+      "materialized_css_sha256": "0fdfceb0a44d0fb558b9c70e6e5b7677fb2cc917e9e7a4446d44e163c191f679",
+      "cascade": "before-main-source-css",
+      "public_writes": 0
+    },
+    "authority_overrides_placement": "before-wikidot-code-fence"
   },
   "adaptation_authority": {
     "ledger": "../adaptation-authority.json",

@@ -1,0 +1,20 @@
+{
+  "assets": [
+    {
+      "sha256": "fcd9f75940109475f878f0702d7eb0e1c55cd461369244c86203bb032b6dbe31",
+      "bytes": 7532,
+      "content_type": "image/svg+xml",
+      "original_url": "https://scpwiki.github.io/sigma/images/header-logo.svg",
+      "final_url": "https://scpwiki.github.io/sigma/images/header-logo.svg"
+    }
+  ],
+  "missing": [],
+  "imports": [],
+  "import_provenance_status": "complete",
+  "import_provenance": [],
+  "localization_transforms": [],
+  "pruned_fonts": [],
+  "template_placeholders": [],
+  "asset_replacements": {},
+  "omitted_assets": []
+}

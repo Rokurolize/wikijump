@@ -174,9 +174,16 @@
       "source_sha256": "8d94e5301b2d8defe39877fa97953287ca77acb73b49b58daf4fa1d5edc43a1a",
       "active_tags": [],
       "candidate_source_sha256": "e2a79c2965b4558f59b4a0884fc18563a7ee8c6ad17d27d6e5f219856044459c",
-      "candidate_active_tags": [],
+      "candidate_active_tags": [
+        "en",
+        "テーマ"
+      ],
+      "runtime_active_tags": [],
+      "showcase_css_modules_removed_exact": 2,
+      "showcase_css_modules_removed_truncated": 0,
+      "showcase_css_modules_unmatched": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "c210cc214640b7b4fc1583b12c82d83c5698f7159dbc57905ab70a78d2755cb2",
+      "candidate_css_sha256": "82d2b9d5d93bc57a58acc320225b6f779f98fc6b91584d9edb1c937cc479f5ed",
       "asset_receipt_path": "assets.json",
       "assets": 33,
       "imports": 5,
@@ -184,6 +191,12 @@
       "localization_transform_manifest": null,
       "missing": 0,
       "external_requests_during_build": 0
+    },
+    "source_css_includes": {
+      "manifest": "source-css-includes.json",
+      "materialized_css_sha256": "875497dc164526da0940bc91a56d9b3cb6839e30cb02881e47245d662982a621",
+      "cascade": "before-main-source-css",
+      "public_writes": 0
     }
   },
   "adaptation_authority": {

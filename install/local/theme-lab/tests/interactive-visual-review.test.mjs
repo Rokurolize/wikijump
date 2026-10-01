@@ -14,6 +14,8 @@ test('records exact-image review for duplicate rows only when both candidate ide
   assert.equal(rows[0].decision_authority, 'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY');
   assert.equal(rows[0].port_conclusion_eligible, false);
   assert.equal(rows[0].visual_review.method, 'direct-image-vision-review');
+  assert.equal(rows[0].visual_review.candidate_sha256, 'css-current');
+  assert.equal(rows[0].visual_review.candidate_source_sha256, 'source-current');
   assert.equal(rows[0].visual_review.decision_authority, 'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY');
   assert.equal(rows[0].visual_review.port_conclusion_eligible, false);
   assert.deepEqual(rows[1].unconfirmed_items, []);

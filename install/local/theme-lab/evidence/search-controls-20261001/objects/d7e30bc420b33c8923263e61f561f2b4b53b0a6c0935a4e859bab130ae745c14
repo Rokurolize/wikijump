@@ -1,0 +1,28 @@
+@font-face {
+  font-family: 'M PLUS 1p';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/e0a6455bb9446e25223583e1b63f8933bb48336716ef6ad82e47691d59298a7c") format('truetype');
+}
+@font-face {
+  font-family: 'M PLUS 1p';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/o/ab7dd8ef611036ea6b71d9e4d22597f458b07adc81827b7742af6b70d2aeedb6") format('truetype');
+}
+@font-face {
+  font-family: 'M PLUS 1p';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/o/01d139bb9ad93e947049cfbfb15a6bdbc45251b043d974e8d17196946a353422") format('truetype');
+}
+@font-face {
+  font-family: 'M PLUS 1p';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/o/ba29d86a938c75ff7e0819c1a75b937b349f2741dfbbb58dddd246838606b8fa") format('truetype');
+}

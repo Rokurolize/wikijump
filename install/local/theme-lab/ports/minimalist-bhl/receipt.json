@@ -41,8 +41,8 @@
   "candidate_source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
   "human_port_candidate_path": "install/local/theme-lab/ports/minimalist-bhl/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "66d2b5303c6b5c4530835fd993c8f9a9e48ab9ac15d3d81eb367d17a038a5391",
-  "candidate_preview_sha256": "d6592bd64af90d046f74fef0eaa041de5d0a66f5416457b30990107af6dc6589",
-  "candidate_css_sha256": "45789c3c04061480fe9e0999f13043df306cbee6c574555071f7143d99d55bb0",
+  "candidate_preview_sha256": "90ea3a6c9b8e830c3a9f11bf7f04c74c22d76b64dfb9bdf61c0180e90248215c",
+  "candidate_css_sha256": "b9b3b2d6fa0c496ea5b858a02cca722eea666988f1db1fdba5148fc89aa207b7",
   "page_attachment_manifest": null,
   "existing_jp_reconciliation": {
     "previous_source_sha256": "6e5daba96afeb10ce3e4f49bc436920f6c0ba2ac4937c072030c59e43e80f3a0",

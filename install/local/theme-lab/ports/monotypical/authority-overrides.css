@@ -1,0 +1,4 @@
+
+
+/* SCP-JP Wikidot monotypical credit correction: keep the modal rating in document flow below the license control. */
+#u-credit-view .modalbox .modalbox-ratemodule { position: static; }

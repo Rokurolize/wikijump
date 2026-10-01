@@ -5,6 +5,7 @@
 // No external network is used.
 
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import http from "node:http";
 import os from "node:os";
@@ -117,6 +118,30 @@ test("theme-port check fails on a missing included component in the rendered pre
   }, {previewClient});
 });
 
+test("recorded check binds the original candidate inputs before replay rewriting", async (t) => {
+  const inputs = {css: '#page-content { color: black; }', baseCss: 'body { font-size: 16px; }', source: '[[module CSS]]\n/* 日本語 */\n[[/module]]', wikitext: '日本語のプレビュー'};
+  const previewClient = {preview: async () => ({body: '<p class="theme-lab-jp-font-probe">日本語のプレビュー</p>', styles: [], legacy_actions: [], membership_actions: []})};
+  await withSession(t, async ({session}) => {
+    const result = await session.check({...inputs, siteId: 6000003, iteration: true});
+    for (const [field, key] of [['candidate_css_sha256','css'], ['candidate_base_css_sha256','baseCss'], ['candidate_source_sha256','source'], ['candidate_preview_sha256','wikitext']]) {
+      assert.equal(result[field], crypto.createHash('sha256').update(inputs[key]).digest('hex'));
+    }
+  }, {previewClient});
+});
+
+test("recorded reference identity binds original HTML and its distinct local replay", async (t) => {
+  await withSession(t, async ({session, fixture}) => {
+    const result = await session.check({referenceUrl: `${fixture.origin}/reference`, css: FOREIGN_CSS, iteration: true});
+    const identity = result.reference_identity;
+    assert.equal(identity.source_url, `${fixture.origin}/reference`);
+    assert.equal(identity.original_html_sha256, crypto.createHash('sha256').update(REFERENCE_HTML).digest('hex'));
+    assert.match(identity.replay_entry, /^\/o\/[a-f0-9]{64}$/u);
+    assert.match(identity.snapshot_sha256, /^[a-f0-9]{64}$/u);
+    assert.equal(identity.offline, false);
+    assert.ok(result.reference.url.endsWith(identity.replay_entry));
+  });
+});
+
 test("theme-port check retains a target-only selector suggestion without a parity action", async (t) => {
   await withSession(t, async ({session, fixture}) => {
     const verdict = await session.check({
@@ -212,6 +237,31 @@ test("broken CSS canary fails local acceptance without certifying a parity misma
     assert.equal(verdict.target_acceptance.status, "fail");
     assert.ok(verdict.top_issues.some((issue) => issue.kind === "viewport_overflow"));
   });
+});
+
+test("full viewport acceptance does not attribute inherited preview overflow to the theme", async (t) => {
+  const previewClient = {
+    preview: async () => ({
+      body: '<div id="inherited-overflow" style="width:340px;height:20px">baseline content</div>',
+      styles: [],
+      legacy_actions: [],
+      membership_actions: [],
+    }),
+  };
+  await withSession(t, async ({session}) => {
+    const verdict = await session.check({
+      siteId: 6000003,
+      wikitext: "inherited overflow fixture",
+      css: "#inherited-overflow { color: rgb(1, 2, 3); }",
+      viewports: true,
+      torture: false,
+    });
+    const narrow = verdict.viewport_status["narrow-mobile"];
+    assert.ok(narrow.viewport_escape_px > 1);
+    assert.equal(narrow.viewport_escape_px, narrow.baseline_viewport_escape_px);
+    assert.equal(narrow.status, "pass");
+    assert.ok(!verdict.top_issues.some((issue) => issue.kind === "viewport_overflow"));
+  }, {previewClient});
 });
 
 test("second check is fully offline and makes no reference requests", async (t) => {

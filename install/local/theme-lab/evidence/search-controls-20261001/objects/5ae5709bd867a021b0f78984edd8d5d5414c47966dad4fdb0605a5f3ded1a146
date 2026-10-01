@@ -1,0 +1,56 @@
+@font-face {
+  font-family: 'Kanit';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/3fe0ae6ba8135a5be6887e3828bb2c53406b067b3ef4490948210583b10c21d6") format('truetype');
+}
+@font-face {
+  font-family: 'Kanit';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/o/d3f64f36875794e69e207be7201ecfd8ffef0b22bc1ced12fac0be3c57660e5c") format('truetype');
+}
+@font-face {
+  font-family: 'Kanit';
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/o/88764c059f60cf28c652db561a68b1fc74eb17309714d04b90845978ce8a49cd") format('truetype');
+}
+@font-face {
+  font-family: 'Kanit';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/o/4b08f403fd98bf9b233b9ad70e24a6fb83816628de11d648cea0257ca2c1c469") format('truetype');
+}
+@font-face {
+  font-family: 'Kanit';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/0b101fdc1a77fb29137731819bf164b3e9b4da19b22a7b2295f0e233c53c486d") format('truetype');
+}
+@font-face {
+  font-family: 'Kanit';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/o/7f81bb404e52302360bc7cca04d118212dc33abd72d0861ebbc764f8231659af") format('truetype');
+}
+@font-face {
+  font-family: 'Kanit';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/o/1dd74f60b656cfdea9189d29d4e6697e99f38fd778cd836893203c45957e8a64") format('truetype');
+}
+@font-face {
+  font-family: 'Kanit';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/o/72213d8d3b09dc14036b2efdcdbe12d2cdf0ed6f0389dff55f0c762ddae9104f") format('truetype');
+}

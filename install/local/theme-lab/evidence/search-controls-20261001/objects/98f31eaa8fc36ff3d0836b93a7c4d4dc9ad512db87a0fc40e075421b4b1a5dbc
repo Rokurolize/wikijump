@@ -1,0 +1,7 @@
+@font-face {
+  font-family: 'Russo One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/7a022de179a466ad9711d5f2848123c5cba6eedf22e51a8dc04ed6e5d64b205d") format('truetype');
+}

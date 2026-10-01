@@ -5,7 +5,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 
-for(const scenario of ['missing-dev','caddy-failure','success']) {
+for(const scenario of ['missing-dev','caddy-failure','success','isolated']) {
  test(`built transport lifecycle: ${scenario}`,async()=>{
   const dir=await fs.mkdtemp(path.join(os.tmpdir(),'built-transport-test-'));
   const fixture=path.join(dir,'install/local/theme-lab/ports/interactive-visual-fixture');
@@ -30,14 +30,18 @@ for(const scenario of ['missing-dev','caddy-failure','success']) {
    `,{mode:0o755});
    await fs.writeFile(path.join(bin,'curl'),'#!/bin/sh\nexit 0\n',{mode:0o755});
    const cache=path.join(dir,'cache');
-   const result=spawnSync(process.execPath,[path.join(fixture,'ensure.mjs')],{
+   const result=spawnSync(process.execPath,[path.join(fixture,'ensure.mjs'),...(scenario==='isolated'?['--namespace=semantic-proof','--port=3396']:[])],{
     cwd:os.tmpdir(),encoding:'utf8',timeout:10000,
     env:{...process.env,PATH:`${bin}:${process.env.PATH}`,SCENARIO:scenario,COMMAND_LOG:log,THEME_LAB_BUILT_CACHE:cache,TMPDIR:dir}
    });
    const commands=(await fs.readFile(log,'utf8')).trim().split('\n').map(JSON.parse);
-   if(scenario==='success'){
+   if(scenario==='success'||scenario==='isolated'){
     assert.equal(result.status,0,result.stderr);
     assert.equal(JSON.parse(result.stdout).restarted,true);
+    if(scenario==='isolated'){
+     assert.ok(commands.every(args=>!args.includes('wikijump-theme-lab-built-framerail')&&!args.includes('wikijump-theme-lab-built-caddy')));
+     assert.ok(commands.some(args=>args.includes('127.0.0.1:3396:443')));
+    }
    }else{
     assert.notEqual(result.status,0);
     if(scenario==='missing-dev')assert.ok(commands.every(args=>args[0]!=='rm'&&args[0]!=='run'));

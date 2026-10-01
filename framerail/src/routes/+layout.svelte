@@ -328,6 +328,8 @@
         <div id="login-status">
           <a id="my-account" href={resolve("/-/user", {})}>{wikidotSessionUserName}</a>
           <span class="printuser">{wikidotSessionUserName}</span>
+          <!-- svelte-ignore a11y_invalid_attribute -- Wikidot-compatible legacy account toggle -->
+          <a id="account-topbutton" href="javascript:;">&#9660;</a>
           <div id="account-options">
             <ul>
               <li>

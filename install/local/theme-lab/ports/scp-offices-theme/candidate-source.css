@@ -1,31 +1,4 @@
 @import url("https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css");
 @import url("https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css");
 
-:root {
-    --logo-image: url("https://scp-jp.wdfiles.com/local--files/theme%3Ascp-offices-theme/scpoffices_logo.svg");
-}
-
-.scp-image-block.block-right {
-    margin: 1em 0 1em 2em;
-}
-
-.scp-image-block a {
-    width: 100%;
-    min-width: 100%;
-}
-
-.scp-image-block img {
-    min-width: 100%;
-    border: 0.5rem solid rgba(var(--pale-gray-monochrome));
-    box-sizing: border-box;
-}
-
-#page-content > div.scp-image-block.block-right > a {
-    background-color: rgb(var(--gray-monochrome));
-}
-
-#page-content > div.scp-image-block.block-right > a > img {
-    padding: 1em;
-}
-
 @import url("https://scp-jp.github.io/files/theme/scp-offices-theme/style0.css")

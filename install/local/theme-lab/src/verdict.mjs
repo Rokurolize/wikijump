@@ -12,6 +12,14 @@ export const DEFAULT_LIMITS = Object.freeze({
   selectorRows: 30,
 });
 
+// Full-bleed content (for example a negative-margin <hr> divider) can land a
+// fraction of a pixel past the viewport edge through sub-pixel layout
+// rounding. `documentElement.scrollWidth - clientWidth` reports that as a
+// whole 1px, so a 1px document overflow is rounding noise, not a defect. Real
+// horizontal overflow (2px and above) still fails. This matches the 1px
+// tolerance already used by `viewportEscape` and the surface contract.
+export const DOCUMENT_OVERFLOW_TOLERANCE_PX = 1;
+
 function severityRank(severity) {
   return {error: 0, warn: 1, info: 2}[severity] ?? 3;
 }
@@ -69,17 +77,29 @@ export function issuesFromTorture(torture) {
     ...(issue.overflow_sources ? {overflow_sources: issue.overflow_sources} : {}),
     ...(issue.element_rect ? {element_rect: issue.element_rect} : {}),
     ...(issue.computed ? {computed: issue.computed} : {}),
+    ...(issue.rationale ? {rationale: issue.rationale} : {}),
+    ...(issue.content_viewport_overflow_px !== undefined ? {content_viewport_overflow_px: issue.content_viewport_overflow_px} : {}),
   }));
 }
 
-export function issuesFromViewports(viewports) {
+export function issuesFromViewports(viewports, baselineViewports = null) {
   const issues = [];
   for (const [id, viewport] of Object.entries(viewports ?? {})) {
-    const overflow = viewport?.document_overflow_px ?? 0;
-    // viewportStatus fails for any positive document overflow; use the same
-    // boundary here so a failed viewport always has an actionable issue.
-    if (overflow > 0) {
-      issues.push({severity: "error", kind: "viewport_overflow", viewport: id, overflow_px: overflow, overflow_sources: viewport?.overflow_sources ?? []});
+    const documentOverflow = viewport?.document_overflow_px ?? 0;
+    const viewportEscape = viewport?.viewport_escape_px ?? 0;
+    const overflow = Math.max(documentOverflow, viewportEscape);
+    const baseline = baselineViewports?.[id] ?? null;
+    const baselineDocumentOverflow = baseline?.document_overflow_px ?? 0;
+    const baselineViewportEscape = baseline?.viewport_escape_px ?? 0;
+    const baselineOverflow = Math.max(baselineDocumentOverflow, baselineViewportEscape);
+    // A viewport fails only for real overflow. Sub-pixel full-bleed rounding
+    // (for example a negative-margin <hr> divider) surfaces as a whole 1px in
+    // documentOverflow or a fractional px in viewportEscape and must not become
+    // an actionable defect. Keep this boundary in sync with viewportStatus.
+    if (overflow > baselineOverflow + DOCUMENT_OVERFLOW_TOLERANCE_PX) {
+      issues.push({severity: "error", kind: "viewport_overflow", viewport: id, overflow_px: overflow, document_overflow_px: documentOverflow, viewport_escape_px: viewportEscape,
+        baseline_overflow_px: baselineOverflow, baseline_document_overflow_px: baselineDocumentOverflow, baseline_viewport_escape_px: baselineViewportEscape,
+        overflow_sources: viewport?.overflow_sources ?? []});
     }
   }
   return issues;
@@ -236,16 +256,20 @@ export function summarizeVisual(visual) {
   const viewports = {};
   let worst = "pass";
   for (const [id, entry] of Object.entries(visual)) {
-    if (!entry.comparison) {
-      viewports[id] = {status: "captured"};
-      continue;
-    }
+    const status = entry.acceptance?.status ?? "inconclusive";
     viewports[id] = {
-      status: entry.comparison.status,
-      normalized_rmse: entry.comparison.normalized_rmse ?? null,
+      status,
+      comparison_status: entry.comparison?.status ?? "unavailable",
+      normalized_rmse: entry.comparison?.normalized_rmse ?? null,
+      candidate_path: entry.candidate_path,
+      reference_path: entry.reference_path,
+      candidate_screenshot_sha256: entry.candidate_screenshot_sha256,
+      reference_screenshot_sha256: entry.reference_screenshot_sha256,
+      review: entry.acceptance?.review ?? null,
     };
-    if (entry.comparison.status === "fail") worst = "fail";
-    else if (entry.comparison.status === "unavailable" && worst === "pass") worst = "unavailable";
+    if (status === "fail") worst = "fail";
+    else if (status === "inconclusive" && worst !== "fail") worst = "inconclusive";
+    else if (status === "warn" && worst === "pass") worst = "warn";
   }
   return {status: worst, viewports};
 }
@@ -254,7 +278,7 @@ export function summarizeVisual(visual) {
 // into authority for a port adaptation.
 export function overallAcceptance(port, target) {
   if (target === "fail" || port === "fail") return "fail";
-  if (port === "inconclusive") return "inconclusive";
+  if (port === "inconclusive" || target === "inconclusive") return "inconclusive";
   if (port === "warn" || target === "warn") return "warn";
   if (port === "pass" && target === "pass") return "pass";
   return "inconclusive";
@@ -264,6 +288,7 @@ export function buildVerdict({
   reference = null,
   torture = null,
   viewports = null,
+  baselineViewports = null,
   fontDiagnostics = null,
   interactionDiagnostics = null,
   imageDiagnostics = null,
@@ -279,7 +304,7 @@ export function buildVerdict({
   const rawIssues = [
     ...issuesFromSelectorDiagnosis(reference?.diagnosis),
     ...issuesFromTorture(torture),
-    ...issuesFromViewports(viewports),
+    ...issuesFromViewports(viewports, baselineViewports),
     ...issuesFromPreview(preview),
     ...issuesFromInteractions(interactionDiagnostics),
     ...(imageDiagnostics?.broken ?? []).map((image) => ({
@@ -293,11 +318,14 @@ export function buildVerdict({
   ];
   const rawStyleChanges = styleChangesFromComputed(reference?.computed_styles, Number.POSITIVE_INFINITY);
   if ((torture?.changed_component_count ?? 0) > 0 && (torture?.issues?.length ?? 0) === 0) {
-    rawIssues.push({
-      severity: "warn",
-      kind: "unscoped_torture_change_summary",
-      changed_component_count: torture.changed_component_count,
-    });
+    const surfaces = {heading: "content.article", list: "content.article", blockquote: "content.blockquote", table: "content.table", code: "content.code", collapsible: "content.collapsible", tabview: "content.tabview", footnote: "content.footnotes", math: "content.article", toc: "content.toc", rating: "content.rating"};
+    const changes = torture.changes ?? [];
+    const components = [...new Set(changes.map(change => change.component))];
+    if (components.length === torture.changed_component_count && components.every(component => surfaces[component])) {
+      for (const component of components) rawIssues.push({severity: "warn", kind: "torture_component_style_change", surface: surfaces[component], component, evidence: changes.filter(change => change.component === component)});
+    } else {
+      rawIssues.push({severity: "warn", kind: "unscoped_torture_change_summary", changed_component_count: torture.changed_component_count});
+    }
   }
   const parityReview = applyRuntimeSurfaceParityGate(rawIssues, rawStyleChanges);
   const issues = parityReview.issues;
@@ -323,8 +351,14 @@ export function buildVerdict({
   const styleChanges = decisionStyleChanges.slice(0, limits.styleChanges);
   const viewportStatus = viewports
     ? Object.fromEntries(Object.entries(viewports).map(([name, result]) => [name, {
-        status: (result.document_overflow_px ?? 0) > 0 ? "fail" : "pass",
+        status: Math.max(result.document_overflow_px ?? 0, result.viewport_escape_px ?? 0) >
+          Math.max(baselineViewports?.[name]?.document_overflow_px ?? 0, baselineViewports?.[name]?.viewport_escape_px ?? 0) + DOCUMENT_OVERFLOW_TOLERANCE_PX ? "fail" : "pass",
         document_overflow_px: result.document_overflow_px ?? 0,
+        ...(result.viewport_escape_px !== undefined ? {viewport_escape_px: result.viewport_escape_px} : {}),
+        ...(baselineViewports?.[name] ? {
+          baseline_document_overflow_px: baselineViewports[name].document_overflow_px ?? 0,
+          ...(baselineViewports[name].viewport_escape_px !== undefined ? {baseline_viewport_escape_px: baselineViewports[name].viewport_escape_px} : {}),
+        } : {}),
         decision_authority: "SCP_JP_TARGET_ACCEPTANCE_ONLY",
       }]))
     : null;
@@ -341,8 +375,10 @@ export function buildVerdict({
     ? proposedActions.filter((action) => action.kind !== "inspect_inactive_media")
     : proposedActions;
 
-  const targetStatus = issues.some((issue) => issue.severity === "error") || (visual && Object.values(visual).some((entry) => entry?.comparison?.status === "fail"))
+  const targetStatus = issues.some((issue) => issue.severity === "error") || (visual && Object.values(visual).some((entry) => entry?.acceptance?.status === "fail"))
     ? "fail"
+    : visual && Object.values(visual).some((entry) => !["pass", "warn"].includes(entry?.acceptance?.status))
+      ? "inconclusive"
     : issues.some((issue) => issue.severity === "warn") || rawStyleChanges.length > 0 || (torture?.changed_component_count ?? 0) > 0
       ? "warn" : "pass";
   const overall = overallAcceptance(verdict, targetStatus);

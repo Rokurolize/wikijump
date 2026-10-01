@@ -121,7 +121,7 @@
   "final_verdict": "inconclusive",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/assets.json",
-  "asset_dependency_decision_count": 39,
+  "asset_dependency_decision_count": 40,
   "maintenance_source": {
     "base": "maintenance/base.wikidot.txt",
     "jp_overrides": "maintenance/jp-overrides.css",
@@ -142,16 +142,29 @@
       "source_sha256": "8dbfc268b989e2afcd15c48f446dfef150a0388569db7d2f63f6bad1eb51fa8d",
       "active_tags": [],
       "candidate_source_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
-      "candidate_active_tags": [],
+      "candidate_active_tags": [
+        "en",
+        "テーマ"
+      ],
+      "runtime_active_tags": [],
+      "showcase_css_modules_removed_exact": 1,
+      "showcase_css_modules_removed_truncated": 0,
+      "showcase_css_modules_unmatched": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "afd8f1baaf471998ff0a135c506c7f5bb1749ca9610fd1b06468717d9e97210a",
+      "candidate_css_sha256": "a551fbd0df47a904de211d625e1f1c4fdd6cb6b0dd3c75688de41e1f444f0ca7",
       "asset_receipt_path": "assets.json",
       "assets": 33,
-      "imports": 5,
+      "imports": 6,
       "localization_transforms": 0,
       "localization_transform_manifest": null,
       "missing": 0,
       "external_requests_during_build": 0
+    },
+    "source_css_includes": {
+      "manifest": "source-css-includes.json",
+      "materialized_css_sha256": "cd3d596a415e550ead1e145717d6d12d583f881a966bc85607571a1d0e2162e0",
+      "cascade": "before-main-source-css",
+      "public_writes": 0
     }
   },
   "adaptation_authority": {

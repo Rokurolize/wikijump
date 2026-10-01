@@ -41,8 +41,8 @@
   "candidate_source_sha256": "1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8",
   "human_port_candidate_path": "install/local/theme-lab/ports/scp-offices-theme/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "24d7ddb6f6f076dac4038822ca246b2c0b69c860ef4ed52f5683b58047994f30",
-  "candidate_preview_sha256": "53ce92e576ffa883f7b1b1d83d7f4a331d3de341080f52da66eed6c4e3b7e9ca",
-  "candidate_css_sha256": "57c4819dd215211e62d3f35fe92ed2a106a345434d5fac5e2a943153beeb59e6",
+  "candidate_preview_sha256": "c1232435af36eeeee5d2d5c5b548832f7b8d7f5e66b5485af3d7eba0b80f4213",
+  "candidate_css_sha256": "3948ce93c88a3e89cd6279c5ce88bb882cfabd37f02fd79ab54122bcf181a6c1",
   "page_assets": [
     {
       "filename": "black-highlighter-logo.svg",
@@ -91,7 +91,7 @@
     "source_evidence": "candidate screenshots visibly rendered unresolved SCP-EN usernames against SCP-JP identity links; preserve display names and freeze upstream/human-port originals"
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/scp-offices-theme/assets.json",
-  "asset_dependency_decision_count": 41,
+  "asset_dependency_decision_count": 40,
   "page_asset_dependency_decisions_path": "install/local/theme-lab/ports/scp-offices-theme/page-assets.json",
   "historical_acceptance": {
     "status": "SUPERSEDED_CANDIDATE",

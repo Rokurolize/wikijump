@@ -1,0 +1,214 @@
+ .col_box {
+     display: inline-block;
+     width: 1rem;
+     height: 1rem;
+     vertical-align: middle;
+
+     border: medium solid;
+}
+
+ .DARK-title {
+     color: var(--keyColor);
+
+     --textColor: hsla(212, 3%, 87%, .33);
+     text-shadow:
+        1px 0 var(--textColor),
+        1px 1px var(--textColor),
+        0 1px var(--textColor),
+        -1px 1px var(--textColor),
+        -1px 0 var(--textColor),
+        -1px -1px var(--textColor),
+        0 -1px var(--textColor),
+        1px -1px var(--textColor);
+}
+
+ .demo {
+     outline: 7px solid var(--bgColor);
+}
+
+ .flavorbox.sml {
+     width: max-content;
+}
+
+ .FL_parent {
+     display: flex;
+     align-items: center;
+     justify-content: space-around;
+}
+
+ .imagediv::after {
+     content: "This image centers on mobile.";
+}
+
+ @media(max-width: 540px) {
+     .imagediv::after {
+          content: "This image right-aligns on desktop.";
+     }
+}
+
+.templateInfo {
+     margin: .33rem 0;
+     padding: .02rem 1rem;
+
+     color: var(--textColorAlt);
+     background: var(--fgColor);
+}
+
+ .templateInfo.templateMargin {
+     margin-bottom: 1rem;
+}
+
+ .templateInfo.templatePadding {
+     padding-bottom: 1rem;
+}
+
+ .templateInfo.templateSetup {
+     width: 50%;
+     margin-right: auto;
+     margin-left: auto;
+}
+
+ @media (max-width: 767px) {
+     .templateInfo.templateSetup {
+          width: 90%;
+    }
+}
+
+ tt {
+     padding: 0 .33rem !important;
+
+     color: var(--keyColor);
+     background: var(--accentColor) !important;
+
+     font-weight: bold;
+}
+
+ tt ::selection {
+     color: var(--alphaColor);
+}
+
+ div.wiki-note {
+     background: var(--fgColor);
+     border-color: var(--fgColor);
+}
+
+/* ---- CODE BY WOEDENAZ ---- */
+ span.pointer {
+     display: inline-block;
+     height: .8125rem;
+     margin: 0 0 0 .75rem;
+     padding: .1875rem .3125rem .1875rem 0;
+
+     color: var(--keyColor);
+     background: var(--accentColor);
+     -webkit-border-bottom-right-radius: .25rem;
+     -webkit-border-top-right-radius: .25rem;
+     -moz-border-radius-bottomright: .25rem;
+     -moz-border-radius-topright: .25rem;
+     border-bottom-right-radius: .25rem;
+     border-top-right-radius: .25rem;
+
+     font-size: 1rem;
+     font-weight: bold;
+     line-height: .8125rem;
+     -webkit-user-select: none;
+     -moz-user-select: none;
+     -ms-user-select: none;
+     user-select: none;
+}
+
+ span.pointer::before {
+     top: -.1875rem;
+     left: -.625rem;
+     padding: 0 .0625rem .1875rem;
+     content: "";
+
+     border-color: transparent var(--accentColor) transparent transparent;
+     border-style: solid;
+     border-width: .5rem .5rem .5rem 0;
+}
+
+ span.pointer::after {
+     left: -.5rem;
+     width: .5rem;
+     height: 1rem;
+     content: "";
+
+     background: var(--fgColor);
+     -webkit-mask-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='utf-8'%3F%3E%3Csvg version='1.2' baseProfile='tiny' id='Layer_1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' viewBox='0 0 26.5933838 19.6584473' overflow='visible' xml:space='preserve'%3E%3Cpolygon fill='%23FFFFFF' points='26.5933838,5.1333008 7.7148438,5.1333008 7.7148438,0 0,9.6740723 7.7148438,19.6584473 7.7148438,14.0671387 26.5933838,14.0671387 '/%3E%3C/svg%3E%0A");
+     mask-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='utf-8'%3F%3E%3Csvg version='1.2' baseProfile='tiny' id='Layer_1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' viewBox='0 0 26.5933838 19.6584473' overflow='visible' xml:space='preserve'%3E%3Cpolygon fill='%23FFFFFF' points='26.5933838,5.1333008 7.7148438,5.1333008 7.7148438,0 0,9.6740723 7.7148438,19.6584473 7.7148438,14.0671387 26.5933838,14.0671387 '/%3E%3C/svg%3E%0A");
+     -webkit-mask-repeat: no-repeat;
+     mask-repeat: no-repeat;
+     -webkit-mask-size: 1rem auto;
+     mask-size: 1rem auto;
+}
+
+ span.pointer::before,
+ span.pointer::after {
+     position: relative;
+     float: left;
+}
+
+ @media only screen and (max-width: 500px) {
+     span.pointer {
+          width: -webkit-calc(100% - 2rem);
+          width: -moz-calc(100% - 2rem);
+          width: calc(100% - 2rem);
+          height: auto;
+          padding-left: .5rem;
+
+          line-height: 1.5em;
+    }
+
+     span.pointer::after {
+          -webkit-mask-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='utf-8'%3F%3E%3Csvg version='1.2' baseProfile='tiny' id='Layer_1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' viewBox='0 0 19.6584473 26.5933838' overflow='visible' xml:space='preserve'%3E%3Cpolygon fill='%23FFFFFF' points='14.5251465,26.5933838 14.5251465,7.7148438 19.6584473,7.7148438 9.984375,0 0,7.7148438 5.5913086,7.7148438 5.5913086,26.5933838 '/%3E%3C/svg%3E%0A");
+          mask-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='utf-8'%3F%3E%3Csvg version='1.2' baseProfile='tiny' id='Layer_1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' viewBox='0 0 19.6584473 26.5933838' overflow='visible' xml:space='preserve'%3E%3Cpolygon fill='%23FFFFFF' points='14.5251465,26.5933838 14.5251465,7.7148438 19.6584473,7.7148438 9.984375,0 0,7.7148438 5.5913086,7.7148438 5.5913086,26.5933838 '/%3E%3C/svg%3E%0A");
+          -webkit-mask-size: contain;
+          mask-size: contain;
+          mask-position: center;
+    }
+}
+
+ .help {
+     display: flex;
+     align-content: stretch;
+}
+
+ .help blockquote {
+     margin: 0;
+
+     font-size: 85%;
+}
+
+ .help blockquote > p {
+     display: flex;
+     align-content: center;
+     align-items: center;
+     flex-wrap: wrap;
+     min-height: 2rem;
+     margin: 0;
+}
+
+ .help blockquote > p * {
+     height: 100%;
+     margin: 0 .1rem;
+}
+
+ .help blockquote:nth-of-type(1) {
+     padding: 0;
+
+     background: 0;
+     border: 0;
+
+     text-align: right;
+}
+
+ .help blockquote:nth-of-type(2) {
+     margin-left: 1em;
+
+     border-left-style: solid;
+}
+
+ .help blockquote:nth-of-type(1) > p {
+     justify-content: flex-end;
+}

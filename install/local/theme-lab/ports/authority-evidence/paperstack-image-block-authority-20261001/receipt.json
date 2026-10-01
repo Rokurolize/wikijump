@@ -1,0 +1,2903 @@
+{
+  "schema": "theme_lab_wikidot_adaptation_ab.v1",
+  "url": "https://scp-jp.wikidot.com/scp-1428-jp",
+  "site": "scp-jp.wikidot.com",
+  "measurement_contract": "contained-probes.v1",
+  "measurement_program_sha256": "bad0d699ebeab46de6b8b711ca6ae7aa442ed8f87d8c75fbff4363044fdf0b27",
+  "archived_sources": [
+    {
+      "path": "measurement-wikidot-adaptation-ab.mjs",
+      "sha256": "bad0d699ebeab46de6b8b711ca6ae7aa442ed8f87d8c75fbff4363044fdf0b27"
+    },
+    {
+      "path": "measurement-viewport-bounds.mjs",
+      "sha256": "3f63853560e7a05f0757cd8cde73b4ba657f2b8e9b421f4006b5c673bbedd8c9"
+    },
+    {
+      "path": "measurement-navigation-interaction.mjs",
+      "sha256": "aa574769e99b8309baad527bdfb3e18a893b7ba315c033e16cdd57531403ae87"
+    },
+    {
+      "path": "measurement-css-layers.mjs",
+      "sha256": "e2da8318c2b3b418341b1cc3c155a3e2e317dad00ef8331d37a3a88651f2d535"
+    }
+  ],
+  "observed_at": "2026-10-01T07:34:48.052Z",
+  "measured_at": "2026-10-01T08:03:01.932Z",
+  "snapshot": {
+    "entry": "/o/69188792f07b4a502f2b894b6aa777c93f26dad886c55f619645ded7e952dfd7",
+    "created_at": "2026-10-01T07:34:48.052Z",
+    "assets": 49,
+    "failed_assets": 3,
+    "failed_asset_details": [
+      {
+        "url": "https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png",
+        "code": "reference_http_error",
+        "message": "reference fetch returned HTTP 500 for https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png"
+      },
+      {
+        "url": "https://s.nitropay.com/ads-143.js",
+        "code": "ENOENT",
+        "message": "ENOENT: no such file or directory, open '/home/roku/.devspace/worktrees/theme-final-audit/install/local/theme-lab/ports/authority-evidence/replay/objects/57/574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c'"
+      },
+      {
+        "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+        "code": "reference_http_error",
+        "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+      }
+    ],
+    "replay_complete": true,
+    "object_digests": [
+      "69188792f07b4a502f2b894b6aa777c93f26dad886c55f619645ded7e952dfd7",
+      "58cab0208fa4ab61053eb9d92a99a1a1999ad6e3dc63f8fd80828e33cb069d53",
+      "f53bdeec5d0316301982c49cf86701d13680dc6f44efb3a8eb1ca93ca183e3ba",
+      "86bfb8fa53fdca123db5feecf7e995eb6de67edbe39ca0a800134c69258c2ba1",
+      "7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387",
+      "49bcabdb14d446bb93d261f9c967bedfa7cdf7b214807a8180974cbd00b21f11",
+      "12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941",
+      "c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc",
+      "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a",
+      "4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7",
+      "9cb7dce5d6e4bbd7fc455be758b3f32a7c4cb5de6d4e5fa0d52e9376f53923ee",
+      "63e33b4b0ba0ae1f5cefa0705d224abbbafb05e525e53b8b21d0da7aa6f99899",
+      "8a74dcd95785ff4f7fdd5f4fbe1360390c9b760878b5e21fdf1607798b1a63b2",
+      "5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583",
+      "dab79d3aeee7dc23243a53e417f1b8dc4cb0f397f06aa17bac4c1f373abd5ede",
+      "c893531613ca348b0217ea5976a52c4dfe7cda7ffa0ca002ef24a0980a201825",
+      "6d59328357ba699fae7fe1ce66e403bcb430c4a86fb750e2c240d483f6ff2201",
+      "8ee173565b2e771fecf3b471a79bdf072aaa1bd9dc27582cfda2b2a322beeba8",
+      "841dadb079124d00a289640d7ddae9ecd8b9e8b245d59c33593d3905863b568a",
+      "d4b09792783e799e3dfd3acc0590f59783a9875909b5baf88f43f5d384d6acd3",
+      "222902c16fcda2ffbe6acf20f48a9a3b1ce3ec1b1f37e4cea2df449c3b053ff8",
+      "2b3f53a407d5b25bc91bd9920f164b13e14d944bc95a7bf32a5138b30cef07c6",
+      "fbfecc922b34a8921eadef91c1763804baa9dc5fe8c9299ccaa94dad3bb31604",
+      "77aa03dfe99dca77dd663d465c87fa642d26267f5190208c11d5498e7c7fe697",
+      "7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c",
+      "44d631b2507c9bfceabf960599f9f3d2093a3e19f5d6f04d27d375efb8012f84",
+      "7668781daf80240168d1142c72b3502f75617be40fbbe081caae66ac7d38d571",
+      "231630b39af902bf9ad98a22bd77b3c5359b18a9336b63bf599c31a76f1e08cd",
+      "cbb644d0ee730ea57dd5fbae35ef5ba4a41d57a254a6b1215de5c9ff8a321c2d",
+      "aadc3580d2b64ff5a7e6f1425587db4e8b033efcbf8f5c332ca52a5ed580c87c",
+      "e3870de89716b72cb61a4bba0e17c75783b361cdaba35ea96961c3070bd8ca18",
+      "9e540a087924a6e64790149d735cac022640e4fa6bff6bd65f5e9f41529bf0b3",
+      "bfdef833219a6edffd9c3cbc28db72739d22bb4d20cc2e2f8d56a7a4d408a206",
+      "ed0652b49899259e10ff2b7270ffee4d9f07b4c2a46c8d95a7f86fa3e94e01d8",
+      "40723fa718237c74623d7b64ce186a02b872f7fb4b3a917013fcc8b6aec3ded6",
+      "2eb982d8faa4ab9bcc8bc39c31cad8f1d73e1d8df8e4aebd3970af1e38620841",
+      "41950d74f0aae0ee95ca1381b8096f1d19dc4154971505c8bdc3b18dce70912d",
+      "1a9b14799594702e4d0350164623d9e71261d70042ed4b3979808b08ba6e38b6",
+      "3ee20e2529a17cdd369a6c89edb23d5662ecfa9007936786d33c22c38fac14de",
+      "d8e1808c4f33e6bd075bd13b7aafc8596a1937495d5c57732322502b9c711a03",
+      "aa602c40276279d9b8e782b8c4d1e466d51e5349dbe55d1756db93976584bcab",
+      "f458790e7e2d0b83533b4d0f3669630adcb473673455815fd38c5c2496c06a46",
+      "d65d63e6581b8c1210bed42a30dc766a0f0273018cb163947fdb8c0e160f3cb5",
+      "1d7378ae112da2d33aafdf0ce83bd2bccb36d6786a5c58317444367f2b9b4604",
+      "8aab16649c61f865e40a66b550fc954c8e1e42e317c06b22970a14a5390e8123",
+      "8814de07a0445f47adffed154a0cd18ed228dcf88faaebaeed1a9f71a280cd80"
+    ]
+  },
+  "browser_version": "154.0.8037.57",
+  "browser_sha256": "aea09d69ce7f24d5901f6bfb15dd44d0c856e793e0a498f8d8393ec7d2c308ec",
+  "acquisition": {
+    "root_url": "https://scp-jp.wikidot.com/scp-1428-jp",
+    "entry": "/o/69188792f07b4a502f2b894b6aa777c93f26dad886c55f619645ded7e952dfd7",
+    "asset_count": 49,
+    "external_requests": 0,
+    "cache_hits": 1,
+    "failed_assets": [
+      {
+        "url": "https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png",
+        "code": "reference_http_error",
+        "message": "reference fetch returned HTTP 500 for https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png"
+      },
+      {
+        "url": "https://s.nitropay.com/ads-143.js",
+        "code": "ENOENT",
+        "message": "ENOENT: no such file or directory, open '/home/roku/.devspace/worktrees/theme-final-audit/install/local/theme-lab/ports/authority-evidence/replay/objects/57/574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c'"
+      },
+      {
+        "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+        "code": "reference_http_error",
+        "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+      }
+    ],
+    "failed_asset_count": 3
+  },
+  "computed_contract": [],
+  "public_writes": 0,
+  "external_browser_requests": 0,
+  "blocked_requests": [
+    {
+      "method": "GET",
+      "url": "http://stats.g.doubleclick.net/dc.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://drizzles.scp-jp.org/api/v2/raven.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/interwikiFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/styleFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "https://drizzles.scp-jp.org/api/v2/raven.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://stats.g.doubleclick.net/dc.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/interwikiFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/styleFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "https://drizzles.scp-jp.org/api/v2/raven.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://stats.g.doubleclick.net/dc.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/interwikiFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/styleFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "https://drizzles.scp-jp.org/api/v2/raven.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://stats.g.doubleclick.net/dc.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/interwikiFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/styleFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "https://drizzles.scp-jp.org/api/v2/raven.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://stats.g.doubleclick.net/dc.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/interwikiFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/styleFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "https://drizzles.scp-jp.org/api/v2/raven.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://stats.g.doubleclick.net/dc.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/interwikiFrame.html"
+    },
+    {
+      "method": "GET",
+      "url": "http://interwiki.scp-jp.org/styleFrame.html"
+    }
+  ],
+  "rows": [
+    {
+      "variant": "without",
+      "width": 320,
+      "state": "image-block",
+      "index": 0,
+      "css_sha256": "76f4a14b16d53108068e2cd2f7cf8beeb9fd7a1d46d2215de9c7b6d5677b8053",
+      "base_css_sha256": null,
+      "effective_css_sha256": "76f4a14b16d53108068e2cd2f7cf8beeb9fd7a1d46d2215de9c7b6d5677b8053",
+      "measurement": {
+        "computed_checks": [],
+        "document_width": 320,
+        "viewport_width": 320,
+        "overlaps": [],
+        "control_occlusion": [],
+        "header_ink_rects": null,
+        "scroll_overflow_sources": [
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 75,
+            "rect": {
+              "x": 16,
+              "y": 119,
+              "width": 75.359375,
+              "height": 21,
+              "top": 119,
+              "right": 91.359375,
+              "bottom": 140,
+              "left": 16
+            },
+            "overflow_x": "visible"
+          },
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 102,
+            "rect": {
+              "x": 91.359375,
+              "y": 119,
+              "width": 101.984375,
+              "height": 21,
+              "top": 119,
+              "right": 193.34375,
+              "bottom": 140,
+              "left": 91.359375
+            },
+            "overflow_x": "visible"
+          },
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 61,
+            "rect": {
+              "x": 16,
+              "y": 140,
+              "width": 61.109375,
+              "height": 21,
+              "top": 140,
+              "right": 77.109375,
+              "bottom": 161,
+              "left": 16
+            },
+            "overflow_x": "visible"
+          }
+        ],
+        "overflow_sources": [
+          {
+            "tag": "DIV",
+            "id": "side-bar",
+            "class_name": "",
+            "rect": {
+              "x": -340.40625,
+              "y": 0,
+              "width": 281.1875,
+              "height": 858.796875,
+              "top": 0,
+              "right": -59.21875,
+              "bottom": 858.796875,
+              "left": -340.40625
+            },
+            "parent_id": "content-wrap",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "14.8px 14.8px 0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block resources",
+            "rect": {
+              "x": -325.609375,
+              "y": 14.796875,
+              "width": 251.59375,
+              "height": 135.046875,
+              "top": 14.796875,
+              "right": -74.015625,
+              "bottom": 149.84375,
+              "left": -325.609375
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "10px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -315.609375,
+              "y": 34.796875,
+              "width": 231.59375,
+              "height": 16.046875,
+              "top": 34.796875,
+              "right": -84.015625,
+              "bottom": 50.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px 0px 0px 15px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -300.609375,
+              "y": 34.796875,
+              "width": 216.59375,
+              "height": 15.046875,
+              "top": 34.796875,
+              "right": -84.015625,
+              "bottom": 49.84375,
+              "left": -300.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 55.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 55.84375,
+              "right": -84.015625,
+              "bottom": 74.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 55.84375,
+              "width": 178.46875,
+              "height": 19,
+              "top": 55.84375,
+              "right": -137.140625,
+              "bottom": 74.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 76.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 76.84375,
+              "right": -84.015625,
+              "bottom": 95.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 76.84375,
+              "width": 27.546875,
+              "height": 19,
+              "top": 76.84375,
+              "right": -288.0625,
+              "bottom": 95.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 97.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 97.84375,
+              "right": -84.015625,
+              "bottom": 116.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 97.84375,
+              "width": 94.40625,
+              "height": 19,
+              "top": 97.84375,
+              "right": -221.203125,
+              "bottom": 116.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 118.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 118.84375,
+              "right": -84.015625,
+              "bottom": 137.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 118.84375,
+              "width": 71.78125,
+              "height": 19,
+              "top": 118.84375,
+              "right": -243.828125,
+              "bottom": 137.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -325.609375,
+              "y": 164.84375,
+              "width": 251.59375,
+              "height": 0,
+              "top": 164.84375,
+              "right": -74.015625,
+              "bottom": 164.84375,
+              "left": -325.609375
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block",
+            "rect": {
+              "x": -325.609375,
+              "y": 164.84375,
+              "width": 251.59375,
+              "height": 893.203125,
+              "top": 164.84375,
+              "right": -74.015625,
+              "bottom": 1058.046875,
+              "left": -325.609375
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "10px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 176.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 176.84375,
+              "right": -84.015625,
+              "bottom": 195.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 176.84375,
+              "width": 76.796875,
+              "height": 19,
+              "top": 176.84375,
+              "right": -238.8125,
+              "bottom": 195.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -315.609375,
+              "y": 205.84375,
+              "width": 231.59375,
+              "height": 16.046875,
+              "top": 205.84375,
+              "right": -84.015625,
+              "bottom": 221.890625,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px 0px 0px 15px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -300.609375,
+              "y": 205.84375,
+              "width": 216.59375,
+              "height": 15.046875,
+              "top": 205.84375,
+              "right": -84.015625,
+              "bottom": 220.890625,
+              "left": -300.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 226.890625,
+              "width": 231.59375,
+              "height": 19,
+              "top": 226.890625,
+              "right": -84.015625,
+              "bottom": 245.890625,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 226.890625,
+              "width": 6.265625,
+              "height": 19,
+              "top": 226.890625,
+              "right": -309.34375,
+              "bottom": 245.890625,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -297.703125,
+              "y": 226.890625,
+              "width": 12.53125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -285.171875,
+              "bottom": 245.890625,
+              "left": -297.703125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -273.53125,
+              "y": 226.890625,
+              "width": 18.78125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -254.75,
+              "bottom": 245.890625,
+              "left": -273.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -243.109375,
+              "y": 226.890625,
+              "width": 15.703125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -227.40625,
+              "bottom": 245.890625,
+              "left": -243.109375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -215.765625,
+              "y": 226.890625,
+              "width": 9.453125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -206.3125,
+              "bottom": 245.890625,
+              "left": -215.765625
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          }
+        ],
+        "selector_coverage": {
+          ".scp-image-block.block-right": 1
+        },
+        "rows": [
+          {
+            "selector": ".scp-image-block.block-right",
+            "pseudo": null,
+            "text": "SCP-1428-JP-Aの画像",
+            "rect": {
+              "x": -10.625,
+              "y": 220,
+              "width": 288,
+              "height": 218.171875,
+              "top": 220,
+              "right": 277.375,
+              "bottom": 438.171875,
+              "left": -10.625
+            },
+            "parent_rect": {
+              "x": 16,
+              "y": 166,
+              "width": 288,
+              "height": 3592.671875,
+              "top": 166,
+              "right": 304,
+              "bottom": 3758.671875,
+              "left": 16
+            },
+            "scroll_width": 272,
+            "client_width": 272,
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "opacity": "1",
+              "position": "static",
+              "box-sizing": "border-box",
+              "transform": "none",
+              "margin-left": "26.64px",
+              "margin-right": "26.64px",
+              "padding-left": "0px",
+              "padding-right": "0px",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "288px",
+              "min-width": "0px",
+              "left": "auto",
+              "right": "auto",
+              "inset-inline-start": "auto",
+              "inset-inline-end": "auto",
+              "white-space": "normal"
+            }
+          }
+        ],
+        "search": {
+          "display": "inline-block",
+          "focused": false
+        }
+      },
+      "bounds": [
+        {
+          "left": -10.625,
+          "right": 277.375,
+          "viewport_width": 320,
+          "off_left_px": 10.625,
+          "off_right_px": 0,
+          "pass": false
+        }
+      ],
+      "interaction_error": null,
+      "pass": false,
+      "screenshot": "without-320-image-block-0.png",
+      "screenshot_sha256": "909b26e5edba9f452f134e166c2ac039db75016d9ddc0e47265de62fc4c8ff21",
+      "dom": "without-320-image-block-0.html.gz",
+      "dom_sha256": "bea0ec314d9d761656a8befd1290e48868ed5dca9ed4eb60beb6e9cba3d11590"
+    },
+    {
+      "variant": "with",
+      "width": 320,
+      "state": "image-block",
+      "index": 0,
+      "css_sha256": "6f14cdb095d7468e628db41240cf54a02b37185e67273e7641852eccc426791d",
+      "base_css_sha256": null,
+      "effective_css_sha256": "6f14cdb095d7468e628db41240cf54a02b37185e67273e7641852eccc426791d",
+      "measurement": {
+        "computed_checks": [],
+        "document_width": 320,
+        "viewport_width": 320,
+        "overlaps": [],
+        "control_occlusion": [],
+        "header_ink_rects": null,
+        "scroll_overflow_sources": [
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 75,
+            "rect": {
+              "x": 16,
+              "y": 119,
+              "width": 75.359375,
+              "height": 21,
+              "top": 119,
+              "right": 91.359375,
+              "bottom": 140,
+              "left": 16
+            },
+            "overflow_x": "visible"
+          },
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 102,
+            "rect": {
+              "x": 91.359375,
+              "y": 119,
+              "width": 101.984375,
+              "height": 21,
+              "top": 119,
+              "right": 193.34375,
+              "bottom": 140,
+              "left": 91.359375
+            },
+            "overflow_x": "visible"
+          },
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 61,
+            "rect": {
+              "x": 16,
+              "y": 140,
+              "width": 61.109375,
+              "height": 21,
+              "top": 140,
+              "right": 77.109375,
+              "bottom": 161,
+              "left": 16
+            },
+            "overflow_x": "visible"
+          }
+        ],
+        "overflow_sources": [
+          {
+            "tag": "DIV",
+            "id": "side-bar",
+            "class_name": "",
+            "rect": {
+              "x": -340.40625,
+              "y": 0,
+              "width": 281.1875,
+              "height": 858.796875,
+              "top": 0,
+              "right": -59.21875,
+              "bottom": 858.796875,
+              "left": -340.40625
+            },
+            "parent_id": "content-wrap",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "14.8px 14.8px 0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block resources",
+            "rect": {
+              "x": -325.609375,
+              "y": 14.796875,
+              "width": 251.59375,
+              "height": 135.046875,
+              "top": 14.796875,
+              "right": -74.015625,
+              "bottom": 149.84375,
+              "left": -325.609375
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "10px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -315.609375,
+              "y": 34.796875,
+              "width": 231.59375,
+              "height": 16.046875,
+              "top": 34.796875,
+              "right": -84.015625,
+              "bottom": 50.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px 0px 0px 15px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -300.609375,
+              "y": 34.796875,
+              "width": 216.59375,
+              "height": 15.046875,
+              "top": 34.796875,
+              "right": -84.015625,
+              "bottom": 49.84375,
+              "left": -300.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 55.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 55.84375,
+              "right": -84.015625,
+              "bottom": 74.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 55.84375,
+              "width": 178.46875,
+              "height": 19,
+              "top": 55.84375,
+              "right": -137.140625,
+              "bottom": 74.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 76.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 76.84375,
+              "right": -84.015625,
+              "bottom": 95.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 76.84375,
+              "width": 27.546875,
+              "height": 19,
+              "top": 76.84375,
+              "right": -288.0625,
+              "bottom": 95.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 97.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 97.84375,
+              "right": -84.015625,
+              "bottom": 116.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 97.84375,
+              "width": 94.40625,
+              "height": 19,
+              "top": 97.84375,
+              "right": -221.203125,
+              "bottom": 116.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 118.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 118.84375,
+              "right": -84.015625,
+              "bottom": 137.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 118.84375,
+              "width": 71.78125,
+              "height": 19,
+              "top": 118.84375,
+              "right": -243.828125,
+              "bottom": 137.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -325.609375,
+              "y": 164.84375,
+              "width": 251.59375,
+              "height": 0,
+              "top": 164.84375,
+              "right": -74.015625,
+              "bottom": 164.84375,
+              "left": -325.609375
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block",
+            "rect": {
+              "x": -325.609375,
+              "y": 164.84375,
+              "width": 251.59375,
+              "height": 893.203125,
+              "top": 164.84375,
+              "right": -74.015625,
+              "bottom": 1058.046875,
+              "left": -325.609375
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "10px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 176.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 176.84375,
+              "right": -84.015625,
+              "bottom": 195.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 176.84375,
+              "width": 76.796875,
+              "height": 19,
+              "top": 176.84375,
+              "right": -238.8125,
+              "bottom": 195.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -315.609375,
+              "y": 205.84375,
+              "width": 231.59375,
+              "height": 16.046875,
+              "top": 205.84375,
+              "right": -84.015625,
+              "bottom": 221.890625,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px 0px 0px 15px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -300.609375,
+              "y": 205.84375,
+              "width": 216.59375,
+              "height": 15.046875,
+              "top": 205.84375,
+              "right": -84.015625,
+              "bottom": 220.890625,
+              "left": -300.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 226.890625,
+              "width": 231.59375,
+              "height": 19,
+              "top": 226.890625,
+              "right": -84.015625,
+              "bottom": 245.890625,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 226.890625,
+              "width": 6.265625,
+              "height": 19,
+              "top": 226.890625,
+              "right": -309.34375,
+              "bottom": 245.890625,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -297.703125,
+              "y": 226.890625,
+              "width": 12.53125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -285.171875,
+              "bottom": 245.890625,
+              "left": -297.703125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -273.53125,
+              "y": 226.890625,
+              "width": 18.78125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -254.75,
+              "bottom": 245.890625,
+              "left": -273.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -243.109375,
+              "y": 226.890625,
+              "width": 15.703125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -227.40625,
+              "bottom": 245.890625,
+              "left": -243.109375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -215.765625,
+              "y": 226.890625,
+              "width": 9.453125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -206.3125,
+              "bottom": 245.890625,
+              "left": -215.765625
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          }
+        ],
+        "selector_coverage": {
+          ".scp-image-block.block-right": 1
+        },
+        "rows": [
+          {
+            "selector": ".scp-image-block.block-right",
+            "pseudo": null,
+            "text": "SCP-1428-JP-Aの画像",
+            "rect": {
+              "x": 18.015625,
+              "y": 220,
+              "width": 259.359375,
+              "height": 199.09375,
+              "top": 220,
+              "right": 277.375,
+              "bottom": 419.09375,
+              "left": 18.015625
+            },
+            "parent_rect": {
+              "x": 16,
+              "y": 166,
+              "width": 288,
+              "height": 3573.59375,
+              "top": 166,
+              "right": 304,
+              "bottom": 3739.59375,
+              "left": 16
+            },
+            "scroll_width": 243,
+            "client_width": 243,
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "opacity": "1",
+              "position": "static",
+              "box-sizing": "border-box",
+              "transform": "none",
+              "margin-left": "26.64px",
+              "margin-right": "26.64px",
+              "padding-left": "0px",
+              "padding-right": "0px",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "259.359px",
+              "min-width": "0px",
+              "left": "auto",
+              "right": "auto",
+              "inset-inline-start": "auto",
+              "inset-inline-end": "auto",
+              "white-space": "normal"
+            }
+          }
+        ],
+        "search": {
+          "display": "inline-block",
+          "focused": false
+        }
+      },
+      "bounds": [
+        {
+          "left": 18.015625,
+          "right": 277.375,
+          "viewport_width": 320,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        }
+      ],
+      "interaction_error": null,
+      "pass": true,
+      "screenshot": "with-320-image-block-0.png",
+      "screenshot_sha256": "a786c2a909dc1fc4a77e443f68a6eb65848f0d85086080788aaa775189f7ec20",
+      "dom": "with-320-image-block-0.html.gz",
+      "dom_sha256": "7d1093c6bffbc52b7fdca96d7eb11267733395363f901c45447a0a5034e911dc"
+    },
+    {
+      "variant": "without",
+      "width": 390,
+      "state": "image-block",
+      "index": 0,
+      "css_sha256": "76f4a14b16d53108068e2cd2f7cf8beeb9fd7a1d46d2215de9c7b6d5677b8053",
+      "base_css_sha256": null,
+      "effective_css_sha256": "76f4a14b16d53108068e2cd2f7cf8beeb9fd7a1d46d2215de9c7b6d5677b8053",
+      "measurement": {
+        "computed_checks": [],
+        "document_width": 390,
+        "viewport_width": 390,
+        "overlaps": [],
+        "control_occlusion": [],
+        "header_ink_rects": null,
+        "scroll_overflow_sources": [
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 75,
+            "rect": {
+              "x": 19.5,
+              "y": 140,
+              "width": 75.359375,
+              "height": 21,
+              "top": 140,
+              "right": 94.859375,
+              "bottom": 161,
+              "left": 19.5
+            },
+            "overflow_x": "visible"
+          },
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 102,
+            "rect": {
+              "x": 94.859375,
+              "y": 140,
+              "width": 101.984375,
+              "height": 21,
+              "top": 140,
+              "right": 196.84375,
+              "bottom": 161,
+              "left": 94.859375
+            },
+            "overflow_x": "visible"
+          }
+        ],
+        "overflow_sources": [
+          {
+            "tag": "DIV",
+            "id": "side-bar",
+            "class_name": "",
+            "rect": {
+              "x": -340.40625,
+              "y": 0,
+              "width": 281.1875,
+              "height": 858.796875,
+              "top": 0,
+              "right": -59.21875,
+              "bottom": 858.796875,
+              "left": -340.40625
+            },
+            "parent_id": "content-wrap",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "14.8px 14.8px 0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block resources",
+            "rect": {
+              "x": -325.609375,
+              "y": 14.796875,
+              "width": 251.59375,
+              "height": 135.046875,
+              "top": 14.796875,
+              "right": -74.015625,
+              "bottom": 149.84375,
+              "left": -325.609375
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "10px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -315.609375,
+              "y": 34.796875,
+              "width": 231.59375,
+              "height": 16.046875,
+              "top": 34.796875,
+              "right": -84.015625,
+              "bottom": 50.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px 0px 0px 15px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -300.609375,
+              "y": 34.796875,
+              "width": 216.59375,
+              "height": 15.046875,
+              "top": 34.796875,
+              "right": -84.015625,
+              "bottom": 49.84375,
+              "left": -300.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 55.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 55.84375,
+              "right": -84.015625,
+              "bottom": 74.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 55.84375,
+              "width": 178.46875,
+              "height": 19,
+              "top": 55.84375,
+              "right": -137.140625,
+              "bottom": 74.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 76.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 76.84375,
+              "right": -84.015625,
+              "bottom": 95.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 76.84375,
+              "width": 27.546875,
+              "height": 19,
+              "top": 76.84375,
+              "right": -288.0625,
+              "bottom": 95.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 97.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 97.84375,
+              "right": -84.015625,
+              "bottom": 116.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 97.84375,
+              "width": 94.40625,
+              "height": 19,
+              "top": 97.84375,
+              "right": -221.203125,
+              "bottom": 116.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 118.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 118.84375,
+              "right": -84.015625,
+              "bottom": 137.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 118.84375,
+              "width": 71.78125,
+              "height": 19,
+              "top": 118.84375,
+              "right": -243.828125,
+              "bottom": 137.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -325.609375,
+              "y": 164.84375,
+              "width": 251.59375,
+              "height": 0,
+              "top": 164.84375,
+              "right": -74.015625,
+              "bottom": 164.84375,
+              "left": -325.609375
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block",
+            "rect": {
+              "x": -325.609375,
+              "y": 164.84375,
+              "width": 251.59375,
+              "height": 893.203125,
+              "top": 164.84375,
+              "right": -74.015625,
+              "bottom": 1058.046875,
+              "left": -325.609375
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "10px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 176.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 176.84375,
+              "right": -84.015625,
+              "bottom": 195.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 176.84375,
+              "width": 76.796875,
+              "height": 19,
+              "top": 176.84375,
+              "right": -238.8125,
+              "bottom": 195.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -315.609375,
+              "y": 205.84375,
+              "width": 231.59375,
+              "height": 16.046875,
+              "top": 205.84375,
+              "right": -84.015625,
+              "bottom": 221.890625,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px 0px 0px 15px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -300.609375,
+              "y": 205.84375,
+              "width": 216.59375,
+              "height": 15.046875,
+              "top": 205.84375,
+              "right": -84.015625,
+              "bottom": 220.890625,
+              "left": -300.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 226.890625,
+              "width": 231.59375,
+              "height": 19,
+              "top": 226.890625,
+              "right": -84.015625,
+              "bottom": 245.890625,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 226.890625,
+              "width": 6.265625,
+              "height": 19,
+              "top": 226.890625,
+              "right": -309.34375,
+              "bottom": 245.890625,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -297.703125,
+              "y": 226.890625,
+              "width": 12.53125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -285.171875,
+              "bottom": 245.890625,
+              "left": -297.703125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -273.53125,
+              "y": 226.890625,
+              "width": 18.78125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -254.75,
+              "bottom": 245.890625,
+              "left": -273.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -243.109375,
+              "y": 226.890625,
+              "width": 15.703125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -227.40625,
+              "bottom": 245.890625,
+              "left": -243.109375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -215.765625,
+              "y": 226.890625,
+              "width": 9.453125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -206.3125,
+              "bottom": 245.890625,
+              "left": -215.765625
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          }
+        ],
+        "selector_coverage": {
+          ".scp-image-block.block-right": 1
+        },
+        "rows": [
+          {
+            "selector": ".scp-image-block.block-right",
+            "pseudo": null,
+            "text": "SCP-1428-JP-Aの画像",
+            "rect": {
+              "x": 43.875,
+              "y": 220,
+              "width": 300,
+              "height": 226.171875,
+              "top": 220,
+              "right": 343.875,
+              "bottom": 446.171875,
+              "left": 43.875
+            },
+            "parent_rect": {
+              "x": 19.5,
+              "y": 166,
+              "width": 351,
+              "height": 3093.578125,
+              "top": 166,
+              "right": 370.5,
+              "bottom": 3259.578125,
+              "left": 19.5
+            },
+            "scroll_width": 284,
+            "client_width": 284,
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "opacity": "1",
+              "position": "static",
+              "box-sizing": "border-box",
+              "transform": "none",
+              "margin-left": "26.64px",
+              "margin-right": "26.64px",
+              "padding-left": "0px",
+              "padding-right": "0px",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "300px",
+              "min-width": "0px",
+              "left": "auto",
+              "right": "auto",
+              "inset-inline-start": "auto",
+              "inset-inline-end": "auto",
+              "white-space": "normal"
+            }
+          }
+        ],
+        "search": {
+          "display": "inline-block",
+          "focused": false
+        }
+      },
+      "bounds": [
+        {
+          "left": 43.875,
+          "right": 343.875,
+          "viewport_width": 390,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        }
+      ],
+      "interaction_error": null,
+      "pass": true,
+      "screenshot": "without-390-image-block-0.png",
+      "screenshot_sha256": "0997dd9f4e1906f29763f0d31acfb762afcc9b8f493df237ac766bfe93be5a3a",
+      "dom": "without-390-image-block-0.html.gz",
+      "dom_sha256": "bea0ec314d9d761656a8befd1290e48868ed5dca9ed4eb60beb6e9cba3d11590"
+    },
+    {
+      "variant": "with",
+      "width": 390,
+      "state": "image-block",
+      "index": 0,
+      "css_sha256": "6f14cdb095d7468e628db41240cf54a02b37185e67273e7641852eccc426791d",
+      "base_css_sha256": null,
+      "effective_css_sha256": "6f14cdb095d7468e628db41240cf54a02b37185e67273e7641852eccc426791d",
+      "measurement": {
+        "computed_checks": [],
+        "document_width": 390,
+        "viewport_width": 390,
+        "overlaps": [],
+        "control_occlusion": [],
+        "header_ink_rects": null,
+        "scroll_overflow_sources": [
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 75,
+            "rect": {
+              "x": 19.5,
+              "y": 140,
+              "width": 75.359375,
+              "height": 21,
+              "top": 140,
+              "right": 94.859375,
+              "bottom": 161,
+              "left": 19.5
+            },
+            "overflow_x": "visible"
+          },
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 102,
+            "rect": {
+              "x": 94.859375,
+              "y": 140,
+              "width": 101.984375,
+              "height": 21,
+              "top": 140,
+              "right": 196.84375,
+              "bottom": 161,
+              "left": 94.859375
+            },
+            "overflow_x": "visible"
+          }
+        ],
+        "overflow_sources": [
+          {
+            "tag": "DIV",
+            "id": "side-bar",
+            "class_name": "",
+            "rect": {
+              "x": -340.40625,
+              "y": 0,
+              "width": 281.1875,
+              "height": 858.796875,
+              "top": 0,
+              "right": -59.21875,
+              "bottom": 858.796875,
+              "left": -340.40625
+            },
+            "parent_id": "content-wrap",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "14.8px 14.8px 0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block resources",
+            "rect": {
+              "x": -325.609375,
+              "y": 14.796875,
+              "width": 251.59375,
+              "height": 135.046875,
+              "top": 14.796875,
+              "right": -74.015625,
+              "bottom": 149.84375,
+              "left": -325.609375
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "10px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -315.609375,
+              "y": 34.796875,
+              "width": 231.59375,
+              "height": 16.046875,
+              "top": 34.796875,
+              "right": -84.015625,
+              "bottom": 50.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px 0px 0px 15px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -300.609375,
+              "y": 34.796875,
+              "width": 216.59375,
+              "height": 15.046875,
+              "top": 34.796875,
+              "right": -84.015625,
+              "bottom": 49.84375,
+              "left": -300.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 55.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 55.84375,
+              "right": -84.015625,
+              "bottom": 74.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 55.84375,
+              "width": 178.46875,
+              "height": 19,
+              "top": 55.84375,
+              "right": -137.140625,
+              "bottom": 74.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 76.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 76.84375,
+              "right": -84.015625,
+              "bottom": 95.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 76.84375,
+              "width": 27.546875,
+              "height": 19,
+              "top": 76.84375,
+              "right": -288.0625,
+              "bottom": 95.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 97.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 97.84375,
+              "right": -84.015625,
+              "bottom": 116.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 97.84375,
+              "width": 94.40625,
+              "height": 19,
+              "top": 97.84375,
+              "right": -221.203125,
+              "bottom": 116.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 118.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 118.84375,
+              "right": -84.015625,
+              "bottom": 137.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 118.84375,
+              "width": 71.78125,
+              "height": 19,
+              "top": 118.84375,
+              "right": -243.828125,
+              "bottom": 137.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -325.609375,
+              "y": 164.84375,
+              "width": 251.59375,
+              "height": 0,
+              "top": 164.84375,
+              "right": -74.015625,
+              "bottom": 164.84375,
+              "left": -325.609375
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "side-block",
+            "rect": {
+              "x": -325.609375,
+              "y": 164.84375,
+              "width": 251.59375,
+              "height": 893.203125,
+              "top": 164.84375,
+              "right": -74.015625,
+              "bottom": 1058.046875,
+              "left": -325.609375
+            },
+            "parent_id": "side-bar",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "10px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 176.84375,
+              "width": 231.59375,
+              "height": 19,
+              "top": 176.84375,
+              "right": -84.015625,
+              "bottom": 195.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 176.84375,
+              "width": 76.796875,
+              "height": 19,
+              "top": 176.84375,
+              "right": -238.8125,
+              "bottom": 195.84375,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "heading",
+            "rect": {
+              "x": -315.609375,
+              "y": 205.84375,
+              "width": 231.59375,
+              "height": 16.046875,
+              "top": 205.84375,
+              "right": -84.015625,
+              "bottom": 221.890625,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px 0px 0px 15px"
+          },
+          {
+            "tag": "P",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -300.609375,
+              "y": 205.84375,
+              "width": 216.59375,
+              "height": 15.046875,
+              "top": 205.84375,
+              "right": -84.015625,
+              "bottom": 220.890625,
+              "left": -300.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "class_name": "menu-item",
+            "rect": {
+              "x": -315.609375,
+              "y": 226.890625,
+              "width": 231.59375,
+              "height": 19,
+              "top": 226.890625,
+              "right": -84.015625,
+              "bottom": 245.890625,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -315.609375,
+              "y": 226.890625,
+              "width": 6.265625,
+              "height": 19,
+              "top": 226.890625,
+              "right": -309.34375,
+              "bottom": 245.890625,
+              "left": -315.609375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -297.703125,
+              "y": 226.890625,
+              "width": 12.53125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -285.171875,
+              "bottom": 245.890625,
+              "left": -297.703125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -273.53125,
+              "y": 226.890625,
+              "width": 18.78125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -254.75,
+              "bottom": 245.890625,
+              "left": -273.53125
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -243.109375,
+              "y": 226.890625,
+              "width": 15.703125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -227.40625,
+              "bottom": 245.890625,
+              "left": -243.109375
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "class_name": "",
+            "rect": {
+              "x": -215.765625,
+              "y": 226.890625,
+              "width": 9.453125,
+              "height": 19,
+              "top": 226.890625,
+              "right": -206.3125,
+              "bottom": 245.890625,
+              "left": -215.765625
+            },
+            "parent_id": "",
+            "box_sizing": "content-box",
+            "min_width": "0px",
+            "padding": "0px"
+          }
+        ],
+        "selector_coverage": {
+          ".scp-image-block.block-right": 1
+        },
+        "rows": [
+          {
+            "selector": ".scp-image-block.block-right",
+            "pseudo": null,
+            "text": "SCP-1428-JP-Aの画像",
+            "rect": {
+              "x": 43.875,
+              "y": 220,
+              "width": 300,
+              "height": 226.171875,
+              "top": 220,
+              "right": 343.875,
+              "bottom": 446.171875,
+              "left": 43.875
+            },
+            "parent_rect": {
+              "x": 19.5,
+              "y": 166,
+              "width": 351,
+              "height": 3093.578125,
+              "top": 166,
+              "right": 370.5,
+              "bottom": 3259.578125,
+              "left": 19.5
+            },
+            "scroll_width": 284,
+            "client_width": 284,
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "opacity": "1",
+              "position": "static",
+              "box-sizing": "border-box",
+              "transform": "none",
+              "margin-left": "26.64px",
+              "margin-right": "26.64px",
+              "padding-left": "0px",
+              "padding-right": "0px",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "300px",
+              "min-width": "0px",
+              "left": "auto",
+              "right": "auto",
+              "inset-inline-start": "auto",
+              "inset-inline-end": "auto",
+              "white-space": "normal"
+            }
+          }
+        ],
+        "search": {
+          "display": "inline-block",
+          "focused": false
+        }
+      },
+      "bounds": [
+        {
+          "left": 43.875,
+          "right": 343.875,
+          "viewport_width": 390,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        }
+      ],
+      "interaction_error": null,
+      "pass": true,
+      "screenshot": "with-390-image-block-0.png",
+      "screenshot_sha256": "0997dd9f4e1906f29763f0d31acfb762afcc9b8f493df237ac766bfe93be5a3a",
+      "dom": "with-390-image-block-0.html.gz",
+      "dom_sha256": "7d1093c6bffbc52b7fdca96d7eb11267733395363f901c45447a0a5034e911dc"
+    },
+    {
+      "variant": "without",
+      "width": 1440,
+      "state": "image-block",
+      "index": 0,
+      "css_sha256": "76f4a14b16d53108068e2cd2f7cf8beeb9fd7a1d46d2215de9c7b6d5677b8053",
+      "base_css_sha256": null,
+      "effective_css_sha256": "76f4a14b16d53108068e2cd2f7cf8beeb9fd7a1d46d2215de9c7b6d5677b8053",
+      "measurement": {
+        "computed_checks": [],
+        "document_width": 1440,
+        "viewport_width": 1440,
+        "overlaps": [],
+        "control_occlusion": [],
+        "header_ink_rects": null,
+        "scroll_overflow_sources": [
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 126,
+            "rect": {
+              "x": 681.171875,
+              "y": 140,
+              "width": 126.046875,
+              "height": 21,
+              "top": 140,
+              "right": 807.21875,
+              "bottom": 161,
+              "left": 681.171875
+            },
+            "overflow_x": "visible"
+          },
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 117,
+            "rect": {
+              "x": 807.21875,
+              "y": 140,
+              "width": 116.84375,
+              "height": 21,
+              "top": 140,
+              "right": 924.0625,
+              "bottom": 161,
+              "left": 807.21875
+            },
+            "overflow_x": "visible"
+          },
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 106,
+            "rect": {
+              "x": 1030.015625,
+              "y": 140,
+              "width": 105.5625,
+              "height": 21,
+              "top": 140,
+              "right": 1135.578125,
+              "bottom": 161,
+              "left": 1030.015625
+            },
+            "overflow_x": "visible"
+          }
+        ],
+        "overflow_sources": [],
+        "selector_coverage": {
+          ".scp-image-block.block-right": 1
+        },
+        "rows": [
+          {
+            "selector": ".scp-image-block.block-right",
+            "pseudo": null,
+            "text": "SCP-1428-JP-Aの画像",
+            "rect": {
+              "x": 836.421875,
+              "y": 218.796875,
+              "width": 300,
+              "height": 227.828125,
+              "top": 218.796875,
+              "right": 1136.421875,
+              "bottom": 446.625,
+              "left": 836.421875
+            },
+            "parent_rect": {
+              "x": 510.796875,
+              "y": 180.796875,
+              "width": 655.21875,
+              "height": 2283.640625,
+              "top": 180.796875,
+              "right": 1166.015625,
+              "bottom": 2464.4375,
+              "left": 510.796875
+            },
+            "scroll_width": 284,
+            "client_width": 284,
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "opacity": "1",
+              "position": "static",
+              "box-sizing": "border-box",
+              "transform": "none",
+              "margin-left": "29.6px",
+              "margin-right": "29.6px",
+              "padding-left": "0px",
+              "padding-right": "0px",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "300px",
+              "min-width": "0px",
+              "left": "auto",
+              "right": "auto",
+              "inset-inline-start": "auto",
+              "inset-inline-end": "auto",
+              "white-space": "normal"
+            }
+          }
+        ],
+        "search": {
+          "display": "inline-block",
+          "focused": false
+        }
+      },
+      "bounds": [
+        {
+          "left": 836.421875,
+          "right": 1136.421875,
+          "viewport_width": 1440,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        }
+      ],
+      "interaction_error": null,
+      "pass": true,
+      "screenshot": "without-1440-image-block-0.png",
+      "screenshot_sha256": "1dd17d1f356d402894f8c8d97fa456e8057be858c4c52ae79ab284de30fea648",
+      "dom": "without-1440-image-block-0.html.gz",
+      "dom_sha256": "bea0ec314d9d761656a8befd1290e48868ed5dca9ed4eb60beb6e9cba3d11590"
+    },
+    {
+      "variant": "with",
+      "width": 1440,
+      "state": "image-block",
+      "index": 0,
+      "css_sha256": "6f14cdb095d7468e628db41240cf54a02b37185e67273e7641852eccc426791d",
+      "base_css_sha256": null,
+      "effective_css_sha256": "6f14cdb095d7468e628db41240cf54a02b37185e67273e7641852eccc426791d",
+      "measurement": {
+        "computed_checks": [],
+        "document_width": 1440,
+        "viewport_width": 1440,
+        "overlaps": [],
+        "control_occlusion": [],
+        "header_ink_rects": null,
+        "scroll_overflow_sources": [
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 126,
+            "rect": {
+              "x": 681.171875,
+              "y": 140,
+              "width": 126.046875,
+              "height": 21,
+              "top": 140,
+              "right": 807.21875,
+              "bottom": 161,
+              "left": 681.171875
+            },
+            "overflow_x": "visible"
+          },
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 117,
+            "rect": {
+              "x": 807.21875,
+              "y": 140,
+              "width": 116.84375,
+              "height": 21,
+              "top": 140,
+              "right": 924.0625,
+              "bottom": 161,
+              "left": 807.21875
+            },
+            "overflow_x": "visible"
+          },
+          {
+            "tag": "LI",
+            "id": "",
+            "class_name": "",
+            "scroll_width": 162,
+            "client_width": 106,
+            "rect": {
+              "x": 1030.015625,
+              "y": 140,
+              "width": 105.5625,
+              "height": 21,
+              "top": 140,
+              "right": 1135.578125,
+              "bottom": 161,
+              "left": 1030.015625
+            },
+            "overflow_x": "visible"
+          }
+        ],
+        "overflow_sources": [],
+        "selector_coverage": {
+          ".scp-image-block.block-right": 1
+        },
+        "rows": [
+          {
+            "selector": ".scp-image-block.block-right",
+            "pseudo": null,
+            "text": "SCP-1428-JP-Aの画像",
+            "rect": {
+              "x": 836.421875,
+              "y": 218.796875,
+              "width": 300,
+              "height": 227.828125,
+              "top": 218.796875,
+              "right": 1136.421875,
+              "bottom": 446.625,
+              "left": 836.421875
+            },
+            "parent_rect": {
+              "x": 510.796875,
+              "y": 180.796875,
+              "width": 655.21875,
+              "height": 2283.640625,
+              "top": 180.796875,
+              "right": 1166.015625,
+              "bottom": 2464.4375,
+              "left": 510.796875
+            },
+            "scroll_width": 284,
+            "client_width": 284,
+            "style": {
+              "display": "block",
+              "visibility": "visible",
+              "opacity": "1",
+              "position": "static",
+              "box-sizing": "border-box",
+              "transform": "none",
+              "margin-left": "29.6px",
+              "margin-right": "29.6px",
+              "padding-left": "0px",
+              "padding-right": "0px",
+              "content": "normal",
+              "background-size": "auto",
+              "width": "300px",
+              "min-width": "0px",
+              "left": "auto",
+              "right": "auto",
+              "inset-inline-start": "auto",
+              "inset-inline-end": "auto",
+              "white-space": "normal"
+            }
+          }
+        ],
+        "search": {
+          "display": "inline-block",
+          "focused": false
+        }
+      },
+      "bounds": [
+        {
+          "left": 836.421875,
+          "right": 1136.421875,
+          "viewport_width": 1440,
+          "off_left_px": 0,
+          "off_right_px": 0,
+          "pass": true
+        }
+      ],
+      "interaction_error": null,
+      "pass": true,
+      "screenshot": "with-1440-image-block-0.png",
+      "screenshot_sha256": "1dd17d1f356d402894f8c8d97fa456e8057be858c4c52ae79ab284de30fea648",
+      "dom": "with-1440-image-block-0.html.gz",
+      "dom_sha256": "7d1093c6bffbc52b7fdca96d7eb11267733395363f901c45447a0a5034e911dc"
+    }
+  ]
+}

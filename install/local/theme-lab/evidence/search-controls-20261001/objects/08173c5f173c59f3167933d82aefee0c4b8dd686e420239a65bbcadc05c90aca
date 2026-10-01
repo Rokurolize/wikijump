@@ -1,0 +1,126 @@
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 100;
+  font-display: swap;
+  src: url("/o/5dcea0643d98c3b9aa1cb1269da7bda17007eef92f47e2c9a001ca8d75b2f1f0") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 200;
+  font-display: swap;
+  src: url("/o/bfaead52c6371b644ff234459211097e2f90441dc3ffd50987516d5acab0c9ea") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/o/e59f6349bc74d1f9f46d50d47d6c12a57a51eb56d632c03642d678b2e7b054eb") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/ef8f755d933b9310804cc9152f1f18cb2ac460d6b05054ec913d889c9f11f79e") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/o/f0f1d28363e3a64ef7ed59937b268494ad5e55e76b2c77eaab2f94c80cce17c9") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/o/5b6f0c6f26e5c554a64cdcc3a9b5d802b7f9aec6206f1dbcfcdcad7b5860a2a9") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/o/c1811d32ac0f6eed1bbf57529f2ecdfc6c717d48a969dd864942436315a1b198") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/o/43650eb9c3a23ddc6fc1f499d1e74892fa573119ae1ae3d83975918b10fa22a7") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 900;
+  font-display: swap;
+  src: url("/o/7c1999c303b4d292f039630440d717f58edb8139f9f1e3b25074e4e07f95b441") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100;
+  font-display: swap;
+  src: url("/o/3428fd01a45310781cfc06d8957c5485de2432132b405ebe6e53efec0719c229") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url("/o/1be2b11bc5c1e0f78deeeb4e8049b2f5cca9c476b77bb1912aac748ba4a37312") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/o/d0f4bc7faca468376e3db9b5e57afcdc2192134c9ac82a9511f32767b56853a4") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/1b08e7fc267a5c7e1d614100f604b83e7e8a0be241f0f288faa2b3ac93a683ba") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/o/8c883f63b2c4157d997319f2c8bc6995ed4357ef371940d31ca159004a4aae63") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/o/e7a1aaf7eda9f2fad4131725fa556265ec75ca7b2d756260173a040363e8d4f7") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/o/b37284b5701b6b168dfc770aa1a4ac492106422fd3ba76bc7641e37434e8019c") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/o/eec66af7f2337bd34fe6e801cf92ededcb57a20c0d7bc40a61d4eefcbe3dd40c") format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("/o/5b717029a2c4cfca2167e97be1157edb24151591e5ec96eb484745c392817a7a") format('truetype');
+}

@@ -1,0 +1,88 @@
+/* latin */
+@font-face {
+  font-family: 'Red Hat Display';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/de0657eab667e72b6b468315fd93c1190b9ca6e45d0e2e5a984702daaff6cb87") format('woff2'), url("/o/7ec738bf83d5c948f5dfc8aad21249d4748fbdcfd378e567334e2776c744dbab") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'Red Hat Display';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/deb559998349b8d2c509e871acd1b34b01305b80450e138c71027fcbda6cca35") format('woff2'), url("/o/9361cc95aa670635d09358ab16f558b0a4fc4af65890f5919edfe4459b753181") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'Red Hat Display';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/0bec32e28c3524c32d4f6d18621d4dcce4d3ad6b99afb27fce4e65119d12a1e2") format('woff2'), url("/o/24feebfa4518453c80005930300906c621f9ede93b760d3506a3039b26e4515b") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'Red Hat Display';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/ce367d1696a29cf107b25dc31502262b55645aaca9facaa04006edf1ac3cb859") format('woff2'), url("/o/c1970edd47fc59add670bc68b07d591533c62b4c7fd1ed713dc5f3874da269ec") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'Red Hat Display';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/131f293be2bb64d87a5ea2a90dadb934df94d976071e220dd685f2a036e5cf90") format('woff2'), url("/o/016e39537399f4ec70ac20af90d0c9078c2c1a3c950e3de40b4df1efa5c45b44") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'Red Hat Display';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/08ee8f706c8a6db20d5cad26c992a970519504525881e16e9faadab3bac53c09") format('woff2'), url("/o/8efb75cb39ab6fd50dc34c92ade53fafda7dde69b01ef4bf44671141632cae23") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'Red Hat Display';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/9abd8177653672bb520e522ed9796479d67d1e71f198695d790813c1a11933a6") format('woff2'), url("/o/f83259e7ce3c30983b198197e22d1f46c987c98e6ad449bd67fe41aa6ed81c74") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'Red Hat Display';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/4e62513569bb41184e39fd017799a241aee8d0df034ce0a9c73f7546d2a994a2") format('woff2'), url("/o/ed18ade649c7c9491c66b446948b633f74cf9cc50bc46af769c504d3b9c2eb18") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+

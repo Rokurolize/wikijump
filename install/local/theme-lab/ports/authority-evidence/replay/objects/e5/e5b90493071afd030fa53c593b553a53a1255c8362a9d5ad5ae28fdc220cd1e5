@@ -1,0 +1,799 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja-corrections" lang="ja-corrections">
+
+<head>
+    <title>SCP-1214 - SCP財団</title>
+    
+    
+    
+    <script type="text/javascript" src="/o/7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387"></script>
+    <script  type="text/javascript">
+        var URL_HOST = 'www.wikidot.com';
+        var URL_DOMAIN = 'wikidot.com';
+        var USE_SSL =  true ;
+        var URL_STATIC = 'https://d3g0gp89917ko0.cloudfront.net/v--0c0da3649c4f';
+        // global request information
+        
+        var WIKIREQUEST = {};
+        WIKIREQUEST.info = {};
+        
+        WIKIREQUEST.info.domain = "scp-jp.wikidot.com";
+        WIKIREQUEST.info.siteId = 578002;
+        WIKIREQUEST.info.siteUnixName = "scp-jp";
+        WIKIREQUEST.info.categoryId = 3777353;
+        WIKIREQUEST.info.themeId = 1;
+        WIKIREQUEST.info.requestPageName = "scp-1214";
+        OZONE.request.timestamp = 1790843529;
+        OZONE.request.date = new Date();
+        WIKIREQUEST.info.lang = 'ja-corrections';
+                WIKIREQUEST.info.pageUnixName = "scp-1214";
+        WIKIREQUEST.info.pageId = 29119886;
+                        WIKIREQUEST.info.lang = "ja-corrections";
+        OZONE.lang = "ja-corrections";
+        var isUAMobile = !!/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    </script>
+    
+    
+
+
+    
+        <script  type="text/javascript">
+    
+        require.config({
+            baseUrl: URL_STATIC + '/common--javascript',
+            paths: {
+                'jquery.ui': 'jquery-ui.min',
+                'jquery.form': 'jquery.form'
+            }
+        });
+    
+    </script>
+    
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8"/>
+                            <meta name="robots" content="index,follow"/>
+                                <meta name="language" content="ja,jp-ja"/>
+                                                            <meta name="keywords" content="SCP,財団,SCP財団,Foundation,Wiki"/>
+                                <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0"/>
+                                <meta name="referrer" content="no-referrer-when-downgrade"/>
+                                <meta name="google-site-verification" content="XCpcYRSKk2KOx262-45XuXn3Rd3vo7ST8aB2TdPmOy8"/>
+                            
+    
+    
+    
+    
+    <meta http-equiv="content-language" content="ja,jp-ja"/>
+    <script type="text/javascript" src="/o/49bcabdb14d446bb93d261f9c967bedfa7cdf7b214807a8180974cbd00b21f11"></script>
+        
+    
+    <style type="text/css" id="internal-style">
+        
+        /* modules */
+@import url("/o/5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583");
+
+
+        
+                
+        /* theme */
+                    @import url("/o/7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c");
+                    @import url("/o/8814de07a0445f47adffed154a0cd18ed228dcf88faaebaeed1a9f71a280cd80");
+            </style>
+    
+        
+        
+    <link rel="shortcut icon" href="/o/58cab0208fa4ab61053eb9d92a99a1a1999ad6e3dc63f8fd80828e33cb069d53"/>
+    <link rel="icon" type="image/gif" href="/o/58cab0208fa4ab61053eb9d92a99a1a1999ad6e3dc63f8fd80828e33cb069d53"/>
+    
+            <link rel="apple-touch-icon" href="/missing" />
+        <link rel="apple-touch-icon" sizes="72x72" href="/o/f53bdeec5d0316301982c49cf86701d13680dc6f44efb3a8eb1ca93ca183e3ba" />
+        <link rel="apple-touch-icon" sizes="114x114" href="/o/86bfb8fa53fdca123db5feecf7e995eb6de67edbe39ca0a800134c69258c2ba1" />    
+        
+            <meta name="msapplication-TileImage" content="/local--wp8icon/wp8icon.png"/>
+                    <meta name="msapplication-TileColor" content="#00245F"/>
+                
+            <link rel="alternate" type="application/wiki" title="Edit this page" href="javascript:WIKIDOT.page.listeners.editClick()"/>
+    
+        <script type="text/javascript">
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-18234656-1']);
+        _gaq.push(['_setDomainName', 'none']);
+        _gaq.push(['_setAllowLinker', true]);
+        _gaq.push(['_trackPageview']);
+
+        _gaq.push(['old._setAccount', 'UA-68540-5']);
+        _gaq.push(['old._setDomainName', 'none']);
+        _gaq.push(['old._setAllowLinker', true]);
+        _gaq.push(['old._trackPageview']);
+
+                _gaq.push(['userTracker._setAccount', 'UA-84647256-2']);
+        _gaq.push(['userTracker._trackPageview']);
+            </script>
+    
+    <script type="text/javascript">
+        window.google_analytics_uacct = 'UA-18234656-1';
+        window.google_analytics_domain_name = 'none';
+    </script>
+    
+<script data-cfasync="false">window.nitroAds=window.nitroAds||{createAd:function(){return new Promise(e=>{window.nitroAds.queue.push(["createAd",arguments,e])})},addUserToken:function(){window.nitroAds.queue.push(["addUserToken",arguments])},queue:[]};</script>
+<script data-cfasync="false" async src="/missing"></script>
+<script type="text/javascript" src="/o/12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941"></script>
+<script type="text/javascript" src="/o/c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc"></script>
+</head>
+<body id="html-body">
+<div id="skrollr-body">
+<a name="page-top"></a>
+
+
+
+
+
+<div id="container-wrap-wrap">
+    <div id="container-wrap">
+        <div id="container">
+            <div id="header">
+              <h1><a href="/"><span>SCP財団</span></a></h1>
+                
+                    <h2><span>確保、収容、保護</span></h2>
+                
+                
+                <!-- google_ad_section_start(weight=ignore) -->
+                
+                <div id="search-top-box" class="form-search">
+    <form id="search-top-box-form" action="dummy" class="input-append">
+        <input id="search-top-box-input" class="text empty search-query" type="text" size="15" name="query" value="サイト検索" onfocus="if(YAHOO.util.Dom.hasClass(this, 'empty')){YAHOO.util.Dom.removeClass(this,'empty'); this.value='';}"/><input class="button btn" type="submit" name="search" value="検索"/>
+    </form>
+</div>
+                
+                
+                    <div id="top-bar">
+                        
+
+<div class="top-bar">
+<ul>
+<li><a href="javascript:;">SCPデータベース</a>
+<ul>
+<li><a href="/collaboration-page-hub">合作</a></li>
+<li><a href="/incident-reports-eye-witness-interviews-and-personal-logs">インシデント記録</a></li>
+<li><a href="/series-archive">シリーズアーカイブ</a></li>
+<li><a href="/contest-archive">コンテストアーカイブ国際版</a></li>
+</ul>
+</li>
+<li><a href="javascript:;">JPデータベース</a>
+<ul>
+<li><a href="/collaboration-hub-jp">合作-JP</a></li>
+<li><a href="/supplement-hub-jp">補足-JP</a></li>
+<li><a href="/anthology-hub-jp">アンソロジー-JP</a></li>
+<li><a href="/event-archive-jp">イベントアーカイブ-JP</a></li>
+<li><a href="/heritage-collection-jp">殿堂入りコレクション</a></li>
+</ul>
+</li>
+<li><a href="/scp-international">SCP和訳一覧</a></li>
+<li><a href="javascript:;">SCPの世界観</a>
+<ul>
+<li><a href="/about-the-scp-foundation">SCP財団とは</a></li>
+<li><a href="/universe-hub">財団世界観</a></li>
+<li><a href="/secure-facilities-locations">セキュリティ施設</a></li>
+<li><a href="/departments">内部部門</a></li>
+<li><a href="/task-forces">機動部隊</a></li>
+<li><a href="/personnel-and-character-dossier">職員・人物ファイル</a></li>
+<li><a href="/groups-of-interest">要注意団体</a></li>
+<li><a href="/secure-facilities-locations-jp">セキュリティ施設-JP</a></li>
+<li><a href="/departments-jp">内部部門-JP</a></li>
+<li><a href="/task-forces-jp">機動部隊-JP</a></li>
+<li><a href="/personnel-and-character-dossier-jp">職員・人物ファイル-JP</a></li>
+<li><a href="/groups-of-interest-jp">要注意団体-JP</a></li>
+<li><a href="/locations-of-interest-jp">要注意領域-JP</a></li>
+</ul>
+</li>
+<li><a href="javascript:;">ガイド</a>
+<ul>
+<li><a href="/guide-hub">ガイドハブ</a></li>
+<li><a href="/site-rules">サイトルール</a></li>
+<li><a href="/licensing-guide">ライセンスガイド</a></li>
+<li><a href="/image-use-policy">画像利用ポリシー</a></li>
+<li><a href="/vote-policy">Voteポリシー</a></li>
+<li><a href="/criticism-policy">批評に関するポリシー</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="mobile-top-bar">
+<div class="open-menu">
+<p><a href="#side-bar">≡</a></p>
+</div>
+<ul>
+<li><a href="javascript:;">シリーズ</a>
+<ul>
+<li><a href="/scp-series">EN - I (001-999)</a></li>
+<li><a href="/scp-series-2">EN - II (1000-1999)</a></li>
+<li><a href="/scp-series-3">EN - III (2000-2999)</a></li>
+<li><a href="/scp-series-4">EN - IV (3000-3999)</a></li>
+<li><a href="/scp-series-5">EN - V (4000-4999)</a></li>
+<li><a href="/scp-series-6">EN - VI (5000-5999)</a></li>
+<li><a href="/scp-series-7">EN - VII (6000-6999)</a></li>
+<li><a href="/scp-series-8">EN - VIII (7000-7999)</a></li>
+<li><a href="/scp-series-9">EN - IX (8000-8999)</a></li>
+<li><a href="/scp-series-10">EN - X (9000-9999)</a></li>
+<li><a href="/lost-scp-series">EN - Lost (L000-L999)</a></li>
+<li><a href="/scp-series-jp">JP - I (001-999)</a></li>
+<li><a href="/scp-series-jp-2">JP - II (1000-1999)</a></li>
+<li><a href="/scp-series-jp-3">JP - III (2000-2999)</a></li>
+<li><a href="/scp-series-jp-4">JP - IV (3000-3999)</a></li>
+<li><a href="/scp-series-jp-5">JP - V (4000-4999)</a></li>
+<li><a href="/scp-international">SCP和訳一覧</a></li>
+</ul>
+</li>
+<li><a href="javascript:;">データベース</a>
+<ul>
+<li><a href="/collaboration-page-hub">合作</a></li>
+<li><a href="/series-archive">シリーズアーカイブ</a></li>
+<li><a href="/contest-archive">コンテストアーカイブ国際版</a></li>
+<li><a href="/collaboration-hub-jp">合作-JP</a></li>
+<li><a href="/supplement-hub-jp">補足-JP</a></li>
+<li><a href="/anthology-hub-jp">アンソロジー-JP</a></li>
+<li><a href="/event-archive-jp">イベントアーカイブ-JP</a></li>
+<li><a href="/heritage-collection-jp">殿堂入りコレクション-JP</a></li>
+</ul>
+</li>
+<li><a href="javascript:;">世界観</a>
+<ul>
+<li><a href="/about-the-scp-foundation">SCP財団とは</a></li>
+<li><a href="/universe-hub">財団世界観</a></li>
+<li><a href="/secure-facilities-locations">セキュリティ施設</a></li>
+<li><a href="/departments">内部部門</a></li>
+<li><a href="/task-forces">機動部隊</a></li>
+<li><a href="/personnel-and-character-dossier">職員・人物ファイル</a></li>
+<li><a href="/groups-of-interest">要注意団体</a></li>
+<li><a href="/secure-facilities-locations-jp">セキュリティ施設-JP</a></li>
+<li><a href="/departments-jp">内部部門-JP</a></li>
+<li><a href="/task-forces-jp">機動部隊-JP</a></li>
+<li><a href="/personnel-and-character-dossier-jp">職員・人物ファイル-JP</a></li>
+<li><a href="/groups-of-interest-jp">要注意団体-JP</a></li>
+<li><a href="/locations-of-interest-jp">要注意領域-JP</a></li>
+</ul>
+</li>
+<li><a href="javascript:;">ガイド</a>
+<ul>
+<li><a href="/guide-hub">ガイドハブ</a></li>
+<li><a href="/site-rules">サイトルール</a></li>
+<li><a href="/licensing-guide">ライセンスガイド</a></li>
+<li><a href="/image-use-policy">画像利用ポリシー</a></li>
+<li><a href="/vote-policy">Voteポリシー</a></li>
+<li><a href="/criticism-policy">批評に関するポリシー</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div style="width:1px;height:1px;position:absolute;pointer-events:none;opacity:0;">    
+
+
+<img src="/o/ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a" alt="analytics.png?s_id=578002&amp;fn=scp-1214" class="image" />
+    
+    
+    
+    </div>
+<div class="list-pages-box">    <div class="list-pages-item">
+
+
+<p><iframe src='https://drizzles.scp-jp.org/api/v2/raven.html?site_name=scp-jp&fullname=scp-1214&revisions=7&rating=8&rating_votes=10&created_at=<span class="odate time_1450276267 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover">16 Dec 2015 14:31</span>&updated_at=<span class="odate time_1708518529 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover">21 Feb 2024 12:28</span>&commented_at=&' style="display: none"></iframe></p>
+</div>
+    
+    
+    
+    </div>
+                    </div>
+                
+                <div id="login-status"><a href="javascript:;" onclick="WIKIDOT.page.listeners.createAccount(event)" class="login-status-create-account btn">アカウントを作成</a> <span>または</span> <a href="javascript:;" onclick="WIKIDOT.page.listeners.loginClick(event)" class="login-status-sign-in btn btn-primary">サインイン</a> </div>
+                <div id="header-extra-div-1"><span></span></div><div id="header-extra-div-2"><span></span></div><div id="header-extra-div-3"><span></span></div>
+            </div>
+            
+            <div id="content-wrap">
+                
+                    <div id="side-bar">
+                        
+
+
+                        
+
+<div class="side-block resources">
+<div class="heading">
+<p>初めての方へ</p>
+</div>
+<div class="menu-item"><a href="/guide-for-newcomers">新規ユーザーのためのガイド</a></div>
+<div class="menu-item"><a href="/faq-jp">FAQ</a></div>
+<div class="menu-item"><a href="/guide-for-newbies">サイトへの参加</a></div>
+<div class="menu-item"><a href="/contact-staff">問い合わせ</a></div>
+</div>
+<div style="clear:both; height: 0px; font-size: 1px"></div>
+<div class="side-block">
+<div class="menu-item"><a href="https://scp-jp.wikidot.com/">メインページ</a></div>
+<div class="heading">
+<p>SCP-JPシリーズ</p>
+</div>
+<div class="menu-item"><a href="/scp-series-jp">I</a> | <a href="/scp-series-jp-2">II</a> | <a href="/scp-series-jp-3">III</a> | <a href="/scp-series-jp-4">IV</a> | <a href="/scp-series-jp-5">V</a></div>
+<div class="heading">
+<p>SCPシリーズ</p>
+</div>
+<div class="menu-item"><a href="/scp-series">I</a> | <a href="/scp-series-2">II</a> | <a href="/scp-series-3">III</a> | <a href="/scp-series-4">IV</a> | <a href="/scp-series-5">V</a></div>
+<div class="menu-item"><a href="/scp-series-6">VI</a> | <a href="/scp-series-7">VII</a> | <a href="/scp-series-8">VIII</a> | <a href="/scp-series-9">IX</a> | <a href="/scp-series-10">X</a></div>
+<div class="menu-item"><a href="/lost-scp-series">Lost</a></div>
+<div class="heading">
+<p>SCP-JPライブラリ</p>
+</div>
+<div class="menu-item"><a href="/goi-formats-jp">GoIフォーマット-JP</a></div>
+<div class="menu-item"><a href="/foundation-tales-jp">Tales-JP</a></div>
+<div class="menu-item"><a href="/canon-hub-jp">カノン-JP</a></div>
+<div class="menu-item"><a href="/series-hub-jp">連作-JP</a></div>
+<div class="menu-item sub-item">
+<p><a href="/artwork-jp">アートワーク-JP</a></p>
+</div>
+<div class="heading">
+<p>SCPライブラリ</p>
+</div>
+<div class="menu-item"><a href="/goi-formats">GoIフォーマット</a></div>
+<div class="menu-item"><a href="/foundation-tales">Tales</a></div>
+<div class="menu-item"><a href="/canon-hub">カノン</a></div>
+<div class="menu-item sub-item">
+<p><a href="/international-artwork">アートワーク国際版</a></p>
+</div>
+<div class="menu-item"><a href="/scp-international">SCP国際版</a></div>
+<div class="heading">
+<p>サイト</p>
+</div>
+<div class="menu-item sub-item">
+<p><a href="/most-recently-created">最近作成された記事</a></p>
+</div>
+<div class="menu-item"><a href="/system:recent-changes">最近の更新</a></div>
+<div class="menu-item"><a href="/top-rated-pages-this-month">評価の高い記事</a></div>
+<div class="menu-item"><a href="/lowest-rated-pages">評価の低い記事</a></div>
+<div class="menu-item"><a href="/random:random-page">ランダムページ</a></div>
+<div class="heading">
+<p>コミュニティ</p>
+</div>
+<div class="menu-item"><a href="/forum:start">フォーラム</a></div>
+<div class="menu-item sub-item">
+<p><a href="/forum:recent-posts">最近の投稿</a></p>
+</div>
+<div class="menu-item sub-item">
+<p><a href="https://scp-jp-sandbox3.wikidot.com/forum:recent-posts">最近の下書き批評</a></p>
+</div>
+<div class="menu-item"><a href="/discord-guideline">公式チャット</a></div>
+<div class="menu-item sub-item">
+<p><a href="/members-pages-jp">著者ページ-JP</a></p>
+</div>
+<div class="menu-item sub-item">
+<p><a href="/international-members-pages">著者ページ国際版</a></p>
+</div>
+<div class="menu-item sub-item">
+<p><a href="/news-jp">茜刺財団新聞</a></p>
+</div>
+<div class="menu-item sub-item">
+<p><a href="https://twitter.com/scpjp_announce">公式X(Twitter)</a></p>
+</div>
+<div class="heading">
+<p>リンク</p>
+</div>
+<div class="menu-item"><a href="https://scp-jp-sandbox3.wikidot.com/start" target="_blank">サンドボックス</a></div>
+<div class="menu-item"><a href="https://scp-jp-storage.wikidot.com/" target="_blank">ファイルストレージ</a></div>
+<div class="menu-item"><a href="/links">リンク集</a></div>
+</div>
+<div style="clear:both; height: 0px; font-size: 1px"></div>
+<div class="side-block">
+<div class="heading">
+<p>ユーザーリソース</p>
+</div>
+<div class="menu-item"><a href="/how-to-write:how-to-write">記事を作成するには？</a></div>
+<div class="menu-item"><a href="/wiki-syntax:startpage">Wikidot構文</a></div>
+<div class="menu-item"><a href="/tag-guide">タグガイド</a> | <a href="/tag-list">タグリスト</a></div>
+<div class="menu-item"><a href="/tag-search">タグ検索</a> | <a href="/tag-translator">タグ翻訳</a></div>
+<div class="menu-item"><a href="/authorssearch">作者検索</a></div>
+<div class="heading">
+<p>困ったときは</p>
+</div>
+<div class="menu-item"><a href="/site-rules">サイトルール</a></div>
+<div class="menu-item"><a href="/licensing-guide">ライセンスガイド</a></div>
+<div class="menu-item"><a href="/guide-hub">ガイド</a> | <a href="/other-link-hub">エッセイ</a></div>
+<div class="menu-item"><a href="https://05command-ja.wikidot.com/">スタッフサイト</a></div>
+<div class="menu-item"><a href="/meet-the-staff-jp">スタッフ一覧</a></div>
+<div class="menu-item"><a href="/contact-staff">問い合わせ</a></div>
+</div>
+<a class="close-menu" href="##"><br />
+<img src="/o/4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7" style="z-index:-1; opacity: 0.3;" alt="black.png" class="image" /><br /></a>
+<div class="scpnet-interwiki-wrapper interwiki-stylable"><div class="list-pages-box">    <div class="list-pages-item">
+
+
+<p><iframe src="//interwiki.scp-jp.org/interwikiFrame.html?lang=jp&community=scp&pagename=scp-1214" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe></p>
+</div>
+    
+    
+    
+    </div></div>
+<p><iframe src="//interwiki.scp-jp.org/styleFrame.html?priority=0&theme=https://scp-jp.github.io/files/theme/sigma-9/sigma-9.min.css&css={$css}" style="display: none"></iframe></p>
+
+                        
+
+
+                    </div>
+                
+                
+                <!-- google_ad_section_end -->
+                
+                <div id="main-content">
+                    <div id="action-area-top"></div>
+                    
+                    
+                        <div id="page-title">
+                            SCP-1214
+                        </div>
+                    
+
+                    
+
+                    
+
+
+
+                    <div id="page-content">
+                        
+
+<div style="text-align: right;"><div class="page-rate-widget-box"><span class="rate-points">評価:&nbsp;<span class="number prw54353">+8</span></span><span class="rateup btn btn-default"><a title="好き" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)">+</a></span><span class="ratedown btn btn-default"><a title="好きじゃない" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)">&#8211;</a></span><span class="cancel btn btn-default"><a title="投票を取り消す" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)">x</a></span></div></div>
+<div class="scp-image-block block-right scp-clear-false" style="width:300px;"><img src="/o/d62e5a8d4a6ab4e9688539ee0bc8565de7bd158ff12166f86d5254c08e1edbcf" alt="RANDOM_NUMBER_TEST.png" class="image" />
+<div class="scp-image-caption">
+<p>SCP-1214（フェイズ2）</p>
+</div>
+</div>
+<p><strong>アイテム番号:</strong> SCP-1214</p>
+<p><strong>オブジェクトクラス:</strong> Safe</p>
+<p><strong>特別収容プロトコル:</strong> SCP-1214が保存されているラップトップコンピュータ（これを1214-L1と呼称します）は、周辺機器とともに標準型ラップトップケースに収容し、サイト33のコンピュータサイエンス部署内のロッカーで保管するものとします。SCP-1214に関する実験を行うためには、シニアCSD管理者のDr. G.ウィルソンの許可が必要です。</p>
+<p>特異電算機器標準取扱規定4324-Bに基づき、SCP-1214-L1をネットワークに接続することは禁じられています。ネットワークの種類に関わらず、例外は認められません。</p>
+<p><strong>説明:</strong> SCP-1214-L1は、Dell製のラップトップコンピュータであるXPS Ultrabookです。電源アダプタとマウスが付属しており、Windows 7やMicrosoft Visual Studio 2012などのソフトウェアがインストールされています。</p>
+<p>ユーザー名█████のDocumentsフォルダには複数のソースコードプロジェクトが保存されており、そのほとんどはC#の練習用プログラムです。その中に一つ、「random_number_test」という名称のC#プロジェクトが存在します。これがSCP-1214です。</p>
+<p>SCP-1214は約60行のソースコードを持ち、48～90の乱数を生成し、生成された数字をASCIIコードと見なして文字に変換する機能を有しています。これによって出現する可能性のある文字は以下の通りです。</p>
+<table class="wiki-content-table">
+<tr>
+<th>SCP-1214によって生成される文字の一覧</th>
+</tr>
+<tr>
+<td>0～9、A～Z（数字、および大文字の英字）</td>
+</tr>
+<tr>
+<td>コロン (:)</td>
+</tr>
+<tr>
+<td>セミコロン (;)</td>
+</tr>
+<tr>
+<td>小なり(&lt;)</td>
+</tr>
+<tr>
+<td>イコール (=)</td>
+</tr>
+<tr>
+<td>大なり (&gt;)</td>
+</tr>
+<tr>
+<td>クエスチョンマーク (?)</td>
+</tr>
+<tr>
+<td>アットマーク (@)</td>
+</tr>
+</table>
+<p>生成された文字は1行50字の文字列となり、SCP-1214が起動している間、1秒に1行ずつ表示されていきます。</p>
+<div class="collapsible-block">
+<div class="collapsible-block-folded"><a class="collapsible-block-link" href="javascript:;">+&nbsp;SCP-1214によって出力された文字列のサンプル（起動時間1分未満）</a></div>
+<div class="collapsible-block-unfolded" style="display:none">
+<div class="collapsible-block-unfolded-link"><a class="collapsible-block-link" href="javascript:;">-&nbsp;SCP-1214によって出力された文字列のサンプル（起動時間1分未満）</a></div>
+<div class="collapsible-block-content">
+<blockquote>
+<p><tt>QGZ33I=9F@?AQQGPK6SGN?NLW;=JMP&gt;GWBM=S5FIMPRXFE=9RO<br />
+DSL?RAT&gt;7R&lt;MGP1RD?49XEK:TYGQ5BY4SY&lt;EVGJ;DEYN&lt;Z92VN<br />
+0Y5IRZ8BFTU38OT7UICGWXOSOBFXXTODUABZZ:6==C1QAA=9T4<br />
+5JJ?R2:&lt;T?C:DL4@8Q=U8KB69DVXA&gt;5&lt;3SO5UFJ?PM@QU2Z@M0<br />
+8FWZWE7C6=7&lt;VE:67KXZEM6Y4F:L&lt;6DF;@5J@3W:XA@&lt;7CQUGN<br />
+V&gt;CMEF?XU@:F7ZTL0E@KP3NN24=UQLO?5H;63IUI:B9GZA9@CF<br />
+C;EVXRJPKA9E79LUAJONHBKQ@=U7NKUWA:9CU9JCF&gt;XC?P;ZV5<br />
+0JKPX0KNFKWC10G&lt;4W0807Z;7:E7AK2V&lt;IK:;K&lt;8R6NZG3&lt;XV3<br />
+L&gt;ZM4SJ@HMFD=UH16C?=0CJR@TD0O4YH;&gt;ZNVJDRJV2IM&gt;TSAE<br />
+WSHI28N7=;&gt;JKCOY8YVU5GZGM5@1410LJ:85ZM&lt;QZN&lt;8D0;JUO<br />
+6VWF?@T0WWSM3;;MZA;IYFL5UB:Q3LUQ6?V5O3UR&lt;YP?Y&lt;K1XQ<br />
+1T&gt;;QJ9QLX52X:21GN@6YWFC=ZP=7HQ9S=K0BVI&lt;VXBXM91E=W</tt></p>
+</blockquote>
+</div>
+</div>
+</div>
+<p>起動直後の時点では、SCP-1214の特異性はほぼ確認不可能なレベルに過ぎません。しかしながら統計分析の結果、現代のコンピュータで使われている擬似乱数生成アルゴリズムに従った通常の動作が見られるのは初期のみであり、起動時間が長くなるにつれて徐々に変化が生じていくことが明らかになっています。最終的には、極めて低い確率でしか生成されないはずのパターンが出力されるようになります。</p>
+<div class="collapsible-block">
+<div class="collapsible-block-folded"><a class="collapsible-block-link" href="javascript:;">+&nbsp;SCP-1214によって出力された文字列のサンプル（起動時間██分）</a></div>
+<div class="collapsible-block-unfolded" style="display:none">
+<div class="collapsible-block-unfolded-link"><a class="collapsible-block-link" href="javascript:;">-&nbsp;SCP-1214によって出力された文字列のサンプル（起動時間██分）</a></div>
+<div class="collapsible-block-content">
+<blockquote>
+<p><tt>7T?RYA?M5JXAAAAPO?FATQU=LQL&lt;9OQYBTA7?7@Q:TA?A13AAJ<br />
+2IAAHIAGBDAH@:A@A4AAKAQAK5ZNAT:RAQBI7ACAYHDYYTP6AW<br />
+2A5W@AXA4ANAAAX=ACJR?&gt;AAATAAAAAXXAUW3AO&gt;AMDAAG&lt;X5A<br />
+AHM8?&lt;9AAHOADJ?A=;3AA67AAAMNO&lt;A&lt;;VAFYAA:2;1AAGJA2A<br />
+AWRAA1WP76A5A:S=JA99DOAA39A;?YAS1J@YAQMNI3A0JA&gt;N&lt;S<br />
+N5AAU=3J=AAAAGLLAAJRA4A&gt;AQ51AARQLA&gt;NAAH:AKAUDY&lt;?QK<br />
+BAA4AA9;A9AAAS2ABAPH;FAX2XAJK;SMI4FGW022ASAVAAABAA<br />
+=PD?&gt;AAG?6ZEZAFAA?AA7PSAVNAF@A?AAA:DAV;3AA:Y2&gt;&lt;:AA<br />
+A8LKD2AI;AAIAEAWACAN@AZ8E19A0IAIPHAT61U8&gt;FGMH8AWCI<br />
+ML?A;PAQA&gt;AG8AVUAGANZYAAQNGAAAFDUAAASV@:&gt;AGB0OFORY<br />
+&lt;PKARZ6=FD?AQ5?APAAAR59AA7DVFDAAA1IURAAA?2AXAU2AAA</tt></p>
+<p>この例では、Aの文字が極端に生成されやすくなっています。SCP-1214のソースコードには、このような結果を生み出し得るアルゴリズムは含まれていません。</p>
+</blockquote>
+</div>
+</div>
+</div>
+<p>起動から約██時間（██分）が経過した時点から、ある程度の一貫性を持った文のようなものが出力結果に混じり始めます。この時点を「T」とし、T以前とT以後をそれぞれフェイズ1、フェイズ2と呼称します。</p>
+<div class="collapsible-block">
+<div class="collapsible-block-folded"><a class="collapsible-block-link" href="javascript:;">+&nbsp;SCP-1214によって出力された文字列のサンプル（起動時間██時間██分）</a></div>
+<div class="collapsible-block-unfolded" style="display:none">
+<div class="collapsible-block-unfolded-link"><a class="collapsible-block-link" href="javascript:;">-SCP-1214によって出力された文字列のサンプル（起動時間██時間██分）</a></div>
+<div class="collapsible-block-content">
+<blockquote>
+<p><tt>ACCCCCCCCCCCCCCRROL8L7=3ZA0E7L@7FJP0LY4Q2IBR5NBSYA<br />
+Y90KI:68PAU0CU:&gt;ARXD5SK<span style="text-decoration: underline;">MAKE</span>EY;Z8FP<span style="text-decoration: underline;">IT</span>7V0EUD9NV26HHR<br />
+=JUE&lt;6I5EEFK9DBMEM737FQBJLIWZ3X7X7Y?<span style="text-decoration: underline;">STOP</span>I1@EZ::P&lt;9<br />
+GC@DJRTBFFFFFFFFFFFFFFAAAAAAAAAAAAAAAAAA<span style="text-decoration: underline;">STOP</span>0WVYXL<br />
+G8:9T3:O0ELHZF8M1QQQQQQQQQQQQQQQQQQQQQQB:2C1<span style="text-decoration: underline;">MAKE</span>K=<br />
+VF3U4&gt;MUAPV4C;E:8NZKCC<span style="text-decoration: underline;">IT</span>SEPDUIGON=LN3CLDGONFM?X0QZ<br />
+NNVL:;2K2JI8ITU17QQGBQG:B&gt;WXPCG<span style="text-decoration: underline;">STOP</span>SS13ALBA2V?OJKK<br />
+86:9HW7KOOOOOOOOOOOOOOOOOOOOO3J&lt;=4;AED&gt;XL7R81HHRZ1<br />
+TIAJC1CT&gt;HOOOOOOLLLLLLLLLLLLLLLLLLLLLLLLLL5PAZVJWY<br />
+QQC=MSR59<span style="text-decoration: underline;">PLEASE</span>X7YX;8445OMV2TA6OH?GK68KA9OD:FY65ID<br />
+RWMLQLL&gt;I0XP;R;<span style="text-decoration: underline;">PLEASE</span>Y&gt;G1CJU<span style="text-decoration: underline;">NO</span>GPC@I91VHUYRJKCCCLZG<br />
+H0L3LTH<span style="text-decoration: underline;">MORE</span>ROSC7&lt;V91W<span style="text-decoration: underline;">PLEASE</span>N3IZXV18F4@NPKV&lt;:S72R7&lt;<br />
+7HCXJ3C3FMEU31?4WNJX2W7C@18=P@XGGQBADXA421T1;QS:UN</tt></p>
+<p>フェイズ2で出力された文字列の例です。<br />
+下線部に「MAKE、IT、STOP、STOP、MAKE、IT、STOP、PLEASE、PLEASE、NO、MORE、PLEASE」（やめろ、やめろ、頼む、もうやめてくれ、頼む）という一連の単語が出現しています。</p>
+</blockquote>
+</div>
+</div>
+</div>
+<p>フェイズ2の開始から██±3時間が経過すると、単語として識別できる文字列の出現頻度は低下し始めます。一方で、同じ文字が連続して出現する頻度は上昇し、出力される文字の種類は減少していきます。この段階をフェイズ3と呼称します。</p>
+<div class="collapsible-block">
+<div class="collapsible-block-folded"><a class="collapsible-block-link" href="javascript:;">+&nbsp;SCP-1214によって出力された文字列のサンプル（起動時間██時間██分）</a></div>
+<div class="collapsible-block-unfolded" style="display:none">
+<div class="collapsible-block-unfolded-link"><a class="collapsible-block-link" href="javascript:;">-SCP-1214によって出力された文字列のサンプル（起動時間██時間██分）</a></div>
+<div class="collapsible-block-content">
+<blockquote>
+<p><tt>I690KGZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZRT@1W<br />
+6;5@?R@82DT54UJX6WM8E=UK2IQ4TG7:=XIGTRJZ&gt;;VG?ITND@<br />
+9PSEN6XXXXXXXXXXXXXXXXXXXXXXXXXX4T4KI@KIJRRWE4G6QI<br />
+QJ?W6DH;6ZH0G:PX7BIR@DHBUB&lt;JRRRRRRRRRRRRRRRRRRRRR@<br />
+56QE&lt;1;&lt;G8328G7BDZ1XT&gt;KD8:3&gt;7C2Z:84G4VB68IQ;XQMR?8<br />
+==========================================&lt;30=?B5W<br />
+:95EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEV87SSD<br />
+W90:=QR=BD33PUICVQ@PMK5S?CZTE1UG8RZKG5C7433R:08=9T<br />
+HNUN1&gt;ZCXR299MJXWV6TJ:C00000000000000000000000000X<br />
+DBKPM:JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ71P<br />
+?M5?75TID688TSM&lt;XTS556PIIIIIIIIIIIIIIIIIIIIIIIIVQ7<br />
+W9HIH4413VU9G&lt;MUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUH@<br />
+ER::::::::::::::::::::::::::::::::::::::::GD;1@345<br />
+E6G&gt;TGW6T7XISWUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUCPU<br />
+IN=XXTZWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWR3E:T;J</tt></p>
+<p>起動実験14においてフェイズ3で出力された文字列の例です。A、F、L、O、Yの5文字が生成される確率は、ゼロかそれに近い値にまで低下しているものと思われます。これ以降、起動実験14の終了まで、この5文字が生成されることはありませんでした。</p>
+</blockquote>
+</div>
+</div>
+</div>
+<p>フェイズ3到達以降は大きなパターン変動は発生せず、前述の傾向が続いていきます。これまで最も長期（██日間）に渡って行われた起動実験27では、フェイズ3において出現する文字種の総数に██%の減少が見られました。</p>
+<p>SCP-1214を終了させてから再起動すると、フェイズ1からフェイズ3までの工程が繰り返されます。出力される文字列や各フェイズの持続期間は常に同じではなく、起動のたびに多少の差異が生じます。</p>
+<p>現在の理論では、SCP-1214がフェイズ3のまま起動を続ければ、最終的に1種類の文字のみが生成されるようになるだろうと予測されています。その状態に至るまでに必要とされるSCP-1214の起動時間は、███～███日です。</p>
+<p><em>追記: 補遺1214-3の事案を受け、シニアCSD管理者のDr. G.ウィルソンの指示により、SCP-1214関連の実験は当面凍結されることになりました。</em></p>
+<p><strong>補遺1214-1:</strong><br />
+SECT（標準型電子汚染検査）の結果は陰性です。SCP-1214には他のコンピュータに感染する能力はなく、SCP-1214のコピーからは特異性は失われています。</p>
+<p><strong>補遺1214-2（回収活動に関する記録）:</strong><br />
+SCP-1214-L1は、数日に渡って起動させておくと「変わった動作」をする実験プログラムがあるという噂が██████・████大学の学生の間で広まっていたことを受け、エージェント・█████によって同大学の学生寮から回収されたものです。噂には尾ひれがつき、プログラムの正体は「政府の陰謀によって作られたAI」「絶対不可能なはずのパターンを生成するライフゲーム」など様々に語られていました。</p>
+<p>幸いにもSCP-1214-L1の所有者は注目を浴びることを避けるようにしていたため、回収活動は隠密裏に行うことが可能でした。回収完了後、SCP-1214や同種のプログラムの活動の兆候を監視できるよう、エージェント・█████によってクラスIVのワームが同大学のネットワークに流されました。データトラフィックの監視は現在も続けられていますが、特に異常は確認されていません。</p>
+<p><strong>補遺1214-3:</strong></p>
+<div class="collapsible-block">
+<div class="collapsible-block-folded"><a class="collapsible-block-link" href="javascript:;">+&nbsp;非常事態報告・████/██/██</a></div>
+<div class="collapsible-block-unfolded" style="display:none">
+<div class="collapsible-block-unfolded-link"><a class="collapsible-block-link" href="javascript:;">-&nbsp;非常事態報告・████/██/██</a></div>
+<div class="collapsible-block-content">
+<p>████/██/██、実験ラボ1214-2</p>
+<p>起動実験28開始。起動実験27の2倍の期間に渡って連続起動を行うことを目的とし、出力された文字列をビデオキャプチャとOCRスキャナによって記録した。</p>
+<p>実験参加者は、主任研究員Dr. H██████、および研究助手Dr. P█████。</p>
+<p>フェイズ1は予測通りに終了したが、フェイズ2開始から███分後、以下の文字列が出力された。これは、現時点までに得られているフェイズ2のデータとは大きく異なるものである。</p>
+<blockquote>
+<p><tt>0?C9HWIHURTSHURTS9?PLEASE STOP=:::::::::::::::::::<br />
+::::::::::SIGNAL::TRACE::COMPLETE::WE::RESPOND::IN<br />
+::KIND:::::::::::::::::::::::::::DWW30PLEASEPLEASE</tt><br />
+(痛い痛い　やめてくれ　信号探知完了　同じ報いを受けよ　頼む頼む)</p>
+</blockquote>
+<p>約5秒後、Dr. H██████が癲癇発作を発症。発作は13秒間に渡って続き、その後彼女は意識を失って床に倒れ込んだ。</p>
+<p>17秒後、Dr. P█████が非常事態プロトコルに従って電源断スイッチを作動させ、これによって実験ラボ1214-2の全電源が停止した（既定の時間内に電源を遮断しなかったことについて、この後Dr. P█████は譴責処分を受けている）。</p>
+<p>Dr. H██████は緊急医療施設███に搬送され、容体が安定していることが確認された。34時間後にDr. H██████の意識が回復した時点で検査が行われたが、その結果、視覚、聴覚、触覚、味覚のいずれもが23%の感度低下を示していることが判明した。一方、嗅覚には特段の異常は生じていない（これに関する考察は、1214-345から1214-347までのレポートを参照されたい）。</p>
+<p>現在、Dr. H██████は医療観察処置を受けている。</p>
+</div>
+</div>
+</div>
+
+                    </div>
+
+                            
+    
+                        <script>
+window['nitroAds'].createAd('wad-scp-jp-below-content-anchor', {
+  "refreshTime": 30,
+  "format": "anchor-v2",
+  "anchor": "bottom",
+  "anchorPersistClose": false,
+  "mediaQuery": "(min-width: 0px)",
+  "report": {
+    "enabled": true,
+    "icon": true,
+    "wording": "Report Ad",
+    "position": "bottom-right"
+  }
+  });
+</script>
+                    
+    
+
+                    
+
+
+                    
+
+
+
+                    
+                        <div class="page-tags">
+                            <span>
+                                <a href="/system:page-tags/tag/en#pages">en</a><a href="/system:page-tags/tag/safe#pages">safe</a><a href="/system:page-tags/tag/scp#pages">scp</a><a href="/system:page-tags/tag/%E3%82%B3%E3%83%B3%E3%83%94%E3%83%A5%E3%83%BC%E3%82%BF#pages">コンピュータ</a><a href="/system:page-tags/tag/%E8%A6%96%E8%A6%9A#pages">視覚</a><a href="/system:page-tags/tag/%E8%AA%8D%E8%AD%98%E7%81%BD%E5%AE%B3#pages">認識災害</a>
+                            </span>
+                        </div>
+                    
+
+                    <div id="page-info-break"></div>
+                    
+                        <div id="page-options-container">
+                            <div id="page-info">ページリビジョン: 7, 最終更新: <span class="odate time_1708518529 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20%E5%89%8D%29">21 Feb 2024 12:28</span></div>
+            <div id="page-options-bottom"  class="page-options-bottom">
+            <a href="javascript:;" class="btn btn-default" id="edit-button">編集</a>
+<a href="javascript:;" class="btn btn-default" id="pagerate-button">評価 (<span id="prw54355">+8</span>)</a>
+<a href="javascript:;" class="btn btn-default" id="tags-button">タグ</a>
+<a href="/forum/t-1715849/scp-1214" class="btn btn-default" id="discuss-button">ディスカッション (0)</a>
+<a href="javascript:;" class="btn btn-default" id="history-button">履歴</a>
+<a href="javascript:;" class="btn btn-default" id="files-button">ファイル</a>
+<a href="javascript:;" class="btn btn-default" id="print-button">印刷</a>
+<a href="javascript:;" class="btn btn-default" id="site-tools-button">サイトツール</a>
+<a href="javascript:;" class="btn btn-default" id="more-options-button">+&nbsp;オプション</a> 
+</div>
+<div id="page-options-bottom-2" class="page-options-bottom form-actions" style="display:none">
+    <a href="javascript:;" class="btn btn-default" id="edit-sections-button">セクションを編集</a>
+    <a href="javascript:;" class="btn btn-default" id="edit-append-button">追加</a>
+    <a href="javascript:;" class="btn btn-default" id="edit-meta-button">メタを編集</a>
+    <a href="javascript:;" class="btn btn-default" id="watchers-button">ウォッチャー</a> 
+    <a href="javascript:;" class="btn btn-default" id="backlinks-button">バックリンク</a> 
+    <a href="javascript:;" class="btn btn-default" id="view-source-button">ページソース</a> 
+    <a href="javascript:;" class="btn btn-default" id="parent-page-button">親ページ</a> 
+    <a href="javascript:;" class="btn btn-default" id="page-block-button">ページロック</a>    
+    <a href="javascript:;" class="btn btn-default" id="rename-move-button">リネーム</a> 
+    <a href="javascript:;" class="btn btn-default" id="delete-button">削除</a> 
+</div>
+<div id="page-options-area-bottom">
+</div>
+
+                        </div>
+                    
+                    <div id="action-area" style="display: none;"></div>
+                </div>
+            </div>
+            
+            
+            
+            <div id="footer" style="display: block; visibility: visible;">
+                <div class="options" style="display: block; visibility: visible;">
+    <a href="https://www.wikidot.com/doc" id="wikidot-help-button">ヘルプ</a>
+    &nbsp;|
+    <a href="https://www.wikidot.com/legal:terms-of-service" id="wikidot-tos-button">利用規約</a>
+    &nbsp;|
+    <a href="https://www.wikidot.com/legal:privacy-policy" id="wikidot-privacy-button">プライバシー</a>
+    &nbsp;|
+    <a href="javascript:;" id="bug-report-button" onclick="WIKIDOT.page.listeners.pageBugReport(event)">バグを報告</a>
+    &nbsp;|
+    <a href="javascript:;" id="abuse-report-button" onclick="WIKIDOT.page.listeners.flagPageObjectionable(event)">不快フラグを立てる</a>
+    <span id="consent-box" style="display:none">
+        &nbsp;|
+        <a href="javascript:;"  onclick="window.__cmp('showModal');">Update cookie settings</a>
+    </span>
+
+    <script>
+    if (window["nitroAds"] && window["nitroAds"].loaded) {
+        document.getElementById("consent-box").style.display = window["__tcfapi"] ? "" : "none";
+        } else {
+        document.addEventListener(
+                "nitroAds.loaded",
+                () =>
+                (document.getElementById("consent-box").style.display = window["__tcfapi"] ? "" : "none")
+                );
+    }
+    </script>
+</div>
+Powered by <a href="https://www.wikidot.com">Wikidot.com</a>
+            </div>
+            
+                <div id="license-area" class="license-area">
+                    
+
+特に指定がない限り、このサイトのすべてのコンテンツは<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/deed.ja">クリエイティブ・コモンズ 表示 - 継承3.0ライセンス</a> の元で利用可能です。
+                </div>
+            
+            
+            
+
+
+
+            <div id="extrac-div-1"><span></span></div><div id="extrac-div-2"><span></span></div><div id="extrac-div-3"><span></span></div>
+            
+            
+            
+            
+                
+            
+        </div>
+        
+    </div>
+<!-- These extra divs/spans may be used as catch-alls to add extra imagery. -->
+<div id="extra-div-1"><span></span></div><div id="extra-div-2"><span></span></div><div id="extra-div-3"><span></span></div>
+<div id="extra-div-4"><span></span></div><div id="extra-div-5"><span></span></div><div id="extra-div-6"><span></span></div>
+</div>
+
+
+
+
+</div>
+<div id="dummy-ondomready-block" style="display: none;" ></div>
+    <!-- Google Analytics load -->
+    <script type="text/javascript">
+        (function() {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'stats.g.doubleclick.net/dc.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+
+
+
+
+<div id="page-options-bottom-tips" style="display: none;">
+    <div id="edit-button-hovertip">
+        ページを編集するにはこのボタンをクリックしてください。    </div>
+</div>
+<div id="page-options-bottom-2-tips"  style="display: none;">
+    <div id="edit-sections-button-hovertip">
+        セクションごとの編集を切り替えるにはこのボタンをクリックしてください(ページにセクションが設定されている必要があります）。有効になった場合はセクションに&quot;編集&quot;ボタンが設置されます。    </div>
+    <div id="edit-append-button-hovertip">
+        ページのソース全体を編集せずに、コンテンツを追加します。    </div>
+    <div id="history-button-hovertip">
+        このページが過去にどのように変化したかを調べることができます。    </div>
+    <div id="discuss-button-hovertip">
+        このページについて話をしたいときは、これを使うのが一番簡単な方法です。    </div>
+    <div id="files-button-hovertip">
+        このページに添付されたファイルの閲覧や管理を行うことができます。    </div>
+    <div id="site-tools-button-hovertip">
+        サイトの管理についての便利なツール。    </div>
+    <div id="backlinks-button-hovertip">
+        このページへリンクしている、またはこのページをincludeしているページを表示します。    </div>
+    <div id="rename-move-button-hovertip">
+        このページの名前(それに伴いURLやページのカテゴリも)を変更します。    </div>
+    <div id="view-source-button-hovertip">
+        編集せずにこのページのソースコードを閲覧します。    </div>
+    <div id="parent-page-button-hovertip">  
+        親ページを設定/閲覧できます(パンくずリストの作成やサイトの構造化に用いられます)    </div>
+            <div id="abuse-report-button-hovertip">
+            管理者にページの違反を通知する。        </div>
+        <div id="bug-report-button-hovertip">
+            何か思い通りにいかないことがありますか? 何ができるか調べましょう。        </div>
+        <div id="wikidot-help-button-hovertip">
+            Wikidot.comのシステム概要とヘルプセクションです。        </div>
+        <div id="wikidot-tos-button-hovertip">
+            Wikidot 利用規約 ― 何ができるか、何をすべきでないか etc.        </div>
+        <div id="wikidot-privacy-button-hovertip">
+            Wikidot.com プライバシーポリシー          
+        </div>
+    </div>
+</body>
+</html>

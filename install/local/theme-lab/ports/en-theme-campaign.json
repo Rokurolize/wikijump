@@ -387,7 +387,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/basalt/assets.json",
-      "dependency_decision_count": 243,
+      "dependency_decision_count": 244,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -818,7 +818,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/foxtrot/assets.json",
-      "dependency_decision_count": 47,
+      "dependency_decision_count": 49,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -2801,7 +2801,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/al-slop/assets.json",
-      "dependency_decision_count": 20,
+      "dependency_decision_count": 21,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -4496,7 +4496,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/space/assets.json",
-      "dependency_decision_count": 21,
+      "dependency_decision_count": 22,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -5991,7 +5991,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/assets.json",
-      "dependency_decision_count": 39,
+      "dependency_decision_count": 40,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -6319,7 +6319,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/aesthetic-theme/assets.json",
-      "dependency_decision_count": 40,
+      "dependency_decision_count": 66,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -6736,7 +6736,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/flopstyle-dark/assets.json",
-      "dependency_decision_count": 33,
+      "dependency_decision_count": 41,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -7366,7 +7366,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/inkblot/assets.json",
-      "dependency_decision_count": 47,
+      "dependency_decision_count": 53,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -9812,7 +9812,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/scp-offices-theme/assets.json",
-      "dependency_decision_count": 41,
+      "dependency_decision_count": 40,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",

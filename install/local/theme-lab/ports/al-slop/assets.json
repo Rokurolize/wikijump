@@ -1,6 +1,13 @@
 {
   "assets": [
     {
+      "sha256": "fcd9f75940109475f878f0702d7eb0e1c55cd461369244c86203bb032b6dbe31",
+      "bytes": 7532,
+      "content_type": "image/svg+xml",
+      "original_url": "https://scpwiki.github.io/sigma/images/header-logo.svg",
+      "final_url": "https://scpwiki.github.io/sigma/images/header-logo.svg"
+    },
+    {
       "sha256": "61ff476ab12ef621ba34a8631e0db1bb9fb5f6d953cbf7081f12df8971e25778",
       "bytes": 10276,
       "content_type": "font/woff2",
@@ -160,6 +167,12 @@
     }
   ],
   "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://scpwiki.github.io/sigma/images/header-logo.svg",
+      "sha256": "fcd9f75940109475f878f0702d7eb0e1c55cd461369244c86203bb032b6dbe31",
+      "decision": "freeze-runtime-independent-asset"
+    },
     {
       "resource_type": "candidate-css-asset",
       "source_url": "https://fonts.bunny.net/boogaloo/files/boogaloo-latin-400-normal.woff2",

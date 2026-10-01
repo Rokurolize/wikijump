@@ -1,31 +1,480 @@
-/* SET INFOSTYLE */
-#main-content #page-content .creditRate.creditModule {
-    float: none !important;
+/* source: https://ah-sandbox.wikidot.com/component:collapsible-sidebar-x1 */
+
+#top-bar .open-menu a {
+        position: fixed;
+        bottom: 0.5em;
+        left: 0.5em;
+        z-index: 15;
+        font-family: san-serif;
+        font-size: 30px;
+        font-weight: 700;
+        width: 30px;
+        height: 30px;
+        line-height: 0.9em;
+        text-align: center;
+        border: 0.2em solid #888 !important;
+        background-color: #fff !important;
+        border-radius: 3em;
+        color: #888 !important;
+        text-decoration: none!important;
 }
-#page-content .creditRate.creditModule .rate-box-with-credit-button {
-    border: solid 1px #bbb !important;
-    min-width: unset !important;
+
+@media (min-width: 768px) {
+
+    .mobile-top-bar {
+        display: block;
+    }
+
+    .mobile-top-bar li {
+        display: none;
+    }
+
+    #main-content {
+        max-width: 708px;
+        margin: 0 auto;
+        padding: 0;
+        transition: max-width 0.2s ease-in-out;
+    }
+
+    #side-bar {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: -25em;
+        width: 17em;
+        height: 100%;
+        background-color: rgb(184, 134, 134);
+        overflow-y: auto;
+        z-index: 10;
+        padding: 1em 1em 0 1em;
+        -webkit-transition: left 0.5s ease-in-out 0.1s;
+        -moz-transition: left 0.5s ease-in-out 0.1s;
+        -ms-transition: left 0.5s ease-in-out 0.1s;
+        -o-transition: left 0.5s ease-in-out 0.1s;
+        transition: left 0.5s ease-in-out 0.1s;
+    }
+
+    #side-bar:after {
+        content: "";
+        position: absolute;
+        top: 0;
+        width: 0;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.2);
+
+    }
+
+    #side-bar:target {
+        display: block;
+        left: 0;
+        width: 17em;
+        margin: 0;
+        border: 1px solid #dedede;
+        z-index: 10;
+    }
+
+    #side-bar:target + #main-content {
+        left: 0;
+    }
+
+    #side-bar:target .close-menu {
+        display: block;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        background: rgba(0,0,0,0.3) 1px 1px repeat;
+        z-index: -1;
+    }
 }
-#page-content .creditRate.creditModule .page-rate-widget-box,
-#page-content .creditRate.creditModule .creditButton {
-    border: none 0 !important;
+
+:where(:root) {
+  --fade-in: fadeIn;
+  --fade-in-delay: 0s;
 }
-#page-content .creditRate.creditModule .page-rate-widget-box .cancel {
-    padding: 0 !important;
+
+/* Disable for hub pages, due to the reader being likely to want to start reading elsewhere than the top of the page */
+:root:has(#page-tags a[href*=hub]),
+/* Disable for pages with a table of contents, as the user is likely to jump directly to where they want to start reading */
+:root:has(#toc) {
+  --fade-in: none !important;
 }
-#page-content .creditRate.creditModule .page-rate-widget-box .cancel a {
-    margin: 0 1px !important;
+
+@media (prefers-reduced-motion: no-preference) {
+  :where(#page-title, #breadcrumbs, #page-content > *) {
+    animation-name: var(--fade-in);
+    animation-duration: 0.6s;
+    animation-iteration-count: 1;
+    animation-timing-function: ease-out;
+    animation-fill-mode: backwards;
+  }
 }
-#page-content .creditRate.creditModule .creditButton {
-    width: 21px !important;
-    height: 16px !important;
-    border: none 0 !important;
-    margin: 0 !important;
-    padding: 0 1px 0 0 !important;
+
+:where(#page-title) { animation-delay: 0s; }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(0,30px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0,0);
+  }
 }
-#page-content .creditRate.creditModule .creditButton a {
-    margin: 0 1px !important;
+
+:where(#page-content > :nth-child(1)) { animation-delay: calc(1 * var(--fade-in-delay)); }
+:where(#page-content > :nth-child(2)) { animation-delay: calc(2 * var(--fade-in-delay)); }
+:where(#page-content > :nth-child(3)) { animation-delay: calc(3 * var(--fade-in-delay)); }
+:where(#page-content > :nth-child(4)) { animation-delay: calc(4 * var(--fade-in-delay)); }
+:where(#page-content > :nth-child(5)) { animation-delay: calc(5 * var(--fade-in-delay)); }
+:where(#page-content > :nth-child(6)) { animation-delay: calc(6 * var(--fade-in-delay)); }
+:where(#page-content > :nth-child(7)) { animation-delay: calc(7 * var(--fade-in-delay)); }
+:where(#page-content > :nth-child(8)) { animation-delay: calc(8 * var(--fade-in-delay)); }
+:where(#page-content > :nth-child(9)) { animation-delay: calc(9 * var(--fade-in-delay)); }
+:where(#page-content > :nth-child(10)) { animation-delay: calc(10 * var(--fade-in-delay)); }
+:where(#page-content > :nth-child(11)) { animation-delay: calc(11 * var(--fade-in-delay)); }
+:where(#page-content > :nth-child(12)) { animation-delay: calc(12 * var(--fade-in-delay)); }
+:where(#page-content > :nth-child(13)) { animation-delay: calc(13 * var(--fade-in-delay)); }
+:where(#page-content > :nth-child(14)) { animation-delay: calc(14 * var(--fade-in-delay)); }
+:where(#page-content > :nth-child(15)) { animation-delay: calc(15 * var(--fade-in-delay)); }
+:where(#page-content > :nth-child(n+15)) { animation-delay: calc(16 * var(--fade-in-delay)); }
+
+
+
+:root {
+  --posX: calc(50% - 358px - 12rem);
+  --fnTransition: 0.3s;
+  --fnLinger: 0.15s;
+  --fnInteract: calc(var(--fnTransition) + var(--fnLinger));
 }
+
+/* --- Footnote Auto-counter -- */
+
+#main-content {
+  counter-reset: megacount;
+}
+
+/* --- Footnote Superscript Number -- */
+
+.fnnum {
+  display: inline-block;
+  width: max-content;
+  text-indent: -0.285ch;
+  vertical-align: super;
+  line-height: 80%;
+  word-break: initial;
+  text-decoration: none;
+  font-weight: bold;
+  font-style: initial;
+  color: transparent;
+  position: relative;
+  font-size: 80%;
+  padding: 0.15em 0.1em 0.15em 0;
+  margin-right: -0.25em;
+  counter-increment: megacount;
+  user-select: none;
+}
+
+.fnnum::after {
+  content: "" counter(megacount);
+  color: var(--fnColor, #e6283c);
+}
+
+.fnnum:hover {
+  text-decoration: none;
+  cursor: pointer;
+  background-color: var(--fnColor, #e6283c);
+}
+.fnnum:hover::after { color: white; }
+
+/* --- Footnote Content Wrapper -- */
+
+.fncon {
+  position: absolute;
+  right: calc(var(--posX) + 80px);
+  line-height: 1.2;
+  padding: 0.82rem;
+  width: 10.3rem;
+  background: white;
+  border: 2px solid black;
+  font-weight: initial;
+  font-style: normal;
+  text-align: initial;
+  visibility: hidden;
+  opacity: 0;
+  z-index: 9;
+  transition: opacity 0.15s linear var(--fnLinger),
+    right var(--fnTransition) cubic-bezier(0.08, 0.72, 0.5, 0.94) var(--fnLinger),
+    visibility 0.01s linear var(--fnInteract);
+}
+
+.fnnum:hover + .fncon,
+.fncon:hover {
+  opacity: 1;
+  right: var(--posX);
+  visibility: visible;
+  transition: opacity 0.15s linear,
+    right var(--fnTransition) cubic-bezier(0.08, 0.72, 0.5, 0.94);
+}
+
+.fncon::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateX(-52%) translateY(-55%) scale(1.15);
+  background-color: var(--fnColor, #e6283c);
+  color: white;
+  content: counter(megacount);
+  font-size: initial;
+  font-weight: bold;
+  font-style: initial;
+  padding: 0.18rem 0.32em 0.08rem;
+}
+
+/* --- Mobile Query -- */
+@media only screen and (max-width: 1279px) {
+
+  .fncon {
+    position: fixed;
+    bottom: 1.3rem;
+    left: calc(11% - 50px);
+    width: 70%;
+    transition: opacity 0.15s linear var(--fnLinger),
+      left var(--fnTransition) cubic-bezier(0.08, 0.72, 0.5, 0.94) var(--fnLinger),
+      visibility 0.01s linear var(--fnInteract);
+  }
+
+  .fnnum:hover + .fncon,
+  .fncon:hover {
+    left: 11%;
+    transition: opacity 0.15s linear,
+      left var(--fnTransition) cubic-bezier(0.08, 0.72, 0.5, 0.94);
+  }
+}
+
+
+:root {
+    --timeScale: 1;
+    --timeDelay: 0s;
+}
+
+/* Converting middle divider from box-shadow to ::before pseudo-element */
+.anom-bar > .bottom-box { box-shadow: none!important; }
+.anom-bar > .bottom-box::before {
+    position: absolute;
+    content: " ";
+    width: 100%;
+    height: 0.5rem;
+    background-color: rgb(var(--black-monochrome, 12, 12, 12));
+    transform: translateY(-0.74rem);
+}
+
+/* DIVIDER */
+.anom-bar > .bottom-box::before {
+    animation-name: divider;
+    animation-duration: calc(0.74s * var(--timeScale));
+    animation-delay: calc(0.1s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: cubic-bezier(.32,.38,.39,.94);
+    animation-fill-mode: backwards;
+}
+
+/* CLASSIFIED LEVEL BARS */
+div.top-center-box  > * {
+    animation-name: bar;
+    animation-duration: calc(0.45s * var(--timeScale));
+    animation-iteration-count: 1;
+    animation-timing-function: ease-out;
+    animation-fill-mode: backwards;
+}
+div.top-center-box > :nth-child(1) { animation-delay: calc(0.2s * var(--timeScale) + var(--timeDelay)); }
+div.top-center-box > :nth-child(2) { animation-delay: calc(0.32s * var(--timeScale) + var(--timeDelay)); }
+div.top-center-box > :nth-child(3) { animation-delay: calc(0.45s * var(--timeScale) + var(--timeDelay)); }
+div.top-center-box > :nth-child(4) { animation-delay: calc(0.61s * var(--timeScale) + var(--timeDelay)); }
+div.top-center-box > :nth-child(5) { animation-delay: calc(0.75s * var(--timeScale) + var(--timeDelay)); }
+div.top-center-box > :nth-child(6) { animation-delay: calc(0.95s * var(--timeScale) + var(--timeDelay)); }
+
+/* TOP TEXT */
+div.top-left-box, div.top-right-box {
+    clip-path: polygon( 0% -50%, 150% -50%, 150% 100%, 0% 100%);
+}
+
+div.top-left-box > *, div.top-right-box > * {
+    position: relative;
+    animation-name: bottomup;
+    animation-duration: calc(0.65s * var(--timeScale));
+    animation-delay: calc(0.5s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: ease-out;
+    animation-fill-mode: backwards;
+}
+
+/*-----------------------------------*/
+/*-----------------------------------*/
+
+/* CONTAINMENT, DISRUPTION, RISK CLASSES */
+div.text-part > * {
+    clip-path: polygon( 0% 0%, 100% 0%, 100% 100%, 0% 100%);
+    animation-name: expand2;
+    animation-duration: calc(0.5s * var(--timeScale));
+    animation-iteration-count: 1;
+    animation-timing-function: cubic-bezier(.12,.41,.27,.99);
+    animation-fill-mode: backwards;
+}
+div.text-part > :nth-child(1) {
+    animation-name: expand1;
+}
+div.text-part > :nth-child(1) { animation-delay: calc(0.6s * var(--timeScale) + var(--timeDelay)); }
+div.text-part > :nth-child(2) { animation-delay: calc(0.75s * var(--timeScale) + var(--timeDelay)); }
+div.text-part > :nth-child(3) { animation-delay: calc(0.86s * var(--timeScale) + var(--timeDelay)); }
+
+div.main-class::before, div.main-class::after {
+    animation-name: iconslide;
+    animation-duration: calc(0.45s * var(--timeScale));
+    animation-delay: calc(0.8s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: cubic-bezier(.12,.41,.27,.99);
+    animation-fill-mode: backwards;
+}
+ /* BOTTOM TEXT */
+div.main-class > *,  div.disrupt-class > *, div.risk-class > * {
+    white-space: nowrap;
+    animation-name: flowIn;
+    animation-duration: calc(0.42s * var(--timeScale));
+    animation-delay: calc(0.75s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: ease-out;
+    animation-fill-mode: backwards;
+}
+
+/*-----------------------------------*/
+/*-----------------------------------*/
+
+/* DIAMOND */
+div.arrows {
+    animation-name: arrowspin;
+    animation-duration: calc(0.7s * var(--timeScale));
+    animation-delay: calc(0.6s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: cubic-bezier(.12,.41,.27,.99);
+    animation-fill-mode: backwards;
+}
+
+div.quadrants > * {
+    animation-name: fade;
+    animation-duration: calc(0.3s * var(--timeScale));
+    animation-delay: calc(1.4s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: cubic-bezier(.12,.41,.27,.99);
+    animation-fill-mode: backwards;
+}
+
+div.top-icon, div.right-icon, div.left-icon, div.bottom-icon {
+    animation-name: nodegrow;
+    animation-duration: calc(0.4s * var(--timeScale));
+    animation-delay: calc(1.4s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: cubic-bezier(.12,.41,.27,.99);
+    animation-fill-mode: backwards;
+}
+div.diamond-part {
+    clip-path: polygon( -10% 0.37%, 120% 0.37%, 120% 100%, -10% 100%);
+    animation-name: diamondBorder;
+    animation-duration: calc(0.8s * var(--timeScale));
+    animation-delay: calc(0.5s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: cubic-bezier(.32,.38,.39,.94);
+    animation-fill-mode: backwards;
+    will-change: box-shadow;
+}
+
+/* MOBILE QUERY */
+@media (max-width: 480px ) {
+    .anom-bar > .bottom-box::before {
+        display:none;
+    }
+    .anom-bar > .bottom-box {
+        box-shadow: 0 -0.5rem 0 0 rgb(var(--black-monochrome, 12, 12, 12))!important;
+    }
+    div.top-center-box  > * {
+        animation-name: bar-mobile;
+        animation-duration: calc(0.9s * var(--timeScale));
+    }
+    div.top-center-box > :nth-child(1) { animation-delay: calc(0.1s * var(--timeScale) + var(--timeDelay)); }
+    div.top-center-box > :nth-child(2) { animation-delay: calc(0.2s * var(--timeScale) + var(--timeDelay)); }
+    div.top-center-box > :nth-child(3) { animation-delay: calc(0.3s * var(--timeScale) + var(--timeDelay)); }
+    div.top-center-box > :nth-child(4) { animation-delay: calc(0.4s * var(--timeScale) + var(--timeDelay)); }
+    div.top-center-box > :nth-child(5) { animation-delay: calc(0.5s * var(--timeScale) + var(--timeDelay)); }
+    div.top-center-box > :nth-child(6) { animation-delay: calc(0.6s * var(--timeScale) + var(--timeDelay)); }
+
+}
+
+/*--- Motion Accessibility ---*/
+@media screen and (prefers-reduced-motion: reduce) {
+    div.anom-bar-container { --timeScale: 0!important; }
+}
+
+/*-------------------------*/
+
+@keyframes divider {
+    from { max-width: 0%;  }
+    to { max-width: 100%; }
+}
+
+@keyframes bar {
+    from { max-width: 0%; }
+    to { max-width: 100%; }
+}
+@keyframes bar-mobile {
+    from { max-height: 0%; }
+    to { max-height: 100%; }
+}
+
+@keyframes bottomup {
+    from { top: 100px; }
+    to { top: 0; }
+}
+
+@keyframes expand1 {
+    from { opacity: 0; clip-path: inset(0 calc(100% - 0.75rem) 0 0); }
+    to { opacity: 1; clip-path: inset(0); }
+}
+@keyframes iconslide {
+    from { opacity: 0; transform: translateX(-5rem); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes expand2 {
+    from { opacity: 0; width: 1%; }
+    to { opacity: 1; width: calc(100% - 0.25rem); }
+}
+@keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes flowIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes arrowspin {
+    from { clip-path: circle(0%); transform: rotate(135deg); }
+    to { clip-path: circle(75%); transform: rotate(0deg); }
+}
+@keyframes nodegrow {
+    from { transform: scale(0);}
+    to {  transform: scale(1);}
+}
+@keyframes diamondBorder {
+    from { box-shadow: -0.5rem -20rem 0 0 rgb(var(--black-monochrome, 12, 12, 12)); }
+    to { box-shadow: -0.5rem 0 0 0 rgb(var(--black-monochrome, 12, 12, 12)); }
+}
+
+
+
 
 @media (min-width: 768px) {
     #main-content {
@@ -1606,4 +2055,20 @@ table.page-history td.optionstd a,
 }
 #page-content #u-credit-view .modalbox .creditBottomRate {
     background: linear-gradient(90deg, var(--dark-bg-2) 2em, #0000 2em calc(100% - 2em), var(--dark-bg-2) calc(100% - 2em)), linear-gradient(rgb(var(--accent)) 1px, var(--dark-bg-2) 1px);
+}
+
+
+/* SCP-JP Wikidot Foxtrot background correction: allow the source dark body palette to show through the Sigma-9 wrapper. */
+div#container-wrap { background-image: none; }
+
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Foxtrot navigation correction: separate the drawer toggle from the header menu and contain row endpoint submenus. */
+@media (max-width: 767px) {
+  #top-bar .open-menu a { top: 14px !important; bottom: auto !important; }
+  #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul { left: auto !important; right: 0 !important; }
+}
+@media (min-width: 360px) and (max-width: 767px) {
+  #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto !important; right: 0 !important; }
 }

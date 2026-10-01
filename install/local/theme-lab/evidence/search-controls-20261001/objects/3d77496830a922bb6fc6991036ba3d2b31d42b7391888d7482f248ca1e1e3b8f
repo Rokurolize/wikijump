@@ -1,0 +1,480 @@
+/* greek */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/1bc10b01688ba9fafa5c24d70372d9dbfc0b38c08a961263854d35751a89820a") format('woff2'), url("/o/96e48c8d9624d1fc3ea5aa144d0d14ffc28a9a482c43ce4f41a79d0ce6d158e9") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/6de912e531b6c98084f1b2d5e5a91bad77be4e68bc4e396e43c46fc435e5f3d9") format('woff2'), url("/o/d385a38cf5bef6b1bc8edbf95167bdaa9992b231c9e887a991ae11486576c073") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/e8731a7e2b00fc4f5e4ae47bff5168ea54e706c183cb213abbf88e46019e6879") format('woff2'), url("/o/6b277c0646c6b5134c1788450be33b00341f91ca6b056e17421d00ba5774fc5a") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/c5c00e8a32022dfedd2e7e864898ed007232e1450c6de1d6b847fe8825c2c5ce") format('woff2'), url("/o/a6dd94f71e249eb386cd66f1138dcccefe21eb06a13298d8875eff87e4f5c901") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/675d4bace127bffba2eeaf798fbf39fe0c505659bc614c662f5a8be95fc0be4c") format('woff2'), url("/o/cf302238b1728a2632348ed925e6dd132a92e7f1b20bfa545012bc54523dd1ab") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/4ffb25726a7ce4ccd80de297624d63000e827e7eccfbe37243ba3e8647e3d4ed") format('woff2'), url("/o/860e0a179c3251cad1d355217b3bcdf36a868334ea3140fd6ac5383dc344d550") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 500;
+  font-stretch: 100%;
+  src: url("/o/77e7cbe17e2ed0251822b28f8c5d62c6214feef60ce2c9d9392b5b3ff2dfd65b") format('woff2'), url("/o/f4b3d0a3a83eeedcc2cb89b2718a56c90ace1a4648225ac0387adf5d8cf13dbc") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 500;
+  font-stretch: 100%;
+  src: url("/o/f68312ae7d4df9f223ee0a563d9823e1c2d2a1783f290e14fbca8d0534e8aeef") format('woff2'), url("/o/f51b351e8b0a4f199a217a62643689955158bd92a9075e3d3c0fb3e6429e8b9f") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 500;
+  font-stretch: 100%;
+  src: url("/o/401724b624b671b856acb3fcdf30f6da2db20c78c1d2b58eed2a5fe9c1607356") format('woff2'), url("/o/1b66b49a68e98224fbaa60d1de1ec2861f2e24a58c0a06d03008aff3edb2cea7") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 500;
+  font-stretch: 100%;
+  src: url("/o/a1875dd50cc5efc00eb5510f13fa77e1d26e3a1aecc361a883ff23dcee3102ef") format('woff2'), url("/o/d100cf8d7ffcb0c68d7640eb36d828d430840729b2d0560dd175f5c79bda6449") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 500;
+  font-stretch: 100%;
+  src: url("/o/838f8b49006001a1fd8f0644d99570d0d79dedbe419a4eb20413910993a9a139") format('woff2'), url("/o/a18528d4879d11128d06e0584d4aa25c45c453187d8bf03d4fdf16fafbb8cf5c") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 500;
+  font-stretch: 100%;
+  src: url("/o/0eaadae13f1b72311bd112cc8b43a4593b8eff18dab801bc0e32b660cace37a1") format('woff2'), url("/o/ebc259fc5594fbe8c88c5921f48006727d831d87280ece55a710cc85404491db") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 600;
+  font-stretch: 100%;
+  src: url("/o/4d357ebec81bfa49564898619330dc79f1ead19a57a6dd9ef834937385759ab4") format('woff2'), url("/o/cf3365ce34925d06ca44aaafb367a4e17aef311a2f3d941fcb4892973531d2b7") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 600;
+  font-stretch: 100%;
+  src: url("/o/a18bdcbc7aaeb2ee3fb50b9af5d689111e9a79767d75e40f22d70de8ded5e4ba") format('woff2'), url("/o/a1e2e7d4a8bacdcc7f996cdf0b473a8974bfa8535bd1e0ea8ed8e10015a1e0b2") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 600;
+  font-stretch: 100%;
+  src: url("/o/e83127cc867a2128ae39c56c10f60b62d1aacb69f40894eb7ca9b97a24188070") format('woff2'), url("/o/d9456fcf3ff10d3c870645b5e47ddfe17be65837b8fcb9df92f2dfdd23c17e63") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 600;
+  font-stretch: 100%;
+  src: url("/o/ff495e0841395139634bfee5ae7f851fad239f57d2af16e753fd0a71728f21d3") format('woff2'), url("/o/a744b5775b026fc2176c3816715e2848bca96364a1c95ffb2aa891d2f7322db0") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 600;
+  font-stretch: 100%;
+  src: url("/o/a5c196466198d48c4737952909751c751b4d4b25a7396fc74aa26c31bd11d816") format('woff2'), url("/o/fbda67f0c87edcb5e777924b5077a61ce9099e4dd58a08ce033fb50b60ffaf05") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 600;
+  font-stretch: 100%;
+  src: url("/o/2cf57507ead8601f23573503a70413a7abee0c10ea406b8edfa60baf1291fabb") format('woff2'), url("/o/cf95e1d04c73f61f200c9b41b76b1254daeaafdcc8472dad3345b55c51669dc2") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/0b77e20f4c67b95072ef8437be4c3c432b462441834f5e2c7ee4ced8cacbe872") format('woff2'), url("/o/7255bacecac22392ba537cd4b6956c8dde901bcf77bb6b304cc2ca6bd11c6ff6") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/3a6a2d7d529a192d52245a69c637c2144aa8e6227ac8a9b21c878939cdc7a7e7") format('woff2'), url("/o/47677a4fc5179ce4ef58691b50ca534e2d9c7fedb0db627c0404d905c0272aa8") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/ceb4e31360c858774a1aee77090073e74660a52442511320b5f18da88419f422") format('woff2'), url("/o/68bc96bb26ccc585cc4752c28cd992027ea15bcbb977abb092dd1fda30fc7481") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/cf954881ba5d0b6fe3b467cb10be91b6690c4df6d5bf1341329deb2b3eace8ec") format('woff2'), url("/o/1993b222438f6367b8598280cdbe597071ab37cf39db822a7eb9dd595ab53cc7") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/1b4de656a8b900a9765d10bb3ca1820e01be3c755d58e0e1e977092e5fafe063") format('woff2'), url("/o/baf5314904b154536f7c7d1a7d671e8d14d60cbd735da21f1a51953c5e09a835") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/028b404b185c76b04bd241c2936e22794330a1cb4a5fac9d73dc6bb0c0b4704e") format('woff2'), url("/o/8ebe99e40442ea79d1babc94aa0556aecf7d078bd8a3d864413a6337940fab81") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/02296067bc904d2ad19b49445bdaf6586cc44704e668e16e248f708e5005a290") format('woff2'), url("/o/8d899d62a1e18740c6f9d8c1a760be8e511ef222e54ab68d3bc88c94d0d104b0") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/3b646991d30055a93a4ecc499713d4347953a74a947ecab435ab72070cbdab0e") format('woff2'), url("/o/828907bfd14855c880789878bd2b38ffd284a6c27c8b80f6069900f70dae3901") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/69afad88a0740b6e5647f1104c9176a261f1ad9d60202f605456a983799752e9") format('woff2'), url("/o/89b819d4fef67eda2ce2c12f2f2b3978141fb73faebeb23ec895a3d7f8e66964") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/c93d2a12aaa280f68b9ab7b726ff8dfedda67c99ef9abed047c1847a1cc6d583") format('woff2'), url("/o/85db75b89e3c0bee23ea75ede70c73024f62516ccdb6be55eb0c5c7a7866433a") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/771538f7f26551bd13ab97d585de6ce7ebe3b432837999d5b743391b48f4946a") format('woff2'), url("/o/aa3bd4c4c493c3110ca5f5ac3f0cd688482982b40e4cf9cb601f931df2a8ccf5") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  src: url("/o/e2580ad78906551e1f9ad621f608cd16ce4d5a992e53c651dd6b3504547576f2") format('woff2'), url("/o/e60c70b37422d621549800db28c60764e16ccce7403a2d2957a8ac079818b28a") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  src: url("/o/8cb6e20b4dbbaa5f7b479d4a68cc91d3d6b370eebcd888cae9ab01052e5483f2") format('woff2'), url("/o/38489276f6e67e4f00fbea894417af635dac8368ccdf14655dd71b5b3de269e0") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  src: url("/o/0717336fb31fcdcde4b8deb3675bb4a0f7f6d484864afcd6751ac29975962203") format('woff2'), url("/o/8d2c7b2eca91869d447851a9c8bd07edf629b26025eacb882291e03b384b4e35") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  src: url("/o/200be3a2a6b1789fb8824a4a74c7cccb7137e83fde6200ea78d8829f99d43546") format('woff2'), url("/o/b9d946b2b727115f06753e92054d272861a8265468bdb267bc279d1447fac20f") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  src: url("/o/2846035d85100f84c79393f80f1442d4ee720129ab8b3ffa8969aae281db8c6c") format('woff2'), url("/o/6aa470ebf8dd5592084d0452b5c3a355d93b04e7eb0f5ca030d9d3a54a48fb5c") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  src: url("/o/85ba3d9c2488a813bbf1d60da3a848bce4a97ac8c8a539289d8524aef6c471f9") format('woff2'), url("/o/156142eef15bc3ea0983949aa2ccc2c4fcb8c97e5507ca019c5b1a23046a3268") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  src: url("/o/08578d906af6d986d12d966d91bf9e76a00ebb74288d5c0eb6fe27dbebe1975a") format('woff2'), url("/o/19928f2f784c679937745ed3949cd9ff4c3af792e2c6b26670e0741c68610400") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  src: url("/o/0a9ebd9019415ee9f161b38fb24b5ee7736e2c8b85bf1e79e1e4c7c0010d55cb") format('woff2'), url("/o/b080df76b8210429debab3f7fadf5975af7d9e43b1b0e51912ba4fde56e87865") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  src: url("/o/8960851d691c054ed38e259bdcf1a6190d157b4203ed5bb32c632a863fb8ec2f") format('woff2'), url("/o/7861a349af1e925a80d56547c2c9e0b1e9f6a9002a9a6867351da2f05122ad21") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  src: url("/o/730becc6f005c18c31440f14d34677f2704a85e6afffd4bee6a64d5c95f45a55") format('woff2'), url("/o/dc111b4254f64561fe50a3645f75bb66e4daa6b026c40d9e55de27f2671b8de0") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  src: url("/o/b25dfd4f979e442ae1e25cd0894463434cf01ba21ac1a35d39f4a82bd4cc060e") format('woff2'), url("/o/ba265b263be35814d27c13d42c6b9a36a0ec5b3a565d38011109bfa556a8d775") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  src: url("/o/5d34b803637befe3714d55d383d9149692c39838c8deb45c8cbdd43b0fd09b98") format('woff2'), url("/o/ae433d3b3cdfc7d2b2ecb4173442cca23b58448cf05c21f7f589cf67f67b2dde") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  src: url("/o/d60d3d0b182753d5640e372c57669f508b79172ac4ff6b460d987ddd34cac199") format('woff2'), url("/o/d3fc6b34ef8f2968cf6b1b548e3d49e8ad3b26ebe60eb01172621b059b7133e5") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/c949641d10a3bebcb7073edd5b6a8f2e0eccb2147f27c875a03ac522f04c209e") format('woff2'), url("/o/1f689ec0fa036813a9c1de6269f793530db71a9f817c51be0b4ae900e0fdf639") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/42e7b0c143c19df9d99fd896e76b48f846edf0902d200bc29796b34d12c33aa7") format('woff2'), url("/o/973b42f17d4dbb83000847469e7777abe95c303f547d7503c934227e697a0516") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/40540598b4c9eb2cd2562f1017e71f2697adb43e76f49079030dfd7f00b4b786") format('woff2'), url("/o/ecdff3a50fa1058d7a1887e5f5edcb4dd36a748df57c5d623ab1662aebc8f10b") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/92f0392bd74fa3955bfa92f6ec747e7246d3567b6f46b32ddbaf271104836ab8") format('woff2'), url("/o/2cf7d29e5008330d097869f893808c4a4a98210ce122416d54dcd9237f5c02cb") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/b79d0c4b68b850071e071d7e496144a30d7f91651efdc1079ca9779079d648ba") format('woff2'), url("/o/bb307d06c782ffb721a1443e0bde0bac43e4dadef9ec11a70d38465cc160fcb6") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  src: url("/o/d07dd536424800975fd408fbb8076857c1590121ef65a8885a7b5946a5812bdf") format('woff2'), url("/o/1f73b4722839a2c937226e0093a27cb742e4e921a9499acd63834745b6f8ff83") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+

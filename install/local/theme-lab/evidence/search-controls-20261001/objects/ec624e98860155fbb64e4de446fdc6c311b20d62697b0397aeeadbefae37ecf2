@@ -1,0 +1,12 @@
+@font-face {
+  font-family: 'Fira Code';
+  font-style: normal;
+  font-weight: 400;
+  src: url("/o/edc273e94e72c8ee4279c8406f65373d96c518e3fea9cc3f121fed51283e0e70") format('truetype');
+}
+@font-face {
+  font-family: 'Fira Code';
+  font-style: normal;
+  font-weight: 700;
+  src: url("/o/67941ae3787edeffd80ab437e8ba99667002d9fae22c2cbb80c1553f2d90ab79") format('truetype');
+}

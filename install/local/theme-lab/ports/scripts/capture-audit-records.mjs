@@ -1,3 +1,14 @@
+import crypto from 'node:crypto';
+
+// Repeated inline image bytes already live in content-addressed asset files.
+// Bind their computed-style occurrence without duplicating megabytes per state.
+export function compactComputedResources(value){
+ if(typeof value==='string')return value.replace(/data:([^;,\s]+)(;base64)?,([^"')\s]+)/gu,(_,mime,encoded,data)=>{let bytes;try{bytes=encoded?Buffer.from(data,'base64'):Buffer.from(decodeURIComponent(data))}catch{return _}return `data:${mime};sha256=${crypto.createHash('sha256').update(bytes).digest('hex')};bytes=${bytes.length}`});
+ if(Array.isArray(value))return value.map(compactComputedResources);
+ if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,compactComputedResources(item)]));
+ return value;
+}
+
 export function compactAuditRecord(record){
  const diagnostics=record.visual_diagnostics;
  const compactSelectors=record.surface.startsWith('credit.')?['.page-rate-widget-box','.creditButton a','#u-credit-view .modalbox','#u-credit-view .page-rate-widget-box','#u-credit-view .page-rate-widget-box .rate-points','#u-credit-view .page-rate-widget-box .rateup','#u-credit-view .page-rate-widget-box .ratedown','#u-credit-view .page-rate-widget-box .cancel','#u-credit-view .creditRate','#u-credit-view .creditBottomRate','#u-credit-view .creditBottomRate .page-rate-widget-box','#u-credit-view .creditBottomRate .rate-points','#u-credit-view .creditBottomRate .rateup','#u-credit-otherwise .modalbox','#u-credit-otherwise .modalbox .credit.otherwise','#u-credit-otherwise .modalbox .credit-back','#u-credit-otherwise .modalbox .credit-back a[href="#u-credit-view"]']:record.surface.startsWith('page.edit')?['#action-area','textarea.editor-wikitext','#edit-page-comments']:record.surface.startsWith('page.history')?['.page-history','.revision-diff','.revision-diff-controls','.page-source']:record.surface.startsWith('page.source')?['#action-area','#page-options-bottom','#page-options-bottom-2','.page-source','.action-area-close','.mobile-top-bar .open-menu a']:record.surface.startsWith('page.files')?['.file-list-scroll','.file-list','.file-row']:record.surface.startsWith('nav.')?['#top-bar','#top-bar .top-bar','.mobile-top-bar','#side-bar','#side-bar .close-menu','#side-bar .collapsible-block-unfolded']:record.surface.startsWith('shell.')?['#login-status','#footer','#license-area','.scpnet-interwiki-frame']:record.surface==='page.normal'?['#page-content','#action-area','#side-bar','#header','#extra-div-1','#extra-div-2','#page-title','#login-status','.mobile-top-bar','.yui-navset','.yui-navset .yui-nav a','.yui-navset .yui-nav a em','.yui-navset .yui-content']:['#action-area','#page-title','#page-content'];
@@ -11,7 +22,7 @@ export function compactAuditRecord(record){
  // overflows. This keeps the accepted Sigma-9 campaign compact while making the
  // migration overflow evidence auditable.
  const horizontalOverflow=(diagnostics?.horizontalOverflow?.length??0)>0?diagnostics.horizontalOverflow:undefined;
- return{...rest,asset_dependency_count:assetDependencies?.length??record.asset_dependency_count??0,visual_diagnostics:diagnostics?{viewport,top_fixed_navigation_inset:diagnostics.topFixedNavigationInset,elements,history,title_overlaps:diagnostics.titleOverlaps??[],header_text:diagnostics.headerText??[],header_children:diagnostics.headerChildren??[],...(horizontalOverflow?{horizontal_overflow:horizontalOverflow}:{})}:null,action_sequence:sequence};
+ return{...rest,asset_dependency_count:assetDependencies?.length??record.asset_dependency_count??0,visual_diagnostics:diagnostics?compactComputedResources({viewport,top_fixed_navigation_inset:diagnostics.topFixedNavigationInset,elements,history,title_overlaps:diagnostics.titleOverlaps??[],header_text:diagnostics.headerText??[],header_children:diagnostics.headerChildren??[],...(horizontalOverflow?{horizontal_overflow:horizontalOverflow}:{})}):null,action_sequence:sequence};
 }
 function failureCount(count, failures){
  if(failures!=null&&!Array.isArray(failures))return null;
@@ -37,6 +48,10 @@ export function compactSupersededRecord(record){
   base_css_sha256:record.base_css_sha256,asset_dependency_sha256:record.asset_dependency_sha256,fixture_contract_sha256:record.fixture_contract_sha256,
   run_contract_sha256:record.run_contract_sha256,environment_contract_sha256:record.environment_contract_sha256,
    capture_state_action_contract_sha256:record.capture_state_action_contract_sha256,runtime_surface_contract_sha256:record.runtime_surface_contract_sha256,
+   capture_action_model:record.capture_action_model,visual_diagnostics_contract_sha256:record.visual_diagnostics_contract_sha256,
+   action_contract_observation:record.action_contract_observation,
+   title_composition_measurement:record.title_composition_measurement,title_composition_contract_sha256:record.title_composition_contract_sha256,
+   title_text_measurement:record.title_text_measurement,title_text_contract_sha256:record.title_text_contract_sha256,
    classification:record.classification,reviewed_after_last_change:record.reviewed_after_last_change,
    visual_findings:visualFindings,intentional_differences:intentionalDifferences,review_provenance:reviewProvenance,
    unconfirmed_items:(record.unconfirmed_items?.length??0)>0?record.unconfirmed_items:undefined,

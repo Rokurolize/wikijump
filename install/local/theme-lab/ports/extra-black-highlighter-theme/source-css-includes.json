@@ -1,0 +1,22 @@
+{
+  "schema": "theme_lab_source_css_includes.v1",
+  "authority": "RUNTIME_INDEPENDENT",
+  "candidate_source": "candidate.wikidot.source.txt",
+  "upstream_source": "upstream-en.wikidot.txt",
+  "includes": [
+    {
+      "locator": "component:bhl-dark-sidebar",
+      "kind": "unconditional-modules",
+      "parameters": {},
+      "source": {
+        "path": "source-includes/bhl-dark-sidebar.wikidot.txt",
+        "sha256": "d0966083b843469867ba56a74ed698bb41fb410d7a5ba04da60aa8bea14891b5"
+      },
+      "css": {
+        "path": "source-includes/bhl-dark-sidebar-input.css",
+        "sha256": "cd3d596a415e550ead1e145717d6d12d583f881a966bc85607571a1d0e2162e0"
+      }
+    }
+  ],
+  "base_import_count": 2
+}

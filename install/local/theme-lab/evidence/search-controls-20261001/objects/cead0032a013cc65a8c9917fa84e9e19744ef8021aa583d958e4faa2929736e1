@@ -1,0 +1,49 @@
+@font-face {
+  font-family: 'Recursive';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/o/52e8cabbbebec2f124d98ae59b1ce0cad8d3729e7a96dee53bd767c081e4079c") format('truetype');
+}
+@font-face {
+  font-family: 'Recursive';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/53c90f9dab2c198c41ee1b689415aa6db035da587d257bf124bc6ee336980b60") format('truetype');
+}
+@font-face {
+  font-family: 'Recursive';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/o/5842abd6704fd2f1a9e0bb2e45efdfad3ec795833c24f31d0ad48b67fe89538f") format('truetype');
+}
+@font-face {
+  font-family: 'Recursive';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/o/9bd60595d9d0b2a8ae8ddb2d2222693fbc30dec59bb4a9fdf9bedac985f75049") format('truetype');
+}
+@font-face {
+  font-family: 'Recursive';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/o/11bc9d8b5a38d046ad769588698d8e255bdcef431528de732a00bd9fdd118722") format('truetype');
+}
+@font-face {
+  font-family: 'Recursive';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/o/568fb7de534adc8c2dbdff806496a7ccf0cdac9c5a47457f68ba73a7df0e3458") format('truetype');
+}
+@font-face {
+  font-family: 'Recursive';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("/o/12e2d9d7dd591d9d03471b14774eb349583bb3e69a8ba2e35fd22acc03f7896a") format('truetype');
+}

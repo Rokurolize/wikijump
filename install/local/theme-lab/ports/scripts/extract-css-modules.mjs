@@ -4,7 +4,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
-const tokens=/\{\{|\}\}|@@|\[\[code(?:\s+[^\]]*)?\]\]|\[\[\/code\]\]|\[\[iftags(?:\s+[^\]]+)?\]\]|\[\[\/iftags\]\]|\[\[ift\{[^}]+\}gs(?:\s+[^\]]+)?\]\]|\[\[\/ift\{[^}]+\}gs\]\]|\[\[module\s+CSS\]\]/giu;
+const tokens=/\[!--[\s\S]*?--\]|\{\{|\}\}|@@|\[\[code(?:\s+[^\]]*)?\]\]|\[\[\/code\]\]|\[\[iftags(?:\s+[^\]]+)?\]\]|\[\[\/iftags\]\]|\[\[ift\{[^}]+\}gs(?:\s+[^\]]+)?\]\]|\[\[\/ift\{[^}]+\}gs\]\]|\[\[module\s+CSS(?:\s+[^\]]*)?\]\]/giu;
 
 function findCssModuleClose(source,start){
   let string=null;
@@ -40,7 +40,7 @@ function findCssModuleClose(source,start){
   return null;
 }
 
-export function extractUnconditionalCssModules(source,{activeTags=[]}={}){
+export function extractCssModules(source,{activeTags=[]}={}){
   const output=[];
   const tags=new Set(activeTags.map(tag=>String(tag).toLowerCase()));
   const conditions=[];
@@ -51,6 +51,7 @@ export function extractUnconditionalCssModules(source,{activeTags=[]}={}){
   let match;
   while((match=tokens.exec(source))!==null){
     const token=match[0].toLowerCase();
+    if(token.startsWith('[!--'))continue;
     if(token==='{{'){inWikidotEscape=true;continue;}
     if(token==='}}'&&inWikidotEscape){inWikidotEscape=false;continue;}
     if(inWikidotEscape)continue;
@@ -70,17 +71,22 @@ export function extractUnconditionalCssModules(source,{activeTags=[]}={}){
     }
     if(token.startsWith('[[ift{')){conditions.push(false);continue;}
     if(token==='[[/iftags]]'||token.startsWith('[[/ift{')){conditions.pop();continue;}
-    if(token==='[[module css]]'){
+    if(/^\[\[module\s+css(?:\s|\]\])/u.test(token)){
       const moduleStart=match.index+match[0].length;
       const close=findCssModuleClose(source,moduleStart);
       if(!close)throw new Error('Unterminated [[module CSS]] block');
-      if(conditions.every(Boolean))output.push(source.slice(moduleStart,close.start));
+      if(conditions.every(Boolean))output.push({index:match.index,css:source.slice(moduleStart,close.start)});
       tokens.lastIndex=close.end;
       continue;
     }
   }
+  return output;
+}
+
+export function extractUnconditionalCssModules(source,{activeTags=[]}={}){
+  const output=extractCssModules(source,{activeTags});
   if(!output.length)throw new Error('No unconditional CSS modules found');
-  return output.join('\n\n').trim()+'\n';
+  return output.map(row=>row.css).join('\n\n').trim()+'\n';
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){

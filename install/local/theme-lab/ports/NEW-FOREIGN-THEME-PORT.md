@@ -227,6 +227,16 @@ for the fast loop. Fix only evidence-backed issues:
 - unreadable/fallback Japanese typography;
 - failed interaction states.
 
+`new horizontal overflow` means overflow introduced or worsened by the theme
+relative to the same SCP-JP target DOM/state without the candidate theme
+layers. An equal or worse overflow already present in that target baseline is
+not evidence that the port introduced a defect and cannot by itself authorize
+a theme-specific correction. Keep the inherited target issue visible in the
+diagnostics and repair the runtime/component separately when that is the real
+owner. If the theme does worsen the target baseline, fix and certify the
+theme-added regression; do not infer causality merely because a candidate-only
+CSS patch can make the shared target defect disappear.
+
 For SCP-JP navigation, longer Japanese labels frequently expose submenu
 min-content/positioning problems that do not appear on the source branch.
 `TECHNICAL-LOCALIZATION-SPEC.md` defines expanded navigation geometry as an
@@ -407,3 +417,17 @@ For a later upstream refresh:
 
 If this workflow becomes common enough to automate, add a standalone-port
 planner rather than weakening the EN maintenance manifest guard.
+
+## Campaign closure
+
+Source integrity, deterministic generation, and adaptation authority do not
+substitute for current browser acceptance. Finish the full port check with exact
+paired image review and the applicable interaction matrix. Unreviewed visual
+results are inconclusive even when raw pixel comparison succeeds. A separate
+`candidate-base.css` must be included with `--css-base`.
+
+For maintained campaigns, run
+`node install/local/theme-lab/scripts/check-campaign-completion.mjs`. Completion
+requires current combined package acceptance and current Sigma-10 acceptance,
+complete current-identity browser coverage, and reviewed screenshot hashes.
+`check-final.mjs --historical-only` is evidence inspection, never promotion.

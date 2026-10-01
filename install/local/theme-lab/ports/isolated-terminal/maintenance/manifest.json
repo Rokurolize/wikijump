@@ -149,6 +149,27 @@
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]
+    },
+    {
+      "marker": "Resolve preserved source CSS component includes",
+      "origin": "source-css-include-resolution",
+      "authority": "RUNTIME_INDEPENDENT",
+      "sha256": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022",
+      "rationale": "Exact CSS from the preserved upstream include chain, materialized before main source CSS; no JP adaptation.",
+      "evidence": [
+        {
+          "path": "isolated-terminal/source-css-includes.json",
+          "sha256": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022"
+        },
+        {
+          "path": "shared-fixtures/current-toggle-sidebar-bhl/receipt.json",
+          "sha256": "afca79891442ed6f8a5aa5bdc5e1a8c27105b1ceae6af0dc893bf0d5cd88f90a"
+        },
+        {
+          "path": "shared-fixtures/current-source-components/receipt.json",
+          "sha256": "38a3de3d2a1987b57615dfa215eeaddde2fe31e5ffb5d7ce4f190656c18dcee2"
+        }
+      ]
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",

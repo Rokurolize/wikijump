@@ -1,16 +1,16 @@
 @import url("https://scp-jp.github.io/files/theme/classic/style0.css");
 
-/* ---- PRESENTATION ---- */
-.templateInfo {
-	margin: 1em 0;
-	padding: 0 1em;
-	background: hsl(0, 0%, 100%);
-	border: 1px solid hsl(0, 0%, 87%);
-}
+
 
 #header h1 a::before{
      content: "The SCP Foundation";
 }
  #header h2 span::before{
      content: "To Secure, Contain, and Protect";
+}
+
+
+/* SCP-JP Wikidot Classic mobile endpoint correction: contain the last submenu above the wrapped narrow layout. */
+@media (min-width: 360px) and (max-width: 767px) {
+  #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
 }

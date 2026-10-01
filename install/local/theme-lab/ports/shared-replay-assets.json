@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "asset_count": 1035,
-  "total_bytes": 140862503,
+  "asset_count": 1045,
+  "total_bytes": 141314445,
   "themes": 34,
   "assets": [
     {
@@ -328,7 +328,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/05f24e5e4d738b9f8e8643809ebed4800287d61a75d19ac2716f12b5d26279dd.ttf",
       "sha256": "05f24e5e4d738b9f8e8643809ebed4800287d61a75d19ac2716f12b5d26279dd",
       "bytes": 122264,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -749,7 +751,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/0f568402dec9731d448210a502e822307d7a62e281a4235265838606e70f7c5f.ttf",
       "sha256": "0f568402dec9731d448210a502e822307d7a62e281a4235265838606e70f7c5f",
       "bytes": 127700,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -1317,7 +1321,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/16bfcc73cb096970989ba59ef550f0b2cee0eaef314d08b76e47a9bc0ed956a1.ttf",
       "sha256": "16bfcc73cb096970989ba59ef550f0b2cee0eaef314d08b76e47a9bc0ed956a1",
       "bytes": 127720,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -1524,7 +1530,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/1bc0594a83762b2c25d38915a34464b7fec6088298ca22d151757bf98d6700ec.ttf",
       "sha256": "1bc0594a83762b2c25d38915a34464b7fec6088298ca22d151757bf98d6700ec",
       "bytes": 127392,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -2150,7 +2158,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/27cd313045d12280384256b4fba922366a4883e32ffb866b9acd62c5a859de61.ttf",
       "sha256": "27cd313045d12280384256b4fba922366a4883e32ffb866b9acd62c5a859de61",
       "bytes": 16884,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -2388,7 +2398,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/2cbb2b5f2ee14819504b724131d0222a1e360b888a23eeed3d90bab7ca81c00f.css",
       "sha256": "2cbb2b5f2ee14819504b724131d0222a1e360b888a23eeed3d90bab7ca81c00f",
       "bytes": 230,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme",
         "hansarp"
@@ -2641,7 +2653,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/32c78cc0077c01b5222d45980f00481dbf9420f6275e10f83913a3721376d959.ttf",
       "sha256": "32c78cc0077c01b5222d45980f00481dbf9420f6275e10f83913a3721376d959",
       "bytes": 127580,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -2760,7 +2774,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/35733d7ccbd96f55d5efef560d2a234cb1c398aa51d3bc2eea03a51689b4f0eb.ttf",
       "sha256": "35733d7ccbd96f55d5efef560d2a234cb1c398aa51d3bc2eea03a51689b4f0eb",
       "bytes": 17796,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -3602,7 +3618,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/47ed1cfaa7ffca04a04ab850b2938fd52c09d1b44cfa3e2980878e166b0cbd87.ttf",
       "sha256": "47ed1cfaa7ffca04a04ab850b2938fd52c09d1b44cfa3e2980878e166b0cbd87",
       "bytes": 122116,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -3711,6 +3729,15 @@
       "historical_used_by": [
         "foxtrot"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5.css",
+      "sha256": "4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5",
+      "bytes": 2771,
+      "used_by": [
+        "flopstyle-dark"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/4af8c9721d8c335080258ee5a5420288c6f72c458bef2dea41ea1322887db6c2.woff",
@@ -4528,7 +4555,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/59c2bc6487139f1b8c5754e0cc98ea431ab4c1c1ee142d9d2433ecabe444b59a.ttf",
       "sha256": "59c2bc6487139f1b8c5754e0cc98ea431ab4c1c1ee142d9d2433ecabe444b59a",
       "bytes": 17752,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -4560,6 +4589,16 @@
         "site",
         "skipos"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc.css",
+      "sha256": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc",
+      "bytes": 2347,
+      "used_by": [
+        "flopstyle-dark",
+        "foxtrot"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/5a6320ca0fd64afd1f6e07c201b84fbc94db63c1316fd29e0fa159ca5d43828d.woff",
@@ -5295,6 +5334,16 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/67941ae3787edeffd80ab437e8ba99667002d9fae22c2cbb80c1553f2d90ab79.ttf",
+      "sha256": "67941ae3787edeffd80ab437e8ba99667002d9fae22c2cbb80c1553f2d90ab79",
+      "bytes": 179384,
+      "used_by": [
+        "flopstyle-dark",
+        "inkblot"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/679516ac1a9589fb175ce611591399c0efea49fd5b05205117f7b207069bf77c.ttf",
       "sha256": "679516ac1a9589fb175ce611591399c0efea49fd5b05205117f7b207069bf77c",
       "bytes": 2173324,
@@ -5517,7 +5566,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/6d3884d0d57c1b67e9c50c54eca7b69c535c114e76bd7a9cfda0258588185553.ttf",
       "sha256": "6d3884d0d57c1b67e9c50c54eca7b69c535c114e76bd7a9cfda0258588185553",
       "bytes": 127156,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -5823,7 +5874,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/733eb93b167e6d45de09aa768f6c0355647c2c26f5416dbc7407a08ed41e81c6.ttf",
       "sha256": "733eb93b167e6d45de09aa768f6c0355647c2c26f5416dbc7407a08ed41e81c6",
       "bytes": 122060,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -5907,7 +5960,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/75367e6da7d914eaed87883ba51b2a2b5816b5cdbb39f96ec5c81a5b032bfd5a.ttf",
       "sha256": "75367e6da7d914eaed87883ba51b2a2b5816b5cdbb39f96ec5c81a5b032bfd5a",
       "bytes": 122132,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -7095,7 +7150,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/8e325b2fc46c5f9ca4f8d9bde772b0f46fc7cbfbff6bc19c9570d2cd965b0954.ttf",
       "sha256": "8e325b2fc46c5f9ca4f8d9bde772b0f46fc7cbfbff6bc19c9570d2cd965b0954",
       "bytes": 122536,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -7414,6 +7471,15 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/937c49b92021245dc02ce5e62f11d369ef778e3b565d07d96c4f9c4d827acce4.css",
+      "sha256": "937c49b92021245dc02ce5e62f11d369ef778e3b565d07d96c4f9c4d827acce4",
+      "bytes": 7444,
+      "used_by": [
+        "extra-black-highlighter-theme"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/93ecc15dfabe5bd0b8096795cbe34bbd865b680223f028924ac32ba4e232b546.woff",
       "sha256": "93ecc15dfabe5bd0b8096795cbe34bbd865b680223f028924ac32ba4e232b546",
       "bytes": 2372,
@@ -7428,7 +7494,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/941f2e8484c81297c9e971ac741664eb60aee15534b3a4a5439b18c35b262f3d.ttf",
       "sha256": "941f2e8484c81297c9e971ac741664eb60aee15534b3a4a5439b18c35b262f3d",
       "bytes": 3129936,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -8172,7 +8240,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/a24fe8031eefd8451d40e31882868d768ce6bed7c3659293281b3c5c7732a952.ttf",
       "sha256": "a24fe8031eefd8451d40e31882868d768ce6bed7c3659293281b3c5c7732a952",
       "bytes": 17708,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -8422,7 +8492,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/a73712ce4f3b32d3c7a1a657d56c6aaf50c719b7fa7fe0541905fe77f5a9906c.ttf",
       "sha256": "a73712ce4f3b32d3c7a1a657d56c6aaf50c719b7fa7fe0541905fe77f5a9906c",
       "bytes": 73276,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme",
         "hansarp"
@@ -8496,7 +8568,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/a90073c83ddbbf1cdeb11938f910fcd1385e0d28bc68099aa1e93bdbbcf4717c.css",
       "sha256": "a90073c83ddbbf1cdeb11938f910fcd1385e0d28bc68099aa1e93bdbbcf4717c",
       "bytes": 1332,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -8505,7 +8579,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/a9ad2e2273d34c4f4bbfd90706903ce0a92ba114a0145226670b92bafcf2a0e7.css",
       "sha256": "a9ad2e2273d34c4f4bbfd90706903ce0a92ba114a0145226670b92bafcf2a0e7",
       "bytes": 213,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -8787,7 +8863,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/afdae82811cf046213e1f65db56ffd21e01a7fb0e5d6194c34717df15535338b.ttf",
       "sha256": "afdae82811cf046213e1f65db56ffd21e01a7fb0e5d6194c34717df15535338b",
       "bytes": 122104,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -8981,7 +9059,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/b4dfd8ad2504ed0476f713d3fe129266ed584c3e18b466df36eb5fc7550e4329.svg",
       "sha256": "b4dfd8ad2504ed0476f713d3fe129266ed584c3e18b466df36eb5fc7550e4329",
       "bytes": 35041,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -9482,6 +9562,16 @@
       "historical_used_by": [
         "basalt"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/c2714a976d659d0376202cd04513db747bf1e4977379b3300958c51c69398130.css",
+      "sha256": "c2714a976d659d0376202cd04513db747bf1e4977379b3300958c51c69398130",
+      "bytes": 404,
+      "used_by": [
+        "flopstyle-dark",
+        "inkblot"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/c2fc25c6bd4997010f95750b716b87e82961c917a2cf4021a954a0494f93317d.bin",
@@ -10330,6 +10420,16 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/d545b9845df5f120e894f3f3207a147719584ed11a629c27bb29006aaa521c9a.gif",
+      "sha256": "d545b9845df5f120e894f3f3207a147719584ed11a629c27bb29006aaa521c9a",
+      "bytes": 32912,
+      "used_by": [
+        "flopstyle-dark",
+        "inkblot"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/d54740b154f92d9fff855599f16bb2435ea68803b9795388574432d45092d7b7.woff",
       "sha256": "d54740b154f92d9fff855599f16bb2435ea68803b9795388574432d45092d7b7",
       "bytes": 41688,
@@ -10564,7 +10664,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/d900c29674397e73c06d533fbf740c9c1c6d209d49b7cd00364e7ec0b1fac278.ttf",
       "sha256": "d900c29674397e73c06d533fbf740c9c1c6d209d49b7cd00364e7ec0b1fac278",
       "bytes": 17768,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -11054,10 +11156,22 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/e1dd2875a4cf1711615b7bc7eb2ae8d05bef3861f87a7fdd847a78199169b458.ttf",
       "sha256": "e1dd2875a4cf1711615b7bc7eb2ae8d05bef3861f87a7fdd847a78199169b458",
       "bytes": 17800,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be.css",
+      "sha256": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be",
+      "bytes": 2469,
+      "used_by": [
+        "basalt",
+        "foxtrot"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/e1e9217e806e276a3fb24933314996cd8c2044dfa3f9307e745be8435de72456.woff",
@@ -11448,7 +11562,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/e7c5553dac77d2b3f7d26d0f41e5df1602ef09da65575acc8ee25d97fba8e67b.css",
       "sha256": "e7c5553dac77d2b3f7d26d0f41e5df1602ef09da65575acc8ee25d97fba8e67b",
       "bytes": 3198,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]
@@ -11689,6 +11805,16 @@
       "historical_used_by": [
         "foxtrot"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/edc273e94e72c8ee4279c8406f65373d96c518e3fea9cc3f121fed51283e0e70.ttf",
+      "sha256": "edc273e94e72c8ee4279c8406f65373d96c518e3fea9cc3f121fed51283e0e70",
+      "bytes": 178748,
+      "used_by": [
+        "flopstyle-dark",
+        "inkblot"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/ede48e359fb3f70d13b558e4bf8aea2697e3c86c267cfb4b360fe2d7a621df18.woff2",
@@ -12187,6 +12313,16 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/f9a4fa40a5771a81b8b88435837fa5c3d4e72193b734ec62331a269adac0a91e.css",
+      "sha256": "f9a4fa40a5771a81b8b88435837fa5c3d4e72193b734ec62331a269adac0a91e",
+      "bytes": 10822,
+      "used_by": [
+        "flopstyle-dark",
+        "inkblot"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/f9b793c39faf2d525ead59d60621e147504c678df604e2cea1172018637b03d8.woff2",
       "sha256": "f9b793c39faf2d525ead59d60621e147504c678df604e2cea1172018637b03d8",
       "bytes": 6700,
@@ -12224,6 +12360,16 @@
         "site",
         "skipos"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/faa24ec881e6040655c187a681d6dc496eb8aa41e1bd0652a180b3a40b457187.png",
+      "sha256": "faa24ec881e6040655c187a681d6dc496eb8aa41e1bd0652a180b3a40b457187",
+      "bytes": 34641,
+      "used_by": [
+        "flopstyle-dark",
+        "inkblot"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/fb812d293d5aa5904dff4b593ccbb0f0702936cb41631c43f0d2de34496c0ac4.woff2",
@@ -12289,7 +12435,9 @@
       "sha256": "fcd9f75940109475f878f0702d7eb0e1c55cd461369244c86203bb032b6dbe31",
       "bytes": 7532,
       "used_by": [
-        "site"
+        "al-slop",
+        "site",
+        "space"
       ],
       "historical_used_by": [
         "site"
@@ -12365,7 +12513,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/ff4fdc11204e0edd14e9a0bb6c374b847a9093b0ec2c16702e03afca79ac4ef7.ttf",
       "sha256": "ff4fdc11204e0edd14e9a0bb6c374b847a9093b0ec2c16702e03afca79ac4ef7",
       "bytes": 127548,
-      "used_by": [],
+      "used_by": [
+        "aesthetic-theme"
+      ],
       "historical_used_by": [
         "aesthetic-theme"
       ]

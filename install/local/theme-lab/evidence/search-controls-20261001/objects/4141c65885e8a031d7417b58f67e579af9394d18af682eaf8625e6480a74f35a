@@ -1,0 +1,983 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+    <title>Bedrock Theme - SCP Foundation</title>
+    
+    
+    
+    <script type="text/javascript" src="/o/7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387"></script>
+    <script  type="text/javascript">
+        var URL_HOST = 'www.wikidot.com';
+        var URL_DOMAIN = 'wikidot.com';
+        var USE_SSL =  true ;
+        var URL_STATIC = 'https://d3g0gp89917ko0.cloudfront.net/v--dc09b212686f';
+        // global request information
+        
+        var WIKIREQUEST = {};
+        WIKIREQUEST.info = {};
+        
+        WIKIREQUEST.info.domain = "scp-wiki.wikidot.com";
+        WIKIREQUEST.info.siteId = 66711;
+        WIKIREQUEST.info.siteUnixName = "scp-wiki";
+        WIKIREQUEST.info.categoryId = 34790961;
+        WIKIREQUEST.info.themeId = 1;
+        WIKIREQUEST.info.requestPageName = "theme:bedrock";
+        OZONE.request.timestamp = 1790128771;
+        OZONE.request.date = new Date();
+        WIKIREQUEST.info.lang = 'en';
+                WIKIREQUEST.info.pageUnixName = "theme:bedrock";
+        WIKIREQUEST.info.pageId = 1436442676;
+                        WIKIREQUEST.info.lang = "en";
+        OZONE.lang = "en";
+        var isUAMobile = !!/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    </script>
+    
+    
+
+
+    
+        <script  type="text/javascript">
+    
+        require.config({
+            baseUrl: URL_STATIC + '/common--javascript',
+            paths: {
+                'jquery.ui': 'jquery-ui.min',
+                'jquery.form': 'jquery.form'
+            }
+        });
+    
+    </script>
+    
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8"/>
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                                <meta name="description" content="The SCP Foundation&#039;s &#039;top-secret&#039; archives, declassified for your enjoyment."/>
+                                <meta name="og:image" content="https://scp-wiki.wdfiles.com/local--files/main/logo_white.png"/>
+                                <meta name="twitter:site" content="@scpwiki"/>
+                                <meta name="twitter:image:alt" content="Seal of the SCP Foundation"/>
+                                <meta name="og:site_name" content="The SCP Foundation"/>
+                                <meta name="twitter:card" content="summary"/>
+                                <meta name="theme-color" content="#882244"/>
+                                <meta name="og:type" content="article"/>
+                                <meta name="og:locale" content="en_US"/>
+                                <meta name="og:locale:alternate" content="en_GB"/>
+                            
+    
+    
+    
+    
+    <meta http-equiv="content-language" content="en"/>
+    <script type="text/javascript" src="/o/6d46b6f0fa89ede15b4ff437b045454b490f72a18b15b4450c77cec3439ee738"></script>
+        
+    
+    <style type="text/css" id="internal-style">
+        
+        /* modules */
+@import url("/o/5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583");
+
+
+        
+                
+        /* theme */
+                    @import url("/o/7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c");
+                    @import url("/o/e9bf71e15958bb16afa6e46e2f6d98397701599f9fb2846d9f051180ffd00a7f");
+            </style>
+    
+        
+        
+        
+    <link rel="shortcut icon" href="/o/5dfe8fdaa35561856164200c8619fefa2f22d0668393fb777788df0a00c2bd0e"/>
+    <link rel="icon" type="image/gif" href="/o/5dfe8fdaa35561856164200c8619fefa2f22d0668393fb777788df0a00c2bd0e"/>
+    
+            <link rel="apple-touch-icon" href="/o/8050269cf155a4f306940d6cc8bda467849fb2b677495ba4ce00bcf54795406e" />
+        <link rel="apple-touch-icon" sizes="72x72" href="/o/a9a42600191c2d367b2e2d048a008ca5d7d6f685fbe1ea8159ac7fcbecc27e13" />
+        <link rel="apple-touch-icon" sizes="114x114" href="/o/bb429b907ca457be0553b7356be9cd2626180b66d30843b0655edbe4aee7b749" />    
+        
+        
+            <link rel="alternate" type="application/wiki" title="Edit this page" href="javascript:WIKIDOT.page.listeners.editClick()"/>
+    
+        <script type="text/javascript">
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-18234656-1']);
+        _gaq.push(['_setDomainName', 'none']);
+        _gaq.push(['_setAllowLinker', true]);
+        _gaq.push(['_trackPageview']);
+
+        _gaq.push(['old._setAccount', 'UA-68540-5']);
+        _gaq.push(['old._setDomainName', 'none']);
+        _gaq.push(['old._setAllowLinker', true]);
+        _gaq.push(['old._trackPageview']);
+
+            </script>
+    
+    <script type="text/javascript">
+        window.google_analytics_uacct = 'UA-18234656-1';
+        window.google_analytics_domain_name = 'none';
+    </script>
+    
+        <link rel="manifest" href="/o/68a004596be19e100f157b2694eea78822cf251dd98bb759d11971bd3f1e6714" />
+    <script src="/o/264a84e138e9f97ca169107e0e1496fbbe1b9992645c170b435815a469a0e481" acync=""></script>
+    <script>
+        var OneSignal = window.OneSignal || [];
+        OneSignal.push(function() {
+          OneSignal.init({
+            appId: null,
+          });
+        });
+    </script>
+        
+<style>
+.hide-ios-cache-issue-notification {
+  width: fit-content;
+  margin-left: 2em;
+}
+
+.ios-cache-issue-notification:has(.hide-ios-cache-issue-notification .collapsible-block-unfolded:not([style*="none"])) {
+  display: none;
+}
+
+.ios-cache-issue-notification a:not(.collapsible-block-link) {
+  text-decoration: underline;
+}
+
+.ios-cache-issue-notification .code {
+  background-color: #fffafa;
+  border-radius: 10px;
+  border: 1px solid #f00;
+}
+
+.ios-cache-issue-notification {
+  line-height: 1.5;
+  position: fixed;
+  top: 65px;
+  left: 10px;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 5px black;
+  border: 1px solid red;
+  font-size: 125%;
+  color: black;
+  background-color: #fee;
+  z-index: 999999999;
+  width: calc(100vw - 70px);
+  clear: none;
+  max-height: calc(100vh - 130px);
+  overflow: auto;
+  animation: ios-cache-issue-notification-fadein 0.5s;
+  animation-delay: 2s;
+  animation-fill-mode: both;
+  max-width: 40em;
+}
+
+@keyframes ios-cache-issue-notification-fadein {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.ios-cache-issue-notification a {
+  color: #b01 !important;
+}
+</style>
+<style>
+iframe.scpnet-interwiki-frame { height: 0; }
+
+/* Forcibly change name of AHT banned user. */
+a[href*="user:info/adminbright"] {
+  font-size: 0;
+}
+
+a[href*="user:info/adminbright"]::before {
+    content: 'TheDuckMan';
+    font-size: .95rem;
+}
+
+a[href*="user:info/adminbright"]:nth-child(1) img {
+  display: none
+}
+
+a[href*="user:info/adminbright"]:nth-child(1)::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background-image: url("/o/089a8cf23978514adcae5f3779ac1d59fb9b969cff41f048c51ead10e94a4a85"), url("/o/822614447ccae3c6c12a2ab911c861d3adbaa035b34a65550619e789e420e81f");
+  display: inline-block;
+  background-size: contain;
+  vertical-align: -0.3em;
+  padding: 1px 9px 1px 8px;
+  background-repeat: no-repeat;
+  background-position-x: 8px, 0;
+}
+</style>
+<style>
+@import url("/o/6f6014087e44b23b342a5a09f3af89aa7e1046a2f3c05c159d98255c01da5ad9");
+@import url("/o/46e7d11586cb91be544e5deaf341e70134f3da4aef57026b600ab935d3574020");
+</style>
+<style>
+.colors-container {
+  width: 98%;
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto;
+  font-weight: 700;
+  font-family: var(--title-font, Verdana), sans-serif;
+  color: black;
+}
+
+.colors-container .colors, .colors-container .subcolors {
+  width: 100%;
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.colors-container .color {
+  flex-grow: 2;
+  padding: 0.5rem;
+  margin: 0.5rem;
+  color: rgb(var(--swatch-text-dark, 0, 0, 0));
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.colors-container .colors .color {
+  height: 7rem;
+  min-width: 4rem;
+  flex-basis: calc((100% / 2) - 2rem - 1px);
+}
+
+.colors-container .subcolors .color {
+  height: 4rem;
+  min-width: 4rem;
+  font-size: 75%;
+  text-align: center;
+  flex-basis: calc((100% / 6) - 2rem - 1px);
+}
+
+.colors-container .css-variable {
+  font-size: 75%;
+  letter-spacing: 0.1em;
+  font-family: var(--body-font, Verdana), sans-serif;
+}
+
+/* Hide a colour that's not been provided by seeing if the variable starts with "{$" */
+.colors-container [data-variable^=\{\$] {
+  display: none;
+}
+
+.colors-container [data-has-light-text="1"] {
+  color: white;
+  color: rgb(var(--swatch-text-light, 255, 255, 255));
+}
+</style>
+<style>
+.nametag {
+    --bs: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='517.88' height='444.8' version='1.0' viewBox='0 0 388.41 333.6'%3E%3Cpath d='M223 20.7c-4.6 4.9-23.9 24.6-42.9 43.8-19 19.3-36.5 37.1-38.9 39.6-4.2 4.5-4.5 5.4-17.8 47.9L110 195.3l8.7 18.5 8.8 18.5 8.5 3.9c4.7 2.2 9.5 4.4 10.7 4.8 2 .8 3.3-1 17.9-25.3 8.6-14.4 16.4-26.9 17.3-27.8.9-.9 3.7-2.3 6.3-3.2l4.7-1.6 31 13.5 30.9 13.5 9.9-6.3c5.4-3.4 10.1-6.6 10.4-7.1.3-.4 1.4-9.4 2.4-20 1.2-11.8 2.1-18.3 2.6-17.1.8 1.9 9.9 44.5 9.9 46.2 0 .5-2.3 3.9-5 7.5l-5.1 6.7 4.5 4.2c3.2 3.1 4.6 5.4 5.1 8.3 2.4 13.7 6.1 29.7 6.9 29.8.5.1 13.3-14.5 28.4-32.6l27.5-32.7h13.4l10.3 13.2c12.2 15.8 11.8 15.3 12.5 14.7.2-.3-1.8-12.6-4.5-27.5-4.5-24-6.6-32.4-19.8-77.4l-14.7-50.5L292 40.8c-31.6-15.7-58.2-28.7-59.1-28.7-.9-.1-5.3 3.8-9.9 8.6Zm88.4 73.6 23.3 32.7.8 28.1c.4 15.4.5 28.2.4 28.4-.2.2-5.6-12-11.9-27.1L312.5 129l-27.8-25.7c-15.3-14.2-29.9-27.7-32.5-30-2.6-2.4-4.5-4.3-4.2-4.3.3-.1 8.8-1.8 19-4 10.2-2.1 19.1-3.7 19.8-3.7.7.1 11.7 14.9 24.6 33zM63.2 183.8l-17.4 5.7-15.9 15.4c-8.8 8.5-15.8 15.9-15.5 16.6.2.7 5.2 7.8 11.1 15.8l10.6 14.5 9.2.6c5.1.3 18.2.8 29.2 1.1l20 .6 8.4-8.5 8.4-8.4-14-29.4c-7.7-16.1-14.7-29.4-15.4-29.5-.8-.1-9.2 2.3-18.7 5.5z' style='fill:%23000;stroke:none;stroke-width:.1' transform='translate(-14.4 -12.1)'/%3E%3Cpath d='m170.2 239.1-22.2 37 .2 28.7.3 28.6 49 6.2 48.9 6.1 22.1-9.8c20.4-9.1 22-10 21.7-12.2-.3-3.2-17.1-86.9-17.4-87.3-.6-.5-78.9-34.4-79.6-34.4-.4 0-10.7 16.7-23 37.1zm70.8 5.5c9.1 5.2 17 10.1 17.6 10.7 1.4 1.5 13.6 47.4 13.2 49.7-.2.9-5.9 6.7-12.8 12.9l-12.5 11.2-14.3-.7c-7.8-.3-17.7-.9-22-1.3l-7.7-.6 18.3-13.4c10-7.3 18.5-13.7 18.8-14.2.3-.5 1.1-9.7 1.7-20.3l1.1-19.4-9.7-12.1c-5.4-6.7-9.4-12.1-9-12.1.5 0 8.3 4.3 17.3 9.6zm94.5-1.4c-12.5 14.9-23 27.9-23.2 28.8-.3 1-.1 2 .4 2.3 1 .7 62.1 13.7 64.1 13.7 2.6 0 26.3-14.2 26-15.6-.3-1.4-40.9-53.4-43.1-55.3-1.1-.8-6 4.4-24.2 26.1z' style='fill:%23000;stroke:none;stroke-width:.1' transform='translate(-14.4 -12.1)'/%3E%3C/svg%3E");
+    text-align: center;
+    overflow: hidden;
+    padding-top: 2rem;
+}
+.nametag h1 {
+    font-size: 0;
+    height: 16rem;
+    width: min(16rem,90%);
+    margin: 0.5rem auto 0;
+    background-color: rgb(var(--basalt-overtone));
+    -webkit-mask-image: var(--bs);
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    -webkit-mask-position: center;
+    mask-image: var(--bs);
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    mask-position: center;
+    transition: all 0.175s ease-out;
+}
+.nametag h1:hover {
+    background-color: rgb(var(--basalt-undertone));
+}
+
+#page-content .colors-container {
+    max-width: calc(var(--main-content-width)*0.75);
+    margin: 1.25rem auto;
+}
+.colors-container, .colors-container .css-variable {
+    font-family: var(--mono-font);
+}
+.colors-container .colors .color {
+    text-align: center;
+    flex-basis: calc((100% / 3) - 2rem);
+}
+.colors-container .color { margin: 0; }
+.colors-container, .colors-container .colors, .colors-container .subcolors { grid-gap: 0.375rem; }
+.colors-container .color span[style*="pre-wrap"] {
+    font-size: 85%;
+    opacity: 0.625;
+}
+</style>
+<script data-cfasync="false">window.nitroAds=window.nitroAds||{createAd:function(){return new Promise(e=>{window.nitroAds.queue.push(["createAd",arguments,e])})},addUserToken:function(){window.nitroAds.queue.push(["addUserToken",arguments])},queue:[]};</script>
+<script data-cfasync="false" async src="/o/574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c"></script>
+<script type="text/javascript" src="/o/12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941"></script>
+<script type="text/javascript" src="/o/c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc"></script>
+</head>
+<body id="html-body">
+<div id="skrollr-body">
+<a name="page-top"></a>
+
+
+
+
+
+<div id="container-wrap-wrap">
+    <div id="container-wrap">
+        <div id="container">
+            <div id="header">
+              <h1><a href="/"><span>SCP Foundation</span></a></h1>
+                
+                    <h2><span>Secure, Contain, Protect</span></h2>
+                
+                
+                <!-- google_ad_section_start(weight=ignore) -->
+                
+                <div id="search-top-box" class="form-search">
+    <form id="search-top-box-form" action="dummy" class="input-append">
+        <input id="search-top-box-input" class="text empty search-query" type="text" size="15" name="query" value="Search this site" onfocus="if(YAHOO.util.Dom.hasClass(this, 'empty')){YAHOO.util.Dom.removeClass(this,'empty'); this.value='';}"/><input class="button btn" type="submit" name="search" value="Search"/>
+    </form>
+</div>
+                
+                
+                    <div id="top-bar">
+                        
+
+<div class="top-bar">
+<ul>
+<li>About
+<ul>
+<li><a href="/about-the-scp-foundation">About Us</a></li>
+<li><a href="/site-rules">Site Rules</a></li>
+<li><a href="/faq">FAQ</a></li>
+<li><a href="/licensing-guide">Licensing</a></li>
+<li><a href="/criticism-policy">Criticism Policy</a></li>
+<li><a href="/deletions-guide">Article Deletions</a></li>
+</ul>
+</li>
+<li>Community
+<ul>
+<li><a href="/news">Site News</a></li>
+<li><a href="/chat-guide">IRC Chat</a></li>
+<li><a href="/authors-pages">Authors' Pages</a></li>
+<li><a href="/artist-directory">Artist Directory</a></li>
+<li><a href="/contest-archive">Contest Archive</a></li>
+<li><a href="http://05command.wikidot.com/staff-list">Staff List</a></li>
+</ul>
+</li>
+<li>Resources
+<ul>
+<li><a href="/guide-hub">Guides</a></li>
+<li><a href="/essay-resource-hub">Essays &amp; Resources</a></li>
+<li><a href="/wiki-syntax">Wiki Syntax</a></li>
+<li><a href="/sandbox">Sandbox</a></li>
+<li><a href="/usertools">Usertools</a></li>
+</ul>
+</li>
+<li><a href="/contact-staff">Contact Us</a></li>
+</ul>
+</div>
+<div class="mobile-top-bar">
+<div class="open-menu">
+<p><a href="#side-bar">≡</a></p>
+</div>
+<ul>
+<li>About
+<ul>
+<li><a href="/about-the-scp-foundation">About Us</a></li>
+<li><a href="/site-rules">Site Rules</a></li>
+<li><a href="/faq">FAQ</a></li>
+<li><a href="/licensing-guide">Licensing</a></li>
+<li><a href="/criticism-policy">Criticism Policy</a></li>
+<li><a href="/deletions-guide">Article Deletions</a></li>
+<li><a href="/contact-staff">Contact Staff</a></li>
+</ul>
+</li>
+<li>Community
+<ul>
+<li><a href="/news">Site News</a></li>
+<li><a href="/chat-guide">IRC Chat</a></li>
+<li><a href="/authors-pages">Authors' Pages</a></li>
+<li><a href="/artist-directory">Artist Directory</a></li>
+<li><a href="/contest-archive">Contest Archive</a></li>
+<li><a href="http://05command.wikidot.com/staff-list">Staff List</a></li>
+</ul>
+</li>
+<li>Resources
+<ul>
+<li><a href="/guide-hub">Guides</a></li>
+<li><a href="/essay-resource-hub">Essays &amp; Resources</a></li>
+<li><a href="/wiki-syntax">Wiki Syntax</a></li>
+<li><a href="/sandbox">Sandbox</a></li>
+<li><a href="/usertools">Usertools</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="side-block ios-cache-issue-notification">
+<div class="hide-ios-cache-issue-notification" style="float: right; clear: both; position: relative; z-index: 999999;">
+<div class="collapsible-block">
+<div class="collapsible-block-folded"><a class="collapsible-block-link" href="javascript:;">✖</a></div>
+<div class="collapsible-block-unfolded" style="display:none">
+<div class="collapsible-block-unfolded-link"><a class="collapsible-block-link" href="javascript:;">–&nbsp;hide&nbsp;block</a></div>
+<div class="collapsible-block-content"></div>
+</div>
+</div>
+</div>
+<div>The SCP Wiki's default theme failed to load. If you see this error and are experiencing graphical issues, you may be able to resolve it by refreshing the page. If you are on iOS or are using Firefox, you may also need to clear your cache. <a href="https://support.apple.com/en-us/105082">Here's how to do this on iOS</a>, and <a href="https://support.mozilla.org/en-US/kb/how-clear-firefox-cache">here's how to do this on Firefox</a>.<br />
+<span style="white-space: pre-wrap;">&#32;</span>
+<div class="collapsible-block">
+<div class="collapsible-block-folded"><a class="collapsible-block-link" href="javascript:;">Seeing&nbsp;this&nbsp;error&nbsp;by&nbsp;mistake?</a></div>
+<div class="collapsible-block-unfolded" style="display:none">
+<div class="collapsible-block-unfolded-link"><a class="collapsible-block-link" href="javascript:;">–&nbsp;hide&nbsp;block</a></div>
+<div class="collapsible-block-content">
+<p>If the page you are on &quot;looks fine,&quot; it is most likely (but not certainly) because its theme is overriding the SCP Wiki's default Sigma-10 theme. If you were to then navigate to a Sigma-10 page, such as the <a href="https://scp-wiki.wikidot.com/">Front Page</a>, it would likely appear broken.</p>
+<p>Alternatively, if you know for sure that Sigma-10 <em>is</em> loading, the error is most likely mistakenly appearing because you switched the Sigma-10 theme to a different theme using the <a href="https://www.wikidot.com/doc-modules:themepreviewer-module">ThemePreviewer</a> module or another similar feature. If this is the case, and you are the author of the page, add the following code to it to remove the warning:</p>
+<div class="code">
+<p><span style="white-space: pre-wrap;">[[module&#32;css]]</span><br />
+<span style="white-space: pre-wrap;">#top-bar&#32;.ios-cache-issue-notification&#32;{</span><br />
+<span style="white-space: pre-wrap;">&#32;&#32;display:&#32;none&#32;!important;</span><br />
+<span style="white-space: pre-wrap;">}</span><br />
+<span style="white-space: pre-wrap;">[[/module]]</span></p>
+</div>
+<br />
+If you are <em>not</em> the author of this page, please contact the author or a member of the <a href="https://05command.wikidot.com/technical-staff-main">SCP Wiki Technical Team</a> so that they may fix it. If possible, in your report, please include the browser and operating system of your device, along with the full URL to the offending page.</div>
+</div>
+</div>
+</div>
+</div>
+
+
+
+                    </div>
+                
+                <div id="login-status"><a href="javascript:;" onclick="WIKIDOT.page.listeners.createAccount(event)" class="login-status-create-account btn">Create account</a> <span>or</span> <a href="javascript:;" onclick="WIKIDOT.page.listeners.loginClick(event)" class="login-status-sign-in btn btn-primary">Sign in</a> </div>
+                <div id="header-extra-div-1"><span></span></div><div id="header-extra-div-2"><span></span></div><div id="header-extra-div-3"><span></span></div>
+            </div>
+            
+            <div id="content-wrap">
+                
+                    <div id="side-bar">
+                        
+
+
+                        
+
+<div class="side-block media" style="padding: 10px 0;">
+<div style="text-align: center;"><a href="https://www.facebook.com/scpfoundation"><img src="/o/6ec97470b5c63d088aad3b722a5ac3aceff82f0fb218417ad2586355bb7af624" alt="Facebook" class="image" /></a><a href="https://twitter.com/scpwiki"><img src="/o/9cccfc2c2343b28468cb3d5914696fbb645bde74983ff2087ed2f427c0ba7e42" alt="Twitter" class="image" /></a><a href="https://www.reddit.com/r/SCP"><img src="/o/d764d606b67a7e91bd513dbddf7346ea3673479e2ca8b6ef7b639b27633e8cb5" alt="Reddit" class="image" /></a><a href="https://www.instagram.com/scpfoundationwiki"><img src="/o/b06f89a9d983033086b07e3ed13cafd7e427e0544e6ee8ac7d12eed6352b25d8" alt="Instagram" class="image" /></a><a href="https://bsky.app/profile/scpwiki.com"><img src="/o/797e877e73eb219b2937cf2eed69bc4170ba2fa734183bb037b506b75bbc030e" alt="Bluesky" class="image" /></a><a href="https://www.tiktok.com/@scpwikiofficial?"><img src="/o/db08c40bf743bed828e99dac6ee7d29d34169777cf49405da6127a3631766ab7" alt="TikTok" class="image" /></a><a href="https://discord.com/invite/scp"><img src="/o/85d094847498af706e7a8af20ca6a86c8c5ebcf5c830578f1ccd6cbce2051bfe" alt="Discord" class="image" /></a></div>
+</div>
+<div style="clear:both; height: 0px; font-size: 1px"></div>
+<div class="side-block resources">
+<div class="heading">
+<p>Getting Started</p>
+</div>
+<div class="menu-item"><a href="/guide-for-newcomers">Guide for Newcomers</a></div>
+<div class="menu-item"><a href="/system:join">Join the Site</a></div>
+<div class="menu-item"><a href="/contribute">Contribute</a> | <a href="/faq">FAQ</a></div>
+<div class="menu-item"><a href="/universe-hub">Universe Hub</a></div>
+</div>
+<div style="clear:both; height: 0px; font-size: 1px"></div>
+<div class="side-block">
+<div class="menu-item"><a href="/">Main</a> | <a href="/forum:start">Forum</a></div>
+<div class="heading">
+<p>SCP by Series</p>
+</div>
+<div class="menu-item"><a href="/scp-series">I</a> | <a href="/scp-series-2">II</a> | <a href="/scp-series-3">III</a> | <a href="/scp-series-4">IV</a> | <a href="/scp-series-5">V</a></div>
+<div class="menu-item"><a href="/scp-series-6">VI</a> | <a href="/scp-series-7">VII</a> | <a href="/scp-series-8">VIII</a> | <a href="/scp-series-9">IX</a> | <a href="/scp-series-10">X</a></div>
+<div class="menu-item"><a href="/lost-scp-series">Lost Series</a></div>
+<div class="heading">
+<p>Other SCP</p>
+</div>
+<div class="menu-item"><a href="/scp-ex">Explained</a> | <a href="/joke-scps">Joke</a></div>
+<div class="menu-item"><a href="/scp-international">International</a></div>
+<div class="heading">
+<p>Feed</p>
+</div>
+<div class="menu-item"><a href="/new-pages-feed">New Pages</a></div>
+<div class="menu-item small"><a href="/shortest-pages-this-month">Shortest</a> | <a href="/top-rated-pages-this-month">Top Rated</a></div>
+<div class="menu-item"><a href="/system:recent-changes">Recent Changes</a></div>
+<div class="menu-item"><a href="/forum:recent-posts">New Forum Posts</a></div>
+<div class="menu-item"><a href="/lowest-rated-pages">Lowest Rated Pages</a></div>
+<div class="heading">
+<p>Stories</p>
+</div>
+<div class="menu-item"><a href="/foundation-tales">Tales Hub</a> | <a href="/series-archive">Series</a></div>
+<div class="menu-item"><a href="/groups-of-interest">Groups of Interest</a></div>
+<div class="menu-item"><a href="/goi-formats">GoI Formats</a></div>
+<div class="menu-item"><a href="/canon-hub">Canon Hub</a></div>
+<div class="heading">
+<p>Discovery</p>
+</div>
+<div class="menu-item"><a href="/artwork-hub">Artwork Hub</a></div>
+<div class="menu-item"><a href="/curated-lists">Curated Lists</a></div>
+<div class="menu-item"><a href="/curated-tale-series">Curated Tale Series</a></div>
+<div class="menu-item"><a href="/tag-search">Tag Search</a></div>
+<div class="heading">
+<p>Random</p>
+</div>
+<div class="menu-item"><a href="/random:random-scp">SCP</a> | <a href="/random:random-tale">Tale</a> | <a href="/random:random-goi-format">GOI</a> | <a href="/random:random-art">Art</a></div>
+<div class="menu-item"><a href="/random:random-page">Random Page</a></div>
+<div class="menu-item"><a href="/random-search">Advanced Random Search</a></div>
+</div>
+<a class="close-menu" href="##"><br />
+<img src="/o/4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7" style="z-index:-1; opacity: 0.3;" alt="black.png" class="image" /><br /></a> 
+
+
+<div class="scpnet-interwiki-wrapper interwiki-stylable"><div class="list-pages-box">    <div class="list-pages-item">
+
+
+<p><iframe src="//interwiki.scpwiki.com/interwikiFrame.html?lang=en&community=scp&pagename=theme:bedrock" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe></p>
+</div>
+    
+    
+    
+    </div></div>
+<p><iframe src="//interwiki.scpwiki.com/styleFrame.html?priority=0&theme=https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css&css={$css}" style="display: none"></iframe></p>
+
+                        
+
+
+                    </div>
+                
+                
+                <!-- google_ad_section_end -->
+                
+                <div id="main-content">
+                    <div id="action-area-top"></div>
+                    
+                    
+                        <div id="page-title">
+                            Bedrock Theme
+                        </div>
+                    
+
+                    
+
+                    
+
+
+
+                    <div id="page-content">
+                        
+
+
+
+
+<div><iframe src="//interwiki.scpwiki.com/styleFrame.html?priority=1&theme=https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css&css={$css}" style="display: none"></iframe> <iframe src="//interwiki.scpwiki.com/styleFrame.html?priority=2&theme=https://cdn.scpwiki.com/theme/en/basalt/basalt-bedrock-min.css&css={$css}" style="display: none"></iframe></div>
+<div class="nametag">
+<h1 id="toc0"><span>Bedrock</span></h1>
+<div class="page-rate-widget-box"><span class="rate-points">rating:&nbsp;<span class="number prw54353">+108</span></span><span class="rateup btn btn-default"><a title="I like it" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)">+</a></span><span class="ratedown btn btn-default"><a title="I don't like it" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)">&#8211;</a></span><span class="cancel btn btn-default"><a title="Cancel my vote" href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)">x</a></span></div></div>
+<p><strong>Bedrock</strong> is an aesthetic base theme created by <span class="printuser avatarhover"><a href="http://www.wikidot.com/user:info/estrellayoshte" onclick="WIKIDOT.page.listeners.userInfo(3781861); return false;"><img class="small" src="/o/d5036b49c859be3ca5bfccaac706823970ccdca5fc593c4c71af0faa7dabd13c" alt="EstrellaYoshte" style="background-image:url("/o/822614447ccae3c6c12a2ab911c861d3adbaa035b34a65550619e789e420e81f")" /></a><a href="http://www.wikidot.com/user:info/estrellayoshte" onclick="WIKIDOT.page.listeners.userInfo(3781861); return false;">EstrellaYoshte</a></span>, <span class="printuser avatarhover"><a href="http://www.wikidot.com/user:info/liryn" onclick="WIKIDOT.page.listeners.userInfo(6254643); return false;"><img class="small" src="/o/0d38b0d771276842e1789aae196f4c53b2a11dff08650ccb590efd708e4f04a6" alt="Liryn" style="background-image:url("/o/822614447ccae3c6c12a2ab911c861d3adbaa035b34a65550619e789e420e81f")" /></a><a href="http://www.wikidot.com/user:info/liryn" onclick="WIKIDOT.page.listeners.userInfo(6254643); return false;">Liryn</a></span> and <span class="printuser avatarhover"><a href="http://www.wikidot.com/user:info/placeholder-mcd" onclick="WIKIDOT.page.listeners.userInfo(6536693); return false;"><img class="small" src="/o/54fbfed971ac1b7b28d490e424ea0ef01b2618457804a3be913009c8604d9c6b" alt="Placeholder McD" style="background-image:url("/o/822614447ccae3c6c12a2ab911c861d3adbaa035b34a65550619e789e420e81f")" /></a><a href="http://www.wikidot.com/user:info/placeholder-mcd" onclick="WIKIDOT.page.listeners.userInfo(6536693); return false;">Placeholder McD</a></span>, with special thanks to <span class="printuser avatarhover"><a href="http://www.wikidot.com/user:info/aismallard" onclick="WIKIDOT.page.listeners.userInfo(4598089); return false;"><img class="small" src="/o/c2b4211e25ba842ddaf8530bbb16c1a2c2c49c9f20cd113ebfbe08d04208826b" alt="aismallard" style="background-image:url("/o/822614447ccae3c6c12a2ab911c861d3adbaa035b34a65550619e789e420e81f")" /></a><a href="http://www.wikidot.com/user:info/aismallard" onclick="WIKIDOT.page.listeners.userInfo(4598089); return false;">aismallard</a></span> for assistance with GitHub, and <span class="printuser avatarhover"><a href="http://www.wikidot.com/user:info/woedenaz" onclick="WIKIDOT.page.listeners.userInfo(1404096); return false;"><img class="small" src="/o/1f707ccc2e1557d0cb598c0b8e26962efbade034d33107a36886c1cacb5c9442" alt="Woedenaz" style="background-image:url("/o/822614447ccae3c6c12a2ab911c861d3adbaa035b34a65550619e789e420e81f")" /></a><a href="http://www.wikidot.com/user:info/woedenaz" onclick="WIKIDOT.page.listeners.userInfo(1404096); return false;">Woedenaz</a></span> for the Edit Area button SVGs alongside general consulting.</p>
+<p>This serves as the foundational structure for <a href="/theme:basalt">Basalt 2.0</a>.</p>
+
+
+
+<div class="colors-container">
+<div class="colors">
+<div class="color" style="background-color: rgb(var(--basalt-primary-color));" data-variable="--basalt-primary-color" data-has-light-text="{$color1-has-light-text}">Quartz<span class="css-variable"><span style="white-space: pre-wrap;">--basalt-primary-color</span></span><span class="css-variable">254,254,254</span></div>
+<div class="color" style="background-color: rgb(var(--basalt-secondary-color));" data-variable="--basalt-secondary-color" data-has-light-text="{$color2-has-light-text}">Calcite<span class="css-variable"><span style="white-space: pre-wrap;">--basalt-secondary-color</span></span><span class="css-variable">247,248,250</span></div>
+<div class="color" style="background-color: rgb(var(--basalt-bright-element-color));" data-variable="--basalt-bright-element-color" data-has-light-text="1">Lapis Lazuli<span class="css-variable"><span style="white-space: pre-wrap;">--basalt-bright-element-color</span></span><span class="css-variable">16,76,184</span></div>
+<div class="color" style="background-color: rgb(var(--basalt-undertone));" data-variable="--basalt-undertone" data-has-light-text="1">Amethyst<span class="css-variable"><span style="white-space: pre-wrap;">--basalt-undertone</span></span><span class="css-variable">61,71,202</span></div>
+<div class="color" style="background-color: rgb(var(--basalt-overtone));" data-variable="--basalt-overtone" data-has-light-text="1">Slate<span class="css-variable"><span style="white-space: pre-wrap;">--basalt-overtone</span></span><span class="css-variable">56,60,64</span></div>
+<div class="color" style="background-color: rgb(var({$color6-variable}));" data-variable="{$color6-variable}" data-has-light-text="{$color6-has-light-text}">{$color6-name}<span class="css-variable"><span style="white-space: pre-wrap;">{$color6-variable}</span></span><span class="css-variable">{$color6-info}</span></div>
+</div>
+<div class="subcolors">
+<div class="color" style="background-color: rgb(var(--basalt-tertiary-color));" data-variable="--basalt-tertiary-color" data-has-light-text="{$subcolor1-has-light-text}">Granite<span class="css-variable"><span style="white-space: pre-wrap;">--basalt-tertiary-color</span></span><span class="css-variable">218,219,222</span></div>
+<div class="color" style="background-color: rgb(var(--basalt-sub-text-color));" data-variable="--basalt-sub-text-color" data-has-light-text="1">Andesite<span class="css-variable"><span style="white-space: pre-wrap;">--basalt-sub-text-color</span></span><span class="css-variable">155,154,162</span></div>
+<div class="color" style="background-color: rgb(var(--basalt-alternate-color));" data-variable="--basalt-alternate-color" data-has-light-text="{$subcolor3-has-light-text}">Sunstone<span class="css-variable"><span style="white-space: pre-wrap;">--basalt-alternate-color</span></span><span class="css-variable">255,132,0</span></div>
+<div class="color" style="background-color: rgb(var(--basalt-positive-color));" data-variable="--basalt-positive-color" data-has-light-text="1">Emerald<span class="css-variable"><span style="white-space: pre-wrap;">--basalt-positive-color</span></span><span class="css-variable">26,180,28</span></div>
+<div class="color" style="background-color: rgb(var(--basalt-negative-color));" data-variable="--basalt-negative-color" data-has-light-text="1">Ruby<span class="css-variable"><span style="white-space: pre-wrap;">--basalt-negative-color</span></span><span class="css-variable">255,48,48</span></div>
+<div class="color" style="background-color: rgb(var(--basalt-dark-element-color));" data-variable="--basalt-dark-element-color" data-has-light-text="1">Sapphire<span class="css-variable"><span style="white-space: pre-wrap;">--basalt-dark-element-color</span></span><span class="css-variable">18,20,150</span></div>
+<div class="color" style="background-color: rgb(var({$subcolor7-variable}));" data-variable="{$subcolor7-variable}" data-has-light-text="{$subcolor7-has-light-text}">{$subcolor7-name}<span class="css-variable"><span style="white-space: pre-wrap;">{$subcolor7-variable}</span></span><span class="css-variable">{$subcolor7-info}</span></div>
+<div class="color" style="background-color: rgb(var({$subcolor8-variable}));" data-variable="{$subcolor8-variable}" data-has-light-text="{$subcolor8-has-light-text}">{$subcolor8-name}<span class="css-variable"><span style="white-space: pre-wrap;">{$subcolor8-variable}</span></span><span class="css-variable">{$subcolor8-info}</span></div>
+<div class="color" style="background-color: rgb(var({$subcolor9-variable}));" data-variable="{$subcolor9-variable}" data-has-light-text="{$subcolor9-has-light-text}">{$subcolor9-name}<span class="css-variable"><span style="white-space: pre-wrap;">{$subcolor9-variable}</span></span><span class="css-variable">{$subcolor9-info}</span></div>
+<div class="color" style="background-color: rgb(var({$subcolor10-variable}));" data-variable="{$subcolor10-variable}" data-has-light-text="{$subcolor10-has-light-text}">{$subcolor10-name}<span class="css-variable"><span style="white-space: pre-wrap;">{$subcolor10-variable}</span></span><span class="css-variable">{$subcolor10-info}</span></div>
+<div class="color" style="background-color: rgb(var({$subcolor11-variable}));" data-variable="{$subcolor11-variable}" data-has-light-text="{$subcolor11-has-light-text}">{$subcolor11-name}<span class="css-variable"><span style="white-space: pre-wrap;">{$subcolor11-variable}</span></span><span class="css-variable">{$subcolor11-info}</span></div>
+<div class="color" style="background-color: rgb(var({$subcolor12-variable}));" data-variable="{$subcolor12-variable}" data-has-light-text="{$subcolor12-has-light-text}">{$subcolor12-name}<span class="css-variable"><span style="white-space: pre-wrap;">{$subcolor12-variable}</span></span><span class="css-variable">{$subcolor12-info}</span></div>
+</div>
+</div>
+<p>To use on a page, add the following:</p>
+<blockquote>
+<p><tt><span style="white-space: pre-wrap;">[[include&#32;:scp-wiki:theme:bedrock]]</span></tt></p>
+</blockquote>
+<table style="margin:0; padding:0">
+<tr>
+<td style="margin:0; padding:0">
+<div id="toc">
+<div id="toc-action-bar"><a href="javascript:;" onclick="WIKIDOT.page.listeners.foldToc(event)">Fold</a><a style="display: none" href="javascript:;" onclick="WIKIDOT.page.listeners.unfoldToc(event)">Unfold</a></div>
+<div class="title">Table of Contents</div>
+<div id="toc-list">
+<div style="margin-left: 1em;"><a href="#toc0">Bedrock</a></div>
+<div style="margin-left: 1em;"><a href="#toc1">Examples</a></div>
+<div style="margin-left: 1em;"><a href="#toc2">CSS Variables</a></div>
+<div style="margin-left: 1em;"><a href="#toc3">Other</a></div>
+</div>
+</div>
+</td>
+</tr>
+</table>
+<h1 id="toc1"><span>Examples</span></h1>
+<p>A horizontal rule can be created with 4 hyphens <span style="white-space: pre-wrap;">&quot;----&quot;</span><sup class="footnoteref"><a id="footnoteref-1" href="javascript:;" class="footnoteref" onclick="WIKIDOT.page.utils.scrollToReference('footnote-1')">1</a></sup> and extends across the whole page if it's not placed inside anything (eg a blockquote). The lines separating sections of this document are horizontal rules.</p>
+<div class="scp-image-block block-right" style="width:280px;"><img src="/o/390d3d9a70157d53667a27669741c3eb7924fa9e8b5d5afac59749c9e591fbad" alt="basaltlogo.svg" class="image" />
+<div class="scp-image-caption">
+<p>Image block.</p>
+</div>
+</div>
+<p>Titles can be created by putting between one and six plus &quot;+&quot; at the start of the line.</p>
+<div class="collapsible-block">
+<div class="collapsible-block-folded"><a class="collapsible-block-link" href="javascript:;">Collapsible&nbsp;-&nbsp;Click&nbsp;me</a></div>
+<div class="collapsible-block-unfolded" style="display:none">
+<div class="collapsible-block-unfolded-link"><a class="collapsible-block-link" href="javascript:;">Collapsible&nbsp;-&nbsp;Click&nbsp;me</a></div>
+<div class="collapsible-block-content">
+<h1><span>First Title</span></h1>
+<h2><span>Second Title</span></h2>
+<h3><span>Third Title</span></h3>
+<h4><span>Fourth Title</span></h4>
+<h5><span>Fifth Title</span></h5>
+<h6><span>Sixth Title</span></h6>
+</div>
+</div>
+</div>
+<div style="clear:both; height: 0px; font-size: 1px"></div>
+<script type="text/javascript" src="/o/635dfb450eccd5357914e89451c7f9ba3ceacffc40a21073050177f7219ab7ab"></script>
+<div id="wiki-tabview-435330a781dd563e85c76afc4495a558" class="yui-navset">
+<ul class="yui-nav">
+<li class="selected"><a href="javascript:;"><em>Tabulator</em></a></li>
+<li><a href="javascript:;"><em>Tabulation</em></a></li>
+<li><a href="javascript:;"><em>Long Tab</em></a></li>
+<li><a href="javascript:;"><em>This tab has a really long name for some odd reason. I wonder why? It is very strange.</em></a></li>
+<li><a href="javascript:;"><em>Empty Tab</em></a></li>
+<li><a href="javascript:;"><em>Empty Tab</em></a></li>
+<li><a href="javascript:;"><em>Empty Tab</em></a></li>
+<li><a href="javascript:;"><em>Empty Tab</em></a></li>
+<li><a href="javascript:;"><em>Empty Tab</em></a></li>
+</ul>
+<div class="yui-content">
+<div id="wiki-tab-0-0">
+<p>This is a tab view.</p>
+</div>
+<div id="wiki-tab-0-1" style="display:none">
+<p>Hey look, more text here.</p>
+<p>How quaint.</p>
+</div>
+<div id="wiki-tab-0-2" style="display:none">
+<p>This is a long tab. It contains a lot of text.</p>
+<p>This is a long tab. It contains a lot of text.</p>
+<p>This is a long tab. It contains a lot of text.</p>
+<p>This is a long tab. It contains a lot of text.</p>
+<p>This is a long tab. It contains a lot of text.</p>
+<p>This is a long tab. It contains a lot of text.</p>
+<p>This is a long tab. It contains a lot of text.</p>
+<p>This is a long tab. It contains a lot of text.</p>
+<p>This is a long tab. It contains a lot of text.</p>
+<p>This is a long tab. It contains a lot of text.</p>
+<p>This is a long tab. It contains a lot of text.</p>
+<p>This is a long tab. It contains a lot of text.</p>
+</div>
+<div id="wiki-tab-0-3" style="display:none">
+<p>This is a tab with footnote<sup class="footnoteref"><a id="footnoteref-2" href="javascript:;" class="footnoteref" onclick="WIKIDOT.page.utils.scrollToReference('footnote-2')">2</a></sup></p>
+</div>
+<div id="wiki-tab-0-4" style="display:none"></div>
+<div id="wiki-tab-0-5" style="display:none"></div>
+<div id="wiki-tab-0-6" style="display:none"></div>
+<div id="wiki-tab-0-7" style="display:none"></div>
+<div id="wiki-tab-0-8" style="display:none"></div>
+</div>
+</div>
+<script type="text/javascript">
+//<![CDATA[
+OZONE.dom.onDomReady(function(){
+        var tabView435330a781dd563e85c76afc4495a558 = new YAHOO.widget.TabView('wiki-tabview-435330a781dd563e85c76afc4495a558');
+                }, "dummy-ondomready-block");
+        
+//]]>
+</script>
+<blockquote>
+<p>This is a blockquote, created by putting &quot;&gt; &quot; at the start of each line.<br />
+More text</p>
+<hr />
+<p>That's a horizontal rule</p>
+<blockquote>
+<p>Nested blockquotes</p>
+</blockquote>
+</blockquote>
+<table class="wiki-content-table">
+<tr>
+<th>This is a</th>
+<th>table</th>
+</tr>
+<tr>
+<td>You should know</td>
+<td>how to make these</td>
+</tr>
+<tr>
+<td colspan="2">already</td>
+</tr>
+</table>
+<div class="footnotes-footer">
+<div class="title">Footnotes</div>
+<div class="footnote-footer" id="footnote-1"><a href="javascript:;" onclick="WIKIDOT.page.utils.scrollToReference('footnoteref-1')">1</a>. This still is to appease <span class="printuser avatarhover"><a href="http://www.wikidot.com/user:info/placeholder-mcd" onclick="WIKIDOT.page.listeners.userInfo(6536693); return false;"><img class="small" src="/o/54fbfed971ac1b7b28d490e424ea0ef01b2618457804a3be913009c8604d9c6b" alt="Placeholder McD" style="background-image:url("/o/822614447ccae3c6c12a2ab911c861d3adbaa035b34a65550619e789e420e81f")" /></a><a href="http://www.wikidot.com/user:info/placeholder-mcd" onclick="WIKIDOT.page.listeners.userInfo(6536693); return false;">Placeholder McD</a></span>.</div>
+<div class="footnote-footer" id="footnote-2"><a href="javascript:;" onclick="WIKIDOT.page.utils.scrollToReference('footnoteref-2')">2</a>. This is another footnote.</div>
+</div>
+<div style="text-align: center;">
+<h3><span>Header font is Lexend.</span></h3>
+<p>Body font is Inter.</p>
+<p><span style="font-family: var(--UI-font);">UI font is Jost.</span></p>
+<p><tt>Monospace font is JetBrains Mono.</tt></p>
+</div>
+<hr />
+<h1 id="toc2"><span>CSS Variables</span></h1>
+<p>Bedrock is built on a series of CSS variables, which can be changed to alter its appearance. Some top-level variables are:</p>
+<div class="code">
+<div class="hl-main">
+<pre><span class="hl-special">:root</span><span class="hl-code"> </span><span class="hl-brackets">{</span><span class="hl-code">
+    --</span><span class="hl-reserved">basalt-primary-color:</span><span class="hl-code"> </span><span class="hl-number">254</span><span class="hl-code">,</span><span class="hl-number">254</span><span class="hl-code">,</span><span class="hl-number">254</span><span class="hl-code">;
+    --</span><span class="hl-reserved">basalt-secondary-color:</span><span class="hl-code"> </span><span class="hl-number">247</span><span class="hl-code">,</span><span class="hl-number">248</span><span class="hl-code">,</span><span class="hl-number">250</span><span class="hl-code">;
+    --</span><span class="hl-reserved">basalt-tertiary-color:</span><span class="hl-code"> </span><span class="hl-number">218</span><span class="hl-code">,</span><span class="hl-number">219</span><span class="hl-code">,</span><span class="hl-number">222</span><span class="hl-code">;
+    --</span><span class="hl-reserved">basalt-main-text-color:</span><span class="hl-code"> </span><span class="hl-number">20</span><span class="hl-code">,</span><span class="hl-number">20</span><span class="hl-code">,</span><span class="hl-number">20</span><span class="hl-code">;
+    --</span><span class="hl-reserved">basalt-overtone:</span><span class="hl-code"> </span><span class="hl-number">50</span><span class="hl-code">,</span><span class="hl-number">50</span><span class="hl-code">,</span><span class="hl-number">50</span><span class="hl-code">;
+    --</span><span class="hl-reserved">basalt-undertone:</span><span class="hl-code"> </span><span class="hl-number">61</span><span class="hl-code">,</span><span class="hl-number">71</span><span class="hl-code">,</span><span class="hl-number">202</span><span class="hl-code">;
+ 
+    --</span><span class="hl-reserved">basalt-bright-element-color:</span><span class="hl-code"> </span><span class="hl-number">16</span><span class="hl-code">,</span><span class="hl-number">76</span><span class="hl-code">,</span><span class="hl-number">184</span><span class="hl-code">;
+    --</span><span class="hl-reserved">basalt-dark-element-color:</span><span class="hl-code"> </span><span class="hl-number">18</span><span class="hl-code">,</span><span class="hl-number">20</span><span class="hl-code">,</span><span class="hl-number">150</span><span class="hl-code">;
+    --</span><span class="hl-reserved">basalt-alternate-color:</span><span class="hl-code"> </span><span class="hl-number">255</span><span class="hl-code">,</span><span class="hl-number">132</span><span class="hl-code">,</span><span class="hl-number">0</span><span class="hl-code">;
+    --</span><span class="hl-reserved">basalt-positive-color:</span><span class="hl-code"> </span><span class="hl-number">24</span><span class="hl-code">,</span><span class="hl-number">163</span><span class="hl-code">,</span><span class="hl-number">20</span><span class="hl-code">;
+    --</span><span class="hl-reserved">basalt-negative-color:</span><span class="hl-code"> </span><span class="hl-number">255</span><span class="hl-code">,</span><span class="hl-number">48</span><span class="hl-code">,</span><span class="hl-number">48</span><span class="hl-code">;
+    --</span><span class="hl-reserved">basalt-cancel-color:</span><span class="hl-code"> var(--basalt-negative-color)</span><span class="hl-code">;
+    --</span><span class="hl-reserved">basalt-sub-text-color:</span><span class="hl-code"> </span><span class="hl-number">155</span><span class="hl-code">,</span><span class="hl-number">154</span><span class="hl-code">,</span><span class="hl-number">162</span><span class="hl-code">;
+    --</span><span class="hl-reserved">basalt-light-text-color:</span><span class="hl-code"> var(--basalt-primary-color)</span><span class="hl-code">;
+ 
+    --</span><span class="hl-reserved">basalt-UI-dark-palette:</span><span class="hl-code"> var(--basalt-overtone)</span><span class="hl-code">;
+    --</span><span class="hl-reserved">basalt-focus-color:</span><span class="hl-code"> var(--basalt-undertone)</span><span class="hl-code">;
+    --</span><span class="hl-reserved">basalt-background-color:</span><span class="hl-code"> var(--basalt-primary-color)</span><span class="hl-code">;
+</span><span class="hl-brackets">}</span></pre></div>
+</div>
+<p>Color variables are in RGB format.</p>
+<div class="code">
+<div class="hl-main">
+<pre><span class="hl-special">:root</span><span class="hl-code"> </span><span class="hl-brackets">{</span><span class="hl-code">
+    --</span><span class="hl-reserved">header-font-primary:</span><span class="hl-code"> 'Lexend'</span><span class="hl-code">;
+    --</span><span class="hl-reserved">UI-font-primary:</span><span class="hl-code"> 'Jost'</span><span class="hl-code">;
+    --</span><span class="hl-reserved">body-font-primary:</span><span class="hl-code"> 'Inter'</span><span class="hl-code">;
+    --</span><span class="hl-reserved">mono-font-primary:</span><span class="hl-code"> 'JetBrains Mono'</span><span class="hl-code">;
+</span><span class="hl-brackets">}</span></pre></div>
+</div>
+<p>The four font types used by Bedrock.</p>
+<div class="code">
+<div class="hl-main">
+<pre><span class="hl-special">:root</span><span class="hl-code"> </span><span class="hl-brackets">{</span><span class="hl-code">
+    --</span><span class="hl-reserved">header-logo:</span><span class="hl-code"> url('https://cdn.scpwiki.com/theme/en/basalt/basaltlogo.svg')</span><span class="hl-code">;
+    --</span><span class="hl-reserved">header-title:</span><span class="hl-code"> 'SCP Foundation'</span><span class="hl-code">;
+    --</span><span class="hl-reserved">header-subtitle:</span><span class="hl-code"> 'SECURE - CONTAIN - PROTECT'</span><span class="hl-code">;
+    --</span><span class="hl-reserved">title-size:</span><span class="hl-code"> </span><span class="hl-number">1.5</span><span class="hl-code">rem</span><span class="hl-code">;
+    --</span><span class="hl-reserved">subtitle-size:</span><span class="hl-code"> </span><span class="hl-number">0.825</span><span class="hl-code">rem</span><span class="hl-code">;
+ 
+    --</span><span class="hl-reserved">base-font-size:</span><span class="hl-code"> </span><span class="hl-number">1</span><span class="hl-code">rem</span><span class="hl-code">;
+    --</span><span class="hl-reserved">main-content-width:</span><span class="hl-code"> </span><span class="hl-number">67.5</span><span class="hl-code">rem</span><span class="hl-code">;
+    --</span><span class="hl-reserved">side-bar-width:</span><span class="hl-code"> </span><span class="hl-number">19</span><span class="hl-code">rem</span><span class="hl-code">;
+</span><span class="hl-brackets">}</span></pre></div>
+</div>
+<p>Note that due to a mechanic in CSS <tt>calc()</tt> function, any variables with length unit such as rem or px should not be discarded even when the value is set to 0, e.g. <em><tt><span style="white-space: pre-wrap;">--subtitle-size:&#32;0rem;</span></tt></em> makes the subtitle disappear but doesn't invalidate the <tt>calc()</tt> function.</p>
+<p><tt><span style="white-space: pre-wrap;">--main-content-width</span></tt> should not be set with % unit. To have the main area take up full screen width, use an arbitrarily high rem value instead.</p>
+<hr />
+<h1 id="toc3"><span>Other</span></h1>
+<p>The source code of this theme can be found on our <a href="https://basalt-team.github.io/Basalt/">GitHub</a> page.</p>
+<p>Bedrock is currently not compatible with Common Theme.</p>
+
+
+
+                    </div>
+
+                            
+    
+                        <script>
+window['nitroAds'].createAd('wad-scp-wiki-below-content-anchor', {
+  "refreshTime": 30,
+  "format": "anchor-v2",
+  "anchor": "bottom",
+  "anchorPersistClose": false,
+  "mediaQuery": "(min-width: 0px)",
+  "report": {
+    "enabled": true,
+    "icon": true,
+    "wording": "Report Ad",
+    "position": "bottom-right"
+  }
+  });
+</script>
+                    
+    
+
+                    
+
+
+                    
+
+
+
+                    
+                        <div class="page-tags">
+                            <span>
+                                <a href="/system:page-tags/tag/_cc#pages">_cc</a><a href="/system:page-tags/tag/theme#pages">theme</a>
+                            </span>
+                        </div>
+                    
+
+                    <div id="page-info-break"></div>
+                    
+                        <div id="page-options-container">
+                            <div id="page-info">page revision: 21, last edited: <span class="odate time_1704719652 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20ago%29">08 Jan 2024 13:14</span></div>
+            <div id="page-options-bottom"  class="page-options-bottom">
+            <a href="javascript:;" class="btn btn-default" id="edit-button">Edit</a>
+<a href="javascript:;" class="btn btn-default" id="pagerate-button">Rate (<span id="prw54355">+108</span>)</a>
+<a href="javascript:;" class="btn btn-default" id="tags-button">Tags</a>
+<a href="/forum/t-15297716/theme:bedrock" class="btn btn-default" id="discuss-button">Discuss (15)</a>
+<a href="javascript:;" class="btn btn-default" id="history-button">History</a>
+<a href="javascript:;" class="btn btn-default" id="files-button">Files</a>
+<a href="javascript:;" class="btn btn-default" id="print-button">Print</a>
+<a href="javascript:;" class="btn btn-default" id="site-tools-button">Site tools</a>
+<a href="javascript:;" class="btn btn-default" id="more-options-button">+&nbsp;Options</a> 
+</div>
+<div id="page-options-bottom-2" class="page-options-bottom form-actions" style="display:none">
+    <a href="javascript:;" class="btn btn-default" id="edit-sections-button">Edit Sections</a>
+    <a href="javascript:;" class="btn btn-default" id="edit-append-button">Append</a>
+    <a href="javascript:;" class="btn btn-default" id="edit-meta-button">Edit Meta</a>
+    <a href="javascript:;" class="btn btn-default" id="watchers-button">Watchers</a> 
+    <a href="javascript:;" class="btn btn-default" id="backlinks-button">Backlinks</a> 
+    <a href="javascript:;" class="btn btn-default" id="view-source-button">Page Source</a> 
+    <a href="javascript:;" class="btn btn-default" id="parent-page-button">Parent</a> 
+    <a href="javascript:;" class="btn btn-default" id="page-block-button">Lock Page</a>    
+    <a href="javascript:;" class="btn btn-default" id="rename-move-button">Rename</a> 
+    <a href="javascript:;" class="btn btn-default" id="delete-button">Delete</a> 
+</div>
+<div id="page-options-area-bottom">
+</div>
+
+                        </div>
+                    
+                    <div id="action-area" style="display: none;"></div>
+                </div>
+            </div>
+            
+            
+            
+            <div id="footer" style="display: block; visibility: visible;">
+                <div class="options" style="display: block; visibility: visible;">
+    <a href="https://www.wikidot.com/doc" id="wikidot-help-button">Help</a>
+    &nbsp;|
+    <a href="https://www.wikidot.com/legal:terms-of-service" id="wikidot-tos-button">Terms of Service</a>
+    &nbsp;|
+    <a href="https://www.wikidot.com/legal:privacy-policy" id="wikidot-privacy-button">Privacy</a>
+    &nbsp;|
+    <a href="javascript:;" id="bug-report-button" onclick="WIKIDOT.page.listeners.pageBugReport(event)">Report a bug</a>
+    &nbsp;|
+    <a href="javascript:;" id="abuse-report-button" onclick="WIKIDOT.page.listeners.flagPageObjectionable(event)">Flag as objectionable</a>
+    <span id="consent-box" style="display:none">
+        &nbsp;|
+        <a href="javascript:;"  onclick="window.__cmp('showModal');">Update cookie settings</a>
+    </span>
+
+    <script>
+    if (window["nitroAds"] && window["nitroAds"].loaded) {
+        document.getElementById("consent-box").style.display = window["__tcfapi"] ? "" : "none";
+        } else {
+        document.addEventListener(
+                "nitroAds.loaded",
+                () =>
+                (document.getElementById("consent-box").style.display = window["__tcfapi"] ? "" : "none")
+                );
+    }
+    </script>
+</div>
+Powered by <a href="https://www.wikidot.com">Wikidot.com</a>
+            </div>
+            
+                <div id="license-area" class="license-area">
+                    Unless otherwise stated, the content of this page is licensed under
+
+ <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-ShareAlike 3.0 License</a>
+                </div>
+            
+            
+            
+
+
+
+            <div id="extrac-div-1"><span></span></div><div id="extrac-div-2"><span></span></div><div id="extrac-div-3"><span></span></div>
+            
+            
+            
+            
+                
+            
+        </div>
+        
+    </div>
+<!-- These extra divs/spans may be used as catch-alls to add extra imagery. -->
+<div id="extra-div-1"><span></span></div><div id="extra-div-2"><span></span></div><div id="extra-div-3"><span></span></div>
+<div id="extra-div-4"><span></span></div><div id="extra-div-5"><span></span></div><div id="extra-div-6"><span></span></div>
+</div>
+
+
+
+
+</div>
+<div id="dummy-ondomready-block" style="display: none;" ></div>
+    <!-- Google Analytics load -->
+    <script type="text/javascript">
+        (function() {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'stats.g.doubleclick.net/dc.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+
+
+
+
+<div id="page-options-bottom-tips" style="display: none;">
+    <div id="edit-button-hovertip">
+        Click here to edit contents of this page.    </div>
+</div>
+<div id="page-options-bottom-2-tips"  style="display: none;">
+    <div id="edit-sections-button-hovertip">
+        Click here to toggle editing of individual sections of the page (if possible).         Watch headings for an &quot;edit&quot; link when available.    </div>
+    <div id="edit-append-button-hovertip">
+        Append content without editing the whole page source.    </div>
+    <div id="history-button-hovertip">
+        Check out how this page has evolved in the past.    </div>
+    <div id="discuss-button-hovertip">
+        If you want to discuss contents of this page - this is the easiest way to do it.    </div>
+    <div id="files-button-hovertip">
+        View and manage file attachments for this page.    </div>
+    <div id="site-tools-button-hovertip">
+        A few useful tools to manage this Site.    </div>
+    <div id="backlinks-button-hovertip">
+        See pages that link to and include this page.    </div>
+    <div id="rename-move-button-hovertip">
+        Change the name (also URL address, possibly the category) of the page.    </div>
+    <div id="view-source-button-hovertip">
+        View wiki source for this page without editing.    </div>
+    <div id="parent-page-button-hovertip">  
+        View/set parent page (used for creating breadcrumbs and structured layout).    </div>
+            <div id="abuse-report-button-hovertip">
+            Notify administrators if there is objectionable content in this page.        </div>
+        <div id="bug-report-button-hovertip">
+            Something does not work as expected? Find out what you can do.        </div>
+        <div id="wikidot-help-button-hovertip">
+            General Wikidot.com documentation and help section.        </div>
+        <div id="wikidot-tos-button-hovertip">
+            Wikidot.com Terms of Service - what you can, what you should not etc.        </div>
+        <div id="wikidot-privacy-button-hovertip">
+            Wikidot.com Privacy Policy.          
+        </div>
+    </div>
+</body>
+</html>

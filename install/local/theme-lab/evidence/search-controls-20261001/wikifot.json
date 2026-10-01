@@ -1,0 +1,316 @@
+{
+  "schema": "theme_lab_wikidot_search_control.v1",
+  "theme": "wikifot",
+  "source_url": "https://scp-wiki.wikidot.com/theme:wikifot",
+  "source_sha256": "406f9fdca96043830e4656383a55643885cf1bd55a2237c360ce5c1f14d85a9e",
+  "observed_at": "2026-10-01T02:21:14.602Z",
+  "public_writes": 0,
+  "external_requests_sent": 0,
+  "offline": true,
+  "browser_version": "149.0.7827.55",
+  "browser_sha256": "2d18db9d8608b052b6a552ee00ec1e830f93692e928b65ecc67d693bd33fe801",
+  "original_html_sha256": "a1553f6fd7651f741716eec44085001f8356d337d9afa899fb6b4be1b0e4b0f0",
+  "replay_entry": "/o/d1ffb17b58ec866b82aa03e48d5ee4e9bda31c7e072472c0c22da166dd6a1e55",
+  "snapshot_sha256": "fb989e6a2ee2953134cd609bf483baddf5328cc204999bf8cceb1c978734e3ad",
+  "artifacts": [
+    {
+      "path": "evidence/search-controls-20261001/objects/12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941",
+      "sha256": "12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941",
+      "content_type": "application/x-javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/264a84e138e9f97ca169107e0e1496fbbe1b9992645c170b435815a469a0e481",
+      "sha256": "264a84e138e9f97ca169107e0e1496fbbe1b9992645c170b435815a469a0e481",
+      "content_type": "application/javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c",
+      "sha256": "574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c",
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583",
+      "sha256": "5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583",
+      "content_type": "text/css"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/635dfb450eccd5357914e89451c7f9ba3ceacffc40a21073050177f7219ab7ab",
+      "sha256": "635dfb450eccd5357914e89451c7f9ba3ceacffc40a21073050177f7219ab7ab",
+      "content_type": "application/x-javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/6d46b6f0fa89ede15b4ff437b045454b490f72a18b15b4450c77cec3439ee738",
+      "sha256": "6d46b6f0fa89ede15b4ff437b045454b490f72a18b15b4450c77cec3439ee738",
+      "content_type": "application/x-javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387",
+      "sha256": "7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387",
+      "content_type": "application/x-javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c",
+      "sha256": "7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c",
+      "content_type": "text/css"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/a1553f6fd7651f741716eec44085001f8356d337d9afa899fb6b4be1b0e4b0f0",
+      "sha256": "a1553f6fd7651f741716eec44085001f8356d337d9afa899fb6b4be1b0e4b0f0",
+      "content_type": "text/html; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc",
+      "sha256": "c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc",
+      "content_type": "application/x-javascript"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/d1ffb17b58ec866b82aa03e48d5ee4e9bda31c7e072472c0c22da166dd6a1e55",
+      "sha256": "d1ffb17b58ec866b82aa03e48d5ee4e9bda31c7e072472c0c22da166dd6a1e55",
+      "content_type": "text/html; charset=utf-8"
+    },
+    {
+      "path": "evidence/search-controls-20261001/objects/eabe424dd70c56173c2cfcfe8ca6b328ef2077d6ce9b3243540148a2d76f20ab",
+      "sha256": "eabe424dd70c56173c2cfcfe8ca6b328ef2077d6ce9b3243540148a2d76f20ab",
+      "content_type": "text/html; charset=utf-8"
+    }
+  ],
+  "scope": "Only the hidden header query and native visible-button search navigation. Missing reference resources remain recorded and do not certify source appearance or whole-site parity.",
+  "source_measurements": [
+    {
+      "theme": "wikifot",
+      "url": "https://scp-wiki.wikidot.com/theme:wikifot",
+      "viewport": "desktop",
+      "viewport_size": {
+        "width": 1440,
+        "height": 1000
+      },
+      "source_sha256": "406f9fdca96043830e4656383a55643885cf1bd55a2237c360ce5c1f14d85a9e",
+      "loaded": {
+        "root_url": "https://scp-wiki.wikidot.com/theme:wikifot",
+        "entry": "/o/d1ffb17b58ec866b82aa03e48d5ee4e9bda31c7e072472c0c22da166dd6a1e55",
+        "asset_count": 38,
+        "external_requests": 0,
+        "cache_hits": 1,
+        "failed_asset_count": 1,
+        "failed_assets": [
+          {
+            "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+          }
+        ],
+        "browser_blocked_external_attempts": 1394,
+        "browser_blocked_urls": [
+          "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+          "https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding:wght@400;700&display=swap",
+          "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+          "https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap",
+          "https://cdn.onesignal.com/sdks/OneSignalPageSDKES6.js?v=151607",
+          "http://interwiki.scpwiki.com/interwikiFrame.html?lang=en&community=scp&pagename=theme:aesthetic-theme",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=0&theme=https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=1&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=2&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css&css={$css}",
+          "https://floors.nitropay.com/f?s=143&c=JP&v=2"
+        ],
+        "offline": true
+      },
+      "query": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "after_focus": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "button": {
+        "display": "inline-block",
+        "visibility": "visible",
+        "width": 56.640625,
+        "height": 17
+      },
+      "handler": {
+        "search": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}",
+        "events": [
+          {
+            "type": "submit",
+            "fn": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}"
+          }
+        ]
+      },
+      "navigation": "/search:site/q/Search%20this%20site",
+      "action_error": null,
+      "original_html_sha256": "a1553f6fd7651f741716eec44085001f8356d337d9afa899fb6b4be1b0e4b0f0",
+      "replay_entry": "/o/d1ffb17b58ec866b82aa03e48d5ee4e9bda31c7e072472c0c22da166dd6a1e55",
+      "snapshot_sha256": "fb989e6a2ee2953134cd609bf483baddf5328cc204999bf8cceb1c978734e3ad",
+      "public_writes": 0,
+      "external_requests_sent": 0
+    },
+    {
+      "theme": "wikifot",
+      "url": "https://scp-wiki.wikidot.com/theme:wikifot",
+      "viewport": "laptop",
+      "viewport_size": {
+        "width": 1024,
+        "height": 900
+      },
+      "source_sha256": "406f9fdca96043830e4656383a55643885cf1bd55a2237c360ce5c1f14d85a9e",
+      "loaded": {
+        "root_url": "https://scp-wiki.wikidot.com/theme:wikifot",
+        "entry": "/o/d1ffb17b58ec866b82aa03e48d5ee4e9bda31c7e072472c0c22da166dd6a1e55",
+        "asset_count": 38,
+        "external_requests": 0,
+        "cache_hits": 1,
+        "failed_asset_count": 1,
+        "failed_assets": [
+          {
+            "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+          }
+        ],
+        "browser_blocked_external_attempts": 1414,
+        "browser_blocked_urls": [
+          "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+          "https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding:wght@400;700&display=swap",
+          "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+          "https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap",
+          "https://cdn.onesignal.com/sdks/OneSignalPageSDKES6.js?v=151607",
+          "http://interwiki.scpwiki.com/interwikiFrame.html?lang=en&community=scp&pagename=theme:aesthetic-theme",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=0&theme=https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=1&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=2&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css&css={$css}",
+          "https://floors.nitropay.com/f?s=143&c=JP&v=2"
+        ],
+        "offline": true
+      },
+      "query": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "after_focus": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "button": {
+        "display": "inline-block",
+        "visibility": "visible",
+        "width": 56.640625,
+        "height": 17
+      },
+      "handler": {
+        "search": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}",
+        "events": [
+          {
+            "type": "submit",
+            "fn": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}"
+          }
+        ]
+      },
+      "navigation": "/search:site/q/Search%20this%20site",
+      "action_error": null,
+      "original_html_sha256": "a1553f6fd7651f741716eec44085001f8356d337d9afa899fb6b4be1b0e4b0f0",
+      "replay_entry": "/o/d1ffb17b58ec866b82aa03e48d5ee4e9bda31c7e072472c0c22da166dd6a1e55",
+      "snapshot_sha256": "fb989e6a2ee2953134cd609bf483baddf5328cc204999bf8cceb1c978734e3ad",
+      "public_writes": 0,
+      "external_requests_sent": 0
+    },
+    {
+      "theme": "wikifot",
+      "url": "https://scp-wiki.wikidot.com/theme:wikifot",
+      "viewport": "tablet",
+      "viewport_size": {
+        "width": 768,
+        "height": 1024
+      },
+      "source_sha256": "406f9fdca96043830e4656383a55643885cf1bd55a2237c360ce5c1f14d85a9e",
+      "loaded": {
+        "root_url": "https://scp-wiki.wikidot.com/theme:wikifot",
+        "entry": "/o/d1ffb17b58ec866b82aa03e48d5ee4e9bda31c7e072472c0c22da166dd6a1e55",
+        "asset_count": 38,
+        "external_requests": 0,
+        "cache_hits": 1,
+        "failed_asset_count": 1,
+        "failed_assets": [
+          {
+            "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+            "code": "reference_http_error",
+            "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+          }
+        ],
+        "browser_blocked_external_attempts": 1434,
+        "browser_blocked_urls": [
+          "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+          "https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding:wght@400;700&display=swap",
+          "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700;800&display=swap",
+          "https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap",
+          "https://cdn.onesignal.com/sdks/OneSignalPageSDKES6.js?v=151607",
+          "http://interwiki.scpwiki.com/interwikiFrame.html?lang=en&community=scp&pagename=theme:aesthetic-theme",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=0&theme=https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=1&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css&css={$css}",
+          "http://interwiki.scpwiki.com/styleFrame.html?priority=2&theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css&css={$css}",
+          "https://floors.nitropay.com/f?s=143&c=JP&v=2"
+        ],
+        "offline": true
+      },
+      "query": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "after_focus": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "button": {
+        "display": "inline-block",
+        "visibility": "visible",
+        "width": 56.640625,
+        "height": 17
+      },
+      "handler": {
+        "search": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}",
+        "events": [
+          {
+            "type": "submit",
+            "fn": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}"
+          }
+        ]
+      },
+      "navigation": "/search:site/q/Search%20this%20site",
+      "action_error": null,
+      "original_html_sha256": "a1553f6fd7651f741716eec44085001f8356d337d9afa899fb6b4be1b0e4b0f0",
+      "replay_entry": "/o/d1ffb17b58ec866b82aa03e48d5ee4e9bda31c7e072472c0c22da166dd6a1e55",
+      "snapshot_sha256": "fb989e6a2ee2953134cd609bf483baddf5328cc204999bf8cceb1c978734e3ad",
+      "public_writes": 0,
+      "external_requests_sent": 0
+    }
+  ],
+  "superseded_measurements": [],
+  "measurement_programs": [
+    {
+      "path": "evidence/search-controls-20261001/probe-frozen-search-all.mjs",
+      "sha256": "0ad62e3594f4d887f973933de98d2e65a1d99085eb1f8b253fb5e05b721705c4"
+    },
+    {
+      "path": "evidence/search-controls-20261001/probe-frozen-search-jakstyle.mjs",
+      "sha256": "095410b808a24f76f6d39e28a2fde12eb4199bfd897fcba8f194f365846d1a23"
+    }
+  ]
+}

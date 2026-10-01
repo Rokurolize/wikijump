@@ -41,8 +41,8 @@
   "candidate_source_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
   "human_port_candidate_path": "install/local/theme-lab/ports/redtape/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "c0dab5aed78cfb4688cd7b452e8cbc5dfdcd4b4da6f4a3eb94ee13cf3970a0d6",
-  "candidate_preview_sha256": "098630d3c2f6997271431d50999af6173fcdca72d73210b184b550138ed02799",
-  "candidate_css_sha256": "c895056a60734a46d38798eb026f1902bbbed2919379bc0af4006e58aa87400d",
+  "candidate_preview_sha256": "770aa44e13226adf2acb3091effcb034e42bf8eb1f87ae3cbeef09ed40ffca81",
+  "candidate_css_sha256": "148094fb643ed7bc5bf743e0d85aa94a0793072867ff94ff8702e55e6dca6f34",
   "page_assets": [
     {
       "filename": "black-highlighter-logo.svg",

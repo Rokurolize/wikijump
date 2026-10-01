@@ -1,4 +1,5 @@
 import { strict as assert } from "node:assert"
+import fs from "node:fs"
 import test from "node:test"
 
 import {
@@ -54,5 +55,16 @@ test("resolves the authenticated user name for Wikidot-compatible chrome", () =>
       user_session: { user: { name: "", slug: "account-slug" } }
     }),
     "account-slug"
+  )
+})
+
+test("authenticated Wikidot chrome retains the legacy account menu toggle before its options", () => {
+  const layout = fs.readFileSync(
+    new URL("../src/routes/+layout.svelte", import.meta.url),
+    "utf8"
+  )
+  assert.match(
+    layout,
+    /<a id="account-topbutton" href="javascript:;">&#9660;<\/a>\s*<div id="account-options">/u
   )
 })

@@ -109,3 +109,28 @@
 [[/div]]
 [[div class="lightoff"]]
 [[/div]]
+
+[[module CSS]]
+/* SCP-JP Wikidot Dear Dictator navigation correction: anchor only the overflowing rightmost menus at their mobile row endpoints. */
+@media (max-width: 359px) {
+  #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul { left: auto; right: 0; }
+}
+@media (min-width: 360px) and (max-width: 767px) {
+  #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
+}
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot dear-dictator credit correction: keep the modal rating in document flow below the license control. */
+#u-credit-view .modalbox .modalbox-ratemodule { position: static; }
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot Dear Dictator control correction: keep mobile navigation inside the viewport above the search layer. */
+@media (max-width: 767px) {
+  #top-bar { z-index: 20 !important; }
+  #top-bar .mobile-top-bar { position: fixed !important; inset: 0 0 auto 0 !important; z-index: 20 !important; }
+  #search-top-box { z-index: 14 !important; width: auto !important; max-width: calc(100vw - 7rem) !important; }
+  #search-top-box-form { width: auto !important; }
+}
+[[/module]]

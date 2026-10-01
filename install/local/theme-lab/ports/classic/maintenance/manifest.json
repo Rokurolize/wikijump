@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
+  "frozen_candidate_source_sha256": "d33430be391e192927659cde039a135b2849be3cef240ed4857a1998d178dfc1",
   "base_source_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "6d90d7fc3a0c76b350b7bc45d14f0ceee0cbc569179eb34e095495f1ae0608d8",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "f6d05fda7ad197b381beb3d728a340b95f5bd60c1bd2e26bf60a7236fc6b59b7",
+  "jp_overrides_sha256": "e1cc27ec968181bc709c367b68ef631b5ece06fa824c6d042ef06f07aa47a939",
+  "semantic_css_sha256": "fb4bb039957de0757e22c4c60a2f97a1fc054c78aa03a7238ee2a3e9ded914d3",
+  "canonical_override_sha256": "60a22b0e06bcaecb8cff81fc08924a41ada3a95c808be8eef59ca813ef1512d6",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
+  "final_source_sha256": "b2f1b6be54e6742c5a02bd3dab0d036dcb2308a174a6f95ce6d944fa8bbebdb2",
   "final_source_inputs": {
     "base_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "e1cc27ec968181bc709c367b68ef631b5ece06fa824c6d042ef06f07aa47a939"
   },
   "ordered_include_sha256": "828ba497417c9320c594b3ccc5add1887bf885de2bf3077bdfd098348bdc999a",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 1,
+  "raw_override_rule_count": 1,
+  "canonical_override_rule_count": 1,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -259,8 +259,43 @@
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot Classic mobile endpoint correction: contain the last submenu above the wrapped narrow layout.",
+      "sha256": "985d2f3995ef32767b02714495f40fb13ff969d4fd986667505025f5f0a96ded",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "At 390px Classic increases the real SCP-JP fourth submenu escape by 4.703125px relative to the native target. Align only that endpoint above 359px. At 320px Classic does not worsen the inherited third-menu escape, so no narrow-layout correction is authorized.",
+      "evidence": [
+        {
+          "path": "authority-evidence/classic-mobile-navigation-authority-20261001/receipt.json",
+          "sha256": "95a06a942594c5fc547a5ee9c8110f82471e8907fa511c7879627ac6741ccb20",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "state": "navigation-action",
+        "viewports": [
+          390
+        ]
+      },
+      "published_css_sha256": "bee544af9adc6c94b59ac9ec8f01ea7fe66e71a1988bd76684d7b807dc69a140"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot Classic mobile endpoint correction: contain the last submenu above the wrapped narrow layout.",
+      "rationale": "SCP-JP Wikidot Classic mobile endpoint correction: contain the last submenu above the wrapped narrow layout.",
+      "sha256": "985d2f3995ef32767b02714495f40fb13ff969d4fd986667505025f5f0a96ded",
+      "selectors": [
+        "#top-bar .mobile-top-bar > ul > li:last-child > ul"
+      ],
+      "at_contexts": [
+        "@media (min-width: 360px) and (max-width: 767px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    }
+  ]
 }

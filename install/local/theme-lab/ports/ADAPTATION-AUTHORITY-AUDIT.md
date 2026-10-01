@@ -112,3 +112,57 @@ passing adaptation authority and deterministic generation from an inconclusive
 full local port acceptance. This cleanup does not certify an unexecuted complete
 migration or reuse stale accepted screenshots. The Sigma final evidence gate
 verifies source and historical evidence integrity and reports that distinction.
+
+The Flopstyle Dark Sigma-10 credit check is separately bound to the frozen
+read-only `sigma-10:main` replay in
+`authority-evidence/flopstyle-dark-sigma10-credit-candidate-current/`. It
+applies the exact current `flopstyle-dark/candidate.css` to the current
+`.creditRateOtherwiseBottom .return-credits` target component at 320px and
+390px. That component and the document fit both widths. The shared interactive
+fixture remains the historical Sigma-9 diagnostic described in
+`interactive-visual-fixture/fixture-source.json`; its `.credit-back-link` is a
+synthetic replacement for a remote iframe control and cannot create a
+Sigma-10 port requirement. Keep those evidence tracks separate when reviewing
+future Flopstyle changes.
+
+## 2026-10-01 action and article-context follow-up
+
+The earlier `navigation` receipts establish submenu sizing after visibility
+injection. They do not establish that a user can activate each menu. New
+`navigation-action` receipts exercise the production helper without changing
+submenu display, visibility or opacity. They certify narrowly scoped corrections
+for Scheme, Foxtrot, Quand le Soleil se Couche and Dear Dictator at 320/390px,
+and `desktop-navigation` certifies Penumbra at 768/1024/1440px. Every submenu
+and link is measured, and the delivered CSS matches the staged proof bytes.
+Quand retains its source filter and responsive header. Penumbra needs only an
+empty mobile overlay pointer correction; its settled closed drawer already
+passes, so the explored extra drawer-position override was discarded.
+
+Wikifot has separate `sidebar-closed` and `sidebar-open` authority at 320/390px.
+The closed contract requires nonempty drawer geometry wholly off-canvas. The
+open contract requires the actual open-menu click and a contained drawer.
+Before correction, 63.98px remains exposed and intercepts the click; after
+correction the closed right edge is zero and the open drawer spans 0..256px.
+The schema, frozen replay, CSS, DOM, PNG and archived measurement programs are
+verified through the normal authority validator.
+
+Generic article CSS excludes exact source modules active only on the theme
+page. A unique trailing prefix may be removed when its only missing bytes are
+closing braces/whitespace. Leading stylesheet imports remain the preserved
+dependency chain, even when a theme page loads them in its presentation guard.
+Transformed or ambiguous module text is retained, never guessed. The affected
+package builds and source proofs are refreshed; historical receipts remain
+against their historical inputs. Pataphysics heritage visibility is corrected
+by this materialization boundary, rather than by a new theme override.
+
+The standalone Quand builder accepts an authority-bound override as a separate
+publication CSS module. `--refresh` regenerates its validation CSS from the
+preserved template plus verified overrides; normal builds still check current
+outputs. It does not bypass input/proof validation or grant visual acceptance.
+
+User-facing navigation activation now fails closed when the parent is occluded;
+sidebar opening tries only reachable source-owned controls. A synthetic DOM event
+cannot certify either opening action. Sidebar closing may still invoke the source
+close event as verified cleanup, requiring both changed hash and closed geometry.
+These helper bodies participate in the per-state action identity, so only affected
+observations must be refreshed; retained screenshots are not assigned a new PASS.

@@ -1,0 +1,80 @@
+/* thai */
+@font-face {
+  font-family: 'Mali';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/36e435671807b0da1ac839e5efca4dfb28f134be5526be81ccb98a3c46ced557") format('woff2'), url("/o/b2479297bcd288b009458861dfee3f5d8adffaf9ab0eff374b8ae4d6b065811d") format('woff'); 
+  unicode-range: U+02D7,U+0303,U+0331,U+0E01-0E5B,U+200C-200D,U+25CC;
+}
+
+/* latin */
+@font-face {
+  font-family: 'Mali';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/0a740b9e76eda6bfd02c373e351a09ed0c5cd324e5dbd1db112ccd382e26e612") format('woff2'), url("/o/cd38e40d516ab13ab4ef21cdb01671bac4c326ef338b39d87eb1892c5fc17bbf") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'Mali';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/68436fded4e2a4d67fbeba53a20d9de61abccaf411a4cd9050acc557fbac0243") format('woff2'), url("/o/2d6857ed5f4679ec8e39f06ae7248e890548fc9c5f7125ab30ff9b1a9a0bdef7") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'Mali';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/bf103ebeaa5a4bc2a2a5330f8d67d956a2a29ac7883fe924283e941426625060") format('woff2'), url("/o/2f429a0b214b7ac7965cc53a689b16342262b9cd8bc2fbce4bf0a90b400b7b91") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* thai */
+@font-face {
+  font-family: 'Mali';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/o/bf6a252515ce985c2bad79af38fbd012e38e5ad96d2221056cabac587a81198b") format('woff2'), url("/o/0c9b87309bb67c949bb902720b8985f9dfc8f1d2d48af25168a31194954abfe8") format('woff'); 
+  unicode-range: U+02D7,U+0303,U+0331,U+0E01-0E5B,U+200C-200D,U+25CC;
+}
+
+/* latin */
+@font-face {
+  font-family: 'Mali';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/o/dd64ef687a2b4b05a5d62563bb6c62656563ad443e9d25d51a0440d3714a7eb3") format('woff2'), url("/o/e947f3eb89a710ce5059b300ee6cbca376f6d2f4d3dda8f3efe1507aa19b3126") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'Mali';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/o/daa039c4c64e23668e972cc47964ae8c3b35e16cc8fe1f869468a47a8d1ffd11") format('woff2'), url("/o/52b163d0d9d9980382e82d8661d677900c042038c9a6263136f317ac33e2762e") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'Mali';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/o/8fd3787e0f83f0958e1d368ac9798f613643f73a6b1277e631e9a6c722f52536") format('woff2'), url("/o/e5268cd8578564d3097c81b4321ef4db11c8429b8b305183aff2a745b631f969") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+

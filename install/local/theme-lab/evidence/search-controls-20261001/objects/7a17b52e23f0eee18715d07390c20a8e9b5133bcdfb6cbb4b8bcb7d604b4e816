@@ -1,0 +1,60 @@
+/* greek */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/57e110b6d4ff875cf8f9aedc7b818bee5143433b4c9032e0e373e40c9604a460") format('woff2'), url("/o/8ec4cbc714c1a1e09a93260e05d92452964667845b21e8932641f3d1e6200bde") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/dabae363ac0ae6c3b2a137a32f7132b42520a8af252f87aa6c2198f2a79cf91c") format('woff2'), url("/o/4ed830600afe65057c2c165013dd64968b3d4fd3c358e7a0d0c2fc8762f632ff") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/c86112704544f597d4814625795347beffe516e15c679d52b14302ec5e149ba7") format('woff2'), url("/o/4651f4141689f9677672b44b7be830e3f8510af0da4d251582c24de3a38d910a") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* greek-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/3141288b0697416cbd4a3198f70f41483efde6d3f033aba96bd47c369649bad8") format('woff2'), url("/o/9f508d42c6e35bf09c51b7dbb4f484a0ba801577e4c7667d319d3d4952d5090b") format('woff'); 
+  unicode-range: U+1F00-1FFF;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/7db064fa5c5d305d684608744d621aa724ec4f1c6b00bb647697f4d8d3e78df1") format('woff2'), url("/o/ee801ef2f955d29bd8c9f4ec104083af7f0ec7ceeaff68b5a28927a3ca83c4ca") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/o/a9d09ab6d1c4b1b02e06a5449c7ff2632d52c87215df9727648a3201efd5951b") format('woff2'), url("/o/da02e7c9e76988de616283ff9efe4893df238ebdd25633e21ea2bca237b9070f") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+

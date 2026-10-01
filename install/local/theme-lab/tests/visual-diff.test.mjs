@@ -19,12 +19,13 @@ test("comparePngRmse passes under threshold and fails over it", async () => {
   assert.equal(fail.status, "fail");
 });
 
-test("summarizeVisual reports per-viewport status", () => {
+test("summarizeVisual keeps raw comparison separate from reviewed acceptance", () => {
   const summary = summarizeVisual({
     desktop: {comparison: {status: "pass", normalized_rmse: 0.001}},
     mobile: {comparison: {status: "fail", normalized_rmse: 0.4}},
   });
-  assert.equal(summary.status, "fail");
-  assert.equal(summary.viewports.mobile.status, "fail");
+  assert.equal(summary.status, "inconclusive");
+  assert.equal(summary.viewports.mobile.status, "inconclusive");
+  assert.equal(summary.viewports.mobile.comparison_status, "fail");
   assert.equal(summarizeVisual(null), null);
 });

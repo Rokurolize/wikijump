@@ -1,0 +1,1056 @@
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 100;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/2ea0978b6c622ef9d56ebc0d888d63be920c137739277b664dc70c091a518954") format('woff2'), url("/o/02a3e8ea251c504209d463e42f6ededf0800a688b26cfdb9f8c0357d8db6c9dc") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 100;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/f418de7ec4e0cb4272023773ec00c56eba3fa52418c471f6793890275f65ad85") format('woff2'), url("/o/501e894677ff7e8bde3dc62034723a2ccfc6e56fe8293da0605fcb8514232136") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 100;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/9c84b418ac899ce8fdc8d67b469663693e608adcff0a642d3c070ae283cdf36a") format('woff2'), url("/o/b88dfac68aedc870797db31d9b8c8e53ea3f6b58dad116328341f757320724e4") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 100;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/75fe38474d34d351dd0a1e36bc9b2f5dca0b53f53de52d4b959a9fc64307a364") format('woff2'), url("/o/1caba0b9e2873f0611314dbc45855d92c7e349b68acac1e0d3b2670a1b9b4a53") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 100;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/a0bd53b7a1d5b0fdde4d6ac7448da7454c93bf630e582db8a210a56e6943b411") format('woff2'), url("/o/9882db802c7e4dd1e640493a7b110f93446ef051af9a77512ee12e400ec1eeb1") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 100;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/0038d0bdd4987114cacd2e07e97b03bb6d9a45461a23e54d9495b9fa207bbaeb") format('woff2'), url("/o/8de6d54408dae73f96f04639ff56f431049fb99c42650e84ebe5ae48f13613f0") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 200;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/bea9b1ac6fce9f72ca582c0ab97c954b5825b2f748a4f4290148fcb36d9725c9") format('woff2'), url("/o/44c7bd5c9064b57b0c3d5a0a054c49d780e73a21be8eee41a64d9dcb06014627") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 200;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/b027d8a71c3678e140ae1b41e3a1ef1a74b3612aeeb150a050351cd4c52521b1") format('woff2'), url("/o/b27230f44f25cf49a44183ebb1d9b88be387f95b6a9bf6f8bb7635690a4e6c5f") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 200;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/540c7ef0841b62ba9f0e7c403e37720f6451328a7b43dc1baebebc1d0e039850") format('woff2'), url("/o/1f15f030524c3db3d9a85b855b8ca08a3a3c5dd1e8db2f153d3ef18cfc931ea0") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 200;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/0c449199e239c6c0cf7a74ac0afd043794daf22868caa598158bd2b8866c8133") format('woff2'), url("/o/55adf184633eaa03771b7a5674764756a1a2f9d7431a6e7b917ffea11bc77a19") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 200;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/2d4808e8d9ece65c459a44510e9eaa2bbdd6f976f6efa4afb4279ffa7356f3fc") format('woff2'), url("/o/ce64c31d4e399062287233c80b9d27694063ad851b422e8c3d3db5a82696f01a") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 200;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/1f026ef57cc732a71d9fbf50909167b215b0a604b33725e0fdc3e1cf3df9b851") format('woff2'), url("/o/dbcc64702e602f44bee78e968a25266144676ef579ef6dd74b21014163db6b56") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 300;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/821df34a4bdb01fa6f02f56119d50561d41382815e57bb2c323cbaf354c11dc5") format('woff2'), url("/o/1ac91243f07b0dcb3bc5bd8ff68797ef01ece7944887f7bb75f49e227b8431ea") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 300;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/8983078ce546bcc4cb38fceb0d965485b598ac8046f60b293d272e2045c65a6e") format('woff2'), url("/o/aa121613a2c0a43d0eb89122eaa250b23fdf86fff8688bfcbe1cb6ec174791f7") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 300;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/729449b4b514386bbd8d537fb30f8ecafed6b8ca57ddd9c2bf9ed88a7b0a5542") format('woff2'), url("/o/f1db06a98098137d9b599c7ce45029209cace14357abc8a7851b9245be19905c") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 300;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/72dbe2ff2877de6c98d182c179fcf546a9c2f8fea11c539d409845acbd4a9704") format('woff2'), url("/o/8947cd9c44d5d31f2f36a0effb1009fd16aec3abce15dd2cecea7326b519b4ed") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 300;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/eac5358a2b5898c864a80369d4eeac3f669cff204ff17177968c66e4b1de3652") format('woff2'), url("/o/ad4fc011c07a84fec531bd58b2cf862ebbb5bbd33f46896deaed99dba6d8bbf6") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 300;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/1d311d89fedfaf7c992d6ae53bc5e75ce89767c5f38c4a5ca2dded49bf4f9401") format('woff2'), url("/o/ec495848d208017cc746f7274093ee89455e498e0ade4eda4b2c71b1bcfbc629") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/61c8c6f188a5f4af2f18edb581f075e10b7284888465eec4bc057114123bfcc1") format('woff2'), url("/o/6d249bee7bdf0062b7ade9c4fd2d09891b14529bd5d71062bf4e2954d476cc7d") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/87ddac4a62229787528cf4ac3fa58137b62a9aec364c44fc0f40470bcda9efba") format('woff2'), url("/o/1f57b3b70a6e688905d8c05ecdd27c33e239c5e1189bfd9f700cc7e4cd9de6bc") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/f1c1fd2a2efbeafa8b0bd8afc5729f3b2c3ff6f936a08d5d039388a9995bc59b") format('woff2'), url("/o/e320b1bdc3e5924ef313ee08504e5e6fad34a5fa041e4bae8b27c84fda3c5802") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/a53b6b29b1621cdf51140761869e160521fc566a4a9f312d9b92e7178d433bc7") format('woff2'), url("/o/6d4972d90efc6c1ea2d18773bf81c5f8a2ed15e38f808bf92272069f99236aaa") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/a2526a850fe7e698184c63ff9cbd28c56d8f18b4946fda1a1834a66db0da4c95") format('woff2'), url("/o/aef395fa9eaf927964571c11dab38a52c38a65139450158c3d8e47873653c5ce") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/4689f72f63b93f1d70c7e22f6c0d76e3800697c13be813a27e2693b36b575da9") format('woff2'), url("/o/019a960a885ce744c6fa8290b400f21b6e9ed9d452318a3a459758522e0ef8bf") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/236d757d1050402747fd9327aeb37283536b9ed36d4cfcb0fa286d3346cb58d3") format('woff2'), url("/o/188028c6c133555d9c535f3cea87b4f768ce3ad39df14e7f0306c6cb8790dabe") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/8c2b903e070e5af56ba45a1c1ed8cfbb1be556ae115ede519acf363b63473dbb") format('woff2'), url("/o/2d3c67c7f37f44a7075c91a2a6f7484502a1ef7c32d1dbf3ebe459e8bedc4b83") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/39a742b40a095e98ffc1d69a4230fce82b980527190da0f1db0ee8bcc6273690") format('woff2'), url("/o/2d5399842cf9462996e060891e04237633e5f6191ec329203b1a93b846c1fcbd") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/6f61561408fe10d4c3f62144e4afd8bcd7ea65ca4aea49a133de972fec127635") format('woff2'), url("/o/8d4ce82e96f0cb7991a1c54a1231b68d693aa95ff41cdc4294cb06f3bcb623b7") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/737d3a757a3cdf14139ddd7326ddd52bafed4e09a59004b20cd3d6a1d2e9ff4c") format('woff2'), url("/o/837b4320ac1b2197c9a0208d89773a9b77e11f06be893e5353813e8455fbb89c") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/354d8740bcddb17879fac53c08a01fcb7f5e19d5faa2dc1821dc6894a7d176a8") format('woff2'), url("/o/4c4e8b07efc501a01a4aad8da8c27a066138e67a88c728810d746b7b8e45061d") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/30fceae3d111ac82b82dec91f8aeec82115a15813a41981aea2d041c9381ee83") format('woff2'), url("/o/89eb8e608daa278e67afaff2de3c946c9c854599fcde93acebdbe6f37f7e3050") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/a4b71abccfd3a61dfcd42b72ae3fee9d47bcf5e656bedd5bf51ad5b9001ecc50") format('woff2'), url("/o/168ee59505ae3b0b5e98ffe1c6c9b8e2f83f9f4c2bcd706d76875e83d5cc421f") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/7874a6a4dc0e1d73fb464f480f2a026dd89c6c141cdb5071f348b74d74a616a0") format('woff2'), url("/o/e8634017993d722b4081b60995fe4fc03bcdaaa6e881ecc88e4c83ec10f1bb37") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/d6927264eddc1600d6249903e06a33f35b9a2e41a35c127b951d70b345df8b3b") format('woff2'), url("/o/82fe25f0aeb8eaac92237ea58bfb455b12d0c4c26226b1925fc6c8497a575b37") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/b47085b8ad6f72cf5487975f1273a765067f9d4f45aa215bca2123eac67c442e") format('woff2'), url("/o/dfd4dbafd222a8ea3f2d5244388ec482b0609aa570c5a36794605b24e72ffb07") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/804a1221392909bfa6dd1a089632808e2be81b44c0c41d38797bde3a575a1581") format('woff2'), url("/o/d3b792a2ac1159de4785f567853b98308ae0eee84b85489e1a8d697854c51f02") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/b16576df1b48d8f51a496bd3a3f3ea2c597ea9ca8c3104f92b22065c8613fec5") format('woff2'), url("/o/acd0d775516ddb87aeca4741deb4ffa0a9d65366120589aa074c5997da56dd50") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/2cd42fe8f872ef7e06156fe04338b23fc4ec532e66450c8e931db43473c0306c") format('woff2'), url("/o/9642fb36f87f0ea3d47ca0fbf682c32a2deea743a3b1db111f3d062b69f9e0d5") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/2aca492a0ceda39d19a2cb3c25058469156f2f062675268012b8412309cbeff5") format('woff2'), url("/o/124faef189b98473d31e04810e5ecd420fc95d22f6fc4371e737b52c14398af5") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/ebfe512fe16186a55f5576fec93d877718e25f90be5ad12223ea624498c33b1e") format('woff2'), url("/o/74eb07c0ac4464192b122b82ed6d5855a03d3813a09607d5d2bc4d4575f1179c") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/c68e8e1c8e2503cf3de478de5eaa7266fe05412e5f46614dae0eca439ce9926c") format('woff2'), url("/o/be9eb6a154bc16fa0190de0d612a41853681b174130a50d81830b63a6d544658") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/0b908d197b1cf2b0a41ebd7cd1d79f027dea97952f2d8bf05f1dcbd9ed472906") format('woff2'), url("/o/ba5b3c7ae69aefe16b647a601bf9e7ca017e32517b6ade5e37f0d9a56125387f") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/76edebec539dff0d48a6917f30346a3678b4edc8c1107d4a6c4d5ecb60fc73e9") format('woff2'), url("/o/759cebbd23e2c2b5481ddb80983c31d902cf51130f6dcd8c4d7ebe26ccaaf563") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/82f17477d9e417911a9dc149916fe4af406fc6e51ede25c00858b9c618dda4be") format('woff2'), url("/o/54b8a8f786dd2ba132e0a0e9d1c0ed4dce3f4138d2bc034a8c0dc19d86983829") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/c715a17bba86a9faf2c389acbe2d6327928dfb57eb3a01bec275698517981538") format('woff2'), url("/o/7402bfd965d766a6c83e599d920bc630c4a8d819a7b2d39460090b61644eed0c") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/26dfa91663c384c953449cda9bbd33d365625705d8a14727ebd7dea11a5685b5") format('woff2'), url("/o/4a5603929306b6048581c4a030c456dbe2d7e1ebd718ab9d3dcc4efe43cd044e") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/8d4ce9514b34b5be364da0cece59a17de241f6ed7b0582beea67af0e1cc7c2e6") format('woff2'), url("/o/519ed752a329c261f14daac125e738ac7a1b74fac4e189e0ef59a68911b4e9b6") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/603107b4ad3f5bc0c5998aaced7555ab6d8e0cba9f6d5dd22820d4d9f5e3216e") format('woff2'), url("/o/01932edefd7b3790b60f28c3ebd282cbc966dc066053b2b03079e7fe16e5ab9c") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/cee573007955812fbc50be20c2eb4e2b6b9c6b22cc9efbccc639044598270b43") format('woff2'), url("/o/98b14cf982186b99da5f4eb1e9b0effd589717a0851945b7c412efc7cece728b") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/8f8404bc7cdddde1d2df7c36891c208ebe1123131421ad85418192325b5c7aa8") format('woff2'), url("/o/e9f7ea54bda9f418cce3097402f174d743a757937ef78308937109d3f22a3733") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/1b38dd929b41f6609d07fcb371a72d9eb92411e7edba7d0ba01acddc7737d369") format('woff2'), url("/o/923ee8e31cc234413a107e792b98900f27f414c999bc63ddcabdf74d6aebc02c") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/8d675ee8a0aee18741d5018ae5c4e6fcd45f36a84c3f931730f5d328b3243ac1") format('woff2'), url("/o/2bea9cba4a228d1f34d7c0214a548d868c23e9847ca78bd58335c1fdb5a71947") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/be381cff74cf32299a5119eba1a058585a0619665e7b6a6d419dc7a5d306ff7b") format('woff2'), url("/o/49580d32358a9f21d86a1839f71b20a4fbef3c48654f830b23506e81408bdf40") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/fdf7ba8a4606843bffa98430b630a77b9668e62ca6addb13891b042fa960d831") format('woff2'), url("/o/351ed2c3b14443d6e41a9ff92bc4581199b03455b2ec15f8a1baf1237f4c5a54") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 200;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/21bb2188b02660450287df5793f6a3f7c15646831e7f0fbbfdc806a05dbaf5ff") format('woff2'), url("/o/16a2b10bd6ce117adcd5303467e3603c4a68365206c902efaafdfa06d8819ab2") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 200;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/a00a542263bae83335b11be020abd3891140122e705f5ffdf7fcd4cabadb4549") format('woff2'), url("/o/8d84c930a37c478d639fc6d7c981214aa76e226a3c9cb353cb88298a9be08aa3") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 200;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/535c9df19299b6719efca3fadb9669a3418ba327d6d320fc862dd163685a6770") format('woff2'), url("/o/5184d16e2638b8cf6b5cbb9a2a36a6ce5ee3618112c020b3af93ee2c968d26b4") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 200;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/7ac6d91b3b8874f2d6cd6c03ad105a59710e6fbf1b163b8bab1045559db8cfb9") format('woff2'), url("/o/6b75cca00f5533572346a7bb4f1cdad7b8b161a864372bd8cc6d122ac6611c34") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 200;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/f00027fbb24ff19f474ff5e485ae0d7a14aa35f918162cf2cd2f6ed28097b31d") format('woff2'), url("/o/5421d7c5decdffb3a98a8894b317e97473a98bc8c5eae9c60bd733dcb23b7ef0") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 200;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/40d9715b0ecc823f2dd42f41011c3def806838bef601805e58752e612c595f41") format('woff2'), url("/o/7db746abcd90b348e248452cff36a47c0f66ad5bf37cb3824767c6c8435dc862") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 300;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/7fbd324f28bb1da5589ec4da8d6472eaaa7e7084cb015ae3e46131dbe38d3da4") format('woff2'), url("/o/84a7406438a9244a69b7f6bc9a0d46b25d2967b0e78876e75288784f5c65f94b") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 300;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/722972afda59a9739c5837279d0cc636d179240b3ec9d052b8ef147681874e61") format('woff2'), url("/o/df5fb63c678dbbe0503cdb948892d30761e9dee19fb007e327154760493768ff") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 300;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/63bac03dd118459dbfd53150317c00b4105b659a6042e9ce946bbf8c970809ca") format('woff2'), url("/o/6d2ed901a52b6daaa296dc8cebf9dbe8e53f881031fe545210e2cbdf8111ce3c") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 300;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/6eef50c7dd2b114b6486562e8fc2bc9bdefca629ccc42dfce337a943c72dfd8e") format('woff2'), url("/o/65b88cf73dc544aad6b4182211c367e90686a5701eac0c424b4c557bb9de4102") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 300;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/0eb3d80d1f6fea48f1ecb31a52a4c209846dcf8e2a4ba606ae3bccb86b3062bf") format('woff2'), url("/o/6422040621245de20f59609091d2d4a2d00c2ef7f59b02fc5e86b78ed38e8092") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 300;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/0694ae1266caae2f3c26d24df30c1e63e57570ea9c593d059e81e262d590cee1") format('woff2'), url("/o/7fbc9f4ae8f534544a630136ab06477ce80a8d21af73d6b11d35e04ac0699650") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/365b7a8eaff022b13ed0561fde3890a04a30507d773ecd5adb3aca8e766a285c") format('woff2'), url("/o/09f89e8369d7745ac5fe92e62a9ea13f66f40fd95b5495fac014c54b3a1ca6cc") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/14425ba9c695763c1547f48a206b7aa60350a33ae23de09f0407877f3fcd89eb") format('woff2'), url("/o/658b9ee07b0249cf910a8d6f3d812d46c962bae81d7379a0355b1db35c61586f") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/522f5827308102a9c0ea7860b5a11306043610ecf03d150ba32056a06e8c56e2") format('woff2'), url("/o/67c9cc7864b4940dbfb246c7b452c1de8e96f140f334d363fcdd87dbfeadab72") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/505dfba8ecbe77e82765f36d317ed7ef4ac42719dc5f4ae68d1c483fd22d0d14") format('woff2'), url("/o/e7131bbf591e1ed9b74e44e162f6a39affa00ac21654cb683585d085733f6355") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/efc9e0df126ca6dd1c37a022bfe1d664d23b3fcaa32979d2028ecb4c074306c8") format('woff2'), url("/o/1dfe0f740fa86409034058e49474b01126ae9ea8c1ecda905917b90d57f03b00") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/5f4292eb92ca542e9f60048ca72832d0183b1a06e5d7bcfeed16f9be9ebb4018") format('woff2'), url("/o/9e3cd33bee514ed877dcbd13d4c0e2e676ff39241883e4ca41cdeeaaab3fc074") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/5b6dee4610cdaab7c4218c1692aa9a536414010eef4e5b3cfb25f45007811bcc") format('woff2'), url("/o/89656e472646bf4d52c23d499fa2e467ad3ee73447fda24eefb96e176b1312d6") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/cb182feeed4d798ff6961d3c79f7026279448fca0676438aaecb21f3fc39553a") format('woff2'), url("/o/a270dd0bf13d91053b8999b7c120ffadb59680cfd63fe1a6b388a13bf2809fe1") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/26c9ed511def1f0fd3d1b5fe6d5c0c594d9ef8dd2435d2ff240ea265a416b6e4") format('woff2'), url("/o/d408a664dc721f614e6346e09f3f32b2837005db28f5e4797ce8dd19da07e4ea") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/879df9319f1cbf633bee1dd489e376a9e1e8c458f4abddcfe381cb83b5e6b027") format('woff2'), url("/o/8006c29f8ec53d12d281774d669a02a70b599590d110ff1a4b4a40a6fd975676") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/bb7b98e92899b511e8f3e99c924142f4421896b2cbc9406c3727c25427662cc9") format('woff2'), url("/o/6b14186bc983291a126aa8d6d9c3044415c968262279eecbb9bb194f1daf7800") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/d6c74dfddab488c40652ff116952624a88f8fa1de196732fd58b8e042a8967d2") format('woff2'), url("/o/df0c4d0a31a56e66619213393846310de8df59952e02f8d594ca81ecb782f89d") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/de02415369898d9aa2d9f30379b6c201fc1c0a7017589d973747d993a68f709b") format('woff2'), url("/o/5d78d0d7859974f41fc49b1cae442e25575016670c5946c2d1317661c4a728ad") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/400c6bfda18d5d14acad1c15d6dcb9f8e13c015e7286317e0b9a482539bef147") format('woff2'), url("/o/3f4ad0687bcb0edc596c7c85138c5140ba3a9c5a3ce2ee944f27608c0f18bab9") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/b450f960a0d29846370fc050b6183727d2075a2bcb1c5595c99374bf083b5a83") format('woff2'), url("/o/658b2246b9d068b64c9f2dbea7af4faa1a58c9428664ae5507a7306f3999895b") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/90899aac1c15552c028fd205376bb537a2a5205164fe8626efabad77d7260c20") format('woff2'), url("/o/7f5fbd7caf6fefa665e65015225fea76b59d425a7bc4645dfd77e6eb7db35ea2") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/3591494d22e7993ea776a7f3a6442f9fefe4cc84f88c025245dcbe1f0ef743d3") format('woff2'), url("/o/1e3421e0f17174374ea4b6103d2f0118cf914c36004ca10cd4b092b8390ee6ed") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/1cdd5a996070b3e5decbb63fd1abb41b97d4288ad8a5100f3945b5f15755ada5") format('woff2'), url("/o/f5020855ff81d885bfb0f3d5765c6a5bec39e0cdf905ce9dc202d19e0129e245") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/ccc154baa0425b7761e171d4270aa6e100d0c5c88c1fef65c4d2345a4ab62a80") format('woff2'), url("/o/ef135812a390dea5041bc99bc3b5cd5d4c0f4f9a01c720a91d85549a56b5904d") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/d0d4e818808f2a0ba39b2b09d1989366f63494e295f003c7ef436697378507e8") format('woff2'), url("/o/5e7319f25a5ef89d2c01c323029ef0bedefad204108e601455ff6f8ae12ca3ff") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/6251ef44d6390a4f0622432eb852864af90dd1b8310d153c3c6d235e0c412570") format('woff2'), url("/o/3fa4c7db9db401d30363d17e47c191320be64411a0814c9d72ee9dac059cb1eb") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/45a606d88f72bc0afae4d1a6988e3dba3a5e77ee51aa3b550e37c31c728f4d2d") format('woff2'), url("/o/bf9ae9dfc82904a59d601042056be8783288ef3d47a4fb5b0e628db57e6d271c") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/c95f3997692ba039a5d812313f82b832b3286d5f9de35a1695a2cc695548c44b") format('woff2'), url("/o/5b505fd67cee30417279006a323f95f306ddf05cf9ccd6e3bba466aa99c40669") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/cdd84c976f72d46f7848f0eed7f949f798fb5dd0c9ea15e8d5a4606e6cfb43ab") format('woff2'), url("/o/0fd576cf32a62dcd0071e000805fe6dc1f715e5ccb2c2f1420a0b83bdee5d82f") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/9246eefee5c641a5cbec406bdb7491eb7b4408f98d12839c42913914ab53669b") format('woff2'), url("/o/4d4cf9395c9124f5b2addb0e6d850c5e66dcd2ffe3afdf858e35a6b101860e21") format('woff'); 
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/237d0cbcf1aacd607e07f610d79cbc880edbffcc99ebcf417c502f8fa873ee53") format('woff2'), url("/o/81e7815969d34be9f582082e87e868fdaa5d07739925f5a0e759c4b947c966c4") format('woff'); 
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/a1e2da127ad842956ce0b3fbd66dedfbe303f8b6d778fc21372db9fc04b09434") format('woff2'), url("/o/7f95099d8d5ec9f345da7a1bcd29486c2af21506cc6c25c3c2113149122cb81b") format('woff'); 
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/de6b2ce7d378a96e11eec82d3fe4531295701ee2e85edd1e014c2ea9d0c3551b") format('woff2'), url("/o/d2f7cfb57f323e1084ce83487df86e31889a7945ee1032498c4b2fa1111a8ade") format('woff'); 
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/fc531e45b95d028a9b0a0ffa51e39ec95cd937f6020a6e5ff620b08ac64b2e8a") format('woff2'), url("/o/23b99628719ccf4d30f69fa110d6c9046546d8b128cff1d18290d3186ebc49a9") format('woff'); 
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/o/a907645ec59e9c09edadb5fa5491a18ea5a994054722e47237cf4a8afc42065d") format('woff2'), url("/o/c00a1ce8c1676c6f0ba41bae1150b27626796e5cde2b53152b7db240156ff014") format('woff'); 
+  unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
