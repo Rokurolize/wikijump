@@ -94,7 +94,76 @@ class PlainTextImportedCssTests(unittest.TestCase):
             self.assertNotIn("No such page", css)
             self.assertEqual(receipt["missing"][0]["reason"], "import-not-css:text/plain")
             self.assertEqual(receipt["import_provenance"], [])
+            self.assertEqual(receipt["import_provenance_status"], "incomplete")
+
+
+class UnflattenedImportProvenanceTests(unittest.TestCase):
+    def engine_with_import(self, root, body=b".legacy { color: #123; }"):
+        cache = root / "cache"
+        digest = hashlib.sha256(body).hexdigest()
+        object_path = cache / "objects" / digest[:2] / digest
+        object_path.parent.mkdir(parents=True)
+        object_path.write_bytes(body)
+        (cache / "manifest.json").write_text(json.dumps({"urls": {"https://local.invalid/theme-code": {"digest": digest}}, "objects": {digest: {"content_type": "text/css"}}}))
+        return freeze_css.CacheCSS(cache, root / "assets")
+
+    def test_trailing_import_without_semicolon_is_flattened(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            engine = self.engine_with_import(root)
+            css, receipt = engine.build('@import url("https://local.invalid/theme-code")', "https://local.invalid/page")
+            self.assertIn(".legacy { color: #123; }", css)
+            self.assertEqual(receipt["missing"], [])
             self.assertEqual(receipt["import_provenance_status"], "complete")
+
+    def test_unquoted_url_does_not_swallow_closing_paren(self):
+        # url(https://host/path) has no space before ")". The URL reference must
+        # stop before ")" or the frozen-cache lookup misses and drops the import.
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            engine = self.engine_with_import(root)
+            css, receipt = engine.build('@import url(https://local.invalid/theme-code);', "https://local.invalid/page")
+            self.assertIn(".legacy { color: #123; }", css)
+            self.assertEqual(receipt["missing"], [])
+            self.assertEqual(receipt["import_provenance_status"], "complete")
+
+    def test_trailing_unquoted_import_without_semicolon_is_flattened(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            engine = self.engine_with_import(root)
+            css, receipt = engine.build('@import url(https://local.invalid/theme-code)', "https://local.invalid/page")
+            self.assertIn(".legacy { color: #123; }", css)
+            self.assertEqual(receipt["missing"], [])
+            self.assertEqual(receipt["import_provenance_status"], "complete")
+
+    def test_surviving_import_fails_provenance_closed(self):
+        # A valid trailing @import without a semicolon must never be dropped
+        # while the receipt still reports complete import provenance.
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            engine = self.engine_with_import(root)
+            css, receipt = engine.build('@import "https://local.invalid/theme-code" screen', "https://local.invalid/page")
+            self.assertNotIn(".legacy { color: #123; }", css)
+            self.assertEqual(receipt["import_provenance_status"], "incomplete")
+            self.assertTrue(any(row["reason"] == "css-import-not-flattened" for row in receipt["missing"]))
+
+    def test_comments_and_strings_do_not_fake_unflattened_imports(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            engine = self.engine_with_import(root)
+            _css, receipt = engine.build('/* @import "https://local.invalid/theme-code"; */ .a { content: "@import"; }', "https://local.invalid/page")
+            self.assertEqual(receipt["missing"], [])
+            self.assertEqual(receipt["import_provenance_status"], "complete")
+
+    def test_flattened_import_leaves_no_residual(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            engine = self.engine_with_import(root)
+            css, receipt = engine.build('@import url("https://local.invalid/theme-code");', "https://local.invalid/page")
+            self.assertIn(".legacy { color: #123; }", css)
+            self.assertEqual(receipt["missing"], [])
+            self.assertEqual(receipt["import_provenance_status"], "complete")
+            self.assertNotIn("@import", css)
 
 
 if __name__ == "__main__":
