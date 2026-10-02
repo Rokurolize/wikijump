@@ -18,11 +18,55 @@ from pathlib import Path
 from urllib.parse import unquote, urljoin, urlparse
 
 
-# A final simple @import is terminated by EOF in native CSS even without a
-# semicolon. Preserve that module form without accepting arbitrary trailing
-# tokens as an EOF import prelude.
-IMPORT_RE = re.compile(r"@import\s+(?:url\()?\s*(['\"]?)([^\s'\")]+)\1\s*\)?(?:\s*[^;]*;|\s*\Z)", re.I)
+# A trailing simple @import is terminated by EOF in native CSS even without a
+# semicolon. Composed candidate files also concatenate separate [[module CSS]]
+# leading @import lines, so a semicolon-less import is additionally terminated
+# at the end of its line: otherwise the first import swallows every following
+# import and its stylesheet as an accidental "prelude". The URL class must keep
+# excluding ")" so an unquoted url(https://host/path) does not swallow the
+# closing paren into the reference and miss the frozen cache. The optional
+# prelude (media query list, layer(...) or supports(...)) is captured so
+# flattening does not silently drop an import condition.
+IMPORT_RE = re.compile(r"@import\s+(?:url\()?\s*(['\"]?)([^\s'\")]+)\1\s*\)?(?P<prelude>[^\n;{}@]*?)[ \t]*(?:;|\Z|\n)", re.I)
 URL_RE = re.compile(r"url\(\s*(['\"]?)(.*?)\1\s*\)", re.I)
+IMPORT_AT_RULE_RE = re.compile(r"@import\b", re.I)
+
+
+def without_css_comments_and_strings(text: str) -> str:
+    """Blank comments and quoted strings, preserving offsets.
+
+    At-rule scans must not treat documentation text such as ``/* @import */``
+    or a quoted ``content: "@import"`` as a live stylesheet import.
+    """
+    output: list[str] = []
+    index = 0
+    length = len(text)
+    while index < length:
+        char = text[index]
+        if char == "/" and index + 1 < length and text[index + 1] == "*":
+            end = text.find("*/", index + 2)
+            end = length if end < 0 else end + 2
+            output.append(" " * (end - index))
+            index = end
+        elif char in ("'", '"'):
+            quote = char
+            end = index + 1
+            while end < length:
+                if text[end] == "\\":
+                    end += 2
+                    continue
+                if text[end] == quote:
+                    end += 1
+                    break
+                end += 1
+            end = min(end, length)
+            output.append(" " * (end - index))
+            index = end
+        else:
+            output.append(char)
+            index += 1
+    return "".join(output)
+
 
 
 class CacheCSS:
@@ -101,6 +145,13 @@ class CacheCSS:
                 self.missing[ref[:120]] = "unsupported-data-css-import"
                 return ""
             target = urljoin(base, ref)
+            prelude = (match.group("prelude") or "").strip()
+            if prelude and re.search(r"(?:^|\s)layer\b|(?:^|\s)supports\s*\(", prelude, re.I):
+                # layer()/supports() change cascade order or feature gating in a
+                # way this flattener does not reproduce. Fail closed instead of
+                # applying the stylesheet unconditionally.
+                self.missing[target] = "css-import-prelude-unsupported"
+                return ""
             if re.search(r"fonts\.(?:googleapis|bunny|coollabs)\.com/", target, re.I) and re.search(r"(?:Noto(?:\+|\s)Sans(?:\+|\s)SC|Noto(?:\+|\s)Serif(?:\+|\s)SC|Noto(?:\+|\s)Sans(?:\+|\s)TC|Noto(?:\+|\s)Sans(?:\+|\s)KR|Noto(?:\+|\s)Sans(?:\+|\s)Thai|Kanit)", target, re.I):
                 self.pruned_fonts.append({"url": target, "reason": "non-JP locale-specific font import; candidate uses Japanese fallback"})
                 return ""
@@ -138,13 +189,26 @@ class CacheCSS:
                 "asset_file": name,
                 "provenance_basis": "frozen-cache-exact-at-build",
             }
-            return self.flatten_imports(decoded, final, depth + 1)
+            flattened = self.flatten_imports(decoded, final, depth + 1)
+            if prelude and flattened.strip():
+                # @import media conditions apply to the imported stylesheet, so
+                # keep them by wrapping the flattened body instead of dropping
+                # the condition.
+                return f"@media {prelude} {{\n{flattened}\n}}"
+            return flattened
 
         while IMPORT_RE.search(text):
             old = text
             text = IMPORT_RE.sub(repl, text)
             if text == old:
                 break
+        # Any surviving @import is an unflattened remote dependency. Leaving it
+        # in the frozen stylesheet would make the browser fetch it (blocked
+        # offline) while the receipt still claimed complete import provenance.
+        # Record it so flattening fails closed instead of silently omitting CSS.
+        for match in IMPORT_AT_RULE_RE.finditer(without_css_comments_and_strings(text)):
+            snippet = re.sub(r"\s+", " ", text[match.start() : match.start() + 160]).strip()
+            self.missing.setdefault(snippet, "css-import-not-flattened")
         return self.resolve_urls(text, base)
 
     @staticmethod
