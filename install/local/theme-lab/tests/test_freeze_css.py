@@ -165,6 +165,54 @@ class UnflattenedImportProvenanceTests(unittest.TestCase):
             self.assertEqual(receipt["import_provenance_status"], "complete")
             self.assertNotIn("@import", css)
 
+    def engine_with_urls(self, root, entries):
+        cache = root / "cache"
+        urls, objects = {}, {}
+        for url, (body, content_type) in entries.items():
+            digest = hashlib.sha256(body).hexdigest()
+            object_path = cache / "objects" / digest[:2] / digest
+            object_path.parent.mkdir(parents=True, exist_ok=True)
+            object_path.write_bytes(body)
+            urls[url] = {"digest": digest}
+            objects[digest] = {"content_type": content_type}
+        (cache / "manifest.json").write_text(json.dumps({"urls": urls, "objects": objects}))
+        return freeze_css.CacheCSS(cache, root / "assets")
+
+    def test_commented_import_is_not_flattened(self):
+        # Real Wikidot never loads an @import hidden in a CSS comment, so the
+        # freezer must leave it literal instead of re-enabling it.
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            engine = self.engine_with_import(root)
+            css, receipt = engine.build('/* @import url("https://local.invalid/theme-code"); */ .a { color: red; }', "https://local.invalid/page")
+            self.assertNotIn(".legacy { color: #123; }", css)
+            self.assertIn('/* @import url("https://local.invalid/theme-code"); */', css)
+            self.assertEqual(receipt["imports"], [])
+            self.assertEqual(receipt["missing"], [])
+            self.assertEqual(receipt["import_provenance_status"], "complete")
+
+    def test_url_inside_comment_is_left_literal(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            engine = self.engine_with_urls(root, {"https://local.invalid/x.png": (b"IMG", "image/png")})
+            css, _receipt = engine.build('/* url(x.png) */ .a { background: url(x.png); }', "https://local.invalid/page")
+            self.assertIn("/* url(x.png) */", css)
+            self.assertIn('background: url("', css)
+
+    def test_url_inside_string_is_left_literal(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            engine = self.engine_with_urls(root, {"https://local.invalid/x.png": (b"IMG", "image/png")})
+            css, _receipt = engine.build('.a::before { content: "url(x.png)"; } .b { background: url(x.png); }', "https://local.invalid/page")
+            self.assertIn('content: "url(x.png)"', css)
+            self.assertIn(".b { background: url(\"", css)
+
+    def test_resolve_urls_skips_literals_and_keeps_real_urls(self):
+        self.assertEqual(
+            freeze_css.CacheCSS.resolve_urls('/* url(x.png) */ .a { content: "url(y.png)"; } .b { background: url(z.png); }', "https://local.invalid/base/"),
+            '/* url(x.png) */ .a { content: "url(y.png)"; } .b { background: url("https://local.invalid/base/z.png"); }',
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
