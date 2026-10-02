@@ -136,16 +136,60 @@ class UnflattenedImportProvenanceTests(unittest.TestCase):
             self.assertEqual(receipt["missing"], [])
             self.assertEqual(receipt["import_provenance_status"], "complete")
 
-    def test_surviving_import_fails_provenance_closed(self):
-        # A valid trailing @import without a semicolon must never be dropped
-        # while the receipt still reports complete import provenance.
+    def test_consecutive_semicolonless_imports_are_each_flattened(self):
+        # Composed candidate files concatenate separate [[module CSS]] leading
+        # @import lines without semicolons. The first import must not swallow the
+        # following imports and stylesheet text as a fake prelude.
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            engine = self.engine_with_urls(root, {
+                "https://local.invalid/a.css": (b".a { color: red; }", "text/css"),
+                "https://local.invalid/b.css": (b".b { color: blue; }", "text/css"),
+            })
+            css, receipt = engine.build(
+                '@import url("https://local.invalid/a.css")\n\n@import url("https://local.invalid/b.css")\n\n:root { --x: 1; }',
+                "https://local.invalid/page",
+            )
+            self.assertIn(".a { color: red; }", css)
+            self.assertIn(".b { color: blue; }", css)
+            self.assertIn(":root { --x: 1; }", css)
+            self.assertEqual(receipt["missing"], [])
+            self.assertEqual(receipt["import_provenance_status"], "complete")
+
+    def test_media_import_prelude_is_preserved_by_wrapping(self):
+        # A media condition on @import applies to the imported stylesheet, so it
+        # must be preserved instead of silently dropped.
+        for source, media in [
+            ('@import "https://local.invalid/theme-code" screen;', "screen"),
+            ('@import url("https://local.invalid/theme-code") print;', "print"),
+            ('@import url(https://local.invalid/theme-code) (min-width: 500px)', "(min-width: 500px)"),
+        ]:
+            with self.subTest(source=source), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                engine = self.engine_with_import(root)
+                css, receipt = engine.build(source, "https://local.invalid/page")
+                self.assertIn(f"@media {media} {{", css)
+                self.assertIn(".legacy { color: #123; }", css)
+                self.assertEqual(receipt["missing"], [])
+                self.assertEqual(receipt["import_provenance_status"], "complete")
+
+    def test_layer_import_prelude_fails_provenance_closed(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             engine = self.engine_with_import(root)
-            css, receipt = engine.build('@import "https://local.invalid/theme-code" screen', "https://local.invalid/page")
+            css, receipt = engine.build('@import url("https://local.invalid/theme-code") layer(base);', "https://local.invalid/page")
             self.assertNotIn(".legacy { color: #123; }", css)
             self.assertEqual(receipt["import_provenance_status"], "incomplete")
-            self.assertTrue(any(row["reason"] == "css-import-not-flattened" for row in receipt["missing"]))
+            self.assertTrue(any(row["reason"] == "css-import-prelude-unsupported" for row in receipt["missing"]))
+
+    def test_supports_import_prelude_fails_provenance_closed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            engine = self.engine_with_import(root)
+            css, receipt = engine.build('@import url("https://local.invalid/theme-code") supports(display: grid);', "https://local.invalid/page")
+            self.assertNotIn(".legacy { color: #123; }", css)
+            self.assertEqual(receipt["import_provenance_status"], "incomplete")
+            self.assertTrue(any(row["reason"] == "css-import-prelude-unsupported" for row in receipt["missing"]))
 
     def test_comments_and_strings_do_not_fake_unflattened_imports(self):
         with tempfile.TemporaryDirectory() as temp:
