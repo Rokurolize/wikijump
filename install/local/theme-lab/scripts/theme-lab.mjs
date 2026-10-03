@@ -222,6 +222,7 @@ async function main() {
       baseCss: args["css-base"] ? fs.readFileSync(path.resolve(args["css-base"]), "utf8") : "",
       sourceStructure: args["source-structure"] ? await loadCandidateStructure(path.dirname(path.resolve(args["source-structure"]))) : null,
       wikitext,
+      savedCandidate: args["saved-candidate"] === true,
       source: args.source ? fs.readFileSync(path.resolve(args.source), "utf8") : null,
       pageAssets: args["page-assets"] ? JSON.parse(fs.readFileSync(path.resolve(args["page-assets"]), "utf8")).assets ?? [] : [],
       title: args.title ?? "Preview",
