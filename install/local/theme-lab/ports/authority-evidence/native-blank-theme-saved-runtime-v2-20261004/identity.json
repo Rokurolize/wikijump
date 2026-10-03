@@ -1,0 +1,9 @@
+{
+  "purpose": "isolated local development proof; not a sealed promotion candidate",
+  "binary_sha256": "b1e390238e83b998e62defe858fd7a4cb572538b2029a208a949fd783f4e6ebf",
+  "source_database": "fresh task-owned seeded database; source snapshot failed on existing page_revision tuple-chain corruption",
+  "network": "theme-lab-blank-proof-20261004",
+  "rpc_url": "http://127.0.0.1:12748/jsonrpc",
+  "renderer_epoch": 12,
+  "source_refactor": "ThemePreviewer source-owned helper extraction"
+}

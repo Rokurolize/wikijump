@@ -3536,6 +3536,32 @@
           ]
         }
       ]
+    },
+    {
+      "id": "theme-previewer-blank-saved-page-and-preview-20261003",
+      "title": "Blank ThemePreviewer consumes module output; saved documents omit their site theme",
+      "feature_ids": [
+        "module-themepreviewer"
+      ],
+      "classification": "documentation-omission",
+      "observed_at": "2026-10-03",
+      "analysis": "Four anonymous cache-gated PagePreview requests establish empty module output for the exact noUi=\"true\" and theme_url=\" \" head, including abutted attributes. Literal code and Wikidot comments remain inert. Independently retained original saved-page HTML for theme:wikifot and two including articles contains Wikidot base and PageRate styles plus a blank theme import, without the site Sigma stylesheet. Saved-page stylesheet behavior is not inferred from PagePreview cssInclude; those responses contain no CSS additions. No public pages were written. Retained saved-page authority is original HTML only and does not assert completeness of unrelated assets.",
+      "normative_behavior": [
+        "The evidenced exact two double-quoted attributes noUi=\"true\" and theme_url=\" \" produce no visible ThemePreviewer body; a missing whitespace separator between those attributes is accepted.",
+        "In saved-page rendering, this executable blank-theme form selects the blank site-theme slot while retaining Wikidot base and PageRate styles. Its presence in resolved include content is page-wide, as evidenced by the retained including articles.",
+        "PagePreview produces no module body or CSS additions for this form; it does not authorize resetting the saved page shell during preview.",
+        "The code-block and Wikidot-comment cases are inert. Unknown attribute heads, nonblank URLs, other values and conditional/unevidenced cases are outside this bounded observation."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/theme-lab/ports/authority-evidence/native-theme-previewer-blank-20261003/receipt.json",
+          "sha256": "3ed236a9c69c4b24c91080e97e6220237e8a530b12c07094e9a733744e0f84ed"
+        },
+        {
+          "path": "install/local/theme-lab/ports/authority-evidence/wikifot-native-site-theme-reset-20261003/receipt.json",
+          "sha256": "839dd08d080f5287b4e60c50603962185ee7ed8c3d08f1010f61b5934421981f"
+        }
+      ]
     }
   ]
 }

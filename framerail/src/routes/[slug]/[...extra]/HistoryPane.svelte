@@ -281,7 +281,7 @@
   <h1 class="page-revision-header">
     {data.internationalization?.["wiki-page-revision-history"]}
   </h1>
-  <div class="revision-list">
+  <div id="revision-list" class="revision-list">
     <table class="page-history">
       <tbody>
         <tr>

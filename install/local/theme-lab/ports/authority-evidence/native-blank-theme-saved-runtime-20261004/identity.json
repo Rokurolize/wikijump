@@ -1,0 +1,8 @@
+{
+  "purpose": "isolated local development proof; not a sealed promotion candidate",
+  "binary_sha256": "5e3b0bf854b82a46fa91f7ca1654dfc7b896e4b14d02ea9cc19f4f2d9471924e",
+  "source_database": "fresh task-owned seeded database; source snapshot failed on existing page_revision tuple-chain corruption",
+  "network": "theme-lab-blank-proof-20261004",
+  "rpc_url": "http://127.0.0.1:12748/jsonrpc",
+  "renderer_epoch": 12
+}

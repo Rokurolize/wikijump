@@ -23,6 +23,7 @@ mod backlinks;
 mod categories;
 mod child_pages;
 mod compat;
+pub(crate) mod compiled_styles;
 mod corpus;
 mod count_pages_recognition;
 mod diagnostics;

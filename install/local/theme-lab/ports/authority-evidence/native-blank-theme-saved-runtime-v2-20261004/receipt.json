@@ -1,0 +1,253 @@
+{
+  "schema": "theme_lab_native_blank_theme_runtime_parity.v1",
+  "observed_at": "2026-10-03T16:51:43.307Z",
+  "purpose": "Bounded local saved-page/PagePreview/browser proof against independently retained native Wikidot behavior; not campaign acceptance or a sealed promotion candidate",
+  "native_authority": [
+    "../native-theme-previewer-blank-20261003/receipt.json",
+    "../wikifot-native-site-theme-reset-20261003/receipt.json"
+  ],
+  "public_writes": 0,
+  "saved_cases": 7,
+  "browser_cells": 21,
+  "runtime_source_sha256": "1d08eae182036400e439dee24be171843ad5e446027e1d883a2b198ccbb3a100",
+  "containers": [
+    {
+      "name": "wikijump-theme-lab-blank-proof-deepwell",
+      "container_id": "35ffee66700dc34b1ae0e3c612fd44aa86115e7e4250022cbb2daf3a3ad5e926",
+      "image_id": "sha256:c9eb061a14f7ed4e0a673c94dbfc5a475a30887e8e387b40b885e9f941c070bf",
+      "started_at": "2026-10-03T16:48:22.736903252Z"
+    },
+    {
+      "name": "wikijump-theme-lab-blank-proof-framerail",
+      "container_id": "0d0c11a76918c443fddc3dc0d353686ae6ae393cbe0f01e0a0bf10c9549b01f8",
+      "image_id": "sha256:8899dbb694f0de346b95fb7e8f755dbe7948173bc0780301cfdd2c26d5a76a86",
+      "started_at": "2026-10-03T16:14:09.820799566Z"
+    },
+    {
+      "name": "wikijump-theme-lab-blank-proof-caddy",
+      "container_id": "4191252aea858640630190b7c2eacf3262d17b372f2bbb7e16dabd481b132a55",
+      "image_id": "sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648",
+      "started_at": "2026-10-03T16:14:10.065157576Z"
+    }
+  ],
+  "source_bindings": [
+    {
+      "source": "deepwell/src/services/render/compiled_styles.rs",
+      "path": "runtime-source-deepwell--src--services--render--compiled_styles.rs",
+      "sha256": "e7656880f4361346d07f356d918d54284b3b718d7b2ace1cad4ae0d742f2c933"
+    },
+    {
+      "source": "deepwell/src/services/render/runtime_modules.rs",
+      "path": "runtime-source-deepwell--src--services--render--runtime_modules.rs",
+      "sha256": "fb09af830ce87132818e892994ee59c90d9b104d1287026fec77fb7a17bad9bc"
+    },
+    {
+      "source": "deepwell/src/services/render/runtime_modules/theme_previewer.rs",
+      "path": "runtime-source-deepwell--src--services--render--runtime_modules--theme_previewer.rs",
+      "sha256": "81fa392da1965c6238f56ed5354c7fdf9ce9399c867b552dfbea2a2387bd100d"
+    },
+    {
+      "source": "deepwell/src/services/render/service.rs",
+      "path": "runtime-source-deepwell--src--services--render--service.rs",
+      "sha256": "73814b9b319e2ba09c0254b978971b3969e3def97bf584bb0d5e8c6886e8dec7"
+    },
+    {
+      "source": "deepwell/src/services/render/generator.rs",
+      "path": "runtime-source-deepwell--src--services--render--generator.rs",
+      "sha256": "4ce1d52d87f08c3a1d70628094e5173bebb2973603c7820ed6761ef0c5871d53"
+    },
+    {
+      "source": "deepwell/src/services/view/service.rs",
+      "path": "runtime-source-deepwell--src--services--view--service.rs",
+      "sha256": "8ca1697f065ca76e67225cacecd5168ae7df90e312ee0c92ab87783a0f008718"
+    },
+    {
+      "source": "deepwell/src/services/view/structs.rs",
+      "path": "runtime-source-deepwell--src--services--view--structs.rs",
+      "sha256": "16c9e311b8780838d5b5a1da1273fa46b675c9a204dfecd8bca0efbf6dc5370c"
+    },
+    {
+      "source": "deepwell/src/endpoints/page/output.rs",
+      "path": "runtime-source-deepwell--src--endpoints--page--output.rs",
+      "sha256": "df392d3759d5ec4afb88a15ceb9c6d6bdd423ba4c9ed86e94c86d630364bedfd"
+    },
+    {
+      "source": "deepwell/src/endpoints/page_revision.rs",
+      "path": "runtime-source-deepwell--src--endpoints--page_revision.rs",
+      "sha256": "d1a8e23a86a28046f9da3ec2aef1eecfcc739e80ae8219926f16854266be7350"
+    },
+    {
+      "source": "framerail/src/routes/+layout.svelte",
+      "path": "runtime-source-framerail--src--routes--+layout.svelte",
+      "sha256": "23b72d6f072c9f488848c5540aa530e6aec106d526a9c3a3e603ed5ce73d6ff3"
+    },
+    {
+      "source": "framerail/src/lib/server/deepwell/views.ts",
+      "path": "runtime-source-framerail--src--lib--server--deepwell--views.ts",
+      "sha256": "aee7d0117b3315958c1a75598b2cffc5d820319564d43199f48e313e5961d4d3"
+    },
+    {
+      "source": "deepwell/Cargo.lock",
+      "path": "runtime-source-deepwell--Cargo.lock",
+      "sha256": "dbad50e18ff49e80e0bce51c4bf42c14680ef0b86e90c9a417d22ea15cd90b43"
+    }
+  ],
+  "files": [
+    {
+      "path": "identity.json",
+      "sha256": "b3d8a4dc6bdd683270975367d27f99cb4a0bbf2b0ca0a0141dd7725b454bb1b9"
+    },
+    {
+      "path": "saved-runtime-proof.json",
+      "sha256": "2ec2ad0403a07426bf7b058d6b78a193f73606dfe93a562052d6ea91dd461dfe"
+    },
+    {
+      "path": "browser-runtime-proof.json",
+      "sha256": "2dfa876a1bfadb688f899bc7103551299d0d08a148aa3bb7da6908e433809eea"
+    },
+    {
+      "path": "framerail-build-identity.json",
+      "sha256": "45c77edae71c1090263208ed39f5af24895f2de998730b3f4c45e208ac89dcd4"
+    },
+    {
+      "path": "chromium-baseline.png",
+      "sha256": "3c54ade51f6cc5b82a5d16ad04e6a81a97e7ee3bbb0773a31dbbce7b9c56ae55"
+    },
+    {
+      "path": "chromium-blank.png",
+      "sha256": "b13d6a3db5adb8cd028cd05923d288be82b66b66712610906fbac2b002912d01"
+    },
+    {
+      "path": "chromium-abutted.png",
+      "sha256": "efb9363fa8558eadeca48178c8a962d89c9480f476546ec5b13dbc9186cdee5c"
+    },
+    {
+      "path": "chromium-code.png",
+      "sha256": "1f5626445aa21465da24b0d8b13039c7be6897d6558861599cd596146acbb327"
+    },
+    {
+      "path": "chromium-comment.png",
+      "sha256": "457e91699e00718cca4fdc3bd7b8771095cc8185d669c2cb05f37105db5a64b2"
+    },
+    {
+      "path": "chromium-included.png",
+      "sha256": "d1b2df92c74149edee6612403a4945408306e3bbef2c2a68cfa3c798f8de46c6"
+    },
+    {
+      "path": "chromium-styled-blank.png",
+      "sha256": "0d3bbee340248a054a9838f1c6bda700223d780d018dcc866c237120cf055419"
+    },
+    {
+      "path": "firefox-baseline.png",
+      "sha256": "b19718911bab7951a5352ec8c6c924f993ae97d911aa4304cf00093be3729a6d"
+    },
+    {
+      "path": "firefox-blank.png",
+      "sha256": "34189e00a3f4f90c356ee9363a1fd37fb535971bcef8a23b407cded9bcbd367c"
+    },
+    {
+      "path": "firefox-abutted.png",
+      "sha256": "3c432ed1426f46fd811e0d2e9581ee7237e095feae01aa38202a19b8017021a3"
+    },
+    {
+      "path": "firefox-code.png",
+      "sha256": "529dcd893ca36f0da09db9623ca47fa25ddd14344525fd8605bda27c43954e1e"
+    },
+    {
+      "path": "firefox-comment.png",
+      "sha256": "2fba3018c7eae2cc9632c6ef4c244605e7bd43e066246cae87f59b1ea4abb6bc"
+    },
+    {
+      "path": "firefox-included.png",
+      "sha256": "8f6693b51cef73dd09ee63a4d4cfcf183c4b45c9cdef8a0700377aaceadaefcd"
+    },
+    {
+      "path": "firefox-styled-blank.png",
+      "sha256": "e46f83cb1f43afb279078a70dee8ba96055e5753dd30f08714635193d4699b3b"
+    },
+    {
+      "path": "webkit-baseline.png",
+      "sha256": "444a66e71ce3e05adbc80e7fb5c9051151d6ac758d06c9445c34b3080a433e3f"
+    },
+    {
+      "path": "webkit-blank.png",
+      "sha256": "48ab1b9d712d5614812b3d24764967bdba4217815585e3361e9dce665031eee1"
+    },
+    {
+      "path": "webkit-abutted.png",
+      "sha256": "83f0639d88456b4797affcafcdb1148d153a5823af6668490365e9fe2dded267"
+    },
+    {
+      "path": "webkit-code.png",
+      "sha256": "a3bbf470645db1b352c703e1cd83998d0b2ea5165b7f87f1611132858e00e64a"
+    },
+    {
+      "path": "webkit-comment.png",
+      "sha256": "08af2c9b6db943442617c163c64e8c3056b72472b87f5220fa0151ec13cd7358"
+    },
+    {
+      "path": "webkit-included.png",
+      "sha256": "ab1bccab23b7b12c0b670519fa3a142c92f1295403ac23d2346ec6d63eda8838"
+    },
+    {
+      "path": "webkit-styled-blank.png",
+      "sha256": "9a9cf815c74687426159e85da248723d24debdec20fbef9bb4d63166b0d2f65d"
+    },
+    {
+      "path": "measurement-prove-blank-theme-saved-runtime-v2-20261004.mjs",
+      "sha256": "d8d01e84d1d17ce0b2ce142b3eb861f95032c7d42727727f2d105c51b8130e90"
+    },
+    {
+      "path": "measurement-prove-blank-theme-browser-runtime-v2-20261004.mjs",
+      "sha256": "937500a572f316032ee874763a441063e8d2c0e655476f7e241881e0e865cba2"
+    },
+    {
+      "path": "runtime-source-deepwell--src--services--render--compiled_styles.rs",
+      "sha256": "e7656880f4361346d07f356d918d54284b3b718d7b2ace1cad4ae0d742f2c933"
+    },
+    {
+      "path": "runtime-source-deepwell--src--services--render--runtime_modules.rs",
+      "sha256": "fb09af830ce87132818e892994ee59c90d9b104d1287026fec77fb7a17bad9bc"
+    },
+    {
+      "path": "runtime-source-deepwell--src--services--render--runtime_modules--theme_previewer.rs",
+      "sha256": "81fa392da1965c6238f56ed5354c7fdf9ce9399c867b552dfbea2a2387bd100d"
+    },
+    {
+      "path": "runtime-source-deepwell--src--services--render--service.rs",
+      "sha256": "73814b9b319e2ba09c0254b978971b3969e3def97bf584bb0d5e8c6886e8dec7"
+    },
+    {
+      "path": "runtime-source-deepwell--src--services--render--generator.rs",
+      "sha256": "4ce1d52d87f08c3a1d70628094e5173bebb2973603c7820ed6761ef0c5871d53"
+    },
+    {
+      "path": "runtime-source-deepwell--src--services--view--service.rs",
+      "sha256": "8ca1697f065ca76e67225cacecd5168ae7df90e312ee0c92ab87783a0f008718"
+    },
+    {
+      "path": "runtime-source-deepwell--src--services--view--structs.rs",
+      "sha256": "16c9e311b8780838d5b5a1da1273fa46b675c9a204dfecd8bca0efbf6dc5370c"
+    },
+    {
+      "path": "runtime-source-deepwell--src--endpoints--page--output.rs",
+      "sha256": "df392d3759d5ec4afb88a15ceb9c6d6bdd423ba4c9ed86e94c86d630364bedfd"
+    },
+    {
+      "path": "runtime-source-deepwell--src--endpoints--page_revision.rs",
+      "sha256": "d1a8e23a86a28046f9da3ec2aef1eecfcc739e80ae8219926f16854266be7350"
+    },
+    {
+      "path": "runtime-source-framerail--src--routes--+layout.svelte",
+      "sha256": "23b72d6f072c9f488848c5540aa530e6aec106d526a9c3a3e603ed5ce73d6ff3"
+    },
+    {
+      "path": "runtime-source-framerail--src--lib--server--deepwell--views.ts",
+      "sha256": "aee7d0117b3315958c1a75598b2cffc5d820319564d43199f48e313e5961d4d3"
+    },
+    {
+      "path": "runtime-source-deepwell--Cargo.lock",
+      "sha256": "dbad50e18ff49e80e0bce51c4bf42c14680ef0b86e90c9a417d22ea15cd90b43"
+    }
+  ]
+}

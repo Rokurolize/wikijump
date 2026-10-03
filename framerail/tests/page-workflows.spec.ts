@@ -300,13 +300,13 @@ test("WIKIDOT History View Version and View Source actions still load selected r
     '#action-area table.page-history tr[id="revision-row-9000341"]'
   )
   await oldRevision.locator("a[title='View source of the revision']").click()
-  await expect(page.locator("#history-subarea textarea.page-source")).toHaveValue(
+  await expect(page.locator("#history-subarea div.page-source")).toHaveText(
     "Source for revision 1"
   )
 
   await oldRevision.locator("a[title='View page revision']").click()
   await expect(page.locator("#page-content")).toContainText("Historical version 1")
-  await expect(page.locator("#history-subarea textarea.page-source")).toHaveCount(0)
+  await expect(page.locator("#history-subarea div.page-source")).toHaveCount(0)
 
   const requests = await request
     .get(`${FIXTURE_URL}/last-page-read-requests`)

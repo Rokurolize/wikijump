@@ -12,6 +12,6 @@
 
 {#if tags.length}
   <div class="page-tags" class:hidden>
-    {@html buildWikidotPageTagsHtml(tags)}
+    <span>{@html buildWikidotPageTagsHtml(tags)}</span>
   </div>
 {/if}
