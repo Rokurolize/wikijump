@@ -52,7 +52,7 @@
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn"
   },
   "dependencies": {
     "slug": "theme:hansarp",
@@ -118,20 +118,20 @@
       "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; "
     }
   ],
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/hansarp/assets.json",
-  "asset_dependency_decision_count": 39,
+  "asset_dependency_decision_count": 49,
   "maintenance_source": {
     "base": "maintenance/base.wikidot.txt",
     "jp_overrides": "maintenance/jp-overrides.css",
     "manifest": "maintenance/manifest.json",
     "base_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "semantic_css_sha256": "90599f7ede0caf4f45cd80063f0d7b2d5de39c2259a67954d408a0350e1f9ae3",
-    "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "jp_overrides_sha256": "d7e0c1fffc095347fe92b2d0830aefac88f9ce1da707cd5b5d9562c723ed4735",
+    "semantic_css_sha256": "0757ad885e740752392ac0e159de5336b8d572c4f5a438054deaa9fe98bba7cf",
+    "canonical_override_sha256": "d3629905f86daa2d4e7fe437321b04ac2076d1f531462de987e8cef8a668d545",
     "final_source": "maintenance/final.wikidot.txt",
-    "final_source_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
+    "final_source_sha256": "666f330ad966549c2ce1fb87ebd8b5caa6f36f1749464eddbb7944dc5e4e6720",
     "exact_duplicate_rules_removed": 0,
     "redundant_same_value_declarations_removed": 0,
     "empty_rules_removed": 0
@@ -141,7 +141,7 @@
       "source_path": "candidate-input.css",
       "source_sha256": "de74faf9920df398c3582b4a8d810130a744ab9e8657645c4c1cdc030d626cad",
       "active_tags": [],
-      "candidate_source_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
+      "candidate_source_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
       "candidate_active_tags": [
         "en",
         "テーマ"
@@ -150,11 +150,13 @@
       "showcase_css_modules_removed_exact": 1,
       "showcase_css_modules_removed_truncated": 0,
       "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 0,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "2639935e21dfcf9175b4a4a431abd1b62313a3c2d3fdf174d5f831a72d3929ac",
+      "candidate_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319",
       "asset_receipt_path": "assets.json",
-      "assets": 33,
-      "imports": 5,
+      "assets": 38,
+      "imports": 10,
       "localization_transforms": 0,
       "localization_transform_manifest": null,
       "missing": 0,
@@ -166,7 +168,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

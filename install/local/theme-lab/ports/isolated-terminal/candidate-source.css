@@ -516,4 +516,18 @@ div#extrac-div-1, div#extrac-div-2 {
 }
 @@
 
-@import url("https://scp-jp.wdfiles.com/local--code/theme%3Aisolated-terminal/1")
+@import url("https://scp-jp.wdfiles.com/local--code/theme%3Aisolated-terminal/1");
+
+
+/* SCP-JP Wikidot Isolated Terminal narrow login: wrap account links inside the masthead without changing their type scale. */
+@media(max-width:359px){#login-status{max-width:calc(100% - 2rem);white-space:normal;margin-left:0;}}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Isolated Terminal native History: retain form and revision columns inside horizontal scrollers. */
+@media(max-width:767px){#revision-list,#history-form-1 .form{max-width:100%;overflow-x:auto;}#history-form-1 .form{display:block;}}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Isolated Terminal narrow tables: preserve their columns in an intrinsic-width horizontal scroller. */
+@media(max-width:359px){#page-content table.wiki-content-table{display:block;max-width:100%;overflow-x:auto;width:max-content;}}

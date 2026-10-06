@@ -1,0 +1,1059 @@
+{
+  "schema": "theme_lab_current_campaign_acceptance.v1",
+  "packages": [
+    {
+      "package": "aesthetic-theme",
+      "inputs": {
+        "css": {
+          "path": "ports/aesthetic-theme/candidate.css",
+          "sha256": "5419caca49caf8f0be65724001a7edcf57daa52f75a01b324c98f4a869b6c117"
+        },
+        "source": {
+          "path": "ports/aesthetic-theme/candidate.wikidot.source.txt",
+          "sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c"
+        },
+        "preview": {
+          "path": "ports/aesthetic-theme/candidate.wikidot.txt",
+          "sha256": "e81d43c4d4d599a8e1325205ad65bfede07cffa4a8cace109c527783c0cdd390"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/aesthetic-theme/accepted-result.json",
+        "sha256": "8ac64b955ec25b2d5c88929d73b23acbda7c7f9e2061014477085ef40863d108"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/aesthetic-theme/browser-audit.json",
+        "sha256": "20b18ca9a5c4afcee79d3845ee99cf31c198931b74ddad705be931b3f42b3403"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/aesthetic-theme/visual-review.json",
+        "sha256": "e69e7296e96ea6a1b4c7de7181fae5d515142ad1844280b793a930431c3ffaff"
+      }
+    },
+    {
+      "package": "al-slop",
+      "inputs": {
+        "css": {
+          "path": "ports/al-slop/candidate.css",
+          "sha256": "00a8fff90043b8cc9164700b07080367ec1c29d29529635e34e6404a071e21e9"
+        },
+        "source": {
+          "path": "ports/al-slop/candidate.wikidot.source.txt",
+          "sha256": "f6809160ccf1b35e74340d5e0421efecf8585246310203debbb5f0727b95eb8b"
+        },
+        "preview": {
+          "path": "ports/al-slop/candidate.wikidot.txt",
+          "sha256": "a9d86eec4a7a303d4969f70d05b53ccfe849d00e6d0235df33389de46cf5daae"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/al-slop/accepted-result.json",
+        "sha256": "1173ac15ae14f0d8bdef4553613588b5dd1aa28c494cc195bc8d250992f8998c"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/al-slop/browser-audit.json",
+        "sha256": "bff07fdc0e0e33d871029f845a5b57fac18b855d30abe106d80fec0aac4a7a8e"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/al-slop/visual-review.json",
+        "sha256": "746c09eeb7622eb64e75e96b6274c545b54c82a5bab0e6c10bd3fa132fb86309"
+      }
+    },
+    {
+      "package": "basalt",
+      "inputs": {
+        "css": {
+          "path": "ports/basalt/candidate.css",
+          "sha256": "c1b44963493737105ecb19c33bb49a41c4b931c09a9b3dbecde0562b0f942823"
+        },
+        "source": {
+          "path": "ports/basalt/candidate.wikidot.source.txt",
+          "sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df"
+        },
+        "preview": {
+          "path": "ports/basalt/candidate.wikidot.txt",
+          "sha256": "4a266040a4c16b6ffd7e281a8615d476680872c057c0d5a4078a07fecb9110ae"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/basalt/accepted-result.json",
+        "sha256": "5b698ca7369d6e71ecf6d2c2c94d8a5e7fa579e05995af320d9f6de41c2fc0dc"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/basalt/browser-audit.json",
+        "sha256": "5c77dab86ead9a0c7c96d1f92fdbc7244e3226e9bca7f6f73f07121e39dcf317"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/basalt/visual-review.json",
+        "sha256": "5902ddc2e23744608e00ec7d11f5aa64563da71c0ed3df5373a2ac31a621dbe9"
+      }
+    },
+    {
+      "package": "bedrock",
+      "inputs": {
+        "css": {
+          "path": "ports/bedrock/candidate.css",
+          "sha256": "210621c337510276613df2496a6fcc1ee98843d5175b0cc07404d82c416236ea"
+        },
+        "source": {
+          "path": "ports/bedrock/candidate.wikidot.source.txt",
+          "sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423"
+        },
+        "preview": {
+          "path": "ports/bedrock/candidate.wikidot.txt",
+          "sha256": "32ee299b78841516ed6395f3dd15b57688f5c302a48896f68cc04d759b1bc579"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/bedrock/accepted-result.json",
+        "sha256": "2c8349783e60c41d5d003c65fb10b646f4a1978f2efcb11e235875c3bfb78748"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/bedrock/browser-audit.json",
+        "sha256": "4e668fbb9f9ba2d23c770f32ac9ce49dcda8f3cb5083dc39e4d27ba398b9bee0"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/bedrock/visual-review.json",
+        "sha256": "7ba1db38afb8c239eff84717e73c190731edef8d916fd7d5a8645c90098a242b"
+      }
+    },
+    {
+      "package": "black-highlighter-theme",
+      "inputs": {
+        "css": {
+          "path": "ports/black-highlighter-theme/candidate.css",
+          "sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b"
+        },
+        "source": {
+          "path": "ports/black-highlighter-theme/candidate.wikidot.source.txt",
+          "sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427"
+        },
+        "preview": {
+          "path": "ports/black-highlighter-theme/candidate.wikidot.txt",
+          "sha256": "3a14fe45ff7f93ff37848c3b91a18a9c8490b61f844e86286fcc0630e0627c9a"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/black-highlighter-theme/accepted-result.json",
+        "sha256": "f86a5f1297b075a505af2a9d10d57192f217095a6b2e048f25033e933f82a0f2"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/black-highlighter-theme/browser-audit.json",
+        "sha256": "435235940d2045a51238c6a6949ad89291306fb17dc68a7943560c3b88207eb4"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/black-highlighter-theme/visual-review.json",
+        "sha256": "c2ed57e5db8862f34d7c34e0d32018e994c5a57346e2bff07a09bf1c06e8626a"
+      }
+    },
+    {
+      "package": "classic",
+      "inputs": {
+        "css": {
+          "path": "ports/classic/candidate.css",
+          "sha256": "8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376"
+        },
+        "source": {
+          "path": "ports/classic/candidate.wikidot.source.txt",
+          "sha256": "9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09"
+        },
+        "preview": {
+          "path": "ports/classic/candidate.wikidot.txt",
+          "sha256": "bda45a5874984fc7fba628622c6fbd8e30e9deaa64897301c35f767979cb5f4b"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/classic/accepted-result.json",
+        "sha256": "4529df7fb46b5922d163527a0ec28444ab3062eb301b29144949a90cee19d82d"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/classic/browser-audit.json",
+        "sha256": "cfdd011d994c0d8baab1bf60f2eb86b076996f24795d376bf12f22418fe8f51b"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/classic/visual-review.json",
+        "sha256": "61ce4d89005b5b32316b405c5398b89cf3f13534900f80f6c9b52489adece14d"
+      }
+    },
+    {
+      "package": "cosmonaut",
+      "inputs": {
+        "css": {
+          "path": "ports/cosmonaut/candidate.css",
+          "sha256": "7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce"
+        },
+        "source": {
+          "path": "ports/cosmonaut/candidate.wikidot.source.txt",
+          "sha256": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179"
+        },
+        "preview": {
+          "path": "ports/cosmonaut/candidate.wikidot.txt",
+          "sha256": "7b5f36f1c228518c3dcde7349214d6d2925074c2e077608a97077703e0c40224"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/cosmonaut/accepted-result.json",
+        "sha256": "1770f9af8fe6eb2430cd99a0f820018c6894d86952ea97582469947debbb4405"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/cosmonaut/browser-audit.json",
+        "sha256": "801bd98b07b5319106b0fbf2e60aa2ccba80335d93604963f2a26f3918d61f0c"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/cosmonaut/visual-review.json",
+        "sha256": "d4a8de7ab96a82de9c6e5d69135a0d1c65be1b226e3094c1203e01f410c4e25a"
+      }
+    },
+    {
+      "package": "dear-dictator",
+      "inputs": {
+        "css": {
+          "path": "ports/dear-dictator/candidate.css",
+          "sha256": "f249a01833c6df378ccbd9d8a954fd2745311d10093cd9c55ead1d70eeaaeaeb"
+        },
+        "source": {
+          "path": "ports/dear-dictator/candidate.wikidot.txt",
+          "sha256": "6cb9b6f38b760ac446014f2f4c4671c05df909a7f102624e5b374d4dbab15b40"
+        },
+        "preview": {
+          "path": "ports/dear-dictator/candidate.wikidot.txt",
+          "sha256": "6cb9b6f38b760ac446014f2f4c4671c05df909a7f102624e5b374d4dbab15b40"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/dear-dictator/accepted-result.json",
+        "sha256": "9b7a08a965b11415f083e6ecd4803624a19d460ca205f8189df34f82cba0fbfc"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/dear-dictator/browser-audit.json",
+        "sha256": "c1e37d8657da5255adc792a1122eb3d01c32bdf63fe3cbc90d4d53fdb893e1e1"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/dear-dictator/visual-review.json",
+        "sha256": "bcdb5de4041255fbf17f831680976c1b79a4d71b4eeafd4ff0ed16924cf87cff"
+      }
+    },
+    {
+      "package": "extra-black-highlighter-theme",
+      "inputs": {
+        "css": {
+          "path": "ports/extra-black-highlighter-theme/candidate.css",
+          "sha256": "1942887e382d16b8150cf95086a4944c7589def1ea0c2783d5d6dc341c445400"
+        },
+        "source": {
+          "path": "ports/extra-black-highlighter-theme/candidate.wikidot.source.txt",
+          "sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a"
+        },
+        "preview": {
+          "path": "ports/extra-black-highlighter-theme/candidate.wikidot.txt",
+          "sha256": "da2890818409c8d174ccd3f01d119deb2ec0e97a579184f5f878f5938af99e19"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/extra-black-highlighter-theme/accepted-result.json",
+        "sha256": "51674d94b6b2ee79638173bcb38097b621d1b12c56f6b47fb0a65145ec7e6042"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/extra-black-highlighter-theme/browser-audit.json",
+        "sha256": "a18e395457caff343ca6c53a15263d171c7fc4fd3c32fba413fbf90dd91409b8"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/extra-black-highlighter-theme/visual-review.json",
+        "sha256": "bf826ee665068c54f9eb90c91efaabc87e6b9aa8a7aa2e7dfc877ed260643ac1"
+      }
+    },
+    {
+      "package": "flopstyle-dark",
+      "inputs": {
+        "css": {
+          "path": "ports/flopstyle-dark/candidate.css",
+          "sha256": "cfb5865dd28e562413dc1cbed44ace29ff4d08eb4bdc8daafcfc87b4e98c8161"
+        },
+        "source": {
+          "path": "ports/flopstyle-dark/candidate.wikidot.source.txt",
+          "sha256": "2b9004a9304ed089aa69da78d140bc03aa333b792751b57133d7429b499aa1e3"
+        },
+        "preview": {
+          "path": "ports/flopstyle-dark/candidate.wikidot.txt",
+          "sha256": "a29c62ad16f1a380c47c63f74904a7875798e4a359dd7aa8503fc09bacab3e49"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/flopstyle-dark/accepted-result.json",
+        "sha256": "2fb786cb888da090ebe4f46f5a2cc2eea124e6afbc2e946e0f913feb2d60bcc9"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/flopstyle-dark/browser-audit.json",
+        "sha256": "66e6e0ad4fd0c8318a7b8a3d7ffeb378c728e440b30db8fce8b0ce3889b14f69"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/flopstyle-dark/visual-review.json",
+        "sha256": "73357a99f0d9a9108cbd950f7a28c77d291666d515555f64629a2280946c7cd8"
+      }
+    },
+    {
+      "package": "foxtrot",
+      "inputs": {
+        "css": {
+          "path": "ports/foxtrot/candidate.css",
+          "sha256": "db15469bd49cb604c373918859834372b1cfc07b79157c0d66747c8f61c69912"
+        },
+        "source": {
+          "path": "ports/foxtrot/candidate.wikidot.source.txt",
+          "sha256": "e0bbf7be650005b5f7d5e3893e598e16febd6f06d0bc26fc86f90163520b4e47"
+        },
+        "preview": {
+          "path": "ports/foxtrot/candidate.wikidot.txt",
+          "sha256": "49e6c67780fa597483e84c34e92e1f69c9c883b0385aa2044076593154c34fcb"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/foxtrot/accepted-result.json",
+        "sha256": "619f2c1a67a1659d84a3b053075fbdad18ab9ec3da7a6442ecb1ac5e7a0482f5"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/foxtrot/browser-audit.json",
+        "sha256": "5d41c955b64a92242d6c5ff123afa288c33c7d78a4725db7d2058dbfec3da711"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/foxtrot/visual-review.json",
+        "sha256": "b1f9dfe00999444414f9dbef4fc19ee77bcae21896dbf16a1736371ec872db1f"
+      }
+    },
+    {
+      "package": "hansarp",
+      "inputs": {
+        "css": {
+          "path": "ports/hansarp/candidate.css",
+          "sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319"
+        },
+        "source": {
+          "path": "ports/hansarp/candidate.wikidot.source.txt",
+          "sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00"
+        },
+        "preview": {
+          "path": "ports/hansarp/candidate.wikidot.txt",
+          "sha256": "c4c5954f86bf330d7014c6ecbe1643e1c7370bb08d48e6492e5c13d2c338508b"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/hansarp/accepted-result.json",
+        "sha256": "341db0ae35aa7ae62c3f5b68fb848fe4ab3fd7a27219a3c2a3153a9cd7712926"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/hansarp/browser-audit.json",
+        "sha256": "577eb26cb74480cb4628376268a441d571a1f0e25909eda925b7d2f41f35d1a2"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/hansarp/visual-review.json",
+        "sha256": "87eb3000c67eabe76490a4c171f9007a86ac2cf5403da331682a7d4a257df850"
+      }
+    },
+    {
+      "package": "inkblot",
+      "inputs": {
+        "css": {
+          "path": "ports/inkblot/candidate.css",
+          "sha256": "fd7e2ae9c01c3d31160b1e7017e441b3abcd8d5eab309c631ef2ebf139fc3406"
+        },
+        "source": {
+          "path": "ports/inkblot/candidate.wikidot.source.txt",
+          "sha256": "679a88f60fb72ac72743a09380e121bfbb03207800e41b1ad74e59b1f66bc9ac"
+        },
+        "preview": {
+          "path": "ports/inkblot/candidate.wikidot.txt",
+          "sha256": "f282f81bb6714ad35dd86d2d4db60cae6c8a2df16cd006dcfcfe0e9ca7281156"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/inkblot/accepted-result.json",
+        "sha256": "0ef43d9aff0473067944e7c6eee1ff15ef0e9dac9d0d39fea4d297853e3bc9f7"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/inkblot/browser-audit.json",
+        "sha256": "b23f2fce62b3a675f92d4e64b84b1653dc9d9ead89a60d68b980b3ea15c1649c"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/inkblot/visual-review.json",
+        "sha256": "3f1b838818e83cf6d4efbdb80fffabdfa0fb2ea96fefe430773f8835e833967b"
+      }
+    },
+    {
+      "package": "isolated-terminal",
+      "inputs": {
+        "css": {
+          "path": "ports/isolated-terminal/candidate.css",
+          "sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2"
+        },
+        "source": {
+          "path": "ports/isolated-terminal/candidate.wikidot.source.txt",
+          "sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7"
+        },
+        "preview": {
+          "path": "ports/isolated-terminal/candidate.wikidot.txt",
+          "sha256": "9c9ac22ea08e631f4e7ead42bdc53e86e9dcb990e9ed742cf97dcd630f2c4d8e"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/isolated-terminal/accepted-result.json",
+        "sha256": "e68566971cfd97228ab79b2e31a11eb6d50a93053ef78498d95b84aecc246ed2"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/isolated-terminal/browser-audit.json",
+        "sha256": "751796884049c4e1f370176021d5855696ce72c15f0632f37f7b2aae3ac163d2"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/isolated-terminal/visual-review.json",
+        "sha256": "164ac8d27ede3240564efb011df18a8731b5cb9a4c1de508cb2108120cabf053"
+      }
+    },
+    {
+      "package": "jakstyle",
+      "inputs": {
+        "css": {
+          "path": "ports/jakstyle/candidate.css",
+          "sha256": "a4b0f7c1cb6262b4ee6ac62e5d9e4846919bf50d57766de6968d3a58ea6ff8e6"
+        },
+        "source": {
+          "path": "ports/jakstyle/candidate.wikidot.source.txt",
+          "sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869"
+        },
+        "preview": {
+          "path": "ports/jakstyle/candidate.wikidot.txt",
+          "sha256": "d09eba82045540c4df285ede15750a2d074e4be1a509d425f8660502c0de3d16"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/jakstyle/accepted-result.json",
+        "sha256": "b6cb607cb35950a5f71a0c45c4b4bcece1fc77d74ba2e84dd1779e3d6066a41e"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/jakstyle/browser-audit.json",
+        "sha256": "9906a1c8ef63dc363bfeef47c0555bb99835500ebbec19ef71ec18b04f0026f1"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/jakstyle/visual-review.json",
+        "sha256": "a7b0aa88b8cd97863ba5f24273f365f6592899dedbb885cd7620f05f0c8c9519"
+      }
+    },
+    {
+      "package": "minimalist-bhl",
+      "inputs": {
+        "css": {
+          "path": "ports/minimalist-bhl/candidate.css",
+          "sha256": "bb4018bd604b2abfbd17e84f3fd884d13c3891be34fdac52c3a6d30af295d245"
+        },
+        "source": {
+          "path": "ports/minimalist-bhl/candidate.wikidot.source.txt",
+          "sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5"
+        },
+        "preview": {
+          "path": "ports/minimalist-bhl/candidate.wikidot.txt",
+          "sha256": "90ea3a6c9b8e830c3a9f11bf7f04c74c22d76b64dfb9bdf61c0180e90248215c"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/minimalist-bhl/accepted-result.json",
+        "sha256": "5eb921f3ab5059a872d3d4de58d48f1061da0f632725c3df126c995afd40bc44"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/minimalist-bhl/browser-audit.json",
+        "sha256": "81cc56bb9c8ddd111d8eeeef2ddc09dfedd8f177836ef59f6b585eadc9ab2a09"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/minimalist-bhl/visual-review.json",
+        "sha256": "2cc3a8d5b8a43d58d216b10776aa0a1e0eb2a585b5809ffbd323baec8250d8ec"
+      }
+    },
+    {
+      "package": "monotypical",
+      "inputs": {
+        "css": {
+          "path": "ports/monotypical/candidate.css",
+          "sha256": "f2883666196dd7cad910db816eba36924273e206d35ef01c410443f3b48bfd23"
+        },
+        "source": {
+          "path": "ports/monotypical/candidate.wikidot.source.txt",
+          "sha256": "2b1757725694a02df9618f21e2e4326f37500b6f751d005558199df72f9913e5"
+        },
+        "preview": {
+          "path": "ports/monotypical/candidate.wikidot.txt",
+          "sha256": "022ab49f089ee55dc5b97a01087c59b629759f6737701abf00789d41947a5ee7"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/monotypical/accepted-result.json",
+        "sha256": "33e5429abd85b22e9deb9b4d5a9189fddca88bd40fe62ee284f039af4671e1ef"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/monotypical/browser-audit.json",
+        "sha256": "f91040978d09bf7bfa672906c5cf3c842f2e6a57d90308ced8fe06be4311703e"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/monotypical/visual-review.json",
+        "sha256": "5c93889707b853c823c5af7ebff15d2b7220862f84f4e47aac4a232c41cfd5b2"
+      }
+    },
+    {
+      "package": "much-cool",
+      "inputs": {
+        "css": {
+          "path": "ports/much-cool/candidate.css",
+          "sha256": "d6232bbe6f3e7da786f975a4960754dd86b71fdf16abbbc58bd07c2052293468"
+        },
+        "source": {
+          "path": "ports/much-cool/candidate.wikidot.source.txt",
+          "sha256": "5b80ba7f55a5f70b6569fef18e95056bf223ec143f7c2ef549d88aba7a3d096a"
+        },
+        "preview": {
+          "path": "ports/much-cool/candidate.wikidot.txt",
+          "sha256": "eea69b0f1c9895752d840ad964f3d1ca925a592aba19dcf2f9a2c0fd539141e1"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/much-cool/accepted-result.json",
+        "sha256": "5c0ed57e6bcbca740e68e592ce1c3883c9999a3ab9dccff1bfee685c81424e16"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/much-cool/browser-audit.json",
+        "sha256": "eeead04389e0c316e43a3a27395e279b6ed3053778ff477fa4d8b328841349a9"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/much-cool/visual-review.json",
+        "sha256": "fe8aefa9b40d1a1fbc382d849de90043ed3485647d1c8d69d4fe7cfce86dc6f1"
+      }
+    },
+    {
+      "package": "night-rush-theme",
+      "inputs": {
+        "css": {
+          "path": "ports/night-rush-theme/candidate.css",
+          "sha256": "6ecbb80fc4aa2e7fbf948a2ced01153aa816bd2911cfcb6cfa398bc3f534245b"
+        },
+        "source": {
+          "path": "ports/night-rush-theme/candidate.wikidot.source.txt",
+          "sha256": "5d0cc657cd638addbb28f8278832126dc863b1ae0ae339f216dceff45ef2f98c"
+        },
+        "preview": {
+          "path": "ports/night-rush-theme/candidate.wikidot.txt",
+          "sha256": "8bb9e638ebf6f146ba9f77b55a6fa22156c1388904d9672e7c67b14a50f17f3b"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/night-rush-theme/accepted-result.json",
+        "sha256": "efc527eb210fd58c110313da6a72526b024d17028d4e12c7951aff9d723815ba"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/night-rush-theme/browser-audit.json",
+        "sha256": "84a0be6fbd0a4973f27dc73cbe640fe81a6bea07d73f20bfaf77bdcdbe6eadb5"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/night-rush-theme/visual-review.json",
+        "sha256": "5715c167cf86b8b2d64f15c3e58e02b59b6d92a037a08930a7a0f176ce85318f"
+      }
+    },
+    {
+      "package": "ouroborous-theme",
+      "inputs": {
+        "css": {
+          "path": "ports/ouroborous-theme/candidate.css",
+          "sha256": "e3ca8e1a29abcba717d8e638af2eb2526f85b0ae134cd76918157a2b7f5a3fb1"
+        },
+        "source": {
+          "path": "ports/ouroborous-theme/candidate.wikidot.source.txt",
+          "sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f"
+        },
+        "preview": {
+          "path": "ports/ouroborous-theme/candidate.wikidot.txt",
+          "sha256": "cf7f337ed0cc7b6d651bf58887aa7c58259f9ad646b32df459b4d28de697c5a8"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/ouroborous-theme/accepted-result.json",
+        "sha256": "aac42f5c271712949aa6a32a76c6e15b1026a1430378e6b0ffdd253f4daa09ad"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/ouroborous-theme/browser-audit.json",
+        "sha256": "1530b93002406bb0fdd0c8eaf0d3dccda09a6c4acf5739f0e92aa4ff389521f9"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/ouroborous-theme/visual-review.json",
+        "sha256": "4c10975f0da2babb7ea49b3d738afcb2a442ca445e561d9ab44379f2a620ff4a"
+      }
+    },
+    {
+      "package": "paperstack",
+      "inputs": {
+        "css": {
+          "path": "ports/paperstack/candidate.css",
+          "sha256": "5c388bc9f4e8c9a888c71e72ca59c6dc7a64f5aab0f791f7a789f8478d77e0aa"
+        },
+        "source": {
+          "path": "ports/paperstack/candidate.wikidot.source.txt",
+          "sha256": "5939181e533d5c02d39ac16dad70f9ae9b80efa7fcd79ebb4c8ba8b75ab16854"
+        },
+        "preview": {
+          "path": "ports/paperstack/candidate.wikidot.txt",
+          "sha256": "5aad28c7ee38731c0d4d3f1dbcf5cd68b58155ae1eb865d48e1687a958232041"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/paperstack/accepted-result.json",
+        "sha256": "3970fe848bb5bed195817523aca6abaf121985d326245a5f926911776ea86ff5"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/paperstack/browser-audit.json",
+        "sha256": "e2b13c3dc6afbc7794f05102babd2924b03d1bafb2a09536065802d2a662e2e2"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/paperstack/visual-review.json",
+        "sha256": "365f842ad877e555d8c82b2ebd347cd2456064a1a158428dfc3355feb5cfa8ac"
+      }
+    },
+    {
+      "package": "pataphysics",
+      "inputs": {
+        "css": {
+          "path": "ports/pataphysics/candidate.css",
+          "sha256": "98f233f2f3161e085fe9c764c87a2e07b95501977e69702236582d1e39923b17"
+        },
+        "source": {
+          "path": "ports/pataphysics/candidate.wikidot.source.txt",
+          "sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b"
+        },
+        "preview": {
+          "path": "ports/pataphysics/candidate.wikidot.txt",
+          "sha256": "3f6aae40dabedb436984739f00c357ff88c8803f576a4fc7e507fb558386ab48"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/pataphysics/accepted-result.json",
+        "sha256": "0286efd1ae21b90b35f8c22a9998749ae0cb6fd0850a1c464505cd9793b6ad91"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/pataphysics/browser-audit.json",
+        "sha256": "df76206de92fe729f8adc7229ffc47b63069d8b7ed496076ea08079c5edab90e"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/pataphysics/visual-review.json",
+        "sha256": "e56f015fbb01a47cb4899d41b694da96e3c424dfaff81777a781a01ef4d69d3d"
+      }
+    },
+    {
+      "package": "penumbra",
+      "inputs": {
+        "css": {
+          "path": "ports/penumbra/candidate.css",
+          "sha256": "2d8436acd87691323a742583e715e7f69c96bfd53c355dac5b2fe27b8ceeb5da"
+        },
+        "source": {
+          "path": "ports/penumbra/candidate.wikidot.source.txt",
+          "sha256": "439b21910d1a4363c35845490fdc2585a286b26577c2d692f130c2f790681b9e"
+        },
+        "preview": {
+          "path": "ports/penumbra/candidate.wikidot.txt",
+          "sha256": "860c670a7e0aa4f25246b7ae6e22bbefd1557ef248c166ca660db8bc48f97be1"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/penumbra/accepted-result.json",
+        "sha256": "6394d992ea257819da0bee392ffbf639fa648e4be0a9c6bb1f7e8ac162874978"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/penumbra/browser-audit.json",
+        "sha256": "b1b4556d1858670e581b84fc5d7b35684444bbec529f946b9700aa29b5151df5"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/penumbra/visual-review.json",
+        "sha256": "f4cdc465dd71d05c6c13ae188a235aa713763e30082a9226747cbca0a6d71bab"
+      }
+    },
+    {
+      "package": "quand-le-soleil-se-couche",
+      "inputs": {
+        "css": {
+          "path": "ports/quand-le-soleil-se-couche/candidate.css",
+          "sha256": "6b82140e1f875394bb5ceb7e2e6be6e9805157dd18c04fc7c63c6eea72eb49a8"
+        },
+        "source": {
+          "path": "ports/quand-le-soleil-se-couche/candidate.wikidot.txt",
+          "sha256": "242dcf54d6b52cea946b65f1c38b508479d255853810d8d7cee3ed3be42815eb"
+        },
+        "preview": {
+          "path": "ports/quand-le-soleil-se-couche/candidate.wikidot.txt",
+          "sha256": "242dcf54d6b52cea946b65f1c38b508479d255853810d8d7cee3ed3be42815eb"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/quand-le-soleil-se-couche/accepted-result.json",
+        "sha256": "6427da19d2159c1ce34bb138f8297cfcf25e6ddac65aa072c37af74c137d42c3"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/quand-le-soleil-se-couche/browser-audit.json",
+        "sha256": "33ce1cd0027fb28551948a873efda1eba43d8c358abf274057f63483a71626e2"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/quand-le-soleil-se-couche/visual-review.json",
+        "sha256": "8dd9255759865f668953e0f82f62a8f084b6e993c6338cb28b6c5e31fbc52900"
+      }
+    },
+    {
+      "package": "redtape",
+      "inputs": {
+        "css": {
+          "path": "ports/redtape/candidate.css",
+          "sha256": "e68651742177907f32d7870a383a86a432159fe581e4a005e1d9f1a0da227016"
+        },
+        "source": {
+          "path": "ports/redtape/candidate.wikidot.source.txt",
+          "sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892"
+        },
+        "preview": {
+          "path": "ports/redtape/candidate.wikidot.txt",
+          "sha256": "770aa44e13226adf2acb3091effcb034e42bf8eb1f87ae3cbeef09ed40ffca81"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/redtape/accepted-result.json",
+        "sha256": "e846dd86332a3d3265a3e8ba104eab18717ecd11906a915c0d446b4990f6b391"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/redtape/browser-audit.json",
+        "sha256": "2c2fcb661990ef7ed03e6fdbf69b5373a09c8b270c14841c06882879626e4141"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/redtape/visual-review.json",
+        "sha256": "56fad0c88df8a4d7a3a6b4def9a11bd26e3dc74df16524e794e071f12cf77623"
+      }
+    },
+    {
+      "package": "scheme",
+      "inputs": {
+        "css": {
+          "path": "ports/scheme/candidate.css",
+          "sha256": "13b6176aa6fddeeaeaf1a8e493163fe1fa6c8f72888e27d9631a66dfc0950fce"
+        },
+        "source": {
+          "path": "ports/scheme/candidate.wikidot.source.txt",
+          "sha256": "292624abd9238b7a3c0cca9fe0f603fbd18476610740084e2b5315a01e8348fc"
+        },
+        "preview": {
+          "path": "ports/scheme/candidate.wikidot.txt",
+          "sha256": "2a8714a48c11b9f54782059116c8969946422eeaa487183e0c89bd66716439a9"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/scheme/accepted-result.json",
+        "sha256": "50bfbfec175b2d9f7252485f53ae819db08f9590d24ed13b169d8ff9763e87cc"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/scheme/browser-audit.json",
+        "sha256": "4fded15ec14d5ae96d50962ddc6d53bf8e18e36a0a4416e463bca5ce8d3af33a"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/scheme/visual-review.json",
+        "sha256": "efc82c8b0747b2acc38a41c103b8d0b5cb7847057ababbdb84507edbb2112e6c"
+      }
+    },
+    {
+      "package": "scp-offices-theme",
+      "inputs": {
+        "css": {
+          "path": "ports/scp-offices-theme/candidate.css",
+          "sha256": "f3d5d0cec11e9092bed5913399d302ed8a19dea98a4e43ee71845afe4e803545"
+        },
+        "source": {
+          "path": "ports/scp-offices-theme/candidate.wikidot.source.txt",
+          "sha256": "1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8"
+        },
+        "preview": {
+          "path": "ports/scp-offices-theme/candidate.wikidot.txt",
+          "sha256": "c1232435af36eeeee5d2d5c5b548832f7b8d7f5e66b5485af3d7eba0b80f4213"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/scp-offices-theme/accepted-result.json",
+        "sha256": "aa93b416e6e3085a0bfbf54c9d60899aee3336171830dae1568ce9f2314bab32"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/scp-offices-theme/browser-audit.json",
+        "sha256": "9afe54e17b0589716b96d56c28972a46c4885a06753740d9b3bff9a83e3fe260"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/scp-offices-theme/visual-review.json",
+        "sha256": "4429c16f7f775c77a985c5d236cbfb17ae0a5ded093ef2823559b70464772d38"
+      }
+    },
+    {
+      "package": "scpedia",
+      "inputs": {
+        "css": {
+          "path": "ports/scpedia/candidate.css",
+          "sha256": "68d1cdb84e515d1c7693a3663d70915f05e7bf5d4de3b9294f7c2a9774b21924"
+        },
+        "source": {
+          "path": "ports/scpedia/candidate.wikidot.source.txt",
+          "sha256": "a03ffcf8189adfaf7d9e43fd3084c61957f9f4910a6096b32d9073ad699d70f8"
+        },
+        "preview": {
+          "path": "ports/scpedia/candidate.wikidot.txt",
+          "sha256": "db15bd1d29bbdd3c9afc7df0394d7a5e0dae707c9c6d24d55629d7801f7bd44e"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/scpedia/accepted-result.json",
+        "sha256": "fbe67ea30d01014681c87ad976b3781b5cd0b13ab8db7afee57eb2e7d29c054e"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/scpedia/browser-audit.json",
+        "sha256": "438f7d042fee99870861276a88e44f7f3a96a1556a1fcbd9ecfb660cbd261df9"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/scpedia/visual-review.json",
+        "sha256": "056d3d24a8f69b61e25f2a82cb34367eb4fb7563df104250a6404a77a6e16143"
+      }
+    },
+    {
+      "package": "sigma",
+      "inputs": {
+        "css": {
+          "path": "ports/sigma/candidate.css",
+          "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+        },
+        "source": {
+          "path": "ports/sigma/candidate.wikidot.source.txt",
+          "sha256": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23"
+        },
+        "preview": {
+          "path": "ports/sigma/candidate.wikidot.txt",
+          "sha256": "87b36a77990b94cf837bd25b7c65d55985f590d3d2b2958c4372ee242a9f3f5f"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/sigma/accepted-result.json",
+        "sha256": "485115c0b91e4d75d1eea20102abb4cabeb09f5ed860d5537389c5b87d08b480"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/sigma/browser-audit.json",
+        "sha256": "0ea8ee0ddbf973f120fda1bc68e59d64a2c2f04f5e2f912401b1c1f94172e2ac"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/sigma/visual-review.json",
+        "sha256": "dd94abf07bb7f2b6b50c10703d6bc32d4328e5edf1b9b869e3311bcb3a5a6e71"
+      }
+    },
+    {
+      "package": "site",
+      "inputs": {
+        "css": {
+          "path": "ports/site/candidate.css",
+          "sha256": "28a72ef325901611e12a505fa1e94ea40a315c80cb316f787d6ec6c2ee3606a4"
+        },
+        "source": {
+          "path": "ports/site/candidate.wikidot.source.txt",
+          "sha256": "b62171f0df44d62ebe3af75eca1cb53ef854f0b8e747dedade2ed0ee399e9c48"
+        },
+        "preview": {
+          "path": "ports/site/candidate.wikidot.txt",
+          "sha256": "84e8437250d8e678be52a6c54fd12dc095fe9a0e9977f20311c5f322729e2924"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/site/accepted-result.json",
+        "sha256": "2bb66ff94663fbcf0a239c9acb1f4378439d70888d30ae7624abfd85bcb9c073"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/site/browser-audit.json",
+        "sha256": "e5eea687c012333d6e14ca111422bac161519e9e43215bb5b801233baaa9e4bb"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/site/visual-review.json",
+        "sha256": "5239bbf145a8bf3bad0ab9f37b165d6a5f6250f32cd2a30297e5af60029ad272"
+      }
+    },
+    {
+      "package": "skipos",
+      "inputs": {
+        "css": {
+          "path": "ports/skipos/candidate.css",
+          "sha256": "4c937d03bc1365ea16418f20c086048139954971435cabb60cfecb36485dc810"
+        },
+        "source": {
+          "path": "ports/skipos/candidate.wikidot.source.txt",
+          "sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507"
+        },
+        "preview": {
+          "path": "ports/skipos/candidate.wikidot.txt",
+          "sha256": "ab38f11dc4f721a5532f98eeef5be0f388db53148b2b24ad7d4d848fad04688f"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/skipos/accepted-result.json",
+        "sha256": "9ecffe7d5ed9cd5044f78dff74e3342023011f92e65f8acbbd66d94caee9635e"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/skipos/browser-audit.json",
+        "sha256": "918e709ec0a34ff44592fa00346d73bb3cb0c0f1c2d45b60e532d2e7c47504e3"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/skipos/visual-review.json",
+        "sha256": "ab4661c06adc5b4e55e3b583edeee8f01baad61f4b0c2ad1dff17654de8e4152"
+      }
+    },
+    {
+      "package": "space",
+      "inputs": {
+        "css": {
+          "path": "ports/space/candidate.css",
+          "sha256": "1df89c43e1a5d880ac726dd3529fb0cd9bf5abf6513cb84c4a3544e390fed286"
+        },
+        "source": {
+          "path": "ports/space/candidate.wikidot.source.txt",
+          "sha256": "20d4d9c98052fc76fcf8573505509dc4d49c3b4852e2ea99580218ad34afe3a7"
+        },
+        "preview": {
+          "path": "ports/space/candidate.wikidot.txt",
+          "sha256": "a1166c2ec232d2931b646c9103e7761982d225484009bfed59133bcb19d83b28"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/space/accepted-result.json",
+        "sha256": "0577b473c62bd0055176e32d75e01c8e07b719f923e802e31ca1048c5f250c5a"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/space/browser-audit.json",
+        "sha256": "b8a747d5f7066d682a2c1c9733854c986c52818e8aa5c134c59112a79a39468a"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/space/visual-review.json",
+        "sha256": "30f1117371cdf132405b02818e9a1e254815ccdbb6e49c9178612454400bfbdc"
+      }
+    },
+    {
+      "package": "turbo-vision",
+      "inputs": {
+        "css": {
+          "path": "ports/turbo-vision/candidate.css",
+          "sha256": "4ea34f42f05c6f1f845811620cdcd73395860284adeac42b847f385aa24e1cd3"
+        },
+        "source": {
+          "path": "ports/turbo-vision/candidate.wikidot.source.txt",
+          "sha256": "69e1fa9c6a57ca01097a29beab1f58b67741f9e53f958e95616fb5f7b559e589"
+        },
+        "preview": {
+          "path": "ports/turbo-vision/candidate.wikidot.txt",
+          "sha256": "338815088793a8787510d4f4bb46df4859619377291f328e004f7c6149e5b0e4"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/turbo-vision/accepted-result.json",
+        "sha256": "34493caf9a7d161a5f64acc24cbbcf3332fda71db20156b19522fa973f75e74c"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/turbo-vision/browser-audit.json",
+        "sha256": "007fc19de51be18d2ddaf9ceaa5b6123f67b9ac6e5e5d91b55b2100c6a60ab30"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/turbo-vision/visual-review.json",
+        "sha256": "04978c685dc4910ee2d2d0a38f3ee4b6214e2a7f6a927a0ce3f463dbec796f57"
+      }
+    },
+    {
+      "package": "wikifot",
+      "inputs": {
+        "css": {
+          "path": "ports/wikifot/candidate.css",
+          "sha256": "738099d2701ec214769009074f34e060a0d05f6b7999e36aeeccc9ec833e1c9d"
+        },
+        "source": {
+          "path": "ports/wikifot/candidate.wikidot.source.txt",
+          "sha256": "403335fe611db4be2ef13a0349e8215dade54727318494551221bb5671cc5e55"
+        },
+        "preview": {
+          "path": "ports/wikifot/candidate.wikidot.txt",
+          "sha256": "54a12171edb8107300f2a6079debb2768b20c68017e0648c32afb16252e4abc3"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/wikifot/accepted-result.json",
+        "sha256": "bc5745743eb43d0367f0f98bca765aa13e83f2e2a7b54b45f900a2ceed95a7fc"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/wikifot/browser-audit.json",
+        "sha256": "8ac73aec097d436999b202f3a67e79c6a148fc24280d063d219e1d5b304717dc"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/wikifot/visual-review.json",
+        "sha256": "b6901204a50f73d8d98dfc0327429097b53214007f376737604f3cf1645f9dab"
+      }
+    },
+    {
+      "package": "y2k",
+      "inputs": {
+        "css": {
+          "path": "ports/y2k/candidate.css",
+          "sha256": "65f2796fb65882751c4b2d521878ddb78a6a542425023a9a83eea30a90a92f5e"
+        },
+        "source": {
+          "path": "ports/y2k/candidate.wikidot.source.txt",
+          "sha256": "267413c5754294971d048457f9712b6929d5421ffe2d3e54dfa47c47140e8bf0"
+        },
+        "preview": {
+          "path": "ports/y2k/candidate.wikidot.txt",
+          "sha256": "03fb37136e7d93f50ad49b482b50cf672869353b7d98c64ccae1181c2793561f"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/y2k/accepted-result.json",
+        "sha256": "cbf675a6150c19b7479d091f466f2c9a4fe58b708c20655fc23fb655718e0f93"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/y2k/browser-audit.json",
+        "sha256": "ac6c984222da83ce1051427bb530f9959be90d4f30b1953a4392fd4610e28984"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/y2k/visual-review.json",
+        "sha256": "4d4386492e711d2d416d46ad865670eadc3bec6d73a3298ed30bf721b3e01ccf"
+      }
+    },
+    {
+      "package": "yossistyle",
+      "inputs": {
+        "css": {
+          "path": "ports/yossistyle/candidate.css",
+          "sha256": "84a214fc85344d262727f624b6319e2a4bdfa6537bd49ebd8678d854f009faab"
+        },
+        "source": {
+          "path": "ports/yossistyle/candidate.wikidot.source.txt",
+          "sha256": "c9987477d0e9079b7b15c55ac608b853e69c970484dc2b5b0e6f3cd6565c442c"
+        },
+        "preview": {
+          "path": "ports/yossistyle/candidate.wikidot.txt",
+          "sha256": "ad086d52d2414db271fbd284ecfff3db51d67222c13557c43263a4fbbd35b52e"
+        }
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/yossistyle/accepted-result.json",
+        "sha256": "b4286bec6a25d524a78340c1e63c2cfefe2ad9e4bd763d5bc1730c7952d40763"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/yossistyle/browser-audit.json",
+        "sha256": "3e55aed044afa0602d0dd7dff10ab08b31ecd86dffe3834fa560daceac357c19"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/yossistyle/visual-review.json",
+        "sha256": "a0d3351b518bb8a069842888a1728a0ae05f0d2b80e85e6849f2d0b554688a80"
+      }
+    }
+  ],
+  "migration": {
+    "receipt": {
+      "path": "sigma10-migration/current-campaign/accepted-result.json",
+      "sha256": "25e1f0aa4cd3f4a93ebfbb3aeeaa36c1a35d6bae6e90fe48f8a639f61de47aeb"
+    },
+    "browser_audit": {
+      "path": "sigma10-migration/current-campaign/browser-audit.json",
+      "sha256": "e9f145b5f7021b21160ea95684dc8d39099158b46602e73f387823509681b5df"
+    }
+  }
+}

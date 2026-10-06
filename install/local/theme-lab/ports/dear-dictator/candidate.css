@@ -583,6 +583,7 @@ div.toweroff {
 /* SCP-JP Wikidot Dear Dictator navigation correction: anchor only the overflowing rightmost menus at their mobile row endpoints. */
 @media (max-width: 359px) {
   #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul { left: auto; right: 0; }
+  #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
 }
 @media (min-width: 360px) and (max-width: 767px) {
   #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
@@ -602,4 +603,23 @@ div.toweroff {
   #top-bar .mobile-top-bar { position: fixed !important; inset: 0 0 auto 0 !important; z-index: 20 !important; }
   #search-top-box { z-index: 14 !important; width: auto !important; max-width: calc(100vw - 7rem) !important; }
   #search-top-box-form { width: auto !important; }
+}
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+/* SCP-JP Wikidot Dear Dictator mobile search correction: keep search below an unwrapped, readable navigation row. */
+@media (max-width: 979px) {
+  #search-top-box { top: 1.5rem !important; }
+}
+@media (max-width: 359px) {
+  #top-bar .mobile-top-bar > ul {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  #top-bar .mobile-top-bar > ul > li {
+    flex: 0 0 auto !important;
+    white-space: nowrap;
+  }
 }

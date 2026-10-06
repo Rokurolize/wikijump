@@ -1,0 +1,159 @@
+{
+  "schema": "theme_lab_real_wikidot_authority_visual_review.v1",
+  "status": "reviewed",
+  "reviewed_at": "2026-10-06T20:55:10.647Z",
+  "reviewer": "Codex visual review",
+  "decision_authority": "REAL_WIKIDOT_TARGET_AB_VISUAL_REVIEW_ONLY",
+  "package": "space",
+  "candidate_source_sha256": "20d4d9c98052fc76fcf8573505509dc4d49c3b4852e2ea99580218ad34afe3a7",
+  "candidate_css_sha256": "1df89c43e1a5d880ac726dd3529fb0cd9bf5abf6513cb84c4a3544e390fed286",
+  "capture_receipt": {
+    "path": "authority-evidence/space-current-navigation-20261007/receipt.json",
+    "sha256": "75bea91f3610e040ba19929dd30019c3d13ffb370a97de11092b07088b8359b8"
+  },
+  "review_scope": {
+    "url": "https://scp-jp.wikidot.com/scp-173-jp",
+    "engine": "chromium",
+    "browser_version": "154.0.8037.97",
+    "state": [
+      "navigation"
+    ],
+    "widths": [
+      320,
+      390
+    ],
+    "page_snapshot_observed_at": "2026-09-29T19:17:18.255Z",
+    "replay_measured_at": "2026-10-06T20:51:40.430Z"
+  },
+  "reviewed_screenshots": [
+    {
+      "variant": "without",
+      "width": 320,
+      "state": "navigation",
+      "index": 0,
+      "path": "authority-evidence/space-current-navigation-20261007/without-320-navigation-0.png",
+      "sha256": "900d6f2a4b4aedcbad7a6880ef96a33ed9380b860499074d72c64282ccc9d7fe"
+    },
+    {
+      "variant": "without",
+      "width": 320,
+      "state": "navigation",
+      "index": 1,
+      "path": "authority-evidence/space-current-navigation-20261007/without-320-navigation-1.png",
+      "sha256": "a1219e487508c9ce56e86b4589365d68320c18324e40d718c5d30ca3232983dc"
+    },
+    {
+      "variant": "without",
+      "width": 320,
+      "state": "navigation",
+      "index": 2,
+      "path": "authority-evidence/space-current-navigation-20261007/without-320-navigation-2.png",
+      "sha256": "81405ece516f92949aadfcfadabdebb39eaec22d4537b0cae3fe0f3bb1ec34e8"
+    },
+    {
+      "variant": "without",
+      "width": 320,
+      "state": "navigation",
+      "index": 3,
+      "path": "authority-evidence/space-current-navigation-20261007/without-320-navigation-3.png",
+      "sha256": "2a38637831a53ac442623e132a887cd2e1cd5583d8861816bdab55008a0b7844"
+    },
+    {
+      "variant": "with",
+      "width": 320,
+      "state": "navigation",
+      "index": 0,
+      "path": "authority-evidence/space-current-navigation-20261007/with-320-navigation-0.png",
+      "sha256": "c02ea9b7f275713da4eba959dd41ef6a2109655f88c8e5d656e32be15897ef27"
+    },
+    {
+      "variant": "with",
+      "width": 320,
+      "state": "navigation",
+      "index": 1,
+      "path": "authority-evidence/space-current-navigation-20261007/with-320-navigation-1.png",
+      "sha256": "5a3e196f17468ed2898481d78db0c31cd456e612a5aa5a3bda37c42e197b0660"
+    },
+    {
+      "variant": "with",
+      "width": 320,
+      "state": "navigation",
+      "index": 2,
+      "path": "authority-evidence/space-current-navigation-20261007/with-320-navigation-2.png",
+      "sha256": "7bd8619d305190d568073e4fe03b051d99fb9bd349fc9665fec7b5219210ef05"
+    },
+    {
+      "variant": "with",
+      "width": 320,
+      "state": "navigation",
+      "index": 3,
+      "path": "authority-evidence/space-current-navigation-20261007/with-320-navigation-3.png",
+      "sha256": "31fbb1a16cbbd09b644f0e7586a313c736d0934daf59fbbc46e43f3b6669d9b7"
+    },
+    {
+      "variant": "without",
+      "width": 390,
+      "state": "navigation",
+      "index": 0,
+      "path": "authority-evidence/space-current-navigation-20261007/without-390-navigation-0.png",
+      "sha256": "eb7f098479e9aab73fde22cfc386001d3dd3d00882f47a52e322d6055c785d98"
+    },
+    {
+      "variant": "without",
+      "width": 390,
+      "state": "navigation",
+      "index": 1,
+      "path": "authority-evidence/space-current-navigation-20261007/without-390-navigation-1.png",
+      "sha256": "974c6828b2db467ff5449a7c834f0b8ae0c6f734de97bc6b7ac029fb539c868f"
+    },
+    {
+      "variant": "without",
+      "width": 390,
+      "state": "navigation",
+      "index": 2,
+      "path": "authority-evidence/space-current-navigation-20261007/without-390-navigation-2.png",
+      "sha256": "51be471ce7f8637843f3bc647b22e8b4f1b48fdf5d391f8caf4759042d199b12"
+    },
+    {
+      "variant": "without",
+      "width": 390,
+      "state": "navigation",
+      "index": 3,
+      "path": "authority-evidence/space-current-navigation-20261007/without-390-navigation-3.png",
+      "sha256": "f3c5ead52a137eb04445dbac3649cbdd4f808f3586d1172366a20d7f380d1d1c"
+    },
+    {
+      "variant": "with",
+      "width": 390,
+      "state": "navigation",
+      "index": 0,
+      "path": "authority-evidence/space-current-navigation-20261007/with-390-navigation-0.png",
+      "sha256": "e5561dab42bd2537ff8493c65c56a170778bcd437bc900b3cf83317173d42006"
+    },
+    {
+      "variant": "with",
+      "width": 390,
+      "state": "navigation",
+      "index": 1,
+      "path": "authority-evidence/space-current-navigation-20261007/with-390-navigation-1.png",
+      "sha256": "fd8af2467964a613f33c1ff80923f30d98c228d9916711b57ea25b7e880741b6"
+    },
+    {
+      "variant": "with",
+      "width": 390,
+      "state": "navigation",
+      "index": 2,
+      "path": "authority-evidence/space-current-navigation-20261007/with-390-navigation-2.png",
+      "sha256": "bd708775b89db4777fb70266383e6e3c4f8b27214fa6fbaf2c53fb8397c7539c"
+    },
+    {
+      "variant": "with",
+      "width": 390,
+      "state": "navigation",
+      "index": 3,
+      "path": "authority-evidence/space-current-navigation-20261007/with-390-navigation-3.png",
+      "sha256": "645452e8d9b1a20ef8a42f918bfb9e727b2949aaae02f2d3a918a320281081cc"
+    }
+  ],
+  "findings": "Directly inspected all 16 paired screenshots: the four expanded navigation groups at 320px and 390px, with and without the Space candidate CSS. With the candidate, the header identity, search controls, top-bar labels, and visible submenu text remain legible; all four groups open. The candidate panels use a dark translucent/blurred backdrop, while the no-candidate Sigma-10 baseline retains its native light dropdowns and article visibility. At both widths, the candidate page document width equals the viewport width, with zero recorded overlaps or control occlusions. The longest EN range menu continues below the screenshot viewport, so this review does not claim every item fits in one frame or assess its lower-item scrolling behavior."
+}

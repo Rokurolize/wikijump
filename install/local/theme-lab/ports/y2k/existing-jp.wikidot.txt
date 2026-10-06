@@ -32,7 +32,7 @@
 
 + Examples
 
-[[include component:image-block name= http://scp-jp-storage.wikidot.com/local--files/file:4094174-4-k55r/logo.png|caption=Y2K|width=200px]]
+[[include component:image-block name= https://scp-jp-storage.wikidot.com/local--files/file:4094174-4-k55r/logo.png|caption=Y2K|width=200px]]
 
 水平方向の罫線は5つのハイフン"-----"で表示できます。罫線は何かの内側に位置していない限りページを横切るように広がります(例えば引用ブロックの中など)。このページのセクション間を区切っている線が罫線です。
 

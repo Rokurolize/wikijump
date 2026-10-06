@@ -113,8 +113,7 @@
     "https://api.fonts.coollabs.io/css2?family=Berkshire+Swash&display=swap",
     "https://fonts.googleapis.com/css2?family=Kaisei+Opti:wght@700&display=swap",
     "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-75-r6x7/particles.css",
-    "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/1",
-    "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/2"
+    "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/1"
   ],
   "import_provenance_status": "complete",
   "import_provenance": [
@@ -177,162 +176,11 @@
       "content_type": "text/css",
       "asset_file": "007314ecf9c9d48022ce23525392f2f6ab14f1fd44dff04317fe7881fff40f0e.css",
       "provenance_basis": "frozen-cache-exact-at-build"
-    },
-    {
-      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/2",
-      "final_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/2",
-      "sha256": "ef7ed75a859917e0114079200360694f8cd60bc1be3cd9074c46555f97966c00",
-      "normalized_text_sha256": "ef7ed75a859917e0114079200360694f8cd60bc1be3cd9074c46555f97966c00",
-      "bytes": 8646,
-      "content_type": "text/css",
-      "asset_file": "ef7ed75a859917e0114079200360694f8cd60bc1be3cd9074c46555f97966c00.css",
-      "provenance_basis": "frozen-cache-exact-at-build"
     }
   ],
   "localization_transforms": [],
   "pruned_fonts": [],
   "template_placeholders": [],
   "asset_replacements": {},
-  "omitted_assets": [],
-  "dependency_decisions": [
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://cdn.fonts.coollabs.io/berkshire-swash/normal/400-latin-ext.woff2",
-      "sha256": "28813221a9ef89d233de7917fb80fc670078d342c63032bf1e0c9f15fdd6b708",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://cdn.fonts.coollabs.io/berkshire-swash/normal/400-latin.woff2",
-      "sha256": "51831d748cc8e6dccff84ea6cdbcf6018224f017dd336a9e71627abc78717c0a",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.gstatic.com/s/kaiseiopti/v11/QldXNThJphYb8_g6c2nlIGHiw41u.ttf",
-      "sha256": "9086a986baf0c0bf41c3c946d225e5c52f5809592c35cdf0848a30ac1300fec0",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/400-latin-ext.woff2",
-      "sha256": "61eeb0eb8b881a84d069e67be1723f5b353b0b9b866ad8e7ad9dba66cdc4dabd",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/400-latin.woff2",
-      "sha256": "d64ba838ef5472bba248620ec4fd8b5aa7cf0db2908e0bb230600caf279ba7bc",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/700-latin-ext.woff2",
-      "sha256": "840ced16f975d8abc2594b436d0206649e0c2a7327e36750ff849d3d37c3c02e",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://cdn.fonts.coollabs.io/atkinson-hyperlegible/normal/700-latin.woff2",
-      "sha256": "140e2bd25a7315c8a062508391426b0d8c3297400c947b8d847be28f73a199f0",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-cyrillic.woff2",
-      "sha256": "756ada10f94d8eaa28aae086f621972fb694d3e8573c1a54bbccb50e4c7654d4",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-greek.woff2",
-      "sha256": "e9b9025f3eacbd93a66a9afe702bbaae843c2873fe8ab755a1ef8dc81979fc2d",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-latin-ext.woff2",
-      "sha256": "91ae985651b5d2d6d940f40815d94ec99f0eab4b383b8c98ecf10ccf7f9777b6",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/400-latin.woff2",
-      "sha256": "148b358d5c6a32ff44aa901fdd583519210675846edb6ccf8913a402054196a0",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-cyrillic.woff2",
-      "sha256": "a168311a7a04b6624c7452ec9657d87bbca333b174ac49a36f3c9e559a3b8a42",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-greek.woff2",
-      "sha256": "260f2b3fabf86718dcc46e6dcbdec0a1f80bf8728d1d3656d9ffd7e1a98b9795",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-latin-ext.woff2",
-      "sha256": "b40402c5b2062c37f84d240d6f888b2dd31dc5522ca62e997359bbd5cfbd7dfc",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://cdn.fonts.coollabs.io/anonymous-pro/normal/700-latin.woff2",
-      "sha256": "375e14fc0e64a2339788b0e6cf9a7b2ac9eef20314cfab80373eded4708f7dfc",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://api.fonts.coollabs.io/css2?family=Anonymous+Pro:wght@400;700&display=swap",
-      "sha256": "ff207ba7270e877548be37146d22b50a05510d5d803f67d778eb2bed5cdbf8ba",
-      "asset_file": "ff207ba7270e877548be37146d22b50a05510d5d803f67d778eb2bed5cdbf8ba.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://api.fonts.coollabs.io/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap",
-      "sha256": "13434753806b206d0deebe8c418af17d7ec23fd4e13067be15b63bf685467406",
-      "asset_file": "13434753806b206d0deebe8c418af17d7ec23fd4e13067be15b63bf685467406.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://api.fonts.coollabs.io/css2?family=Berkshire+Swash&display=swap",
-      "sha256": "1f2281205b9cfe892d6621165c30c6c4f52d5c1bc5804e70c4834a3c3106c244",
-      "asset_file": "1f2281205b9cfe892d6621165c30c6c4f52d5c1bc5804e70c4834a3c3106c244.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://fonts.googleapis.com/css2?family=Kaisei+Opti:wght@700&display=swap",
-      "sha256": "0a0b5662553b0f2c89cdb20d3e2014e1377724c041f1dcbfff547bbb73b934c7",
-      "asset_file": "0a0b5662553b0f2c89cdb20d3e2014e1377724c041f1dcbfff547bbb73b934c7.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-75-r6x7/particles.css",
-      "sha256": "1bbdda2c2da47561890c737c5ec742fc14cde846120000e611bc640810c184c5",
-      "asset_file": "1bbdda2c2da47561890c737c5ec742fc14cde846120000e611bc640810c184c5.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/1",
-      "sha256": "007314ecf9c9d48022ce23525392f2f6ab14f1fd44dff04317fe7881fff40f0e",
-      "asset_file": "007314ecf9c9d48022ce23525392f2f6ab14f1fd44dff04317fe7881fff40f0e.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/2",
-      "sha256": "ef7ed75a859917e0114079200360694f8cd60bc1be3cd9074c46555f97966c00",
-      "asset_file": "ef7ed75a859917e0114079200360694f8cd60bc1be3cd9074c46555f97966c00.css",
-      "decision": "freeze-source-stylesheet"
-    }
-  ]
+  "omitted_assets": []
 }

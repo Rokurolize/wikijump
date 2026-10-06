@@ -112,12 +112,12 @@
     "base": "maintenance/base.wikidot.txt",
     "jp_overrides": "maintenance/jp-overrides.css",
     "manifest": "maintenance/manifest.json",
-    "base_sha256": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
-    "jp_overrides_sha256": "f66884753c63b4490cfa32dad2680d660ee9a6bdda81aaa3ed29b43b043a32e5",
-    "semantic_css_sha256": "448e3c1caa17fccad16a6c74ddeee4f215519579c381676e2dae4c6e8b69dca0",
-    "canonical_override_sha256": "55966c0ffdee004383e3b2a0a0abd8f9326ec1e76f954f23f7dbe1f6c922aed1",
+    "base_sha256": "ef64c472fbc4c6add75121aa68283f72d21823b9e7915c493c6c891bac559b70",
+    "jp_overrides_sha256": "fd094532f5134a9b0628032ebbc6909c20e6b684c2eb2dfecee15b3677d97bdd",
+    "semantic_css_sha256": "8b8b4257981b831faeb1ad09ff51ee706f29c9278bbe79430ce0fa6bd1d8fa9e",
+    "canonical_override_sha256": "a8060f9eb9899e86d46fe41bd8d915c088d590e7bdf7c86b33f2487ffe418cad",
     "final_source": "maintenance/final.wikidot.txt",
-    "final_source_sha256": "77f38efa844a1c3067de050964289c3fba374dab605ad89152f7745247d6491a",
+    "final_source_sha256": "416d5ebf279a8dfd9e94ee8438c4cfa7c528c16fc8b9e7a6f9df6d3bbbec04c8",
     "exact_duplicate_rules_removed": 0,
     "redundant_same_value_declarations_removed": 0,
     "empty_rules_removed": 0
@@ -127,10 +127,18 @@
       "source_path": "candidate-input.css",
       "source_sha256": "9a6611c882f1b485cc2c3936d5a6c52d475818c7fd20d32f9a74edc192d0fc99",
       "active_tags": [],
-      "candidate_source_sha256": "b86654032bd696212ebb8c1a5742b34763cc28bb459546dfa90e5fa66ea1e82f",
-      "candidate_active_tags": [],
+      "candidate_source_sha256": "f6809160ccf1b35e74340d5e0421efecf8585246310203debbb5f0727b95eb8b",
+      "candidate_active_tags": [
+        "theme"
+      ],
+      "runtime_active_tags": [],
+      "showcase_css_modules_removed_exact": 0,
+      "showcase_css_modules_removed_truncated": 0,
+      "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 0,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "9036434a9d3d7d838cf7e96c12a2734adfbd8455f0ee4609efc9a0c125f23538",
+      "candidate_css_sha256": "00a8fff90043b8cc9164700b07080367ec1c29d29529635e34e6404a071e21e9",
       "asset_receipt_path": "assets.json",
       "assets": 16,
       "imports": 3,
@@ -141,7 +149,7 @@
     },
     "source_css_includes": {
       "manifest": "source-css-includes.json",
-      "materialized_css_sha256": "09350849191e39a9fbaaa1596f602135457989b169cc24233a2d7eee5b9ef4ab",
+      "materialized_css_sha256": "5bd2d00b494a875d43fcd5e270a4b323c9ddbe16b6238fb5f5b80992c3b37b0a",
       "cascade": "before-main-source-css",
       "public_writes": 0
     }

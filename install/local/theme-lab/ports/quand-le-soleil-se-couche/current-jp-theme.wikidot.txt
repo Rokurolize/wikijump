@@ -1,0 +1,202 @@
+[[iftags +テーマ]]
+
+[[include :scp-jp:credit:start-preview]]
+**タイトル:** 太陽が沈む時 テーマ
+**翻訳責任者:** [[*user koku4]]
+**翻訳年:** 2026
+**原題:** Thème de Quand le Soleil se Couche
+**著作権者:** [[*user Cyrielle Centori]]
+**作成年:** 2024
+**初訳時参照リビジョン:** 13
+**元記事リンク:** https://fondationscp.wikidot.com/theme:quand-le-soleil-se-couche
+[[include :scp-jp:credit:end-preview]]
+
+これは「[[[centre-quand-le-soleil-se-couche|太陽が沈む時]]]」カノンのテーマです。記事でこのテーマを使用するには、以下のコードをページのコードの先頭にコピーしてください。
+> @@[[include :scp-jp:theme:quand-le-soleil-se-couche@@
+> @@|sous-titre=@@##808080|//ここにサブタイトルを入力//##
+> @@]]@@
+----
+[# これはリンクです]
+
+[[[theme:quand-le-soleil-se-couche|これは訪問済みのリンクです]]]
+
+[[[404|これは存在しないリンクです]]]
+
+脚注付きのテキスト[[footnote]] 脚注テキスト [[/footnote]]
+
++ 1番目の見出し
+
+++ 2番目の見出し
+
++++ 3番目の見出し
+
+++++ 4番目の見出し
+
++++++ 5番目の見出し
+
+++++++ 6番目の見出し
+@@ @@
+[[tabview]]
+[[tab タブ]]
+これはタブです。
+[[/tab]]
+[[tab 別のタブ]]
+見てください、ここにもテキストがあります。
+
+意外ですね。
+[[/tab]]
+[[tab 長いタブ]]
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[/tabview]]
+
+[[footnoteblock]]
+------
+[[/iftags]]
+[[div [[iftags -テーマ]]style="display: none"[[/iftags]]]]
+[[module CSS show="true"]]
+/*
+    Thème de Quand le Soleil se Couche (Sigma-9)
+    Thème Wikidot 2024
+    Créé par Cauchynambour, adapté pour le wiki international et anglais par Cyrielle Centori
+    Image logo créée par Cauchynambour
+    Image header tirée du thème https://scp-jp.wikidot.com/theme:poor-foundation
+*/
+ 
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono&display=swap');
+ 
+:root {
+    --ct_cnt_alt-header-txt: "財団";
+    --ct_cnt_alt-slogan-txt: "{$sous-titre}";
+    --ct_bg_header-logo: url(https://scp-jp-storage.wdfiles.com/local--files/file%3A8518479-10-p71t/header-logo.png);
+    --ct_col_link: black;
+    --ct_col_link-visited: black;
+}
+ 
+#header {
+    background-image: var(--ct_bg_header-logo);
+}
+ 
+@media (min-width: 980px) {
+    #header {
+        background-size: 100px;
+    }
+}
+ 
+#header h1 a::before, .flickering {
+    content : 'SCP';
+    animation : flicker 3s linear infinite;
+}
+ 
+.flickering {
+    font-size: 180%;
+}
+ 
+@keyframes flicker {
+    0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% {
+     //text-shadow: none;
+     opacity: .99;
+    }
+    20%, 21.999%, 63%, 63.999%, 65%, 69.999% {
+     opacity: 0.4;
+    }
+}
+ 
+#header h1 a::after {
+    content: var(--ct_cnt_alt-header-txt);
+}
+ 
+#header h1 a span {
+    font-size: 0;
+    letter-spacing: 0;
+}
+ 
+/* from : https://scp-jp.wikidot.com/theme:poor-foundation */
+div#container-wrap {
+    background-image: url(https://scp-jp-storage.wdfiles.com/local--files/file%3A7657035-73-0m0k/body_bg_grey.png);
+}
+ 
+#header h2 span::before,
+#search-top-box,
+#login-status,
+#account-topbutton,
+.top-bar,
+.mobile-top-bar > *:not(.open-menu),
+#side-bar .side-block,
+#side-bar .scpnet-interwiki-wrapper,
+div.page-rate-widget-box,
+.creditButton,
+.yui-navset {
+   -webkit-filter: grayscale(100%);
+   filter: grayscale(100%);
+}
+ 
+#page-title {
+    color : black;
+}
+ 
+@media (max-width: 767px) {
+    #side-bar {
+        background-color: #9e9e9e;
+    }
+}
+ 
+#header h2 {
+    transform : rotate(2deg);
+}
+ 
+#header h2 span {
+    font-size: 0;
+}
+ 
+#header h2 span::before {
+    color: #f0f0c0;
+    content: var(--ct_cnt_alt-slogan-txt);
+    font-size: 0.84rem;
+}
+ 
+div.img {
+    filter : grayscale(0);
+}
+ 
+a {
+   color: var(--ct_col_link);
+}
+ 
+a:visited {
+   color: var(--ct_col_link-visited);
+}
+ 
+.creditButton a {
+    color: #fff6f0;
+}
+[[/module]]
+[[/div]]

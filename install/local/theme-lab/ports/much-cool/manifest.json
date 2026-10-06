@@ -4,8 +4,8 @@
   "en_updated_at": "2026-04-12T05:13:12+00:00",
   "en_entity_uuid": "6020a376-6735-4d65-8010-217e35135a87",
   "jp_previous_status": "present",
-  "jp_previous_source_sha256": "0305019f63ac920a0451b2fe9c17aa8c84992d86ae8b2243692e3d29c7354833",
-  "jp_previous_updated_at": "2024-07-04T11:44:02+00:00",
+  "jp_previous_source_sha256": "aff88b307f9e26ce47d632a6f29bb786a62f9b89b1e2b41ed9ab0e74d9272988",
+  "jp_previous_updated_at": "2026-09-25T03:02:42+00:00",
   "jp_previous_entity_uuid": "4e8ae45c-5b2f-4a66-b87d-915964dfe094",
   "technical_spec_version": "1.4",
   "reference_url": "https://scp-wiki.wikidot.com/theme:much-cool",
@@ -37,8 +37,8 @@
     "jp": {
       "status": "present",
       "source_path": "existing-jp.wikidot.txt",
-      "sha256": "0305019f63ac920a0451b2fe9c17aa8c84992d86ae8b2243692e3d29c7354833",
-      "updated_at": "2024-07-04T11:44:02+00:00",
+      "sha256": "aff88b307f9e26ce47d632a6f29bb786a62f9b89b1e2b41ed9ab0e74d9272988",
+      "updated_at": "2026-09-25T03:02:42+00:00",
       "entity_uuid": "4e8ae45c-5b2f-4a66-b87d-915964dfe094",
       "tags": [
         "en",
@@ -49,11 +49,20 @@
         "kind": "scp-corpus-page",
         "branch": "jp",
         "slug": "theme:much-cool"
-      }
+      },
+      "revisions": 4
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn",
+    "existing_jp_rebase": {
+      "previous_sha256": "0305019f63ac920a0451b2fe9c17aa8c84992d86ae8b2243692e3d29c7354833",
+      "previous_snapshot": "existing-jp-pre-rebase-20261005.wikidot.txt",
+      "current_revision": 4,
+      "current_updated_at": "2026-09-25T03:02:42+00:00",
+      "current_sha256": "aff88b307f9e26ce47d632a6f29bb786a62f9b89b1e2b41ed9ab0e74d9272988",
+      "diff_assessment": "provenance refresh; source freshness audit found no theme CSS/runtime behavior delta"
+    }
   },
   "dependencies": {
     "slug": "theme:much-cool",
@@ -100,7 +109,7 @@
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
   "candidate_origin": "current official SCP-JP page source",
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/much-cool/assets.json",
   "asset_dependency_decision_count": 5,
@@ -132,6 +141,8 @@
       "showcase_css_modules_removed_exact": 0,
       "showcase_css_modules_removed_truncated": 0,
       "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 0,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
       "candidate_css_sha256": "d6232bbe6f3e7da786f975a4960754dd86b71fdf16abbbc58bd07c2052293468",
       "asset_receipt_path": "assets.json",
@@ -148,7 +159,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

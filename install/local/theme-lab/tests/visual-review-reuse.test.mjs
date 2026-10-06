@@ -92,6 +92,13 @@ test('same bytes from another state are not reused', () => {
   assert.equal(row.classification, 'UNCONFIRMED');
 });
 
+test('an exact screenshot review from a different backend runtime is not reused', () => {
+  const row={...base,runtime_source_sha256:'1'.repeat(64),backend_runtime_identity_sha256:'2'.repeat(64),fixture_contract_sha256:'3'.repeat(64),capture_state_action_contract_sha256:'4'.repeat(64),scoped_run_contract_sha256:'5'.repeat(64),environment_contract_sha256:'6'.repeat(64)};
+  const stale=prior({runtime_source_sha256:'1'.repeat(64),backend_runtime_identity_sha256:'7'.repeat(64),fixture_contract_sha256:'3'.repeat(64),capture_state_action_contract_sha256:'4'.repeat(64),scoped_run_contract_sha256:'5'.repeat(64),environment_contract_sha256:'6'.repeat(64)});
+  assert.equal(applyExactVisualReviewReuseToRows([row],[stale]),0);
+  assert.equal(row.reviewed_after_last_change,false);
+});
+
 test('changed screenshot bytes are not reused', () => {
   const row = {...base};
   assert.equal(

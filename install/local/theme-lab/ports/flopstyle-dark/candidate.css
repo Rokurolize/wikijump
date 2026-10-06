@@ -324,7 +324,6 @@ div.diamond-part {
     }
 }
 
-
 /* CROQSTYLE CSS */
 /* Source: https://scp-wiki.wikidot.com/component:croqstyle */
 
@@ -612,59 +611,32 @@ tt {
 :where(.croqstyle-reset-tabs) .yui-navset .yui-content { background: initial; border: initial; padding: initial }
 
 
+/* https://scp-jp.wikidot.com/component:fade-in */
+
 :where(:root) {
   --fade-in: fadeIn;
-  --fade-in-delay: 0s;
-}
-
-/* Disable for hub pages, due to the reader being likely to want to start reading elsewhere than the top of the page */
-:root:has(#page-tags a[href*=hub]),
-/* Disable for pages with a table of contents, as the user is likely to jump directly to where they want to start reading */
-:root:has(#toc) {
-  --fade-in: none !important;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  :where(#page-title, #breadcrumbs, #page-content > *) {
+  :where(#page-title, #breadcrumbs, #page-content) {
     animation-name: var(--fade-in);
-    animation-duration: 0.6s;
+    animation-duration: 0.5s;
     animation-iteration-count: 1;
     animation-timing-function: ease-out;
     animation-fill-mode: backwards;
   }
 }
 
-:where(#page-title) { animation-delay: 0s; }
-
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translate(0,30px);
+    transform: translate(0,15px);
   }
   to {
     opacity: 1;
     transform: translate(0,0);
   }
 }
-
-:where(#page-content > :nth-child(1)) { animation-delay: calc(1 * var(--fade-in-delay)); }
-:where(#page-content > :nth-child(2)) { animation-delay: calc(2 * var(--fade-in-delay)); }
-:where(#page-content > :nth-child(3)) { animation-delay: calc(3 * var(--fade-in-delay)); }
-:where(#page-content > :nth-child(4)) { animation-delay: calc(4 * var(--fade-in-delay)); }
-:where(#page-content > :nth-child(5)) { animation-delay: calc(5 * var(--fade-in-delay)); }
-:where(#page-content > :nth-child(6)) { animation-delay: calc(6 * var(--fade-in-delay)); }
-:where(#page-content > :nth-child(7)) { animation-delay: calc(7 * var(--fade-in-delay)); }
-:where(#page-content > :nth-child(8)) { animation-delay: calc(8 * var(--fade-in-delay)); }
-:where(#page-content > :nth-child(9)) { animation-delay: calc(9 * var(--fade-in-delay)); }
-:where(#page-content > :nth-child(10)) { animation-delay: calc(10 * var(--fade-in-delay)); }
-:where(#page-content > :nth-child(11)) { animation-delay: calc(11 * var(--fade-in-delay)); }
-:where(#page-content > :nth-child(12)) { animation-delay: calc(12 * var(--fade-in-delay)); }
-:where(#page-content > :nth-child(13)) { animation-delay: calc(13 * var(--fade-in-delay)); }
-:where(#page-content > :nth-child(14)) { animation-delay: calc(14 * var(--fade-in-delay)); }
-:where(#page-content > :nth-child(15)) { animation-delay: calc(15 * var(--fade-in-delay)); }
-:where(#page-content > :nth-child(n+15)) { animation-delay: calc(16 * var(--fade-in-delay)); }
-
-
 
 /* Basic message code */
 .text-container .text {
@@ -1272,7 +1244,7 @@ tt {
 
  .top-bar::before {
     position: absolute;
-    top: -.5em;
+    top: -.4em;
     left: calc(100% / 4);
     width: calc(100% / 2);
     height: 5px;
@@ -4366,5 +4338,11 @@ tt {
  #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul { left: auto; right: 0; }
 }
 @media (min-width: 360px) and (max-width: 767px) {
+ #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul,
  #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
 }
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Flopstyle Dark Firefox submenu: anchor the third parent endpoint at mobile widths. */
+@supports (-moz-appearance:none){@media(max-width:359px){#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul {left:0;right:auto;}}@media(min-width:360px) and (max-width:767px){#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul {left:auto;right:0;}#top-bar .mobile-top-bar > ul > li:last-child > ul {left:0;right:auto;}}}

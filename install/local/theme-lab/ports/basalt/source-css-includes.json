@@ -6,16 +6,17 @@
   "includes": [
     {
       "locator": "component:betterfootnotes",
-      "kind": "unconditional-modules",
+      "kind": "wikidot-local-code",
       "parameters": {},
       "source": {
         "path": "source-includes/betterfootnotes.wikidot.txt",
-        "sha256": "a93c113949c85d818d49453d7e0271fa0a06c9eed70b0641eebd2466aab33c8c"
+        "sha256": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d"
       },
       "css": {
         "path": "source-includes/betterfootnotes-input.css",
-        "sha256": "2fc50a2c55c1c62c675b9486918a57da966d8011b9c54d483de6821efef336be"
-      }
+        "sha256": "4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5"
+      },
+      "code_index": 1
     },
     {
       "locator": "component:acs-animation",

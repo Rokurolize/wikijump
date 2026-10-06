@@ -216,12 +216,142 @@ div.diamond-part {
     to { box-shadow: -0.5rem 0 0 0 rgb(var(--black-monochrome, 12, 12, 12)); }
 }
 
-@import url("https://scp-wiki.wdfiles.com/local--code/component:betterfootnotes/1");
+:root {
+    --posX: calc(50% - 358px - 12rem);
+    --fnTransition: 0.3s;
+    --fnLinger: 0.15s;
+    --fnInteract: calc(var(--fnTransition) + var(--fnLinger));
+}
+
+/*--- Footnote Auto-counter --*/
+#main-content {
+    counter-reset: megacount;
+}
+
+/*--- Footnote Superscript Number --*/
+.fnnum {
+    display: inline-block;
+    width: max-content;
+    text-indent: -0.475ex;
+    vertical-align: super;
+    line-height: 80%;
+    word-break: initial;
+    text-decoration: none;
+    font-weight: bold;
+    font-style: initial;
+    color: transparent;
+    position: relative;
+    font-size: 80%;
+    padding: .15em .05em;
+    margin-right: -0.25em;
+    counter-increment: megacount;
+    -webkit-user-select: none;
+    user-select: none;
+}
+.fnnum::after {
+    content: "" counter(megacount);
+    color: var(--fnColor, #E6283C);
+}
+.fnnum:hover {
+    text-decoration: none;
+    cursor: pointer;
+    background-color: var(--fnColor, #E6283C);
+}
+.fnnum:hover::after { color: white; }
+
+/*--- Footnote Content Wrapper --*/
+.fncon {
+    position: absolute;
+    right: calc(var(--posX) + 80px);
+    line-height: 1.25;
+    padding: 0.8125rem;
+    width: 12.5rem;
+    box-sizing: border-box;
+    background: white;
+    border: .125rem solid black;
+    font-size: .9125rem;
+    font-weight: initial;
+    font-style: normal;
+    text-align: initial;
+    visibility: hidden;
+    opacity: 0;
+    z-index: 9;
+    transition:
+        opacity 0.15s linear var(--fnLinger),
+        right var(--fnTransition) cubic-bezier(.08,.72,.5,.94) var(--fnLinger),
+        visibility 0.01s linear var(--fnInteract);
+}
+.fnnum:hover + .fncon, .fncon:is(:hover,:focus-within) {
+    opacity: 1;
+    z-index: 10;
+    right: var(--posX);
+    visibility: visible;
+    transition:
+        opacity 0.15s linear,
+        right var(--fnTransition) cubic-bezier(.08,.72,.5,.94);
+}
+
+.fncon::before {
+    position: absolute;
+    top: 0; left: 0;
+    transform: translateX(-52%) translateY(-55%) scale(1.15);
+    background-color: var(--fnColor, #E6283C);
+    color: white;
+    content: counter(megacount);
+    font-size: initial;
+    font-weight: bold;
+    font-style: initial;
+    padding: 0.18rem 0.32em 0.08rem;
+}
+
+/*--- Mobile Query --*/
+@media only screen and (max-width: 1279px) {
+    .fncon {
+        position: fixed;
+        bottom: 1.5rem;
+        left: calc(15% - 50px);
+        width: 70%;
+        transition:
+            opacity 0.15s linear var(--fnLinger),
+            left var(--fnTransition) cubic-bezier(.08,.72,.5,.94) var(--fnLinger),
+            visibility 0.01s linear var(--fnInteract);
+    }
+    .fnnum:hover + .fncon, .fncon:is(:hover,:focus-within) {
+        left: 15%;
+        transition:
+            opacity 0.15s linear,
+            left var(--fnTransition) cubic-bezier(.08,.72,.5,.94);
+    }
+}
 
 @import url(https://scp-wiki.wdfiles.com/local--code/component%3Acroqstyle/1);
 
-@import url(https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1);
-@import url("https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1");
+/* https://scp-jp.wikidot.com/component:fade-in */
+
+:where(:root) {
+  --fade-in: fadeIn;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :where(#page-title, #breadcrumbs, #page-content) {
+    animation-name: var(--fade-in);
+    animation-duration: 0.5s;
+    animation-iteration-count: 1;
+    animation-timing-function: ease-out;
+    animation-fill-mode: backwards;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(0,15px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0,0);
+  }
+}
 
 /* Basic message code */
 .text-container .text {
@@ -405,5 +535,11 @@ div.diamond-part {
  #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul { left: auto; right: 0; }
 }
 @media (min-width: 360px) and (max-width: 767px) {
+ #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul,
  #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
 }
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Flopstyle Dark Firefox submenu: anchor the third parent endpoint at mobile widths. */
+@supports (-moz-appearance:none){@media(max-width:359px){#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul {left:0;right:auto;}}@media(min-width:360px) and (max-width:767px){#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul {left:auto;right:0;}#top-bar .mobile-top-bar > ul > li:last-child > ul {left:0;right:auto;}}}

@@ -809,6 +809,12 @@ html {
 
 
 
+
+
+
+
+
+
 [[module CSS]]
 td { vertical-align: top; }
 td strong { white-space: nowrap; }
@@ -876,7 +882,12 @@ td strong { white-space: nowrap; }
 [[div class="creditRate"]]
 [[div class="rateBox"]]
 [[div class="rate-box-with-credit-button"]]
-[[module Rate]]
+[[div class="page-rate-widget-box"]]
+[[span class="rate-points"]]評価: +1[[/span]]
+[[span class="rateup btn btn-default"]]+[[/span]]
+[[span class="ratedown btn btn-default"]]–[[/span]]
+[[span class="cancel btn btn-default"]]x[[/span]]
+[[/div]]
 [[/div]]
 [[/div]]
 [[/div]]

@@ -114,7 +114,7 @@ export function issuesFromPreview(preview) {
   }));
 }
 
-function issuesFromInteractions(interactions) {
+export function issuesFromInteractions(interactions) {
   if (!interactions) return [];
   return Object.entries(interactions)
     .filter(([, result]) => result?.status === "fail")

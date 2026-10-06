@@ -54,3 +54,21 @@ test("root clipping bounds decorative paint without hiding unclipped escapes", a
     assert.equal(visible.viewport_escape_px, 45);
   } finally {await browser.close();}
 });
+
+test("a closed off-canvas drawer with only a fractional edge sliver is not viewport escape", async () => {
+  const browser = await loadChromium().launch({headless: true});
+  try {
+    const page = await browser.newPage({viewport: {width: 320, height: 200}});
+    await page.setContent(`<style>
+      html, body { margin: 0; min-height: 200px; }
+      #drawer { position: fixed; left: -158.5px; top: 0; width: 158.625px; height: 100px; overflow-x: hidden; }
+      #drawer-link { display: block; width: 100%; height: 100%; }
+    </style><aside id="drawer"><a id="drawer-link" href="#closed">closed drawer</a></aside>`);
+    const result = (await collectViewportOverflow(page, [{id: "test", width: 320, height: 200}])).test;
+    assert.equal(result.document_overflow_px, 0);
+    assert.equal(result.viewport_escape_px, 0);
+    assert.deepEqual(result.overflow_sources, []);
+  } finally {
+    await browser.close();
+  }
+});

@@ -2175,7 +2175,7 @@ Aliquam fringilla eleifend tellus, feugiat pellentesque lacus auctor vitae. Prae
 
  .top-bar::before {
     position: absolute;
-    top: -.5em;
+    top: -.4em;
     left: calc(100% / 4);
     width: calc(100% / 2);
     height: 5px;

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "asset_count": 1045,
-  "total_bytes": 141314445,
+  "asset_count": 1077,
+  "total_bytes": 144398419,
   "themes": 34,
   "assets": [
     {
@@ -76,7 +76,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/018de3d1ce2b196714b0e1551210710762f7f977d2d46293be634d0d90dd77f6.css",
       "sha256": "018de3d1ce2b196714b0e1551210710762f7f977d2d46293be634d0d90dd77f6",
       "bytes": 1559440,
-      "used_by": [],
+      "used_by": [
+        "isolated-terminal"
+      ],
       "historical_used_by": [
         "isolated-terminal"
       ]
@@ -89,14 +91,14 @@
         "aesthetic-theme",
         "black-highlighter-theme",
         "extra-black-highlighter-theme",
+        "foxtrot",
         "hansarp",
         "isolated-terminal",
         "jakstyle",
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -119,6 +121,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -133,9 +136,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/02296067bc904d2ad19b49445bdaf6586cc44704e668e16e248f708e5005a290.woff2",
       "sha256": "02296067bc904d2ad19b49445bdaf6586cc44704e668e16e248f708e5005a290",
       "bytes": 9940,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -155,7 +156,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/02977bcbdc09013b30983c597e5d4e219629746d41932bddf7cd2e5e4563e9a1.ttf",
       "sha256": "02977bcbdc09013b30983c597e5d4e219629746d41932bddf7cd2e5e4563e9a1",
       "bytes": 5315052,
-      "used_by": [],
+      "used_by": [
+        "isolated-terminal"
+      ],
       "historical_used_by": [
         "isolated-terminal"
       ]
@@ -227,6 +230,15 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/03c22cfb3121845c2e3201ce354780011431564c496653d36a63f78005998355.ttf",
+      "sha256": "03c22cfb3121845c2e3201ce354780011431564c496653d36a63f78005998355",
+      "bytes": 57720,
+      "used_by": [
+        "paperstack"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/04c588bb5653e3ea46188e0697287b90b391122df213e26850f8904b91be5fa8.woff",
       "sha256": "04c588bb5653e3ea46188e0697287b90b391122df213e26850f8904b91be5fa8",
       "bytes": 62184,
@@ -244,6 +256,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -258,7 +271,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/0505f3ab36add14a8fb8565ee504190d96ae0d3d3893a0f3b81ae90f2cb7e033.ttf",
       "sha256": "0505f3ab36add14a8fb8565ee504190d96ae0d3d3893a0f3b81ae90f2cb7e033",
       "bytes": 115084,
-      "used_by": [],
+      "used_by": [
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -270,6 +285,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -438,9 +454,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/08a976c52d286f2b7b97102530fb91860674308bb15f666bb2982a7e0c5bbd5b.svg",
       "sha256": "08a976c52d286f2b7b97102530fb91860674308bb15f666bb2982a7e0c5bbd5b",
       "bytes": 27142,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -544,9 +558,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/0a9ebd9019415ee9f161b38fb24b5ee7736e2c8b85bf1e79e1e4c7c0010d55cb.woff2",
       "sha256": "0a9ebd9019415ee9f161b38fb24b5ee7736e2c8b85bf1e79e1e4c7c0010d55cb",
       "bytes": 10368,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -565,8 +577,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -586,9 +597,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/0af0cdff64ef9bf144ee5b06ec9c80a82767c3210673702c97cebaac39987a33.png",
       "sha256": "0af0cdff64ef9bf144ee5b06ec9c80a82767c3210673702c97cebaac39987a33",
       "bytes": 95671,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -783,8 +792,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -805,7 +813,8 @@
       "sha256": "0f80a46802573730c8c18aab2022761d1ec548268dd5d2734b50ad4a27dc6303",
       "bytes": 80241,
       "used_by": [
-        "flopstyle-dark"
+        "flopstyle-dark",
+        "foxtrot"
       ],
       "historical_used_by": [
         "flopstyle-dark"
@@ -829,6 +838,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -854,7 +864,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/107f028a3a04f40a58061a0c131ba7498d6a553f6cb633e00747552f49612b30.css",
       "sha256": "107f028a3a04f40a58061a0c131ba7498d6a553f6cb633e00747552f49612b30",
       "bytes": 16634,
-      "used_by": [],
+      "used_by": [
+        "isolated-terminal"
+      ],
       "historical_used_by": [
         "isolated-terminal"
       ]
@@ -874,9 +886,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/11150b36a2bced98564b2645e31f1676acf064cc661539da1caf43d23df00c59.webp",
       "sha256": "11150b36a2bced98564b2645e31f1676acf064cc661539da1caf43d23df00c59",
       "bytes": 357206,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -896,7 +906,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/11735fd2849504bb32df882870afb5a1343e4a8087c6e2068c7d737eecf8ae83.bin",
       "sha256": "11735fd2849504bb32df882870afb5a1343e4a8087c6e2068c7d737eecf8ae83",
       "bytes": 17188,
-      "used_by": [],
+      "used_by": [
+        "ouroborous-theme"
+      ],
       "historical_used_by": [
         "ouroborous-theme"
       ]
@@ -915,8 +927,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -936,9 +947,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/11c86148cec1c9a1fcc2e566bf92076cfcc98f8d60faf6bc5782fd98c093f072.png",
       "sha256": "11c86148cec1c9a1fcc2e566bf92076cfcc98f8d60faf6bc5782fd98c093f072",
       "bytes": 10269,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -990,8 +999,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -1065,8 +1073,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -1089,6 +1096,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -1256,6 +1264,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -1281,7 +1290,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/15e03687e060d9e5f045b756763dfac1d1476e5a7c46170a25fe053568e042c9.css",
       "sha256": "15e03687e060d9e5f045b756763dfac1d1476e5a7c46170a25fe053568e042c9",
       "bytes": 1289511,
-      "used_by": [],
+      "used_by": [
+        "isolated-terminal"
+      ],
       "historical_used_by": [
         "isolated-terminal"
       ]
@@ -1301,7 +1312,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/161769240d1222ac41b703074d694085504ad49376851ebc6f9e185efaa3e126.css",
       "sha256": "161769240d1222ac41b703074d694085504ad49376851ebc6f9e185efaa3e126",
       "bytes": 16703,
-      "used_by": [],
+      "used_by": [
+        "isolated-terminal"
+      ],
       "historical_used_by": [
         "isolated-terminal"
       ]
@@ -1343,7 +1356,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/16d5bd2c2125750c9588eef0d07011373e28538bbdb30c1ba562c14308e41494.css",
       "sha256": "16d5bd2c2125750c9588eef0d07011373e28538bbdb30c1ba562c14308e41494",
       "bytes": 231,
-      "used_by": [],
+      "used_by": [
+        "hansarp"
+      ],
       "historical_used_by": [
         "hansarp"
       ]
@@ -1352,9 +1367,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/177aa1063d048de5417d6fa6da209b1a7559aeb64906ab62bd9d36d4697841fa.css",
       "sha256": "177aa1063d048de5417d6fa6da209b1a7559aeb64906ab62bd9d36d4697841fa",
       "bytes": 3138,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -1374,7 +1387,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/19bd6ffce01143943a871c99224adefde36b6d53f66317fcb895d54cecfc8078.ttf",
       "sha256": "19bd6ffce01143943a871c99224adefde36b6d53f66317fcb895d54cecfc8078",
       "bytes": 36276,
-      "used_by": [],
+      "used_by": [
+        "hansarp"
+      ],
       "historical_used_by": [
         "hansarp"
       ]
@@ -1459,8 +1474,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -1483,6 +1497,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -1541,9 +1556,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/1bc10b01688ba9fafa5c24d70372d9dbfc0b38c08a961263854d35751a89820a.woff2",
       "sha256": "1bc10b01688ba9fafa5c24d70372d9dbfc0b38c08a961263854d35751a89820a",
       "bytes": 10600,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -1562,8 +1575,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -1583,7 +1595,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/1c0ff118a4290c99f39c90abb38703a866e47251b23cca20266c69c812ccafeb.css",
       "sha256": "1c0ff118a4290c99f39c90abb38703a866e47251b23cca20266c69c812ccafeb",
       "bytes": 5,
-      "used_by": [],
+      "used_by": [
+        "ouroborous-theme"
+      ],
       "historical_used_by": [
         "ouroborous-theme"
       ]
@@ -1669,7 +1683,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/1d3d56cc146e4fb311f95cf6f175f506cba8310e5edd8b8bb05fb301fd2650c3.ttf",
       "sha256": "1d3d56cc146e4fb311f95cf6f175f506cba8310e5edd8b8bb05fb301fd2650c3",
       "bytes": 6799452,
-      "used_by": [],
+      "used_by": [
+        "hansarp"
+      ],
       "historical_used_by": [
         "hansarp"
       ]
@@ -1722,7 +1738,10 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/1d9b643eed6250e7e62541844b9637bfc55168a471014684024c417f61289653.ttf",
       "sha256": "1d9b643eed6250e7e62541844b9637bfc55168a471014684024c417f61289653",
       "bytes": 5317276,
-      "used_by": [],
+      "used_by": [
+        "foxtrot",
+        "isolated-terminal"
+      ],
       "historical_used_by": [
         "isolated-terminal"
       ]
@@ -1819,7 +1838,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/1fab59679ec5ec28b61fae4877aa6e42a5e45a7a316232aa48ef0bec0cf3ce9a.ttf",
       "sha256": "1fab59679ec5ec28b61fae4877aa6e42a5e45a7a316232aa48ef0bec0cf3ce9a",
       "bytes": 5326848,
-      "used_by": [],
+      "used_by": [
+        "isolated-terminal"
+      ],
       "historical_used_by": [
         "isolated-terminal"
       ]
@@ -1907,7 +1928,6 @@
       "bytes": 5364,
       "used_by": [
         "monotypical",
-        "paperstack",
         "penumbra",
         "skipos"
       ],
@@ -1925,6 +1945,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -1939,7 +1960,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/21e419475c728e0c6e64a54f2fca4f15ca334e7d235c92e848d145fccc74e485.bin",
       "sha256": "21e419475c728e0c6e64a54f2fca4f15ca334e7d235c92e848d145fccc74e485",
       "bytes": 17516,
-      "used_by": [],
+      "used_by": [
+        "ouroborous-theme"
+      ],
       "historical_used_by": [
         "ouroborous-theme"
       ]
@@ -1949,7 +1972,6 @@
       "sha256": "21fa8cfe955ff06b708bdebf0e2a6dcc7f4c693b952cf0d559126b900e71c65e",
       "bytes": 22596,
       "used_by": [
-        "paperstack",
         "penumbra"
       ],
       "historical_used_by": [
@@ -1984,7 +2006,6 @@
       "sha256": "230cd81d3dc64401b7e7d14caff7b10438b13b65a5dadd799b18e293483de1f1",
       "bytes": 15100,
       "used_by": [
-        "paperstack",
         "penumbra",
         "skipos"
       ],
@@ -2023,6 +2044,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -2120,6 +2142,15 @@
       "historical_used_by": [
         "cosmonaut"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/26950a300be25c16196278f7df632147f7c4fce63681d325f63c9c30daaf566b.ttf",
+      "sha256": "26950a300be25c16196278f7df632147f7c4fce63681d325f63c9c30daaf566b",
+      "bytes": 184032,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/26f9e611260b72c43467d0a0ab4f56c5068ec431e41d9e3088fa74117ca086d8.woff",
@@ -2278,6 +2309,15 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/2a6a1bb1e485d559b68376b3c94565cdf796ce28a020234bb7c4b15289729dc1.css",
+      "sha256": "2a6a1bb1e485d559b68376b3c94565cdf796ce28a020234bb7c4b15289729dc1",
+      "bytes": 420,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/2a7facad5e91f16a52721eabaa09726d5452738f23499c6fafbd759b90d3d77d.woff2",
       "sha256": "2a7facad5e91f16a52721eabaa09726d5452738f23499c6fafbd759b90d3d77d",
       "bytes": 6720,
@@ -2305,7 +2345,6 @@
       "bytes": 6676,
       "used_by": [
         "monotypical",
-        "paperstack",
         "penumbra",
         "skipos"
       ],
@@ -2376,6 +2415,7 @@
       "sha256": "2c7c3e9c133e288e4c46573f139ac49eb93de013c3bfa70bd44873c69ec22685",
       "bytes": 5318344,
       "used_by": [
+        "isolated-terminal",
         "turbo-vision"
       ],
       "historical_used_by": [
@@ -2399,7 +2439,8 @@
       "sha256": "2cbb2b5f2ee14819504b724131d0222a1e360b888a23eeed3d90bab7ca81c00f",
       "bytes": 230,
       "used_by": [
-        "aesthetic-theme"
+        "aesthetic-theme",
+        "hansarp"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -2432,9 +2473,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/2cf57507ead8601f23573503a70413a7abee0c10ea406b8edfa60baf1291fabb.woff2",
       "sha256": "2cf57507ead8601f23573503a70413a7abee0c10ea406b8edfa60baf1291fabb",
       "bytes": 13796,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -2446,6 +2485,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -2479,6 +2519,15 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/2d9446450ff615627ce55d32ad2e29d3fa7d936cf141a0112f13b7edc65a4a9e.ttf",
+      "sha256": "2d9446450ff615627ce55d32ad2e29d3fa7d936cf141a0112f13b7edc65a4a9e",
+      "bytes": 99860,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/2e1879853e4bdc633d3c72898f5781de8e2443f6f99cbf79caf42b8e3c24035a.png",
       "sha256": "2e1879853e4bdc633d3c72898f5781de8e2443f6f99cbf79caf42b8e3c24035a",
       "bytes": 684452,
@@ -2504,7 +2553,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/2e9e1e815da488a79680ee6b6f2acde09270bd237dd5bea58cd93a37839f345b.css",
       "sha256": "2e9e1e815da488a79680ee6b6f2acde09270bd237dd5bea58cd93a37839f345b",
       "bytes": 386,
-      "used_by": [],
+      "used_by": [
+        "hansarp"
+      ],
       "historical_used_by": [
         "hansarp"
       ]
@@ -2564,6 +2615,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -2589,7 +2641,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/30b53b50c2e86ca683adb7d76aa11a9af3d851aa17b38cd0bd025dee92192f70.ttf",
       "sha256": "30b53b50c2e86ca683adb7d76aa11a9af3d851aa17b38cd0bd025dee92192f70",
       "bytes": 115188,
-      "used_by": [],
+      "used_by": [
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -2675,7 +2729,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160.ttf",
       "sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
       "bytes": 112204,
-      "used_by": [],
+      "used_by": [
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -2716,8 +2772,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -2760,7 +2815,6 @@
       "sha256": "3563a6acdb8ef5c8fe03c7c9a53a6c47cab96914ce4f430251e9780dc40eafe9",
       "bytes": 9992,
       "used_by": [
-        "paperstack",
         "penumbra",
         "skipos"
       ],
@@ -2807,7 +2861,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/3620bdfbafa8c6060fd8c71c796a73d02fe75cae55e748d52f7f430dc2351416.ttf",
       "sha256": "3620bdfbafa8c6060fd8c71c796a73d02fe75cae55e748d52f7f430dc2351416",
       "bytes": 112364,
-      "used_by": [],
+      "used_by": [
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -2893,7 +2949,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/38943c1c31632dde9b344d5c6f4402a2d4cd9cf5f1391833487e1cf9a538dace.ttf",
       "sha256": "38943c1c31632dde9b344d5c6f4402a2d4cd9cf5f1391833487e1cf9a538dace",
       "bytes": 115284,
-      "used_by": [],
+      "used_by": [
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -2916,6 +2974,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -2975,6 +3034,13 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/396b98969a7d1b53713d6ab36be3e25025c75f11b1cf2653d701aaba03948bbd.svg",
+      "sha256": "396b98969a7d1b53713d6ab36be3e25025c75f11b1cf2653d701aaba03948bbd",
+      "bytes": 585,
+      "used_by": [],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/3a013466c0eee979fb9d42c2d7a8887cd3645dc8b897cfc5b71781cf982efc5a.woff2",
       "sha256": "3a013466c0eee979fb9d42c2d7a8887cd3645dc8b897cfc5b71781cf982efc5a",
       "bytes": 98152,
@@ -3018,6 +3084,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -3043,9 +3110,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/3b646991d30055a93a4ecc499713d4347953a74a947ecab435ab72070cbdab0e.woff2",
       "sha256": "3b646991d30055a93a4ecc499713d4347953a74a947ecab435ab72070cbdab0e",
       "bytes": 22588,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -3098,7 +3163,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/3c015b221abdbba41c3b3e04d38e219d60705748c45029615c869289830c7060.bin",
       "sha256": "3c015b221abdbba41c3b3e04d38e219d60705748c45029615c869289830c7060",
       "bytes": 17108,
-      "used_by": [],
+      "used_by": [
+        "ouroborous-theme"
+      ],
       "historical_used_by": [
         "ouroborous-theme"
       ]
@@ -3150,6 +3217,15 @@
       "historical_used_by": [
         "penumbra"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/3db3a516fbee424e612e901febea1d3186d96e04dbd9ae50faec6845bf8bb9ac.css",
+      "sha256": "3db3a516fbee424e612e901febea1d3186d96e04dbd9ae50faec6845bf8bb9ac",
+      "bytes": 459,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/3de5a725194c740fd8174f9c3ded741dc2cef1eee032003d97682380b2b1da28.woff2",
@@ -3221,7 +3297,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/3f50b7a805114afce96fb1bbe1b5a2247927b7e93b91d57f8725fe712ea63f49.svg",
       "sha256": "3f50b7a805114afce96fb1bbe1b5a2247927b7e93b91d57f8725fe712ea63f49",
       "bytes": 194706,
-      "used_by": [],
+      "used_by": [
+        "ouroborous-theme"
+      ],
       "historical_used_by": [
         "ouroborous-theme"
       ]
@@ -3280,6 +3358,15 @@
       "historical_used_by": [
         "scheme"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/4084c60c3c24f9fa3fa92b9b557c07d10d2a93eaf51e048e1728719042cb3bf3.ttf",
+      "sha256": "4084c60c3c24f9fa3fa92b9b557c07d10d2a93eaf51e048e1728719042cb3bf3",
+      "bytes": 36236,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/4086e8af98c7662d159e6550d69464d73fd135ca9593cb4382857b66774e5baf.woff",
@@ -3365,8 +3452,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -3397,9 +3483,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/43fa8c58d04a8a626e714e4c7813dd459420ee118de224cc012ec9d9ed9bea15.png",
       "sha256": "43fa8c58d04a8a626e714e4c7813dd459420ee118de224cc012ec9d9ed9bea15",
       "bytes": 215593,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -3408,7 +3492,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/44bf95a8960ece5a659ae72b424c6095bd17c009663b98d65c57028a1ce9d6c2.ttf",
       "sha256": "44bf95a8960ece5a659ae72b424c6095bd17c009663b98d65c57028a1ce9d6c2",
       "bytes": 115008,
-      "used_by": [],
+      "used_by": [
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -3417,7 +3503,10 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/44ce4a84f20d60f24539bd0cef11f79c29e38609e0f8adf18551c9794a5d9dc3.ttf",
       "sha256": "44ce4a84f20d60f24539bd0cef11f79c29e38609e0f8adf18551c9794a5d9dc3",
       "bytes": 112172,
-      "used_by": [],
+      "used_by": [
+        "foxtrot",
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -3437,9 +3526,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/44f0fd6b9ce0984dac6d928b79a167c7b06b78501d34f4e46b9743caa2b8d642.png",
       "sha256": "44f0fd6b9ce0984dac6d928b79a167c7b06b78501d34f4e46b9743caa2b8d642",
       "bytes": 137042,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -3460,6 +3547,8 @@
       "sha256": "4593dfcdc70ee68852606c90d75dfc6e022feda12780a55615239c53c54ef086",
       "bytes": 5324144,
       "used_by": [
+        "foxtrot",
+        "isolated-terminal",
         "turbo-vision"
       ],
       "historical_used_by": [
@@ -3540,6 +3629,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "skipos"
       ],
       "historical_used_by": [
@@ -3687,6 +3777,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -3701,9 +3792,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe.css",
       "sha256": "4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe",
       "bytes": 235,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -3734,9 +3823,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5.css",
       "sha256": "4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5",
       "bytes": 2771,
-      "used_by": [
-        "flopstyle-dark"
-      ],
+      "used_by": [],
       "historical_used_by": []
     },
     {
@@ -3776,7 +3863,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/4b15a4f0ed67b209aed9a9cb06e717485f0f416f7f8c3b8eb1b3f041539d5efc.ttf",
       "sha256": "4b15a4f0ed67b209aed9a9cb06e717485f0f416f7f8c3b8eb1b3f041539d5efc",
       "bytes": 112276,
-      "used_by": [],
+      "used_by": [
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -3848,9 +3937,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/4d357ebec81bfa49564898619330dc79f1ead19a57a6dd9ef834937385759ab4.woff2",
       "sha256": "4d357ebec81bfa49564898619330dc79f1ead19a57a6dd9ef834937385759ab4",
       "bytes": 11000,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -3924,8 +4011,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -4006,8 +4092,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -4027,9 +4112,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/4ffb25726a7ce4ccd80de297624d63000e827e7eccfbe37243ba3e8647e3d4ed.woff2",
       "sha256": "4ffb25726a7ce4ccd80de297624d63000e827e7eccfbe37243ba3e8647e3d4ed",
       "bytes": 13412,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -4046,6 +4129,15 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/50880519c7814f353d58a521c6aa3a4c66f9ddb2c17d135f35d31b83885841c5.ttf",
+      "sha256": "50880519c7814f353d58a521c6aa3a4c66f9ddb2c17d135f35d31b83885841c5",
+      "bytes": 1895872,
+      "used_by": [
+        "paperstack"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/509faab0cdbddd8a3f969c7ed35b24cb78dbfeb21f2898665764de44923ff386.woff2",
       "sha256": "509faab0cdbddd8a3f969c7ed35b24cb78dbfeb21f2898665764de44923ff386",
       "bytes": 4508,
@@ -4060,7 +4152,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/511b044b15640a706488c9667994ca5d1e9f2041067809c8b4d9c320dbf32fb3.css",
       "sha256": "511b044b15640a706488c9667994ca5d1e9f2041067809c8b4d9c320dbf32fb3",
       "bytes": 2720,
-      "used_by": [],
+      "used_by": [
+        "ouroborous-theme"
+      ],
       "historical_used_by": [
         "ouroborous-theme"
       ]
@@ -4156,8 +4250,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -4202,6 +4295,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -4248,8 +4342,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -4314,7 +4407,6 @@
       "sha256": "54e9f097b2172b52bef202daedbd6b60c57138555f4ca6e4bb735bd30c023029",
       "bytes": 21648,
       "used_by": [
-        "paperstack",
         "penumbra"
       ],
       "historical_used_by": [
@@ -4345,6 +4437,15 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/557374841a9934ec41ef89f6b53f36a64b6979ce22647b476beec7341e5cf2bc.ttf",
+      "sha256": "557374841a9934ec41ef89f6b53f36a64b6979ce22647b476beec7341e5cf2bc",
+      "bytes": 71068,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/559e3eddf87b194161e89f8943fbb51ddfc2eb9cbaddbbd4df2904ec8df55ca2.woff",
       "sha256": "559e3eddf87b194161e89f8943fbb51ddfc2eb9cbaddbbd4df2904ec8df55ca2",
       "bytes": 4320,
@@ -4360,6 +4461,7 @@
       "sha256": "55ebddc0f968968851a4fd781512592c10f5ea248b77b1497f7b4de9a33fc469",
       "bytes": 5320828,
       "used_by": [
+        "isolated-terminal",
         "turbo-vision"
       ],
       "historical_used_by": [
@@ -4392,8 +4494,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -4456,8 +4557,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -4490,7 +4590,6 @@
       "bytes": 7860,
       "used_by": [
         "monotypical",
-        "paperstack",
         "penumbra",
         "skipos"
       ],
@@ -4541,6 +4640,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -4580,6 +4680,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -4594,10 +4695,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc.css",
       "sha256": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc",
       "bytes": 2347,
-      "used_by": [
-        "flopstyle-dark",
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": []
     },
     {
@@ -4615,9 +4713,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/5a6fde6c7acf7ad08a351aa90721121ccb117fab0fba5d00b8fd9c8146cbf2d0.png",
       "sha256": "5a6fde6c7acf7ad08a351aa90721121ccb117fab0fba5d00b8fd9c8146cbf2d0",
       "bytes": 11354,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -4680,8 +4776,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -4711,8 +4806,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -4792,6 +4886,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -4817,9 +4912,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/5d34b803637befe3714d55d383d9149692c39838c8deb45c8cbdd43b0fd09b98.woff2",
       "sha256": "5d34b803637befe3714d55d383d9149692c39838c8deb45c8cbdd43b0fd09b98",
       "bytes": 8460,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -4860,8 +4953,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -4893,7 +4985,6 @@
       "sha256": "5de10f834d9191afcdfa42c79ccfd8d202be8af4f6d0e5cabea52b176d58ccd0",
       "bytes": 10612,
       "used_by": [
-        "paperstack",
         "penumbra",
         "skipos"
       ],
@@ -4921,6 +5012,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -4935,7 +5027,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/5e310fbdd2031f6d8fb485d3ec8683bb1dcbdc5b9007a6b8efe7a77e640c2faf.ttf",
       "sha256": "5e310fbdd2031f6d8fb485d3ec8683bb1dcbdc5b9007a6b8efe7a77e640c2faf",
       "bytes": 115160,
-      "used_by": [],
+      "used_by": [
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -5113,7 +5207,6 @@
       "bytes": 11960,
       "used_by": [
         "monotypical",
-        "paperstack",
         "penumbra",
         "skipos"
       ],
@@ -5139,7 +5232,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/62bbab00e0b0faffb38a3d111341a814f8731fd50778aa0b495d3293b8290aaf.ttf",
       "sha256": "62bbab00e0b0faffb38a3d111341a814f8731fd50778aa0b495d3293b8290aaf",
       "bytes": 112300,
-      "used_by": [],
+      "used_by": [
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -5236,7 +5331,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/65c0bb03aebbd47f9708a71ec588dde3754dbee055c1f64cbb41b4390fe2dfe3.ttf",
       "sha256": "65c0bb03aebbd47f9708a71ec588dde3754dbee055c1f64cbb41b4390fe2dfe3",
       "bytes": 104556,
-      "used_by": [],
+      "used_by": [
+        "hansarp"
+      ],
       "historical_used_by": [
         "hansarp"
       ]
@@ -5315,12 +5412,19 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/675d4bace127bffba2eeaf798fbf39fe0c505659bc614c662f5a8be95fc0be4c.woff2",
       "sha256": "675d4bace127bffba2eeaf798fbf39fe0c505659bc614c662f5a8be95fc0be4c",
       "bytes": 8692,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/6764b63895b5c760712a88b3d1660c3565c4d834887e987fb585b6123be7306f.css",
+      "sha256": "6764b63895b5c760712a88b3d1660c3565c4d834887e987fb585b6123be7306f",
+      "bytes": 234,
+      "used_by": [
+        "paperstack"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/676ac40c0c9ed3a60897731cf2879f6006a17b294e423043d5a5505ae05cb9af.woff2",
@@ -5339,7 +5443,7 @@
       "bytes": 179384,
       "used_by": [
         "flopstyle-dark",
-        "inkblot"
+        "foxtrot"
       ],
       "historical_used_by": []
     },
@@ -5383,6 +5487,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -5408,9 +5513,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/69afad88a0740b6e5647f1104c9176a261f1ad9d60202f605456a983799752e9.woff2",
       "sha256": "69afad88a0740b6e5647f1104c9176a261f1ad9d60202f605456a983799752e9",
       "bytes": 14800,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -5431,7 +5534,8 @@
       "sha256": "69d997478237b769cda0f420d39f6932a9d9ce71d6c2738426aeec117a051abe",
       "bytes": 81504,
       "used_by": [
-        "flopstyle-dark"
+        "flopstyle-dark",
+        "foxtrot"
       ],
       "historical_used_by": [
         "flopstyle-dark"
@@ -5463,9 +5567,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/6b277c0646c6b5134c1788450be33b00341f91ca6b056e17421d00ba5774fc5a.woff",
       "sha256": "6b277c0646c6b5134c1788450be33b00341f91ca6b056e17421d00ba5774fc5a",
       "bytes": 14972,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -5499,6 +5601,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -5546,7 +5649,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/6cef1d5e85c07036bae92718e36fb10532529d796fdfa69e29b3ff15e14145d7.bin",
       "sha256": "6cef1d5e85c07036bae92718e36fb10532529d796fdfa69e29b3ff15e14145d7",
       "bytes": 16876,
-      "used_by": [],
+      "used_by": [
+        "ouroborous-theme"
+      ],
       "historical_used_by": [
         "ouroborous-theme"
       ]
@@ -5601,7 +5706,6 @@
       "bytes": 23312,
       "used_by": [
         "monotypical",
-        "paperstack",
         "penumbra",
         "skipos"
       ],
@@ -5627,9 +5731,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/6de912e531b6c98084f1b2d5e5a91bad77be4e68bc4e396e43c46fc435e5f3d9.woff2",
       "sha256": "6de912e531b6c98084f1b2d5e5a91bad77be4e68bc4e396e43c46fc435e5f3d9",
       "bytes": 24356,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -5680,6 +5782,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -5689,6 +5792,15 @@
         "site",
         "skipos"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/6f7b16897ff0590cf90a67f984ae30e48faecd25b99d3ee440ac8b64f9b40aba.css",
+      "sha256": "6f7b16897ff0590cf90a67f984ae30e48faecd25b99d3ee440ac8b64f9b40aba",
+      "bytes": 43,
+      "used_by": [
+        "basalt"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/6fb289fea179641579de5b208600d490ee52177b347f83e92cf673afc419704e.woff2",
@@ -5727,7 +5839,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/704f82dac0a9f4eea4a5fdcdea05a3f5b3739417da92385f316717284eb9b1ff.bin",
       "sha256": "704f82dac0a9f4eea4a5fdcdea05a3f5b3739417da92385f316717284eb9b1ff",
       "bytes": 23312,
-      "used_by": [],
+      "used_by": [
+        "ouroborous-theme"
+      ],
       "historical_used_by": [
         "ouroborous-theme"
       ]
@@ -5750,6 +5864,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -5863,9 +5978,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/730becc6f005c18c31440f14d34677f2704a85e6afffd4bee6a64d5c95f45a55.woff2",
       "sha256": "730becc6f005c18c31440f14d34677f2704a85e6afffd4bee6a64d5c95f45a55",
       "bytes": 15040,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -5951,7 +6064,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/74853c3111842ac73d23a5f61a081c02e7862f36db0e0ac93abc7e3a9c1697e4.bin",
       "sha256": "74853c3111842ac73d23a5f61a081c02e7862f36db0e0ac93abc7e3a9c1697e4",
       "bytes": 17416,
-      "used_by": [],
+      "used_by": [
+        "ouroborous-theme"
+      ],
       "historical_used_by": [
         "ouroborous-theme"
       ]
@@ -6059,9 +6174,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/771538f7f26551bd13ab97d585de6ce7ebe3b432837999d5b743391b48f4946a.woff2",
       "sha256": "771538f7f26551bd13ab97d585de6ce7ebe3b432837999d5b743391b48f4946a",
       "bytes": 8204,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -6103,9 +6216,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/7861a349af1e925a80d56547c2c9e0b1e9f6a9002a9a6867351da2f05122ad21.woff",
       "sha256": "7861a349af1e925a80d56547c2c9e0b1e9f6a9002a9a6867351da2f05122ad21",
       "bytes": 23876,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -6114,9 +6225,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/787c5ced3221a4276da1a43eb988070f7e483407080bae563569feba0cc8a29c.svg",
       "sha256": "787c5ced3221a4276da1a43eb988070f7e483407080bae563569feba0cc8a29c",
       "bytes": 3016,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -6137,7 +6246,6 @@
       "sha256": "7a022de179a466ad9711d5f2848123c5cba6eedf22e51a8dc04ed6e5d64b205d",
       "bytes": 36816,
       "used_by": [
-        "foxtrot",
         "redtape"
       ],
       "historical_used_by": [
@@ -6161,7 +6269,6 @@
       "sha256": "7a60615cb55e7cb7e562ff265f9c26943ef28aec751efa58c58167cb04ecef5d",
       "bytes": 8456,
       "used_by": [
-        "paperstack",
         "penumbra",
         "skipos"
       ],
@@ -6251,8 +6358,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -6272,9 +6378,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/7ccd1bd8e6962347d10b0f217a9255bf58ecfd76e0a0b1f1431e6bedf839173d.svg",
       "sha256": "7ccd1bd8e6962347d10b0f217a9255bf58ecfd76e0a0b1f1431e6bedf839173d",
       "bytes": 9873,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -6379,6 +6483,15 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/7eca286b060cae36de89344033a6deaaeb40ad809fbfc160bf872858300274c2.ttf",
+      "sha256": "7eca286b060cae36de89344033a6deaaeb40ad809fbfc160bf872858300274c2",
+      "bytes": 70952,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/7fafb91bd3ff1178c67f10b7a2b6bd9c0cfdc4c0966d7566b2322831c1afdcc1.woff2",
       "sha256": "7fafb91bd3ff1178c67f10b7a2b6bd9c0cfdc4c0966d7566b2322831c1afdcc1",
       "bytes": 7260,
@@ -6437,7 +6550,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/8163e7df7c00f1fee4abf3789826a59bc716da432df99de33bcbea1a3e95b5f4.css",
       "sha256": "8163e7df7c00f1fee4abf3789826a59bc716da432df99de33bcbea1a3e95b5f4",
       "bytes": 207,
-      "used_by": [],
+      "used_by": [
+        "hansarp"
+      ],
       "historical_used_by": [
         "hansarp"
       ]
@@ -6452,6 +6567,15 @@
       "historical_used_by": [
         "al-slop"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/81811045d2de6edbf12682f3a03ce3c60ab92e69e115d9e65f6b42cc42a9f4c7.ttf",
+      "sha256": "81811045d2de6edbf12682f3a03ce3c60ab92e69e115d9e65f6b42cc42a9f4c7",
+      "bytes": 100004,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/818aa16aebd22595188e2517e78edab3a62c894f2bb5f3aa3558cfb5214116ec.woff",
@@ -6490,9 +6614,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/828907bfd14855c880789878bd2b38ffd284a6c27c8b80f6069900f70dae3901.woff",
       "sha256": "828907bfd14855c880789878bd2b38ffd284a6c27c8b80f6069900f70dae3901",
       "bytes": 22104,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -6633,9 +6755,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/85db75b89e3c0bee23ea75ede70c73024f62516ccdb6be55eb0c5c7a7866433a.woff",
       "sha256": "85db75b89e3c0bee23ea75ede70c73024f62516ccdb6be55eb0c5c7a7866433a",
       "bytes": 14360,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -6644,7 +6764,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/85f6cbdbb180bf784bfb5c457641e519812120ba0f29326f71c1b9991888f060.css",
       "sha256": "85f6cbdbb180bf784bfb5c457641e519812120ba0f29326f71c1b9991888f060",
       "bytes": 3872,
-      "used_by": [],
+      "used_by": [
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -6653,9 +6775,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/860e0a179c3251cad1d355217b3bcdf36a868334ea3140fd6ac5383dc344d550.woff",
       "sha256": "860e0a179c3251cad1d355217b3bcdf36a868334ea3140fd6ac5383dc344d550",
       "bytes": 11652,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -6707,8 +6827,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -6809,9 +6928,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/8960851d691c054ed38e259bdcf1a6190d157b4203ed5bb32c632a863fb8ec2f.woff2",
       "sha256": "8960851d691c054ed38e259bdcf1a6190d157b4203ed5bb32c632a863fb8ec2f",
       "bytes": 24252,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -6831,9 +6948,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/89b819d4fef67eda2ce2c12f2f2b3978141fb73faebeb23ec895a3d7f8e66964.woff",
       "sha256": "89b819d4fef67eda2ce2c12f2f2b3978141fb73faebeb23ec895a3d7f8e66964",
       "bytes": 13512,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -6967,7 +7082,6 @@
       "bytes": 7832,
       "used_by": [
         "monotypical",
-        "paperstack",
         "penumbra",
         "skipos"
       ],
@@ -6983,7 +7097,6 @@
       "sha256": "8bbf57e5234bdf826cc151318d8c29a51043835e02be889283d7b47098fe2bb3",
       "bytes": 5372,
       "used_by": [
-        "paperstack",
         "penumbra",
         "skipos"
       ],
@@ -7029,8 +7142,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -7094,9 +7206,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/8d899d62a1e18740c6f9d8c1a760be8e511ef222e54ab68d3bc88c94d0d104b0.woff",
       "sha256": "8d899d62a1e18740c6f9d8c1a760be8e511ef222e54ab68d3bc88c94d0d104b0",
       "bytes": 8760,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -7139,6 +7249,8 @@
       "sha256": "8e27c1f5656b2482f06486e620ec17d8533e7ceef79c4d9fb819a08a67009b61",
       "bytes": 5327688,
       "used_by": [
+        "isolated-terminal",
+        "paperstack",
         "turbo-vision"
       ],
       "historical_used_by": [
@@ -7167,6 +7279,15 @@
       "historical_used_by": [
         "inkblot"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/8eb12af7c555ddc2f90cece6a14fc31f2ca15518f172f734bc350285fe4f7f3d.ttf",
+      "sha256": "8eb12af7c555ddc2f90cece6a14fc31f2ca15518f172f734bc350285fe4f7f3d",
+      "bytes": 45944,
+      "used_by": [
+        "paperstack"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/8ed2ed0d3b496bdf88a267158d5e7d4bcb7c6b33946edf877ba673d46dfcec54.woff2",
@@ -7230,6 +7351,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -7318,6 +7440,15 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/919a51cab11b436d130a1cdc7c2981a194d5165a787c2ff4f1966037e531b39f.svg",
+      "sha256": "919a51cab11b436d130a1cdc7c2981a194d5165a787c2ff4f1966037e531b39f",
+      "bytes": 2797,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/91ae985651b5d2d6d940f40815d94ec99f0eab4b383b8c98ecf10ccf7f9777b6.woff2",
       "sha256": "91ae985651b5d2d6d940f40815d94ec99f0eab4b383b8c98ecf10ccf7f9777b6",
       "bytes": 11712,
@@ -7349,6 +7480,15 @@
       "historical_used_by": [
         "space"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/928f8146f72b210bb6553c356ad5d007462da1bc63a483b73161de305a35a64b.ttf",
+      "sha256": "928f8146f72b210bb6553c356ad5d007462da1bc63a483b73161de305a35a64b",
+      "bytes": 110624,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/92b583cb2a5c4c599ae764ffeedcd319d47ca2a25399de356ae0375cd32412b9.woff2",
@@ -7394,6 +7534,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -7441,9 +7582,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/9346dc72f3fdad810acffde4519fe08c2f56a71125823dcded660e40d6725df0.png",
       "sha256": "9346dc72f3fdad810acffde4519fe08c2f56a71125823dcded660e40d6725df0",
       "bytes": 13437,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -7463,9 +7602,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/936bab32a6df130e60836eb8c6db216a01f36217b91ae186b5fe176f21bc0c5d.svg",
       "sha256": "936bab32a6df130e60836eb8c6db216a01f36217b91ae186b5fe176f21bc0c5d",
       "bytes": 45820,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -7512,9 +7649,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/946890cfa28c09b0df7a859054053a2a7534daa5a33ce5d2a95a3ba16b10f657.css",
       "sha256": "946890cfa28c09b0df7a859054053a2a7534daa5a33ce5d2a95a3ba16b10f657",
       "bytes": 11880,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -7550,7 +7685,6 @@
       "sha256": "9594c5808ece545915d533de00a262359ddab39a9efcdc6aa26ce141abda9070",
       "bytes": 207,
       "used_by": [
-        "foxtrot",
         "redtape"
       ],
       "historical_used_by": [
@@ -7606,9 +7740,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/96e48c8d9624d1fc3ea5aa144d0d14ffc28a9a482c43ce4f41a79d0ce6d158e9.woff",
       "sha256": "96e48c8d9624d1fc3ea5aa144d0d14ffc28a9a482c43ce4f41a79d0ce6d158e9",
       "bytes": 9540,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -7664,6 +7796,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -7749,6 +7882,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -7845,7 +7979,6 @@
       "sha256": "99eac709b04b7e8a87206e4f7fd8df79cc892ae309df532eda1f4538a7bf681e",
       "bytes": 23548,
       "used_by": [
-        "paperstack",
         "penumbra"
       ],
       "historical_used_by": [
@@ -7933,8 +8066,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -7955,7 +8087,6 @@
       "sha256": "9c30afe93cd10bd11045d2c7829c71335285284051debae71ca35f52468e5228",
       "bytes": 29836,
       "used_by": [
-        "paperstack",
         "penumbra",
         "skipos"
       ],
@@ -8167,9 +8298,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/a18bdcbc7aaeb2ee3fb50b9af5d689111e9a79767d75e40f22d70de8ded5e4ba.woff2",
       "sha256": "a18bdcbc7aaeb2ee3fb50b9af5d689111e9a79767d75e40f22d70de8ded5e4ba",
       "bytes": 26464,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -8189,7 +8318,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/a1a4b514933ac5a3ea738ac71c5f6d09004f22517e7cf8ff4a98ef6ffc558ce3.bin",
       "sha256": "a1a4b514933ac5a3ea738ac71c5f6d09004f22517e7cf8ff4a98ef6ffc558ce3",
       "bytes": 17388,
-      "used_by": [],
+      "used_by": [
+        "ouroborous-theme"
+      ],
       "historical_used_by": [
         "ouroborous-theme"
       ]
@@ -8220,7 +8351,10 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/a1d92abc6b02a87faed23d98067ab1027e8e95242fd7c9978a072ea383b89d1a.ttf",
       "sha256": "a1d92abc6b02a87faed23d98067ab1027e8e95242fd7c9978a072ea383b89d1a",
       "bytes": 112092,
-      "used_by": [],
+      "used_by": [
+        "foxtrot",
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -8229,9 +8363,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/a1e2e7d4a8bacdcc7f996cdf0b473a8974bfa8535bd1e0ea8ed8e10015a1e0b2.woff",
       "sha256": "a1e2e7d4a8bacdcc7f996cdf0b473a8974bfa8535bd1e0ea8ed8e10015a1e0b2",
       "bytes": 26164,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -8262,7 +8394,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/a28e58259bb6824edb551f24a653778e8469b62701ba6a6582500bb0d183b02f.svg",
       "sha256": "a28e58259bb6824edb551f24a653778e8469b62701ba6a6582500bb0d183b02f",
       "bytes": 16281,
-      "used_by": [],
+      "used_by": [
+        "minimalist-bhl"
+      ],
       "historical_used_by": [
         "minimalist-bhl"
       ]
@@ -8294,6 +8428,8 @@
       "sha256": "a3910e15eea0451ffbea62e894e951ea9f7c812c8b4b5e947593b6ecc2d4b057",
       "bytes": 5319680,
       "used_by": [
+        "isolated-terminal",
+        "paperstack",
         "turbo-vision"
       ],
       "historical_used_by": [
@@ -8393,9 +8529,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/a5c196466198d48c4737952909751c751b4d4b25a7396fc74aa26c31bd11d816.woff2",
       "sha256": "a5c196466198d48c4737952909751c751b4d4b25a7396fc74aa26c31bd11d816",
       "bytes": 8996,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -8459,9 +8593,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/a6dd94f71e249eb386cd66f1138dcccefe21eb06a13298d8875eff87e4f5c901.woff",
       "sha256": "a6dd94f71e249eb386cd66f1138dcccefe21eb06a13298d8875eff87e4f5c901",
       "bytes": 15476,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -8493,7 +8625,8 @@
       "sha256": "a73712ce4f3b32d3c7a1a657d56c6aaf50c719b7fa7fe0541905fe77f5a9906c",
       "bytes": 73276,
       "used_by": [
-        "aesthetic-theme"
+        "aesthetic-theme",
+        "hansarp"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -8504,12 +8637,19 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/a744b5775b026fc2176c3816715e2848bca96364a1c95ffb2aa891d2f7322db0.woff",
       "sha256": "a744b5775b026fc2176c3816715e2848bca96364a1c95ffb2aa891d2f7322db0",
       "bytes": 16184,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/a77d37f9b02bc18bd55f965dbb2124299fa7a6207a858ea840d834b1f7633a35.ttf",
+      "sha256": "a77d37f9b02bc18bd55f965dbb2124299fa7a6207a858ea840d834b1f7633a35",
+      "bytes": 36140,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/a7855c10e377c361d5198132f90c8c34525d51cc57626ab7133b6441fee25964.css",
@@ -8548,10 +8688,21 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/a87945c5e921deccd12513e296ba25f49aa6a93c9468492888b9324410baeede.css",
       "sha256": "a87945c5e921deccd12513e296ba25f49aa6a93c9468492888b9324410baeede",
       "bytes": 2097,
-      "used_by": [],
+      "used_by": [
+        "isolated-terminal"
+      ],
       "historical_used_by": [
         "isolated-terminal"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/a8a4b558116770a8d1a50bf4da894d8d9c80db71c5b8745556866f6b3b067ccc.css",
+      "sha256": "a8a4b558116770a8d1a50bf4da894d8d9c80db71c5b8745556866f6b3b067ccc",
+      "bytes": 430,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/a8b5faafd1d42bc0eee9ec9c5dffaa59b0bc64748f9d370c95869414d6c98091.woff",
@@ -8638,9 +8789,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/aa3bd4c4c493c3110ca5f5ac3f0cd688482982b40e4cf9cb601f931df2a8ccf5.woff",
       "sha256": "aa3bd4c4c493c3110ca5f5ac3f0cd688482982b40e4cf9cb601f931df2a8ccf5",
       "bytes": 6392,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -8649,9 +8798,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/aa3fe960509bbf92da95b92b082b310647f160b550be15270cd68a991aa3f0ac.svg",
       "sha256": "aa3fe960509bbf92da95b92b082b310647f160b550be15270cd68a991aa3f0ac",
       "bytes": 27379,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -8699,8 +8846,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -8808,9 +8954,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/ae433d3b3cdfc7d2b2ecb4173442cca23b58448cf05c21f7f589cf67f67b2dde.woff",
       "sha256": "ae433d3b3cdfc7d2b2ecb4173442cca23b58448cf05c21f7f589cf67f67b2dde",
       "bytes": 6584,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -8904,12 +9048,19 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/b072a9ba7ca286138933ac3f8327553c28486cadae27c4fb5a49a18e662765f7.css",
+      "sha256": "b072a9ba7ca286138933ac3f8327553c28486cadae27c4fb5a49a18e662765f7",
+      "bytes": 448,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/b080df76b8210429debab3f7fadf5975af7d9e43b1b0e51912ba4fde56e87865.woff",
       "sha256": "b080df76b8210429debab3f7fadf5975af7d9e43b1b0e51912ba4fde56e87865",
       "bytes": 9220,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -8962,9 +9113,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/b25dfd4f979e442ae1e25cd0894463434cf01ba21ac1a35d39f4a82bd4cc060e.woff2",
       "sha256": "b25dfd4f979e442ae1e25cd0894463434cf01ba21ac1a35d39f4a82bd4cc060e",
       "bytes": 16448,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -9005,8 +9154,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -9114,9 +9262,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/b608cde3c3fce3defba40d2f38677b682f7a8c915f5a11f3fc9b3e27d19010e5.ttf",
       "sha256": "b608cde3c3fce3defba40d2f38677b682f7a8c915f5a11f3fc9b3e27d19010e5",
       "bytes": 48432,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -9126,7 +9272,6 @@
       "sha256": "b6486de9cccc519fcc2b4ddd70dbcb39f32d654dba781fcff69ed73efd3b548d",
       "bytes": 7228,
       "used_by": [
-        "paperstack",
         "penumbra",
         "skipos"
       ],
@@ -9250,9 +9395,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/ba265b263be35814d27c13d42c6b9a36a0ec5b3a565d38011109bfa556a8d775.woff",
       "sha256": "ba265b263be35814d27c13d42c6b9a36a0ec5b3a565d38011109bfa556a8d775",
       "bytes": 14772,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -9265,14 +9408,14 @@
         "aesthetic-theme",
         "black-highlighter-theme",
         "extra-black-highlighter-theme",
+        "foxtrot",
         "hansarp",
         "isolated-terminal",
         "jakstyle",
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -9295,6 +9438,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -9383,10 +9527,21 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/bc28d2f8e1523a0025498921f4e34141d28745b56e790d02679d5b4c39ae4046.css",
+      "sha256": "bc28d2f8e1523a0025498921f4e34141d28745b56e790d02679d5b4c39ae4046",
+      "bytes": 466,
+      "used_by": [
+        "paperstack"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/bc31e0b0583e8530795907883e768597bf7bdb4e47a65861dc393b4411439e22.ttf",
       "sha256": "bc31e0b0583e8530795907883e768597bf7bdb4e47a65861dc393b4411439e22",
       "bytes": 112088,
-      "used_by": [],
+      "used_by": [
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -9427,8 +9582,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -9502,8 +9656,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -9564,12 +9717,20 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/c22267b21d7ae5b7d9af535002c6c975336ccc9f55c7df8cce558a245ac8ad42.svg",
+      "sha256": "c22267b21d7ae5b7d9af535002c6c975336ccc9f55c7df8cce558a245ac8ad42",
+      "bytes": 3113,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/c2714a976d659d0376202cd04513db747bf1e4977379b3300958c51c69398130.css",
       "sha256": "c2714a976d659d0376202cd04513db747bf1e4977379b3300958c51c69398130",
       "bytes": 404,
       "used_by": [
-        "flopstyle-dark",
-        "inkblot"
+        "flopstyle-dark"
       ],
       "historical_used_by": []
     },
@@ -9577,7 +9738,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/c2fc25c6bd4997010f95750b716b87e82961c917a2cf4021a954a0494f93317d.bin",
       "sha256": "c2fc25c6bd4997010f95750b716b87e82961c917a2cf4021a954a0494f93317d",
       "bytes": 23636,
-      "used_by": [],
+      "used_by": [
+        "ouroborous-theme"
+      ],
       "historical_used_by": [
         "ouroborous-theme"
       ]
@@ -9722,9 +9885,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/c5c00e8a32022dfedd2e7e864898ed007232e1450c6de1d6b847fe8825c2c5ce.woff2",
       "sha256": "c5c00e8a32022dfedd2e7e864898ed007232e1450c6de1d6b847fe8825c2c5ce",
       "bytes": 17008,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -9770,9 +9931,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/c6d34160c1a607c5b96b7a574854dfde35467e2b5a26fd9a7588b5a419c22592.css",
       "sha256": "c6d34160c1a607c5b96b7a574854dfde35467e2b5a26fd9a7588b5a419c22592",
       "bytes": 68501,
-      "used_by": [
-        "flopstyle-dark"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "flopstyle-dark"
       ]
@@ -9877,12 +10036,19 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/c935977340d9ec0f260833f6413a5fc517971def26ec1cf79bda9fc679669ee3.css",
+      "sha256": "c935977340d9ec0f260833f6413a5fc517971def26ec1cf79bda9fc679669ee3",
+      "bytes": 466,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/c93d2a12aaa280f68b9ab7b726ff8dfedda67c99ef9abed047c1847a1cc6d583.woff2",
       "sha256": "c93d2a12aaa280f68b9ab7b726ff8dfedda67c99ef9abed047c1847a1cc6d583",
       "bytes": 15980,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -9913,9 +10079,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/ca79e6bfe0da02f170e1077f856ae1634141f5f162bad497142b1ddbd699f1dd.png",
       "sha256": "ca79e6bfe0da02f170e1077f856ae1634141f5f162bad497142b1ddbd699f1dd",
       "bytes": 228001,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -10016,7 +10180,10 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/cc17f1489da4f8a376839e183f61c8e5256d0a974aaa99a196c847455b6116d0.ttf",
       "sha256": "cc17f1489da4f8a376839e183f61c8e5256d0a974aaa99a196c847455b6116d0",
       "bytes": 114956,
-      "used_by": [],
+      "used_by": [
+        "foxtrot",
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -10135,9 +10302,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/ced54bdc5900911444c06dcc427578b756f5cb6d3ad9ad053ced3dc35c6ab0a5.css",
       "sha256": "ced54bdc5900911444c06dcc427578b756f5cb6d3ad9ad053ced3dc35c6ab0a5",
       "bytes": 10917,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -10157,9 +10322,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/cf302238b1728a2632348ed925e6dd132a92e7f1b20bfa545012bc54523dd1ab.woff",
       "sha256": "cf302238b1728a2632348ed925e6dd132a92e7f1b20bfa545012bc54523dd1ab",
       "bytes": 6988,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -10168,9 +10331,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/cf3365ce34925d06ca44aaafb367a4e17aef311a2f3d941fcb4892973531d2b7.woff",
       "sha256": "cf3365ce34925d06ca44aaafb367a4e17aef311a2f3d941fcb4892973531d2b7",
       "bytes": 10100,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -10179,9 +10340,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/cf95e1d04c73f61f200c9b41b76b1254daeaafdcc8472dad3345b55c51669dc2.woff",
       "sha256": "cf95e1d04c73f61f200c9b41b76b1254daeaafdcc8472dad3345b55c51669dc2",
       "bytes": 12144,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -10200,8 +10359,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -10313,9 +10471,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/d385a38cf5bef6b1bc8edbf95167bdaa9992b231c9e887a991ae11486576c073.woff",
       "sha256": "d385a38cf5bef6b1bc8edbf95167bdaa9992b231c9e887a991ae11486576c073",
       "bytes": 24036,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -10332,6 +10488,15 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/d3d9c9ad210fba827d47180250adc61ae55792ccd09313c2b7a6aa37987ed541.css",
+      "sha256": "d3d9c9ad210fba827d47180250adc61ae55792ccd09313c2b7a6aa37987ed541",
+      "bytes": 224,
+      "used_by": [
+        "paperstack"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/d3df5f286d2afa858ced9e0fe71529d7ad7ca4d16bc684ea8048fd14b09afa71.woff",
       "sha256": "d3df5f286d2afa858ced9e0fe71529d7ad7ca4d16bc684ea8048fd14b09afa71",
       "bytes": 10864,
@@ -10346,9 +10511,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/d3fc6b34ef8f2968cf6b1b548e3d49e8ad3b26ebe60eb01172621b059b7133e5.woff",
       "sha256": "d3fc6b34ef8f2968cf6b1b548e3d49e8ad3b26ebe60eb01172621b059b7133e5",
       "bytes": 10616,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -10424,8 +10587,7 @@
       "sha256": "d545b9845df5f120e894f3f3207a147719584ed11a629c27bb29006aaa521c9a",
       "bytes": 32912,
       "used_by": [
-        "flopstyle-dark",
-        "inkblot"
+        "flopstyle-dark"
       ],
       "historical_used_by": []
     },
@@ -10499,9 +10661,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/d60d3d0b182753d5640e372c57669f508b79172ac4ff6b460d987ddd34cac199.woff2",
       "sha256": "d60d3d0b182753d5640e372c57669f508b79172ac4ff6b460d987ddd34cac199",
       "bytes": 12304,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -10516,6 +10676,15 @@
       "historical_used_by": [
         "cosmonaut"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/d65d63e6581b8c1210bed42a30dc766a0f0273018cb163947fdb8c0e160f3cb5.png",
+      "sha256": "d65d63e6581b8c1210bed42a30dc766a0f0273018cb163947fdb8c0e160f3cb5",
+      "bytes": 283,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/d69fb1b863db9bb918ab44314e04b6ff0f0838a4f12e1822b9b0b74c959bcd82.woff",
@@ -10543,7 +10712,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/d765504789eab375ff40f0ced1f98c6faa49f639f10b0d2976aa0bf4588c565d.ttf",
       "sha256": "d765504789eab375ff40f0ced1f98c6faa49f639f10b0d2976aa0bf4588c565d",
       "bytes": 115028,
-      "used_by": [],
+      "used_by": [
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -10686,9 +10857,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/d9456fcf3ff10d3c870645b5e47ddfe17be65837b8fcb9df92f2dfdd23c17e63.woff",
       "sha256": "d9456fcf3ff10d3c870645b5e47ddfe17be65837b8fcb9df92f2dfdd23c17e63",
       "bytes": 15516,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -10711,6 +10880,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -10725,9 +10895,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/da8119c8c0f1cbc7bc07df9e62cd72ced9d117dc1ac1d6098e982283cc86cbff.png",
       "sha256": "da8119c8c0f1cbc7bc07df9e62cd72ced9d117dc1ac1d6098e982283cc86cbff",
       "bytes": 26057,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -10747,7 +10915,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/dabeb51b87971d0f273f0d2e5e57558106dda72d1f64fb39bf98a8bd92163982.ttf",
       "sha256": "dabeb51b87971d0f273f0d2e5e57558106dda72d1f64fb39bf98a8bd92163982",
       "bytes": 5328124,
-      "used_by": [],
+      "used_by": [
+        "isolated-terminal"
+      ],
       "historical_used_by": [
         "isolated-terminal"
       ]
@@ -10767,7 +10937,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/db7eeb7fdf5f16e2c0c2466d6bf88af41ab0547207b392de2a764f1f89c8fda2.ttf",
       "sha256": "db7eeb7fdf5f16e2c0c2466d6bf88af41ab0547207b392de2a764f1f89c8fda2",
       "bytes": 104032,
-      "used_by": [],
+      "used_by": [
+        "hansarp"
+      ],
       "historical_used_by": [
         "hansarp"
       ]
@@ -10776,9 +10948,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/dc111b4254f64561fe50a3645f75bb66e4daa6b026c40d9e55de27f2671b8de0.woff",
       "sha256": "dc111b4254f64561fe50a3645f75bb66e4daa6b026c40d9e55de27f2671b8de0",
       "bytes": 13888,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -10799,7 +10969,6 @@
       "sha256": "dc8b14694b66c1381814d6f8e8bebbca8347433f032befdbbd38226c578b5f1e",
       "bytes": 20920,
       "used_by": [
-        "paperstack",
         "penumbra"
       ],
       "historical_used_by": [
@@ -10819,6 +10988,15 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/dcd8310f9895d68f8065bf1c3d49be5ad95ff9e7ad33f3e3792c98e033b07d0c.css",
+      "sha256": "dcd8310f9895d68f8065bf1c3d49be5ad95ff9e7ad33f3e3792c98e033b07d0c",
+      "bytes": 434,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/dd1b61e61c6eb0e1c8fbf87ca014b036f5d22e4ce97144c9e59048a1caf7ea56.woff2",
       "sha256": "dd1b61e61c6eb0e1c8fbf87ca014b036f5d22e4ce97144c9e59048a1caf7ea56",
       "bytes": 24184,
@@ -10836,6 +11014,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -10856,6 +11035,15 @@
       "historical_used_by": [
         "scheme"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/ddc84183cf16c4aa94c8baa5965504fd3703097bfa07539e8b96e05a34b4525e.ttf",
+      "sha256": "ddc84183cf16c4aa94c8baa5965504fd3703097bfa07539e8b96e05a34b4525e",
+      "bytes": 110708,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/de0657eab667e72b6b468315fd93c1190b9ca6e45d0e2e5a984702daaff6cb87.woff2",
@@ -10909,7 +11097,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8.ttf",
       "sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
       "bytes": 112160,
-      "used_by": [],
+      "used_by": [
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -10943,6 +11133,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -10971,6 +11162,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -11007,7 +11199,6 @@
         "ouroborous-theme",
         "redtape",
         "scp-offices-theme",
-        "sigma",
         "space"
       ],
       "historical_used_by": [
@@ -11051,7 +11242,9 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/e0cbb86865f792358176b62d32d263081f4e1d071f96b446cb89bbf2c0fed432.bin",
       "sha256": "e0cbb86865f792358176b62d32d263081f4e1d071f96b446cb89bbf2c0fed432",
       "bytes": 23820,
-      "used_by": [],
+      "used_by": [
+        "ouroborous-theme"
+      ],
       "historical_used_by": [
         "ouroborous-theme"
       ]
@@ -11098,6 +11291,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -11167,10 +11361,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be.css",
       "sha256": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be",
       "bytes": 2469,
-      "used_by": [
-        "basalt",
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": []
     },
     {
@@ -11209,8 +11400,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -11230,9 +11420,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/e2580ad78906551e1f9ad621f608cd16ce4d5a992e53c651dd6b3504547576f2.woff2",
       "sha256": "e2580ad78906551e1f9ad621f608cd16ce4d5a992e53c651dd6b3504547576f2",
       "bytes": 12148,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -11320,7 +11508,6 @@
       "bytes": 3512,
       "used_by": [
         "monotypical",
-        "paperstack",
         "penumbra",
         "skipos"
       ],
@@ -11338,6 +11525,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -11373,8 +11561,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -11394,9 +11581,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/e5a7d376768aa3ffe7532a21caa7f93e861381d32276d3482fe47e17a852b140.css",
       "sha256": "e5a7d376768aa3ffe7532a21caa7f93e861381d32276d3482fe47e17a852b140",
       "bytes": 208,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -11405,9 +11590,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/e60c70b37422d621549800db28c60764e16ccce7403a2d2957a8ac079818b28a.woff",
       "sha256": "e60c70b37422d621549800db28c60764e16ccce7403a2d2957a8ac079818b28a",
       "bytes": 10288,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -11481,8 +11664,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -11530,8 +11712,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -11584,9 +11765,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/e83127cc867a2128ae39c56c10f60b62d1aacb69f40894eb7ca9b97a24188070.woff2",
       "sha256": "e83127cc867a2128ae39c56c10f60b62d1aacb69f40894eb7ca9b97a24188070",
       "bytes": 16464,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -11617,9 +11796,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/e8731a7e2b00fc4f5e4ae47bff5168ea54e706c183cb213abbf88e46019e6879.woff2",
       "sha256": "e8731a7e2b00fc4f5e4ae47bff5168ea54e706c183cb213abbf88e46019e6879",
       "bytes": 16128,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -11628,12 +11805,19 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/e88d014915562194b9fad4fd954a046ef8103a62bb7b70c5f93f8cf7f25045ce.png",
       "sha256": "e88d014915562194b9fad4fd954a046ef8103a62bb7b70c5f93f8cf7f25045ce",
       "bytes": 79462,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/e8d487a0bea8978efb7a53e3fc1b866eb6e1bea7b56e577be5183a0c37b2b93a.css",
+      "sha256": "e8d487a0bea8978efb7a53e3fc1b866eb6e1bea7b56e577be5183a0c37b2b93a",
+      "bytes": 68501,
+      "used_by": [
+        "flopstyle-dark"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/e8d7078160ef92b82c2123857c1b3aefaa4a795a44b56df5fe3edade60d81576.woff2",
@@ -11642,6 +11826,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -11651,6 +11836,15 @@
         "site",
         "skipos"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/e93305634b06763b06cea7b872f909c96282571cd482d55cbfeae6a5c20b6d72.css",
+      "sha256": "e93305634b06763b06cea7b872f909c96282571cd482d55cbfeae6a5c20b6d72",
+      "bytes": 227,
+      "used_by": [
+        "paperstack"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/e9796e8de1954ee72e8d5de23d26bb8f577d4b903abae1fe11db8904279516ef.woff2",
@@ -11752,6 +11946,15 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/ec0b5c2b8b452b52cfe803f5ece234d3fbb7eb718e05746a9fe9d67b2da7b15c.css",
+      "sha256": "ec0b5c2b8b452b52cfe803f5ece234d3fbb7eb718e05746a9fe9d67b2da7b15c",
+      "bytes": 914,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/ec5fec8205840e47aad1cee4b1ab458bb5bda4307a124fb7701834ffcd41edff.png",
       "sha256": "ec5fec8205840e47aad1cee4b1ab458bb5bda4307a124fb7701834ffcd41edff",
       "bytes": 447252,
@@ -11796,6 +11999,15 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/ed1cd3c5181078d6a8ffeb3587b0abd74b1d05ae6a131dc1937aac2fe3685a69.css",
+      "sha256": "ed1cd3c5181078d6a8ffeb3587b0abd74b1d05ae6a131dc1937aac2fe3685a69",
+      "bytes": 968,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/ed55e8d4f13187a45a065914d4c756d360dea4fdbc7594b6c3db2bd9c3f644a3.png",
       "sha256": "ed55e8d4f13187a45a065914d4c756d360dea4fdbc7594b6c3db2bd9c3f644a3",
       "bytes": 71846,
@@ -11812,7 +12024,8 @@
       "bytes": 178748,
       "used_by": [
         "flopstyle-dark",
-        "inkblot"
+        "foxtrot",
+        "paperstack"
       ],
       "historical_used_by": []
     },
@@ -11852,8 +12065,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -11873,9 +12085,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/ef7ed75a859917e0114079200360694f8cd60bc1be3cd9074c46555f97966c00.css",
       "sha256": "ef7ed75a859917e0114079200360694f8cd60bc1be3cd9074c46555f97966c00",
       "bytes": 8646,
-      "used_by": [
-        "cosmonaut"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "cosmonaut"
       ]
@@ -11894,8 +12104,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -11940,6 +12149,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -11949,6 +12159,15 @@
         "site",
         "skipos"
       ]
+    },
+    {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/f0123e28dc0c4cac86559d1ffe587dded6ec57a4819956f56fcf6ad31d696eed.ttf",
+      "sha256": "f0123e28dc0c4cac86559d1ffe587dded6ec57a4819956f56fcf6ad31d696eed",
+      "bytes": 183604,
+      "used_by": [
+        "foxtrot"
+      ],
+      "historical_used_by": []
     },
     {
       "path": "install/local/theme-lab/ports/shared-replay-assets/f048563743244d656487d4d08a7e663d7aad355aaa9800060d3ad181b215fe63.woff2",
@@ -12019,8 +12238,7 @@
         "minimalist-bhl",
         "ouroborous-theme",
         "redtape",
-        "scp-offices-theme",
-        "sigma"
+        "scp-offices-theme"
       ],
       "historical_used_by": [
         "aesthetic-theme",
@@ -12043,6 +12261,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -12101,9 +12320,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/f299e7fb233c4edc8b1f813f4e5a09be5ca2bf3c974acea6bd5fb9de39265f7e.png",
       "sha256": "f299e7fb233c4edc8b1f813f4e5a09be5ca2bf3c974acea6bd5fb9de39265f7e",
       "bytes": 228053,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -12127,9 +12344,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/f3a993f7645fcabb6e5475a1e017febb8e9224ecb395d279c3886ead671b3b8c.svg",
       "sha256": "f3a993f7645fcabb6e5475a1e017febb8e9224ecb395d279c3886ead671b3b8c",
       "bytes": 31776,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -12138,7 +12353,10 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/f3ad0f703a734b38b49b3ee2d8121ef2718fba185198c3482e81a618272cb4af.ttf",
       "sha256": "f3ad0f703a734b38b49b3ee2d8121ef2718fba185198c3482e81a618272cb4af",
       "bytes": 114960,
-      "used_by": [],
+      "used_by": [
+        "foxtrot",
+        "scp-offices-theme"
+      ],
       "historical_used_by": [
         "scp-offices-theme"
       ]
@@ -12272,9 +12490,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/f7ab5cc03cc3fb46c78414739b8469c1e344a46afe41f33f5d6649456d9d2a1f.ttf",
       "sha256": "f7ab5cc03cc3fb46c78414739b8469c1e344a46afe41f33f5d6649456d9d2a1f",
       "bytes": 60644,
-      "used_by": [
-        "foxtrot"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "foxtrot"
       ]
@@ -12302,6 +12518,15 @@
       ]
     },
     {
+      "path": "install/local/theme-lab/ports/shared-replay-assets/f863cbf56bdc254127b41d9cbddddd058a52d85dcd79330eaf6f649a414dbacf.css",
+      "sha256": "f863cbf56bdc254127b41d9cbddddd058a52d85dcd79330eaf6f649a414dbacf",
+      "bytes": 198,
+      "used_by": [
+        "paperstack"
+      ],
+      "historical_used_by": []
+    },
+    {
       "path": "install/local/theme-lab/ports/shared-replay-assets/f911fa26eda01ef225b3478c626610fdd81f74454cd588fc657fd9cf00f64aee.css",
       "sha256": "f911fa26eda01ef225b3478c626610fdd81f74454cd588fc657fd9cf00f64aee",
       "bytes": 10121,
@@ -12317,8 +12542,7 @@
       "sha256": "f9a4fa40a5771a81b8b88435837fa5c3d4e72193b734ec62331a269adac0a91e",
       "bytes": 10822,
       "used_by": [
-        "flopstyle-dark",
-        "inkblot"
+        "flopstyle-dark"
       ],
       "historical_used_by": []
     },
@@ -12351,6 +12575,7 @@
       "used_by": [
         "basalt",
         "bedrock",
+        "foxtrot",
         "site",
         "skipos"
       ],
@@ -12366,8 +12591,7 @@
       "sha256": "faa24ec881e6040655c187a681d6dc496eb8aa41e1bd0652a180b3a40b457187",
       "bytes": 34641,
       "used_by": [
-        "flopstyle-dark",
-        "inkblot"
+        "flopstyle-dark"
       ],
       "historical_used_by": []
     },
@@ -12412,9 +12636,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/fbda67f0c87edcb5e777924b5077a61ce9099e4dd58a08ce033fb50b60ffaf05.woff",
       "sha256": "fbda67f0c87edcb5e777924b5077a61ce9099e4dd58a08ce033fb50b60ffaf05",
       "bytes": 7264,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]
@@ -12502,9 +12724,7 @@
       "path": "install/local/theme-lab/ports/shared-replay-assets/ff495e0841395139634bfee5ae7f851fad239f57d2af16e753fd0a71728f21d3.woff2",
       "sha256": "ff495e0841395139634bfee5ae7f851fad239f57d2af16e753fd0a71728f21d3",
       "bytes": 17708,
-      "used_by": [
-        "paperstack"
-      ],
+      "used_by": [],
       "historical_used_by": [
         "paperstack"
       ]

@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "bb5cb179a2d565e4874f57e9490cbb75fa8ebc20f01d0287bf83135a240aff72",
+  "frozen_candidate_source_sha256": "e0bbf7be650005b5f7d5e3893e598e16febd6f06d0bc26fc86f90163520b4e47",
   "base_source_sha256": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
-  "raw_jp_overrides_sha256": "1d3aff6a29d490d6e606ca41dac1ee3ffd417e18e414ed6ac89233e78783b2cb",
-  "jp_overrides_sha256": "2fbcc8171099e0a9a115d694d792ededd663f8b62e2bebab0961e98c328d73eb",
-  "semantic_css_sha256": "efa30baf5075c98820e1e1153974b6f9305f4bc4799c3b1bf12448aee117aae2",
-  "canonical_override_sha256": "b34325fe1c05257c6cce876ea6eea9bfb94f82004586c1fc1100a5aeb0dd1788",
+  "raw_jp_overrides_sha256": "e50f6ac33618d59caf40271fd30bafa8fe8bfec545f7084fe22b7816a611ef1a",
+  "jp_overrides_sha256": "4e673bd50dad499374773efdfdfa62fb6ac3f9cf7bd82e7fbe44a4e19edc7978",
+  "semantic_css_sha256": "1cae7fd4476aa41a4d8f18f8b3944a22a1f1e1d6b587c54354e108d6cb9775f3",
+  "canonical_override_sha256": "606a2cd1f316be2d8a69d196ebe4dfba6671e5b4ddeed1f6e289213536a4e27b",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "6399526f2d1ae714f74a0772510ecf7e2e42b3bfda25c3007e9f845e9bb03a41",
+  "final_source_sha256": "f8a5bb6bf010741cbe19dbdf55541c4ad30a62343d845d3d296b6b6606980156",
   "final_source_inputs": {
     "base_sha256": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
-    "jp_overrides_sha256": "2fbcc8171099e0a9a115d694d792ededd663f8b62e2bebab0961e98c328d73eb"
+    "jp_overrides_sha256": "4e673bd50dad499374773efdfdfa62fb6ac3f9cf7bd82e7fbe44a4e19edc7978"
   },
   "ordered_include_sha256": "839fef7ae721bb851ef23cb3c782a6435f953785942a2f2c58e733a10e71c852",
   "declaration_reviews": {},
   "adaptation_block_count": 2,
-  "raw_override_rule_count": 4,
-  "canonical_override_rule_count": 4,
+  "raw_override_rule_count": 3,
+  "canonical_override_rule_count": 3,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -366,9 +366,9 @@
     {
       "marker": "source-theme-and-localized-document-input",
       "origin": "preserved-source",
-      "sha256": "a0b2553ed2ef9958d159b6c32f5de1ba48137c58547a8fb405df4259323e0cd6",
+      "sha256": "204ba9991e64a43359ce626e5b6f775e709a1c482974f44896cd6c11326c7e73",
       "authority": "SOURCE_THEME",
-      "rationale": "Preserve source-theme imports, source declarations, include parameters and localized documentation before the historical campaign suffix. Asset freezing and include expansion are separate runtime-independent transforms.",
+      "rationale": "Materialize the exact active default article CSS modules from the already authority-bound publishable localization base. Exclude commented/false variant and theme-page presentation modules; source component includes and certified overlays remain their separate layers.",
       "evidence": [
         {
           "path": "foxtrot/upstream-en.wikidot.txt",
@@ -377,8 +377,13 @@
         },
         {
           "path": "foxtrot/existing-jp.wikidot.txt",
-          "sha256": "93f5876476041e7bc3f28e52fc7da233f1f78733f1ff687157086a64b05eb925",
+          "sha256": "d342ea8a6503fe16f975d74ff6646ff285ab8a382538e54c3e863d70bd055634",
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+        },
+        {
+          "path": "foxtrot/runtime-css-materialization.json",
+          "sha256": "7d17d16f28c2f1924970a2218b469f9f67ff8b7d079bbced8374b71ab6d8d005",
+          "decision_authority": "FROZEN_WIKIDOT_SOURCE_MODULES"
         }
       ]
     },
@@ -386,12 +391,17 @@
       "marker": "SCP-JP Wikidot Foxtrot background correction: allow the source dark body palette to show through the Sigma-9 wrapper.",
       "sha256": "1cf54f38791d5a2e86eceab485b2ac2994770e66b800eed9a14b3f5a38e3d610",
       "origin": "target-certified-replacement",
-      "authority": "TARGET_WIKIDOT_CERTIFIED",
-      "rationale": "The frozen source CSS intentionally paints a dark body with light text. Real SCP-JP Sigma-9 adds a light wrapper background absent from that intent, obscuring the light text. Clear only that image; four widths verify the computed layer and retain source colors.",
+      "authority": "REMOVE",
+      "rationale": "Restoring the complete active main stylesheet independently clears the Sigma-9 wrapper background. Frozen native same-CSS A/B passes with this block removed, including the prior background-image computed contract. Remove the redundant correction; retain its old receipts as diagnostics.",
       "evidence": [
         {
-          "path": "authority-evidence/foxtrot-final-navigation-readable-body-20-0-20261001/receipt.json",
-          "sha256": "f7c09ca8c75c85d7206f76ae52a5695f464fe8e4213f2423c5a7ce73a0807bfd",
+          "path": "authority-evidence/foxtrot-default-source-owner-readable-body-20-0-20261001/receipt.json",
+          "sha256": "d24f266b8331b2a51b03a96e17ab1f469995533a9cd18ab42ea915d8c9afe003",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        },
+        {
+          "path": "authority-evidence/foxtrot-materialized-final-readable-body-20-20261001/receipt.json",
+          "sha256": "3ae177cc04ce6e338d57ae0d2739418f8137cfe8b069cdd1ac18e4fa06bd2f57",
           "decision_authority": "REAL_WIKIDOT_TARGET_AB"
         }
       ],
@@ -408,36 +418,42 @@
           "path": "foxtrot/upstream-en.wikidot.txt",
           "sha256": "04407aa0cfb8cf27b6066cd994b7b1ae7d2c867f187aacbd90639423f7c78b5d"
         }
-      },
-      "published_css_sha256": "16d20dd41d1c6610da31afb4bb3b667efebeadab21c146d1966d6deb06fb7aca"
+      }
     },
     {
       "marker": "Resolve preserved source CSS component includes",
       "origin": "source-css-include-resolution",
       "authority": "RUNTIME_INDEPENDENT",
-      "sha256": "24cac5e58e8bad7afbd4fb5f2ac581759331609d3e10406b7bed0274c18ba7d2",
-      "rationale": "Exact source-owned include CSS and literal source parameters, materialized after site base imports before source theme declarations.",
+      "sha256": "ca5375a8eb7bea14e007095268c13a32b3a69e5e341fce0abb6120cc20eafbc8",
+      "rationale": "Materialize the reviewed SCP-JP component publication-source CSS locally before the theme declarations. This removes the temporary EN-component oracle while preserving the exact component behavior that will be published to SCP-JP.",
       "evidence": [
         {
           "path": "foxtrot/source-css-includes.json",
-          "sha256": "24cac5e58e8bad7afbd4fb5f2ac581759331609d3e10406b7bed0274c18ba7d2"
+          "sha256": "ca5375a8eb7bea14e007095268c13a32b3a69e5e341fce0abb6120cc20eafbc8",
+          "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_BINDING"
         },
         {
-          "path": "shared-fixtures/current-source-components-jp/receipt.json",
-          "sha256": "6ed5d876df05625082ce9c92fc69abe7eac6fa4b787b48eeccd9cd7b9b3b1676"
+          "path": "foxtrot/source-includes/fade-in.wikidot.txt",
+          "sha256": "a4882c56f2c0be3af6f9c4d1d0b6d6054ddbf86c16e6fa584342e2a6adb71f90",
+          "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_SOURCE"
+        },
+        {
+          "path": "foxtrot/source-includes/betterfootnotes.wikidot.txt",
+          "sha256": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d",
+          "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_SOURCE"
         }
       ]
     },
     {
       "marker": "SCP-JP Wikidot Foxtrot navigation correction: separate the drawer toggle from the header menu and contain row endpoint submenus.",
-      "sha256": "0038b036c90e6c41c068bb653eac94bf6ee7f85ed813d2c36c6103ddf80127dd",
+      "sha256": "15c5280fde0e4808cf39a31b03d4424b4ca729f861d05161f34605a7f853ace5",
       "origin": "target-certified-replacement",
       "authority": "TARGET_WIKIDOT_CERTIFIED",
-      "rationale": "The source header containing block places the drawer toggle over the first parent. Separate the toggle from that menu and anchor only the evidenced overflow endpoints, preserving header flow and source menu dimensions.",
+      "rationale": "The complete default source stylesheet still requires the drawer separation and third-menu endpoint correction at mobile widths. The fourth parent wraps at 390px, so right-anchoring it creates a new left escape and is removed. Trusted native A/B exercises all eight parent actions with the retained correction.",
       "evidence": [
         {
-          "path": "authority-evidence/foxtrot-navigation-action-authority-20261001/receipt.json",
-          "sha256": "37000ecc3858efa6c68c62093c4299956519a9823a78171028129105e60a9ea9",
+          "path": "authority-evidence/foxtrot-component-refresh-navigation-chromium-20261005/receipt.json",
+          "sha256": "7971c30fb81e03fba8d13a46c669b1285d7b9dab8705d760927745d26a83ca06",
           "decision_authority": "REAL_WIKIDOT_TARGET_AB"
         }
       ],
@@ -449,33 +465,65 @@
           390
         ]
       },
-      "published_css_sha256": "16d20dd41d1c6610da31afb4bb3b667efebeadab21c146d1966d6deb06fb7aca"
+      "published_css_sha256": "db15469bd49cb604c373918859834372b1cfc07b79157c0d66747c8f61c69912"
+    },
+    {
+      "marker": "SCP-JP Wikidot Foxtrot WebKit row endpoint: contain the fourth submenu where the engine keeps all parents on one row.",
+      "sha256": "aafd43797a2065561b9a42ad3269189cfba6c6d5501cb34275502c1bc7978a76",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "origin": "target-certified-replacement",
+      "rationale": "In WebKit at 390px all four native JP menu parents stay on one row. The fourth submenu expands even the closed document beyond the viewport; the unthemed state fits. Right-anchor this row endpoint only in WebKit at 360–767px. Native normal and all eight navigation actions pass; the wrapped 320px row and other engines retain their existing anchors.",
+      "evidence": [
+        {
+          "path": "authority-evidence/foxtrot-component-refresh-normal-webkit-20261005/receipt.json",
+          "sha256": "dc4da2e03b0cc2871699e26056bfbc8100c43edd6160b2e9aeb45db419a9bac5",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        },
+        {
+          "path": "authority-evidence/foxtrot-component-refresh-navigation-webkit-20261005/receipt.json",
+          "sha256": "f8276df16b5cadd9504c20988193eb2f05c480925f81066d9e377f8d1b0062f1",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "states": [
+          "normal",
+          "navigation-action"
+        ],
+        "viewports": [
+          320,
+          390
+        ]
+      },
+      "published_css_sha256": "db15469bd49cb604c373918859834372b1cfc07b79157c0d66747c8f61c69912"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
   "publishable_adaptations": [
     {
-      "marker": "SCP-JP Wikidot Foxtrot background correction: allow the source dark body palette to show through the Sigma-9 wrapper.",
-      "rationale": "SCP-JP Wikidot Foxtrot background correction: allow the source dark body palette to show through the Sigma-9 wrapper.",
-      "sha256": "1cf54f38791d5a2e86eceab485b2ac2994770e66b800eed9a14b3f5a38e3d610",
-      "selectors": [
-        "div#container-wrap"
-      ],
-      "at_contexts": [],
-      "authority": "TARGET_WIKIDOT_CERTIFIED"
-    },
-    {
       "marker": "SCP-JP Wikidot Foxtrot navigation correction: separate the drawer toggle from the header menu and contain row endpoint submenus.",
       "rationale": "SCP-JP Wikidot Foxtrot navigation correction: separate the drawer toggle from the header menu and contain row endpoint submenus.",
-      "sha256": "0038b036c90e6c41c068bb653eac94bf6ee7f85ed813d2c36c6103ddf80127dd",
+      "sha256": "15c5280fde0e4808cf39a31b03d4424b4ca729f861d05161f34605a7f853ace5",
       "selectors": [
-        "#top-bar .mobile-top-bar > ul > li:last-child > ul",
         "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul",
         "#top-bar .open-menu a"
       ],
       "at_contexts": [
-        "@media (max-width: 767px)",
-        "@media (min-width: 360px) and (max-width: 767px)"
+        "@media (max-width: 767px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot Foxtrot WebKit row endpoint: contain the fourth submenu where the engine keeps all parents on one row.",
+      "rationale": "SCP-JP Wikidot Foxtrot WebKit row endpoint: contain the fourth submenu where the engine keeps all parents on one row.",
+      "sha256": "aafd43797a2065561b9a42ad3269189cfba6c6d5501cb34275502c1bc7978a76",
+      "selectors": [
+        "#top-bar .mobile-top-bar > ul > li:last-child > ul"
+      ],
+      "at_contexts": [
+        "@media(min-width:360px) and (max-width:767px)",
+        "@supports(-webkit-hyphens:none)"
       ],
       "authority": "TARGET_WIKIDOT_CERTIFIED"
     }

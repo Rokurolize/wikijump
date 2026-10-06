@@ -1,204 +1,549 @@
 {
   "assets": [
     {
-      "sha256": "936bab32a6df130e60836eb8c6db216a01f36217b91ae186b5fe176f21bc0c5d",
-      "bytes": 45820,
-      "content_type": "image/svg+xml",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-60-vjf1/fxtrt-canada.svg",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-60-vjf1/fxtrt-canada.svg"
-    },
-    {
-      "sha256": "9346dc72f3fdad810acffde4519fe08c2f56a71125823dcded660e40d6725df0",
-      "bytes": 13437,
-      "content_type": "image/png",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-61-9brj/fxtrt-canada_darkmode.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-61-9brj/fxtrt-canada_darkmode.png"
-    },
-    {
-      "sha256": "0af0cdff64ef9bf144ee5b06ec9c80a82767c3210673702c97cebaac39987a33",
-      "bytes": 95671,
-      "content_type": "image/png",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-77-o0tg/ontologonew2.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-77-o0tg/ontologonew2.png"
-    },
-    {
-      "sha256": "f299e7fb233c4edc8b1f813f4e5a09be5ca2bf3c974acea6bd5fb9de39265f7e",
-      "bytes": 228053,
-      "content_type": "image/png",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A3995762-105-gvkd/120.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A3995762-105-gvkd/120.png"
-    },
-    {
-      "sha256": "da8119c8c0f1cbc7bc07df9e62cd72ced9d117dc1ac1d6098e982283cc86cbff",
-      "bytes": 26057,
-      "content_type": "image/png",
-      "original_url": "http://scp-jp-storage.wikidot.com/local--files/file%3A5722815-48-k39z/Big87.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-48-k39z/Big87.png"
-    },
-    {
-      "sha256": "11150b36a2bced98564b2645e31f1676acf064cc661539da1caf43d23df00c59",
-      "bytes": 357206,
-      "content_type": "application/octet-stream",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-62-tcqn/fxtrt-vanguard_logo.webp",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-62-tcqn/fxtrt-vanguard_logo.webp"
-    },
-    {
-      "sha256": "aa3fe960509bbf92da95b92b082b310647f160b550be15270cd68a991aa3f0ac",
-      "bytes": 27379,
-      "content_type": "image/svg+xml",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A2963469-55-celk/overwatchheaderthreshold.svg",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A2963469-55-celk/overwatchheaderthreshold.svg"
-    },
-    {
-      "sha256": "08a976c52d286f2b7b97102530fb91860674308bb15f666bb2982a7e0c5bbd5b",
-      "bytes": 27142,
-      "content_type": "image/svg+xml",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A2963469-4-z8c6/overwatchheader.svg",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A2963469-4-z8c6/overwatchheader.svg"
-    },
-    {
-      "sha256": "f3a993f7645fcabb6e5475a1e017febb8e9224ecb395d279c3886ead671b3b8c",
-      "bytes": 31776,
-      "content_type": "image/svg+xml",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-78-0n3j/ATOM.svg",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-78-0n3j/ATOM.svg"
-    },
-    {
-      "sha256": "43fa8c58d04a8a626e714e4c7813dd459420ee118de224cc012ec9d9ed9bea15",
-      "bytes": 215593,
-      "content_type": "image/png",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-471a/fxtrt-spc_lightmode.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-471a/fxtrt-spc_lightmode.png"
-    },
-    {
-      "sha256": "e88d014915562194b9fad4fd954a046ef8103a62bb7b70c5f93f8cf7f25045ce",
-      "bytes": 79462,
-      "content_type": "image/png",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-79-by5e/spc-header.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-79-by5e/spc-header.png"
-    },
-    {
-      "sha256": "7ccd1bd8e6962347d10b0f217a9255bf58ecfd76e0a0b1f1431e6bedf839173d",
-      "bytes": 9873,
-      "content_type": "image/svg+xml",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-80-85w5/Site-184.svg",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-80-85w5/Site-184.svg"
-    },
-    {
-      "sha256": "5a6fde6c7acf7ad08a351aa90721121ccb117fab0fba5d00b8fd9c8146cbf2d0",
-      "bytes": 11354,
-      "content_type": "image/png",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-tlne/fxtrt-nightfall_lightmode.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-tlne/fxtrt-nightfall_lightmode.png"
-    },
-    {
-      "sha256": "11c86148cec1c9a1fcc2e566bf92076cfcc98f8d60faf6bc5782fd98c093f072",
-      "bytes": 10269,
-      "content_type": "image/png",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-81-p6yq/moon1.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-81-p6yq/moon1.png"
-    },
-    {
-      "sha256": "b608cde3c3fce3defba40d2f38677b682f7a8c915f5a11f3fc9b3e27d19010e5",
-      "bytes": 48432,
+      "sha256": "26950a300be25c16196278f7df632147f7c4fce63681d325f63c9c30daaf566b",
+      "bytes": 184032,
       "content_type": "font/ttf",
-      "original_url": "https://fonts.gstatic.com/s/sairastencilone/v19/SLXSc03I6HkvZGJ1GvvipLoYSTEL9DsLYQw.ttf",
-      "final_url": "https://fonts.gstatic.com/s/sairastencilone/v19/SLXSc03I6HkvZGJ1GvvipLoYSTEL9DsLYQw.ttf"
+      "original_url": "https://fonts.gstatic.com/s/montserrat/v31/JTUFjIg1_i6t8kCHKm459Wx7xQYXK0vOoz6jqyR6aX8.ttf",
+      "final_url": "https://fonts.gstatic.com/s/montserrat/v31/JTUFjIg1_i6t8kCHKm459Wx7xQYXK0vOoz6jqyR6aX8.ttf"
     },
     {
-      "sha256": "ca79e6bfe0da02f170e1077f856ae1634141f5f162bad497142b1ddbd699f1dd",
-      "bytes": 228001,
-      "content_type": "image/png",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-qfcj/fxtrt-hybrasil_lightmode.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-qfcj/fxtrt-hybrasil_lightmode.png"
-    },
-    {
-      "sha256": "44f0fd6b9ce0984dac6d928b79a167c7b06b78501d34f4e46b9743caa2b8d642",
-      "bytes": 137042,
-      "content_type": "image/png",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-82-8r1s/mksjr3.png",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-82-8r1s/mksjr3.png"
-    },
-    {
-      "sha256": "7a022de179a466ad9711d5f2848123c5cba6eedf22e51a8dc04ed6e5d64b205d",
-      "bytes": 36816,
+      "sha256": "f0123e28dc0c4cac86559d1ffe587dded6ec57a4819956f56fcf6ad31d696eed",
+      "bytes": 183604,
       "content_type": "font/ttf",
-      "original_url": "https://fonts.gstatic.com/s/russoone/v18/Z9XUDmZRWg6M1LvRYsH-yA.ttf",
-      "final_url": "https://fonts.gstatic.com/s/russoone/v18/Z9XUDmZRWg6M1LvRYsH-yA.ttf"
+      "original_url": "https://fonts.gstatic.com/s/montserrat/v31/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCvr70w-.ttf",
+      "final_url": "https://fonts.gstatic.com/s/montserrat/v31/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCvr70w-.ttf"
     },
     {
-      "sha256": "f7ab5cc03cc3fb46c78414739b8469c1e344a46afe41f33f5d6649456d9d2a1f",
-      "bytes": 60644,
+      "sha256": "7eca286b060cae36de89344033a6deaaeb40ad809fbfc160bf872858300274c2",
+      "bytes": 70952,
       "content_type": "font/ttf",
-      "original_url": "https://fonts.gstatic.com/s/creepster/v13/AlZy_zVUqJz4yMrniH4hdQ.ttf",
-      "final_url": "https://fonts.gstatic.com/s/creepster/v13/AlZy_zVUqJz4yMrniH4hdQ.ttf"
+      "original_url": "https://fonts.gstatic.com/s/lexend/v26/wlptgwvFAVdoq2_F94zlCfv0bz1WC9wR_LA.ttf",
+      "final_url": "https://fonts.gstatic.com/s/lexend/v26/wlptgwvFAVdoq2_F94zlCfv0bz1WC9wR_LA.ttf"
     },
     {
-      "sha256": "787c5ced3221a4276da1a43eb988070f7e483407080bae563569feba0cc8a29c",
-      "bytes": 3016,
+      "sha256": "557374841a9934ec41ef89f6b53f36a64b6979ce22647b476beec7341e5cf2bc",
+      "bytes": 71068,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/lexend/v26/wlptgwvFAVdoq2_F94zlCfv0bz1WC7sR_LA.ttf",
+      "final_url": "https://fonts.gstatic.com/s/lexend/v26/wlptgwvFAVdoq2_F94zlCfv0bz1WC7sR_LA.ttf"
+    },
+    {
+      "sha256": "f3ad0f703a734b38b49b3ee2d8121ef2718fba185198c3482e81a618272cb4af",
+      "bytes": 114960,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDba2o-flEEny0FZhsfKu5WU4xD-IQ-PuZJJXxfpAO-LflOQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDba2o-flEEny0FZhsfKu5WU4xD-IQ-PuZJJXxfpAO-LflOQ.ttf"
+    },
+    {
+      "sha256": "cc17f1489da4f8a376839e183f61c8e5256d0a974aaa99a196c847455b6116d0",
+      "bytes": 114956,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDba2o-flEEny0FZhsfKu5WU4xD-IQ-PuZJJXxfpAO9seVOQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDba2o-flEEny0FZhsfKu5WU4xD-IQ-PuZJJXxfpAO9seVOQ.ttf"
+    },
+    {
+      "sha256": "44ce4a84f20d60f24539bd0cef11f79c29e38609e0f8adf18551c9794a5d9dc3",
+      "bytes": 112172,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPQ.ttf"
+    },
+    {
+      "sha256": "a1d92abc6b02a87faed23d98067ab1027e8e95242fd7c9978a072ea383b89d1a",
+      "bytes": 112092,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8L6tjPQ.ttf",
+      "final_url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8L6tjPQ.ttf"
+    },
+    {
+      "sha256": "edc273e94e72c8ee4279c8406f65373d96c518e3fea9cc3f121fed51283e0e70",
+      "bytes": 178748,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sFVc.ttf",
+      "final_url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sFVc.ttf"
+    },
+    {
+      "sha256": "67941ae3787edeffd80ab437e8ba99667002d9fae22c2cbb80c1553f2d90ab79",
+      "bytes": 179384,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_NprFVc.ttf",
+      "final_url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_NprFVc.ttf"
+    },
+    {
+      "sha256": "2d9446450ff615627ce55d32ad2e29d3fa7d936cf141a0112f13b7edc65a4a9e",
+      "bytes": 99860,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/sofiasans/v20/Yq6G-LCVXSLy9uPBwlATrORgnBjYmSP97MWy80WupPY.ttf",
+      "final_url": "https://fonts.gstatic.com/s/sofiasans/v20/Yq6G-LCVXSLy9uPBwlATrORgnBjYmSP97MWy80WupPY.ttf"
+    },
+    {
+      "sha256": "81811045d2de6edbf12682f3a03ce3c60ab92e69e115d9e65f6b42cc42a9f4c7",
+      "bytes": 100004,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/sofiasans/v20/Yq6G-LCVXSLy9uPBwlATrORgnBjYmSP97MWy86KppPY.ttf",
+      "final_url": "https://fonts.gstatic.com/s/sofiasans/v20/Yq6G-LCVXSLy9uPBwlATrORgnBjYmSP97MWy86KppPY.ttf"
+    },
+    {
+      "sha256": "928f8146f72b210bb6553c356ad5d007462da1bc63a483b73161de305a35a64b",
+      "bytes": 110624,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/sofiasans/v20/Yq6E-LCVXSLy9uPBwlAThu1SY8Cx8rlT69B6sK3t.ttf",
+      "final_url": "https://fonts.gstatic.com/s/sofiasans/v20/Yq6E-LCVXSLy9uPBwlAThu1SY8Cx8rlT69B6sK3t.ttf"
+    },
+    {
+      "sha256": "ddc84183cf16c4aa94c8baa5965504fd3703097bfa07539e8b96e05a34b4525e",
+      "bytes": 110708,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/sofiasans/v20/Yq6E-LCVXSLy9uPBwlAThu1SY8Cx8rlT69Cdt63t.ttf",
+      "final_url": "https://fonts.gstatic.com/s/sofiasans/v20/Yq6E-LCVXSLy9uPBwlAThu1SY8Cx8rlT69Cdt63t.ttf"
+    },
+    {
+      "sha256": "693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3",
+      "bytes": 352240,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterVariable.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterVariable.woff2?v=4.1"
+    },
+    {
+      "sha256": "e564f652916db6c139570fefb9524a77c4d48f30c92928de9db19b6b5c7a262a",
+      "bytes": 387976,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterVariable-Italic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterVariable-Italic.woff2?v=4.1"
+    },
+    {
+      "sha256": "70ca998635d9fc627dede8108f04d0989e6e03346183f0ad0917723e790f6973",
+      "bytes": 109548,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-Thin.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Thin.woff2?v=4.1"
+    },
+    {
+      "sha256": "930d666b74e0dc0c26c2821f5643b701f8a41beaf3bb95ce146298104f29169c",
+      "bytes": 116880,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-ThinItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-ThinItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "ba4fc81dbb25871f1bcabc664b1e37703fca0a05f7248a923e7db497c6d211cc",
+      "bytes": 112728,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-ExtraLight.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-ExtraLight.woff2?v=4.1"
+    },
+    {
+      "sha256": "38bad3a6a9ad1a7fcd8082e6423ba5e0baea16598f2cf304e527844f697e32b2",
+      "bytes": 119320,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-ExtraLightItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-ExtraLightItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "e111a1e2ad914ccda9179b95e83fb10234dd52a1932e0b93c480476227983fd9",
+      "bytes": 112592,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-Light.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Light.woff2?v=4.1"
+    },
+    {
+      "sha256": "050265b27d11860a26c66c054210852661abb5d229c4e0bb3525757a830f3790",
+      "bytes": 119608,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-LightItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-LightItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "e06f6b1bc553aaea4e4668023ed0ab0a147129c3107f511bc7d03d361b0ae085",
+      "bytes": 111268,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-Regular.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Regular.woff2?v=4.1"
+    },
+    {
+      "sha256": "2d078cb3bc8f934740d53b39dd23b0678f2f97477e49ec785dd9d8acd8b96bfc",
+      "bytes": 117700,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-Italic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Italic.woff2?v=4.1"
+    },
+    {
+      "sha256": "0ff3e94614e1493eb556314fd247ae6c4a85a7783b4cc86be539940cf83f2a48",
+      "bytes": 114348,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-Medium.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Medium.woff2?v=4.1"
+    },
+    {
+      "sha256": "1b0df503de488a92082a8c5d72ddc4c0229183ceb645ae1c25c2d0d63778517c",
+      "bytes": 120784,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-MediumItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-MediumItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "5cb7103e4e605989afebc03d989c79201e54b21b5183db33981f70db9178a301",
+      "bytes": 114812,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-SemiBold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-SemiBold.woff2?v=4.1"
+    },
+    {
+      "sha256": "5e2a2bc3b5b9af0644f005693b10499dab18065d6aedbf46c8b74ccede27daeb",
+      "bytes": 121416,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-SemiBoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-SemiBoldItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "fa888127b6da015b65569f0351f3b5c391ad928904951f1c20e9f8462a8d95ea",
+      "bytes": 114840,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-Bold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Bold.woff2?v=4.1"
+    },
+    {
+      "sha256": "4a10532d76c90c4597c0ad4bfc9284600e597d3012dd1ec16c1d44e0ad0058ab",
+      "bytes": 121500,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-BoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-BoldItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "6f75025856f8db1b2186e9cb89be9de9894932c8b7b20f4df5e65916ff714e34",
+      "bytes": 114856,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-ExtraBold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-ExtraBold.woff2?v=4.1"
+    },
+    {
+      "sha256": "53bb20ba292e2ac28a0777bf0f56f31b98be432a3cc04359e2eb608c758349c7",
+      "bytes": 121516,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-ExtraBoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-ExtraBoldItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "12ed0eed6749099b46c7b2e8198dc30c2d7e0f2a4e5fb1d12f0b6ae2c4f33cc4",
+      "bytes": 111668,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-Black.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-Black.woff2?v=4.1"
+    },
+    {
+      "sha256": "308e101141e9dee3b6b121614da03969eb8179886975a9eeb5348021b04368fe",
+      "bytes": 118420,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/Inter-BlackItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/Inter-BlackItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "21cfe42e7f1031b410e247ed199f43fc362415af81b3a8e442a97f63b4dbe327",
+      "bytes": 108820,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-Thin.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Thin.woff2?v=4.1"
+    },
+    {
+      "sha256": "eff21589eacf1f6a596191038d7b47b4dd2455a096b175bb3572ecb6d026a611",
+      "bytes": 116040,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-ThinItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-ThinItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "9031b6d2a1a559753d50b311ecb463ddf7acaaae1d992a7e9b009620d8ce6def",
+      "bytes": 113108,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraLight.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraLight.woff2?v=4.1"
+    },
+    {
+      "sha256": "e8d7078160ef92b82c2123857c1b3aefaa4a795a44b56df5fe3edade60d81576",
+      "bytes": 120124,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraLightItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraLightItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "01dd2d491ed863177e61f6e9458813baa85453ad97b32c5c1216927d4eebfe65",
+      "bytes": 112976,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-Light.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Light.woff2?v=4.1"
+    },
+    {
+      "sha256": "59b5be56306fd353d067aa6995c2c92bc3feb3ace73684d94e3c6e73fe2beaac",
+      "bytes": 119692,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-LightItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-LightItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "3a9463a58c3e7ba1e3cd65b5dbff91a35c508ff78a104cd1121feff83efeb787",
+      "bytes": 108948,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-Regular.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Regular.woff2?v=4.1"
+    },
+    {
+      "sha256": "dfd398d7372b61278e1505bfbdfc5ab0f6511ef887a47a2c90c13475eae585da",
+      "bytes": 116988,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-Italic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Italic.woff2?v=4.1"
+    },
+    {
+      "sha256": "f1227907684853882ad00d7f97ce9f64bc17b89a2a291a7d4ec84fccfa442934",
+      "bytes": 113476,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-Medium.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Medium.woff2?v=4.1"
+    },
+    {
+      "sha256": "6bf254c1a65c806c019f52818add66747da83595a314112917911bcf5fa2f5c5",
+      "bytes": 120560,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-MediumItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-MediumItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "d9f63a82b826fb0117c92715c3a52a2d2247bc321bc39341420bf52d91e8277a",
+      "bytes": 113772,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-SemiBold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-SemiBold.woff2?v=4.1"
+    },
+    {
+      "sha256": "dd9d78314bdd5062302a73c7e2954008bab8158304fa7ac4f0ea8977b841dccb",
+      "bytes": 120468,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-SemiBoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-SemiBoldItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "23bc37619593377e128f24660fedb2869d18277b4026cb46e5637be7643faf91",
+      "bytes": 113556,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-Bold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Bold.woff2?v=4.1"
+    },
+    {
+      "sha256": "5a0fe1f01b8777fab4a5f73c757743fa52579c7723b0291777625cb53c0a792a",
+      "bytes": 120432,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-BoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-BoldItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "97eeee5a6f4f22fef1f607cf8836104d65968f03e59bc068a7586bf18364a8a7",
+      "bytes": 113636,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraBold.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraBold.woff2?v=4.1"
+    },
+    {
+      "sha256": "159b72ba47887032915420aa1445ae6768197e7ea732230182998f14d1cdb932",
+      "bytes": 120712,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraBoldItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-ExtraBoldItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "05650cb83c70fda2a465eade0c0a1a6c25d37ec49df3cd74b7e564683f9729f1",
+      "bytes": 110308,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-Black.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-Black.woff2?v=4.1"
+    },
+    {
+      "sha256": "9746bf2bd43fe158144b83ede747088e80396daad55b9e6ea7232e0e22ee6fce",
+      "bytes": 116820,
+      "content_type": "font/woff2",
+      "original_url": "https://rsms.me/inter/font-files/InterDisplay-BlackItalic.woff2?v=4.1",
+      "final_url": "https://rsms.me/inter/font-files/InterDisplay-BlackItalic.woff2?v=4.1"
+    },
+    {
+      "sha256": "4084c60c3c24f9fa3fa92b9b557c07d10d2a93eaf51e048e1728719042cb3bf3",
+      "bytes": 36236,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/figtree/v9/_Xmz-HUzqDCFdgfMsYiV_F7wfS-Bs_f_R15e.ttf",
+      "final_url": "https://fonts.gstatic.com/s/figtree/v9/_Xmz-HUzqDCFdgfMsYiV_F7wfS-Bs_f_R15e.ttf"
+    },
+    {
+      "sha256": "a77d37f9b02bc18bd55f965dbb2124299fa7a6207a858ea840d834b1f7633a35",
+      "bytes": 36140,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/figtree/v9/_Xmz-HUzqDCFdgfMsYiV_F7wfS-Bs_fWR15e.ttf",
+      "final_url": "https://fonts.gstatic.com/s/figtree/v9/_Xmz-HUzqDCFdgfMsYiV_F7wfS-Bs_fWR15e.ttf"
+    },
+    {
+      "sha256": "01d139bb9ad93e947049cfbfb15a6bdbc45251b043d974e8d17196946a353422",
+      "bytes": 1721396,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQRBEgew.ttf",
+      "final_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQRBEgew.ttf"
+    },
+    {
+      "sha256": "ba29d86a938c75ff7e0819c1a75b937b349f2741dfbbb58dddd246838606b8fa",
+      "bytes": 1728288,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQWBIgew.ttf",
+      "final_url": "https://fonts.gstatic.com/s/mplus1p/v33/e3tmeuShHdiFyPFzBRrQWBIgew.ttf"
+    },
+    {
+      "sha256": "4593dfcdc70ee68852606c90d75dfc6e022feda12780a55615239c53c54ef086",
+      "bytes": 5324144,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEj75s.ttf",
+      "final_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEj75s.ttf"
+    },
+    {
+      "sha256": "1d9b643eed6250e7e62541844b9637bfc55168a471014684024c417f61289653",
+      "bytes": 5317276,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFJEk75s.ttf",
+      "final_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFJEk75s.ttf"
+    },
+    {
+      "sha256": "c22267b21d7ae5b7d9af535002c6c975336ccc9f55c7df8cce558a245ac8ad42",
+      "bytes": 3113,
       "content_type": "image/svg+xml",
-      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-83-zz31/fxtrt-spooky_logo.svg",
-      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-83-zz31/fxtrt-spooky_logo.svg"
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-58-kjwu/fxtrt-scp_logo_lightmode.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-58-kjwu/fxtrt-scp_logo_lightmode.svg"
+    },
+    {
+      "sha256": "919a51cab11b436d130a1cdc7c2981a194d5165a787c2ff4f1966037e531b39f",
+      "bytes": 2797,
+      "content_type": "image/svg+xml",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-59-l1ls/fxtrt-scp_logo_darkmode.svg",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-59-l1ls/fxtrt-scp_logo_darkmode.svg"
+    },
+    {
+      "sha256": "0f80a46802573730c8c18aab2022761d1ec548268dd5d2734b50ad4a27dc6303",
+      "bytes": 80241,
+      "content_type": "image/png",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-46-ec6z/wl_hr.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-46-ec6z/wl_hr.png"
+    },
+    {
+      "sha256": "69d997478237b769cda0f420d39f6932a9d9ce71d6c2738426aeec117a051abe",
+      "bytes": 81504,
+      "content_type": "image/png",
+      "original_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-47-mqmb/wl_border.png",
+      "final_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-47-mqmb/wl_border.png"
+    },
+    {
+      "sha256": "d65d63e6581b8c1210bed42a30dc766a0f0273018cb163947fdb8c0e160f3cb5",
+      "bytes": 283,
+      "content_type": "image/png",
+      "original_url": "http://scp-jp.wikidot.com/local--files/nav:side/expand.png",
+      "final_url": "https://scp-jp.wdfiles.com/local--files/nav%3Aside/expand.png"
     }
   ],
   "missing": [],
   "imports": [
-    "https://fonts.googleapis.com/css2?family=Creepster&display=swap",
-    "https://fonts.googleapis.com/css2?family=Russo+One&display=swap",
-    "https://fonts.googleapis.com/css?family=Saira+Stencil+One&display=swap",
-    "https://scp-jp.github.io/files/component/betterfootnotes/style0.css",
-    "https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1"
+    "https://fonts.googleapis.com/css2?family=Figtree:wght@800;900&display=swap",
+    "https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap",
+    "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+    "https://fonts.googleapis.com/css2?family=Lexend:wght@700;800&display=swap",
+    "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@700;800&display=swap",
+    "https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,800;1,800&display=swap",
+    "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;800&display=swap",
+    "https://fonts.googleapis.com/css2?family=Sofia+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+    "https://rsms.me/inter/inter.css"
   ],
   "import_provenance_status": "complete",
   "import_provenance": [
     {
-      "source_url": "https://fonts.googleapis.com/css2?family=Creepster&display=swap",
-      "final_url": "https://fonts.googleapis.com/css2?family=Creepster&display=swap",
-      "sha256": "e5a7d376768aa3ffe7532a21caa7f93e861381d32276d3482fe47e17a852b140",
-      "normalized_text_sha256": "e5a7d376768aa3ffe7532a21caa7f93e861381d32276d3482fe47e17a852b140",
-      "bytes": 208,
+      "source_url": "https://fonts.googleapis.com/css2?family=Figtree:wght@800;900&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Figtree:wght@800;900&display=swap",
+      "sha256": "dcd8310f9895d68f8065bf1c3d49be5ad95ff9e7ad33f3e3792c98e033b07d0c",
+      "normalized_text_sha256": "dcd8310f9895d68f8065bf1c3d49be5ad95ff9e7ad33f3e3792c98e033b07d0c",
+      "bytes": 434,
       "content_type": "text/css",
-      "asset_file": "e5a7d376768aa3ffe7532a21caa7f93e861381d32276d3482fe47e17a852b140.css",
+      "asset_file": "dcd8310f9895d68f8065bf1c3d49be5ad95ff9e7ad33f3e3792c98e033b07d0c.css",
       "provenance_basis": "frozen-cache-exact-at-build"
     },
     {
-      "source_url": "https://fonts.googleapis.com/css2?family=Russo+One&display=swap",
-      "final_url": "https://fonts.googleapis.com/css2?family=Russo+One&display=swap",
-      "sha256": "9594c5808ece545915d533de00a262359ddab39a9efcdc6aa26ce141abda9070",
-      "normalized_text_sha256": "9594c5808ece545915d533de00a262359ddab39a9efcdc6aa26ce141abda9070",
-      "bytes": 207,
+      "source_url": "https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap",
+      "sha256": "b072a9ba7ca286138933ac3f8327553c28486cadae27c4fb5a49a18e662765f7",
+      "normalized_text_sha256": "b072a9ba7ca286138933ac3f8327553c28486cadae27c4fb5a49a18e662765f7",
+      "bytes": 448,
       "content_type": "text/css",
-      "asset_file": "9594c5808ece545915d533de00a262359ddab39a9efcdc6aa26ce141abda9070.css",
+      "asset_file": "b072a9ba7ca286138933ac3f8327553c28486cadae27c4fb5a49a18e662765f7.css",
       "provenance_basis": "frozen-cache-exact-at-build"
     },
     {
-      "source_url": "https://fonts.googleapis.com/css?family=Saira+Stencil+One&display=swap",
-      "final_url": "https://fonts.googleapis.com/css?family=Saira+Stencil+One&display=swap",
-      "sha256": "4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe",
-      "normalized_text_sha256": "4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe",
-      "bytes": 235,
+      "source_url": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+      "sha256": "ed1cd3c5181078d6a8ffeb3587b0abd74b1d05ae6a131dc1937aac2fe3685a69",
+      "normalized_text_sha256": "ed1cd3c5181078d6a8ffeb3587b0abd74b1d05ae6a131dc1937aac2fe3685a69",
+      "bytes": 968,
       "content_type": "text/css",
-      "asset_file": "4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe.css",
+      "asset_file": "ed1cd3c5181078d6a8ffeb3587b0abd74b1d05ae6a131dc1937aac2fe3685a69.css",
       "provenance_basis": "frozen-cache-exact-at-build"
     },
     {
-      "source_url": "https://scp-jp.github.io/files/component/betterfootnotes/style0.css",
-      "final_url": "https://scp-jp.github.io/files/component/betterfootnotes/style0.css",
-      "sha256": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be",
-      "normalized_text_sha256": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be",
-      "bytes": 2469,
+      "source_url": "https://fonts.googleapis.com/css2?family=Lexend:wght@700;800&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Lexend:wght@700;800&display=swap",
+      "sha256": "a8a4b558116770a8d1a50bf4da894d8d9c80db71c5b8745556866f6b3b067ccc",
+      "normalized_text_sha256": "a8a4b558116770a8d1a50bf4da894d8d9c80db71c5b8745556866f6b3b067ccc",
+      "bytes": 430,
       "content_type": "text/css",
-      "asset_file": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be.css",
+      "asset_file": "a8a4b558116770a8d1a50bf4da894d8d9c80db71c5b8745556866f6b3b067ccc.css",
       "provenance_basis": "frozen-cache-exact-at-build"
     },
     {
-      "source_url": "https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1",
-      "final_url": "https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1",
-      "sha256": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc",
-      "normalized_text_sha256": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc",
-      "bytes": 2347,
+      "source_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@700;800&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@700;800&display=swap",
+      "sha256": "2a6a1bb1e485d559b68376b3c94565cdf796ce28a020234bb7c4b15289729dc1",
+      "normalized_text_sha256": "2a6a1bb1e485d559b68376b3c94565cdf796ce28a020234bb7c4b15289729dc1",
+      "bytes": 420,
       "content_type": "text/css",
-      "asset_file": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc.css",
+      "asset_file": "2a6a1bb1e485d559b68376b3c94565cdf796ce28a020234bb7c4b15289729dc1.css",
+      "provenance_basis": "frozen-cache-exact-at-build"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,800;1,800&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,800;1,800&display=swap",
+      "sha256": "3db3a516fbee424e612e901febea1d3186d96e04dbd9ae50faec6845bf8bb9ac",
+      "normalized_text_sha256": "3db3a516fbee424e612e901febea1d3186d96e04dbd9ae50faec6845bf8bb9ac",
+      "bytes": 459,
+      "content_type": "text/css",
+      "asset_file": "3db3a516fbee424e612e901febea1d3186d96e04dbd9ae50faec6845bf8bb9ac.css",
+      "provenance_basis": "frozen-cache-exact-at-build"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;800&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;800&display=swap",
+      "sha256": "c935977340d9ec0f260833f6413a5fc517971def26ec1cf79bda9fc679669ee3",
+      "normalized_text_sha256": "c935977340d9ec0f260833f6413a5fc517971def26ec1cf79bda9fc679669ee3",
+      "bytes": 466,
+      "content_type": "text/css",
+      "asset_file": "c935977340d9ec0f260833f6413a5fc517971def26ec1cf79bda9fc679669ee3.css",
+      "provenance_basis": "frozen-cache-exact-at-build"
+    },
+    {
+      "source_url": "https://fonts.googleapis.com/css2?family=Sofia+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+      "final_url": "https://fonts.googleapis.com/css2?family=Sofia+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+      "sha256": "ec0b5c2b8b452b52cfe803f5ece234d3fbb7eb718e05746a9fe9d67b2da7b15c",
+      "normalized_text_sha256": "ec0b5c2b8b452b52cfe803f5ece234d3fbb7eb718e05746a9fe9d67b2da7b15c",
+      "bytes": 914,
+      "content_type": "text/css",
+      "asset_file": "ec0b5c2b8b452b52cfe803f5ece234d3fbb7eb718e05746a9fe9d67b2da7b15c.css",
+      "provenance_basis": "frozen-cache-exact-at-build"
+    },
+    {
+      "source_url": "https://rsms.me/inter/inter.css",
+      "final_url": "https://rsms.me/inter/inter.css",
+      "sha256": "46d01c7807f64a24c1b2853b756ef15f3a2facdf4a9f066eaf5d39c0c9935441",
+      "normalized_text_sha256": "46d01c7807f64a24c1b2853b756ef15f3a2facdf4a9f066eaf5d39c0c9935441",
+      "bytes": 11497,
+      "content_type": "text/css",
+      "asset_file": "46d01c7807f64a24c1b2853b756ef15f3a2facdf4a9f066eaf5d39c0c9935441.css",
       "provenance_basis": "frozen-cache-exact-at-build"
     }
   ],
@@ -206,162 +551,5 @@
   "pruned_fonts": [],
   "template_placeholders": [],
   "asset_replacements": {},
-  "omitted_assets": [],
-  "dependency_decisions": [
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-60-vjf1/fxtrt-canada.svg",
-      "sha256": "936bab32a6df130e60836eb8c6db216a01f36217b91ae186b5fe176f21bc0c5d",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-61-9brj/fxtrt-canada_darkmode.png",
-      "sha256": "9346dc72f3fdad810acffde4519fe08c2f56a71125823dcded660e40d6725df0",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-77-o0tg/ontologonew2.png",
-      "sha256": "0af0cdff64ef9bf144ee5b06ec9c80a82767c3210673702c97cebaac39987a33",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A3995762-105-gvkd/120.png",
-      "sha256": "f299e7fb233c4edc8b1f813f4e5a09be5ca2bf3c974acea6bd5fb9de39265f7e",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wikidot.com/local--files/file%3A5722815-48-k39z/Big87.png",
-      "sha256": "da8119c8c0f1cbc7bc07df9e62cd72ced9d117dc1ac1d6098e982283cc86cbff",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-62-tcqn/fxtrt-vanguard_logo.webp",
-      "sha256": "11150b36a2bced98564b2645e31f1676acf064cc661539da1caf43d23df00c59",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A2963469-55-celk/overwatchheaderthreshold.svg",
-      "sha256": "aa3fe960509bbf92da95b92b082b310647f160b550be15270cd68a991aa3f0ac",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A2963469-4-z8c6/overwatchheader.svg",
-      "sha256": "08a976c52d286f2b7b97102530fb91860674308bb15f666bb2982a7e0c5bbd5b",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-78-0n3j/ATOM.svg",
-      "sha256": "f3a993f7645fcabb6e5475a1e017febb8e9224ecb395d279c3886ead671b3b8c",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-471a/fxtrt-spc_lightmode.png",
-      "sha256": "43fa8c58d04a8a626e714e4c7813dd459420ee118de224cc012ec9d9ed9bea15",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-79-by5e/spc-header.png",
-      "sha256": "e88d014915562194b9fad4fd954a046ef8103a62bb7b70c5f93f8cf7f25045ce",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-80-85w5/Site-184.svg",
-      "sha256": "7ccd1bd8e6962347d10b0f217a9255bf58ecfd76e0a0b1f1431e6bedf839173d",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-tlne/fxtrt-nightfall_lightmode.png",
-      "sha256": "5a6fde6c7acf7ad08a351aa90721121ccb117fab0fba5d00b8fd9c8146cbf2d0",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-81-p6yq/moon1.png",
-      "sha256": "11c86148cec1c9a1fcc2e566bf92076cfcc98f8d60faf6bc5782fd98c093f072",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.gstatic.com/s/sairastencilone/v19/SLXSc03I6HkvZGJ1GvvipLoYSTEL9DsLYQw.ttf",
-      "sha256": "b608cde3c3fce3defba40d2f38677b682f7a8c915f5a11f3fc9b3e27d19010e5",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-63-qfcj/fxtrt-hybrasil_lightmode.png",
-      "sha256": "ca79e6bfe0da02f170e1077f856ae1634141f5f162bad497142b1ddbd699f1dd",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-82-8r1s/mksjr3.png",
-      "sha256": "44f0fd6b9ce0984dac6d928b79a167c7b06b78501d34f4e46b9743caa2b8d642",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.gstatic.com/s/russoone/v18/Z9XUDmZRWg6M1LvRYsH-yA.ttf",
-      "sha256": "7a022de179a466ad9711d5f2848123c5cba6eedf22e51a8dc04ed6e5d64b205d",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.gstatic.com/s/creepster/v13/AlZy_zVUqJz4yMrniH4hdQ.ttf",
-      "sha256": "f7ab5cc03cc3fb46c78414739b8469c1e344a46afe41f33f5d6649456d9d2a1f",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wdfiles.com/local--files/file%3A5722815-83-zz31/fxtrt-spooky_logo.svg",
-      "sha256": "787c5ced3221a4276da1a43eb988070f7e483407080bae563569feba0cc8a29c",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://fonts.googleapis.com/css2?family=Creepster&display=swap",
-      "sha256": "e5a7d376768aa3ffe7532a21caa7f93e861381d32276d3482fe47e17a852b140",
-      "asset_file": "e5a7d376768aa3ffe7532a21caa7f93e861381d32276d3482fe47e17a852b140.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://fonts.googleapis.com/css2?family=Russo+One&display=swap",
-      "sha256": "9594c5808ece545915d533de00a262359ddab39a9efcdc6aa26ce141abda9070",
-      "asset_file": "9594c5808ece545915d533de00a262359ddab39a9efcdc6aa26ce141abda9070.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://fonts.googleapis.com/css?family=Saira+Stencil+One&display=swap",
-      "sha256": "4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe",
-      "asset_file": "4a3bbfd44bc552e03f095949a4a15e54d8494161c92a47cf11a6230ec8dcaffe.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-jp.github.io/files/component/betterfootnotes/style0.css",
-      "sha256": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be",
-      "asset_file": "e1dec8193b6384e033e4ed60cb7fac5af2e8439587de1750d88a9d178eb181be.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1",
-      "sha256": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc",
-      "asset_file": "5a2c26fc39de9766125a3d0a01efdbdec4c65d1b691485af9440fab1374803bc.css",
-      "decision": "freeze-source-stylesheet"
-    }
-  ]
+  "omitted_assets": []
 }

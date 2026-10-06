@@ -19,16 +19,17 @@
     },
     {
       "locator": "component:betterfootnotes",
-      "kind": "unconditional-modules",
+      "kind": "wikidot-local-code",
       "parameters": {},
       "source": {
         "path": "source-includes/betterfootnotes.wikidot.txt",
-        "sha256": "066c8183fe39451b88e4d53a6b08306829d21846170d14b0688d91f3c6203bc0"
+        "sha256": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d"
       },
       "css": {
         "path": "source-includes/betterfootnotes-input.css",
-        "sha256": "e772de798fc0b7df2005967a39c9d66584bebc9e1851ec41207d2352249b1ab4"
-      }
+        "sha256": "4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5"
+      },
+      "code_index": 1
     },
     {
       "locator": "component:croqstyle",
@@ -45,18 +46,19 @@
     },
     {
       "locator": "component:fade-in",
-      "kind": "unconditional-modules",
+      "kind": "wikidot-local-code",
       "parameters": {
         "speed": "1"
       },
       "source": {
         "path": "source-includes/fade-in.wikidot.txt",
-        "sha256": "a952981c4b1443cabdea6cd37205cafa7be3291b61d23ad521016f684418e00a"
+        "sha256": "a4882c56f2c0be3af6f9c4d1d0b6d6054ddbf86c16e6fa584342e2a6adb71f90"
       },
       "css": {
         "path": "source-includes/fade-in-input.css",
-        "sha256": "5a74694f5601bc5fb2e36dc6dcaa9996091d2b3891aaa392b2e9a5715a08290d"
-      }
+        "sha256": "f08bd5ec39fd99fa194e1614c1523191b66f7168e8d332b9eac0bf384222cd17"
+      },
+      "code_index": 1
     },
     {
       "locator": "component:text-style",

@@ -9,9 +9,9 @@ test('page action reset leaves hover-triggered sidebar and uses a trusted click'
   try {
     const page=await browser.newPage({viewport:{width:1440,height:1000}});
     await page.setContent(`<!doctype html><style>
-      #side-bar{position:fixed;inset:0 auto 0 0;width:30px}
+      #side-bar{position:fixed;inset:0 auto 0 0;width:30px;z-index:100}
       #side-bar:hover~#main-content::before{content:'';position:fixed;inset:0;z-index:99}
-      #main-content{margin-left:100px}
+      #main-content{margin-left:100px;position:relative;z-index:1}
     </style><div id="side-bar"></div><div id="main-content">
       <button id="history-button">History</button><div id="action-area"></div></div>`);
     await page.evaluate(()=>document.querySelector('#history-button').addEventListener('click',event=>{

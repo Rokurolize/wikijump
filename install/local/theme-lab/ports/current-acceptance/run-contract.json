@@ -1,5 +1,16 @@
 {
   "schema": "scp_jp_interactive_acceptance_run.v1",
+  "expected_runtime_source_sha256": "d67899e66baa58c3504ec8d93fb81bfb31509c80eb8d4785b93fbb9974127caa",
+  "expected_backend_runtime_identity": {
+    "schema": "wikijump_deepwell_runtime_identity.v1",
+    "source_sha256": "e305cb837753e27e7504ccad0e87d237a721bdd0d6fc234312e9488b94232637",
+    "ftml_git_revision": "bf49d32fe980611fed368661396a3d6c1f02c51f",
+    "container_id": "9c70840b9fb2b5f7a3ec9906a5661c69719c94152c55577418e967354a18376e",
+    "image_id": "sha256:d3f14cc0be8dc6689987564b68eb6d85078981ef33f6220f833653ed09ed6a6e",
+    "binary_sha256": "f15625c1413755e69d6e30aaad9612553c410a7bb48540181cf2166c8efbf77b",
+    "config_sha256": "46c242e2d7c63d03606647f71e038756edfef6455feb125a753dbde01426b73c",
+    "identity_sha256": "33db6564f49af2ef3afb9769ce3bcbee1f8e2cb92efd710b7e6f50c3b1bc7a2e"
+  },
   "target_site": {
     "slug": "scpaiueouiuiuiui",
     "origin": "https://scpaiueouiuiuiui.wikijump.localhost:18443",
@@ -67,7 +78,12 @@
     "quand-le-soleil-se-couche": {
       "directory": "../quand-le-soleil-se-couche",
       "candidate_sha256": "6b82140e1f875394bb5ceb7e2e6be6e9805157dd18c04fc7c63c6eea72eb49a8",
-      "source_sha256": "6020687f316cb450c479f5bc74dfcad54b143c88a1d922132cc61708f8d2dbb5"
+      "source_sha256": "242dcf54d6b52cea946b65f1c38b508479d255853810d8d7cee3ed3be42815eb"
     }
-  }
+  },
+  "visual_gate_policy": {
+    "path": "visual-gate-policy.json",
+    "sha256": "3f26c321e2c510d08dc7cf85b1367d882b8f52e5a7b5fe1bc30a9ade6415d1af"
+  },
+  "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36"
 }

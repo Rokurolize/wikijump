@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import {interactiveAcceptanceFixture} from '../src/interactive-acceptance-fixture.mjs';
+import {interactiveAcceptanceFixture,ORDINARY_MAIN_FIXTURE_SLUG,HISTORY_FIXTURE_SLUG} from '../src/interactive-acceptance-fixture.mjs';
 
 const migrationFixture = {
   main_slug: 'run-owned:sigma10-main',
@@ -23,13 +23,18 @@ test('migration browser capture keeps shell states and explicit diagnostic varia
     interactiveAcceptanceFixture({surface: 'credit.variant.no-rate', fixtureSlug: 'run-owned:credit-no-rate-diagnostic'}, migrationFixture),
     'run-owned:credit-no-rate-diagnostic',
   );
-  assert.equal(interactiveAcceptanceFixture({surface: 'page.history'}, migrationFixture), null);
+  assert.equal(interactiveAcceptanceFixture({surface: 'page.history'}, migrationFixture), HISTORY_FIXTURE_SLUG);
 });
 
 test('ordinary acceptance retains its existing fixture routing', () => {
-  assert.equal(interactiveAcceptanceFixture({surface: 'credit.default'}), null);
+  assert.equal(interactiveAcceptanceFixture({surface: 'credit.default'}), ORDINARY_MAIN_FIXTURE_SLUG);
   assert.equal(
     interactiveAcceptanceFixture({surface: 'credit.variant.heritage', fixtureSlug: 'run-owned:credit-heritage-diagnostic'}),
     'run-owned:credit-heritage-diagnostic',
   );
+});
+
+test('effective ordinary History identity names the page actually navigated',()=>{
+  assert.equal(interactiveAcceptanceFixture({surface:'page.history'}),HISTORY_FIXTURE_SLUG);
+  assert.equal(interactiveAcceptanceFixture({surface:'page.source'}),ORDINARY_MAIN_FIXTURE_SLUG);
 });

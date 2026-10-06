@@ -965,3 +965,8 @@ div#action-area h1 {
  div#extra-div-2 { left: 16.75rem; }
 }
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot native history list: preserve the seven columns inside their own horizontal scroller. */
+@media(max-width:767px){#revision-list {max-width:100%;overflow-x:auto;}}
+[[/module]]

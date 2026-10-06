@@ -1,0 +1,3013 @@
+{
+  "schema": "theme_lab_final_manual_publication_set.v1",
+  "generated_at": "2026-10-06T19:50:03.265Z",
+  "decision": "ready-for-manual-scp-jp-publication",
+  "publication_scope": "SCP-JP manual page and attachment actions only; no public Wikidot writes have been performed.",
+  "candidate_freeze": {
+    "state": "frozen-before-final-acceptance",
+    "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36",
+    "frozen_manifest_path": "install/local/theme-lab/publication/frozen-candidate-set.json",
+    "frozen_manifest_whole_file_sha256": "4befa5ea869269099632792bce0259bba6eaf7f5f306ccf02793e3a9362314eb",
+    "identity_contract": "sha256(JSON.stringify({inventory,nodes,edges,attachments,targeted_scenarios,authority}))",
+    "note": "The frozen node/action/provenance fields are retained as the pre-acceptance snapshot. Later final acceptance is bound below without changing candidate identity."
+  },
+  "inventory": {
+    "total_nodes": 48,
+    "themes": 36,
+    "shared_components_and_fragments": 12,
+    "actions": {
+      "update": 26,
+      "reuse-existing": 6,
+      "retain-cross-wiki": 2,
+      "create": 14
+    },
+    "attachments": 50,
+    "graph_edges": 19,
+    "dependency_observations": 209
+  },
+  "final_acceptance": {
+    "completion_gate": {
+      "status": "pass",
+      "failures": [],
+      "receipt": {
+        "path": "install/local/theme-lab/publication/evidence/final-campaign-completion-20261007.json",
+        "sha256": "54a6c6123b4110f4955ebef7edfb3ffad4adf2c9015c460309c43d080f33ad88"
+      },
+      "underlying_campaign_receipt": {
+        "path": "install/local/theme-lab/current-campaign-acceptance.json",
+        "sha256": "c41ca1e0fdd3cf3d5b41da76a1b6c7ee5c81c1d9af447b6a03d5ffdcf5b6fcc5"
+      },
+      "command": "node scripts/check-campaign-completion.mjs"
+    },
+    "sigma9": {
+      "status": "pass",
+      "rows": 5220,
+      "themes": 36,
+      "rows_per_theme": 145,
+      "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36",
+      "run_contract": {
+        "path": "install/local/theme-lab/ports/current-acceptance/run-contract.json",
+        "sha256": "d74f3e5715d08999740ed45ad5371355384d4f066803ff6b0c2a57bcd61825a9"
+      },
+      "aggregate": {
+        "path": "install/local/theme-lab/ports/current-acceptance/final-sigma9-aggregate-20261006.json",
+        "sha256": "b1707c425488adad6daf24bb3e042aeef09eff1d6befad1090ac04aa659c4f8e"
+      },
+      "audit": {
+        "path": "install/local/theme-lab/ports/current-acceptance/artifacts/interactive-visual-audit.json",
+        "sha256": "00fec5a98d21fb3f0357da49928c1ab1a3a13c9ff5bc5519c8d50952bd390a8f",
+        "bytes": 202294955
+      },
+      "visual_gate": {
+        "policy_sha256": "3f26c321e2c510d08dc7cf85b1367d882b8f52e5a7b5fe1bc30a9ade6415d1af",
+        "classes": {
+          "V": 1260,
+          "C": 2736,
+          "M": 1224
+        },
+        "direct_review_screenshots": 2648,
+        "contact_sheets": 152,
+        "status": "pass"
+      },
+      "runtime": {
+        "expected_runtime_source_sha256": "d67899e66baa58c3504ec8d93fb81bfb31509c80eb8d4785b93fbb9974127caa",
+        "measured_runtime_source_sha256s": [
+          "d67899e66baa58c3504ec8d93fb81bfb31509c80eb8d4785b93fbb9974127caa"
+        ],
+        "expected_deepwell_identity_sha256": "33db6564f49af2ef3afb9769ce3bcbee1f8e2cb92efd710b7e6f50c3b1bc7a2e",
+        "measured_deepwell_identity_sha256s": [
+          "33db6564f49af2ef3afb9769ce3bcbee1f8e2cb92efd710b7e6f50c3b1bc7a2e"
+        ]
+      }
+    },
+    "sigma10": {
+      "status": "pass",
+      "rows": 5365,
+      "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36",
+      "run_contract": {
+        "path": "install/local/theme-lab/sigma10-migration/current-campaign/run-contract.json",
+        "sha256": "7c7fef86dcca136348c0628676c0835aa49e94b45ce07d85b1705ad8f49dfa22"
+      },
+      "accepted_result": {
+        "path": "install/local/theme-lab/sigma10-migration/current-campaign/accepted-result.json",
+        "sha256": "25e1f0aa4cd3f4a93ebfbb3aeeaa36c1a35d6bae6e90fe48f8a639f61de47aeb"
+      },
+      "browser_audit": {
+        "path": "install/local/theme-lab/sigma10-migration/current-campaign/browser-audit.json",
+        "sha256": "e9f145b5f7021b21160ea95684dc8d39099158b46602e73f387823509681b5df"
+      },
+      "visual_review": {
+        "path": "install/local/theme-lab/sigma10-migration/current-campaign/final-vcm-acceptance-20261007/visual-review.json",
+        "sha256": "5236aa22dcc0226aecd5833745fad0c4cd898c79eea98b9f2d7e2e95cd741c9f",
+        "contact_sheet_manifest_sha256": "6f23976d5d9ec0f655668ecfb39d1284d0c822bc0d9f2abb0c92be057dac7afb",
+        "contact_sheets": 236,
+        "exact_screenshot_hashes": 3759
+      },
+      "worklist": {
+        "path": "install/local/theme-lab/sigma10-migration/current-campaign/final-vcm-acceptance-20261007/visual-review-worklist.json",
+        "sha256": "7819c912b4f186381aec33224a7b6f0572760c228bb123d3251a925dd1aee4fd",
+        "visual_gate_policy_sha256": "3f26c321e2c510d08dc7cf85b1367d882b8f52e5a7b5fe1bc30a9ade6415d1af",
+        "classes": {
+          "V": 1295,
+          "C": 2812,
+          "M": 1258
+        },
+        "required_visual_rows": 4107,
+        "machine_only_success_rows": 1258
+      },
+      "runtime": {
+        "framerail_source_sha256": "d67899e66baa58c3504ec8d93fb81bfb31509c80eb8d4785b93fbb9974127caa",
+        "deepwell_identity_sha256": "33db6564f49af2ef3afb9769ce3bcbee1f8e2cb92efd710b7e6f50c3b1bc7a2e"
+      }
+    },
+    "visual_gate_policy": {
+      "V": 35,
+      "C": 76,
+      "M": 34,
+      "policy_sha256": "3f26c321e2c510d08dc7cf85b1367d882b8f52e5a7b5fe1bc30a9ade6415d1af"
+    }
+  },
+  "runtime_authority": {
+    "framerail_source_sha256": "d67899e66baa58c3504ec8d93fb81bfb31509c80eb8d4785b93fbb9974127caa",
+    "deepwell": {
+      "schema": "wikijump_deepwell_runtime_identity.v1",
+      "source_sha256": "e305cb837753e27e7504ccad0e87d237a721bdd0d6fc234312e9488b94232637",
+      "ftml_git_revision": "bf49d32fe980611fed368661396a3d6c1f02c51f",
+      "container_id": "9c70840b9fb2b5f7a3ec9906a5661c69719c94152c55577418e967354a18376e",
+      "image_id": "sha256:d3f14cc0be8dc6689987564b68eb6d85078981ef33f6220f833653ed09ed6a6e",
+      "binary_sha256": "f15625c1413755e69d6e30aaad9612553c410a7bb48540181cf2166c8efbf77b",
+      "config_sha256": "46c242e2d7c63d03606647f71e038756edfef6455feb125a753dbde01426b73c",
+      "identity_sha256": "33db6564f49af2ef3afb9769ce3bcbee1f8e2cb92efd710b7e6f50c3b1bc7a2e"
+    }
+  },
+  "source_and_dependency_policy": {
+    "graph_path": "install/local/theme-lab/publication/dependency-graph.json",
+    "graph_sha256": "d33b5d15ea4cddfcff50710a6d825e03115881ff0ae14aa9bb263a59ce14c20c",
+    "edge_scope": "Explicit edges represent publication ordering constraints and actionable cross-page publication/runtime dependency actions. They are not an exhaustive rendering of every ordinary Wikidot include. Ordinary include observations and source identities are recorded per theme in campaign_snapshot.candidate_jp_includes and package dependency-input/source-includes manifests; excluded dependencies are listed separately.",
+    "publication_rules": [
+      "Sigma+ must be published before Al Slop and Space.",
+      "Al Slop must use SCP-JP component:license-box-backend rev 9 as the current authority; corpus rev 8 is stale.",
+      "Inkblot must use the SCP-JP interwiki-style counterpart and must not retain its showcase-only Croqstyle include.",
+      "Flopstyle Dark retains Croqstyle and Text Style as intentional cross-wiki dependencies.",
+      "Quand le Soleil se Couche updates the existing JP revision 2 page and includes both inventoried image attachments.",
+      "Dear Dictator is a new source-only theme page with no separate attachment publication."
+    ],
+    "excluded_dependencies": [
+      {
+        "package": "theme:inkblot",
+        "dependency": "component:croqstyle",
+        "reason": "current source include is showcase-only and removed from publication source"
+      },
+      {
+        "package": "theme:space",
+        "dependency": "component:license-box-theme",
+        "reason": "already absent from current candidate and maintenance final source"
+      }
+    ],
+    "intentional_cross_wiki_dependencies": [
+      {
+        "from": "theme:flopstyle-dark",
+        "to": "component:croqstyle",
+        "site": "scp-wiki",
+        "relation": "intentional-shared-dependency",
+        "policy": "retain"
+      },
+      {
+        "from": "theme:flopstyle-dark",
+        "to": "component:text-style",
+        "site": "scp-wiki",
+        "relation": "intentional-shared-dependency",
+        "policy": "retain"
+      }
+    ],
+    "edges": [
+      {
+        "from": "component:betterfootnotes",
+        "to": "theme:basalt",
+        "relation": "publish-before"
+      },
+      {
+        "from": "component:betterfootnotes",
+        "to": "theme:foxtrot",
+        "relation": "publish-before"
+      },
+      {
+        "from": "component:betterfootnotes",
+        "to": "theme:flopstyle-dark",
+        "relation": "publish-before"
+      },
+      {
+        "from": "component:fade-in",
+        "to": "theme:foxtrot",
+        "relation": "publish-before"
+      },
+      {
+        "from": "component:fade-in",
+        "to": "theme:flopstyle-dark",
+        "relation": "publish-before"
+      },
+      {
+        "from": "component:sigma-plus",
+        "to": "theme:al-slop",
+        "relation": "publish-before"
+      },
+      {
+        "from": "component:sigma-plus",
+        "to": "theme:space",
+        "relation": "publish-before"
+      },
+      {
+        "from": "component:license-box-backend",
+        "site": "scp-jp",
+        "revision": 9,
+        "updated_at": "2026-09-25T02:24:12Z",
+        "source_sha256": "f1e98ccb0adc48a8d457115f92cd909a0cc3d6b2c250b81291e71b9b8d7467c9",
+        "to": "theme:al-slop",
+        "relation": "runtime-include",
+        "policy": "reuse-existing-jp-counterpart"
+      },
+      {
+        "from": "component:interwiki-style",
+        "site": "scp-jp",
+        "revision": 6,
+        "updated_at": "2023-01-08T08:30:25Z",
+        "to": "theme:inkblot",
+        "relation": "runtime-include",
+        "policy": "replace-both-foreign-includes",
+        "source_sha256": "51ad052297c3ea8bf38549b93154eebb20995448b316458911f97677b9cee2dd"
+      },
+      {
+        "from": "component:collapsible-sidebar",
+        "site": "scp-jp",
+        "to": "theme:black-highlighter-theme",
+        "relation": "targeted-option-scenario",
+        "coverage": "targeted Chromium states plus Firefox/WebKit desktop hover/focus only",
+        "scenario": "bhl-options-collapsible-sidebar",
+        "source_sha256": "b0ae91dbf313be853ab0a8e130176b2dc6bd5a9543d1f97687fc4cf9432db55f",
+        "child_fragment": "fragment:collapsible-sidebar-bhl@rev5"
+      },
+      {
+        "from": "component:centered-header-bhl+component:toggle-sidebar-bhl+component:bhl-dark-sidebar",
+        "site": "scp-jp",
+        "to": "theme:black-highlighter-theme",
+        "relation": "targeted-option-scenario",
+        "coverage": "combined-sigma9-sigma10-capture-and-review"
+      },
+      {
+        "from": "theme:flopstyle-dark",
+        "to": "component:croqstyle",
+        "site": "scp-wiki",
+        "relation": "intentional-shared-dependency",
+        "policy": "retain"
+      },
+      {
+        "from": "theme:flopstyle-dark",
+        "to": "component:text-style",
+        "site": "scp-wiki",
+        "relation": "intentional-shared-dependency",
+        "policy": "retain"
+      },
+      {
+        "from": "component:centered-header-bhl",
+        "to": "theme:black-highlighter-theme",
+        "site": "scp-jp",
+        "relation": "targeted-option-scenario",
+        "scenario": "bhl-options-toggle-header-dark",
+        "source_sha256": "be0cec9e1373b49ea771184edf19efda85a9b7b09ef6788f89ce266874b9a28c"
+      },
+      {
+        "from": "component:toggle-sidebar-bhl",
+        "to": "theme:black-highlighter-theme",
+        "site": "scp-jp",
+        "relation": "targeted-option-scenario",
+        "scenario": "bhl-options-toggle-header-dark",
+        "source_sha256": "b498d2bbcd7a503ac89beb04a63041a5cb8d49f980630e82155ddbf7b2857a05"
+      },
+      {
+        "from": "component:bhl-dark-sidebar",
+        "to": "theme:black-highlighter-theme",
+        "site": "scp-jp",
+        "relation": "targeted-option-scenario",
+        "scenario": "bhl-options-toggle-header-dark",
+        "source_sha256": "a00d21e5e4272ba0b598b59609f50523c7f0b7961f86d53f9d00a66566f72b7e",
+        "publication_source": "components/bhl-dark-sidebar/source.wikidot.txt"
+      },
+      {
+        "from": "fragment:collapsible-sidebar-bhl",
+        "to": "theme:black-highlighter-theme",
+        "site": "scp-jp",
+        "relation": "targeted-option-scenario",
+        "scenario": "bhl-options-collapsible-sidebar",
+        "source_sha256": "2e8e7c132c50ab0c046f42bda185472d4ed19e7d8eb1725085835561e07bf2c3"
+      },
+      {
+        "from": "component:bhl-dark-sidebar",
+        "site": "scp-jp",
+        "to": "theme:black-highlighter-theme",
+        "relation": "publish-before",
+        "policy": "update-existing-component-before-dependent-theme",
+        "source_sha256": "a00d21e5e4272ba0b598b59609f50523c7f0b7961f86d53f9d00a66566f72b7e"
+      },
+      {
+        "from": "component:bhl-dark-sidebar",
+        "to": "theme:extra-black-highlighter-theme",
+        "site": "scp-jp",
+        "relation": "publish-before",
+        "policy": "update-shared-component-before-dependent-theme",
+        "source_sha256": "a00d21e5e4272ba0b598b59609f50523c7f0b7961f86d53f9d00a66566f72b7e"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "component:betterfootnotes",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "candidate-ready",
+        "source": {
+          "path": "install/local/theme-lab/publication/components/betterfootnotes/source.wikidot.txt",
+          "sha256": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d"
+        },
+        "source_authority_sha256": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d",
+        "candidate_css_sha256": null,
+        "candidate_source_sha256": null,
+        "current_target": {
+          "status": "present",
+          "revision": 10,
+          "revisions": null,
+          "updated_at": "2026-09-24T21:34:07+00:00",
+          "source_sha256": "a93c113949c85d818d49453d7e0271fa0a06c9eed70b0641eebd2466aab33c8c",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "install/local/theme-lab/publication/components/betterfootnotes/manifest.json#/authority/jp_before"
+        },
+        "upstream": null,
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "component:bhl-dark-sidebar",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "candidate-ready-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/publication/components/bhl-dark-sidebar/source.wikidot.txt",
+          "sha256": "a00d21e5e4272ba0b598b59609f50523c7f0b7961f86d53f9d00a66566f72b7e"
+        },
+        "source_authority_sha256": "a00d21e5e4272ba0b598b59609f50523c7f0b7961f86d53f9d00a66566f72b7e",
+        "candidate_css_sha256": null,
+        "candidate_source_sha256": null,
+        "current_target": {
+          "status": "present",
+          "revision": 2,
+          "revisions": null,
+          "updated_at": "2023-01-20T09:58:55+00:00",
+          "source_sha256": "ac6bdcbd357fda304db94439c8140a3e3b6fc379d4ba558ecf0add845e903357",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": null,
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "bhl-options-toggle-header-dark",
+          "bhl-options-collapsible-sidebar"
+        ]
+      },
+      {
+        "id": "component:centered-header-bhl",
+        "site": "scp-jp",
+        "action": "reuse-existing",
+        "freeze_snapshot_status": "current-counterpart-source-matched",
+        "source": null,
+        "source_authority_sha256": "be0cec9e1373b49ea771184edf19efda85a9b7b09ef6788f89ce266874b9a28c",
+        "candidate_css_sha256": null,
+        "candidate_source_sha256": null,
+        "current_target": {
+          "status": "present",
+          "revision": 3,
+          "revisions": null,
+          "updated_at": "2023-09-18T04:38:13+00:00",
+          "source_sha256": "be0cec9e1373b49ea771184edf19efda85a9b7b09ef6788f89ce266874b9a28c",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/authority.json#/pages/component:centered-header-bhl"
+        },
+        "upstream": null,
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "component:collapsible-sidebar",
+        "site": "scp-jp",
+        "action": "reuse-existing",
+        "freeze_snapshot_status": "current-corpus-source-required-for-targeted-capture",
+        "source": null,
+        "source_authority_sha256": "b0ae91dbf313be853ab0a8e130176b2dc6bd5a9543d1f97687fc4cf9432db55f",
+        "candidate_css_sha256": null,
+        "candidate_source_sha256": null,
+        "current_target": {
+          "status": "present",
+          "revision": 4,
+          "revisions": null,
+          "updated_at": "2026-09-25T04:20:00+00:00",
+          "source_sha256": "b0ae91dbf313be853ab0a8e130176b2dc6bd5a9543d1f97687fc4cf9432db55f",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/authority.json#/pages/component:collapsible-sidebar"
+        },
+        "upstream": null,
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "component:croqstyle",
+        "site": "scp-wiki",
+        "action": "retain-cross-wiki",
+        "freeze_snapshot_status": "intentional-shared-dependency",
+        "source": null,
+        "source_authority_sha256": "9c8b316516f374d664c92042a1913268e9018a7eaeaaac1f5011e16546bab529",
+        "candidate_css_sha256": null,
+        "candidate_source_sha256": null,
+        "current_target": null,
+        "upstream": null,
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "component:fade-in",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "candidate-ready",
+        "source": {
+          "path": "install/local/theme-lab/publication/components/fade-in/source.wikidot.txt",
+          "sha256": "a4882c56f2c0be3af6f9c4d1d0b6d6054ddbf86c16e6fa584342e2a6adb71f90"
+        },
+        "source_authority_sha256": "a4882c56f2c0be3af6f9c4d1d0b6d6054ddbf86c16e6fa584342e2a6adb71f90",
+        "candidate_css_sha256": null,
+        "candidate_source_sha256": null,
+        "current_target": {
+          "status": "present",
+          "revision": 2,
+          "revisions": null,
+          "updated_at": "2026-09-25T04:49:01+00:00",
+          "source_sha256": "69829e1b8c93c57d79254911adbb96df4ce3e0ced9285d900b01b4cfd714d95c",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "install/local/theme-lab/publication/components/fade-in/manifest.json#/authority/jp_before"
+        },
+        "upstream": null,
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "component:interwiki-style",
+        "site": "scp-jp",
+        "action": "reuse-existing",
+        "freeze_snapshot_status": "current-counterpart",
+        "source": null,
+        "source_authority_sha256": "51ad052297c3ea8bf38549b93154eebb20995448b316458911f97677b9cee2dd",
+        "candidate_css_sha256": null,
+        "candidate_source_sha256": null,
+        "current_target": {
+          "status": "present",
+          "revision": 6,
+          "revisions": null,
+          "updated_at": "2023-01-08T08:30:25Z",
+          "source_sha256": "51ad052297c3ea8bf38549b93154eebb20995448b316458911f97677b9cee2dd",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "install/local/theme-lab/publication/dependency-graph.json#/edges/component:interwiki-style->theme:inkblot"
+        },
+        "upstream": null,
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "component:license-box-backend",
+        "site": "scp-jp",
+        "action": "reuse-existing",
+        "freeze_snapshot_status": "current-live-counterpart",
+        "source": null,
+        "source_authority_sha256": "f1e98ccb0adc48a8d457115f92cd909a0cc3d6b2c250b81291e71b9b8d7467c9",
+        "candidate_css_sha256": null,
+        "candidate_source_sha256": null,
+        "current_target": {
+          "status": "present",
+          "revision": 9,
+          "revisions": null,
+          "updated_at": "2026-09-25T02:24:12Z",
+          "source_sha256": "f1e98ccb0adc48a8d457115f92cd909a0cc3d6b2c250b81291e71b9b8d7467c9",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "install/local/theme-lab/publication/dependency-graph.json#/edges/component:license-box-backend->theme:al-slop"
+        },
+        "upstream": null,
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "component:sigma-plus",
+        "site": "scp-jp",
+        "action": "create",
+        "freeze_snapshot_status": "source-staged-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/publication/components/sigma-plus/source.wikidot.txt",
+          "sha256": "dccfb8c281e6bf0268f7f472ef86690aa64181d3d916d1385838886bd89eafbf"
+        },
+        "source_authority_sha256": "dccfb8c281e6bf0268f7f472ef86690aa64181d3d916d1385838886bd89eafbf",
+        "candidate_css_sha256": null,
+        "candidate_source_sha256": null,
+        "current_target": null,
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "component:sigma-plus",
+          "revision": 38,
+          "updated_at": "2025-12-11T06:28:08Z",
+          "sha256": "2ee01c9b8a8b4ad082abc030944a41e4d9624d7eda46ea3ecf1dcf9046d66498"
+        },
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "Sigma-9/Sigma-10 accepted consumers: Al Slop and Space"
+        ]
+      },
+      {
+        "id": "component:text-style",
+        "site": "scp-wiki",
+        "action": "retain-cross-wiki",
+        "freeze_snapshot_status": "intentional-shared-dependency",
+        "source": null,
+        "source_authority_sha256": "e3a5a66146f647d29675138ae6edab6ad8236e5221d8e79d94a10ceb546433c5",
+        "candidate_css_sha256": null,
+        "candidate_source_sha256": null,
+        "current_target": null,
+        "upstream": null,
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "component:toggle-sidebar-bhl",
+        "site": "scp-jp",
+        "action": "reuse-existing",
+        "freeze_snapshot_status": "current-counterpart-source-matched",
+        "source": null,
+        "source_authority_sha256": "b498d2bbcd7a503ac89beb04a63041a5cb8d49f980630e82155ddbf7b2857a05",
+        "candidate_css_sha256": null,
+        "candidate_source_sha256": null,
+        "current_target": {
+          "status": "present",
+          "revision": 3,
+          "revisions": null,
+          "updated_at": "2023-09-18T04:40:36+00:00",
+          "source_sha256": "b498d2bbcd7a503ac89beb04a63041a5cb8d49f980630e82155ddbf7b2857a05",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": null,
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "fragment:collapsible-sidebar-bhl",
+        "site": "scp-jp",
+        "action": "reuse-existing",
+        "freeze_snapshot_status": "current-corpus-source-required-for-targeted-capture",
+        "source": null,
+        "source_authority_sha256": "2e8e7c132c50ab0c046f42bda185472d4ed19e7d8eb1725085835561e07bf2c3",
+        "candidate_css_sha256": null,
+        "candidate_source_sha256": null,
+        "current_target": {
+          "status": "present",
+          "revision": 5,
+          "revisions": null,
+          "updated_at": "2023-01-20T10:01:32+00:00",
+          "source_sha256": "2e8e7c132c50ab0c046f42bda185472d4ed19e7d8eb1725085835561e07bf2c3",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/authority.json#/pages/fragment:collapsible-sidebar-bhl"
+        },
+        "upstream": null,
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:aesthetic-theme",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/aesthetic-theme/candidate.wikidot.source.txt",
+          "sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c"
+        },
+        "source_authority_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
+        "candidate_css_sha256": "5419caca49caf8f0be65724001a7edcf57daa52f75a01b324c98f4a869b6c117",
+        "candidate_source_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
+        "current_target": {
+          "status": "present",
+          "revision": null,
+          "revisions": null,
+          "updated_at": "2026-03-17T14:48:29+00:00",
+          "source_sha256": "da06a9e340ca0f6faa0f900117f1c165eaffed070d2269df0a99aec038b06338",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:aesthetic-theme",
+          "sha256": "35234ec38792ffc739258798c50bb91d993575fb23eb6b6a51c58c2d02b26efd",
+          "updated_at": "2026-04-10T05:10:37+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:component:theme-squares -=-",
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:theme:aesthetic-theme",
+          ":scp-jp:component:toggle-sidebar-bhl",
+          ":scp-jp:component:centered-header-bhl",
+          ":scp-jp:component:interwiki-style"
+        ],
+        "attachments": [
+          {
+            "filename": "AESTHETIC_logo.svg",
+            "source_path": "install/local/theme-lab/ports/aesthetic-theme/page-assets/AESTHETIC_logo.svg",
+            "bytes": 15578,
+            "sha256": "64ca862d41f0aebc7f0fc6c9f0af82bc93b0dba29fc87e83bf18e9a8ba58c8e7",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "black-highlighter-logo.svg",
+            "source_path": "install/local/theme-lab/ports/aesthetic-theme/page-assets/black-highlighter-logo.svg",
+            "bytes": 6615,
+            "sha256": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:al-slop",
+        "site": "scp-jp",
+        "action": "create",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/al-slop/candidate.wikidot.source.txt",
+          "sha256": "f6809160ccf1b35e74340d5e0421efecf8585246310203debbb5f0727b95eb8b"
+        },
+        "source_authority_sha256": "f6809160ccf1b35e74340d5e0421efecf8585246310203debbb5f0727b95eb8b",
+        "candidate_css_sha256": "00a8fff90043b8cc9164700b07080367ec1c29d29529635e34e6404a071e21e9",
+        "candidate_source_sha256": null,
+        "current_target": null,
+        "upstream": null,
+        "dependencies": [
+          "component:sigma-plus",
+          "component:license-box-backend@scp-jp rev9"
+        ],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:basalt",
+        "site": "scp-jp",
+        "action": "create",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/basalt/candidate.wikidot.source.txt",
+          "sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df"
+        },
+        "source_authority_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
+        "candidate_css_sha256": "c1b44963493737105ecb19c33bb49a41c4b931c09a9b3dbecde0562b0f942823",
+        "candidate_source_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
+        "current_target": null,
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:basalt",
+          "sha256": "df4b78d344536f5b7c363ac86b2ddc6f3c31b3647693f473169550e03fca17c5",
+          "updated_at": "2026-07-22T01:52:12+00:00"
+        },
+        "dependencies": [],
+        "attachments": [
+          {
+            "filename": "basalt-theme-logo.svg",
+            "source_path": "install/local/theme-lab/ports/basalt/page-assets/basalt-theme-logo.svg",
+            "bytes": 5451,
+            "sha256": "3baf62c62621629c69f22433651572da5fd917e276e5953ae4eebd75b7ca99b2",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:bedrock",
+        "site": "scp-jp",
+        "action": "create",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/bedrock/candidate.wikidot.source.txt",
+          "sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423"
+        },
+        "source_authority_sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423",
+        "candidate_css_sha256": "210621c337510276613df2496a6fcc1ee98843d5175b0cc07404d82c416236ea",
+        "candidate_source_sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423",
+        "current_target": null,
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:bedrock",
+          "sha256": "7f62a64c055d179d4b51746812fc8f288fd479661219bc3e607036c69dc86da5",
+          "updated_at": "2024-01-08T13:14:12+00:00"
+        },
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:black-highlighter-theme",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/black-highlighter-theme/candidate.wikidot.source.txt",
+          "sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427"
+        },
+        "source_authority_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
+        "candidate_css_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
+        "candidate_source_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
+        "current_target": {
+          "status": "present",
+          "revision": 74,
+          "revisions": null,
+          "updated_at": "2026-09-25T01:25:13+00:00",
+          "source_sha256": "760ef1fb2d85d2c956c7ae59c6792c22c651faf05dc547669a86e66f5702c10e",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:black-highlighter-theme",
+          "sha256": "fa840cb320ea4de09864cd687aca308115f9027076d8c5712c3fb52cd5c31a58",
+          "updated_at": "2024-09-03T02:55:28+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:component:bhl-dark-sidebar",
+          ":scp-jp:component:collapsible-sidebar",
+          ":scp-jp:component:toggle-sidebar-bhl",
+          ":scp-jp:component:centered-header-bhl",
+          ":scp-jp:component:theme-squares -=-",
+          ":scp-jp:component:image-block name=https://scp-jp.github.io/Black-Highlighter/img/logo.svg"
+        ],
+        "attachments": [
+          {
+            "filename": "black-highlighter-logo.svg",
+            "source_path": "install/local/theme-lab/ports/black-highlighter-theme/page-assets/black-highlighter-logo.svg",
+            "bytes": 6615,
+            "sha256": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:classic",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/classic/candidate.wikidot.source.txt",
+          "sha256": "9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09"
+        },
+        "source_authority_sha256": "9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09",
+        "candidate_css_sha256": "8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376",
+        "candidate_source_sha256": "9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09",
+        "current_target": {
+          "status": "present",
+          "revision": 11,
+          "revisions": null,
+          "updated_at": "2026-09-25T00:46:02+00:00",
+          "source_sha256": "fa167734c0345030acd8ac869edf0505a91aad74be1bb87fc9f26ec59d38584a",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:classic",
+          "sha256": "306c9422efd40de805e391694aba91df5e660aab46a3b023959e6902a8d43728",
+          "updated_at": "2026-07-12T20:13:59+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:theme:classic",
+          ":scp-jp:theme:classic engtitle=a"
+        ],
+        "attachments": [
+          {
+            "filename": "base_image_frame.png",
+            "source_path": "install/local/theme-lab/ports/classic/page-assets/base_image_frame.png",
+            "bytes": 2283,
+            "sha256": "c5a79a414173aa6ccd5013fea65aae666b35826b53c30e0a20b4534f475e5a6f",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "scp_foundation_logo.png",
+            "source_path": "install/local/theme-lab/ports/classic/page-assets/scp_foundation_logo.png",
+            "bytes": 9225,
+            "sha256": "975a510eefe55e44930b50076b7c4e729c202e0d7f4c9049cd90e38a70516ed0",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:cosmonaut",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/cosmonaut/candidate.wikidot.source.txt",
+          "sha256": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179"
+        },
+        "source_authority_sha256": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179",
+        "candidate_css_sha256": "7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce",
+        "candidate_source_sha256": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179",
+        "current_target": {
+          "status": "present",
+          "revision": null,
+          "revisions": null,
+          "updated_at": "2025-03-11T09:05:30+00:00",
+          "source_sha256": "857c48d316a054139c6c667fcfadd14208885fcf1c3103b56c9a661a620e5fd2",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:cosmonaut",
+          "sha256": "7d315826293db9af4419d47ffd594a19bfbe6bd458493de0dc410f34693a18a4",
+          "updated_at": "2025-12-14T11:15:02+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:theme:cosmonaut",
+          ":scp-jp:theme:cosmonaut twilight=--",
+          ":scp-jp:component:image-block name= https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-74-cf41/hpl2.png",
+          ":scp-jp:component:interwiki-style"
+        ],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:dear-dictator-jp",
+        "site": "scp-jp",
+        "action": "create",
+        "freeze_snapshot_status": "source-ready-acceptance-required",
+        "source": {
+          "path": "install/local/theme-lab/publication/themes/dear-dictator-jp/source.wikidot.txt",
+          "sha256": "32739731fe39263816ea42f378f2541286186b93d477938feb6d489279e42022"
+        },
+        "source_authority_sha256": "32739731fe39263816ea42f378f2541286186b93d477938feb6d489279e42022",
+        "candidate_css_sha256": null,
+        "candidate_source_sha256": null,
+        "current_target": null,
+        "upstream": null,
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:extra-black-highlighter-theme",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/extra-black-highlighter-theme/candidate.wikidot.source.txt",
+          "sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a"
+        },
+        "source_authority_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
+        "candidate_css_sha256": "1942887e382d16b8150cf95086a4944c7589def1ea0c2783d5d6dc341c445400",
+        "candidate_source_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
+        "current_target": {
+          "status": "present",
+          "revision": null,
+          "revisions": null,
+          "updated_at": "2024-06-07T02:17:29+00:00",
+          "source_sha256": "9fd030b51393568f0701d43d31f25c61ac7ad2350995f04a98e2f8d1fcedcaf5",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:extra-black-highlighter-theme",
+          "sha256": "7f4834eabf433320747d1334a18987e5cd9d976fba3872031e2c67cdf9ad6e31",
+          "updated_at": "2026-04-12T04:59:50+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:theme:extra-black-highlighter-theme",
+          ":scp-jp:component:theme-squares -=-",
+          "component:image-block name=https://scp-jp.github.io/Black-Highlighter/img/logo.svg",
+          ":scp-jp:component:bhl-dark-sidebar",
+          ":scp-jp:component:interwiki-style"
+        ],
+        "attachments": [
+          {
+            "filename": "black-highlighter-logo.svg",
+            "source_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/page-assets/black-highlighter-logo.svg",
+            "bytes": 6615,
+            "sha256": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:flopstyle-dark",
+        "site": "scp-jp",
+        "action": "create",
+        "freeze_snapshot_status": "final-acceptance-pending-after-freeze",
+        "source": {
+          "path": "install/local/theme-lab/ports/flopstyle-dark/candidate.wikidot.source.txt",
+          "sha256": "2b9004a9304ed089aa69da78d140bc03aa333b792751b57133d7429b499aa1e3"
+        },
+        "source_authority_sha256": "2b9004a9304ed089aa69da78d140bc03aa333b792751b57133d7429b499aa1e3",
+        "candidate_css_sha256": "cfb5865dd28e562413dc1cbed44ace29ff4d08eb4bdc8daafcfc87b4e98c8161",
+        "candidate_source_sha256": "2b9004a9304ed089aa69da78d140bc03aa333b792751b57133d7429b499aa1e3",
+        "current_target": null,
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:flopstyle-dark",
+          "revision": 401,
+          "updated_at": "2026-09-28T23:41:46+00:00",
+          "sha256": "bce06e2f87c6962d176e9f54f8bac47815860044b52a16562a139e98a0051b85"
+        },
+        "dependencies": [],
+        "attachments": [
+          {
+            "filename": "alt_logo_tyrian.png",
+            "source_path": "install/local/theme-lab/ports/flopstyle-dark/page-assets/alt_logo_tyrian.png",
+            "bytes": 17814,
+            "sha256": "0d1e21c24a9092515ec777ee45760bc711f85a4ad5049d4d62b0a987f81ac407",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "scp_foundation_logo.png",
+            "source_path": "install/local/theme-lab/ports/flopstyle-dark/page-assets/scp_foundation_logo.png",
+            "bytes": 9225,
+            "sha256": "975a510eefe55e44930b50076b7c4e729c202e0d7f4c9049cd90e38a70516ed0",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:foxtrot",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/foxtrot/candidate.wikidot.source.txt",
+          "sha256": "e0bbf7be650005b5f7d5e3893e598e16febd6f06d0bc26fc86f90163520b4e47"
+        },
+        "source_authority_sha256": "e0bbf7be650005b5f7d5e3893e598e16febd6f06d0bc26fc86f90163520b4e47",
+        "candidate_css_sha256": "db15469bd49cb604c373918859834372b1cfc07b79157c0d66747c8f61c69912",
+        "candidate_source_sha256": "e0bbf7be650005b5f7d5e3893e598e16febd6f06d0bc26fc86f90163520b4e47",
+        "current_target": {
+          "status": "present",
+          "revision": 8,
+          "revisions": null,
+          "updated_at": "2026-09-24T19:03:04+00:00",
+          "source_sha256": "d342ea8a6503fe16f975d74ff6646ff285ab8a382538e54c3e863d70bd055634",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:foxtrot",
+          "sha256": "04407aa0cfb8cf27b6066cd994b7b1ae7d2c867f187aacbd90639423f7c78b5d",
+          "updated_at": "2026-03-26T17:29:48+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:component:toggle-sidebar",
+          ":scp-jp:component:acs-animation",
+          ":scp-jp:component:fade-in speed=1",
+          ":scp-jp:component:betterfootnotes",
+          ":scp-jp:component:image-block",
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-wiki:component:author-label-source start=--",
+          ":scp-wiki:component:author-label-source end=--",
+          ":scp-jp:theme:foxtrot",
+          ":scp-jp:theme:foxtrot@@ ##green",
+          ":scp-jp:theme:foxtrot@@ ##green",
+          ":scp-jp:theme:foxtrot@@ ##green",
+          ":scp-jp:theme:foxtrot@@ ##green",
+          ":scp-jp:theme:foxtrot@@ ##green",
+          ":scp-jp:theme:foxtrot@@ ##green",
+          ":scp-jp:theme:foxtrot@@ ##green",
+          ":scp-jp:theme:foxtrot@@ ##green",
+          ":scp-jp:theme:foxtrot@@ ##green",
+          ":scp-jp:theme:foxtrot@@ ##green",
+          ":scp-jp:theme:foxtrot@@ ##green",
+          ":scp-jp:theme:foxtrot@@ ##green",
+          ":scp-jp:theme:foxtrot@@ ##green",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style"
+        ],
+        "attachments": [
+          {
+            "filename": "canada_dark-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/canada_dark-JP.png",
+            "bytes": 67295,
+            "sha256": "5b21d465f3108d573b11d651d11ded55751b99e63195d272530651ba23726ba0",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "canada_light-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/canada_light-JP.png",
+            "bytes": 66220,
+            "sha256": "7557a168960706abff94ffa6023a5ae977649d5e8ae0905fcc662dd3b4ed5e3d",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "fishing_dark-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/fishing_dark-JP.png",
+            "bytes": 66696,
+            "sha256": "58c241c1bf7914e763334443cef3a23444ec4c1252bcb539a01ae01c7077c54d",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "fishing_light-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/fishing_light-JP.png",
+            "bytes": 61957,
+            "sha256": "bde8bf5d2c40f3b2b7b6b440f5d9cf136275e28688fece77ae2e5743a5903565",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "goc_dark-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/goc_dark-JP.png",
+            "bytes": 67949,
+            "sha256": "29d24f580ebc75cacd907119395368075ca63d04f19807db4c6476b84f95bf75",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "goc_light-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/goc_light-JP.png",
+            "bytes": 66505,
+            "sha256": "ae136ebd2d5e00dded63907f373bbb29c3bb67ab15dd7c4b261e636837efed4c",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "hybrasil_dark-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/hybrasil_dark-JP.png",
+            "bytes": 93569,
+            "sha256": "a62e82cfc8b8721b8ed93ece934cc9ca58a882ceaa19db6a47d5e78e1b0b647a",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "hybrasil_light-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/hybrasil_light-JP.png",
+            "bytes": 97774,
+            "sha256": "739a8f6f2c6eecfe275d6d7b8d32fb36d7caced4ed5dc977cbb429fcf50919fa",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "nightfall_dark-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/nightfall_dark-JP.png",
+            "bytes": 54725,
+            "sha256": "4d7b21765130662fc1127eb0bd8657ab74ea10039967e0e1b95dd27563dec631",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "nightfall_light-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/nightfall_light-JP.png",
+            "bytes": 18673,
+            "sha256": "a48444c067a9b8f8eb7169175a9651e8d4563e3ca632a7062c5de156ad5497ee",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "overwatch_dark-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/overwatch_dark-JP.png",
+            "bytes": 54778,
+            "sha256": "a1c43f76d90909b4e0d88465c4c38077ab22f4134e79b3bf49b64d04c4e17760",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "overwatch_light-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/overwatch_light-JP.png",
+            "bytes": 14163,
+            "sha256": "8fedc09672684735671d09fa6940808553fe80d27eccaf0a043b337b310c143d",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "poland_dark-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/poland_dark-JP.png",
+            "bytes": 71846,
+            "sha256": "ed55e8d4f13187a45a065914d4c756d360dea4fdbc7594b6c3db2bd9c3f644a3",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "poland_light-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/poland_light-JP.png",
+            "bytes": 60908,
+            "sha256": "ba64644d32f217fd57b7777ed7a8aa1dbd1e24dd7ad4d21f61ddc44781589a54",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "slothspit_dark-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/slothspit_dark-JP.png",
+            "bytes": 85314,
+            "sha256": "060e75de6b3488c5bfcab1e1362dded4dfaecc1d0875b06f0f5583726f365305",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "slothspit_light-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/slothspit_light-JP.png",
+            "bytes": 82144,
+            "sha256": "d8e40b36106b3bb1525775bc6dc12b71441348dd80fe4eba4ff13e930c57ab42",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "spc_dark-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/spc_dark-JP.png",
+            "bytes": 68745,
+            "sha256": "8ddc3500d4375fc6dfab44bc9b318817acbc8955f42afa8ed5b653be6f84e54d",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "spc_light-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/spc_light-JP.png",
+            "bytes": 68351,
+            "sha256": "05c8d142b7ac7a752804aa65ff738ece4592ebbb827ce85a6e7ea96544519844",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "spooky_dark-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/spooky_dark-JP.png",
+            "bytes": 74095,
+            "sha256": "37ce528638b7f5bc5334d691ce5e5b6a6ad9c13736d22136943f6dee6a0e2908",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "spooky_light-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/spooky_light-JP.png",
+            "bytes": 77430,
+            "sha256": "4a8557fde9fe00f2f840bbbe3dccbda38c49d6cf9b1ab6c02ecd12ad07b1200b",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "threshold_dark-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/threshold_dark-JP.png",
+            "bytes": 54586,
+            "sha256": "ccbdcd07ac6f1592973a81c4045d269cdbdbf9aa931ac8deafbe1377c7d877ce",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "threshold_light-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/threshold_light-JP.png",
+            "bytes": 46540,
+            "sha256": "3bccd3bbf06f609a0b20e106855a2562a10cd6ad394f8d558e27ef8ae336f991",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "vanguard_dark-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/vanguard_dark-JP.png",
+            "bytes": 81498,
+            "sha256": "077589c0ff6c4c77bf7b72ffefc820ec46078163bee12d3a0c5f71669766451c",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "vanguard_light-JP.png",
+            "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/vanguard_light-JP.png",
+            "bytes": 86195,
+            "sha256": "85d57f2d3421928fbaf94af29707d4707bbfeb5a7d8ab51b60fd71e0d43f7303",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:hansarp",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/hansarp/candidate.wikidot.source.txt",
+          "sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00"
+        },
+        "source_authority_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
+        "candidate_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319",
+        "candidate_source_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
+        "current_target": {
+          "status": "present",
+          "revision": null,
+          "revisions": null,
+          "updated_at": "2024-09-06T10:28:57+00:00",
+          "source_sha256": "f398f2ab409800a156552d37382cbd396a6745d6bbdd794f3f39ab17c5fa78dd",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:hansarp",
+          "sha256": "d8484393306d5ae7ded365f3a0a611258213a0dc9cb011829015802bbfbaa01e",
+          "updated_at": "2026-09-03T13:21:03+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:component:theme-squares -=-",
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:theme:hansarp",
+          ":scp-jp:component:interwiki-style"
+        ],
+        "attachments": [
+          {
+            "filename": "hansarplogo.png",
+            "source_path": "install/local/theme-lab/ports/hansarp/page-assets/hansarplogo.png",
+            "bytes": 20766,
+            "sha256": "7606a8868385d21bbad3105808e7c117017ddbdd91b719f2063471de7b0a5503",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:inkblot",
+        "site": "scp-jp",
+        "action": "create",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/inkblot/candidate.wikidot.source.txt",
+          "sha256": "679a88f60fb72ac72743a09380e121bfbb03207800e41b1ad74e59b1f66bc9ac"
+        },
+        "source_authority_sha256": "679a88f60fb72ac72743a09380e121bfbb03207800e41b1ad74e59b1f66bc9ac",
+        "candidate_css_sha256": "fd7e2ae9c01c3d31160b1e7017e441b3abcd8d5eab309c631ef2ebf139fc3406",
+        "candidate_source_sha256": null,
+        "current_target": null,
+        "upstream": null,
+        "dependencies": [
+          "component:interwiki-style@scp-jp rev6"
+        ],
+        "attachments": [
+          {
+            "filename": "pancakes.png",
+            "source_path": "install/local/theme-lab/ports/inkblot/page-assets/pancakes.png",
+            "bytes": 353234,
+            "sha256": "8eb0eabe37b5c0fcd4f402861b8634a4505224d5bfdaccb12af1a4d739735f0a",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:isolated-terminal",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/isolated-terminal/candidate.wikidot.source.txt",
+          "sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7"
+        },
+        "source_authority_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+        "candidate_css_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+        "candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+        "current_target": {
+          "status": "present",
+          "revision": 14,
+          "revisions": null,
+          "updated_at": "2026-09-24T10:21:35+00:00",
+          "source_sha256": "7b004be4cad79ce61c5c092e5aa714d40c95369ab8422a465025917ab0bd8ea4",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:isolated-terminal",
+          "sha256": "120ce0a71fa1ca235d3ed1955957ebe037bdb8e4a160b7099fe810d61f17a257",
+          "updated_at": "2026-02-01T03:34:54+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:component:theme-squares -=-",
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:theme:isolated-terminal",
+          "component:image-block name=https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-10-4g1r/pxlogo.png",
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:theme:isolated-terminal",
+          ":scp-jp:component:ayu18",
+          ":scp-jp:component:toggle-sidebar-bhl",
+          ":scp-jp:component:centered-header-bhl",
+          ":scp-jp:component:interwiki-style"
+        ],
+        "attachments": [
+          {
+            "filename": "black-highlighter-logo.svg",
+            "source_path": "install/local/theme-lab/ports/isolated-terminal/page-assets/black-highlighter-logo.svg",
+            "bytes": 6615,
+            "sha256": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:jakstyle",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/jakstyle/candidate.wikidot.source.txt",
+          "sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869"
+        },
+        "source_authority_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
+        "candidate_css_sha256": "a4b0f7c1cb6262b4ee6ac62e5d9e4846919bf50d57766de6968d3a58ea6ff8e6",
+        "candidate_source_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
+        "current_target": {
+          "status": "present",
+          "revision": null,
+          "revisions": null,
+          "updated_at": "2023-02-20T06:32:47+00:00",
+          "source_sha256": "043a9ecd102a053c1d7daa538e293a147117f722cfe6e232c694f6107c48dae2",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:jakstyle",
+          "sha256": "001da31e6e309460792f950ba5bcb78eba3c8a7305efb7a3e21e05365615d270",
+          "updated_at": "2026-04-21T01:35:48+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:theme:jakstyle",
+          ":scp-jp:component:image-block name=https://scp-jp.github.io/Black-Highlighter/img/logo.svg",
+          ":scp-jp:component:centered-header-bhl",
+          ":scp-jp:component:toggle-sidebar-bhl",
+          ":scp-jp:component:interwiki-style"
+        ],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:minimalist-bhl",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/minimalist-bhl/candidate.wikidot.source.txt",
+          "sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5"
+        },
+        "source_authority_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
+        "candidate_css_sha256": "bb4018bd604b2abfbd17e84f3fd884d13c3891be34fdac52c3a6d30af295d245",
+        "candidate_source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
+        "current_target": {
+          "status": "present",
+          "revision": 2,
+          "revisions": null,
+          "updated_at": "2026-09-24T20:45:09+00:00",
+          "source_sha256": "7d870ffc63b1f7a700201a7b585a7aca8aa57a52d5f673c6eafd76d2f1426848",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:minimalist-bhl",
+          "sha256": "d076f29e54167c0adc56808ccce19a17511162997bd4816470cb34812a7e282a",
+          "updated_at": "2026-04-12T05:12:17+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:theme:minimalist-bhl",
+          "component:image-block name=http://scp-jp-storage.wikidot.com/local--files/file:3324351-140-5rt8/Ar6AfDt.png",
+          ":scp-jp:component:centered-header-bhl",
+          ":scp-jp:component:toggle-sidebar-bhl",
+          ":scp-jp:component:interwiki-style"
+        ],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:monotypical",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/monotypical/candidate.wikidot.source.txt",
+          "sha256": "2b1757725694a02df9618f21e2e4326f37500b6f751d005558199df72f9913e5"
+        },
+        "source_authority_sha256": "2b1757725694a02df9618f21e2e4326f37500b6f751d005558199df72f9913e5",
+        "candidate_css_sha256": "f2883666196dd7cad910db816eba36924273e206d35ef01c410443f3b48bfd23",
+        "candidate_source_sha256": "2b1757725694a02df9618f21e2e4326f37500b6f751d005558199df72f9913e5",
+        "current_target": {
+          "status": "present",
+          "revision": null,
+          "revisions": null,
+          "updated_at": "2024-10-18T09:04:38+00:00",
+          "source_sha256": "f9e1ea2563ba3963770c899068d58fd175d58824f0d3ffd4436ec8db5a60c156",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:monotypical",
+          "sha256": "7584ab59275e4e7300966646f2f8b42a2833e3087fa8353c508f26c2a8f89bc4",
+          "updated_at": "2026-04-12T05:12:14+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:theme:monotypical",
+          ":scp-jp:component:image-block name= https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-77-5jif/mono.png"
+        ],
+        "attachments": [
+          {
+            "filename": "mono-dracula.png",
+            "source_path": "install/local/theme-lab/ports/monotypical/page-assets/mono-dracula.png",
+            "bytes": 38179,
+            "sha256": "695f4ad3654ba9a63585e61a94d740df4d340608842e93ce55e1940e6929d34a",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "mono-nord.png",
+            "source_path": "install/local/theme-lab/ports/monotypical/page-assets/mono-nord.png",
+            "bytes": 37494,
+            "sha256": "6a0c47c302004321e8f7bf7df6e04e18f14ac037664e1ef8b194b235616de200",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "mono-solarized.png",
+            "source_path": "install/local/theme-lab/ports/monotypical/page-assets/mono-solarized.png",
+            "bytes": 37054,
+            "sha256": "0830d0c7c6e4bcecb0863f88b35302c549167b41f171f2c4f9f263b49fed3b11",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:much-cool",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/much-cool/candidate.wikidot.source.txt",
+          "sha256": "5b80ba7f55a5f70b6569fef18e95056bf223ec143f7c2ef549d88aba7a3d096a"
+        },
+        "source_authority_sha256": "5b80ba7f55a5f70b6569fef18e95056bf223ec143f7c2ef549d88aba7a3d096a",
+        "candidate_css_sha256": "d6232bbe6f3e7da786f975a4960754dd86b71fdf16abbbc58bd07c2052293468",
+        "candidate_source_sha256": "5b80ba7f55a5f70b6569fef18e95056bf223ec143f7c2ef549d88aba7a3d096a",
+        "current_target": {
+          "status": "present",
+          "revision": 4,
+          "revisions": null,
+          "updated_at": "2026-09-25T03:02:42+00:00",
+          "source_sha256": "aff88b307f9e26ce47d632a6f29bb786a62f9b89b1e2b41ed9ab0e74d9272988",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:much-cool",
+          "sha256": "e2e876a82210ed12ecbe3f0fa37f4ae084ebafa21b3fd50366ab154de244c88a",
+          "updated_at": "2026-04-12T05:13:12+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:theme:much-cool",
+          ":scp-jp:component:image-block name=https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-45-w138/logo.png"
+        ],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:night-rush-theme",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/night-rush-theme/candidate.wikidot.source.txt",
+          "sha256": "5d0cc657cd638addbb28f8278832126dc863b1ae0ae339f216dceff45ef2f98c"
+        },
+        "source_authority_sha256": "5d0cc657cd638addbb28f8278832126dc863b1ae0ae339f216dceff45ef2f98c",
+        "candidate_css_sha256": "6ecbb80fc4aa2e7fbf948a2ced01153aa816bd2911cfcb6cfa398bc3f534245b",
+        "candidate_source_sha256": "5d0cc657cd638addbb28f8278832126dc863b1ae0ae339f216dceff45ef2f98c",
+        "current_target": {
+          "status": "present",
+          "revision": 11,
+          "revisions": null,
+          "updated_at": "2026-09-24T21:34:04+00:00",
+          "source_sha256": "03327c410ace73c1105b60aaf89f254336732ed63579c9c952608be0462bb132",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:night-rush-theme",
+          "sha256": "2d1fe57ae48528ada48c2f177e2b9db9d3b83b825233e3bd105cc38931cd69ef",
+          "updated_at": "2022-12-20T21:40:07+00:00"
+        },
+        "dependencies": [
+          ":scp-wiki:info:start",
+          ":scp-wiki:info:more",
+          ":scp-wiki:info:end",
+          "theme:night-rush-theme",
+          "component:image-block name=http://scp-jp.wikidot.com/local--files/scp-4755/containment"
+        ],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:ouroborous-theme",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/ouroborous-theme/candidate.wikidot.source.txt",
+          "sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f"
+        },
+        "source_authority_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
+        "candidate_css_sha256": "e3ca8e1a29abcba717d8e638af2eb2526f85b0ae134cd76918157a2b7f5a3fb1",
+        "candidate_source_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
+        "current_target": {
+          "status": "present",
+          "revision": null,
+          "revisions": null,
+          "updated_at": "2025-01-19T12:38:49+00:00",
+          "source_sha256": "154b816e5c5de3fef3ea3fa0f0b9dbe5688cbd936d8ba60eeb60fb8eb5d35b58",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:ouroborous-theme",
+          "sha256": "b172231574fa6f71b41be2fb5065293aafc9c772d808a268009798e7aba4ab4f",
+          "updated_at": "2023-05-05T17:15:28+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:component:theme-squares -=-",
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:theme:ouroborous-theme",
+          ":scp-jp:component:interwiki-style"
+        ],
+        "attachments": [
+          {
+            "filename": "black-highlighter-logo.svg",
+            "source_path": "install/local/theme-lab/ports/ouroborous-theme/page-assets/black-highlighter-logo.svg",
+            "bytes": 6615,
+            "sha256": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "ouroborous_logo.png",
+            "source_path": "install/local/theme-lab/ports/ouroborous-theme/page-assets/ouroborous_logo.png",
+            "bytes": 172768,
+            "sha256": "6ce2cde35401f36f7d44966903821ee9df970033eb22d77979d21195dbaeabac",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:paperstack",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/paperstack/candidate.wikidot.source.txt",
+          "sha256": "5939181e533d5c02d39ac16dad70f9ae9b80efa7fcd79ebb4c8ba8b75ab16854"
+        },
+        "source_authority_sha256": "5939181e533d5c02d39ac16dad70f9ae9b80efa7fcd79ebb4c8ba8b75ab16854",
+        "candidate_css_sha256": "5c388bc9f4e8c9a888c71e72ca59c6dc7a64f5aab0f791f7a789f8478d77e0aa",
+        "candidate_source_sha256": "5939181e533d5c02d39ac16dad70f9ae9b80efa7fcd79ebb4c8ba8b75ab16854",
+        "current_target": {
+          "status": "present",
+          "revision": 6,
+          "revisions": null,
+          "updated_at": "2026-09-24T21:16:37+00:00",
+          "source_sha256": "a6d81604d54acbe2626a625fcd1b839636fdb8a53d6b7de292338280ac6b8fc6",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:paperstack",
+          "sha256": "473d6a0dcb753239797efd8dd829f1e34bb626419076023de8d4afe944adf187",
+          "updated_at": "2026-04-12T05:15:56+00:00"
+        },
+        "dependencies": [
+          "component:image-block name=http://scp-wiki.wdfiles.com/local--files/theme:paperstack/test.png",
+          ":scp-jp:theme:paperstack",
+          "component:image-block name=画像URL",
+          ":scp-jp:theme:paperstack",
+          "component:image-block",
+          "component:image-block",
+          "component:image-block"
+        ],
+        "attachments": [
+          {
+            "filename": "lgtrans.png",
+            "source_path": "install/local/theme-lab/ports/paperstack/page-assets/lgtrans.png",
+            "bytes": 28725,
+            "sha256": "85bb999e3a059b8686f0b18df73636242976531b5991c2d3ca395d7dd6d6b12e",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:pataphysics",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/pataphysics/candidate.wikidot.source.txt",
+          "sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b"
+        },
+        "source_authority_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b",
+        "candidate_css_sha256": "98f233f2f3161e085fe9c764c87a2e07b95501977e69702236582d1e39923b17",
+        "candidate_source_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b",
+        "current_target": {
+          "status": "present",
+          "revision": 40,
+          "revisions": null,
+          "updated_at": "2026-09-25T03:22:03+00:00",
+          "source_sha256": "010bec1cd52b910ae33ba244dd04b5141304142ba7210c53f3347ef68944504a",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:pataphysics",
+          "sha256": "b4961dbb0f02d987d5084bc0803f7c4a000cc03843c623f454b213ca69d852a8",
+          "updated_at": "2026-04-12T05:16:06+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:credit:start",
+          ":scp-jp:credit:end",
+          ":scp-jp:theme:pataphysics",
+          "component:image-block"
+        ],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:penumbra",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/penumbra/candidate.wikidot.source.txt",
+          "sha256": "439b21910d1a4363c35845490fdc2585a286b26577c2d692f130c2f790681b9e"
+        },
+        "source_authority_sha256": "439b21910d1a4363c35845490fdc2585a286b26577c2d692f130c2f790681b9e",
+        "candidate_css_sha256": "2d8436acd87691323a742583e715e7f69c96bfd53c355dac5b2fe27b8ceeb5da",
+        "candidate_source_sha256": "439b21910d1a4363c35845490fdc2585a286b26577c2d692f130c2f790681b9e",
+        "current_target": {
+          "status": "present",
+          "revision": 8,
+          "revisions": null,
+          "updated_at": "2026-09-24T17:15:44+00:00",
+          "source_sha256": "9ab03d7a81385d6867dd7cf6fabcad33b3257b8f11296479924031b9eb1cbec0",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:penumbra",
+          "sha256": "befb285563d3f8d956f49726d2272a051bdab6ac4b9a84dd0ba856490c0890b5",
+          "updated_at": "2026-04-12T05:16:38+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:theme:penumbra",
+          "component:image-block name=http://scp-jp-storage.wdfiles.com/local--files/file%3A3396310-44-yz1t/tb.png",
+          ":scp-jp:component:toggle-sidebar"
+        ],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:quand-le-soleil-se-couche",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "rebased-package-acceptance-required",
+        "source": {
+          "path": "install/local/theme-lab/publication/themes/quand-le-soleil-se-couche/source.wikidot.txt",
+          "sha256": "c44ef95cf9a648f5b2eb9bc3854e95cb4e7005d5c9f656078e795508c7c7c47a"
+        },
+        "source_authority_sha256": "c44ef95cf9a648f5b2eb9bc3854e95cb4e7005d5c9f656078e795508c7c7c47a",
+        "candidate_css_sha256": null,
+        "candidate_source_sha256": null,
+        "current_target": {
+          "status": "present",
+          "revision": 2,
+          "revisions": null,
+          "updated_at": "2026-09-29T15:10:19Z",
+          "source_sha256": "d42659934387cf19af43b9135db16820ecef9e8fe478c9ee645e794b4c71a881",
+          "live_serialized_source_sha256": "79650874ae52b22c901e86c83a17f60ecca2eb814b9ddd90a499a352b0262851",
+          "provenance_record": "install/local/theme-lab/publication/themes/quand-le-soleil-se-couche/manifest.json#/current_target"
+        },
+        "upstream": null,
+        "dependencies": [],
+        "attachments": [
+          {
+            "filename": "header-logo.png",
+            "source_path": "install/local/theme-lab/publication/themes/quand-le-soleil-se-couche/assets/header-logo.png",
+            "bytes": 368742,
+            "sha256": "e242245d05519a8b2b8d672837f580ce483ded9691f8f14c1c7653fc4c2a336a",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "body_bg_grey.png",
+            "source_path": "install/local/theme-lab/publication/themes/quand-le-soleil-se-couche/assets/body_bg_grey.png",
+            "bytes": 4099,
+            "sha256": "bec371b36d3f250ca4b45a03ab46d6a31a5536481ba334cd4ec06eb985db7b0a",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:redtape",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/redtape/candidate.wikidot.source.txt",
+          "sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892"
+        },
+        "source_authority_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
+        "candidate_css_sha256": "e68651742177907f32d7870a383a86a432159fe581e4a005e1d9f1a0da227016",
+        "candidate_source_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
+        "current_target": {
+          "status": "present",
+          "revision": null,
+          "revisions": null,
+          "updated_at": "2025-02-24T00:14:16+00:00",
+          "source_sha256": "b0f436a038cfd2c4f1bb0e153995a5ba911c92682d5a058eba578724563632af",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:redtape",
+          "sha256": "7362f7971e67776bff08f0f29e39d43f0d38c03a432e063f908a4dc07ae30ea1",
+          "updated_at": "2024-10-02T07:06:10+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:image-block name=https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-101-3mcp/redtapethemethumbnail.png",
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:cc4",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:component:theme-squares -=-",
+          ":scp-jp:component:image-block name=https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-101-3mcp/redtapethemethumbnail.png",
+          ":scp-jp:credit:cc4",
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:theme:redtape@@",
+          ":scp-jp:component:centered-header-bhl",
+          ":scp-jp:component:toggle-sidebar-bhl",
+          ":scp-jp:component:interwiki-style"
+        ],
+        "attachments": [
+          {
+            "filename": "black-highlighter-logo.svg",
+            "source_path": "install/local/theme-lab/ports/redtape/page-assets/black-highlighter-logo.svg",
+            "bytes": 6615,
+            "sha256": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "newtempest.png",
+            "source_path": "install/local/theme-lab/ports/redtape/page-assets/newtempest.png",
+            "bytes": 224475,
+            "sha256": "1a1be495a9cf1908e6ee84146afdbcea551d917185cd757b79188dc3dd82ebea",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "redtapeexample.png",
+            "source_path": "install/local/theme-lab/ports/redtape/page-assets/redtapeexample.png",
+            "bytes": 1410267,
+            "sha256": "d8a7b428d6d94523681d22f4955e71e415f8a2347e0b2a58972a254367b4a6f5",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:scheme",
+        "site": "scp-jp",
+        "action": "create",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/scheme/candidate.wikidot.source.txt",
+          "sha256": "292624abd9238b7a3c0cca9fe0f603fbd18476610740084e2b5315a01e8348fc"
+        },
+        "source_authority_sha256": "292624abd9238b7a3c0cca9fe0f603fbd18476610740084e2b5315a01e8348fc",
+        "candidate_css_sha256": "13b6176aa6fddeeaeaf1a8e493163fe1fa6c8f72888e27d9631a66dfc0950fce",
+        "candidate_source_sha256": "292624abd9238b7a3c0cca9fe0f603fbd18476610740084e2b5315a01e8348fc",
+        "current_target": null,
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:scheme",
+          "sha256": "639e67baca7add0448d8170f065e1672b7393416f5753792ab81832429676471",
+          "updated_at": "2026-04-12T05:21:40+00:00"
+        },
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:scp-offices-theme",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/scp-offices-theme/candidate.wikidot.source.txt",
+          "sha256": "1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8"
+        },
+        "source_authority_sha256": "1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8",
+        "candidate_css_sha256": "f3d5d0cec11e9092bed5913399d302ed8a19dea98a4e43ee71845afe4e803545",
+        "candidate_source_sha256": "1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8",
+        "current_target": {
+          "status": "present",
+          "revision": null,
+          "revisions": null,
+          "updated_at": "2023-01-20T10:11:35+00:00",
+          "source_sha256": "712c7edf8e1060819d93f205158f599cf5318cdc4cec6d3e2c5241e059873808",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:scp-offices-theme",
+          "sha256": "b102a2474cef0f96202818ee1e283eab2807c83db8c69479e642b2758629a00a",
+          "updated_at": "2026-04-12T05:22:32+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:component:theme-squares -=-",
+          ":scp-jp:theme:black-highlighter-theme",
+          ":scp-jp:theme:scp-offices-theme",
+          ":scp-jp:component:interwiki-style"
+        ],
+        "attachments": [
+          {
+            "filename": "black-highlighter-logo.svg",
+            "source_path": "install/local/theme-lab/ports/scp-offices-theme/page-assets/black-highlighter-logo.svg",
+            "bytes": 6615,
+            "sha256": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          },
+          {
+            "filename": "scpoffices_logo.svg",
+            "source_path": "install/local/theme-lab/ports/scp-offices-theme/page-assets/scpoffices_logo.svg",
+            "bytes": 9665,
+            "sha256": "83529fbd5981bfa3e339b2487469def8c31b242e89154f5af95a7798e01b6706",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:scpedia",
+        "site": "scp-jp",
+        "action": "create",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/scpedia/candidate.wikidot.source.txt",
+          "sha256": "a03ffcf8189adfaf7d9e43fd3084c61957f9f4910a6096b32d9073ad699d70f8"
+        },
+        "source_authority_sha256": "a03ffcf8189adfaf7d9e43fd3084c61957f9f4910a6096b32d9073ad699d70f8",
+        "candidate_css_sha256": "68d1cdb84e515d1c7693a3663d70915f05e7bf5d4de3b9294f7c2a9774b21924",
+        "candidate_source_sha256": "a03ffcf8189adfaf7d9e43fd3084c61957f9f4910a6096b32d9073ad699d70f8",
+        "current_target": null,
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:scpedia",
+          "sha256": "195a9d70bbfed2cf6cb177aec6b7f8f236c7ca161af19b040d1a653f8da16284",
+          "updated_at": "2026-04-12T05:22:44+00:00"
+        },
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:sigma",
+        "site": "scp-jp",
+        "action": "create",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/sigma/candidate.wikidot.source.txt",
+          "sha256": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23"
+        },
+        "source_authority_sha256": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23",
+        "candidate_css_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "candidate_source_sha256": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23",
+        "current_target": null,
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:sigma",
+          "sha256": "e2f126ba6f6debd4cbde5f1712f04da794e2820f0180a6501b54dbe4e318639c",
+          "updated_at": "2025-10-09T22:11:04+00:00"
+        },
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:site",
+        "site": "scp-jp",
+        "action": "create",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/site/candidate.wikidot.source.txt",
+          "sha256": "b62171f0df44d62ebe3af75eca1cb53ef854f0b8e747dedade2ed0ee399e9c48"
+        },
+        "source_authority_sha256": "b62171f0df44d62ebe3af75eca1cb53ef854f0b8e747dedade2ed0ee399e9c48",
+        "candidate_css_sha256": "28a72ef325901611e12a505fa1e94ea40a315c80cb316f787d6ec6c2ee3606a4",
+        "candidate_source_sha256": "b62171f0df44d62ebe3af75eca1cb53ef854f0b8e747dedade2ed0ee399e9c48",
+        "current_target": null,
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:site",
+          "sha256": "17f5d83fc92f3f171fcdb790f78fe207db86203eeca1e34f508631fb36daca34",
+          "updated_at": "2026-05-22T09:04:20+00:00"
+        },
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:skipos",
+        "site": "scp-jp",
+        "action": "create",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/skipos/candidate.wikidot.source.txt",
+          "sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507"
+        },
+        "source_authority_sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507",
+        "candidate_css_sha256": "4c937d03bc1365ea16418f20c086048139954971435cabb60cfecb36485dc810",
+        "candidate_source_sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507",
+        "current_target": null,
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:skipos",
+          "sha256": "846904b0214ea2a126cccdd984834608efc30236df82ebd3b1b86da36c8969dd",
+          "updated_at": "2026-04-12T05:29:02+00:00"
+        },
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:space",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/space/candidate.wikidot.source.txt",
+          "sha256": "20d4d9c98052fc76fcf8573505509dc4d49c3b4852e2ea99580218ad34afe3a7"
+        },
+        "source_authority_sha256": "20d4d9c98052fc76fcf8573505509dc4d49c3b4852e2ea99580218ad34afe3a7",
+        "candidate_css_sha256": "1df89c43e1a5d880ac726dd3529fb0cd9bf5abf6513cb84c4a3544e390fed286",
+        "candidate_source_sha256": null,
+        "current_target": {
+          "status": "present",
+          "revision": null,
+          "revisions": null,
+          "updated_at": "2024-07-04T11:38:26+00:00",
+          "source_sha256": "63bee9d3876ac78335c8a587c63b719efea9d3a9ab1bf945bdd807ce1f554c5d",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "install/local/theme-lab/ports/space/manifest.json#/source_identity/jp"
+        },
+        "upstream": null,
+        "dependencies": [
+          "component:sigma-plus"
+        ],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:turbo-vision",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/turbo-vision/candidate.wikidot.source.txt",
+          "sha256": "69e1fa9c6a57ca01097a29beab1f58b67741f9e53f958e95616fb5f7b559e589"
+        },
+        "source_authority_sha256": "69e1fa9c6a57ca01097a29beab1f58b67741f9e53f958e95616fb5f7b559e589",
+        "candidate_css_sha256": "4ea34f42f05c6f1f845811620cdcd73395860284adeac42b847f385aa24e1cd3",
+        "candidate_source_sha256": "69e1fa9c6a57ca01097a29beab1f58b67741f9e53f958e95616fb5f7b559e589",
+        "current_target": {
+          "status": "present",
+          "revision": 6,
+          "revisions": null,
+          "updated_at": "2026-09-24T10:35:51+00:00",
+          "source_sha256": "ca80e76ee545e00f11d7d2145aa43942b83910dea9b5db2a854b9aabed6e7e0b",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:turbo-vision",
+          "sha256": "c28a37187cdc6bcb768921c8a05f805b18d153a929411db17971dd8e9019f97f",
+          "updated_at": "2026-04-12T05:37:45+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:component:toggle-sidebar",
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:theme:turbo-vision",
+          ":scp-jp:theme:turbo-vision blocks=-",
+          "component:image-block",
+          ":scp-jp:component:image-block@@"
+        ],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:wikifot",
+        "site": "scp-jp",
+        "action": "create",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/wikifot/candidate.wikidot.source.txt",
+          "sha256": "403335fe611db4be2ef13a0349e8215dade54727318494551221bb5671cc5e55"
+        },
+        "source_authority_sha256": "403335fe611db4be2ef13a0349e8215dade54727318494551221bb5671cc5e55",
+        "candidate_css_sha256": "738099d2701ec214769009074f34e060a0d05f6b7999e36aeeccc9ec833e1c9d",
+        "candidate_source_sha256": "403335fe611db4be2ef13a0349e8215dade54727318494551221bb5671cc5e55",
+        "current_target": null,
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:wikifot",
+          "sha256": "406f9fdca96043830e4656383a55643885cf1bd55a2237c360ce5c1f14d85a9e",
+          "updated_at": "2024-07-05T14:55:30+00:00"
+        },
+        "dependencies": [],
+        "attachments": [
+          {
+            "filename": "table.png",
+            "source_path": "install/local/theme-lab/ports/wikifot/page-assets/table.png",
+            "bytes": 17211,
+            "sha256": "61d58db78f6aec50335ca228add57a43332a69a01078beb3235b39645452057a",
+            "action": "upload-as-page-attachment",
+            "prerequisite": "required-before-publication"
+          }
+        ],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:y2k",
+        "site": "scp-jp",
+        "action": "update",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/y2k/candidate.wikidot.source.txt",
+          "sha256": "267413c5754294971d048457f9712b6929d5421ffe2d3e54dfa47c47140e8bf0"
+        },
+        "source_authority_sha256": "267413c5754294971d048457f9712b6929d5421ffe2d3e54dfa47c47140e8bf0",
+        "candidate_css_sha256": "65f2796fb65882751c4b2d521878ddb78a6a542425023a9a83eea30a90a92f5e",
+        "candidate_source_sha256": "267413c5754294971d048457f9712b6929d5421ffe2d3e54dfa47c47140e8bf0",
+        "current_target": {
+          "status": "present",
+          "revision": 3,
+          "revisions": null,
+          "updated_at": "2026-09-24T20:25:44+00:00",
+          "source_sha256": "49187df24c3c7c454aa0a01eeec6f33e2f625074495bbb91c1f2d7b811705aab",
+          "live_serialized_source_sha256": null,
+          "provenance_record": "publication/dependency-graph.json#/nodes[].current_jp_source"
+        },
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:y2k",
+          "sha256": "c2c102c15afbf03460f7045110a8d70c0615020e459c647a4ad82651ab649c8a",
+          "updated_at": "2025-12-20T09:19:59+00:00"
+        },
+        "dependencies": [
+          ":scp-jp:component:interwiki-style",
+          ":scp-jp:credit:start-preview",
+          ":scp-jp:credit:end-preview",
+          ":scp-jp:theme:y2k",
+          "component:image-block name= http://scp-jp-storage.wikidot.com/local--files/file:4094174-4-k55r/logo.png"
+        ],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      },
+      {
+        "id": "theme:yossistyle",
+        "site": "scp-jp",
+        "action": "create",
+        "freeze_snapshot_status": "source-dependency-reviewed-final-acceptance-pending",
+        "source": {
+          "path": "install/local/theme-lab/ports/yossistyle/candidate.wikidot.source.txt",
+          "sha256": "c9987477d0e9079b7b15c55ac608b853e69c970484dc2b5b0e6f3cd6565c442c"
+        },
+        "source_authority_sha256": "c9987477d0e9079b7b15c55ac608b853e69c970484dc2b5b0e6f3cd6565c442c",
+        "candidate_css_sha256": "84a214fc85344d262727f624b6319e2a4bdfa6537bd49ebd8678d854f009faab",
+        "candidate_source_sha256": "c9987477d0e9079b7b15c55ac608b853e69c970484dc2b5b0e6f3cd6565c442c",
+        "current_target": null,
+        "upstream": {
+          "site": "scp-wiki",
+          "slug": "theme:yossistyle",
+          "sha256": "561228038e46e76ab45e61d95570e82519bceea1aa5233addbbec324601ca4d4",
+          "updated_at": "2021-09-11T01:27:54+00:00"
+        },
+        "dependencies": [],
+        "attachments": [],
+        "acceptance_basis": [
+          "current frozen candidate-set Sigma-9/Sigma-10 acceptance"
+        ]
+      }
+    ],
+    "attachments": [
+      {
+        "node": "theme:aesthetic-theme",
+        "filename": "AESTHETIC_logo.svg",
+        "source_path": "install/local/theme-lab/ports/aesthetic-theme/page-assets/AESTHETIC_logo.svg",
+        "bytes": 15578,
+        "sha256": "64ca862d41f0aebc7f0fc6c9f0af82bc93b0dba29fc87e83bf18e9a8ba58c8e7",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:aesthetic-theme",
+        "filename": "black-highlighter-logo.svg",
+        "source_path": "install/local/theme-lab/ports/aesthetic-theme/page-assets/black-highlighter-logo.svg",
+        "bytes": 6615,
+        "sha256": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:basalt",
+        "filename": "basalt-theme-logo.svg",
+        "source_path": "install/local/theme-lab/ports/basalt/page-assets/basalt-theme-logo.svg",
+        "bytes": 5451,
+        "sha256": "3baf62c62621629c69f22433651572da5fd917e276e5953ae4eebd75b7ca99b2",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:black-highlighter-theme",
+        "filename": "black-highlighter-logo.svg",
+        "source_path": "install/local/theme-lab/ports/black-highlighter-theme/page-assets/black-highlighter-logo.svg",
+        "bytes": 6615,
+        "sha256": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:classic",
+        "filename": "base_image_frame.png",
+        "source_path": "install/local/theme-lab/ports/classic/page-assets/base_image_frame.png",
+        "bytes": 2283,
+        "sha256": "c5a79a414173aa6ccd5013fea65aae666b35826b53c30e0a20b4534f475e5a6f",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:classic",
+        "filename": "scp_foundation_logo.png",
+        "source_path": "install/local/theme-lab/ports/classic/page-assets/scp_foundation_logo.png",
+        "bytes": 9225,
+        "sha256": "975a510eefe55e44930b50076b7c4e729c202e0d7f4c9049cd90e38a70516ed0",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:extra-black-highlighter-theme",
+        "filename": "black-highlighter-logo.svg",
+        "source_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/page-assets/black-highlighter-logo.svg",
+        "bytes": 6615,
+        "sha256": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:flopstyle-dark",
+        "filename": "alt_logo_tyrian.png",
+        "source_path": "install/local/theme-lab/ports/flopstyle-dark/page-assets/alt_logo_tyrian.png",
+        "bytes": 17814,
+        "sha256": "0d1e21c24a9092515ec777ee45760bc711f85a4ad5049d4d62b0a987f81ac407",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:flopstyle-dark",
+        "filename": "scp_foundation_logo.png",
+        "source_path": "install/local/theme-lab/ports/flopstyle-dark/page-assets/scp_foundation_logo.png",
+        "bytes": 9225,
+        "sha256": "975a510eefe55e44930b50076b7c4e729c202e0d7f4c9049cd90e38a70516ed0",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "canada_dark-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/canada_dark-JP.png",
+        "bytes": 67295,
+        "sha256": "5b21d465f3108d573b11d651d11ded55751b99e63195d272530651ba23726ba0",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "canada_light-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/canada_light-JP.png",
+        "bytes": 66220,
+        "sha256": "7557a168960706abff94ffa6023a5ae977649d5e8ae0905fcc662dd3b4ed5e3d",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "fishing_dark-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/fishing_dark-JP.png",
+        "bytes": 66696,
+        "sha256": "58c241c1bf7914e763334443cef3a23444ec4c1252bcb539a01ae01c7077c54d",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "fishing_light-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/fishing_light-JP.png",
+        "bytes": 61957,
+        "sha256": "bde8bf5d2c40f3b2b7b6b440f5d9cf136275e28688fece77ae2e5743a5903565",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "goc_dark-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/goc_dark-JP.png",
+        "bytes": 67949,
+        "sha256": "29d24f580ebc75cacd907119395368075ca63d04f19807db4c6476b84f95bf75",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "goc_light-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/goc_light-JP.png",
+        "bytes": 66505,
+        "sha256": "ae136ebd2d5e00dded63907f373bbb29c3bb67ab15dd7c4b261e636837efed4c",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "hybrasil_dark-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/hybrasil_dark-JP.png",
+        "bytes": 93569,
+        "sha256": "a62e82cfc8b8721b8ed93ece934cc9ca58a882ceaa19db6a47d5e78e1b0b647a",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "hybrasil_light-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/hybrasil_light-JP.png",
+        "bytes": 97774,
+        "sha256": "739a8f6f2c6eecfe275d6d7b8d32fb36d7caced4ed5dc977cbb429fcf50919fa",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "nightfall_dark-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/nightfall_dark-JP.png",
+        "bytes": 54725,
+        "sha256": "4d7b21765130662fc1127eb0bd8657ab74ea10039967e0e1b95dd27563dec631",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "nightfall_light-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/nightfall_light-JP.png",
+        "bytes": 18673,
+        "sha256": "a48444c067a9b8f8eb7169175a9651e8d4563e3ca632a7062c5de156ad5497ee",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "overwatch_dark-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/overwatch_dark-JP.png",
+        "bytes": 54778,
+        "sha256": "a1c43f76d90909b4e0d88465c4c38077ab22f4134e79b3bf49b64d04c4e17760",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "overwatch_light-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/overwatch_light-JP.png",
+        "bytes": 14163,
+        "sha256": "8fedc09672684735671d09fa6940808553fe80d27eccaf0a043b337b310c143d",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "poland_dark-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/poland_dark-JP.png",
+        "bytes": 71846,
+        "sha256": "ed55e8d4f13187a45a065914d4c756d360dea4fdbc7594b6c3db2bd9c3f644a3",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "poland_light-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/poland_light-JP.png",
+        "bytes": 60908,
+        "sha256": "ba64644d32f217fd57b7777ed7a8aa1dbd1e24dd7ad4d21f61ddc44781589a54",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "slothspit_dark-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/slothspit_dark-JP.png",
+        "bytes": 85314,
+        "sha256": "060e75de6b3488c5bfcab1e1362dded4dfaecc1d0875b06f0f5583726f365305",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "slothspit_light-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/slothspit_light-JP.png",
+        "bytes": 82144,
+        "sha256": "d8e40b36106b3bb1525775bc6dc12b71441348dd80fe4eba4ff13e930c57ab42",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "spc_dark-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/spc_dark-JP.png",
+        "bytes": 68745,
+        "sha256": "8ddc3500d4375fc6dfab44bc9b318817acbc8955f42afa8ed5b653be6f84e54d",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "spc_light-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/spc_light-JP.png",
+        "bytes": 68351,
+        "sha256": "05c8d142b7ac7a752804aa65ff738ece4592ebbb827ce85a6e7ea96544519844",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "spooky_dark-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/spooky_dark-JP.png",
+        "bytes": 74095,
+        "sha256": "37ce528638b7f5bc5334d691ce5e5b6a6ad9c13736d22136943f6dee6a0e2908",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "spooky_light-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/spooky_light-JP.png",
+        "bytes": 77430,
+        "sha256": "4a8557fde9fe00f2f840bbbe3dccbda38c49d6cf9b1ab6c02ecd12ad07b1200b",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "threshold_dark-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/threshold_dark-JP.png",
+        "bytes": 54586,
+        "sha256": "ccbdcd07ac6f1592973a81c4045d269cdbdbf9aa931ac8deafbe1377c7d877ce",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "threshold_light-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/threshold_light-JP.png",
+        "bytes": 46540,
+        "sha256": "3bccd3bbf06f609a0b20e106855a2562a10cd6ad394f8d558e27ef8ae336f991",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "vanguard_dark-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/vanguard_dark-JP.png",
+        "bytes": 81498,
+        "sha256": "077589c0ff6c4c77bf7b72ffefc820ec46078163bee12d3a0c5f71669766451c",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:foxtrot",
+        "filename": "vanguard_light-JP.png",
+        "source_path": "install/local/theme-lab/ports/foxtrot/page-assets/vanguard_light-JP.png",
+        "bytes": 86195,
+        "sha256": "85d57f2d3421928fbaf94af29707d4707bbfeb5a7d8ab51b60fd71e0d43f7303",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:hansarp",
+        "filename": "hansarplogo.png",
+        "source_path": "install/local/theme-lab/ports/hansarp/page-assets/hansarplogo.png",
+        "bytes": 20766,
+        "sha256": "7606a8868385d21bbad3105808e7c117017ddbdd91b719f2063471de7b0a5503",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:inkblot",
+        "filename": "pancakes.png",
+        "source_path": "install/local/theme-lab/ports/inkblot/page-assets/pancakes.png",
+        "bytes": 353234,
+        "sha256": "8eb0eabe37b5c0fcd4f402861b8634a4505224d5bfdaccb12af1a4d739735f0a",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:isolated-terminal",
+        "filename": "black-highlighter-logo.svg",
+        "source_path": "install/local/theme-lab/ports/isolated-terminal/page-assets/black-highlighter-logo.svg",
+        "bytes": 6615,
+        "sha256": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:monotypical",
+        "filename": "mono-dracula.png",
+        "source_path": "install/local/theme-lab/ports/monotypical/page-assets/mono-dracula.png",
+        "bytes": 38179,
+        "sha256": "695f4ad3654ba9a63585e61a94d740df4d340608842e93ce55e1940e6929d34a",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:monotypical",
+        "filename": "mono-nord.png",
+        "source_path": "install/local/theme-lab/ports/monotypical/page-assets/mono-nord.png",
+        "bytes": 37494,
+        "sha256": "6a0c47c302004321e8f7bf7df6e04e18f14ac037664e1ef8b194b235616de200",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:monotypical",
+        "filename": "mono-solarized.png",
+        "source_path": "install/local/theme-lab/ports/monotypical/page-assets/mono-solarized.png",
+        "bytes": 37054,
+        "sha256": "0830d0c7c6e4bcecb0863f88b35302c549167b41f171f2c4f9f263b49fed3b11",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:ouroborous-theme",
+        "filename": "black-highlighter-logo.svg",
+        "source_path": "install/local/theme-lab/ports/ouroborous-theme/page-assets/black-highlighter-logo.svg",
+        "bytes": 6615,
+        "sha256": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:ouroborous-theme",
+        "filename": "ouroborous_logo.png",
+        "source_path": "install/local/theme-lab/ports/ouroborous-theme/page-assets/ouroborous_logo.png",
+        "bytes": 172768,
+        "sha256": "6ce2cde35401f36f7d44966903821ee9df970033eb22d77979d21195dbaeabac",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:paperstack",
+        "filename": "lgtrans.png",
+        "source_path": "install/local/theme-lab/ports/paperstack/page-assets/lgtrans.png",
+        "bytes": 28725,
+        "sha256": "85bb999e3a059b8686f0b18df73636242976531b5991c2d3ca395d7dd6d6b12e",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:quand-le-soleil-se-couche",
+        "filename": "header-logo.png",
+        "source_path": "install/local/theme-lab/publication/themes/quand-le-soleil-se-couche/assets/header-logo.png",
+        "bytes": 368742,
+        "sha256": "e242245d05519a8b2b8d672837f580ce483ded9691f8f14c1c7653fc4c2a336a",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:quand-le-soleil-se-couche",
+        "filename": "body_bg_grey.png",
+        "source_path": "install/local/theme-lab/publication/themes/quand-le-soleil-se-couche/assets/body_bg_grey.png",
+        "bytes": 4099,
+        "sha256": "bec371b36d3f250ca4b45a03ab46d6a31a5536481ba334cd4ec06eb985db7b0a",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:redtape",
+        "filename": "black-highlighter-logo.svg",
+        "source_path": "install/local/theme-lab/ports/redtape/page-assets/black-highlighter-logo.svg",
+        "bytes": 6615,
+        "sha256": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:redtape",
+        "filename": "newtempest.png",
+        "source_path": "install/local/theme-lab/ports/redtape/page-assets/newtempest.png",
+        "bytes": 224475,
+        "sha256": "1a1be495a9cf1908e6ee84146afdbcea551d917185cd757b79188dc3dd82ebea",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:redtape",
+        "filename": "redtapeexample.png",
+        "source_path": "install/local/theme-lab/ports/redtape/page-assets/redtapeexample.png",
+        "bytes": 1410267,
+        "sha256": "d8a7b428d6d94523681d22f4955e71e415f8a2347e0b2a58972a254367b4a6f5",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:scp-offices-theme",
+        "filename": "black-highlighter-logo.svg",
+        "source_path": "install/local/theme-lab/ports/scp-offices-theme/page-assets/black-highlighter-logo.svg",
+        "bytes": 6615,
+        "sha256": "4cd40e7d6111296c9f4c6d066f63ef5b01301df18358889677cd182d76bfe593",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:scp-offices-theme",
+        "filename": "scpoffices_logo.svg",
+        "source_path": "install/local/theme-lab/ports/scp-offices-theme/page-assets/scpoffices_logo.svg",
+        "bytes": 9665,
+        "sha256": "83529fbd5981bfa3e339b2487469def8c31b242e89154f5af95a7798e01b6706",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      },
+      {
+        "node": "theme:wikifot",
+        "filename": "table.png",
+        "source_path": "install/local/theme-lab/ports/wikifot/page-assets/table.png",
+        "bytes": 17211,
+        "sha256": "61d58db78f6aec50335ca228add57a43332a69a01078beb3235b39645452057a",
+        "action": "upload-as-page-attachment",
+        "prerequisite": "required-before-publication"
+      }
+    ]
+  },
+  "targeted_scenarios": [
+    {
+      "id": "bhl-options-toggle-header-dark",
+      "theme": "theme:black-highlighter-theme",
+      "includes": [
+        "component:centered-header-bhl",
+        "component:toggle-sidebar-bhl",
+        "component:bhl-dark-sidebar"
+      ],
+      "required_source": [
+        "theme:black-highlighter-theme@rev74",
+        "component:centered-header-bhl@rev3",
+        "component:toggle-sidebar-bhl@rev3",
+        "post-close-menu Framerail runtime fingerprint",
+        "component:bhl-dark-sidebar@rev2 current target source ac6bdcbd357fda304db94439c8140a3e3b6fc379d4ba558ecf0add845e903357",
+        "component:bhl-dark-sidebar update candidate a00d21e5e4272ba0b598b59609f50523c7f0b7961f86d53f9d00a66566f72b7e"
+      ],
+      "states": [
+        "toggle-rest",
+        "toggle-corner-button-open",
+        "toggle-hover-after-button-open",
+        "toggle-keyboard-focus-open",
+        "toggle-mobile-target-open",
+        "toggle-mobile-close-menu",
+        "toggle-narrow-target-open",
+        "normal/hover/focus/current dark-sidebar links",
+        "centered desktop/mobile/narrow composition"
+      ],
+      "viewports": [
+        "1280x900",
+        "390x844",
+        "320x740"
+      ],
+      "engine_scope": {
+        "chromium": "all listed states and viewports",
+        "firefox_webkit": "targeted desktop hover/focus/:target/close interaction states"
+      },
+      "current_authority_sha256": "32390ce05b5d1d0bd1622eda6d03370e3e4f777377b908a35c2726343e6b52a5",
+      "candidate_source_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
+      "candidate_css_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
+      "visual_review": {
+        "path": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json",
+        "sha256": "8ff2d95035a525a971dbe2e27bf413d61045cf4cbc39caa97d60425e0116f46b"
+      },
+      "receipts": [
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "sha256": "be310c902b619a20b2330d5886cbca25c26537e35d66632c8942466d6b7ea3f1"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+          "sha256": "f592ed931269b068a867f9054cd066899763a0ad98c02826fae44a10c988b2a2"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+          "sha256": "2a54dbb29fe7433cdc3c56f9e345b3a02c8cf41344d8cbbadcef6d5e73238ed5"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "sha256": "4b91bad5287c44e6ce92b38b89fba1c225e7ca1ac850943421bf1e3976700b47"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+          "sha256": "779356860d63b5884471b234ef7d18d5679854cbaee5a13e729f2d6d195a8ba9"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+          "sha256": "5d2f5df795355edfc25605b5be536162333079b83b2c4c241fb188fbc6221aec"
+        }
+      ]
+    },
+    {
+      "id": "bhl-options-collapsible-sidebar",
+      "theme": "theme:black-highlighter-theme",
+      "includes": [
+        "component:collapsible-sidebar"
+      ],
+      "required_source": [
+        "theme:black-highlighter-theme@rev74",
+        "component:collapsible-sidebar@rev4",
+        "fragment:collapsible-sidebar-bhl@rev5 pinned dynamic result",
+        "post-close-menu Framerail runtime fingerprint"
+      ],
+      "states": [
+        "collapsible-rest",
+        "collapsible-hover-expanded",
+        "collapsible-keyboard-focus-expanded",
+        "collapsible-nested-entry",
+        "collapsible-closed",
+        "collapsible-mobile",
+        "collapsible-narrow-mobile"
+      ],
+      "viewports": [
+        "1280x900",
+        "390x844",
+        "320x740"
+      ],
+      "engine_scope": {
+        "chromium": "all listed states and viewports",
+        "firefox_webkit": "desktop interaction states only where source exercises hover/focus/:target/transform behavior; no duplicate styling-only or mobile captures"
+      },
+      "current_authority_sha256": "32390ce05b5d1d0bd1622eda6d03370e3e4f777377b908a35c2726343e6b52a5",
+      "candidate_source_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
+      "candidate_css_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
+      "visual_review": {
+        "path": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json",
+        "sha256": "8ff2d95035a525a971dbe2e27bf413d61045cf4cbc39caa97d60425e0116f46b"
+      },
+      "receipts": [
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "sha256": "d903074c60bc4fef51fa14fc66b07ba4742263f452ccb1c47827c25fa7e6b057"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
+          "sha256": "2a207b2da20ac46a395db290a912e6238dd9b3e47fadb6fdb39813d241725f2b"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
+          "sha256": "1c68e0ecf89f1158252a2f0ad06f378213c8cb07fd087e1fc49c7d98d91e43de"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "sha256": "ce23b58b24102b993463e1220001bad5f03ac2abfb5fe2b80375e153cc7dfc61"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
+          "sha256": "b128fd3cce22317074070781f3e05e3f503cb4505885c795c5c6fab85b4a7b6d"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
+          "sha256": "0b63722ae50b67990152fe9d16f6607920cf7710ee8f10e802b44750a9294dc3"
+        }
+      ]
+    }
+  ],
+  "supplemental_rich_body_review": {
+    "status": "reviewed-with-known-synthetic-stress-variance",
+    "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36",
+    "sigma9_run_contract_sha256": "d74f3e5715d08999740ed45ad5371355384d4f066803ff6b0c2a57bcd61825a9",
+    "capture_receipt": {
+      "path": "install/local/theme-lab/ports/current-acceptance/rich-body-probe-20261006/receipt.json",
+      "sha256": "0551b1ab358691d6336d53b367b98c45d47b35ae181dc01ee61949ec897ec646"
+    },
+    "baseline_receipt": {
+      "path": "install/local/theme-lab/ports/current-acceptance/rich-body-probe-20261006/baseline-receipt.json",
+      "sha256": "d1995a22515a23f29879d5341288c3e1e387a27378ae59fddccf9d5b98a783b7"
+    },
+    "visual_review": {
+      "path": "install/local/theme-lab/ports/current-acceptance/rich-body-probe-20261006/visual-review.json",
+      "sha256": "8dc29e12183a956f883d3282f3079f579fd991e278dcfd65206a596e167c6d0e"
+    },
+    "candidate_themes": 36,
+    "viewports": [
+      "320px",
+      "390px"
+    ],
+    "runtime": {
+      "framerail_source_sha256": "d67899e66baa58c3504ec8d93fb81bfb31509c80eb8d4785b93fbb9974127caa",
+      "deepwell_identity_sha256": "33db6564f49af2ef3afb9769ce3bcbee1f8e2cb92efd710b7e6f50c3b1bc7a2e"
+    },
+    "verified_features": [
+      "h1-h6",
+      "nested ordered and unordered lists",
+      "semantic blockquote",
+      "blockquote class",
+      "five-column table",
+      "480-character code",
+      "128-character uninterrupted link label",
+      "scp-image-block and loaded local fixture image",
+      "caption",
+      "two footnotes and generated footnote block",
+      "expanded collapsible"
+    ],
+    "known_synthetic_stress_variance": "Some fonts/link styles enlarge an intentionally unbroken label. Baseline has 516px overflow at 320 and 449px at 390; this probe is a diagnostic stress case, not a new publication defect by itself.",
+    "still_unverified": [
+      "bibliography module behavior: current Deepwell preview leaves [[bibliography]] literal; no theme presentation claim is made for it"
+    ],
+    "note": "Supplemental only; it does not change the frozen main fixture or replace either final matrix."
+  },
+  "publication_preconditions": [
+    "Before any update, confirm the live SCP-JP target still matches the listed current revision/source identity; if it moved, refresh that node before writing.",
+    "Upload each listed attachment to its target filename before creating or updating its page source.",
+    "Follow every publish-before edge; reuse-existing and retain-cross-wiki nodes are not page-write actions.",
+    "Freeze-time status strings remain historical; use this final acceptance overlay for current acceptance state.",
+    "Any change to publication source or candidate CSS after this freeze invalidates acceptance for that changed candidate."
+  ],
+  "post_freeze_target_visual_reviews": [
+    {
+      "package": "al-slop",
+      "purpose": "Current real-Wikidot mobile navigation A/B; directly reviewed all 16 screenshots at 320px and 390px.",
+      "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36",
+      "candidate_source_sha256": "f6809160ccf1b35e74340d5e0421efecf8585246310203debbb5f0727b95eb8b",
+      "candidate_css_sha256": "00a8fff90043b8cc9164700b07080367ec1c29d29529635e34e6404a071e21e9",
+      "capture_receipt": {
+        "path": "ports/authority-evidence/al-slop-current-navigation-20261007/receipt.json",
+        "sha256": "3963394b0152ff3b85e0d732684ae94628a2470b047f9870ebebf6f910a39c8f"
+      },
+      "visual_review": {
+        "path": "ports/authority-evidence/al-slop-current-navigation-20261007/visual-review.json",
+        "sha256": "8eb6bd37c4d13c5c8dd051d2ff985614856e37d76f6a0ce82cdbf20b76e93850"
+      }
+    },
+    {
+      "package": "flopstyle-dark",
+      "purpose": "Current Sigma-10 real-Wikidot credit/otherwise return-control A/B; directly reviewed all four screenshots at 320px and 390px.",
+      "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36",
+      "candidate_source_sha256": "2b9004a9304ed089aa69da78d140bc03aa333b792751b57133d7429b499aa1e3",
+      "candidate_css_sha256": "cfb5865dd28e562413dc1cbed44ace29ff4d08eb4bdc8daafcfc87b4e98c8161",
+      "capture_receipt": {
+        "path": "ports/authority-evidence/flopstyle-dark-rev401-sigma10-credit-otherwise-20261007/receipt.json",
+        "sha256": "97dc419cb87bf6420f448e363c657d4aecab1bad8f8b005d486b0c454305dbdd"
+      },
+      "visual_review": {
+        "path": "ports/authority-evidence/flopstyle-dark-rev401-sigma10-credit-otherwise-20261007/visual-review.json",
+        "sha256": "0ef847a90756f270111e2a05e9bc7d4b44f636d183016c812c9b2558b58e8ebf"
+      }
+    },
+    {
+      "package": "space",
+      "purpose": "Current real-Wikidot mobile navigation A/B; directly reviewed all 16 screenshots at 320px and 390px. The longest EN submenu continues below the captured viewport; lower-item scrolling is outside this review.",
+      "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36",
+      "candidate_source_sha256": "20d4d9c98052fc76fcf8573505509dc4d49c3b4852e2ea99580218ad34afe3a7",
+      "candidate_css_sha256": "1df89c43e1a5d880ac726dd3529fb0cd9bf5abf6513cb84c4a3544e390fed286",
+      "capture_receipt": {
+        "path": "ports/authority-evidence/space-current-navigation-20261007/receipt.json",
+        "sha256": "75bea91f3610e040ba19929dd30019c3d13ffb370a97de11092b07088b8359b8"
+      },
+      "visual_review": {
+        "path": "ports/authority-evidence/space-current-navigation-20261007/visual-review.json",
+        "sha256": "700ee70d2a803d6001a03fc69cd79e0c789e96a18815b1acb8b6c5559e4073d0"
+      }
+    }
+  ],
+  "post_freeze_visual_review_payload_policy": "The exact PNG screenshots, capture receipts, and review manifests are retained. Receipts preserve row-specific DOM SHA-256 values; bulky compressed per-state DOM payloads are omitted from the tracked supplemental bundle."
+}

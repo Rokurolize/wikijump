@@ -28,9 +28,9 @@
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/hansarp",
-  "candidate_source_hash": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
+  "candidate_source_hash": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
   "source_candidate_path": "install/local/theme-lab/ports/hansarp/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
+  "source_candidate_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -38,11 +38,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/hansarp/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
+  "candidate_source_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
   "human_port_candidate_path": "install/local/theme-lab/ports/hansarp/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "d779b6aa54d2983d24a74a5f80c5a961abad8a5152eec360d3541c38185a7fc5",
-  "candidate_preview_sha256": "5f25d745ece55cc484cb389137b7b5ee3d104699fe42e48c593a52b67159b8f1",
-  "candidate_css_sha256": "2639935e21dfcf9175b4a4a431abd1b62313a3c2d3fdf174d5f831a72d3929ac",
+  "candidate_preview_sha256": "c4c5954f86bf330d7014c6ecbe1643e1c7370bb08d48e6492e5c13d2c338508b",
+  "candidate_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319",
   "page_assets": [
     {
       "filename": "hansarplogo.png",
@@ -79,7 +79,7 @@
     "source_evidence": "candidate screenshots visibly rendered unresolved SCP-EN usernames against SCP-JP identity links; preserve display names and freeze upstream/human-port originals"
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/hansarp/assets.json",
-  "asset_dependency_decision_count": 39,
+  "asset_dependency_decision_count": 49,
   "page_asset_dependency_decisions_path": "install/local/theme-lab/ports/hansarp/page-assets.json",
   "historical_acceptance": {
     "status": "SUPERSEDED_CANDIDATE",
@@ -93,10 +93,15 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/hansarp/accepted-result.json",
+    "sha256": "341db0ae35aa7ae62c3f5b68fb848fe4ab3fd7a27219a3c2a3153a9cd7712926"
+  }
 }

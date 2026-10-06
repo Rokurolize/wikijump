@@ -42,7 +42,7 @@
   "human_port_candidate_path": "install/local/theme-lab/ports/redtape/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "c0dab5aed78cfb4688cd7b452e8cbc5dfdcd4b4da6f4a3eb94ee13cf3970a0d6",
   "candidate_preview_sha256": "770aa44e13226adf2acb3091effcb034e42bf8eb1f87ae3cbeef09ed40ffca81",
-  "candidate_css_sha256": "148094fb643ed7bc5bf743e0d85aa94a0793072867ff94ff8702e55e6dca6f34",
+  "candidate_css_sha256": "e68651742177907f32d7870a383a86a432159fe581e4a005e1d9f1a0da227016",
   "page_assets": [
     {
       "filename": "black-highlighter-logo.svg",
@@ -117,10 +117,15 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/redtape/accepted-result.json",
+    "sha256": "e846dd86332a3d3265a3e8ba104eab18717ecd11906a915c0d446b4990f6b391"
+  }
 }

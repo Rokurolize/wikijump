@@ -54,39 +54,5 @@
   "pruned_fonts": [],
   "template_placeholders": [],
   "asset_replacements": {},
-  "omitted_assets": [],
-  "dependency_decisions": [
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.gstatic.com/s/vollkornsc/v12/j8_v6-zQ3rXpceZj9cqnVhF5.ttf",
-      "sha256": "2f644d4bffc7faf274eccc9e8d416999c46509cd20be056457dcd10812653205",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-45-fiuq/background.png",
-      "sha256": "c9744d457b141368d85c2de09acb787b3089475f3410599811bd21736b62696e",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A8260379-45-w138/logo.png",
-      "sha256": "e36011c468a54c8f8226156ef3550e9b342bb033d82ffc779cf0efbd8e48095d",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://fonts.googleapis.com/css2?family=Vollkorn+SC&display=swap",
-      "sha256": "888795d810a02d2330547b09d17078fdd0111f72594b8373dd1ec9fbd5e408d6",
-      "asset_file": "888795d810a02d2330547b09d17078fdd0111f72594b8373dd1ec9fbd5e408d6.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-jp.wdfiles.com/local--code/theme%3Amuch-cool/1",
-      "sha256": "f911fa26eda01ef225b3478c626610fdd81f74454cd588fc657fd9cf00f64aee",
-      "asset_file": "f911fa26eda01ef225b3478c626610fdd81f74454cd588fc657fd9cf00f64aee.css",
-      "decision": "freeze-source-stylesheet"
-    }
-  ]
+  "omitted_assets": []
 }

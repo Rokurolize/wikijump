@@ -16,6 +16,7 @@ import {fileURLToPath} from "node:url";
 import {loadChromium} from "../src/browser-lab.mjs";
 import {ReferenceCache} from "../src/reference-cache.mjs";
 import {startSessionServer} from "../src/session-server.mjs";
+import {TARGET_ACCEPTANCE_CONTRACT_SHA256} from "../src/target-acceptance-contract.mjs";
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(MODULE_DIR, "../../../..");
@@ -260,6 +261,7 @@ test("full viewport acceptance does not attribute inherited preview overflow to 
     assert.ok(narrow.viewport_escape_px > 1);
     assert.equal(narrow.viewport_escape_px, narrow.baseline_viewport_escape_px);
     assert.equal(narrow.status, "pass");
+    assert.equal(verdict.target_acceptance_contract_sha256, TARGET_ACCEPTANCE_CONTRACT_SHA256);
     assert.ok(!verdict.top_issues.some((issue) => issue.kind === "viewport_overflow"));
   }, {previewClient});
 });

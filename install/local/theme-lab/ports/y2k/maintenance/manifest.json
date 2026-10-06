@@ -284,7 +284,7 @@
         },
         {
           "path": "y2k/existing-jp.wikidot.txt",
-          "sha256": "da489a08caa3f51ed73125e40b823a1e5e647a711769d6962721ef4a958191d5",
+          "sha256": "49187df24c3c7c454aa0a01eeec6f33e2f625074495bbb91c1f2d7b811705aab",
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]

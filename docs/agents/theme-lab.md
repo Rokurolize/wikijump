@@ -101,10 +101,48 @@ visual judgments; full package and runtime/source safety gates still apply.
 ## Authority rules
 
 - A foreign theme's **Wikidot source**, not its rendered HTML, is the source
-  authority. For a new/refresh acquisition, use
+  authority. **Before live acquisition, check the machine-wide shared Wikidot
+  corpus first.** On the current workstation its root is
+  `/home/roku/src/Rokurolize/scp-wiki-translation/corpus`; read
+  `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/README.md` for the
+  storage/freshness contract. Normal page sources live at
+  `<branch>/pages/<slug>/source.wikidot.txt`, with sibling metadata/current
+  snapshot files. For example:
+
+  - `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/component:betterfootnotes/source.wikidot.txt`
+  - `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/component:betterfootnotes/source.wikidot.txt`
+  - `/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:basalt/source.wikidot.txt`
+
+  The corpus is the **shared storage owner**, not an automatic freshness
+  oracle. Compare its `meta.json` (`revisions`, `updated_at`), `current.json`,
+  and run provenance against any later
+  retained live observation already present in Theme Lab or another
+  repository. When freshness is in doubt, use the local `wikidot.py` high-level
+  page read as an independent live cross-check: compare `page.revisions_count`
+  and `page.updated_at` with the corpus metadata (and `page.latest_revision`
+  when the exact latest-revision identity matters). Raw source SHA-256 alone is
+  not a sufficient ordering signal across different acquisition transports,
+  because equivalent source can be serialized with different whitespace or
+  line-ending bytes. If Theme Lab has a later source observation, treat that as
+  evidence that the corpus page is stale and refresh the corpus slug before
+  proceeding. If the required slug is present and sufficiently current for the
+  task, use that retained source instead of re-fetching it into `/tmp` or
+  inventing another package-local snapshot. If it is absent or demonstrably stale, use the
+  acquisition owner under
+  `/home/roku/src/Rokurolize/scp-wiki-translation`
+  (`scripts/fetch_wikidot.py`, `scripts/corpus_sync.py`,
+  `scp_wiki_wikidot/`) as appropriate to the task. That code can fall back
+  to the local `wikidot.py` fork at
+  `/home/roku/src/Rokurolize/wikidot.py`; its `AGENTS.md` points to
+  `llms.txt`, including the direct read-only
+  `site.page.get(slug).source.wiki_text` API.
+- For an explicit Theme Lab evidence acquisition that is not already owned by
+  the shared corpus, use
   `install/local/theme-lab/scripts/acquire_wikidot_source.py` or an equivalent
   retained source artifact. The helper performs the observed anonymous
-  `viewsource/ViewSourceModule` read and records page/source identity.
+  `viewsource/ViewSourceModule` read and records page/source identity. Do not
+  let a convenient Theme Lab helper hide the fact that another repository may
+  already own a fresher source snapshot.
 - Rendered foreign pages are browser/reference evidence. Acquire them once
   through Theme Lab and use local replay for iteration.
 - An existing SCP-JP port is evidence to inspect, not automatically the

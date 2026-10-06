@@ -44,7 +44,7 @@
     },
     "existing_jp_audit": "new-jp-candidate-verified",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn"
   },
   "dependencies": {
     "slug": "theme:basalt",
@@ -133,7 +133,7 @@
       "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; "
     }
   ],
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/basalt/assets.json",
   "asset_dependency_decision_count": 244,
@@ -164,8 +164,10 @@
       "showcase_css_modules_removed_exact": 1,
       "showcase_css_modules_removed_truncated": 0,
       "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 4,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "78b8bd21dce4bb8130ae89f7e9b825163ddbcd7abab6ff33a621a0d7293ae581",
+      "candidate_css_sha256": "c1b44963493737105ecb19c33bb49a41c4b931c09a9b3dbecde0562b0f942823",
       "asset_receipt_path": "assets.json",
       "assets": 237,
       "imports": 6,
@@ -176,7 +178,7 @@
     },
     "source_css_includes": {
       "manifest": "source-css-includes.json",
-      "materialized_css_sha256": "920d7ae67987df51ae4d45035bbbcca9d1bfd130e0f99d653d54c5299198ad51",
+      "materialized_css_sha256": "a3b020cf413cb0b48f125a3dda4a20d61565e3cf5d1e376e23f94102c298baea",
       "cascade": "before-main-source-css",
       "public_writes": 0
     }
@@ -186,7 +188,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

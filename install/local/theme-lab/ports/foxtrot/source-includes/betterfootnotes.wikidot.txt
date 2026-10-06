@@ -78,7 +78,7 @@ https://scp-jp.wikidot.com/fragment:black-highlighter-theme-source
 .fnnum {
     display: inline-block;
     width: max-content;
-    text-indent: -0.285ch;
+    text-indent: -0.475ex;
     vertical-align: super;
     line-height: 80%;
     word-break: initial;
@@ -88,9 +88,10 @@ https://scp-jp.wikidot.com/fragment:black-highlighter-theme-source
     color: transparent;
     position: relative;
     font-size: 80%;
-    padding: .15em .1em .15em 0;
+    padding: .15em .05em;
     margin-right: -0.25em;
     counter-increment: megacount;
+    -webkit-user-select: none;
     user-select: none;
 }
 .fnnum::after {
@@ -108,11 +109,13 @@ https://scp-jp.wikidot.com/fragment:black-highlighter-theme-source
 .fncon {
     position: absolute;
     right: calc(var(--posX) + 80px);
-    line-height: 1.2;
-    padding: 0.82rem;
-    width: 10.3rem;
+    line-height: 1.25;
+    padding: 0.8125rem;
+    width: 12.5rem;
+    box-sizing: border-box;
     background: white;
-    border: 2px solid black;
+    border: .125rem solid black;
+    font-size: .9125rem;
     font-weight: initial;
     font-style: normal;
     text-align: initial;
@@ -124,8 +127,9 @@ https://scp-jp.wikidot.com/fragment:black-highlighter-theme-source
         right var(--fnTransition) cubic-bezier(.08,.72,.5,.94) var(--fnLinger),
         visibility 0.01s linear var(--fnInteract);
 }
-.fnnum:hover + .fncon, .fncon:hover {
+.fnnum:hover + .fncon, .fncon:is(:hover,:focus-within) {
     opacity: 1;
+    z-index: 10;
     right: var(--posX);
     visibility: visible;
     transition:
@@ -150,16 +154,16 @@ https://scp-jp.wikidot.com/fragment:black-highlighter-theme-source
 @media only screen and (max-width: 1279px) {
     .fncon {
         position: fixed;
-        bottom: 1.3rem;
-        left: calc(11% - 50px);
+        bottom: 1.5rem;
+        left: calc(15% - 50px);
         width: 70%;
         transition:
             opacity 0.15s linear var(--fnLinger),
             left var(--fnTransition) cubic-bezier(.08,.72,.5,.94) var(--fnLinger),
             visibility 0.01s linear var(--fnInteract);
     }
-    .fnnum:hover + .fncon, .fncon:hover {
-        left: 11%;
+    .fnnum:hover + .fncon, .fncon:is(:hover,:focus-within) {
+        left: 15%;
         transition:
             opacity 0.15s linear,
             left var(--fnTransition) cubic-bezier(.08,.72,.5,.94);
@@ -169,5 +173,5 @@ https://scp-jp.wikidot.com/fragment:black-highlighter-theme-source
 [[/iftags]]
 
 [[module CSS]]
-@import url("https://scp-jp.github.io/files/component/betterfootnotes/style0.css");
+@import url("https://scp-jp.wdfiles.com/local--code/component%3Abetterfootnotes/1");
 [[/module]]

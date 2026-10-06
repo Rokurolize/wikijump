@@ -41,7 +41,7 @@
   "human_port_candidate_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "41599fe6d22ed63d835475a90f46f1382ed97c06f01c916415a5d649bd59e861",
   "candidate_preview_sha256": "da2890818409c8d174ccd3f01d119deb2ec0e97a579184f5f878f5938af99e19",
-  "candidate_css_sha256": "a551fbd0df47a904de211d625e1f1c4fdd6cb6b0dd3c75688de41e1f444f0ca7",
+  "candidate_css_sha256": "1942887e382d16b8150cf95086a4944c7589def1ea0c2783d5d6dc341c445400",
   "page_assets": [
     {
       "filename": "black-highlighter-logo.svg",
@@ -92,10 +92,15 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/extra-black-highlighter-theme/accepted-result.json",
+    "sha256": "51674d94b6b2ee79638173bcb38097b621d1b12c56f6b47fb0a65145ec7e6042"
+  }
 }

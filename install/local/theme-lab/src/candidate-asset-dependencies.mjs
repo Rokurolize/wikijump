@@ -4,7 +4,7 @@ import path from 'node:path';
 import {resolveExistingContainedFile} from './package-path.mjs';
 
 const ASSET_NAME_PATTERN = /[0-9a-f]{64}\.(?:css|svg|png|jpe?g|webp|woff2?|ttf|otf|eot)/giu;
-const LEGACY_ASSET_PATTERN = /url\(\s*["']?\.\/assets\/([^)\/'"\s]+)["']?\s*\)/giu;
+const LEGACY_ASSET_PATTERN = /url\(\s*["']?\.\/assets\/([^)'"\s]+)["']?\s*\)/giu;
 const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const assetNames = value => String(value ?? '').match(new RegExp(ASSET_NAME_PATTERN.source, ASSET_NAME_PATTERN.flags)) ?? [];
 const legacyAssetNames = value => [...String(value ?? '').matchAll(new RegExp(LEGACY_ASSET_PATTERN.source, LEGACY_ASSET_PATTERN.flags))].map(match=>match[1]);

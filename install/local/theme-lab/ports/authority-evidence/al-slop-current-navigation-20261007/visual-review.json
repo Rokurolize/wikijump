@@ -1,0 +1,157 @@
+{
+  "schema": "theme_lab_real_wikidot_authority_visual_review.v1",
+  "status": "reviewed",
+  "reviewed_at": "2026-10-06T20:49:33.707Z",
+  "reviewer": "Codex visual review",
+  "decision_authority": "REAL_WIKIDOT_TARGET_AB_VISUAL_REVIEW_ONLY",
+  "package": "al-slop",
+  "candidate_source_sha256": "f6809160ccf1b35e74340d5e0421efecf8585246310203debbb5f0727b95eb8b",
+  "candidate_css_sha256": "00a8fff90043b8cc9164700b07080367ec1c29d29529635e34e6404a071e21e9",
+  "capture_receipt": {
+    "path": "authority-evidence/al-slop-current-navigation-20261007/receipt.json",
+    "sha256": "3963394b0152ff3b85e0d732684ae94628a2470b047f9870ebebf6f910a39c8f"
+  },
+  "review_scope": {
+    "url": "https://scp-jp.wikidot.com/scp-173-jp",
+    "engine": "chromium",
+    "browser_version": "154.0.8037.97",
+    "state": [
+      "navigation"
+    ],
+    "widths": [
+      320,
+      390
+    ]
+  },
+  "reviewed_screenshots": [
+    {
+      "variant": "without",
+      "width": 320,
+      "state": "navigation",
+      "index": 0,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/without-320-navigation-0.png",
+      "sha256": "900d6f2a4b4aedcbad7a6880ef96a33ed9380b860499074d72c64282ccc9d7fe"
+    },
+    {
+      "variant": "without",
+      "width": 320,
+      "state": "navigation",
+      "index": 1,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/without-320-navigation-1.png",
+      "sha256": "a1219e487508c9ce56e86b4589365d68320c18324e40d718c5d30ca3232983dc"
+    },
+    {
+      "variant": "without",
+      "width": 320,
+      "state": "navigation",
+      "index": 2,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/without-320-navigation-2.png",
+      "sha256": "81405ece516f92949aadfcfadabdebb39eaec22d4537b0cae3fe0f3bb1ec34e8"
+    },
+    {
+      "variant": "without",
+      "width": 320,
+      "state": "navigation",
+      "index": 3,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/without-320-navigation-3.png",
+      "sha256": "2a38637831a53ac442623e132a887cd2e1cd5583d8861816bdab55008a0b7844"
+    },
+    {
+      "variant": "with",
+      "width": 320,
+      "state": "navigation",
+      "index": 0,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/with-320-navigation-0.png",
+      "sha256": "92d0ca6e12bd282b1e48cdda55b03643dd7106186593a5722f522dc2290fe2a9"
+    },
+    {
+      "variant": "with",
+      "width": 320,
+      "state": "navigation",
+      "index": 1,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/with-320-navigation-1.png",
+      "sha256": "aec1bfa7832800b33033d06a338e5fceb56d492bc9b6120ab89fc3b6665527f0"
+    },
+    {
+      "variant": "with",
+      "width": 320,
+      "state": "navigation",
+      "index": 2,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/with-320-navigation-2.png",
+      "sha256": "4d29bc6d2f516d292f0dd2fec7f978d11e29bc4decb37f79f955ec6ae5359060"
+    },
+    {
+      "variant": "with",
+      "width": 320,
+      "state": "navigation",
+      "index": 3,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/with-320-navigation-3.png",
+      "sha256": "23a328b9bb90bcf8ce476bd803fd1c49107213517f7400a42616decd932fa3a1"
+    },
+    {
+      "variant": "without",
+      "width": 390,
+      "state": "navigation",
+      "index": 0,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/without-390-navigation-0.png",
+      "sha256": "eb7f098479e9aab73fde22cfc386001d3dd3d00882f47a52e322d6055c785d98"
+    },
+    {
+      "variant": "without",
+      "width": 390,
+      "state": "navigation",
+      "index": 1,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/without-390-navigation-1.png",
+      "sha256": "974c6828b2db467ff5449a7c834f0b8ae0c6f734de97bc6b7ac029fb539c868f"
+    },
+    {
+      "variant": "without",
+      "width": 390,
+      "state": "navigation",
+      "index": 2,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/without-390-navigation-2.png",
+      "sha256": "51be471ce7f8637843f3bc647b22e8b4f1b48fdf5d391f8caf4759042d199b12"
+    },
+    {
+      "variant": "without",
+      "width": 390,
+      "state": "navigation",
+      "index": 3,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/without-390-navigation-3.png",
+      "sha256": "f3c5ead52a137eb04445dbac3649cbdd4f808f3586d1172366a20d7f380d1d1c"
+    },
+    {
+      "variant": "with",
+      "width": 390,
+      "state": "navigation",
+      "index": 0,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/with-390-navigation-0.png",
+      "sha256": "db783b06ce69be5c6d87ed0fa4fa8e8c69edbdd5242240a592be69a99a566b28"
+    },
+    {
+      "variant": "with",
+      "width": 390,
+      "state": "navigation",
+      "index": 1,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/with-390-navigation-1.png",
+      "sha256": "d3bedb8ee559195200f57f307d616988dfac895a0b5bda5d78121cb703d5a46c"
+    },
+    {
+      "variant": "with",
+      "width": 390,
+      "state": "navigation",
+      "index": 2,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/with-390-navigation-2.png",
+      "sha256": "8f6da14d91d13e7ec047f4737070804bef1f7c338fffc0920933b49cd7c23973"
+    },
+    {
+      "variant": "with",
+      "width": 390,
+      "state": "navigation",
+      "index": 3,
+      "path": "authority-evidence/al-slop-current-navigation-20261007/with-390-navigation-3.png",
+      "sha256": "f4b957809d7a70ed22b9b2894d6a69f26bf6cd473e00a57577058eceaf3a929d"
+    }
+  ],
+  "findings": "Directly inspected every with/without mobile navigation screenshot at 320px and 390px. The four expanded submenu positions remain legible; candidate dropdowns stay within the viewport, including the narrow right-anchored submenu. No unrelated clipping or page-width change was visible."
+}

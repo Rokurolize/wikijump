@@ -8,11 +8,16 @@ import {TORTURE_VIEWPORTS, diffTortureStates} from "../src/torture-corpus.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-test("torture fixture uses retained real PageRateWidget DOM where preview cannot execute the module", () => {
+test("torture fixture uses an exact retained native rating fragment where preview cannot execute the module", async () => {
+  const {loadTortureNativeRating}=await import('../src/torture-native-components.mjs');
+  const {html}=await loadTortureNativeRating();
   const fixture = fs.readFileSync(path.join(root, "fixtures/theme-torture.wikidot.txt"), "utf8");
-  assert.match(fixture, /class="page-rate-widget-box"/u);
-  assert.match(fixture, /class="rate-points"/u);
-  assert.match(fixture, /class="rateup btn btn-default"/u);
+  assert.match(html, /class="page-rate-widget-box"/u);
+  assert.match(html, /class="rate-points"/u);
+  assert.match(html, /class="rateup btn btn-default"/u);
+  assert.equal((html.match(/<a\b/gu)??[]).length,3);
+  assert.doesNotMatch(html, /<p>|<br/u);
+  assert.doesNotMatch(fixture, /class="page-rate-widget-box"/u);
   assert.doesNotMatch(fixture, /\[\[module Rate\]\]/u);
 });
 

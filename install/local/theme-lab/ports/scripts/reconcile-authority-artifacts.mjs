@@ -137,7 +137,7 @@ for(const theme of campaign.themes) {
   if(await exists(path.join(dir,'candidate-base.css')))for(const match of (await fs.readFile(path.join(dir,'candidate-base.css'),'utf8')).matchAll(/([a-f0-9]{64})\.[a-z0-9]+/gu))use(match[1],name);
   const data=JSON.parse(await fs.readFile(path.join(dir,'assets.json'),'utf8'));
   const pageFile=path.join(dir,'page-assets.json');
-  theme.dependency_decision_count=data.dependency_decisions.length+(await exists(pageFile)?JSON.parse(await fs.readFile(pageFile,'utf8')).dependency_decisions?.length??0:0);
+  theme.dependency_decision_count=(data.dependency_decisions?.length??0)+(await exists(pageFile)?JSON.parse(await fs.readFile(pageFile,'utf8')).dependency_decisions?.length??0:0);
 }
 const assetRoot=path.join(ports,'shared-replay-assets');
 index.assets=[];

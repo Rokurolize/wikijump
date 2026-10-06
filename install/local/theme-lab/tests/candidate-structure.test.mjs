@@ -15,3 +15,13 @@ test('source-owned structure is bound to both preserved source and rendered exce
   await assert.rejects(loadCandidateStructure(dir),/stale or differs/);
  }finally{await fs.rm(dir,{recursive:true,force:true})}
 });
+
+test('source-owned structure files cannot escape the package through a symlink',async()=>{
+ const original=new URL('../ports/monotypical/',import.meta.url),dir=await fs.mkdtemp(path.join(os.tmpdir(),'theme-structure-')),outside=await fs.mkdtemp(path.join(os.tmpdir(),'theme-structure-outside-'));
+ try{
+  const spec=JSON.parse(await fs.readFile(new URL('acceptance-structure.json',original),'utf8'));
+  for(const name of ['acceptance-structure.json',spec.upstream_file,spec.excerpt.path,spec.html.path])await fs.copyFile(new URL(name,original),path.join(dir,name));
+  const outsideSource=path.join(outside,spec.source_file);await fs.copyFile(new URL(spec.source_file,original),outsideSource);await fs.symlink(outsideSource,path.join(dir,spec.source_file));
+  await assert.rejects(loadCandidateStructure(dir),/escapes package/u);
+ }finally{await fs.rm(dir,{recursive:true,force:true});await fs.rm(outside,{recursive:true,force:true})}
+});

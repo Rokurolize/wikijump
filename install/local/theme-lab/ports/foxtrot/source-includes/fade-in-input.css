@@ -1,2 +1,26 @@
-@import url(https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1);
-@import url("https://scp-wiki.wdfiles.com/local--code/component%3Afade-in/1");
+/* https://scp-jp.wikidot.com/component:fade-in */
+
+:where(:root) {
+  --fade-in: fadeIn;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :where(#page-title, #breadcrumbs, #page-content) {
+    animation-name: var(--fade-in);
+    animation-duration: 0.5s;
+    animation-iteration-count: 1;
+    animation-timing-function: ease-out;
+    animation-fill-mode: backwards;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(0,15px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0,0);
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "schema": "theme_lab_component_publication_source.v1",
+  "slug": "component:betterfootnotes",
+  "target_branch": "jp",
+  "source_file": "source.wikidot.txt",
+  "source_sha256": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d",
+  "authority": {
+    "en": {
+      "revision": 55,
+      "updated_at": "2024-10-27T12:28:26+00:00",
+      "source_sha256": "066c8183fe39451b88e4d53a6b08306829d21846170d14b0688d91f3c6203bc0"
+    },
+    "jp_before": {
+      "revision": 10,
+      "updated_at": "2026-09-24T21:34:07+00:00",
+      "source_sha256": "a93c113949c85d818d49453d7e0271fa0a06c9eed70b0641eebd2466aab33c8c"
+    },
+    "live_metadata_crosscheck": "/tmp/theme-lab-live-metadata-crosscheck-20261005.json"
+  },
+  "acceptance": {
+    "sigma9": {
+      "chromium": "pass",
+      "firefox": "pass",
+      "webkit": "pass"
+    },
+    "sigma10": {
+      "chromium": "pass",
+      "firefox": "pass",
+      "webkit": "pass"
+    },
+    "desktop_mobile": "pass",
+    "reduced_motion": "not-applicable",
+    "external_requests": 0,
+    "evidence": "evidence/browser-cross-baseline.json",
+    "deepwell_syntax_preview": "pass"
+  },
+  "publication": {
+    "public_writes": 0,
+    "manual_publish_required": true,
+    "publish_before_themes": [
+      "basalt",
+      "flopstyle-dark",
+      "foxtrot"
+    ]
+  }
+}

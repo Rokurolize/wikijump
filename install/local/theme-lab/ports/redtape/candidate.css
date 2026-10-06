@@ -1630,5 +1630,9 @@ rnb-.current.raisanav {
     --wght: 900;
 }
 
+
+
+:root {
+    --header-subtitle: "{$years} Minutes to Midnight";
     --minutes-to-midnight: {$years};
 }

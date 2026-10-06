@@ -39,7 +39,7 @@
   "human_port_candidate_path": "install/local/theme-lab/ports/basalt/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "bebdfef76f8d55d398d36bc71927978f55f5821ab4401252ff942ca81457aa1e",
   "candidate_preview_sha256": "4a266040a4c16b6ffd7e281a8615d476680872c057c0d5a4078a07fecb9110ae",
-  "candidate_css_sha256": "78b8bd21dce4bb8130ae89f7e9b825163ddbcd7abab6ff33a621a0d7293ae581",
+  "candidate_css_sha256": "c1b44963493737105ecb19c33bb49a41c4b931c09a9b3dbecde0562b0f942823",
   "page_assets": [
     {
       "filename": "basalt-theme-logo.svg",
@@ -81,10 +81,15 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/basalt/accepted-result.json",
+    "sha256": "5b698ca7369d6e71ecf6d2c2c94d8a5e7fa579e05995af320d9f6de41c2fc0dc"
+  }
 }

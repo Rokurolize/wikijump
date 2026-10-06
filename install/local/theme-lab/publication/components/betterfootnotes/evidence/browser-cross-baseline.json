@@ -1,0 +1,612 @@
+{
+  "schema": "theme_lab_component_browser_acceptance.v1",
+  "component": "component:betterfootnotes",
+  "generated_at": "2026-10-05T06:41:23.275Z",
+  "summary": {
+    "records": 12,
+    "pass": 12,
+    "fail": 0
+  },
+  "records": [
+    {
+      "engine": "chromium",
+      "baseline": "sigma9",
+      "viewport": "desktop",
+      "component": "betterfootnotes",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1226,
+        "clientHeight": 1000
+      },
+      "details": {
+        "initial": {
+          "visibility": "hidden",
+          "opacity": "0",
+          "left": 1092.40625,
+          "right": 1292.40625,
+          "top": 60.578125,
+          "bottom": 127.046875,
+          "width": 200
+        },
+        "hovered": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 1172.40625,
+          "right": 1372.40625,
+          "top": 60.578125,
+          "bottom": 127.046875,
+          "width": 200,
+          "zIndex": "10"
+        },
+        "focused": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 1172.40625,
+          "right": 1372.40625,
+          "top": 60.578125,
+          "bottom": 127.046875,
+          "width": 200,
+          "zIndex": "10"
+        },
+        "fnnum": {
+          "after": "\"\" counter(megacount)",
+          "color": "rgb(255, 255, 255)"
+        }
+      }
+    },
+    {
+      "engine": "chromium",
+      "baseline": "sigma9",
+      "viewport": "mobile",
+      "component": "betterfootnotes",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "scrollHeight": 1186,
+        "clientHeight": 844
+      },
+      "details": {
+        "initial": {
+          "visibility": "hidden",
+          "opacity": "0",
+          "left": 8.5,
+          "right": 281.5,
+          "top": 771.765625,
+          "bottom": 820,
+          "width": 273
+        },
+        "hovered": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 58.5,
+          "right": 331.5,
+          "top": 771.765625,
+          "bottom": 820,
+          "width": 273,
+          "zIndex": "10"
+        },
+        "focused": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 58.5,
+          "right": 331.5,
+          "top": 771.765625,
+          "bottom": 820,
+          "width": 273,
+          "zIndex": "10"
+        },
+        "fnnum": {
+          "after": "\"\" counter(megacount)",
+          "color": "rgb(255, 255, 255)"
+        }
+      }
+    },
+    {
+      "engine": "chromium",
+      "baseline": "sigma10",
+      "viewport": "desktop",
+      "component": "betterfootnotes",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1241,
+        "clientHeight": 1000
+      },
+      "details": {
+        "initial": {
+          "visibility": "hidden",
+          "opacity": "0",
+          "left": 1114,
+          "right": 1314,
+          "top": 66.90625,
+          "bottom": 133.375,
+          "width": 200
+        },
+        "hovered": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 1194,
+          "right": 1394,
+          "top": 66.90625,
+          "bottom": 133.375,
+          "width": 200,
+          "zIndex": "10"
+        },
+        "focused": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 1194,
+          "right": 1394,
+          "top": 66.90625,
+          "bottom": 133.375,
+          "width": 200,
+          "zIndex": "10"
+        },
+        "fnnum": {
+          "after": "\"\" counter(megacount)",
+          "color": "rgb(255, 255, 255)"
+        }
+      }
+    },
+    {
+      "engine": "chromium",
+      "baseline": "sigma10",
+      "viewport": "mobile",
+      "component": "betterfootnotes",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "scrollHeight": 1203,
+        "clientHeight": 844
+      },
+      "details": {
+        "initial": {
+          "visibility": "hidden",
+          "opacity": "0",
+          "left": 8.5,
+          "right": 281.5,
+          "top": 771.765625,
+          "bottom": 820,
+          "width": 273
+        },
+        "hovered": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 58.5,
+          "right": 331.5,
+          "top": 771.765625,
+          "bottom": 820,
+          "width": 273,
+          "zIndex": "10"
+        },
+        "focused": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 58.5,
+          "right": 331.5,
+          "top": 771.765625,
+          "bottom": 820,
+          "width": 273,
+          "zIndex": "10"
+        },
+        "fnnum": {
+          "after": "\"\" counter(megacount)",
+          "color": "rgb(255, 255, 255)"
+        }
+      }
+    },
+    {
+      "engine": "firefox",
+      "baseline": "sigma9",
+      "viewport": "desktop",
+      "component": "betterfootnotes",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1224,
+        "clientHeight": 1000
+      },
+      "details": {
+        "initial": {
+          "visibility": "hidden",
+          "opacity": "0",
+          "left": 1092.4000244140625,
+          "right": 1292.4000244140625,
+          "top": 59.600006103515625,
+          "bottom": 126.10000610351562,
+          "width": 200
+        },
+        "hovered": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 1172.4000244140625,
+          "right": 1372.4000244140625,
+          "top": 59.600006103515625,
+          "bottom": 126.10000610351562,
+          "width": 200,
+          "zIndex": "10"
+        },
+        "focused": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 1172.4000244140625,
+          "right": 1372.4000244140625,
+          "top": 59.600006103515625,
+          "bottom": 126.10000610351562,
+          "width": 200,
+          "zIndex": "10"
+        },
+        "fnnum": {
+          "after": "\"\" counter(megacount)",
+          "color": "rgb(255, 255, 255)"
+        }
+      }
+    },
+    {
+      "engine": "firefox",
+      "baseline": "sigma9",
+      "viewport": "mobile",
+      "component": "betterfootnotes",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "scrollHeight": 1185,
+        "clientHeight": 844
+      },
+      "details": {
+        "initial": {
+          "visibility": "hidden",
+          "opacity": "0",
+          "left": 8.5,
+          "right": 281.5,
+          "top": 771.75,
+          "bottom": 820,
+          "width": 273
+        },
+        "hovered": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 58.5,
+          "right": 331.5,
+          "top": 771.75,
+          "bottom": 820,
+          "width": 273,
+          "zIndex": "10"
+        },
+        "focused": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 58.5,
+          "right": 331.5,
+          "top": 771.75,
+          "bottom": 820,
+          "width": 273,
+          "zIndex": "10"
+        },
+        "fnnum": {
+          "after": "\"\" counter(megacount)",
+          "color": "rgb(255, 255, 255)"
+        }
+      }
+    },
+    {
+      "engine": "firefox",
+      "baseline": "sigma10",
+      "viewport": "desktop",
+      "component": "betterfootnotes",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1240,
+        "clientHeight": 1000
+      },
+      "details": {
+        "initial": {
+          "visibility": "hidden",
+          "opacity": "0",
+          "left": 1114,
+          "right": 1314,
+          "top": 66.91667175292969,
+          "bottom": 133.4166717529297,
+          "width": 200
+        },
+        "hovered": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 1194,
+          "right": 1394,
+          "top": 66.91667175292969,
+          "bottom": 133.4166717529297,
+          "width": 200,
+          "zIndex": "10"
+        },
+        "focused": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 1194,
+          "right": 1394,
+          "top": 66.91667175292969,
+          "bottom": 133.4166717529297,
+          "width": 200,
+          "zIndex": "10"
+        },
+        "fnnum": {
+          "after": "\"\" counter(megacount)",
+          "color": "rgb(255, 255, 255)"
+        }
+      }
+    },
+    {
+      "engine": "firefox",
+      "baseline": "sigma10",
+      "viewport": "mobile",
+      "component": "betterfootnotes",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "scrollHeight": 1203,
+        "clientHeight": 844
+      },
+      "details": {
+        "initial": {
+          "visibility": "hidden",
+          "opacity": "0",
+          "left": 8.5,
+          "right": 281.5,
+          "top": 771.75,
+          "bottom": 820,
+          "width": 273
+        },
+        "hovered": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 58.5,
+          "right": 331.5,
+          "top": 771.75,
+          "bottom": 820,
+          "width": 273,
+          "zIndex": "10"
+        },
+        "focused": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 58.5,
+          "right": 331.5,
+          "top": 771.75,
+          "bottom": 820,
+          "width": 273,
+          "zIndex": "10"
+        },
+        "fnnum": {
+          "after": "\"\" counter(megacount)",
+          "color": "rgb(255, 255, 255)"
+        }
+      }
+    },
+    {
+      "engine": "webkit",
+      "baseline": "sigma9",
+      "viewport": "desktop",
+      "component": "betterfootnotes",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 1431,
+        "clientWidth": 1431,
+        "scrollHeight": 1223,
+        "clientHeight": 1000
+      },
+      "details": {
+        "initial": {
+          "visibility": "hidden",
+          "opacity": "0",
+          "left": 1087.90625,
+          "right": 1287.90625,
+          "top": 57.578125,
+          "bottom": 124.046875,
+          "width": 200
+        },
+        "hovered": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 1167.90625,
+          "right": 1367.90625,
+          "top": 57.578125,
+          "bottom": 124.046875,
+          "width": 200,
+          "zIndex": "10"
+        },
+        "focused": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 1167.90625,
+          "right": 1367.90625,
+          "top": 57.578125,
+          "bottom": 124.046875,
+          "width": 200,
+          "zIndex": "10"
+        },
+        "fnnum": {
+          "after": "\"\" counter(megacount)",
+          "color": "rgb(255, 255, 255)"
+        }
+      }
+    },
+    {
+      "engine": "webkit",
+      "baseline": "sigma9",
+      "viewport": "mobile",
+      "component": "betterfootnotes",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 381,
+        "clientWidth": 381,
+        "scrollHeight": 1184,
+        "clientHeight": 844
+      },
+      "details": {
+        "initial": {
+          "visibility": "hidden",
+          "opacity": "0",
+          "left": 7.140625,
+          "right": 273.828125,
+          "top": 771.765625,
+          "bottom": 820,
+          "width": 266.6875
+        },
+        "hovered": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 57.140625,
+          "right": 323.828125,
+          "top": 771.765625,
+          "bottom": 820,
+          "width": 266.6875,
+          "zIndex": "10"
+        },
+        "focused": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 57.140625,
+          "right": 323.828125,
+          "top": 771.765625,
+          "bottom": 820,
+          "width": 266.6875,
+          "zIndex": "10"
+        },
+        "fnnum": {
+          "after": "\"\" counter(megacount)",
+          "color": "rgb(255, 255, 255)"
+        }
+      }
+    },
+    {
+      "engine": "webkit",
+      "baseline": "sigma10",
+      "viewport": "desktop",
+      "component": "betterfootnotes",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1237,
+        "clientHeight": 1000
+      },
+      "details": {
+        "initial": {
+          "visibility": "hidden",
+          "opacity": "0",
+          "left": 1114,
+          "right": 1314,
+          "top": 62.90625,
+          "bottom": 129.375,
+          "width": 200
+        },
+        "hovered": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 1194,
+          "right": 1394,
+          "top": 62.90625,
+          "bottom": 129.375,
+          "width": 200,
+          "zIndex": "10"
+        },
+        "focused": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 1194,
+          "right": 1394,
+          "top": 62.90625,
+          "bottom": 129.375,
+          "width": 200,
+          "zIndex": "10"
+        },
+        "fnnum": {
+          "after": "\"\" counter(megacount)",
+          "color": "rgb(255, 255, 255)"
+        }
+      }
+    },
+    {
+      "engine": "webkit",
+      "baseline": "sigma10",
+      "viewport": "mobile",
+      "component": "betterfootnotes",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "scrollHeight": 1200,
+        "clientHeight": 844
+      },
+      "details": {
+        "initial": {
+          "visibility": "hidden",
+          "opacity": "0",
+          "left": 8.5,
+          "right": 281.5,
+          "top": 771.765625,
+          "bottom": 820,
+          "width": 273
+        },
+        "hovered": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 58.5,
+          "right": 331.5,
+          "top": 771.765625,
+          "bottom": 820,
+          "width": 273,
+          "zIndex": "10"
+        },
+        "focused": {
+          "visibility": "visible",
+          "opacity": 1,
+          "left": 58.5,
+          "right": 331.5,
+          "top": 771.765625,
+          "bottom": 820,
+          "width": 273,
+          "zIndex": "10"
+        },
+        "fnnum": {
+          "after": "\"\" counter(megacount)",
+          "color": "rgb(255, 255, 255)"
+        }
+      }
+    }
+  ]
+}

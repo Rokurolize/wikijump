@@ -4,12 +4,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {withAuditLock} from './audit-lock.mjs';
+import {iterateSupersededAuditHistory} from './audit-shard-merge.mjs';
 import {pngPixelSha256File} from './png-pixel-hash.mjs';
 import {
  applyExactVisualReviewReuse,
  buildExactVisualReviewIndex,
  currentRowAllowsVisualReuse,
  reusableVisualReview,
+ visualReviewRuntimeIdentityCompatible,
  visualReviewRowKey,
  verifyExactReviewSources
 } from './visual-review-reuse.mjs';
@@ -55,7 +57,9 @@ async function pixelSha(row){
 await withAuditLock(auditPath,async()=>{
  const audit=JSON.parse(await fs.readFile(auditPath,'utf8'));
  const rows=audit.records??[];
- const priorRows=[...(audit.superseded_records??[]),...rows];
+ const priorRows=[];
+ for await(const row of iterateSupersededAuditHistory(auditPath,audit))priorRows.push(row);
+ priorRows.push(...rows);
  const exactIndex=buildExactVisualReviewIndex(await verifyExactReviewSources(priorRows,rows,root));
  const reviewedCandidatesByKey=new Map();
  const reviewedByKey=new Map();
@@ -94,6 +98,7 @@ await withAuditLock(auditPath,async()=>{
   let verifiedPriorFile=false;
   for(let index=reusableCandidates.length-1;index>=0;index--){
    const candidate=reusableCandidates[index];
+   if(!visualReviewRuntimeIdentityCompatible(row,candidate))continue;
    if(!await verifiedFile(candidate))continue;
    verifiedPriorFile=true;
    if(currentPixels&&currentPixels===await pixelSha(candidate)){prior=candidate;break}

@@ -1,4 +1,4 @@
-[[include :scp-wiki:component:sigma-plus]]
+[[include :scp-jp:component:sigma-plus]]
 
 [[module CSS]]
 @import url(https://scp-jp.wikidot.com/theme:al-slop/code/1);
@@ -340,7 +340,7 @@ div.page-rate-widget-box {
 }
 [[/code]]
 
-[[include :scp-wiki:component:license-box-theme
+[[include :scp-jp:component:license-box-backend
 |author=HaydenSaintPascal, AWhiteBoy and BAD_DATA]]
 
 > **ファイル名:** alBanner.png
@@ -529,4 +529,19 @@ div.page-rate-widget-box {
 @media (min-width: 768px) and (max-width: 1100px) {
   #top-bar .top-bar > ul > li:nth-last-child(2) > ul { inset-inline-start: auto; inset-inline-end: 0; }
 }
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot Al Slop heritage rating callouts: anchor tooltip images at the narrow article edge. */
+@media (max-width:479px){.heritage-rating-module :is(.rateup,.ratedown,.cancel)::before {left:auto;right:0;transform:none;}}
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot Al Slop saved credit callouts: retain tooltip images inside their rating edge. */
+.creditRate > li :is(.rateup,.ratedown,.cancel)::before{left:auto;right:0;transform:none;}
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot Al Slop narrow saved navigation: anchor the wrapped penultimate submenu at its row endpoint. */
+@media(max-width:359px){#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul{left:auto;right:0;}}
 [[/module]]

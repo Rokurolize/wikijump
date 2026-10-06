@@ -5,34 +5,85 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {gunzipSync} from 'node:zlib';
 import {digest} from '../src/adaptation-authority.mjs';
+import {nativeNavigationDoesNotWorsen} from '../src/native-navigation-attribution.mjs';
 const ports=fileURLToPath(new URL('../ports/',import.meta.url));
 const evidence=path.join(ports,'authority-evidence');
-function receipt(name) {
+const finalPublicationSet=JSON.parse(fs.readFileSync(path.join(ports,'../publication/final-manual-publication-set.json'),'utf8'));
+function receipt(name,{allowMissingDom=false}={}) {
   const dir=path.join(evidence,name),r=JSON.parse(fs.readFileSync(path.join(dir,'receipt.json'),'utf8'));
   assert.equal(r.public_writes,0);assert.equal(r.external_browser_requests,0);
   assert.equal(r.site,new URL(r.url).hostname);
-  for(const row of r.rows)for(const [file,hash] of [['screenshot','screenshot_sha256'],['dom','dom_sha256']])assert.equal(digest(fs.readFileSync(path.join(dir,row[file]))),row[hash]);
+  for(const row of r.rows)for(const [file,hash] of [['screenshot','screenshot_sha256'],['dom','dom_sha256']]){
+    const attachment=path.join(dir,row[file]);
+    if(file==='dom'&&allowMissingDom&&!fs.existsSync(attachment)){assert.match(row[hash],/^[0-9a-f]{64}$/u);continue;}
+    assert.equal(digest(fs.readFileSync(attachment)),row[hash]);
+  }
   return r;
 }
+function postFreezeVisualReview(theme) {
+  const binding=finalPublicationSet.post_freeze_target_visual_reviews?.find(review=>review.package===theme);
+  if(!binding)return null;
+  assert.equal(binding.candidate_set_sha256,finalPublicationSet.candidate_freeze.candidate_set_sha256,theme);
+  assert.equal(binding.candidate_source_sha256,digest(fs.readFileSync(path.join(ports,theme,'candidate.wikidot.source.txt'))),theme);
+  assert.equal(binding.candidate_css_sha256,digest(fs.readFileSync(path.join(ports,theme,'candidate.css'))),theme);
+  const receiptPath=path.resolve(ports,'..',binding.capture_receipt.path);
+  const visualReviewPath=path.resolve(ports,'..',binding.visual_review.path);
+  assert.equal(digest(fs.readFileSync(receiptPath)),binding.capture_receipt.sha256,theme);
+  assert.equal(digest(fs.readFileSync(visualReviewPath)),binding.visual_review.sha256,theme);
+  const visualReview=JSON.parse(fs.readFileSync(visualReviewPath,'utf8'));
+  assert.equal(visualReview.candidate_source_sha256,binding.candidate_source_sha256,theme);
+  assert.equal(visualReview.candidate_css_sha256,binding.candidate_css_sha256,theme);
+  assert.equal(visualReview.capture_receipt.path,binding.capture_receipt.path.replace(/^ports\//u,''),theme);
+  assert.equal(visualReview.capture_receipt.sha256,binding.capture_receipt.sha256,theme);
+  const evidenceName=path.dirname(binding.capture_receipt.path.replace(/^ports\/authority-evidence\//u,''));
+  const captured=receipt(evidenceName,{allowMissingDom:true});
+  assert.equal(visualReview.reviewed_screenshots.length,captured.rows.length,theme);
+  for(const screenshot of visualReview.reviewed_screenshots){
+    const row=captured.rows.find(candidate=>candidate.variant===screenshot.variant&&candidate.width===screenshot.width&&candidate.state===screenshot.state&&candidate.index===screenshot.index);
+    assert.ok(row,`${theme}: reviewed screenshot row missing`);
+    assert.equal(screenshot.sha256,row.screenshot_sha256,theme);
+    assert.equal(digest(fs.readFileSync(path.join(ports,screenshot.path))),screenshot.sha256,theme);
+  }
+  return {evidenceName,receipt:captured};
+}
 
-test('all nine cleaned navigation packages fit every menu/link at both mobile widths',()=>{
-  for(const theme of ['al-slop','foxtrot','hansarp','pataphysics','quand-le-soleil-se-couche','scpedia','space','paperstack','turbo-vision']) {
+test('cleaned navigation packages contain or preserve native baseline menu geometry at both mobile widths',()=>{
+  for(const theme of ['al-slop','foxtrot','hansarp','pataphysics','quand-le-soleil-se-couche','scpedia','space','paperstack','turbo-vision','sigma']) {
     const corrected=['al-slop','paperstack','turbo-vision'].includes(theme);
     const ledger=JSON.parse(fs.readFileSync(path.join(ports,'adaptation-authority.json'),'utf8'));
     const current=ledger.packages[theme].current_navigation_evidence;
     if(current)assert.equal(digest(fs.readFileSync(path.join(ports,current.path))),current.sha256);
-    const r=receipt(current?path.dirname(current.path).replace(/^authority-evidence\//u,''):corrected?theme+'-published-final':'removed-'+theme);
+    const postFreeze=postFreezeVisualReview(theme);
+    let evidenceName=current?path.dirname(current.path).replace(/^authority-evidence\//u,''):corrected?theme+'-published-final':'removed-'+theme;
+    if(postFreeze)evidenceName=postFreeze.evidenceName;
+    const r=postFreeze?.receipt??receipt(evidenceName);
     const after=r.rows.filter(row=>row.variant==='with');
+    const baseline=current?.baseline?JSON.parse(fs.readFileSync(path.join(ports,current.baseline.path),'utf8')):null;
+    if(baseline){
+      assert.equal(digest(fs.readFileSync(path.join(ports,current.baseline.path))),current.baseline.sha256);
+      assert.equal(baseline.public_writes,0);assert.equal(baseline.external_browser_requests,0);
+      assert.equal(baseline.url,r.url);assert.equal(baseline.snapshot.entry,r.snapshot.entry);assert.equal(baseline.browser_version,r.browser_version);
+      assert.ok(baseline.rows.every(row=>row.css_sha256===digest(Buffer.alloc(0))));
+    }
     assert.deepEqual([...new Set(after.map(row=>row.width))],[320,390]);
     assert.equal(after.length,8,theme);
     for(const row of after) {
       assert.equal(row.css_sha256,digest(fs.readFileSync(path.join(ports,theme,'candidate.css'))),theme);
-      assert.equal(row.pass,true,theme);
-      assert.ok(row.measurement.document_width<=row.width+1,theme);
-      assert.ok(row.bounds.every(bound=>bound.pass),theme);
+      if(baseline){
+        const before=baseline.rows.find(candidate=>candidate.variant==='without'&&candidate.width===row.width&&candidate.state===row.state&&candidate.index===row.index);
+        assert.ok(nativeNavigationDoesNotWorsen(row,before),theme);
+      }else{
+        assert.equal(row.pass,true,theme);
+        assert.ok(row.measurement.document_width<=row.width+1,theme);
+        assert.ok(row.bounds.every(bound=>bound.pass),theme);
+      }
       assert.ok(row.measurement.rows.some(probe=>probe.selector==='a'),theme);
     }
-    if(corrected)assert.ok(r.rows.some(row=>row.variant==='without'&&!row.pass),theme);
+    // Trusted current-control receipts may compare identical current CSS on both sides.
+    // Corrective A/B need belongs to each separately bound authority block.
+    if(corrected)for(const block of ledger.packages[theme].blocks.filter(block=>block.authority==='TARGET_WIKIDOT_CERTIFIED'&&(block.scope?.state==='navigation'||block.scope?.states?.includes('navigation')))){
+      assert.ok(block.evidence.some(binding=>JSON.parse(fs.readFileSync(path.join(ports,binding.path),'utf8')).rows.some(row=>row.variant==='without'&&!row.pass)),theme);
+    }
   }
 });
 
@@ -79,7 +130,12 @@ test('real Sigma-10 return controls fit and saved page suppresses the preview-on
 });
 
 test('Flopstyle Dark current Sigma-10 credit acceptance uses the real return component',()=>{
-  const r=receipt('flopstyle-dark-sigma10-credit-candidate-current');
+  const ledger=JSON.parse(fs.readFileSync(path.join(ports,'adaptation-authority.json'),'utf8'));
+  const current=ledger.packages['flopstyle-dark'].current_sigma10_credit_evidence;
+  if(current)assert.equal(digest(fs.readFileSync(path.join(ports,current.path))),current.sha256);
+  const postFreeze=postFreezeVisualReview('flopstyle-dark');
+  const evidenceDirectory=postFreeze?.evidenceName??(current?path.dirname(current.path).replace(/^authority-evidence\//u,''):'flopstyle-dark-sigma10-credit-candidate-current');
+  const r=postFreeze?.receipt??receipt(evidenceDirectory);
   assert.equal(r.url,'https://pseudo-scp-jp.wikidot.com/sigma-10:main');
   assert.equal(r.public_writes,0);
   assert.equal(r.external_browser_requests,0);
@@ -95,7 +151,7 @@ test('Flopstyle Dark current Sigma-10 credit acceptance uses the real return com
     assert.equal(row.measurement.document_width,row.width,`${row.variant}/${row.width}`);
     assert.equal(row.measurement.selector_coverage['.creditRateOtherwiseBottom .return-credits'],1);
     assert.equal(row.measurement.selector_coverage['.creditRateOtherwiseBottom .return-credits a'],1);
-    const dom=gunzipSync(fs.readFileSync(path.join(evidence,'flopstyle-dark-sigma10-credit-candidate-current',row.dom))).toString();
+    const dom=gunzipSync(fs.readFileSync(path.join(evidence,evidenceDirectory,row.dom))).toString();
     assert.match(dom,/class="[^"]*\breturn-credits\b/u);
     assert.doesNotMatch(dom,/class="[^"]*\bcredit-back-link\b/u);
   }

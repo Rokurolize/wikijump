@@ -1,17 +1,11 @@
 {
-  "schema": "theme_lab_current_wikidot_source_read.v1",
-  "observed_at": "2026-09-29T23:52:24.619451+00:00",
-  "site": "scp-wiki",
-  "transport": "anonymous wikidot.py source read",
+  "schema": "theme_lab_source_dependency_policy_rebind.v1",
+  "policy_audit": "../../publication/evidence/audits/theme-lab-foreign-dependency-policy-audit-20261005.json",
   "public_writes": 0,
-  "edit_locks": 0,
-  "pages": [
-    {
-      "page": "component:sigma-plus",
-      "page_id": 1446205162,
-      "url": "https://scp-wiki.wikidot.com/component:sigma-plus",
-      "file": "sigma-plus.wikidot.txt",
-      "sha256": "2ee01c9b8a8b4ad082abc030944a41e4d9624d7eda46ea3ecf1dcf9046d66498"
-    }
-  ]
+  "dependency": "component:sigma-plus",
+  "target": "scp-jp:component:sigma-plus",
+  "source_file": "source-includes/sigma-plus.wikidot.txt",
+  "source_sha256": "dccfb8c281e6bf0268f7f472ef86690aa64181d3d916d1385838886bd89eafbf",
+  "css_file": "source-includes/sigma-plus-input.css",
+  "css_sha256": "5bd2d00b494a875d43fcd5e270a4b323c9ddbe16b6238fb5f5b80992c3b37b0a"
 }

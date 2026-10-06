@@ -42,7 +42,7 @@
   "human_port_candidate_path": "install/local/theme-lab/ports/jakstyle/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "e90739b02bf2ff8e314c0d0481936260fe9e0d3db8ccb646bd6025fee91f463d",
   "candidate_preview_sha256": "d09eba82045540c4df285ede15750a2d074e4be1a509d425f8660502c0de3d16",
-  "candidate_css_sha256": "54e1622ad4ae34084c6eefc85355178fae005d29e17015d6025d7beebfb9e405",
+  "candidate_css_sha256": "a4b0f7c1cb6262b4ee6ac62e5d9e4846919bf50d57766de6968d3a58ea6ff8e6",
   "page_attachment_manifest": null,
   "existing_jp_reconciliation": {
     "previous_source_sha256": "043a9ecd102a053c1d7daa538e293a147117f722cfe6e232c694f6107c48dae2",
@@ -79,10 +79,15 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/jakstyle/accepted-result.json",
+    "sha256": "b6cb607cb35950a5f71a0c45c4b4bcece1fc77d74ba2e84dd1779e3d6066a41e"
+  }
 }

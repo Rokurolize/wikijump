@@ -5,6 +5,9 @@ import path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {withAuditLock} from './audit-lock.mjs';
 import {candidateIdentity} from './candidate-identity.mjs';
+import {captureRunContractIsCurrent} from '../../src/scoped-run-contract.mjs';
+import {observationRuntimeSourceMatchesContract} from '../../src/runtime-source-identity.mjs';
+import {deepwellRuntimeIdentityMatchesContract,requireDeepwellRuntimeIdentity} from '../../src/deepwell-runtime-identity.mjs';
 
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 
@@ -59,7 +62,7 @@ export function applyVisualReviews(rows, reviews, currentIdentity, reviewedAt = 
       candidate_sha256: row.candidate_sha256,
       candidate_source_sha256: row.candidate_source_sha256,
       note: review.note,
-      reviewer: 'Codex visual capability',
+      reviewer: typeof review.reviewer==='string'&&review.reviewer.trim()?review.reviewer.trim():'Codex visual capability',
       decision_authority: 'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY',
       port_conclusion_eligible: false
     };
@@ -73,12 +76,15 @@ async function main() {
   const input = args[0];
   if (!input) throw new Error('usage: node record-interactive-visual-review.mjs <review-evidence.json>');
   const auditOption=args.indexOf('--audit');
+  const runContractArg=args.find(arg=>arg.startsWith('--run-contract='))?.slice('--run-contract='.length);
   const auditPath = auditOption<0 ? path.join(root, 'interactive-visual-audit.json') : path.resolve(args[auditOption+1]);
   if(!auditPath.startsWith(path.resolve(root,'..')+path.sep))throw new Error('review audit must remain inside Theme Lab');
   const evidence = JSON.parse(await fs.readFile(path.resolve(input), 'utf8'));
   if (!Array.isArray(evidence.reviews) || evidence.reviews.length === 0) throw new Error('review evidence must contain a non-empty reviews array');
   await withAuditLock(auditPath, async () => {
-    const audit = JSON.parse(await fs.readFile(auditPath, 'utf8'));
+    const auditBytes=await fs.readFile(auditPath);
+    if(evidence.audit_sha256&&sha(auditBytes)!==evidence.audit_sha256)throw new Error('visual review evidence names a stale input audit SHA');
+    const audit = JSON.parse(auditBytes.toString('utf8'));
     const known = new Map();
     for (const row of audit.records) {
       const values = known.get(row.theme) ?? new Set();
@@ -86,12 +92,20 @@ async function main() {
       known.set(row.theme, values);
     }
     const current = new Map();
-    const migrationContractPath=path.resolve(root,'../../sigma10-migration/current-campaign/run-contract.json');
+    const migrationContractPath=path.resolve(root,'../sigma10-migration/current-campaign/run-contract.json');
+    const sigma9ContractPath=path.resolve(root,'current-acceptance/run-contract.json');
     let migrationContract=null;
     if(auditPath.startsWith(path.dirname(migrationContractPath)+path.sep)){
       try{migrationContract=JSON.parse(await fs.readFile(migrationContractPath,'utf8'))}catch{}
     }
     const migrationSha=migrationContract?sha(await fs.readFile(migrationContractPath)):null;
+    const runContractPath=runContractArg?path.resolve(runContractArg):migrationContract?migrationContractPath:sigma9ContractPath;
+    const runContractBytes=await fs.readFile(runContractPath);
+    const currentRunContract=JSON.parse(runContractBytes);
+    const currentRunContractSha=sha(runContractBytes);
+    requireDeepwellRuntimeIdentity(currentRunContract.expected_backend_runtime_identity,`${migrationContract?'Sigma-10':'Sigma-9'} review run contract`);
+    if(evidence.candidate_set_sha256&&evidence.candidate_set_sha256!==currentRunContract.candidate_set_sha256)throw new Error('visual review evidence is not bound to the current candidate set');
+    if(evidence.run_contract_sha256&&evidence.run_contract_sha256!==currentRunContractSha)throw new Error('visual review evidence is not bound to the selected run contract');
     if(migrationContract){
       for(const binding of Object.values(migrationContract.frozen_sigma10_authority?.artifacts??{})){
         const bytes=await fs.readFile(path.resolve(root,'..',binding.path));
@@ -130,7 +144,9 @@ async function main() {
     for (const review of evidence.reviews) {
       const matching = rowsByScreenshot.get(review.screenshot_sha256) ?? [];
       if (!matching.length) throw new Error(`no audit row for screenshot ${review.screenshot_sha256}`);
-      if(migrationContract&&matching.some(row=>row.run_contract_sha256!==migrationSha))throw new Error('cannot review Sigma-10 evidence from a superseded run contract');
+      if(matching.some(row=>!captureRunContractIsCurrent(row,currentRunContract,currentRunContractSha)))throw new Error('cannot review browser evidence from a superseded run contract');
+      if(matching.some(row=>!observationRuntimeSourceMatchesContract(row,currentRunContract)))throw new Error('cannot review browser evidence from a superseded Framerail runtime');
+      if(matching.some(row=>!deepwellRuntimeIdentityMatchesContract(row,currentRunContract)))throw new Error('cannot review browser evidence from a superseded Deepwell backend runtime');
       for (const screenshot of new Set(matching.map(row => row.screenshot))) {
         const key = `${screenshot}\0${review.screenshot_sha256}`;
         if (verifiedPaths.has(key)) continue;

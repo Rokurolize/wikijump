@@ -335,7 +335,7 @@
         },
         {
           "path": "minimalist-bhl/existing-jp.wikidot.txt",
-          "sha256": "6e5daba96afeb10ce3e4f49bc436920f6c0ba2ac4937c072030c59e43e80f3a0",
+          "sha256": "7d870ffc63b1f7a700201a7b585a7aca8aa57a52d5f673c6eafd76d2f1426848",
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]

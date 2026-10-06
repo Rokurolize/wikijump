@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "5aa82bc9e061687b59147410f9fa05f56ce98701943e0fefa23fd50dcd2d5dcd",
+  "frozen_candidate_source_sha256": "b62171f0df44d62ebe3af75eca1cb53ef854f0b8e747dedade2ed0ee399e9c48",
   "base_source_sha256": "9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343",
-  "raw_jp_overrides_sha256": "d7325c53977f68385403a38a1140f67fe2643cc467c2467f770c37921f02145a",
-  "jp_overrides_sha256": "b0a6afc1bc2cd08513cab4c383969c27aa1888a5a5f405c6cd6949c5d17abefe",
-  "semantic_css_sha256": "2f2dcbad0fcf30759d1e0f01e0f1e4284f1a942a8132cb43de4150d409927a9b",
-  "canonical_override_sha256": "bed5914b420af6dd3c3f349a7f7976d75791fa2fa3ee16e8209ac88f2f59afc9",
+  "raw_jp_overrides_sha256": "73d5749d83547dde008a146b063bdc6dc272ca74839e06bd981aa6ea08d450c7",
+  "jp_overrides_sha256": "5b80b2f9a908df9d19e2f8f3f85bd63768efb2856751e6ce7e09656819894134",
+  "semantic_css_sha256": "1a42f9e2cd7237d38b212e87976c161f3b56322888cc466412683f74b6628919",
+  "canonical_override_sha256": "35d0419a7802de34be25997c0d14b648b18e476942426fa359df2ddd5c07b033",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "a4edded4af020678bb3a10b4324a3a977ff13e24900e127f867f32b72d7b6b87",
+  "final_source_sha256": "b19c9514e1a1b4ffc8c045a3803832515df02b2a0dcf03bf0fa340285aa4a555",
   "final_source_inputs": {
     "base_sha256": "9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343",
-    "jp_overrides_sha256": "b0a6afc1bc2cd08513cab4c383969c27aa1888a5a5f405c6cd6949c5d17abefe"
+    "jp_overrides_sha256": "5b80b2f9a908df9d19e2f8f3f85bd63768efb2856751e6ce7e09656819894134"
   },
   "ordered_include_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
   "declaration_reviews": {},
-  "adaptation_block_count": 1,
-  "raw_override_rule_count": 1,
-  "canonical_override_rule_count": 1,
+  "adaptation_block_count": 3,
+  "raw_override_rule_count": 3,
+  "canonical_override_rule_count": 3,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -221,9 +221,8 @@
       ],
       "evidence": [
         {
-          "path": "authority-evidence/site-image-block-authority-20261001/receipt.json",
-          "sha256": "db68c84cf5fb5520c10a0e0a0b89c4914b617308c78d538f3ee136203da842db",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/site-image-final-css-v5-20261005/receipt.json",
+          "sha256": "93aeba0513aa02af20eafd177d3d6410d3c696d164fbbe88a30d60fc52263830"
         }
       ],
       "scope": {
@@ -235,8 +234,46 @@
           1440
         ]
       },
-      "published_css_sha256": "eaa8088894338c084bf745a6da3bb6269976e498636ea2d6a750677ee188c206",
-      "published_base_css_sha256": "869c96d0a83b3beef1775abe5c08801a319443a301ea6e8f056b0a38ad9e6833"
+      "published_css_sha256": "28a72ef325901611e12a505fa1e94ea40a315c80cb316f787d6ec6c2ee3606a4",
+      "published_base_css_sha256": "23b32297ee4252de0f78d0cc40ec6fc43b0c6c75ae2a3f8b78e7a71e4cba6440"
+    },
+    {
+      "marker": "SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access.",
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "sha256": "d0f6ee5e3aee7abe85a50b3a3c934b55ba2ad17fea9f3915b4922d8028644487",
+      "rationale": "Wikidot PagePreview keeps HTML blocks literal. Keep a long literal frame source within the tablet sidebar while preserving horizontal access; the rule is media-limited and removes no content.",
+      "evidence": [
+        {
+          "path": "authority-evidence/sigma10-preview-sidebar-containment.json",
+          "sha256": "f1e70f4fffaefbbb888cda9bfa748f283d0cae7657f34483f9876485f4a05bab"
+        }
+      ]
+    },
+    {
+      "marker": "SCP-JP Wikidot narrow mobile navigation: keep the penultimate submenu within its owning row.",
+      "rationale": "A same-SCP-JP-target Sigma-10 comparison at 320px showed the candidate added 4px of document overflow (21px candidate versus 17px baseline). Moving only the penultimate submenu 4px left returns candidate overflow to the existing 17px target baseline; no viewport escape or interaction failure remains.",
+      "sha256": "3a6057cc9f4c3585dc7e77e20ac38bb2f48d9122c140b94a67e609ad0cc21516",
+      "selectors": [
+        "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul"
+      ],
+      "at_contexts": [
+        "@media (max-width: 359px)"
+      ],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/site-narrow-submenu-target-delta-20261005/receipt.json",
+          "sha256": "8eab23ded271277649ae572a80e6586402dee61b79da0897fab81a6e82ba9595"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-10 current target acceptance",
+        "state": "settled+narrow-mobile",
+        "viewport_width": 320
+      },
+      "published_css_sha256": "28a72ef325901611e12a505fa1e94ea40a315c80cb316f787d6ec6c2ee3606a4"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -252,6 +289,30 @@
         "@media (max-width: 479px)"
       ],
       "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access.",
+      "rationale": "SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access.",
+      "sha256": "d0f6ee5e3aee7abe85a50b3a3c934b55ba2ad17fea9f3915b4922d8028644487",
+      "selectors": [
+        "#side-bar"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px) and (max-width: 1023px)"
+      ],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot narrow mobile navigation: keep the penultimate submenu within its owning row.",
+      "rationale": "SCP-JP Wikidot narrow mobile navigation: keep the penultimate submenu within its owning row.",
+      "sha256": "3a6057cc9f4c3585dc7e77e20ac38bb2f48d9122c140b94a67e609ad0cc21516",
+      "selectors": [
+        "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul"
+      ],
+      "at_contexts": [
+        "@media (max-width: 359px)"
+      ],
+      "authority": "RUNTIME_INDEPENDENT"
     }
   ]
 }

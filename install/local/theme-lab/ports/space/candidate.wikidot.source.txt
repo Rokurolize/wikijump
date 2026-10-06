@@ -1,4 +1,4 @@
-[[include :scp-wiki:component:sigma-plus]]
+[[include :scp-jp:component:sigma-plus]]
 [[module css]]
 @import url(https://scp-jp.wdfiles.com/local--code/theme%3Aspace/1);
 [[/module]]
@@ -950,3 +950,10 @@ table.page-files .highlight { background: transparent; }
 [[/code]]
 [[/collapsible]]
 [[/iftags]]
+
+[[module CSS]]
+/* SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  #side-bar { overflow-x: auto !important; }
+}
+[[/module]]

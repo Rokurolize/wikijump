@@ -3,9 +3,80 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {candidatePageTags,genericRuntimeThemeCss} from '../src/runtime-theme-css.mjs';
+import {extractCssModules} from '../ports/scripts/extract-css-modules.mjs';
+import {candidatePageTags,genericRuntimeThemeCss,materializeDefaultCss} from '../src/runtime-theme-css.mjs';
 
 const themeLabDir=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+
+test('explicit default materialization retains active modules in source order',()=>{
+  const source='[[iftags +theme]][[module CSS]].demo{color:red}[[/module]][[/iftags]]\n[[module CSS]]@import url(base.css);[[/module]]\n[[iftags -theme]][[module CSS]].article{color:teal}[[/module]][[/iftags]]';
+  assert.equal(materializeDefaultCss(source).css,'@import url(base.css);\n\n.article{color:teal}\n');
+  const plain='[[module CSS]].first{color:blue}[[/module]][!-- [[module CSS]].optional{color:red}[[/module]] --][[module CSS]].last{color:green}[[/module]]';
+  assert.equal(materializeDefaultCss(plain).css,'.first{color:blue}\n\n.last{color:green}\n');
+});
+
+test('default materialization refuses literals and unresolved-only modules',()=>{
+  assert.throws(()=>materializeDefaultCss('@@[[module CSS]].literal{}[[/module]]@@'),/No active/);
+  assert.throws(()=>materializeDefaultCss('[[iftags]][[/ift{$optional}gs]][[module CSS]].optional{}[[/module]][[/iftags]]'),/No active/);
+});
+
+test('a fully accounted tagged showcase can inherit the site theme on tagless articles',()=>{
+  const source='[[iftags +theme]][[module CSS]].color{color:red}[[/module]][[/iftags]]';
+  assert.deepEqual(materializeDefaultCss(source,{sourcePageTags:['theme']}),{modules:[],css:'\n'});
+  assert.throws(()=>materializeDefaultCss(source,{sourcePageTags:['other']}),/No active/);
+  const unresolved=source+'[[ift{$variant}gs +theme]][[module CSS]].unknown{}[[/module]][[/ift{$variant}gs]]';
+  assert.throws(()=>materializeDefaultCss(unresolved,{sourcePageTags:['theme']}),/No active/);
+  assert.throws(()=>materializeDefaultCss('@@[[module CSS]].literal{}[[/module]]@@',{sourcePageTags:['theme']}),/No active/);
+});
+
+test('default runtime excludes an optional import owned by a Wikidot comment',()=>{
+ const source='[[module CSS]]@import url(base.css);[[/module]]\n[!-- {$variant}]\n[[module CSS]]@import url(optional.css);[[/module]]\n[!-- --]\n[[module CSS]].article{color:teal}[[/module]]';
+ const result=genericRuntimeThemeCss({candidateSource:source,candidateInput:'@import url(base.css);\n@import url(optional.css);\n.article{color:teal}'});
+ assert.equal(result.css,'@import url(base.css);\n\n.article{color:teal}');
+ assert.equal(result.removed_inactive_source_modules,1);
+ assert.equal(result.unmatched_inactive_source_modules,0);
+});
+
+test('ambiguous commented stylesheet occurrences stay actionable',()=>{
+ const result=genericRuntimeThemeCss({candidateSource:'[!-- [[module CSS]]@import url(optional.css);[[/module]] --]',candidateInput:'@import url(optional.css);\n@import url(optional.css);'});
+ assert.equal(result.removed_inactive_source_modules,0);
+ assert.equal(result.unmatched_inactive_source_modules,1);
+ assert.equal(result.css,'@import url(optional.css);\n@import url(optional.css);');
+});
+
+test('unresolved parameterized closing tag cannot enable a default-disabled variant',()=>{
+ const source='[[iftags]][[/ift{$variant}gs]]\n[[iftags -theme]][[module CSS]].variant{color:purple}[[/module]][[/iftags]][[/iftags]]\n[[module CSS]]@import url(default.css);[[/module]]';
+ const result=genericRuntimeThemeCss({candidateSource:source,candidateInput:'.variant{color:purple}\n@import url(default.css);',candidateTags:['theme']});
+ assert.equal(result.css,'\n@import url(default.css);');
+ assert.equal(result.removed_inactive_source_modules,1);
+});
+
+test('runtime model applies the default include-variable boundary while publication extraction stays conservative',()=>{
+ const source='[[ift{$item}gs +theme]][[module CSS]].default-on{display:none}[[/module]][[iftags]][[module CSS]].opt-in{color:black}[[/module]][[/iftags]][[/ift{$item}gs]]';
+ assert.equal(extractCssModules(source).length,0);
+ const result=genericRuntimeThemeCss({candidateInput:'.default-on{display:none}\n.opt-in{color:black}',candidateSource:source,candidateTags:[]});
+ assert.equal(result.css,'.default-on{display:none}\n');
+ assert.equal(result.removed_inactive_source_modules,1);
+});
+
+test('Basalt default include runtime keeps module 5 and leaves opt-in iftags imports inactive',()=>{
+ const source=fs.readFileSync(path.join(themeLabDir,'ports','basalt','candidate.wikidot.source.txt'),'utf8');
+ const modules=extractCssModules(source,{activeTags:[],resolveUnboundIncludeVariables:true});
+ const imports=modules.map(row=>row.css.match(/theme%3Abasalt\/(\d)/u)?.[1]).filter(Boolean);
+ assert.deepEqual(imports,['1','5']);
+});
+
+test('duplicate default-disabled modules are removed only with matching source multiplicity',()=>{
+ const module='[[module CSS]].variant{color:purple}[[/module]]';
+ const source='[!-- '+module+' '+module+' --]';
+ const result=genericRuntimeThemeCss({candidateSource:source,candidateInput:'.variant{color:purple}\n.variant{color:purple}'});
+ assert.equal(result.css,'\n');
+ assert.equal(result.removed_inactive_source_modules,2);
+ assert.equal(result.unmatched_inactive_source_modules,0);
+ const extra=genericRuntimeThemeCss({candidateSource:source,candidateInput:'.variant{color:purple}\n.variant{color:purple}\n.variant{color:purple}'});
+ assert.equal(extra.removed_inactive_source_modules,0);
+ assert.equal(extra.unmatched_inactive_source_modules,2);
+});
 
 test('generic runtime drops exact theme-page-only CSS while preserving reusable CSS',()=>{
   const source=`[[module CSS]].base { color: black; }[[/module]]

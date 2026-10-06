@@ -167,16 +167,18 @@
       "marker": "Resolve preserved source CSS component includes",
       "origin": "source-css-include-resolution",
       "authority": "RUNTIME_INDEPENDENT",
-      "sha256": "4909badaa3bd401e820d6ac2ea4f4d4b734f1544b3592a63b1b9ba4b63abfaf5",
-      "rationale": "Exact source-owned include CSS and literal source parameters, materialized after site base imports before source theme declarations.",
+      "sha256": "91a598f39414626016af54112e912f4d7f3ed958e883ed2737fefb08c576ae9b",
+      "rationale": "Materialize the reviewed SCP-JP component publication-source CSS locally before the theme declarations. This removes the temporary EN-component oracle while preserving the exact component behavior that will be published to SCP-JP.",
       "evidence": [
         {
           "path": "basalt/source-css-includes.json",
-          "sha256": "4909badaa3bd401e820d6ac2ea4f4d4b734f1544b3592a63b1b9ba4b63abfaf5"
+          "sha256": "91a598f39414626016af54112e912f4d7f3ed958e883ed2737fefb08c576ae9b",
+          "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_BINDING"
         },
         {
-          "path": "shared-fixtures/current-source-components-jp/receipt.json",
-          "sha256": "6ed5d876df05625082ce9c92fc69abe7eac6fa4b787b48eeccd9cd7b9b3b1676"
+          "path": "basalt/source-includes/betterfootnotes.wikidot.txt",
+          "sha256": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d",
+          "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_SOURCE"
         }
       ]
     }

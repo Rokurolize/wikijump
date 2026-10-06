@@ -1,52 +1,50 @@
 [[iftags +component]]
 
-[[>]]
 [[module Rate]]
-[[/>]]
 
 [[div style="border: solid 2px #ededed; padding: 0.5rem;"]]
-This is a meta-component made by [[*user EstrellaYoshte]] to be used as an assistive layer for theme-making.
-To use, put the following:
+このコンポーネントは、テーマ制作者の EstrellaYoshte が作成した Sigma+ のSCP-JP向け移植です。Sigma標準のページ構造を保ちながら、ヘッダー、トップバー、ドロップダウン、評価・情報モジュール、タブを拡張可能なCSS変数と現代的なレイアウトで整えます。
 
-> @@[[include :scp-wiki:component:sigma-plus]]@@
+使い方:
+> @@[[include :scp-jp:component:sigma-plus]]@@
 
-Sigma+, by itself, preserves most of the original aesthetics while using more modern CSS conventions and properties, including:
+主な機能:
+* CSS変数によるヘッダー、ナビゲーション、評価モジュール、タブの調整
+* Grid/Flexboxを使った画面幅に応じるレイアウト
+* キーボードで操作できるトップバーのドロップダウン
+* RTL方向への配慮
 
-* Extensible CSS variables
-* Grid and flex-based layout
-* Fully tab-able navigation
-* RTL direction compliance
++++ 開発者向けの説明
 
-+++ Developer's Note
+このコンポーネントは、Sigmaの古い共通レイアウトをテーマごとに作り直す負担を減らすための補助レイヤーです。Wikidotが生成する意味的なページ構造をできるだけ保ち、視覚的な配置を再定義します。
 
-The principal idea of the component is to alleviate the burden of resolving the site theme's outdated base layout, which tends to either limit the amount of customization implemented, massively increase CSS complexity/overhead to implement the desired layout, further worsens the situation with more unoptimized CSS, or some unholy combination of the three.
+* ヘッダー装飾をコンテナ背景からヘッダー要素へ移し、サイズや表示条件に追従させます。
+* トップバーのドロップダウンを画面幅に合わせ、標準スタイルを調整して、タブキーで操作できるようにします。
+* 評価・情報モジュールを変数で調整できるようにし、Info module固有の振る舞いを整理します。
+* タブのスプライト画像をCSS変数によるスタイルへ置き換えます。
 
-Sigma+ limits itself to re-implementing semantic and visual flow for the most part to maintain the highest possible passthrough as a compatibility layer, with a few exceptions:
++++ 既定値の例
 
-* **Header decoration**: Originally a background-image on {{#container-wrap}}, which both semantically divorce it from the actual {{#header}} and {{#top-bar}}, and makes it unresponsive to change in size and layout (from end-user settings, browser defaults, screen size, etc.) Remade into {{background-image}} for both divs.
-* **Top Bar dropdowns**: modified to be better responsive to screen sizes, as well as overriding generally annoying styles from Wikidot's default. Made tab-navigable.
-* **Rate & Info module**: significantly restyled for better semantic separation and easier to modify with variables. Undid Info module's idiosyncratic CSS.
-* **Tabs**: Replaced the spritesheet used to style the tabs with CSS variables. Slightly less annoying to deal with.
-
-+++ Example
-
-[[image https://scp-wiki.wdfiles.com/local--files/component%3Asigma-plus/plus-example.png]]
-
+このコンポーネントはテーマ側から既定のヘッダー文字列や高さを上書きできます。
 [[div class="code"]]
 :root {
-@@    --header-title: "We don't have a 55";@@
+@@    --header-title: "SCP財団";@@
 @@    --sp_header-height: 21.75rem;@@
 }
 [[/div]]
 
+++ 作者・出典
+
+原版: [https://scp-wiki.wikidot.com/component:sigma-plus SCP-EN component:sigma-plus revision 38]。作者: [[*user EstrellaYoshte]]。この移植では機能CSSを保ち、利用者向け説明、既定の文字列とヘッダーロゴをSCP-JP向けにしています。
+
 [[/div]]
 
-++ Source Code:
+++ ソースCSS
 
 [[code type="css"]]
 :where(:root) {
-    --header-title: "SCP Foundation";
-    --header-subtitle: "Secure, Contain, Protect";
+    --header-title: "SCP財団";
+    --header-subtitle: "確保・収容・保護";
 
     --sp_header-title-size: min(calc(2.675rem * var(--sp_header-title-scale)), calc(1.25rem * var(--sp_header-title-scale) + 2.5vw));
     --sp_header-subtitle-size: min(calc(.875rem * var(--sp_header-subtitle-scale)), calc(0.475rem * var(--sp_header-subtitle-scale) + 1.25vw));
@@ -735,9 +733,8 @@ margin-left: 0;
     #top-bar div[class*="top-bar"] > ul > li { flex-grow: 1; }
 }
 [[/code]]
-
 [[/iftags]]
 
-[[module css]]
-@import url(https://scp-wiki.wdfiles.com/local--code/component%3Asigma-plus/1);
+[[module CSS]]
+@import url("https://scp-jp.wdfiles.com/local--code/component%3Asigma-plus/1");
 [[/module]]

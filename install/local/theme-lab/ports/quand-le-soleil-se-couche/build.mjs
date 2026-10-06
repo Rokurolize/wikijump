@@ -91,7 +91,7 @@ if (
 }
 
 const cssModule = composeAuthoritySource(`[[module CSS]]\n${publishCss}\n[[/module]]`, authorityCss);
-const themeSource = shell.replace("__THEME_CSS_MODULE__", cssModule);
+const themeSource = shell.replace("__THEME_CSS_MODULE__", cssModule).replace("[[module CSS]]", '[[module CSS show="true"]]');
 const demo = `[[module CSS]]\n${inlineDemoCss}\n[[/module]]\n\n${demoSource}`;
 
 await fs.mkdir(path.dirname(path.resolve(output)), {recursive: true});

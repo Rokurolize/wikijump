@@ -1,0 +1,61 @@
+{
+  "schema": "theme_lab_real_wikidot_authority_visual_review.v1",
+  "status": "reviewed",
+  "reviewed_at": "2026-10-06T20:49:33.727Z",
+  "reviewer": "Codex visual review",
+  "decision_authority": "REAL_WIKIDOT_TARGET_AB_VISUAL_REVIEW_ONLY",
+  "package": "flopstyle-dark",
+  "candidate_source_sha256": "2b9004a9304ed089aa69da78d140bc03aa333b792751b57133d7429b499aa1e3",
+  "candidate_css_sha256": "cfb5865dd28e562413dc1cbed44ace29ff4d08eb4bdc8daafcfc87b4e98c8161",
+  "capture_receipt": {
+    "path": "authority-evidence/flopstyle-dark-rev401-sigma10-credit-otherwise-20261007/receipt.json",
+    "sha256": "97dc419cb87bf6420f448e363c657d4aecab1bad8f8b005d486b0c454305dbdd"
+  },
+  "review_scope": {
+    "url": "https://pseudo-scp-jp.wikidot.com/sigma-10:main",
+    "engine": "chromium",
+    "browser_version": "154.0.8037.97",
+    "state": [
+      "credit-otherwise"
+    ],
+    "widths": [
+      320,
+      390
+    ]
+  },
+  "reviewed_screenshots": [
+    {
+      "variant": "without",
+      "width": 320,
+      "state": "credit-otherwise",
+      "index": 0,
+      "path": "authority-evidence/flopstyle-dark-rev401-sigma10-credit-otherwise-20261007/without-320-credit-otherwise-0.png",
+      "sha256": "430bfac2079e5865890d98129d7615075a970c85be6dc9a2411d85b860e29547"
+    },
+    {
+      "variant": "with",
+      "width": 320,
+      "state": "credit-otherwise",
+      "index": 0,
+      "path": "authority-evidence/flopstyle-dark-rev401-sigma10-credit-otherwise-20261007/with-320-credit-otherwise-0.png",
+      "sha256": "8203e962f1caec789b2b4bac15b2544b1b9ce430fb72169c66990647d05bd005"
+    },
+    {
+      "variant": "without",
+      "width": 390,
+      "state": "credit-otherwise",
+      "index": 0,
+      "path": "authority-evidence/flopstyle-dark-rev401-sigma10-credit-otherwise-20261007/without-390-credit-otherwise-0.png",
+      "sha256": "8bc63598306f6917e9ddaf2e287a9d1ebd4813163c8943f60a8cb33ecb15b052"
+    },
+    {
+      "variant": "with",
+      "width": 390,
+      "state": "credit-otherwise",
+      "index": 0,
+      "path": "authority-evidence/flopstyle-dark-rev401-sigma10-credit-otherwise-20261007/with-390-credit-otherwise-0.png",
+      "sha256": "fd3155dcf40c785f41ffd291035b489c2472d79c984979262d02fe7202024801"
+    }
+  ],
+  "findings": "Directly inspected the with/without credit-otherwise screenshots at 320px and 390px. The current Flopstyle Dark styling remains legible at both widths. The measured native return-credit component and anchor are present in the real target DOM; no unrelated horizontal overflow or overlap was visible."
+}

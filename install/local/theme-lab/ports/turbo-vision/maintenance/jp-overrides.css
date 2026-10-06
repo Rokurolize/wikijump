@@ -37,3 +37,21 @@
     left: 0; right: 16px; width: calc(100% - 16px);
   }
 }
+
+/* SCP-JP Wikidot native history list: preserve the seven columns inside their own horizontal scroller. */
+@media(max-width:767px) {
+  #revision-list {
+    max-width:100%;overflow-x:auto;
+  }
+}
+
+/* SCP-JP Wikidot Turbo Vision narrow navigation rows: reserve the source gray bar for wrapped labels. */
+@media(max-width:359px) {
+  #header {
+    padding-bottom:42px;
+  }
+
+  #top-bar {
+    height:40px;background-color:#aaa;
+  }
+}

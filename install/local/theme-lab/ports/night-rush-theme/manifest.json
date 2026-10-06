@@ -4,8 +4,8 @@
   "en_updated_at": "2022-12-20T21:40:07+00:00",
   "en_entity_uuid": "c5b815e1-97fc-40c4-b411-a9448612a00d",
   "jp_previous_status": "present",
-  "jp_previous_source_sha256": "05a20d5b6e1534554099e014972271405efabf5a119d6c84b8a3b2b021922453",
-  "jp_previous_updated_at": "2023-01-05T16:09:54+00:00",
+  "jp_previous_source_sha256": "03327c410ace73c1105b60aaf89f254336732ed63579c9c952608be0462bb132",
+  "jp_previous_updated_at": "2026-09-24T21:34:04+00:00",
   "jp_previous_entity_uuid": "11b60ef5-308f-470c-9850-f42fcb81fa1e",
   "technical_spec_version": "1.4",
   "reference_url": "https://scp-wiki.wikidot.com/theme:night-rush-theme",
@@ -36,8 +36,8 @@
     "jp": {
       "status": "present",
       "source_path": "existing-jp.wikidot.txt",
-      "sha256": "05a20d5b6e1534554099e014972271405efabf5a119d6c84b8a3b2b021922453",
-      "updated_at": "2023-01-05T16:09:54+00:00",
+      "sha256": "03327c410ace73c1105b60aaf89f254336732ed63579c9c952608be0462bb132",
+      "updated_at": "2026-09-24T21:34:04+00:00",
       "entity_uuid": "11b60ef5-308f-470c-9850-f42fcb81fa1e",
       "tags": [
         "en",
@@ -48,11 +48,20 @@
         "kind": "scp-corpus-page",
         "branch": "jp",
         "slug": "theme:night-rush-theme"
-      }
+      },
+      "revisions": 11
     },
     "existing_jp_audit": "existing-jp-current-and-valid",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn",
+    "existing_jp_rebase": {
+      "previous_sha256": "05a20d5b6e1534554099e014972271405efabf5a119d6c84b8a3b2b021922453",
+      "previous_snapshot": "existing-jp-pre-rebase-20261005.wikidot.txt",
+      "current_revision": 11,
+      "current_updated_at": "2026-09-24T21:34:04+00:00",
+      "current_sha256": "03327c410ace73c1105b60aaf89f254336732ed63579c9c952608be0462bb132",
+      "diff_assessment": "provenance refresh; source freshness audit found no theme CSS/runtime behavior delta"
+    }
   },
   "dependencies": {
     "slug": "theme:night-rush-theme",
@@ -91,7 +100,7 @@
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
   "candidate_origin": "current official SCP-JP page source",
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-current-and-valid",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/night-rush-theme/assets.json",
   "asset_dependency_decision_count": 3,
@@ -123,6 +132,8 @@
       "showcase_css_modules_removed_exact": 0,
       "showcase_css_modules_removed_truncated": 0,
       "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 0,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
       "candidate_css_sha256": "6ecbb80fc4aa2e7fbf948a2ced01153aa816bd2911cfcb6cfa398bc3f534245b",
       "asset_receipt_path": "assets.json",
@@ -139,7 +150,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

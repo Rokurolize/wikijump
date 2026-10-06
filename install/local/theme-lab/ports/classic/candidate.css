@@ -418,15 +418,30 @@ table.wiki-content-table td {
 
 
 
-#header h1 a::before{
-     content: "The SCP Foundation";
-}
- #header h2 span::before{
-     content: "To Secure, Contain, and Protect";
-}
+
 
 
 /* SCP-JP Wikidot Classic mobile endpoint correction: contain the last submenu above the wrapped narrow layout. */
 @media (min-width: 360px) and (max-width: 767px) {
   #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
+}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  #side-bar { overflow-x: auto !important; }
+}
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Classic narrow mobile navigation: keep localized destinations inside one readable bar row. */
+@media (max-width: 359px) {
+  #top-bar .mobile-top-bar > ul > li > a {
+    padding-left: .7em;
+    padding-right: .7em;
+  }
+  #top-bar .mobile-top-bar > ul > li:last-child > ul {
+    left: auto;
+    right: 0;
+  }
 }

@@ -328,16 +328,18 @@
           "marker": "Resolve preserved source CSS component includes",
           "origin": "source-css-include-resolution",
           "authority": "RUNTIME_INDEPENDENT",
-          "sha256": "4909badaa3bd401e820d6ac2ea4f4d4b734f1544b3592a63b1b9ba4b63abfaf5",
-          "rationale": "Exact source-owned include CSS and literal source parameters, materialized after site base imports before source theme declarations.",
+          "sha256": "91a598f39414626016af54112e912f4d7f3ed958e883ed2737fefb08c576ae9b",
+          "rationale": "Materialize the reviewed SCP-JP component publication-source CSS locally before the theme declarations. This removes the temporary EN-component oracle while preserving the exact component behavior that will be published to SCP-JP.",
           "evidence": [
             {
               "path": "basalt/source-css-includes.json",
-              "sha256": "4909badaa3bd401e820d6ac2ea4f4d4b734f1544b3592a63b1b9ba4b63abfaf5"
+              "sha256": "91a598f39414626016af54112e912f4d7f3ed958e883ed2737fefb08c576ae9b",
+              "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_BINDING"
             },
             {
-              "path": "shared-fixtures/current-source-components-jp/receipt.json",
-              "sha256": "6ed5d876df05625082ce9c92fc69abe7eac6fa4b787b48eeccd9cd7b9b3b1676"
+              "path": "basalt/source-includes/betterfootnotes.wikidot.txt",
+              "sha256": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d",
+              "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_SOURCE"
             }
           ]
         }
@@ -347,15 +349,15 @@
         "candidate-input.css": "0a40d1b821a9f77c875da059e36c9d089a1250b9911d50d4ea6e944098baa7d0",
         "authority-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
-        "source-includes/betterfootnotes.wikidot.txt": "a93c113949c85d818d49453d7e0271fa0a06c9eed70b0641eebd2466aab33c8c",
-        "source-includes/betterfootnotes-input.css": "2fc50a2c55c1c62c675b9486918a57da966d8011b9c54d483de6821efef336be",
+        "source-includes/betterfootnotes.wikidot.txt": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d",
+        "source-includes/betterfootnotes-input.css": "4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5",
         "source-includes/acs-animation.wikidot.txt": "9d275b2ce4a8399a5754801e943ce8962c597d2515d9b4bd3ec8101711161de8",
         "source-includes/acs-animation-input.css": "9c2d54387591ead58b15b16791039c675b87d47c268b98800b48eed8f6662690",
-        "source-css-includes.json": "4909badaa3bd401e820d6ac2ea4f4d4b734f1544b3592a63b1b9ba4b63abfaf5"
+        "source-css-includes.json": "91a598f39414626016af54112e912f4d7f3ed958e883ed2737fefb08c576ae9b"
       },
       "outputs": {
-        "candidate.css": "78b8bd21dce4bb8130ae89f7e9b825163ddbcd7abab6ff33a621a0d7293ae581",
-        "candidate-source.css": "462646e6eb5aa041908476fd8ed91ed62eee06124359c130ae4a994a77749d11",
+        "candidate.css": "c1b44963493737105ecb19c33bb49a41c4b931c09a9b3dbecde0562b0f942823",
+        "candidate-source.css": "4299340521db719481a402743d780d52e8c4337a2e1557df7d2c5311d8234638",
         "candidate.wikidot.source.txt": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
         "candidate.wikidot.txt": "4a266040a4c16b6ffd7e281a8615d476680872c057c0d5a4078a07fecb9110ae",
         "maintenance/base.wikidot.txt": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
@@ -715,9 +717,9 @@
         {
           "marker": "source-theme-and-localized-document-input",
           "origin": "preserved-source",
-          "sha256": "a0b2553ed2ef9958d159b6c32f5de1ba48137c58547a8fb405df4259323e0cd6",
+          "sha256": "204ba9991e64a43359ce626e5b6f775e709a1c482974f44896cd6c11326c7e73",
           "authority": "SOURCE_THEME",
-          "rationale": "Preserve source-theme imports, source declarations, include parameters and localized documentation before the historical campaign suffix. Asset freezing and include expansion are separate runtime-independent transforms.",
+          "rationale": "Materialize the exact active default article CSS modules from the already authority-bound publishable localization base. Exclude commented/false variant and theme-page presentation modules; source component includes and certified overlays remain their separate layers.",
           "evidence": [
             {
               "path": "foxtrot/upstream-en.wikidot.txt",
@@ -726,8 +728,13 @@
             },
             {
               "path": "foxtrot/existing-jp.wikidot.txt",
-              "sha256": "93f5876476041e7bc3f28e52fc7da233f1f78733f1ff687157086a64b05eb925",
+              "sha256": "d342ea8a6503fe16f975d74ff6646ff285ab8a382538e54c3e863d70bd055634",
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+            },
+            {
+              "path": "foxtrot/runtime-css-materialization.json",
+              "sha256": "7d17d16f28c2f1924970a2218b469f9f67ff8b7d079bbced8374b71ab6d8d005",
+              "decision_authority": "FROZEN_WIKIDOT_SOURCE_MODULES"
             }
           ]
         },
@@ -735,12 +742,17 @@
           "marker": "SCP-JP Wikidot Foxtrot background correction: allow the source dark body palette to show through the Sigma-9 wrapper.",
           "sha256": "1cf54f38791d5a2e86eceab485b2ac2994770e66b800eed9a14b3f5a38e3d610",
           "origin": "target-certified-replacement",
-          "authority": "TARGET_WIKIDOT_CERTIFIED",
-          "rationale": "The frozen source CSS intentionally paints a dark body with light text. Real SCP-JP Sigma-9 adds a light wrapper background absent from that intent, obscuring the light text. Clear only that image; four widths verify the computed layer and retain source colors.",
+          "authority": "REMOVE",
+          "rationale": "Restoring the complete active main stylesheet independently clears the Sigma-9 wrapper background. Frozen native same-CSS A/B passes with this block removed, including the prior background-image computed contract. Remove the redundant correction; retain its old receipts as diagnostics.",
           "evidence": [
             {
-              "path": "authority-evidence/foxtrot-final-navigation-readable-body-20-0-20261001/receipt.json",
-              "sha256": "f7c09ca8c75c85d7206f76ae52a5695f464fe8e4213f2423c5a7ce73a0807bfd",
+              "path": "authority-evidence/foxtrot-default-source-owner-readable-body-20-0-20261001/receipt.json",
+              "sha256": "d24f266b8331b2a51b03a96e17ab1f469995533a9cd18ab42ea915d8c9afe003",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            },
+            {
+              "path": "authority-evidence/foxtrot-materialized-final-readable-body-20-20261001/receipt.json",
+              "sha256": "3ae177cc04ce6e338d57ae0d2739418f8137cfe8b069cdd1ac18e4fa06bd2f57",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -757,36 +769,42 @@
               "path": "foxtrot/upstream-en.wikidot.txt",
               "sha256": "04407aa0cfb8cf27b6066cd994b7b1ae7d2c867f187aacbd90639423f7c78b5d"
             }
-          },
-          "published_css_sha256": "16d20dd41d1c6610da31afb4bb3b667efebeadab21c146d1966d6deb06fb7aca"
+          }
         },
         {
           "marker": "Resolve preserved source CSS component includes",
           "origin": "source-css-include-resolution",
           "authority": "RUNTIME_INDEPENDENT",
-          "sha256": "24cac5e58e8bad7afbd4fb5f2ac581759331609d3e10406b7bed0274c18ba7d2",
-          "rationale": "Exact source-owned include CSS and literal source parameters, materialized after site base imports before source theme declarations.",
+          "sha256": "ca5375a8eb7bea14e007095268c13a32b3a69e5e341fce0abb6120cc20eafbc8",
+          "rationale": "Materialize the reviewed SCP-JP component publication-source CSS locally before the theme declarations. This removes the temporary EN-component oracle while preserving the exact component behavior that will be published to SCP-JP.",
           "evidence": [
             {
               "path": "foxtrot/source-css-includes.json",
-              "sha256": "24cac5e58e8bad7afbd4fb5f2ac581759331609d3e10406b7bed0274c18ba7d2"
+              "sha256": "ca5375a8eb7bea14e007095268c13a32b3a69e5e341fce0abb6120cc20eafbc8",
+              "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_BINDING"
             },
             {
-              "path": "shared-fixtures/current-source-components-jp/receipt.json",
-              "sha256": "6ed5d876df05625082ce9c92fc69abe7eac6fa4b787b48eeccd9cd7b9b3b1676"
+              "path": "foxtrot/source-includes/fade-in.wikidot.txt",
+              "sha256": "a4882c56f2c0be3af6f9c4d1d0b6d6054ddbf86c16e6fa584342e2a6adb71f90",
+              "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_SOURCE"
+            },
+            {
+              "path": "foxtrot/source-includes/betterfootnotes.wikidot.txt",
+              "sha256": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d",
+              "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_SOURCE"
             }
           ]
         },
         {
           "marker": "SCP-JP Wikidot Foxtrot navigation correction: separate the drawer toggle from the header menu and contain row endpoint submenus.",
-          "sha256": "0038b036c90e6c41c068bb653eac94bf6ee7f85ed813d2c36c6103ddf80127dd",
+          "sha256": "15c5280fde0e4808cf39a31b03d4424b4ca729f861d05161f34605a7f853ace5",
           "origin": "target-certified-replacement",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
-          "rationale": "The source header containing block places the drawer toggle over the first parent. Separate the toggle from that menu and anchor only the evidenced overflow endpoints, preserving header flow and source menu dimensions.",
+          "rationale": "The complete default source stylesheet still requires the drawer separation and third-menu endpoint correction at mobile widths. The fourth parent wraps at 390px, so right-anchoring it creates a new left escape and is removed. Trusted native A/B exercises all eight parent actions with the retained correction.",
           "evidence": [
             {
-              "path": "authority-evidence/foxtrot-navigation-action-authority-20261001/receipt.json",
-              "sha256": "37000ecc3858efa6c68c62093c4299956519a9823a78171028129105e60a9ea9",
+              "path": "authority-evidence/foxtrot-component-refresh-navigation-chromium-20261005/receipt.json",
+              "sha256": "7971c30fb81e03fba8d13a46c669b1285d7b9dab8705d760927745d26a83ca06",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -798,32 +816,64 @@
               390
             ]
           },
-          "published_css_sha256": "16d20dd41d1c6610da31afb4bb3b667efebeadab21c146d1966d6deb06fb7aca"
+          "published_css_sha256": "db15469bd49cb604c373918859834372b1cfc07b79157c0d66747c8f61c69912"
+        },
+        {
+          "marker": "SCP-JP Wikidot Foxtrot WebKit row endpoint: contain the fourth submenu where the engine keeps all parents on one row.",
+          "sha256": "aafd43797a2065561b9a42ad3269189cfba6c6d5501cb34275502c1bc7978a76",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "origin": "target-certified-replacement",
+          "rationale": "In WebKit at 390px all four native JP menu parents stay on one row. The fourth submenu expands even the closed document beyond the viewport; the unthemed state fits. Right-anchor this row endpoint only in WebKit at 360–767px. Native normal and all eight navigation actions pass; the wrapped 320px row and other engines retain their existing anchors.",
+          "evidence": [
+            {
+              "path": "authority-evidence/foxtrot-component-refresh-normal-webkit-20261005/receipt.json",
+              "sha256": "dc4da2e03b0cc2871699e26056bfbc8100c43edd6160b2e9aeb45db419a9bac5",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            },
+            {
+              "path": "authority-evidence/foxtrot-component-refresh-navigation-webkit-20261005/receipt.json",
+              "sha256": "f8276df16b5cadd9504c20988193eb2f05c480925f81066d9e377f8d1b0062f1",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+            "states": [
+              "normal",
+              "navigation-action"
+            ],
+            "viewports": [
+              320,
+              390
+            ]
+          },
+          "published_css_sha256": "db15469bd49cb604c373918859834372b1cfc07b79157c0d66747c8f61c69912"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
-        "candidate-input.css": "a0b2553ed2ef9958d159b6c32f5de1ba48137c58547a8fb405df4259323e0cd6",
-        "authority-overrides.css": "ab72aa8ca8cfa38674bb606a42ffe43b7d672f46024b6f6af6747a18e054f728",
+        "candidate-input.css": "204ba9991e64a43359ce626e5b6f775e709a1c482974f44896cd6c11326c7e73",
+        "authority-overrides.css": "e50f6ac33618d59caf40271fd30bafa8fe8bfec545f7084fe22b7816a611ef1a",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar.wikidot.txt": "5e6e6bf79aa9b08344865b1209693254db4c8d1aef7d579092bc6dd9c7c55e35",
         "source-includes/toggle-sidebar-input.css": "d4d80ebcc0e2afb61490420a96b3f0b4cc29dfc9de532029e062af1ee80028ae",
-        "source-css-includes.json": "24cac5e58e8bad7afbd4fb5f2ac581759331609d3e10406b7bed0274c18ba7d2",
+        "source-css-includes.json": "ca5375a8eb7bea14e007095268c13a32b3a69e5e341fce0abb6120cc20eafbc8",
         "source-includes/acs-animation.wikidot.txt": "9d275b2ce4a8399a5754801e943ce8962c597d2515d9b4bd3ec8101711161de8",
         "source-includes/acs-animation-input.css": "9c2d54387591ead58b15b16791039c675b87d47c268b98800b48eed8f6662690",
-        "source-includes/fade-in.wikidot.txt": "69829e1b8c93c57d79254911adbb96df4ce3e0ced9285d900b01b4cfd714d95c",
-        "source-includes/fade-in-input.css": "5a74694f5601bc5fb2e36dc6dcaa9996091d2b3891aaa392b2e9a5715a08290d",
-        "source-includes/betterfootnotes.wikidot.txt": "a93c113949c85d818d49453d7e0271fa0a06c9eed70b0641eebd2466aab33c8c",
-        "source-includes/betterfootnotes-input.css": "2fc50a2c55c1c62c675b9486918a57da966d8011b9c54d483de6821efef336be"
+        "source-includes/fade-in.wikidot.txt": "a4882c56f2c0be3af6f9c4d1d0b6d6054ddbf86c16e6fa584342e2a6adb71f90",
+        "source-includes/fade-in-input.css": "f08bd5ec39fd99fa194e1614c1523191b66f7168e8d332b9eac0bf384222cd17",
+        "source-includes/betterfootnotes.wikidot.txt": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d",
+        "source-includes/betterfootnotes-input.css": "4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5",
+        "runtime-css-materialization.json": "7d17d16f28c2f1924970a2218b469f9f67ff8b7d079bbced8374b71ab6d8d005"
       },
       "outputs": {
-        "candidate.css": "16d20dd41d1c6610da31afb4bb3b667efebeadab21c146d1966d6deb06fb7aca",
-        "candidate-source.css": "b815909cbe7e1d7a3bd24a6a00cf68b284885f11fb3f11d8c7cb9d56c243ef03",
-        "candidate.wikidot.source.txt": "bb5cb179a2d565e4874f57e9490cbb75fa8ebc20f01d0287bf83135a240aff72",
+        "candidate.css": "db15469bd49cb604c373918859834372b1cfc07b79157c0d66747c8f61c69912",
+        "candidate-source.css": "57f5b70ec4d75bf10a09461bc06b848c79f80afa7787d7af0079284d9db1afeb",
+        "candidate.wikidot.source.txt": "e0bbf7be650005b5f7d5e3893e598e16febd6f06d0bc26fc86f90163520b4e47",
         "candidate.wikidot.txt": "49e6c67780fa597483e84c34e92e1f69c9c883b0385aa2044076593154c34fcb",
         "maintenance/base.wikidot.txt": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
-        "maintenance/jp-overrides.css": "2fbcc8171099e0a9a115d694d792ededd663f8b62e2bebab0961e98c328d73eb",
-        "maintenance/final.wikidot.txt": "6399526f2d1ae714f74a0772510ecf7e2e42b3bfda25c3007e9f845e9bb03a41"
+        "maintenance/jp-overrides.css": "4e673bd50dad499374773efdfdfa62fb6ac3f9cf7bd82e7fbe44a4e19edc7978",
+        "maintenance/final.wikidot.txt": "f8a5bb6bf010741cbe19dbdf55541c4ad30a62343d845d3d296b6b6606980156"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -834,8 +884,8 @@
         }
       },
       "current_navigation_evidence": {
-        "path": "authority-evidence/foxtrot-navigation-action-authority-20261001/receipt.json",
-        "sha256": "37000ecc3858efa6c68c62093c4299956519a9823a78171028129105e60a9ea9"
+        "path": "authority-evidence/foxtrot-component-refresh-navigation-chromium-20261005/receipt.json",
+        "sha256": "7971c30fb81e03fba8d13a46c669b1285d7b9dab8705d760927745d26a83ca06"
       }
     },
     "black-highlighter-theme": {
@@ -919,7 +969,7 @@
             },
             {
               "path": "black-highlighter-theme/existing-jp.wikidot.txt",
-              "sha256": "809901626419de877645afccb36574a01ef943cfbd5d70a4b167210ebe4db939",
+              "sha256": "760ef1fb2d85d2c956c7ae59c6792c22c651faf05dc547669a86e66f5702c10e",
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
             }
           ]
@@ -1150,9 +1200,8 @@
           ],
           "evidence": [
             {
-              "path": "authority-evidence/site-image-block-authority-20261001/receipt.json",
-              "sha256": "db68c84cf5fb5520c10a0e0a0b89c4914b617308c78d538f3ee136203da842db",
-              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+              "path": "authority-evidence/site-image-final-css-v5-20261005/receipt.json",
+              "sha256": "93aeba0513aa02af20eafd177d3d6410d3c696d164fbbe88a30d60fc52263830"
             }
           ],
           "scope": {
@@ -1164,25 +1213,63 @@
               1440
             ]
           },
-          "published_css_sha256": "eaa8088894338c084bf745a6da3bb6269976e498636ea2d6a750677ee188c206",
-          "published_base_css_sha256": "869c96d0a83b3beef1775abe5c08801a319443a301ea6e8f056b0a38ad9e6833"
+          "published_css_sha256": "28a72ef325901611e12a505fa1e94ea40a315c80cb316f787d6ec6c2ee3606a4",
+          "published_base_css_sha256": "23b32297ee4252de0f78d0cc40ec6fc43b0c6c75ae2a3f8b78e7a71e4cba6440"
+        },
+        {
+          "marker": "SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access.",
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "sha256": "d0f6ee5e3aee7abe85a50b3a3c934b55ba2ad17fea9f3915b4922d8028644487",
+          "rationale": "Wikidot PagePreview keeps HTML blocks literal. Keep a long literal frame source within the tablet sidebar while preserving horizontal access; the rule is media-limited and removes no content.",
+          "evidence": [
+            {
+              "path": "authority-evidence/sigma10-preview-sidebar-containment.json",
+              "sha256": "f1e70f4fffaefbbb888cda9bfa748f283d0cae7657f34483f9876485f4a05bab"
+            }
+          ]
+        },
+        {
+          "marker": "SCP-JP Wikidot narrow mobile navigation: keep the penultimate submenu within its owning row.",
+          "rationale": "A same-SCP-JP-target Sigma-10 comparison at 320px showed the candidate added 4px of document overflow (21px candidate versus 17px baseline). Moving only the penultimate submenu 4px left returns candidate overflow to the existing 17px target baseline; no viewport escape or interaction failure remains.",
+          "sha256": "3a6057cc9f4c3585dc7e77e20ac38bb2f48d9122c140b94a67e609ad0cc21516",
+          "selectors": [
+            "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul"
+          ],
+          "at_contexts": [
+            "@media (max-width: 359px)"
+          ],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/site-narrow-submenu-target-delta-20261005/receipt.json",
+              "sha256": "8eab23ded271277649ae572a80e6586402dee61b79da0897fab81a6e82ba9595"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-10 current target acceptance",
+            "state": "settled+narrow-mobile",
+            "viewport_width": 320
+          },
+          "published_css_sha256": "28a72ef325901611e12a505fa1e94ea40a315c80cb316f787d6ec6c2ee3606a4"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343",
         "candidate-input.css": "18768d711c87cec0cb6ed1b79a2d7023a53a422f35f39e841417374be0de3a69",
-        "authority-overrides.css": "d7325c53977f68385403a38a1140f67fe2643cc467c2467f770c37921f02145a",
+        "authority-overrides.css": "36fb098bb9a87a64c79a8d526e4ef00619692bd10f57fdea04b0bab5f749f5ad",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd"
       },
       "outputs": {
-        "candidate.css": "eaa8088894338c084bf745a6da3bb6269976e498636ea2d6a750677ee188c206",
-        "candidate-source.css": "eaa8088894338c084bf745a6da3bb6269976e498636ea2d6a750677ee188c206",
-        "candidate-base.css": "869c96d0a83b3beef1775abe5c08801a319443a301ea6e8f056b0a38ad9e6833",
-        "candidate.wikidot.source.txt": "5aa82bc9e061687b59147410f9fa05f56ce98701943e0fefa23fd50dcd2d5dcd",
-        "candidate.wikidot.txt": "f1a5e4a53a40855aa68e172876031063487cd3f733651e5bdc124764755912dd",
+        "candidate.css": "28a72ef325901611e12a505fa1e94ea40a315c80cb316f787d6ec6c2ee3606a4",
+        "candidate-source.css": "28a72ef325901611e12a505fa1e94ea40a315c80cb316f787d6ec6c2ee3606a4",
+        "candidate-base.css": "23b32297ee4252de0f78d0cc40ec6fc43b0c6c75ae2a3f8b78e7a71e4cba6440",
+        "candidate.wikidot.source.txt": "b62171f0df44d62ebe3af75eca1cb53ef854f0b8e747dedade2ed0ee399e9c48",
+        "candidate.wikidot.txt": "84e8437250d8e678be52a6c54fd12dc095fe9a0e9977f20311c5f322729e2924",
         "maintenance/base.wikidot.txt": "9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343",
-        "maintenance/jp-overrides.css": "b0a6afc1bc2cd08513cab4c383969c27aa1888a5a5f405c6cd6949c5d17abefe",
-        "maintenance/final.wikidot.txt": "a4edded4af020678bb3a10b4324a3a977ff13e24900e127f867f32b72d7b6b87"
+        "maintenance/jp-overrides.css": "5b80b2f9a908df9d19e2f8f3f85bd63768efb2856751e6ce7e09656819894134",
+        "maintenance/final.wikidot.txt": "b19c9514e1a1b4ffc8c045a3803832515df02b2a0dcf03bf0fa340285aa4a555"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -1318,7 +1405,7 @@
             },
             {
               "path": "isolated-terminal/existing-jp.wikidot.txt",
-              "sha256": "4cffaa491e5f88926e9793f732bdb80616f0c8a91282b2544478e1b9caa41e30",
+              "sha256": "7b004be4cad79ce61c5c092e5aa714d40c95369ab8422a465025917ab0bd8ea4",
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
             }
           ]
@@ -1343,12 +1430,98 @@
               "sha256": "38a3de3d2a1987b57615dfa215eeaddde2fe31e5ffb5d7ce4f190656c18dcee2"
             }
           ]
+        },
+        {
+          "marker": "SCP-JP Wikidot Isolated Terminal narrow login: wrap account links inside the masthead without changing their type scale.",
+          "sha256": "6707e306f24b83dd7f06d5ff013bc47c59dd3663274779dc3a551f14c8b555fa",
+          "origin": "target-certified-replacement",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "rationale": "The native narrow account region extends 10.71875px off-left under this theme. Bound it to the masthead and allow its links to wrap, preserving the source font scale and wider states.",
+          "evidence": [
+            {
+              "path": "authority-evidence/isolated-terminal-generated-final-normal-20261002-v2/receipt.json",
+              "sha256": "6b96ff3bbcf2e5dc0cf5a5be5393b8ab0f7db785160b2fdd8355945b96948c3c",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://scp-jp.wikidot.com/scp-173",
+            "state": "normal",
+            "viewports": [
+              320,
+              390,
+              1440
+            ],
+            "selectors": [
+              "#login-status",
+              "#login-status a"
+            ]
+          },
+          "published_css_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2"
+        },
+        {
+          "marker": "SCP-JP Wikidot Isolated Terminal native History: retain form and revision columns inside horizontal scrollers.",
+          "sha256": "ce7c12ba301c97f593548b6916c2a5c807c88f88dbf4c592618567b4b44ff042",
+          "origin": "target-certified-replacement",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "rationale": "The exact native History read responses expand a 320px document to 462px; its filter table still extends 38px after containing the revision list alone. Retain both tables in horizontal scrollers, without claiming filter/diff behavior.",
+          "evidence": [
+            {
+              "path": "authority-evidence/isolated-terminal-generated-final-history-list-20261002-v2/receipt.json",
+              "sha256": "6d11fcd6178c97b34fb66764a9960bb6b1d0684de6706871137821920209f46e",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://scp-jp.wikidot.com/scp-173",
+            "state": "history-list",
+            "viewports": [
+              320,
+              390,
+              1440
+            ],
+            "selectors": [
+              "#revision-list",
+              "#history-form-1 .form"
+            ]
+          },
+          "published_css_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2"
+        },
+        {
+          "marker": "SCP-JP Wikidot Isolated Terminal narrow tables: preserve their columns in an intrinsic-width horizontal scroller.",
+          "sha256": "fe041f5cfdf0b49e860f01fb32327f85a4e038f196aef87ca0dd7fefdcbccd55",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "origin": "target-certified-replacement",
+          "rationale": "Anonymous native SCP-JP preview table rows retain the actual Wikidot table DOM. The longer three-column case expands a 320px document to 337px under the source theme. A table-owned horizontal scroller preserves all columns, the source type scale, compact control widths and wider layouts. Authority is preview component geometry in the frozen standard SCP-JP shell, not a saved-page or editing claim.",
+          "evidence": [
+            {
+              "path": "authority-evidence/isolated-terminal-generated-final-article-table-20261002-v2/receipt.json",
+              "sha256": "d6a0dabc9387fab9d0483e85a76951c34231d1bcfde4ff910617454fea33565f",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://scp-jp.wikidot.com/scp-173",
+            "state": "article-table",
+            "viewports": [
+              320,
+              390,
+              1440
+            ],
+            "selectors": [
+              ".native-table-positive-one table.wiki-content-table",
+              ".native-table-positive-two table.wiki-content-table",
+              ".native-table-negative-one table.wiki-content-table",
+              ".native-table-negative-two table.wiki-content-table"
+            ]
+          },
+          "published_css_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "e2a79c2965b4558f59b4a0884fc18563a7ee8c6ad17d27d6e5f219856044459c",
         "candidate-input.css": "8d94e5301b2d8defe39877fa97953287ca77acb73b49b58daf4fa1d5edc43a1a",
-        "authority-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "authority-overrides.css": "aba7816550929ab34d537aa5f297cc9ad364ecba2c8c54981bf092d2e5e73a49",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar-bhl.wikidot.txt": "212ffc2c275de8baa38b3da02d6e08636d649ea5324e0c9c2e9dab6a313a73dc",
         "source-includes/toggle-sidebar-bhl-input.css": "6a820d809d6029aa94eb1285ae644e0f2e28d03c3656e37ee32f6d4473fed1fb",
@@ -1357,13 +1530,13 @@
         "source-css-includes.json": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022"
       },
       "outputs": {
-        "candidate.css": "82d2b9d5d93bc57a58acc320225b6f779f98fc6b91584d9edb1c937cc479f5ed",
-        "candidate-source.css": "b73c5e7045d2e7446870c34b3f0ba449769a8a00983d7fb85c9817282630f304",
-        "candidate.wikidot.source.txt": "e2a79c2965b4558f59b4a0884fc18563a7ee8c6ad17d27d6e5f219856044459c",
-        "candidate.wikidot.txt": "5ce795e7e6a9d28dc09403c82854da33b9f736556245b258ea3783631c72d46f",
+        "candidate.css": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+        "candidate-source.css": "5ad87d16d773b9f56cd1db7904a7dac4b9ee808e7a0e7c21d3becdf4d29dcf81",
+        "candidate.wikidot.source.txt": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+        "candidate.wikidot.txt": "9c9ac22ea08e631f4e7ead42bdc53e86e9dcb990e9ed742cf97dcd630f2c4d8e",
         "maintenance/base.wikidot.txt": "e2a79c2965b4558f59b4a0884fc18563a7ee8c6ad17d27d6e5f219856044459c",
-        "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "maintenance/final.wikidot.txt": "e2a79c2965b4558f59b4a0884fc18563a7ee8c6ad17d27d6e5f219856044459c"
+        "maintenance/jp-overrides.css": "8a9af036f7af817c26040ed10056babd3fd8f6193562f3195a4fec0d8b01c901",
+        "maintenance/final.wikidot.txt": "5379e2db62a142b3d1c080d9a96c56fefc6b40a52b50a768945ba347e2ef1073"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -1693,7 +1866,7 @@
             },
             {
               "path": "penumbra/existing-jp.wikidot.txt",
-              "sha256": "f164a9b83100be37a9695d067604cc3563032bcd1cfd6016e7e5200ad21a72b7",
+              "sha256": "9ab03d7a81385d6867dd7cf6fabcad33b3257b8f11296479924031b9eb1cbec0",
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
             }
           ]
@@ -2049,8 +2222,8 @@
           "rationale": "Frozen real SCP-JP A/B establishes this specific target regression and verifies the minimum correction. Source styling, palette, dimensions, and unrelated menus remain owned by the imported theme.",
           "evidence": [
             {
-              "path": "authority-evidence/scpedia-settled-published-current-v8/receipt.json",
-              "sha256": "4987484ea0f38db70129cb6a88c9ce4adae79edbf11d23416449d0e2bcbcb6ff",
+              "path": "authority-evidence/scpedia-current-generated-authority-15-settled-20261002/receipt.json",
+              "sha256": "52e5082923dd1ff38d2d7884e109467007d5f5904d260a41da5ed4bb0ea552b7",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -2070,23 +2243,47 @@
               "sha256": "195a9d70bbfed2cf6cb177aec6b7f8f236c7ca161af19b040d1a653f8da16284"
             }
           },
-          "published_css_sha256": "8879d620581f542e01b0f16d52df22737db850e655b61e0326cfb71831ee0660"
+          "published_css_sha256": "68d1cdb84e515d1c7693a3663d70915f05e7bf5d4de3b9294f7c2a9774b21924"
+        },
+        {
+          "marker": "SCP-JP Wikidot native history list: preserve the seven columns inside their own horizontal scroller.",
+          "sha256": "2094c32464d499abf47df40b62cc958016249707445299f7775fbf9df36f8832",
+          "origin": "target-certified-replacement",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "rationale": "The exact retained native History responses stay within the unthemed SCP-JP viewport, while this theme expands the document. Keep all seven columns and native radios in their own horizontal scroller. This proof establishes list geometry only.",
+          "evidence": [
+            {
+              "path": "authority-evidence/scpedia-chromium-generated-final-history-20261002-v2/receipt.json",
+              "sha256": "15fb53f20108315d31f8e1338bab3526487db539b522be30d09c42c67beb8dbe",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://scp-jp.wikidot.com/scp-173",
+            "state": "history-list",
+            "viewports": [
+              320,
+              390,
+              1440
+            ]
+          },
+          "published_css_sha256": "68d1cdb84e515d1c7693a3663d70915f05e7bf5d4de3b9294f7c2a9774b21924"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "c72a8efe05d1b61db6186108038dbfaca435d076a00f78319464deed5cfbb7c5",
         "candidate-input.css": "f0dcaaffb851a91e022f5ad7c8b033ce5cd9e9d78dba183e0fb144925265be3f",
-        "authority-overrides.css": "99306e14fd6e49e300a041e1780cabf0180bb1290beb26f6874e10b344014206",
+        "authority-overrides.css": "d7a619f67c81f5b1bd398740b0e63045be2575f01752eadd2c2550bd8b2f023e",
         "asset-transforms.json": "0c24102540a240fa3ab06ad8164b12f4bbde36e0f8bca6b0c8516440c1ee7091"
       },
       "outputs": {
-        "candidate.css": "8879d620581f542e01b0f16d52df22737db850e655b61e0326cfb71831ee0660",
-        "candidate-source.css": "e5aab1d426ea2d90df1821062f4e89cf552e84610ee4373621deb9a7268d78f5",
-        "candidate.wikidot.source.txt": "7d3669b6ee3e4c5cc5a2653403c679532610e2a78a7c4d8969eccc2577e1346f",
-        "candidate.wikidot.txt": "4258c537b2ff47e5be915d0dff75fdf5d3f4a72dd8f2859613e928ea1c8cad35",
+        "candidate.css": "68d1cdb84e515d1c7693a3663d70915f05e7bf5d4de3b9294f7c2a9774b21924",
+        "candidate-source.css": "94fb353dfbe2f72bd25ac324952421d66f139bca71b0debbaa585b355f620fa7",
+        "candidate.wikidot.source.txt": "a03ffcf8189adfaf7d9e43fd3084c61957f9f4910a6096b32d9073ad699d70f8",
+        "candidate.wikidot.txt": "db15bd1d29bbdd3c9afc7df0394d7a5e0dae707c9c6d24d55629d7801f7bd44e",
         "maintenance/base.wikidot.txt": "c72a8efe05d1b61db6186108038dbfaca435d076a00f78319464deed5cfbb7c5",
-        "maintenance/jp-overrides.css": "e5561c15adf3f9bf631c521ab053746e696314fe3bb9a57f90969428f95658df",
-        "maintenance/final.wikidot.txt": "8e9b7cd11a718d8ee83352f4d571ea936d4e7ef3107cd9c2a021216cac61d419"
+        "maintenance/jp-overrides.css": "301bd46a3731b354212eccf782c23aa4b1e00b7a2a40dd4cac69a857b3fc132c",
+        "maintenance/final.wikidot.txt": "bf2e81396c35166d28fc55a7b61c932d31102739753c889521580dd362b1565f"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -2097,8 +2294,12 @@
         }
       },
       "current_navigation_evidence": {
-        "path": "authority-evidence/removed-scpedia-current/receipt.json",
-        "sha256": "b6adb217c0e27693f8cbcd67adc30432f903fe7510bf99685adf1a94e64f197b"
+        "path": "authority-evidence/scpedia-current-generated-navigation-20261002/receipt.json",
+        "sha256": "490f8025c4926f6b48e722d43887f12d1ddfe0c13000f60f4b693d1299afabbc",
+        "baseline": {
+          "path": "authority-evidence/native-navigation-baseline-chromium-20261002/receipt.json",
+          "sha256": "38829f33d29e8b6f399aba80ad04059507da9386a311305106e49659e9d38e61"
+        }
       }
     },
     "al-slop": {
@@ -2326,13 +2527,13 @@
           "evidence": [
             {
               "path": "al-slop/source-includes/receipt.json",
-              "sha256": "ec3cb6e20e0940f5a975573fa78c6aba8caa7edb29fe020c380b5bbecae1bc70",
-              "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+              "sha256": "7e32c051740bb5c61155c44ad41dae7697c9a65c5d8d2af7ae3efd8c4334fa5e",
+              "decision_authority": "FOREIGN_DEPENDENCY_POLICY_AUDIT"
             },
             {
               "path": "al-slop/source-css-includes.json",
-              "sha256": "c0fae8c4897b5ee9f2b46a968be89a88ad0c22765199284d9b02d4daa8016bce",
-              "decision_authority": "SOURCE_INCLUDE_TRANSFORM"
+              "sha256": "02e25771b7150b87385c11550cbce45a4ab7886bb9260b436c3928ede4709620",
+              "decision_authority": "FOREIGN_DEPENDENCY_POLICY_AUDIT"
             }
           ]
         },
@@ -2345,11 +2546,11 @@
           "evidence": [
             {
               "path": "al-slop/source-css-includes.json",
-              "sha256": "c0fae8c4897b5ee9f2b46a968be89a88ad0c22765199284d9b02d4daa8016bce"
+              "sha256": "02e25771b7150b87385c11550cbce45a4ab7886bb9260b436c3928ede4709620"
             },
             {
               "path": "al-slop/source-includes/receipt.json",
-              "sha256": "ec3cb6e20e0940f5a975573fa78c6aba8caa7edb29fe020c380b5bbecae1bc70"
+              "sha256": "7e32c051740bb5c61155c44ad41dae7697c9a65c5d8d2af7ae3efd8c4334fa5e"
             }
           ]
         },
@@ -2361,27 +2562,26 @@
           "rationale": "The preserved Sigma Plus source grid expands beyond the real Japanese search control at 320px. On the frozen real SCP-JP header/menu DOM, candidate without this declaration escapes 22px at 320px; candidate with it keeps all links and submenus inside both edges at 320px and 390px. One source grid track becomes shrinkable; source typography, menu spacing, and colors remain intact.",
           "evidence": [
             {
-              "path": "authority-evidence/al-slop-grid-current/receipt.json",
-              "sha256": "1478fb35c23d5a977a9b4cc1da2f39788141f0f5d7b3907559d7f3a3ddab63a4",
+              "path": "authority-evidence/al-slop-responsive-grid-current-20261005/receipt.json",
+              "sha256": "cdcb9738770c040773b2c0c61b0d54ddc08beb08ba9d6c056b3f51dddf89ee6f",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
           "scope": {
             "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
-            "state": "navigation",
+            "state": "header-title-search",
             "viewports": [
               320,
               390
             ],
             "selectors": [
-              "#header",
-              "#top-bar .mobile-top-bar > ul",
-              "submenu",
-              "submenu li",
-              "submenu a"
+              "#header h1",
+              "#header h2",
+              "#search-top-box-input",
+              "#header"
             ]
           },
-          "published_css_sha256": "9036434a9d3d7d838cf7e96c12a2734adfbd8455f0ee4609efc9a0c125f23538"
+          "published_css_sha256": "00a8fff90043b8cc9164700b07080367ec1c29d29529635e34e6404a071e21e9"
         },
         {
           "marker": "SCP-JP Wikidot Al Slop desktop submenu fit: keep the long second-to-last target menu within the viewport.",
@@ -2390,8 +2590,8 @@
           "rationale": "The complete Al Slop source CSS introduces a right-edge overflow in the real SCP-JP desktop navigation at 768px and 1024px. A per-theme second-to-last submenu alignment removes it while the frozen source/target page remains within both viewport edges at 768px, 1024px, 1100px, and 1440px.",
           "evidence": [
             {
-              "path": "authority-evidence/al-slop-desktop-navigation-current/receipt.json",
-              "sha256": "32cb0d948d35aac604c416b5885c8c5e5ecc2e5d2bde60722a1085c02d581cca",
+              "path": "authority-evidence/al-slop-desktop-submenu-current-20261005/receipt.json",
+              "sha256": "93542483c29ca081f2773dae64018acb977f4be9f83f524628c8f206ca00746b",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -2407,27 +2607,111 @@
               "#header"
             ]
           },
-          "published_css_sha256": "9036434a9d3d7d838cf7e96c12a2734adfbd8455f0ee4609efc9a0c125f23538",
+          "published_css_sha256": "00a8fff90043b8cc9164700b07080367ec1c29d29529635e34e6404a071e21e9",
           "sha256": "1cd2c305dd795cb6320d2c8d7d8b6c51b0331e20ecdf4086367e37e94d856a22"
+        },
+        {
+          "marker": "SCP-JP Wikidot Al Slop heritage rating callouts: anchor tooltip images at the narrow article edge.",
+          "sha256": "ad450ef48b3c271e0e3127a704de779f816c5da8db17b64444da43708aa55c54",
+          "origin": "target-certified-replacement",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "rationale": "The retained SCP-040-JP page has a visible source heritage widget. Al Slop positions its rating tooltip images past the article edge, expanding the 320px/390px document to 354px/424px. Anchor those callouts at the button right edge at narrow widths and preserve source imagery and desktop placement.",
+          "evidence": [
+            {
+              "path": "authority-evidence/al-slop-heritage-callout-current-20261005/receipt.json",
+              "sha256": "09fa2dea1f8e3c571b12952decb802bffd125b55a96b1f1de70117f27c73a4a6",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://scp-jp.wikidot.com/scp-040-jp",
+            "state": "heritage-rating",
+            "viewports": [
+              320,
+              390
+            ],
+            "selectors": [
+              ".heritage-rating-module .rateup::before",
+              ".heritage-rating-module .ratedown::before",
+              ".heritage-rating-module .cancel::before"
+            ]
+          },
+          "published_css_sha256": "00a8fff90043b8cc9164700b07080367ec1c29d29529635e34e6404a071e21e9"
+        },
+        {
+          "marker": "SCP-JP Wikidot Al Slop saved credit callouts: retain tooltip images inside their rating edge.",
+          "sha256": "b115cc67c3e41d9bf652307bc9924f2f470f11b013c8179e2affcec60181151c",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "origin": "target-certified-replacement",
+          "rationale": "The saved native rating group places source tooltip images at the article edge. Their center anchoring expands the unthemed target document by 22px at 320, 390 and 768px. Anchor the same images at their own rating edge; preserve the separately evidenced heritage shape.",
+          "evidence": [
+            {
+              "path": "authority-evidence/al-slop-credit-callout-current-20261005/receipt.json",
+              "sha256": "833cca0147e6cc18fafe22542aeeaed247aca3c4b51274bd8d6b733de859a970",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://pseudo-scp-jp.wikidot.com/sigma-10:main",
+            "state": "normal",
+            "viewports": [
+              320,
+              390,
+              768
+            ],
+            "selectors": [
+              ".creditRate > li .rateup::before",
+              ".creditRate > li .ratedown::before",
+              ".creditRate > li .cancel::before"
+            ]
+          },
+          "published_css_sha256": "00a8fff90043b8cc9164700b07080367ec1c29d29529635e34e6404a071e21e9"
+        },
+        {
+          "marker": "SCP-JP Wikidot Al Slop narrow saved navigation: anchor the wrapped penultimate submenu at its row endpoint.",
+          "sha256": "358c4d2b9d8889155052f29d20852e6cbab10ef6df9960e7121043dc04e0183c",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "origin": "target-certified-replacement",
+          "rationale": "The native saved Sigma-10 shell wraps the penultimate mobile parent. With the rating callouts independently contained, this hidden submenu still expands the 320px document to 331px. Right-anchor only that narrow row endpoint; 390px and wider rows retain their original placement.",
+          "evidence": [
+            {
+              "path": "authority-evidence/al-slop-narrow-navigation-current-20261005/receipt.json",
+              "sha256": "be3390adfc1a82c6a671aaa3ab0efaa809bb2a068b1869efdd7a75b18656b26c",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://pseudo-scp-jp.wikidot.com/sigma-10:main",
+            "state": "navigation",
+            "viewports": [
+              320
+            ],
+            "selectors": [
+              "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul",
+              "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul li",
+              "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul a"
+            ]
+          },
+          "published_css_sha256": "00a8fff90043b8cc9164700b07080367ec1c29d29529635e34e6404a071e21e9"
         }
       ],
       "inputs": {
-        "maintenance/authority-base.wikidot.txt": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
+        "maintenance/authority-base.wikidot.txt": "ef64c472fbc4c6add75121aa68283f72d21823b9e7915c493c6c891bac559b70",
         "candidate-input.css": "9a6611c882f1b485cc2c3936d5a6c52d475818c7fd20d32f9a74edc192d0fc99",
-        "authority-overrides.css": "81703a13a936fb878de147c70ff93fa7b6785dc4a4ffd0be2c69ce125f797a09",
+        "authority-overrides.css": "25975fac9e2440d461ee80aa1af33f0545911b449daa0c7b0c4c86d9201c6608",
         "asset-transforms.json": "f38b8391e1bad262be44143f12441c10d1520de73a5dab0ec8736019cd8d26c0",
-        "source-css-includes.json": "c0fae8c4897b5ee9f2b46a968be89a88ad0c22765199284d9b02d4daa8016bce",
-        "source-includes/sigma-plus.wikidot.txt": "2ee01c9b8a8b4ad082abc030944a41e4d9624d7eda46ea3ecf1dcf9046d66498",
-        "source-includes/sigma-plus-input.css": "09350849191e39a9fbaaa1596f602135457989b169cc24233a2d7eee5b9ef4ab"
+        "source-css-includes.json": "02e25771b7150b87385c11550cbce45a4ab7886bb9260b436c3928ede4709620",
+        "source-includes/sigma-plus.wikidot.txt": "dccfb8c281e6bf0268f7f472ef86690aa64181d3d916d1385838886bd89eafbf",
+        "source-includes/sigma-plus-input.css": "5bd2d00b494a875d43fcd5e270a4b323c9ddbe16b6238fb5f5b80992c3b37b0a"
       },
       "outputs": {
-        "candidate.css": "9036434a9d3d7d838cf7e96c12a2734adfbd8455f0ee4609efc9a0c125f23538",
-        "candidate-source.css": "30f02daea6547b9a8d87369b1dc4ca0e804a63a27024d614cd56d1289b6d5890",
-        "candidate.wikidot.source.txt": "b86654032bd696212ebb8c1a5742b34763cc28bb459546dfa90e5fa66ea1e82f",
-        "candidate.wikidot.txt": "f519222a5e6c9179f9421294a5df6307240441adbb6475943deef6f9921ae898",
-        "maintenance/base.wikidot.txt": "e309d09fbd7d57e589bcad98584914d1effa73a859fdae5a23a850ffe2d71733",
-        "maintenance/jp-overrides.css": "f66884753c63b4490cfa32dad2680d660ee9a6bdda81aaa3ed29b43b043a32e5",
-        "maintenance/final.wikidot.txt": "77f38efa844a1c3067de050964289c3fba374dab605ad89152f7745247d6491a"
+        "candidate.css": "00a8fff90043b8cc9164700b07080367ec1c29d29529635e34e6404a071e21e9",
+        "candidate-source.css": "cd6eb3f4d47ae0ef24e9a03d2bea6f077fb23726922410b12eb06eddee8d3d46",
+        "candidate.wikidot.source.txt": "f6809160ccf1b35e74340d5e0421efecf8585246310203debbb5f0727b95eb8b",
+        "candidate.wikidot.txt": "a9d86eec4a7a303d4969f70d05b53ccfe849d00e6d0235df33389de46cf5daae",
+        "maintenance/base.wikidot.txt": "ef64c472fbc4c6add75121aa68283f72d21823b9e7915c493c6c891bac559b70",
+        "maintenance/jp-overrides.css": "fd094532f5134a9b0628032ebbc6909c20e6b684c2eb2dfecee15b3677d97bdd",
+        "maintenance/final.wikidot.txt": "416d5ebf279a8dfd9e94ee8438c4cfa7c528c16fc8b9e7a6f9df6d3bbbec04c8"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -2438,8 +2722,8 @@
         }
       },
       "current_navigation_evidence": {
-        "path": "authority-evidence/al-slop-grid-current/receipt.json",
-        "sha256": "1478fb35c23d5a977a9b4cc1da2f39788141f0f5d7b3907559d7f3a3ddab63a4"
+        "path": "authority-evidence/al-slop-final-three-trusted-navigation-v3-20261002/receipt.json",
+        "sha256": "2e445e034eb8e15ddac95934e2be233f7c169c23733c97db615f295826b6d092"
       }
     },
     "wikifot": {
@@ -2964,7 +3248,7 @@
             },
             {
               "path": "classic/existing-jp.wikidot.txt",
-              "sha256": "261f3dbdd16444999df3fa36301ff4323237ab4bfed4ca50b2f99c13794e683e",
+              "sha256": "fa167734c0345030acd8ac869edf0505a91aad74be1bb87fc9f26ec59d38584a",
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
             }
           ]
@@ -2974,12 +3258,11 @@
           "sha256": "985d2f3995ef32767b02714495f40fb13ff969d4fd986667505025f5f0a96ded",
           "origin": "target-certified-replacement",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
-          "rationale": "At 390px Classic increases the real SCP-JP fourth submenu escape by 4.703125px relative to the native target. Align only that endpoint above 359px. At 320px Classic does not worsen the inherited third-menu escape, so no narrow-layout correction is authorized.",
+          "rationale": "At 390px Classic increases the real SCP-JP fourth submenu escape by 4.703125px relative to the native target. Align only that endpoint from 360px through 767px. At 320–359px, a separately certified narrow-navigation block keeps primary links in one row and contains the fourth submenu.",
           "evidence": [
             {
-              "path": "authority-evidence/classic-mobile-navigation-final-authority-20261001/receipt.json",
-              "sha256": "1672efcc03dbc8b7b877a5969be28d2af9f9834fe1bc97f97ee1cdd19fb137a2",
-              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+              "path": "authority-evidence/classic-mobile-endpoint-current-css-20261006/receipt.json",
+              "sha256": "11b4fdd7784d20bc018903a2cddca990d92c05c99f86c723bcd06b4cffcc1ca9"
             }
           ],
           "scope": {
@@ -2989,23 +3272,66 @@
               390
             ]
           },
-          "published_css_sha256": "5190a1bdb121d156ed6559f85a863b6e7be2016eddf7de18af6decdd225429a2"
+          "published_css_sha256": "8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376"
+        },
+        {
+          "marker": "SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access.",
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "sha256": "d0f6ee5e3aee7abe85a50b3a3c934b55ba2ad17fea9f3915b4922d8028644487",
+          "rationale": "Wikidot PagePreview keeps HTML blocks literal. Keep a long literal frame source within the tablet sidebar while preserving horizontal access; the rule is media-limited and removes no content.",
+          "evidence": [
+            {
+              "path": "authority-evidence/sigma10-preview-sidebar-containment.json",
+              "sha256": "f1e70f4fffaefbbb888cda9bfa748f283d0cae7657f34483f9876485f4a05bab"
+            }
+          ]
+        },
+        {
+          "marker": "SCP-JP Classic narrow mobile navigation: keep localized destinations inside one readable bar row.",
+          "sha256": "9c674af713922f9367df4447deb9c24b797e07e0d65c37fe7b649fed81cc10a2",
+          "origin": "target-certified-replacement",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "rationale": "At 320px and 359px, read-only A/B against the current SCP-JP page shows the fourth primary navigation link wrapping outside #top-bar and over the tagline. Reducing only top-level horizontal link padding to 0.7em keeps all four destinations in the bar; right-aligning the fourth submenu prevents horizontal overflow. The max-width rule ends before 360px, where the separately certified endpoint rule remains active.",
+          "selectors": [
+            "#top-bar .mobile-top-bar > ul > li > a",
+            "#top-bar .mobile-top-bar > ul > li:last-child > ul"
+          ],
+          "at_contexts": [
+            "@media (max-width: 359px)"
+          ],
+          "evidence": [
+            {
+              "path": "authority-evidence/classic-narrow-mobile-navigation-final-css-20261006/receipt.json",
+              "sha256": "64bafba2e95194e713726699821d3bcbfebd9282d429c7505c0d59c508fc67d0"
+            }
+          ],
+          "scope": {
+            "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+            "state": "navigation-row-layout",
+            "viewports": [
+              320,
+              359,
+              360
+            ]
+          },
+          "published_css_sha256": "8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
         "candidate-input.css": "1f2d3cde0f8ffde0ef454d68df3cd989008970842182d573be6210b58d1aa24c",
-        "authority-overrides.css": "f6d05fda7ad197b381beb3d728a340b95f5bd60c1bd2e26bf60a7236fc6b59b7",
+        "authority-overrides.css": "ad0eb6ed563f4b075a38cdfb917d5daa1c9669dccbcb31c81164ee2b5ac9b35a",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd"
       },
       "outputs": {
-        "candidate.css": "5190a1bdb121d156ed6559f85a863b6e7be2016eddf7de18af6decdd225429a2",
-        "candidate-source.css": "44db826473f42552fb35a56c0fd7c613cdd6aa0dce32f1d4ec4062507f1ad3c9",
-        "candidate.wikidot.source.txt": "d33430be391e192927659cde039a135b2849be3cef240ed4857a1998d178dfc1",
-        "candidate.wikidot.txt": "15305ce7edc9729ef0e7de47e39ece150984ba6a18f826cd92fe9747be5b5b41",
+        "candidate.css": "8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376",
+        "candidate-source.css": "f26d37541fb12b4cf35fc1b0a4bf7f6e8220db9ce767d66c393e5cd7b9780828",
+        "candidate.wikidot.source.txt": "9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09",
+        "candidate.wikidot.txt": "bda45a5874984fc7fba628622c6fbd8e30e9deaa64897301c35f767979cb5f4b",
         "maintenance/base.wikidot.txt": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
-        "maintenance/jp-overrides.css": "e1cc27ec968181bc709c367b68ef631b5ece06fa824c6d042ef06f07aa47a939",
-        "maintenance/final.wikidot.txt": "b2f1b6be54e6742c5a02bd3dab0d036dcb2308a174a6f95ce6d944fa8bbebdb2"
+        "maintenance/jp-overrides.css": "f624af884489ebe0ec695086818f0a136087d12a3a54b41be06777e189a66306",
+        "maintenance/final.wikidot.txt": "a9e1ec087457f2cae9bb3d9ee173d35f6285aa3408fc590a79f5552a40e6d196"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -3062,29 +3388,35 @@
         {
           "marker": "source-theme-and-localized-document-input",
           "origin": "preserved-source",
-          "sha256": "8f99adadb50538f45d7c287b81f5070ca6128cb72d170e4a42f890e65584fc8c",
+          "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
           "authority": "SOURCE_THEME",
-          "rationale": "Preserve source-theme imports, source declarations, include parameters and localized documentation before the historical campaign suffix. Asset freezing and include expansion are separate runtime-independent transforms.",
+          "rationale": "Materialize the exact active default article CSS modules from the already authority-bound publishable localization base. Exclude commented/false variant and theme-page presentation modules; source component includes and certified overlays remain their separate layers.",
           "evidence": [
             {
               "path": "sigma/upstream-en.wikidot.txt",
               "sha256": "e2f126ba6f6debd4cbde5f1712f04da794e2820f0180a6501b54dbe4e318639c",
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+            },
+            {
+              "path": "sigma/runtime-css-materialization.json",
+              "sha256": "9a0116f69921f5c80fc23fb9a376ee56d87e5c5abd8b42d79270e94d22a09262",
+              "decision_authority": "FROZEN_WIKIDOT_SOURCE_MODULES"
             }
           ]
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23",
-        "candidate-input.css": "8f99adadb50538f45d7c287b81f5070ca6128cb72d170e4a42f890e65584fc8c",
+        "candidate-input.css": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
         "authority-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd"
+        "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
+        "runtime-css-materialization.json": "9a0116f69921f5c80fc23fb9a376ee56d87e5c5abd8b42d79270e94d22a09262"
       },
       "outputs": {
-        "candidate.css": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
-        "candidate-source.css": "02a2527c55fea05c0654038e908cc06874dec356ac4d24c7d37ab094760798ed",
+        "candidate.css": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "candidate-source.css": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
         "candidate.wikidot.source.txt": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23",
-        "candidate.wikidot.txt": "b78ba5c0fd523f733055d00b6dc2da1f3d23d912b594dfd0817ef185b40dc9be",
+        "candidate.wikidot.txt": "87b36a77990b94cf837bd25b7c65d55985f590d3d2b2958c4372ee242a9f3f5f",
         "maintenance/base.wikidot.txt": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23",
         "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "maintenance/final.wikidot.txt": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23"
@@ -3096,6 +3428,16 @@
           "css": "c595ea532eca4ccd104af2c8645d1d879e97acbbc6cc257b51525e80a98b2d00",
           "source": "8df3a5dbae531dc1d8a873b39fbfedd6eb5fe6c7d81bdbdde6a886acc8b0948d"
         }
+      },
+      "current_navigation_evidence": {
+        "path": "authority-evidence/sigma-final-three-trusted-navigation-v3-20261002/receipt.json",
+        "sha256": "ba663e01fa998f85642c205a2eb8410a01c1c1fd87a76eb550aff9338cf8de48",
+        "baseline": {
+          "path": "authority-evidence/sigma-final-three-trusted-navigation-v3-20261002/baseline-comparison.json",
+          "sha256": "3d28a5beb995a3ebbcc786b76caef3c2b6a1ab41af993d8cf8163e546fa3402d"
+        },
+        "decision_authority": "REAL_WIKIDOT_TARGET_BASELINE_RELATIVE_NAVIGATION",
+        "published_css_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
       }
     },
     "y2k": {
@@ -3360,7 +3702,7 @@
             },
             {
               "path": "y2k/existing-jp.wikidot.txt",
-              "sha256": "da489a08caa3f51ed73125e40b823a1e5e647a711769d6962721ef4a958191d5",
+              "sha256": "49187df24c3c7c454aa0a01eeec6f33e2f625074495bbb91c1f2d7b811705aab",
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
             }
           ]
@@ -4015,32 +4357,45 @@
           "evidence": [
             {
               "path": "space/source-css-includes.json",
-              "sha256": "c0fae8c4897b5ee9f2b46a968be89a88ad0c22765199284d9b02d4daa8016bce"
+              "sha256": "02e25771b7150b87385c11550cbce45a4ab7886bb9260b436c3928ede4709620"
             },
             {
               "path": "al-slop/source-includes/receipt.json",
-              "sha256": "ec3cb6e20e0940f5a975573fa78c6aba8caa7edb29fe020c380b5bbecae1bc70"
+              "sha256": "7e32c051740bb5c61155c44ad41dae7697c9a65c5d8d2af7ae3efd8c4334fa5e"
+            }
+          ]
+        },
+        {
+          "marker": "SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access.",
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "sha256": "d0f6ee5e3aee7abe85a50b3a3c934b55ba2ad17fea9f3915b4922d8028644487",
+          "rationale": "Wikidot PagePreview keeps HTML blocks literal. Keep a long literal frame source within the tablet sidebar while preserving horizontal access; the rule is media-limited and removes no content.",
+          "evidence": [
+            {
+              "path": "authority-evidence/sigma10-preview-sidebar-containment.json",
+              "sha256": "f1e70f4fffaefbbb888cda9bfa748f283d0cae7657f34483f9876485f4a05bab"
             }
           ]
         }
       ],
       "inputs": {
-        "maintenance/authority-base.wikidot.txt": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
+        "maintenance/authority-base.wikidot.txt": "72ef4e7545f439aa9d8a330c566a9489980eafa02cd8e08cff327b7171b3d6aa",
         "candidate-input.css": "718d6bfc1705006f15a492f3cb96000489e32efc1df0ab50d5ffc10b41276367",
-        "authority-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "authority-overrides.css": "f716120edf59cda85ff259f2093d9adf11db2b5134b3c235a8c274ea81aa785f",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
-        "source-includes/sigma-plus.wikidot.txt": "2ee01c9b8a8b4ad082abc030944a41e4d9624d7eda46ea3ecf1dcf9046d66498",
-        "source-includes/sigma-plus-input.css": "09350849191e39a9fbaaa1596f602135457989b169cc24233a2d7eee5b9ef4ab",
-        "source-css-includes.json": "c0fae8c4897b5ee9f2b46a968be89a88ad0c22765199284d9b02d4daa8016bce"
+        "source-includes/sigma-plus.wikidot.txt": "dccfb8c281e6bf0268f7f472ef86690aa64181d3d916d1385838886bd89eafbf",
+        "source-includes/sigma-plus-input.css": "5bd2d00b494a875d43fcd5e270a4b323c9ddbe16b6238fb5f5b80992c3b37b0a",
+        "source-css-includes.json": "02e25771b7150b87385c11550cbce45a4ab7886bb9260b436c3928ede4709620"
       },
       "outputs": {
-        "candidate.css": "75d64447d5f59d4e89b45ec74bdbd42351ff3a19400dc4391bb6eedcbfa37e1b",
-        "candidate-source.css": "8e3b8292332397ad65f87e1070005940de0eac06fb60fb78788ec612f20e5eb4",
-        "candidate.wikidot.source.txt": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
-        "candidate.wikidot.txt": "1d7298014f1b2bfd60f993bc798885d3462aee64f315e457d7dd2a6b605ba765",
-        "maintenance/base.wikidot.txt": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
-        "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "maintenance/final.wikidot.txt": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc"
+        "candidate.css": "1df89c43e1a5d880ac726dd3529fb0cd9bf5abf6513cb84c4a3544e390fed286",
+        "candidate-source.css": "42b90a6ef319583f5e495699fb8a7ca7ac4c35be3b7ed68263abe757f301a72e",
+        "candidate.wikidot.source.txt": "20d4d9c98052fc76fcf8573505509dc4d49c3b4852e2ea99580218ad34afe3a7",
+        "candidate.wikidot.txt": "a1166c2ec232d2931b646c9103e7761982d225484009bfed59133bcb19d83b28",
+        "maintenance/base.wikidot.txt": "72ef4e7545f439aa9d8a330c566a9489980eafa02cd8e08cff327b7171b3d6aa",
+        "maintenance/jp-overrides.css": "2b7539e8bf40a3ec4370f99ab54ceac5d7b6eee530a972e0591475ace89ba09b",
+        "maintenance/final.wikidot.txt": "db8407b17ff0f17e576e59e1142efc98e0653682bf0183567f8c92afc98ca32a"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -4051,8 +4406,8 @@
         }
       },
       "current_navigation_evidence": {
-        "path": "authority-evidence/space-navigation-complete-source-current/receipt.json",
-        "sha256": "27f53827d77088e7495733e70481bc8d6569d98c8aed4f557d00277dc1569dcb"
+        "path": "authority-evidence/space-navigation-sidebar-fix-20261004/receipt.json",
+        "sha256": "dc064cdee11b7ef6d8af04554febe47295732e34c6f641cb73913a4c8d3bfb41"
       }
     },
     "jakstyle": {
@@ -4503,7 +4858,7 @@
         "source-css-includes.json": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022"
       },
       "outputs": {
-        "candidate.css": "54e1622ad4ae34084c6eefc85355178fae005d29e17015d6025d7beebfb9e405",
+        "candidate.css": "a4b0f7c1cb6262b4ee6ac62e5d9e4846919bf50d57766de6968d3a58ea6ff8e6",
         "candidate-source.css": "8412da20a730ec6173739ca41af48ec47feade3b3e7bb8467f90ea3f127c48f2",
         "candidate.wikidot.source.txt": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
         "candidate.wikidot.txt": "d09eba82045540c4df285ede15750a2d074e4be1a509d425f8660502c0de3d16",
@@ -4604,7 +4959,7 @@
             },
             {
               "path": "pataphysics/existing-jp.wikidot.txt",
-              "sha256": "c2de53df254304f9cc88cb9955003855ecaafb336b24a11355dbd51ae832796b",
+              "sha256": "010bec1cd52b910ae33ba244dd04b5141304142ba7210c53f3347ef68944504a",
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
             }
           ]
@@ -4806,7 +5161,7 @@
             },
             {
               "path": "turbo-vision/existing-jp.wikidot.txt",
-              "sha256": "325801b1dd4a3d1fb23f216c08a0ea56519d32da234638a8b5022c45a30d982c",
+              "sha256": "ca80e76ee545e00f11d7d2145aa43942b83910dea9b5db2a854b9aabed6e7e0b",
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
             }
           ]
@@ -4819,17 +5174,17 @@
           "rationale": "Per-theme real SCP-JP A/B at 320px and 390px; every submenu/item/link stays inside both viewport edges. Preserve the wrapped row, source menu widths, palette and link layout. Space also retains its separate header grid correction; Turbo bounds only the invisible masthead responsible for remaining 320px document overflow.",
           "evidence": [
             {
-              "path": "authority-evidence/turbo-vision-final-mobile-navigation-11-0-20261001/receipt.json",
-              "sha256": "cced9055085b15a5bba1e0c9ea71bc139d8cb5d6b6b1bf9e0e814bbd609f1faf",
+              "path": "authority-evidence/turbo-vision-final-three-authority-11-navigation-v3-20261002/receipt.json",
+              "sha256": "901fc4dd00e85f645cc78b167427ba07e7011d4fd484b964a649cc386e667f51",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             },
             {
-              "path": "authority-evidence/turbo-vision-final-mobile-header-title-search-11-1-20261001/receipt.json",
-              "sha256": "03c3a0b9beaf13bf262c1cb7a3147cb074ca4a3c5473666b18c3ce89ce862d20",
+              "path": "authority-evidence/turbo-vision-final-three-authority-11-header-title-search-v3-20261002/receipt.json",
+              "sha256": "ad3df013c2ffadec5ccd4f8dfa3be9d43e181e2b48857bd06618f4ae8ca1ec5d",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
-          "published_css_sha256": "d6179a31555c949cc38c33360d3c2a790342eb4e0a0df031b3a4f31024c1b350",
+          "published_css_sha256": "4ea34f42f05c6f1f845811620cdcd73395860284adeac42b847f385aa24e1cd3",
           "scope": {
             "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
             "viewports": [
@@ -4871,8 +5226,8 @@
           "rationale": "The complete Turbo Vision source CSS inherits Sigma positioning that places the real SCP-JP desktop top-bar 16px off the left edge. A bounded per-theme inset fixes the left edge while keeping the existing 16px right inset and leaves document width at the viewport at 768px, 1024px, and 1440px.",
           "evidence": [
             {
-              "path": "authority-evidence/turbo-vision-final-mobile-normal-13-0-20261001/receipt.json",
-              "sha256": "6981696917d9246b45ad3b0ffbb22d1c1f453c6a303f67ec548984375069834e",
+              "path": "authority-evidence/turbo-vision-final-three-authority-13-normal-v3-20261002/receipt.json",
+              "sha256": "e3f9de2184402dadb924d9fe88f1f25860a985b533dfab848ea190e2bca19cea",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -4890,7 +5245,7 @@
               "#top-bar .top-bar"
             ]
           },
-          "published_css_sha256": "d6179a31555c949cc38c33360d3c2a790342eb4e0a0df031b3a4f31024c1b350",
+          "published_css_sha256": "4ea34f42f05c6f1f845811620cdcd73395860284adeac42b847f385aa24e1cd3",
           "sha256": "1815af33b6b70ad3ae2e97b5b850c3e5ffc24bd6c8ea04f332f52ba06252ed5f"
         },
         {
@@ -4907,8 +5262,8 @@
           ],
           "evidence": [
             {
-              "path": "authority-evidence/turbo-vision-final-mobile-image-block-14-0-20261001/receipt.json",
-              "sha256": "0da707e0632810737e5b5fb5098559f203fe773d24c64f452e52a9f25ae16fb9",
+              "path": "authority-evidence/turbo-vision-final-three-authority-14-image-block-v3-20261002/receipt.json",
+              "sha256": "55eded8cf6e7ff01d40c649d191205f1920f305910803e65317dcefa6de6d548",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -4921,7 +5276,7 @@
               1440
             ]
           },
-          "published_css_sha256": "d6179a31555c949cc38c33360d3c2a790342eb4e0a0df031b3a4f31024c1b350",
+          "published_css_sha256": "4ea34f42f05c6f1f845811620cdcd73395860284adeac42b847f385aa24e1cd3",
           "published_base_css_sha256": null
         },
         {
@@ -4932,8 +5287,8 @@
           "rationale": "The real target mobile top-bar sits 16px left of the viewport. Preserve its right inset and bound its width, leaving the separately certified desktop row unchanged.",
           "evidence": [
             {
-              "path": "authority-evidence/turbo-vision-remaining-navigation-authority-20261001/receipt.json",
-              "sha256": "eaf809a881271e8339b697dd5656bb3c86943f3a43e3ddc327137499e4e954ee",
+              "path": "authority-evidence/turbo-vision-final-three-authority-15-top-bar-bounds-v3-20261002/receipt.json",
+              "sha256": "307756167b018436574a68513c548e5788debd248c8dcd6ec8f7c8ec8cf76749",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -4947,26 +5302,78 @@
               1440
             ]
           },
-          "published_css_sha256": "d6179a31555c949cc38c33360d3c2a790342eb4e0a0df031b3a4f31024c1b350"
+          "published_css_sha256": "4ea34f42f05c6f1f845811620cdcd73395860284adeac42b847f385aa24e1cd3"
+        },
+        {
+          "marker": "SCP-JP Wikidot native history list: preserve the seven columns inside their own horizontal scroller.",
+          "sha256": "2094c32464d499abf47df40b62cc958016249707445299f7775fbf9df36f8832",
+          "origin": "target-certified-replacement",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "rationale": "The exact retained native History responses stay within the unthemed SCP-JP viewport, while this theme expands the document. Keep all seven columns and native radios in their own horizontal scroller. This proof establishes list geometry only.",
+          "evidence": [
+            {
+              "path": "authority-evidence/turbo-vision-final-three-authority-16-history-list-v3-20261002/receipt.json",
+              "sha256": "77522a7b29593470de7b5cf0bb76c3a65260a86eae24fb152ad7cba95bead891",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://scp-jp.wikidot.com/scp-173",
+            "state": "history-list",
+            "viewports": [
+              320,
+              390,
+              1440
+            ]
+          },
+          "published_css_sha256": "4ea34f42f05c6f1f845811620cdcd73395860284adeac42b847f385aa24e1cd3"
+        },
+        {
+          "marker": "SCP-JP Wikidot Turbo Vision narrow navigation rows: reserve the source gray bar for wrapped labels.",
+          "sha256": "238127e113659bc8c2eafe1109b61fd2f28bf01c87f8f4b4db528ccc2c16481f",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "origin": "target-certified-replacement",
+          "rationale": "At 320px, the first wrapped JP row sits 20px above the source gray navigation bar and its black text becomes unreadable on the navy masthead. Reserve two rows of the source gray bar below the unchanged pixel logo. Native visible text ranges fit both rows; 390px/tablet/desktop typography, source colors and positioning remain unchanged.",
+          "evidence": [
+            {
+              "path": "authority-evidence/turbo-vision-final-three-authority-17-navigation-row-layout-v3-20261002/receipt.json",
+              "sha256": "5732e268f5af32be56d62d12e7c6c6efa1f1478ab4bcb880d904dda4b7563369",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+            "state": "navigation-row-layout",
+            "viewports": [
+              320,
+              390,
+              768,
+              1440
+            ],
+            "selectors": [
+              "#top-bar"
+            ]
+          },
+          "published_css_sha256": "4ea34f42f05c6f1f845811620cdcd73395860284adeac42b847f385aa24e1cd3"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
         "candidate-input.css": "277f938a1ab759664945e72cf4d5a1a5adc249e5c7d0cc234343711ab27116e6",
-        "authority-overrides.css": "df61b40b32ad07263e0593f2a850486ad9976d45f3a9b9ed260ef4dc66c67cf6",
+        "authority-overrides.css": "c804d7fc858d8cc847d3d96bca7897082511aa5844e061722e6575ad42436ea8",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar.wikidot.txt": "5e6e6bf79aa9b08344865b1209693254db4c8d1aef7d579092bc6dd9c7c55e35",
         "source-includes/toggle-sidebar-input.css": "d4d80ebcc0e2afb61490420a96b3f0b4cc29dfc9de532029e062af1ee80028ae",
         "source-css-includes.json": "22ec56b4a00133c5e763223b56503807bbfc245c31c0a66324886fcf716ed5a9"
       },
       "outputs": {
-        "candidate.css": "d6179a31555c949cc38c33360d3c2a790342eb4e0a0df031b3a4f31024c1b350",
-        "candidate-source.css": "3b18dd36077ff284b3426b18d6c110d01d82b8b7312963f723aa51e47f2c6a35",
-        "candidate.wikidot.source.txt": "814267355937aac2965489af46429bbeaee59b1fe2ba953197709bbe4ce0eeee",
-        "candidate.wikidot.txt": "29c71743142d73c97a846f4c9ffcb4cbb591a23908a94748c62ddffac9bce56b",
+        "candidate.css": "4ea34f42f05c6f1f845811620cdcd73395860284adeac42b847f385aa24e1cd3",
+        "candidate-source.css": "303a3cf34d48a768f0cf40ee8fd9fd79a90786473019dc6794d84361de530b0f",
+        "candidate.wikidot.source.txt": "69e1fa9c6a57ca01097a29beab1f58b67741f9e53f958e95616fb5f7b559e589",
+        "candidate.wikidot.txt": "338815088793a8787510d4f4bb46df4859619377291f328e004f7c6149e5b0e4",
         "maintenance/base.wikidot.txt": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
-        "maintenance/jp-overrides.css": "25adc352233d1e3a161613523be5d02792709b45db2061d6920db3ef81171df4",
-        "maintenance/final.wikidot.txt": "87ad0c19014bc8b430c06cbf94255786fbb1ced80531fef34fc81015f6c40c98"
+        "maintenance/jp-overrides.css": "e0a16bfa070fb8b6e957596efe1b04900034022b8089f719ba4f7e92a2822f09",
+        "maintenance/final.wikidot.txt": "bc2edc69a644fda477278f959d9a49f75fd311ab65c815758e0ebe7978dfa9c9"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -4977,8 +5384,8 @@
         }
       },
       "current_navigation_evidence": {
-        "path": "authority-evidence/turbo-vision-final-mobile-navigation-11-0-20261001/receipt.json",
-        "sha256": "cced9055085b15a5bba1e0c9ea71bc139d8cb5d6b6b1bf9e0e814bbd609f1faf"
+        "path": "authority-evidence/turbo-vision-final-three-trusted-navigation-v3-20261002/receipt.json",
+        "sha256": "11e14456397fa1c083ad2440aa97058805efa7a5907f0d6aa0287ffec89d1dc5"
       }
     },
     "skipos": {
@@ -5393,7 +5800,7 @@
         "source-css-includes.json": "f6a3c710e9437604a3ddf49527dbed8f8aab9cdffd26633332c21b4aef2c4d2d"
       },
       "outputs": {
-        "candidate.css": "a551fbd0df47a904de211d625e1f1c4fdd6cb6b0dd3c75688de41e1f444f0ca7",
+        "candidate.css": "1942887e382d16b8150cf95086a4944c7589def1ea0c2783d5d6dc341c445400",
         "candidate-source.css": "78a1092980b6e4343cdbfec987a75283d6d367a753b94ae3e4c6401344ce2588",
         "candidate.wikidot.source.txt": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
         "candidate.wikidot.txt": "da2890818409c8d174ccd3f01d119deb2ec0e97a579184f5f878f5938af99e19",
@@ -5899,21 +6306,21 @@
           "evidence": [
             {
               "path": "flopstyle-dark/upstream-en.wikidot.txt",
-              "sha256": "31af257ac4fde398b560f6106ee4f1e916291c40141938a9fcc5b6ef95335c46",
+              "sha256": "bce06e2f87c6962d176e9f54f8bac47815860044b52a16562a139e98a0051b85",
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
             }
           ]
         },
         {
           "marker": "SCP-JP Wikidot flopstyle-dark navigation correction: anchor only the overflowing mobile row endpoint menus.",
-          "sha256": "0a920fddaaed58dcf848efd25eb2bcc04932beae782b318da606e2ab44edf5d8",
+          "sha256": "5db60b3e89bfffa349136d8c63775f78f3fa711d0c8aeea04d3d65cc5c8e6adf",
           "origin": "target-certified-replacement",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
           "rationale": "Frozen real SCP-JP A/B establishes this specific target regression and verifies the minimum correction. Source styling, palette, dimensions, and unrelated menus remain owned by the imported theme.",
           "evidence": [
             {
-              "path": "authority-evidence/flopstyle-dark-complete-source-current/receipt.json",
-              "sha256": "dc1a2f8c6e338bdeec33c70fcce4ab69c62bbbe117b5bbcccb27d24f02b0810c",
+              "path": "authority-evidence/flopstyle-dark-rev401-navigation-chromium-20261005/receipt.json",
+              "sha256": "c8cdb36e5af58d3de723f2cbea9784bd353912d96ac6b1d0e83583148b77fed1",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -5926,56 +6333,86 @@
             ],
             "source_intent": {
               "path": "flopstyle-dark/upstream-en.wikidot.txt",
-              "sha256": "31af257ac4fde398b560f6106ee4f1e916291c40141938a9fcc5b6ef95335c46"
+              "sha256": "bce06e2f87c6962d176e9f54f8bac47815860044b52a16562a139e98a0051b85"
             }
           },
-          "published_css_sha256": "01c957ad910df37c8b14bcde04ad7bde2a9359877032cf84a3786dc7d0b3941d"
+          "published_css_sha256": "cfb5865dd28e562413dc1cbed44ace29ff4d08eb4bdc8daafcfc87b4e98c8161"
         },
         {
           "marker": "Resolve preserved source CSS component includes",
           "origin": "source-css-include-resolution",
           "authority": "RUNTIME_INDEPENDENT",
-          "sha256": "10a97e3b89afbe422995b9199a99dcd94539f4fe7ba3e0d4a4acb9828658788d",
-          "rationale": "Exact source-owned include CSS and literal source parameters, materialized after site base imports before source theme declarations.",
+          "sha256": "4c796140e009526579a9bdfdaaafa29a40695acec752914a3e0a6a1321ccb082",
+          "rationale": "Materialize the reviewed SCP-JP component publication-source CSS locally before the theme declarations. This removes the temporary EN-component oracle while preserving the exact component behavior that will be published to SCP-JP.",
           "evidence": [
             {
               "path": "flopstyle-dark/source-css-includes.json",
-              "sha256": "10a97e3b89afbe422995b9199a99dcd94539f4fe7ba3e0d4a4acb9828658788d"
+              "sha256": "4c796140e009526579a9bdfdaaafa29a40695acec752914a3e0a6a1321ccb082",
+              "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_BINDING"
             },
             {
-              "path": "shared-fixtures/current-source-components-jp/receipt.json",
-              "sha256": "6ed5d876df05625082ce9c92fc69abe7eac6fa4b787b48eeccd9cd7b9b3b1676"
+              "path": "flopstyle-dark/source-includes/betterfootnotes.wikidot.txt",
+              "sha256": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d",
+              "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_SOURCE"
+            },
+            {
+              "path": "flopstyle-dark/source-includes/fade-in.wikidot.txt",
+              "sha256": "a4882c56f2c0be3af6f9c4d1d0b6d6054ddbf86c16e6fa584342e2a6adb71f90",
+              "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_SOURCE"
             }
           ]
+        },
+        {
+          "marker": "SCP-JP Wikidot Flopstyle Dark Firefox submenu: anchor the third parent endpoint at mobile widths.",
+          "sha256": "13b8c7b7c322e51f9007d7ac002966b1215b57487c19f76ab097ce84e1a63a38",
+          "origin": "target-certified-replacement",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "rationale": "Firefox wraps the native third/fourth parents onto different rows. The Chromium anchors lose the third submenu off-left at 320px and the fourth off-left at 390px; the third hidden menu also expands the 390px document. Scope alternate row endpoints to Firefox and retain the separately certified Chromium behavior.",
+          "evidence": [
+            {
+              "path": "authority-evidence/flopstyle-dark-rev401-navigation-firefox-20261005/receipt.json",
+              "sha256": "42ecbfbf102bb0cdaf807d697eaf22736947797ea364e87fae6b3bd1313fce71",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+            "state": "navigation-action",
+            "viewports": [
+              320,
+              390
+            ]
+          },
+          "published_css_sha256": "cfb5865dd28e562413dc1cbed44ace29ff4d08eb4bdc8daafcfc87b4e98c8161"
         }
       ],
       "inputs": {
-        "maintenance/authority-base.wikidot.txt": "77a303e9d2dc6e64c5332492fd979a8aced278ac199348cf9e7d0ba5fd66e6c5",
+        "maintenance/authority-base.wikidot.txt": "541622cca25acbb968a463e89f4b1465092b1658088c499211a479af6ca1021f",
         "candidate-input.css": "d811f7cbfdc58a636c845e006f230679d8828f71192b628cf6151116d750968d",
-        "authority-overrides.css": "4daf5134fa0c775c49c8859668d9a5758086d6de30bae77581a3436595821d8b",
+        "authority-overrides.css": "3201d6a33528fcb21e2d4975d65a036f8c34ba473e29d3403dbe987b5a4350f0",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar.wikidot.txt": "5e6e6bf79aa9b08344865b1209693254db4c8d1aef7d579092bc6dd9c7c55e35",
         "source-includes/toggle-sidebar-input.css": "d4d80ebcc0e2afb61490420a96b3f0b4cc29dfc9de532029e062af1ee80028ae",
-        "source-css-includes.json": "10a97e3b89afbe422995b9199a99dcd94539f4fe7ba3e0d4a4acb9828658788d",
-        "source-includes/betterfootnotes.wikidot.txt": "066c8183fe39451b88e4d53a6b08306829d21846170d14b0688d91f3c6203bc0",
-        "source-includes/betterfootnotes-input.css": "e772de798fc0b7df2005967a39c9d66584bebc9e1851ec41207d2352249b1ab4",
+        "source-css-includes.json": "4c796140e009526579a9bdfdaaafa29a40695acec752914a3e0a6a1321ccb082",
+        "source-includes/betterfootnotes.wikidot.txt": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d",
+        "source-includes/betterfootnotes-input.css": "4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5",
         "source-includes/croqstyle.wikidot.txt": "9c8b316516f374d664c92042a1913268e9018a7eaeaaac1f5011e16546bab529",
         "source-includes/croqstyle-input.css": "0fdfceb0a44d0fb558b9c70e6e5b7677fb2cc917e9e7a4446d44e163c191f679",
-        "source-includes/fade-in.wikidot.txt": "a952981c4b1443cabdea6cd37205cafa7be3291b61d23ad521016f684418e00a",
-        "source-includes/fade-in-input.css": "5a74694f5601bc5fb2e36dc6dcaa9996091d2b3891aaa392b2e9a5715a08290d",
+        "source-includes/fade-in.wikidot.txt": "a4882c56f2c0be3af6f9c4d1d0b6d6054ddbf86c16e6fa584342e2a6adb71f90",
+        "source-includes/fade-in-input.css": "f08bd5ec39fd99fa194e1614c1523191b66f7168e8d332b9eac0bf384222cd17",
         "source-includes/text-style.wikidot.txt": "e3a5a66146f647d29675138ae6edab6ad8236e5221d8e79d94a10ceb546433c5",
         "source-includes/text-style-input.css": "42d5212a9b2c678da42c7475070ce923befcd1d7fe67c57292d1b3ce3d33d29b",
         "source-includes/acs-animation.wikidot.txt": "9d275b2ce4a8399a5754801e943ce8962c597d2515d9b4bd3ec8101711161de8",
         "source-includes/acs-animation-input.css": "9c2d54387591ead58b15b16791039c675b87d47c268b98800b48eed8f6662690"
       },
       "outputs": {
-        "candidate.css": "01c957ad910df37c8b14bcde04ad7bde2a9359877032cf84a3786dc7d0b3941d",
-        "candidate-source.css": "2a78dc27f324ae40e931474cb21b413e432b671da75d3131c0e3e15b7750f84d",
-        "candidate.wikidot.source.txt": "552b383a302605f79963b84881bf67a578e5588f8cf3ad8ce6a970ddf6cb2e74",
-        "candidate.wikidot.txt": "0835f8ddd526730a1b5bcb8df63f947aeb5bfc251f4c3f37bc74ce07f6981ebf",
-        "maintenance/base.wikidot.txt": "77a303e9d2dc6e64c5332492fd979a8aced278ac199348cf9e7d0ba5fd66e6c5",
-        "maintenance/jp-overrides.css": "af6cd8a915c01c52a3b810b0a3ff5de59b687118675f7e80dad72dff9702a6a9",
-        "maintenance/final.wikidot.txt": "bb1479fb8b4f12f67bc629775e03b6fe6b5a985b699217761a7930f6aded6dec"
+        "candidate.css": "cfb5865dd28e562413dc1cbed44ace29ff4d08eb4bdc8daafcfc87b4e98c8161",
+        "candidate-source.css": "4853e602fdf0308ecfa9817b0f6e5d6360b6b68f0988ea875cd3736f4f560264",
+        "candidate.wikidot.source.txt": "2b9004a9304ed089aa69da78d140bc03aa333b792751b57133d7429b499aa1e3",
+        "candidate.wikidot.txt": "a29c62ad16f1a380c47c63f74904a7875798e4a359dd7aa8503fc09bacab3e49",
+        "maintenance/base.wikidot.txt": "541622cca25acbb968a463e89f4b1465092b1658088c499211a479af6ca1021f",
+        "maintenance/jp-overrides.css": "f5a5121214996623e128b5a81fa71d8603a4fa98338527c258b7c43bb195c113",
+        "maintenance/final.wikidot.txt": "e24e3a95742e89ef59c1fca64c768cceed2466ec5ab1b997f0a81816463c574b"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -5986,8 +6423,22 @@
         }
       },
       "current_navigation_evidence": {
-        "path": "authority-evidence/flopstyle-dark-complete-source-current/receipt.json",
-        "sha256": "dc1a2f8c6e338bdeec33c70fcce4ab69c62bbbe117b5bbcccb27d24f02b0810c"
+        "path": "authority-evidence/flopstyle-dark-rev401-navigation-chromium-20261005/receipt.json",
+        "sha256": "c8cdb36e5af58d3de723f2cbea9784bd353912d96ac6b1d0e83583148b77fed1",
+        "decision_authority": "REAL_WIKIDOT_TARGET_AB",
+        "published_css_sha256": "cfb5865dd28e562413dc1cbed44ace29ff4d08eb4bdc8daafcfc87b4e98c8161"
+      },
+      "current_sigma10_credit_evidence": {
+        "path": "authority-evidence/flopstyle-dark-rev401-sigma10-credit-otherwise-20261005/receipt.json",
+        "sha256": "a1a66262f3751f11d308517354a590f7d6927971f2552f8135ee9f9528d476a9",
+        "decision_authority": "REAL_WIKIDOT_TARGET_AB",
+        "published_css_sha256": "cfb5865dd28e562413dc1cbed44ace29ff4d08eb4bdc8daafcfc87b4e98c8161"
+      },
+      "current_navigation_firefox_evidence": {
+        "path": "authority-evidence/flopstyle-dark-rev401-navigation-firefox-20261005/receipt.json",
+        "sha256": "42ecbfbf102bb0cdaf807d697eaf22736947797ea364e87fae6b3bd1313fce71",
+        "decision_authority": "REAL_WIKIDOT_TARGET_AB",
+        "published_css_sha256": "cfb5865dd28e562413dc1cbed44ace29ff4d08eb4bdc8daafcfc87b4e98c8161"
       }
     },
     "much-cool": {
@@ -6071,7 +6522,7 @@
             },
             {
               "path": "much-cool/existing-jp.wikidot.txt",
-              "sha256": "0305019f63ac920a0451b2fe9c17aa8c84992d86ae8b2243692e3d29c7354833",
+              "sha256": "aff88b307f9e26ce47d632a6f29bb786a62f9b89b1e2b41ed9ab0e74d9272988",
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
             }
           ]
@@ -6328,23 +6779,6 @@
           ]
         },
         {
-          "marker": "Resolve preserved source CSS component includes",
-          "origin": "source-css-include-resolution",
-          "authority": "RUNTIME_INDEPENDENT",
-          "sha256": "305a2efe22658437210a164b05216472fe60b93ff6d029db3f858c27b61aac6d",
-          "rationale": "Exact source-owned include CSS and literal source parameters, materialized after site base imports before source theme declarations.",
-          "evidence": [
-            {
-              "path": "inkblot/source-css-includes.json",
-              "sha256": "305a2efe22658437210a164b05216472fe60b93ff6d029db3f858c27b61aac6d"
-            },
-            {
-              "path": "shared-fixtures/current-source-components/receipt.json",
-              "sha256": "38a3de3d2a1987b57615dfa215eeaddde2fe31e5ffb5d7ce4f190656c18dcee2"
-            }
-          ]
-        },
-        {
           "marker": "SCP-JP Wikidot Inkblot navigation correction: contain the third narrow mobile submenu.",
           "sha256": "09b878d5d1b22d84a37a08288cb7ba94e88e65bcf338b5581170dc026d7152b5",
           "origin": "target-certified-replacement",
@@ -6352,23 +6786,22 @@
           "rationale": "Read-only SCP-JP Wikidot A/B found the third mobile submenu 2.83px beyond the right viewport edge at 320px with the adaptation removed; the exact current CSS with this right-edge anchor passes all submenu, item, and link bounds at 320px and 390px.",
           "evidence": [
             {
-              "path": "authority-evidence/inkblot-final-mobile-navigation-14-0-20261001/receipt.json",
-              "sha256": "9444d75f330327973ee0222348c7b66da7a0b7db7919cef61831ade75a6ae063",
+              "path": "authority-evidence/inkblot-third-mobile-submenu-current-20261005/receipt.json",
+              "sha256": "3cd9107673706e7c5c742b7bc1b82172e2f24abcd1676fa7f153e14c44a28fbc",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
-          "published_css_sha256": "e995e17a2c8ee18655e0af72e51bc8f98ad26868aae7adb2d1233e54e6915220",
+          "published_css_sha256": "fd7e2ae9c01c3d31160b1e7017e441b3abcd8d5eab309c631ef2ebf139fc3406",
           "scope": {
             "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
             "state": "navigation",
             "viewports": [
-              320,
-              390
+              320
             ],
             "selectors": [
-              ".mobile-top-bar > ul > li > ul",
-              ".mobile-top-bar > ul > li > ul li",
-              ".mobile-top-bar > ul > li > ul a"
+              ".mobile-top-bar > ul > li:nth-child(3) > ul",
+              ".mobile-top-bar > ul > li:nth-child(3) > ul li",
+              ".mobile-top-bar > ul > li:nth-child(3) > ul a"
             ]
           }
         },
@@ -6380,8 +6813,8 @@
           "rationale": "The real target fourth menu escapes at 390px. Align only that row endpoint above 359px; the wrapped last parent at 320px must preserve its left alignment.",
           "evidence": [
             {
-              "path": "authority-evidence/inkblot-final-mobile-navigation-action-15-0-20261001/receipt.json",
-              "sha256": "c5b72eacae7ecdb6c75c28884ac469c9ede12a32c886c3457ef43968e7a1c7d5",
+              "path": "authority-evidence/inkblot-last-mobile-menu-current-20261005/receipt.json",
+              "sha256": "a86e60e7adfe2770147216cc86269bd231444eee2f394f8a52f5be3b34b1beb6",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -6391,29 +6824,29 @@
             "viewports": [
               320,
               390
+            ],
+            "selectors": [
+              "#top-bar"
             ]
           },
-          "published_css_sha256": "e995e17a2c8ee18655e0af72e51bc8f98ad26868aae7adb2d1233e54e6915220"
+          "published_css_sha256": "fd7e2ae9c01c3d31160b1e7017e441b3abcd8d5eab309c631ef2ebf139fc3406"
         }
       ],
       "inputs": {
-        "maintenance/authority-base.wikidot.txt": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
+        "maintenance/authority-base.wikidot.txt": "a934ded09f94f4f6ece53627d01d18c84ee1bc500c98a032ecd7ed949a955917",
         "candidate-input.css": "dd984fa9804edb30594e8322f3d478ed0196c662e950a131872a3d312b6c68f1",
         "authority-overrides.css": "7401a29fbd33a0c40a198b30bf5344a8cf224acacae2b289659ae6daee5660bb",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
-        "source-includes/croqstyle.wikidot.txt": "9c8b316516f374d664c92042a1913268e9018a7eaeaaac1f5011e16546bab529",
-        "source-includes/croqstyle-input.css": "0fdfceb0a44d0fb558b9c70e6e5b7677fb2cc917e9e7a4446d44e163c191f679",
-        "source-css-includes.json": "305a2efe22658437210a164b05216472fe60b93ff6d029db3f858c27b61aac6d",
         "maintenance/jp-overrides.css": "1b3a95a688d28be0125534870f4fc182ff75d85fe2097ab98da83817e277bc25"
       },
       "outputs": {
-        "candidate.css": "e995e17a2c8ee18655e0af72e51bc8f98ad26868aae7adb2d1233e54e6915220",
-        "candidate-source.css": "317605991e1cb6b1d0cab311a08e6047af902acb8612ee779eb3bc322503b9fb",
-        "candidate.wikidot.source.txt": "be2817d74c0061befd04de1ac46d687f66b6a424d5dcb555195a5235eafbae8c",
+        "candidate.css": "fd7e2ae9c01c3d31160b1e7017e441b3abcd8d5eab309c631ef2ebf139fc3406",
+        "candidate-source.css": "21d440eb8d10816e089293770d8846a03b8942e1cb5a3c405294540e0b7cadff",
+        "candidate.wikidot.source.txt": "679a88f60fb72ac72743a09380e121bfbb03207800e41b1ad74e59b1f66bc9ac",
         "candidate.wikidot.txt": "f282f81bb6714ad35dd86d2d4db60cae6c8a2df16cd006dcfcfe0e9ca7281156",
-        "maintenance/base.wikidot.txt": "ff929d2f88664d9e91952135127d5bc900aae32ab59dd39e218534a75080741f",
+        "maintenance/base.wikidot.txt": "a934ded09f94f4f6ece53627d01d18c84ee1bc500c98a032ecd7ed949a955917",
         "maintenance/jp-overrides.css": "1b3a95a688d28be0125534870f4fc182ff75d85fe2097ab98da83817e277bc25",
-        "maintenance/final.wikidot.txt": "c94dfdfe040f9f5dbd7ac354c55030e771748f277496c92e6341f223e96ea828"
+        "maintenance/final.wikidot.txt": "b782d955d524860335b435842ae1c048f758e7f29b80a0ac6ff3a090b9d2ae1b"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -6971,9 +7404,9 @@
         {
           "marker": "source-theme-and-localized-document-input",
           "origin": "preserved-source",
-          "sha256": "bbd1bbd60b65aa9c185aedc85f50ea426f5e473d2ceaa2be5b311c86814d0c82",
+          "sha256": "6067a4ad25d5ecd4d0ae64b51ed7e75d7bdcb19a31c9e544b9403e78707053ee",
           "authority": "SOURCE_THEME",
-          "rationale": "Preserve source-theme imports, source declarations, include parameters and localized documentation before the historical campaign suffix. Asset freezing and include expansion are separate runtime-independent transforms.",
+          "rationale": "Materialize the exact active default article CSS modules from the already authority-bound publishable localization base. Exclude commented/false variant and theme-page presentation modules; source component includes and certified overlays remain their separate layers.",
           "evidence": [
             {
               "path": "paperstack/upstream-en.wikidot.txt",
@@ -6982,8 +7415,13 @@
             },
             {
               "path": "paperstack/existing-jp.wikidot.txt",
-              "sha256": "6c36f989fdefaab3f2dbeff63bc5770e57b638650911eb9263e1b814dea27ee0",
+              "sha256": "a6d81604d54acbe2626a625fcd1b839636fdb8a53d6b7de292338280ac6b8fc6",
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+            },
+            {
+              "path": "paperstack/runtime-css-materialization.json",
+              "sha256": "28ae34f459cc0429c38cd82da9e599b427d7ab9f8c84466fbc0a168b3922d475",
+              "decision_authority": "FROZEN_WIKIDOT_SOURCE_MODULES"
             }
           ]
         },
@@ -6995,12 +7433,11 @@
           "rationale": "Per-theme real SCP-JP A/B at 320px and 390px; every submenu/item/link stays inside both viewport edges. Preserve the wrapped row, source menu widths, palette and link layout. Space also retains its separate header grid correction; Turbo bounds only the invisible masthead responsible for remaining 320px document overflow.",
           "evidence": [
             {
-              "path": "authority-evidence/paperstack-final-image-navigation-16-0-20261001/receipt.json",
-              "sha256": "a91289a5ada5c2365b5f53b66622274f850050e073e3ca2e2e36f5f061a3f80a",
-              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+              "path": "authority-evidence/paperstack-navigation-final-css-v2-20261004/receipt.json",
+              "sha256": "f7ad020f54df8f098e05051640e81c585877bbf5c185fca75131baacac48c58d"
             }
           ],
-          "published_css_sha256": "6f14cdb095d7468e628db41240cf54a02b37185e67273e7641852eccc426791d",
+          "published_css_sha256": "5c388bc9f4e8c9a888c71e72ca59c6dc7a64f5aab0f791f7a789f8478d77e0aa",
           "scope": {
             "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
             "state": "navigation",
@@ -7029,9 +7466,8 @@
           ],
           "evidence": [
             {
-              "path": "authority-evidence/paperstack-image-block-authority-20261001/receipt.json",
-              "sha256": "efed3879e51610792a69216183bec1faffdbc350fe32c94c67cf4e4f97418500",
-              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+              "path": "authority-evidence/paperstack-image-final-css-v2-20261004/receipt.json",
+              "sha256": "901835a8f4d6641bb28d41c1d9b1d215d1db478e4e63048714a60753afb80d42"
             }
           ],
           "scope": {
@@ -7043,24 +7479,65 @@
               1440
             ]
           },
-          "published_css_sha256": "6f14cdb095d7468e628db41240cf54a02b37185e67273e7641852eccc426791d",
+          "published_css_sha256": "5c388bc9f4e8c9a888c71e72ca59c6dc7a64f5aab0f791f7a789f8478d77e0aa",
           "published_base_css_sha256": null
+        },
+        {
+          "marker": "SCP-JP Wikidot Paperstack narrow masthead: fit its generated title without overlapping lines.",
+          "sha256": "05f0d83482e947cfd0082ffd45ce01d419f622362a9c3cb2f004ac156c5c8ca9",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "origin": "target-certified-replacement",
+          "rationale": "The frozen SCP-JP shell inherits a zero line height. This theme introduces the longer generated English title; at 320px its two ink ranges occupy the same 32px-high line. Scale only that generated title from 1.3em to 1.15em below 360px, retaining its source face, text, weight and color. Native A/B demonstrates one readable line and unchanged 390/768/1440 layouts; the old header refinements remain quarantined.",
+          "evidence": [
+            {
+              "path": "authority-evidence/paperstack-title-final-css-v2-20261004/receipt.json",
+              "sha256": "2ea4967fb934ad2e9e5770a99a7ab563f18086674ea077296fc496b09ca2c412"
+            }
+          ],
+          "scope": {
+            "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+            "state": "header-line-layout",
+            "viewports": [
+              320,
+              390,
+              768,
+              1440
+            ],
+            "selectors": [
+              "#header h1 a::before"
+            ]
+          },
+          "published_css_sha256": "5c388bc9f4e8c9a888c71e72ca59c6dc7a64f5aab0f791f7a789f8478d77e0aa"
+        },
+        {
+          "marker": "SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access.",
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "sha256": "d0f6ee5e3aee7abe85a50b3a3c934b55ba2ad17fea9f3915b4922d8028644487",
+          "rationale": "Wikidot PagePreview keeps HTML blocks literal. Keep a long literal frame source within the tablet sidebar while preserving horizontal access; the rule is media-limited and removes no content.",
+          "evidence": [
+            {
+              "path": "authority-evidence/sigma10-preview-sidebar-containment.json",
+              "sha256": "f1e70f4fffaefbbb888cda9bfa748f283d0cae7657f34483f9876485f4a05bab"
+            }
+          ]
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "39dc4c06547aa7c7e49ac6f35fe38480a35dd7687331496ac6c4f6ef54c0fd99",
-        "candidate-input.css": "bbd1bbd60b65aa9c185aedc85f50ea426f5e473d2ceaa2be5b311c86814d0c82",
-        "authority-overrides.css": "a6aeb6881eb11bbf70fbe0740d8ffaa78652c0f3c42a81207e8d31363fa0b89d",
-        "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd"
+        "candidate-input.css": "6067a4ad25d5ecd4d0ae64b51ed7e75d7bdcb19a31c9e544b9403e78707053ee",
+        "authority-overrides.css": "467437331c69b566c2a031b75acc9cb131a9ef9caddd63e9c8dc19edd200f63d",
+        "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
+        "runtime-css-materialization.json": "28ae34f459cc0429c38cd82da9e599b427d7ab9f8c84466fbc0a168b3922d475"
       },
       "outputs": {
-        "candidate.css": "6f14cdb095d7468e628db41240cf54a02b37185e67273e7641852eccc426791d",
-        "candidate-source.css": "eaa1c303157c60435d6efd2e054bff146bcca8d4f3d7e34e0a721d3b34b65510",
-        "candidate.wikidot.source.txt": "2ae35aa85c55534bec335d6c5cc61571c22bc4dc4543c596f87d8c39d931eb4d",
-        "candidate.wikidot.txt": "865c100fbfb76fa60f7539ca5a66db5287ab45aef75a3ec78013fb28cadbbd31",
+        "candidate.css": "5c388bc9f4e8c9a888c71e72ca59c6dc7a64f5aab0f791f7a789f8478d77e0aa",
+        "candidate-source.css": "87b67948ef8fc88ea862d109a32be6749d09b7c775c5fa723919206d6a0cc2b9",
+        "candidate.wikidot.source.txt": "5939181e533d5c02d39ac16dad70f9ae9b80efa7fcd79ebb4c8ba8b75ab16854",
+        "candidate.wikidot.txt": "5aad28c7ee38731c0d4d3f1dbcf5cd68b58155ae1eb865d48e1687a958232041",
         "maintenance/base.wikidot.txt": "39dc4c06547aa7c7e49ac6f35fe38480a35dd7687331496ac6c4f6ef54c0fd99",
-        "maintenance/jp-overrides.css": "f4a25c7ed4c6ca6d52aa37f46311edd6969a1a70ab21a8f2c91c213a0f207137",
-        "maintenance/final.wikidot.txt": "d3bdb0697c95a39a958889e3f6caf9eb7d4e2d0df33a2d5920137c98101e72d2"
+        "maintenance/jp-overrides.css": "66af346b6d395eb3dd369939a568cd2a5d37cb2ce6813d00a3865993c9e89da7",
+        "maintenance/final.wikidot.txt": "3698d103a394615869d927b52895e88af94f753eca4b58ceb5790e841c49113a"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -7071,8 +7548,8 @@
         }
       },
       "current_navigation_evidence": {
-        "path": "authority-evidence/paperstack-final-image-navigation-16-0-20261001/receipt.json",
-        "sha256": "a91289a5ada5c2365b5f53b66622274f850050e073e3ca2e2e36f5f061a3f80a"
+        "path": "authority-evidence/paperstack-navigation-sidebar-fix-20261004/receipt.json",
+        "sha256": "69522553444725cabda82398182226c4e138e41da9782d03985ea44e29c44e1a"
       }
     },
     "cosmonaut": {
@@ -7129,9 +7606,9 @@
         {
           "marker": "source-theme-and-localized-document-input",
           "origin": "preserved-source",
-          "sha256": "134c1edbcb8ab4b7deb6859d5967fbe4c1c27f7b374fa0332c672d5cb24b596e",
+          "sha256": "8521e659db311e79a1371ec5e8744184744df8fa9d34ec9cc75699c2e2e8df6e",
           "authority": "SOURCE_THEME",
-          "rationale": "Preserve source-theme imports, source declarations, include parameters and localized documentation before the historical campaign suffix. Asset freezing and include expansion are separate runtime-independent transforms.",
+          "rationale": "Materialize the exact active default article CSS modules from the already authority-bound publishable localization base. Exclude commented/false variant and theme-page presentation modules; source component includes and certified overlays remain their separate layers.",
           "evidence": [
             {
               "path": "cosmonaut/upstream-en.wikidot.txt",
@@ -7142,6 +7619,11 @@
               "path": "cosmonaut/existing-jp.wikidot.txt",
               "sha256": "857c48d316a054139c6c667fcfadd14208885fcf1c3103b56c9a661a620e5fd2",
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+            },
+            {
+              "path": "cosmonaut/runtime-css-materialization.json",
+              "sha256": "a8e1e10fe52405798fd90a1022e48ce8510e694ecb5588bd51217f75efc51dc5",
+              "decision_authority": "FROZEN_WIKIDOT_SOURCE_MODULES"
             }
           ]
         },
@@ -7153,8 +7635,8 @@
           "rationale": "Read-only frozen real SCP-JP A/B proves target control interception or off-right viewport escape. Restrict the correction to the affected modal or rightmost mobile submenu; preserve source colors and other geometry.",
           "evidence": [
             {
-              "path": "authority-evidence/cosmonaut-credit-license-published-current-v5/receipt.json",
-              "sha256": "2ffc18e0bde81967b17a24bfd1fa06314e77f58a670bf39fb76dc9422d09b47b",
+              "path": "authority-evidence/cosmonaut-final-three-authority-5-credit-license-v3-20261002/receipt.json",
+              "sha256": "1000268b97a5bc70ac27910a1beb2ac0e1ff2627fe59abd11c0605bf4bda2bbe",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -7167,46 +7649,47 @@
               1440
             ]
           },
-          "published_css_sha256": "8541af1a0f8289fa0ba964fac18b8104ac2d8996cc8d5218de819ab732033fa2"
+          "published_css_sha256": "7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce"
         },
         {
           "marker": "SCP-JP Wikidot Cosmonaut navigation correction: anchor the rightmost mobile submenu to its source menu endpoint.",
-          "sha256": "7f48254870839dddb7c00e73ec3100b152fc7ba37d7d73cfff04164b1160b380",
+          "sha256": "534b1267094fe0425c1e075fae957bcd47776434b4b7600e74eb15ce807579c6",
           "origin": "target-certified-replacement",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
-          "rationale": "Read-only frozen real SCP-JP A/B proves target control interception or off-right viewport escape. Restrict the correction to the affected modal or rightmost mobile submenu; preserve source colors and other geometry.",
+          "rationale": "The default source variant increases the 320px third-menu escape from native 24.96875px to 33.640625px and the 390px last-menu escape from native 18.046875px to 58.21875px. Contain those row endpoints; keep the separately certified credit correction.",
           "evidence": [
             {
-              "path": "authority-evidence/cosmonaut-navigation-published-current-v5/receipt.json",
-              "sha256": "6bfd67b3fc7ff0982934b1b238caf1d2d5eceb34509cb46ccac43f7cef6a800e",
+              "path": "authority-evidence/cosmonaut-final-three-authority-6-navigation-action-v3-20261002/receipt.json",
+              "sha256": "616fb37e6e8361d56d284f6b6cd9c3c72083e681cbb094761c587d1f9362f349",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
           "scope": {
             "target_url": "https://scp-jp.wikidot.com/scp-2000-jp",
-            "state": "navigation",
+            "state": "navigation-action",
             "viewports": [
               320,
               390
             ]
           },
-          "published_css_sha256": "8541af1a0f8289fa0ba964fac18b8104ac2d8996cc8d5218de819ab732033fa2"
+          "published_css_sha256": "7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "e750036fbf808494c66552806ea74f30c8bbed43a239ee383d955c8c630fd0e1",
-        "candidate-input.css": "134c1edbcb8ab4b7deb6859d5967fbe4c1c27f7b374fa0332c672d5cb24b596e",
-        "authority-overrides.css": "88bc9e4ada1bcf562e501c15060a9fd11531d30ee50fac281a2a5fbd0259d562",
-        "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd"
+        "candidate-input.css": "8521e659db311e79a1371ec5e8744184744df8fa9d34ec9cc75699c2e2e8df6e",
+        "authority-overrides.css": "852fc005328696a84aa39a515ac828f367862a1689eca977d22d1ef17449585b",
+        "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
+        "runtime-css-materialization.json": "a8e1e10fe52405798fd90a1022e48ce8510e694ecb5588bd51217f75efc51dc5"
       },
       "outputs": {
-        "candidate.css": "8541af1a0f8289fa0ba964fac18b8104ac2d8996cc8d5218de819ab732033fa2",
-        "candidate-source.css": "8fe77e4b0a81ece29aa8c68c4bfac68210479bb412e43808b99fd1a07c0eca6d",
-        "candidate.wikidot.source.txt": "b4a0775f23f8727f07ad778e96934868697ae620d1e35ef5cdd506bfdc6839c8",
-        "candidate.wikidot.txt": "04b6968bdd06f658d18b873927a0fe3bc849c7c38b07602079395721e34ca601",
+        "candidate.css": "7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce",
+        "candidate-source.css": "5445569476d5c748c53a44cf384a54f7609852e05ff81d57c811837904033529",
+        "candidate.wikidot.source.txt": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179",
+        "candidate.wikidot.txt": "7b5f36f1c228518c3dcde7349214d6d2925074c2e077608a97077703e0c40224",
         "maintenance/base.wikidot.txt": "e750036fbf808494c66552806ea74f30c8bbed43a239ee383d955c8c630fd0e1",
-        "maintenance/jp-overrides.css": "e3d627463fc15efd66afcef1864f3c3fab8ca488281ddd4bed17535c0dbd776e",
-        "maintenance/final.wikidot.txt": "0e117e277b2e7907113072ee02d458376e0b944552b355a4b6cf7dade2c527cc"
+        "maintenance/jp-overrides.css": "fddcaccf5f24f235d0065a8132cb8fc6a85b3c0117770aae537ca04865089f7b",
+        "maintenance/final.wikidot.txt": "0ab5c10680a2ef9d06e2857b13cb48c47f3049ae3b3dc347dab2c7e099049862"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -7215,6 +7698,10 @@
           "css": "e27ea1b7a049ec4aabc42b820745e606136144e00bb20f252772c4e19ffc262e",
           "source": "63cb210dd527471b81a7c564a82191755275b51878ac560f7550f3f530215866"
         }
+      },
+      "current_navigation_evidence": {
+        "path": "authority-evidence/cosmonaut-final-three-trusted-navigation-v3-20261002/receipt.json",
+        "sha256": "001948c1d7ca30983121f9841f508e8d42f511a5e4ba68c16ddd3d5d25fa8cad"
       }
     },
     "monotypical": {
@@ -7778,7 +8265,7 @@
             },
             {
               "path": "minimalist-bhl/existing-jp.wikidot.txt",
-              "sha256": "6e5daba96afeb10ce3e4f49bc436920f6c0ba2ac4937c072030c59e43e80f3a0",
+              "sha256": "7d870ffc63b1f7a700201a7b585a7aca8aa57a52d5f673c6eafd76d2f1426848",
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
             }
           ]
@@ -7817,7 +8304,7 @@
         "source-css-includes.json": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022"
       },
       "outputs": {
-        "candidate.css": "b9b3b2d6fa0c496ea5b858a02cca722eea666988f1db1fdba5148fc89aa207b7",
+        "candidate.css": "bb4018bd604b2abfbd17e84f3fd884d13c3891be34fdac52c3a6d30af295d245",
         "candidate-source.css": "e8b0f843602869405f0241ec9f9355b98cead44da11a2ede23c09ff76632b3c0",
         "candidate.wikidot.source.txt": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
         "candidate.wikidot.txt": "90ea3a6c9b8e830c3a9f11bf7f04c74c22d76b64dfb9bdf61c0180e90248215c",
@@ -7989,22 +8476,169 @@
               "decision_authority": "FROZEN_ASSET_TRANSFORM"
             }
           ]
+        },
+        {
+          "marker": "SCP-JP Wikidot Hansarp narrow masthead: contain its rotated source title within the article viewport.",
+          "sha256": "77c4de92ff775201eb0bfa608ca6386e2ac97cc077c043507d1744c39be8363e",
+          "origin": "target-certified-replacement",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "rationale": "The source rotated masthead extends left of the native SCP-JP viewport at 320, 390 and 768px. Translate the existing title by 20px at tablet/mobile widths and reduce only its 320px type scale enough to retain both edges, preserving rotation, face and wider layout.",
+          "evidence": [
+            {
+              "path": "authority-evidence/hansarp-final-four-block-12-20261004/receipt.json",
+              "sha256": "3c45e962ff9fdec6a00eaa39b9c31fa29bdfab6d21ae2e24bf83997614bb0436",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+            "state": "header-title-search",
+            "viewports": [
+              320,
+              390,
+              768,
+              1440
+            ],
+            "selectors": [
+              "#header h1",
+              "#header h1 a span"
+            ]
+          },
+          "published_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319"
+        },
+        {
+          "marker": "SCP-JP Wikidot Hansarp narrow header slot: keep its rotated box within the available inline width.",
+          "sha256": "55e00ecc1f63db55f89a57e978e7fa5c3b02dec1ec5012494e5891ae770a9b33",
+          "authority": "REMOVE",
+          "origin": "target-certified-replacement",
+          "rationale": "The independently source-certified generated-lettering fit makes this outer-slot width/max-width correction redundant. Exact current native A/B fits at 320/390/768/1440 with and without the slot block; preserve its former evidence, but remove it from publication.",
+          "evidence": [
+            {
+              "path": "authority-evidence/hansarp-final-five-block-13-20261004/receipt.json",
+              "sha256": "cee1c25830130d6523f0faee2d1895fcc83e42742d31ab27c4973e8c63fdd5ee",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://pseudo-scp-jp.wikidot.com/sigma-10:main",
+            "state": "normal",
+            "viewports": [
+              320,
+              390,
+              768,
+              1440
+            ],
+            "selectors": [
+              "#header h1"
+            ]
+          },
+          "superseded_evidence": [
+            {
+              "path": "authority-evidence/hansarp-final-three-authority-13-normal-v3-20261002/receipt.json",
+              "sha256": "2d40bcef6af0baac87887f27f8d4ff2db75b5bb25c48fe97ef2f82fd8d8b4040",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ]
+        },
+        {
+          "marker": "SCP-JP Wikidot Hansarp nested credit panels: keep the otherwise panel fixed to the viewport.",
+          "sha256": "c9d7e360fac1ddcdf5c38306c91cb8bc7924171b0c50784d03cde1b707fef7ab",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "origin": "target-certified-replacement",
+          "rationale": "The theme transforms the view-panel container, making its nested otherwise panel fixed relative to that container instead of the viewport. Native trusted otherwise clicks demonstrate 51–597px of panel escape. Remove only that containing transform and retain vertical centering with top/bottom and auto margins.",
+          "evidence": [
+            {
+              "path": "authority-evidence/hansarp-final-four-block-14-20261004/receipt.json",
+              "sha256": "467515d0d6b790a1cdac5b97dae43c7b25b73f9fbbc092ceeb59560e9e3fb2d5",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://pseudo-scp-jp.wikidot.com/sigma-10:main",
+            "state": "credit-fold-otherwise",
+            "viewports": [
+              320,
+              390,
+              768,
+              1440
+            ],
+            "selectors": [
+              "#u-credit-otherwise .modalbox"
+            ]
+          },
+          "published_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319"
+        },
+        {
+          "marker": "SCP-JP Wikidot Hansarp generated masthead title: fit its source lettering within the narrow title slot.",
+          "sha256": "2961f9505858fc96e9f995c5eb32eda3fd08c4eddadfdef9e6fd0b7458736e54",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "origin": "target-certified-replacement",
+          "rationale": "The source generated HANSARP lettering expands the native Firefox target to 357/410px at 320/390, while the same unthemed target fits. Fit only the narrow source lettering to the remaining header slot, preserving face, rotation, source repeated shadow, colors and zero-line-height layout.",
+          "evidence": [
+            {
+              "path": "authority-evidence/hansarp-final-four-block-15-20261004/receipt.json",
+              "sha256": "fb9943e7fa697c3eb46572c4de232a571ac982ffa031cb011560fd1b90274143",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://pseudo-scp-jp.wikidot.com/sigma-10:main",
+            "state": "normal",
+            "viewports": [
+              320,
+              390,
+              768,
+              1440
+            ],
+            "selectors": [
+              "#header h1 a::before"
+            ]
+          },
+          "published_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319"
+        },
+        {
+          "marker": "SCP-JP Wikidot Hansarp credit fader anchors: retain native backdrop stacking under the visible controls.",
+          "sha256": "bbd8cd176e69656fa84abcba9aa00bd0fee182b4c5872316d82e48a12d19561b",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "origin": "target-certified-replacement",
+          "rationale": "The source generic link hover/focus rule transforms and raises the invisible native fader close anchor over modal controls. Native scrolled-return A/B fails without the correction and succeeds with it. Restore only the native absolute/auto-stack/untransformed backdrop anchor, retaining real outside-panel close clicks.",
+          "evidence": [
+            {
+              "path": "authority-evidence/hansarp-final-four-block-16-20261004/receipt.json",
+              "sha256": "ff8a77510af45034b2fd907d90224b58909322acfafd1faa5e4709a3926cbc10",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://pseudo-scp-jp.wikidot.com/sigma-10:main",
+            "state": "credit-fold-return",
+            "viewports": [
+              320,
+              390,
+              768,
+              1440
+            ],
+            "selectors": [
+              "#u-credit-view .modalbox"
+            ]
+          },
+          "published_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
         "candidate-input.css": "de74faf9920df398c3582b4a8d810130a744ab9e8657645c4c1cdc030d626cad",
-        "authority-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "authority-overrides.css": "802009c4f689b85bbd33f27359cabfd48e56ef33f2f6ebd4c51014686f9c4833",
         "asset-transforms.json": "4b0c068f13004ecbc65dc4139e0f97c4b8ef7f5125f3656610fabbe5fa838f11"
       },
       "outputs": {
-        "candidate.css": "2639935e21dfcf9175b4a4a431abd1b62313a3c2d3fdf174d5f831a72d3929ac",
-        "candidate-source.css": "de74faf9920df398c3582b4a8d810130a744ab9e8657645c4c1cdc030d626cad",
-        "candidate.wikidot.source.txt": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
-        "candidate.wikidot.txt": "5f25d745ece55cc484cb389137b7b5ee3d104699fe42e48c593a52b67159b8f1",
+        "candidate.css": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319",
+        "candidate-source.css": "99111d65e5e94da0210758d770d2b91ddd6de315e83301d671f8d6875a0d9d2e",
+        "candidate.wikidot.source.txt": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
+        "candidate.wikidot.txt": "c4c5954f86bf330d7014c6ecbe1643e1c7370bb08d48e6492e5c13d2c338508b",
         "maintenance/base.wikidot.txt": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
-        "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "maintenance/final.wikidot.txt": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98"
+        "maintenance/jp-overrides.css": "d7e0c1fffc095347fe92b2d0830aefac88f9ce1da707cd5b5d9562c723ed4735",
+        "maintenance/final.wikidot.txt": "666f330ad966549c2ce1fb87ebd8b5caa6f36f1749464eddbb7944dc5e4e6720"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -8013,6 +8647,11 @@
           "css": "bc3538f028e67d821fd460103a73cd1addec338ba674cb35a0e2b64e1794cfc7",
           "source": "586784a5830a65c735d39c62c642425646d4ff87159cd864698102d68a8d99e6"
         }
+      },
+      "current_navigation_evidence": {
+        "path": "authority-evidence/hansarp-final-four-navigation-20261004/receipt.json",
+        "sha256": "d7a691e8ec5bfa81724a336ef91df41818bdbe0bce21e6c5c30eaa3b860c34e4",
+        "published_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319"
       }
     },
     "night-rush-theme": {
@@ -8224,7 +8863,7 @@
             },
             {
               "path": "night-rush-theme/existing-jp.wikidot.txt",
-              "sha256": "05a20d5b6e1534554099e014972271405efabf5a119d6c84b8a3b2b021922453",
+              "sha256": "03327c410ace73c1105b60aaf89f254336732ed63579c9c952608be0462bb132",
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
             }
           ]
@@ -8445,7 +9084,7 @@
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd"
       },
       "outputs": {
-        "candidate.css": "3948ce93c88a3e89cd6279c5ce88bb882cfabd37f02fd79ab54122bcf181a6c1",
+        "candidate.css": "f3d5d0cec11e9092bed5913399d302ed8a19dea98a4e43ee71845afe4e803545",
         "candidate-source.css": "8857dd3cd6b307cf6b21c6c2d0c9f220c52bb6501278f865c467e85185c1eb8b",
         "candidate.wikidot.source.txt": "1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8",
         "candidate.wikidot.txt": "c1232435af36eeeee5d2d5c5b548832f7b8d7f5e66b5485af3d7eba0b80f4213",
@@ -8643,8 +9282,8 @@
         "source-css-includes.json": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022"
       },
       "outputs": {
-        "candidate.css": "148094fb643ed7bc5bf743e0d85aa94a0793072867ff94ff8702e55e6dca6f34",
-        "candidate-source.css": "51c8beef7cd0da017abdb631396ba4466b8136d65540241fde0e66e595794c75",
+        "candidate.css": "e68651742177907f32d7870a383a86a432159fe581e4a005e1d9f1a0da227016",
+        "candidate-source.css": "9ba92371a9f7f0ccd1b6a065dcff74ca18ba96bc74acbf311248d2fe84f09cb4",
         "candidate.wikidot.source.txt": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
         "candidate.wikidot.txt": "770aa44e13226adf2acb3091effcb034e42bf8eb1f87ae3cbeef09ed40ffca81",
         "maintenance/base.wikidot.txt": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
@@ -8658,6 +9297,10 @@
           "css": "ce43bbbf2d239cb1af429cda872840d6b31098c1808e8033c1ad73a96b2c257b",
           "source": "12c6c0bbac19f85ff7ce012332aa052aa764204c95213473cf360a242d483c7e"
         }
+      },
+      "current_navigation_evidence": {
+        "path": "authority-evidence/redtape-final-three-trusted-navigation-v3-20261002/receipt.json",
+        "sha256": "66679fb6396617ffeb794cdd0bf6098409b51b66c9f18b9e231d3c9602869992"
       }
     },
     "ouroborous-theme": {
@@ -8966,7 +9609,7 @@
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd"
       },
       "outputs": {
-        "candidate.css": "3a0e10e723d0e231e62e8c2ca65994265257429fd5a354059e8acf507bd15f22",
+        "candidate.css": "e3ca8e1a29abcba717d8e638af2eb2526f85b0ae134cd76918157a2b7f5a3fb1",
         "candidate-source.css": "d8aa6041a1f215780cc3fd06461193e0a8cc352ee2806ff2df22d97c809f17af",
         "candidate.wikidot.source.txt": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
         "candidate.wikidot.txt": "cf7f337ed0cc7b6d651bf58887aa7c58259f9ad646b32df459b4d28de697c5a8",
@@ -9164,14 +9807,14 @@
         },
         {
           "marker": "SCP-JP Wikidot Dear Dictator navigation correction: anchor only the overflowing rightmost menus at their mobile row endpoints.",
-          "sha256": "43855feae6c3c414a13f3c1f08709fd9d6bafcf9e398cbd7ca636b58d95a7f07",
+          "sha256": "be06a9b64f4344e13242d49765cf0ad02f39e828b75a03a11153ed457ad46196",
           "origin": "target-certified-replacement",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
-          "rationale": "Real SCP-JP frozen A/B demonstrates off-right submenu clipping even when document.scrollWidth equals the viewport. Anchor only the overflowing row endpoint menu; preserve source widths, header, palette and other menu geometry.",
+          "rationale": "Current SCP-JP read-only A/B showed the 320px rightmost Guide submenu extending past the viewport. Anchor the two rightmost source menus at the row end on the narrow breakpoint; the updated exact candidate contains each menu at 320px and 390px.",
           "evidence": [
             {
-              "path": "authority-evidence/dear-dictator-final-navigation-navigation-19-0-20261001/receipt.json",
-              "sha256": "1aa3f20d5c56a7cf6f6c4d91ed436cf3d626d36e54fdaf7eeff7c138d1ee0060",
+              "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-overflow-v2/receipt.json",
+              "sha256": "d569cc1c0166b98b772981f0c242ae58adb5e5f6105df4c4d248c25c2a375474",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -9187,18 +9830,84 @@
               ".mobile-top-bar > ul > li > ul a"
             ]
           },
-          "published_css_sha256": "65243e70234f596b4bb022f96a08c659b117a5a4b3415b9db75b31c5999e04f2"
+          "published_css_sha256": "f249a01833c6df378ccbd9d8a954fd2745311d10093cd9c55ead1d70eeaaeaeb",
+          "visual_review": {
+            "status": "directly-reviewed",
+            "reviewer": "Codex",
+            "reviewed_at": "2026-10-06",
+            "decision": "PASS_NATURAL",
+            "candidate_css_sha256": "f249a01833c6df378ccbd9d8a954fd2745311d10093cd9c55ead1d70eeaaeaeb",
+            "candidate_source_sha256": "6cb9b6f38b760ac446014f2f4c4671c05df909a7f102624e5b374d4dbab15b40",
+            "screenshots": [
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-overflow-v2/with-320-navigation-0.png",
+                "sha256": "29c8d226c5fe6abe34392091b69dc473456e2e294ff12988b42ef03d256466d1",
+                "viewport_width": 320,
+                "state": "navigation",
+                "item_index": 0
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-overflow-v2/with-320-navigation-1.png",
+                "sha256": "91ca3425fe19f8b7e0a2f42d9864df650bdf14fee9c78ef04188eab8540d0252",
+                "viewport_width": 320,
+                "state": "navigation",
+                "item_index": 1
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-overflow-v2/with-320-navigation-2.png",
+                "sha256": "1ad4633f80adabf76a2444601a0269ca6ee407d29b657b45ed1605a90a684ea8",
+                "viewport_width": 320,
+                "state": "navigation",
+                "item_index": 2
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-overflow-v2/with-320-navigation-3.png",
+                "sha256": "bd0a0ff88b1ae4fa6dd29446d73d9b7dfbec6ef0a2f3bc74e4acf2f96e98404d",
+                "viewport_width": 320,
+                "state": "navigation",
+                "item_index": 3
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-overflow-v2/with-390-navigation-0.png",
+                "sha256": "95d4d5abd9b554e31e0d11f2cdaafe1a971b671fab037d8e2b8d3d1f7f57d593",
+                "viewport_width": 390,
+                "state": "navigation",
+                "item_index": 0
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-overflow-v2/with-390-navigation-1.png",
+                "sha256": "684a4bed9a973c1575ad7f68f7c6aef27a3c590bc5e5f0af3dccd31377a842c2",
+                "viewport_width": 390,
+                "state": "navigation",
+                "item_index": 1
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-overflow-v2/with-390-navigation-2.png",
+                "sha256": "5c587592b9dc4c0a199ba913c112d529abd7da20513adc0f96576b4209317d8a",
+                "viewport_width": 390,
+                "state": "navigation",
+                "item_index": 2
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-overflow-v2/with-390-navigation-3.png",
+                "sha256": "5d91f2d89717d37830471ccc600f4c3c3cf147e9dcf126741d0a563c843bef0a",
+                "viewport_width": 390,
+                "state": "navigation",
+                "item_index": 3
+              }
+            ]
+          }
         },
         {
           "marker": "SCP-JP Wikidot dear-dictator credit correction: keep the modal rating in document flow below the license control.",
           "sha256": "b4173dd52cf67779c7655ae8e6275e8cce48cfcde90ebd3e7556389e3f29b4b2",
           "origin": "target-certified-replacement",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
-          "rationale": "Read-only real current SCP-JP Sigma-9 Credit A/B shows the absolute rating row intercepts the license link. Preserve the source rating styling and place only that row in normal flow. This selector does not match the Sigma-10 return component.",
+          "rationale": "Current SCP-JP Sigma-9 Credit read-only A/B confirms the candidate keeps the otherwise-license link visible and clickable below the rating row at 320px, 390px, and desktop width. The correction moves only the rating row into normal flow.",
           "evidence": [
             {
-              "path": "authority-evidence/dear-dictator-final-navigation-credit-license-20-0-20261001/receipt.json",
-              "sha256": "6faa3322c0d4f75418856109ca2237629cdf7a4163ac9928548318d87d3d8b0b",
+              "path": "authority-evidence/dear-dictator-final-search-current-20261006/credit-license-v2/receipt.json",
+              "sha256": "53ce2c787aac747f49340e11eb85890b66f6dea3cc1c4cf05d235226ea1b4ebd",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -9214,20 +9923,51 @@
               "#u-credit-view .modalbox .modalbox-ratemodule",
               "#u-credit-view a[href=\"#u-credit-otherwise\"]"
             ],
-            "target_version": "SCP-JP Sigma-9 Credit; current source receipt current-acceptance/authority-evidence/scp-jp-credit-current/receipt.json"
+            "target_version": "Current public SCP-JP page; read-only snapshot captured 2026-10-06."
           },
-          "published_css_sha256": "65243e70234f596b4bb022f96a08c659b117a5a4b3415b9db75b31c5999e04f2"
+          "published_css_sha256": "f249a01833c6df378ccbd9d8a954fd2745311d10093cd9c55ead1d70eeaaeaeb",
+          "visual_review": {
+            "status": "directly-reviewed",
+            "reviewer": "Codex",
+            "reviewed_at": "2026-10-06",
+            "decision": "PASS_NATURAL",
+            "candidate_css_sha256": "f249a01833c6df378ccbd9d8a954fd2745311d10093cd9c55ead1d70eeaaeaeb",
+            "candidate_source_sha256": "6cb9b6f38b760ac446014f2f4c4671c05df909a7f102624e5b374d4dbab15b40",
+            "screenshots": [
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/credit-license-v2/with-320-credit-license-0.png",
+                "sha256": "124b69dfac0ba43472c167d942a856b82c322e781fd841ad92ba7bd8d022ef40",
+                "viewport_width": 320,
+                "state": "credit-license",
+                "item_index": 0
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/credit-license-v2/with-390-credit-license-0.png",
+                "sha256": "32e14b7cff3fd3641fbfd6783ebe888f4b75c418c0e2132477e1182d15954445",
+                "viewport_width": 390,
+                "state": "credit-license",
+                "item_index": 0
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/credit-license-v2/with-1440-credit-license-0.png",
+                "sha256": "04f94d9667efac4abdca66084d2b0f3e9aec76f2659d85eaed374b2c932da72e",
+                "viewport_width": 1440,
+                "state": "credit-license",
+                "item_index": 0
+              }
+            ]
+          }
         },
         {
           "marker": "SCP-JP Wikidot Dear Dictator control correction: keep mobile navigation inside the viewport above the search layer.",
           "sha256": "69e190ae11e0465d4a6333b404f1ea623fead782eff7bc09f8746a443a703180",
           "origin": "target-certified-replacement",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
-          "rationale": "At 320px source mobile parents are entirely above the viewport; after positioning them, search intercepts later parents. Fix the mobile bar to the viewport and raise its owning top-bar above the bounded search layer. Preserve the earlier source-certified submenu and credit corrections.",
+          "rationale": "Current SCP-JP source A/B exercises all four mobile top-bar submenu controls at 320px and 390px. Each source interaction reaches a visible, contained submenu with the current candidate CSS.",
           "evidence": [
             {
-              "path": "authority-evidence/dear-dictator-navigation-action-authority-20261001/receipt.json",
-              "sha256": "a2d8a797e24cdd6dfaeca4d13100a69ecf0cdb4e9a667de7ed40334f5f7362fc",
+              "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-action-v2/receipt.json",
+              "sha256": "738b95a87ff1e0904d6178d7cdc230c9b5adb84efd29b3ca600fad4039c248e2",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -9239,17 +9979,151 @@
               390
             ]
           },
-          "published_css_sha256": "65243e70234f596b4bb022f96a08c659b117a5a4b3415b9db75b31c5999e04f2"
+          "published_css_sha256": "f249a01833c6df378ccbd9d8a954fd2745311d10093cd9c55ead1d70eeaaeaeb",
+          "visual_review": {
+            "status": "directly-reviewed",
+            "reviewer": "Codex",
+            "reviewed_at": "2026-10-06",
+            "decision": "PASS_NATURAL",
+            "candidate_css_sha256": "f249a01833c6df378ccbd9d8a954fd2745311d10093cd9c55ead1d70eeaaeaeb",
+            "candidate_source_sha256": "6cb9b6f38b760ac446014f2f4c4671c05df909a7f102624e5b374d4dbab15b40",
+            "screenshots": [
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-action-v2/with-320-navigation-action-0.png",
+                "sha256": "6bbeead0a3e2477170287915fd468f0ed61cfb463a8f03c267bafc26e7493572",
+                "viewport_width": 320,
+                "state": "navigation-action",
+                "item_index": 0
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-action-v2/with-320-navigation-action-1.png",
+                "sha256": "025362c90f2aa620bf86033bf88326324b9ea58f119116a9749a3231c20ae202",
+                "viewport_width": 320,
+                "state": "navigation-action",
+                "item_index": 1
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-action-v2/with-320-navigation-action-2.png",
+                "sha256": "af8a452381bd2a21b335163d59d5b32f822cadee03a7f8c786f8f421d74d15b0",
+                "viewport_width": 320,
+                "state": "navigation-action",
+                "item_index": 2
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-action-v2/with-320-navigation-action-3.png",
+                "sha256": "dcce65815585fe62192a5ca40152d1466f383e872d8083c9be28f7b76050100a",
+                "viewport_width": 320,
+                "state": "navigation-action",
+                "item_index": 3
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-action-v2/with-390-navigation-action-0.png",
+                "sha256": "9918026bbd47043f794c1671f696922292fcd96ae3a06e8876fd0bb0cbf16938",
+                "viewport_width": 390,
+                "state": "navigation-action",
+                "item_index": 0
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-action-v2/with-390-navigation-action-1.png",
+                "sha256": "a5cc15c317543d82ab44d18da60f58d02765bf4a77052ef458f0de1d79db5b88",
+                "viewport_width": 390,
+                "state": "navigation-action",
+                "item_index": 1
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-action-v2/with-390-navigation-action-2.png",
+                "sha256": "7487c9409e04d26dd6184f51e39f22058ed0d5f25c6af2cb7439e3d49c86b060",
+                "viewport_width": 390,
+                "state": "navigation-action",
+                "item_index": 2
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/navigation-action-v2/with-390-navigation-action-3.png",
+                "sha256": "1c5a8f77a4fb474681b7f72bd84019b480cf1ada242177698203786942dca2e8",
+                "viewport_width": 390,
+                "state": "navigation-action",
+                "item_index": 3
+              }
+            ]
+          }
+        },
+        {
+          "marker": "SCP-JP Wikidot Dear Dictator mobile search correction: keep search below an unwrapped, readable navigation row.",
+          "sha256": "8b07aec3303e2ebe064d5cec6834d921805cf02921455469577ab3739242420f",
+          "origin": "target-certified-replacement",
+          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "rationale": "Current SCP-JP source A/B shows the search box overlaps localized navigation at 320px without this correction. The exact current candidate places the search row below navigation at 320px, 390px, 768px, and 979px; all four direct screenshots show readable navigation and visible search controls.",
+          "evidence": [
+            {
+              "path": "authority-evidence/dear-dictator-final-search-current-20261006/mobile-search-v2/receipt.json",
+              "sha256": "569b169c05eba5ba499c2dde32c380e355ea83b282862f8f824f46d4b0fd3305",
+              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+            }
+          ],
+          "scope": {
+            "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+            "state": "normal",
+            "viewports": [
+              320,
+              390,
+              768,
+              979
+            ],
+            "selectors": [
+              "#search-top-box-form input[type=\"text\"]",
+              "#search-top-box-form input[type=\"submit\"]"
+            ],
+            "target_version": "Current public SCP-JP page; anonymous read-only snapshot captured 2026-10-06."
+          },
+          "published_css_sha256": "f249a01833c6df378ccbd9d8a954fd2745311d10093cd9c55ead1d70eeaaeaeb",
+          "visual_review": {
+            "status": "directly-reviewed",
+            "reviewer": "Codex",
+            "reviewed_at": "2026-10-06",
+            "decision": "PASS_NATURAL",
+            "candidate_css_sha256": "f249a01833c6df378ccbd9d8a954fd2745311d10093cd9c55ead1d70eeaaeaeb",
+            "candidate_source_sha256": "6cb9b6f38b760ac446014f2f4c4671c05df909a7f102624e5b374d4dbab15b40",
+            "screenshots": [
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/mobile-search-v2/with-320-normal-0.png",
+                "sha256": "24fb221f9ff9a47f9c88979aa755e9dce9c9933a4bc61f8700fe44e4f974b112",
+                "viewport_width": 320,
+                "state": "normal",
+                "item_index": 0
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/mobile-search-v2/with-390-normal-0.png",
+                "sha256": "312bbb0969634131950b229910333543e13aa10e6c9e27dae10b87ec55688a10",
+                "viewport_width": 390,
+                "state": "normal",
+                "item_index": 0
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/mobile-search-v2/with-768-normal-0.png",
+                "sha256": "c1987b455b41fb0d769167415e8df9c82f04bb55e2fdca09da72ac19a4dd2bd4",
+                "viewport_width": 768,
+                "state": "normal",
+                "item_index": 0
+              },
+              {
+                "path": "authority-evidence/dear-dictator-final-search-current-20261006/mobile-search-v2/with-979-normal-0.png",
+                "sha256": "28f1aea3dbaa6d8a99413a4e6bf0e065db2016e513eb71577a7f2277d213ae4a",
+                "viewport_width": 979,
+                "state": "normal",
+                "item_index": 0
+              }
+            ]
+          }
         }
       ],
       "inputs": {
         "candidate-input.css": "c52365e80c9f89d061622e910a59425c04c283201d09cfc45faa4fb108932f8a",
-        "authority-overrides.css": "a442a5a6cd8b3f3372a3efb0cf011d34bf62518676804965fe1945e0afbae0f5",
+        "authority-overrides.css": "f998edc4477b883346dea3af9312655bbde99c5c178177ed6ce2622b7b030963",
         "maintenance/authority-base.wikidot.txt": "b6c93b192d4db6ca662f3560a00a47f273d221f3e52ba3832a5d04f7f2b76e52"
       },
       "outputs": {
-        "candidate.css": "65243e70234f596b4bb022f96a08c659b117a5a4b3415b9db75b31c5999e04f2",
-        "candidate.wikidot.txt": "4d547ad7d87c7efab4a35decf68a7c684269cedd4a4a4437b86fa4361300a5c0"
+        "candidate.css": "f249a01833c6df378ccbd9d8a954fd2745311d10093cd9c55ead1d70eeaaeaeb",
+        "candidate.wikidot.txt": "6cb9b6f38b760ac446014f2f4c4671c05df909a7f102624e5b374d4dbab15b40"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -9328,6 +10202,25 @@
             ]
           },
           "published_css_sha256": "6b82140e1f875394bb5ceb7e2e6be6e9805157dd18c04fc7c63c6eea72eb49a8"
+        },
+        {
+          "marker": "SCP-JP Wikidot Quand navigation correction: separate the drawer toggle from the filtered header menu and contain row endpoint submenus.",
+          "sha256": "414c8c40ad78bf032ec7ef96284777361e4828cffdaa2377fbe285b95aba9d94",
+          "origin": "current-JP-rev2-functional-rebase",
+          "authority": "RUNTIME_INDEPENDENT",
+          "rationale": "The generated candidate source materializes the reviewed SCP-FR theme template together with the current existing SCP-JP rev2 theme page content and its Japanese credit/showcase context. The publishable theme module is separately checked against current target A/B authority for its responsive navigation block.",
+          "evidence": [
+            {
+              "path": "quand-le-soleil-se-couche/current-jp-theme.wikidot.txt",
+              "sha256": "d42659934387cf19af43b9135db16820ecef9e8fe478c9ee645e794b4c71a881",
+              "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+            },
+            {
+              "path": "quand-le-soleil-se-couche/candidate-template.css",
+              "sha256": "7006189af102de81cc0461ee7c9181708bad29d3240a8d55c7b0287d8d0b3cf2",
+              "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+            }
+          ]
         }
       ],
       "inputs": {
@@ -9336,8 +10229,8 @@
       },
       "outputs": {
         "candidate.css": "6b82140e1f875394bb5ceb7e2e6be6e9805157dd18c04fc7c63c6eea72eb49a8",
-        "candidate.wikidot.txt": "6020687f316cb450c479f5bc74dfcad54b143c88a1d922132cc61708f8d2dbb5",
-        "publishable-theme.wikidot.txt": "08e2dad6765433c8694b70afd407a2d51240b7f7b0f10d9b188b69cd72f68d2e"
+        "candidate.wikidot.txt": "242dcf54d6b52cea946b65f1c38b508479d255853810d8d7cee3ed3be42815eb",
+        "publishable-theme.wikidot.txt": "c44ef95cf9a648f5b2eb9bc3854e95cb4e7005d5c9f656078e795508c7c7c47a"
       },
       "current_navigation_evidence": {
         "path": "authority-evidence/quand-le-soleil-se-couche-navigation-action-authority-20261001/receipt.json",

@@ -4,8 +4,8 @@
   "en_updated_at": "2026-04-12T05:16:38+00:00",
   "en_entity_uuid": "94f238b1-d448-4ba2-81f6-3da09e32ab94",
   "jp_previous_status": "present",
-  "jp_previous_source_sha256": "f164a9b83100be37a9695d067604cc3563032bcd1cfd6016e7e5200ad21a72b7",
-  "jp_previous_updated_at": "2025-08-03T13:23:04+00:00",
+  "jp_previous_source_sha256": "9ab03d7a81385d6867dd7cf6fabcad33b3257b8f11296479924031b9eb1cbec0",
+  "jp_previous_updated_at": "2026-09-24T17:15:44+00:00",
   "jp_previous_entity_uuid": "bc01c0f2-dead-43d0-832c-c7a071205b12",
   "technical_spec_version": "1.4",
   "reference_url": "https://scp-wiki.wikidot.com/theme:penumbra",
@@ -36,8 +36,8 @@
     "jp": {
       "status": "present",
       "source_path": "existing-jp.wikidot.txt",
-      "sha256": "f164a9b83100be37a9695d067604cc3563032bcd1cfd6016e7e5200ad21a72b7",
-      "updated_at": "2025-08-03T13:23:04+00:00",
+      "sha256": "9ab03d7a81385d6867dd7cf6fabcad33b3257b8f11296479924031b9eb1cbec0",
+      "updated_at": "2026-09-24T17:15:44+00:00",
       "entity_uuid": "bc01c0f2-dead-43d0-832c-c7a071205b12",
       "tags": [
         "en",
@@ -49,11 +49,20 @@
         "kind": "scp-corpus-page",
         "branch": "jp",
         "slug": "theme:penumbra"
-      }
+      },
+      "revisions": 8
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn",
+    "existing_jp_rebase": {
+      "previous_sha256": "f164a9b83100be37a9695d067604cc3563032bcd1cfd6016e7e5200ad21a72b7",
+      "previous_snapshot": "existing-jp-pre-rebase-20261005.wikidot.txt",
+      "current_revision": 8,
+      "current_updated_at": "2026-09-24T17:15:44+00:00",
+      "current_sha256": "9ab03d7a81385d6867dd7cf6fabcad33b3257b8f11296479924031b9eb1cbec0",
+      "diff_assessment": "provenance refresh; source freshness audit found no theme CSS/runtime behavior delta"
+    }
   },
   "dependencies": {
     "slug": "theme:penumbra",
@@ -97,7 +106,7 @@
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
   "candidate_origin": "current official SCP-JP page source",
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/penumbra/assets.json",
   "asset_dependency_decision_count": 77,
@@ -128,6 +137,8 @@
       "showcase_css_modules_removed_exact": 0,
       "showcase_css_modules_removed_truncated": 0,
       "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 0,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
       "candidate_css_sha256": "2d8436acd87691323a742583e715e7f69c96bfd53c355dac5b2fe27b8ceeb5da",
       "asset_receipt_path": "assets.json",
@@ -164,7 +175,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

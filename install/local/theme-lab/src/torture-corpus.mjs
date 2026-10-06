@@ -11,6 +11,7 @@ import {fileURLToPath} from "node:url";
 
 import {applyStylesheet, clearStylesheet, setViewport} from "./browser-lab.mjs";
 import {ACCEPTANCE_VIEWPORTS} from "./acceptance-viewports.mjs";
+import {loadTortureNativeRating} from './torture-native-components.mjs';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
@@ -374,13 +375,19 @@ export async function runTortureCorpus({
   const started = performance.now();
   const wikitext = await loadTortureFixture(fixturePath);
   const rendered = await previewClient.preview({siteId, title, wikitext, syntaxOnly});
+  const nativeRating=await loadTortureNativeRating();
   const rpcDone = performance.now();
 
   await page.evaluate(
-    ({body, styles}) => {
+    ({body, styles, nativeRating}) => {
       const container = document.querySelector("#page-content");
       if (!container) throw new Error("preview container not found: #page-content");
       container.innerHTML = body;
+      const slots=container.querySelectorAll('.tl-rate');
+      if(slots.length!==1)throw new Error('native rating fixture slot must be unique');
+      const template=document.createElement('template');template.innerHTML=nativeRating.html;
+      if(template.content.children.length!==1||!template.content.firstElementChild.matches('.page-rate-widget-box')||template.content.querySelectorAll('.page-rate-widget-box > span').length!==4||template.content.querySelectorAll('.page-rate-widget-box > span > a').length!==3)throw new Error('native rating fixture DOM differs');
+      slots[0].replaceChildren(template.content);
       let previewStyle = document.getElementById("theme-lab-preview-styles");
       if (!previewStyle) {
         previewStyle = document.createElement("style");
@@ -389,7 +396,7 @@ export async function runTortureCorpus({
       }
       previewStyle.textContent = styles.join("\n");
     },
-    {body: rendered.body, styles: rendered.styles},
+    {body: rendered.body, styles: rendered.styles,nativeRating},
   );
 
   const injectedCss = await readInjectedCss(page, styleId);
@@ -413,6 +420,8 @@ export async function runTortureCorpus({
       bytes: Buffer.byteLength(wikitext, "utf8"),
       syntax_only: syntaxOnly,
       rendered_body_bytes: Buffer.byteLength(rendered.body, "utf8"),
+      native_rating_sha256:nativeRating.sha256,
+      native_rating_source_sha256:nativeRating.source_sha256,
     },
     viewports: viewports.map((viewport) => viewport.id),
     components: TORTURE_COMPONENTS.map((component) => component.id),

@@ -29,9 +29,9 @@
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/space",
-  "candidate_source_hash": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
+  "candidate_source_hash": "20d4d9c98052fc76fcf8573505509dc4d49c3b4852e2ea99580218ad34afe3a7",
   "source_candidate_path": "install/local/theme-lab/ports/space/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
+  "source_candidate_sha256": "20d4d9c98052fc76fcf8573505509dc4d49c3b4852e2ea99580218ad34afe3a7",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -39,11 +39,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/space/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "bc6be8bd7096c73a0d3c5dc1da1632dddb2793733c6d3ff8f34a0d5dac9e6cfc",
+  "candidate_source_sha256": "20d4d9c98052fc76fcf8573505509dc4d49c3b4852e2ea99580218ad34afe3a7",
   "human_port_candidate_path": "install/local/theme-lab/ports/space/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "b17a253456f0a733d5fcafe4f4b16c4bb06050cec2c7461b08466c58eb048589",
-  "candidate_preview_sha256": "1d7298014f1b2bfd60f993bc798885d3462aee64f315e457d7dd2a6b605ba765",
-  "candidate_css_sha256": "75d64447d5f59d4e89b45ec74bdbd42351ff3a19400dc4391bb6eedcbfa37e1b",
+  "candidate_preview_sha256": "a1166c2ec232d2931b646c9103e7761982d225484009bfed59133bcb19d83b28",
+  "candidate_css_sha256": "1df89c43e1a5d880ac726dd3529fb0cd9bf5abf6513cb84c4a3544e390fed286",
   "page_attachment_manifest": null,
   "existing_jp_reconciliation": {
     "previous_source_sha256": "63bee9d3876ac78335c8a587c63b719efea9d3a9ab1bf945bdd807ce1f554c5d",
@@ -80,10 +80,15 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/space/accepted-result.json",
+    "sha256": "0577b473c62bd0055176e32d75e01c8e07b719f923e802e31ca1048c5f250c5a"
+  }
 }

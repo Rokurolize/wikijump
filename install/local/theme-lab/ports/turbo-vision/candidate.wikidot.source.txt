@@ -1699,3 +1699,13 @@ div.page-rate-widget-box .rate-points {
   #top-bar { left: 0; right: 16px; width: calc(100% - 16px); }
 }
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot native history list: preserve the seven columns inside their own horizontal scroller. */
+@media(max-width:767px){#revision-list {max-width:100%;overflow-x:auto;}}
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot Turbo Vision narrow navigation rows: reserve the source gray bar for wrapped labels. */
+@media(max-width:359px){#header{padding-bottom:42px;}#top-bar{height:40px;background-color:#aaa;}}
+[[/module]]

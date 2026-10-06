@@ -24,9 +24,9 @@
   "existing_jp_audit": "new-jp-candidate-verified",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/inkblot",
-  "candidate_source_hash": "be2817d74c0061befd04de1ac46d687f66b6a424d5dcb555195a5235eafbae8c",
+  "candidate_source_hash": "679a88f60fb72ac72743a09380e121bfbb03207800e41b1ad74e59b1f66bc9ac",
   "source_candidate_path": "install/local/theme-lab/ports/inkblot/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "be2817d74c0061befd04de1ac46d687f66b6a424d5dcb555195a5235eafbae8c",
+  "source_candidate_sha256": "679a88f60fb72ac72743a09380e121bfbb03207800e41b1ad74e59b1f66bc9ac",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -34,11 +34,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/inkblot/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "be2817d74c0061befd04de1ac46d687f66b6a424d5dcb555195a5235eafbae8c",
+  "candidate_source_sha256": "679a88f60fb72ac72743a09380e121bfbb03207800e41b1ad74e59b1f66bc9ac",
   "human_port_candidate_path": "install/local/theme-lab/ports/inkblot/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "eb4f0d31324c9b7949043c9a42a415d42e26230c144829a7eba7b118269d79c9",
   "candidate_preview_sha256": "f282f81bb6714ad35dd86d2d4db60cae6c8a2df16cd006dcfcfe0e9ca7281156",
-  "candidate_css_sha256": "e995e17a2c8ee18655e0af72e51bc8f98ad26868aae7adb2d1233e54e6915220",
+  "candidate_css_sha256": "fd7e2ae9c01c3d31160b1e7017e441b3abcd8d5eab309c631ef2ebf139fc3406",
   "page_assets": [
     {
       "filename": "pancakes.png",
@@ -66,7 +66,7 @@
     "source_evidence": "candidate screenshots visibly rendered unresolved SCP-EN usernames against SCP-JP identity links; preserve display names and freeze upstream/human-port originals"
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/inkblot/assets.json",
-  "asset_dependency_decision_count": 53,
+  "asset_dependency_decision_count": 47,
   "page_asset_dependency_decisions_path": "install/local/theme-lab/ports/inkblot/page-assets.json",
   "visual_acceptance_findings": [
     {
@@ -92,10 +92,11 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
+  "state": "accepted-local-candidate-not-published",
   "current_wikidot_authority": {
     "path": "authority-evidence/inkblot-narrow-navigation/receipt.json",
     "sha256": "4e63736393e73def4a023bcbe05348e294a2de190bcf77da591aea0ee0e6b840",
@@ -116,6 +117,10 @@
     "port_verdict": "pass",
     "target_status": "fail"
   },
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/inkblot/accepted-result.json",
+    "sha256": "0ef43d9aff0473067944e7c6eee1ff15ef0e9dac9d0d39fea4d297853e3bc9f7"
+  }
 }

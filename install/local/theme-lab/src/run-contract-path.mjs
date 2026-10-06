@@ -9,13 +9,15 @@ export function resolveRunContractPath(themeLabDir, contractDir, relative, label
   if (typeof relative !== 'string' || !relative || path.isAbsolute(relative)) {
     throw new Error(`${label} must be a non-empty relative path`);
   }
-  const root = path.resolve(themeLabDir);
+  const root = fs.realpathSync(themeLabDir);
   const candidates = [path.resolve(contractDir, relative), path.resolve(root, relative)];
   for (const candidate of [...new Set(candidates)]) {
     if (candidate !== root && !candidate.startsWith(root + path.sep)) continue;
     try {
       fs.accessSync(candidate);
-      return candidate;
+      const actual=fs.realpathSync(candidate);
+      if(actual===root||actual.startsWith(root+path.sep))return actual;
+      throw new Error(`${label} escapes Theme Lab through a symlink`);
     } catch (error) {
       if (error.code !== 'ENOENT' && error.code !== 'ENOTDIR') throw error;
     }

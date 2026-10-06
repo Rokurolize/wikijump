@@ -29,9 +29,9 @@
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/cosmonaut",
-  "candidate_source_hash": "b4a0775f23f8727f07ad778e96934868697ae620d1e35ef5cdd506bfdc6839c8",
+  "candidate_source_hash": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179",
   "source_candidate_path": "install/local/theme-lab/ports/cosmonaut/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "b4a0775f23f8727f07ad778e96934868697ae620d1e35ef5cdd506bfdc6839c8",
+  "source_candidate_sha256": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -39,11 +39,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/cosmonaut/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "b4a0775f23f8727f07ad778e96934868697ae620d1e35ef5cdd506bfdc6839c8",
+  "candidate_source_sha256": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179",
   "human_port_candidate_path": "install/local/theme-lab/ports/cosmonaut/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "8d6fa4f9ce90b03ac66185bead1ec44cd6b8781534cd329135275bfdbf3608a5",
-  "candidate_preview_sha256": "04b6968bdd06f658d18b873927a0fe3bc849c7c38b07602079395721e34ca601",
-  "candidate_css_sha256": "8541af1a0f8289fa0ba964fac18b8104ac2d8996cc8d5218de819ab732033fa2",
+  "candidate_preview_sha256": "7b5f36f1c228518c3dcde7349214d6d2925074c2e077608a97077703e0c40224",
+  "candidate_css_sha256": "7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce",
   "page_attachment_manifest": null,
   "existing_jp_reconciliation": {
     "previous_source_sha256": "857c48d316a054139c6c667fcfadd14208885fcf1c3103b56c9a661a620e5fd2",
@@ -66,7 +66,7 @@
     "source_evidence": "candidate screenshots visibly rendered unresolved SCP-EN usernames against SCP-JP identity links; preserve display names and freeze upstream/human-port originals"
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/cosmonaut/assets.json",
-  "asset_dependency_decision_count": 22,
+  "asset_dependency_decision_count": 21,
   "page_asset_dependency_decisions_path": null,
   "historical_acceptance": {
     "status": "SUPERSEDED_CANDIDATE",
@@ -80,10 +80,15 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/cosmonaut/accepted-result.json",
+    "sha256": "1770f9af8fe6eb2430cd99a0f820018c6894d86952ea97582469947debbb4405"
+  }
 }

@@ -1,0 +1,2252 @@
+{
+  "schema": "theme_lab_sigma9_pending_direct_review.v1",
+  "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36",
+  "run_contract_sha256": "d74f3e5715d08999740ed45ad5371355384d4f066803ff6b0c2a57bcd61825a9",
+  "audit_sha256": "0424e01cd9428a80e8f3a809c6f950195b7834956f149ddd0c77b9deccbfcc29",
+  "generated_at": "2026-10-07",
+  "input_manifest_path": "ports/current-acceptance/sigma9-direct-review-20261007/pending-screenshots.json",
+  "input_manifest_sha256": "590dcb6410bc933d5d854bce5a258b3714982819e03471e679289a044c4a1cbf",
+  "unique_images": 90,
+  "sheet_count": 7,
+  "contact_sheets": [
+    {
+      "path": "ports/current-acceptance/sigma9-direct-review-20261007/contact-sheets/landscape-01.jpg",
+      "sha256": "841a779ee87506843fdef3bd34ad769641a85f02b3d930ee0bb8548e39bffbe6",
+      "bytes": 339335,
+      "dimensions": [
+        1440,
+        1104
+      ],
+      "groups": 16
+    },
+    {
+      "path": "ports/current-acceptance/sigma9-direct-review-20261007/contact-sheets/landscape-02.jpg",
+      "sha256": "69a29f06e2f940ffbea26dac5435b6027e3f87865592bb632d3001c3f9f0498c",
+      "bytes": 359748,
+      "dimensions": [
+        1440,
+        1104
+      ],
+      "groups": 16
+    },
+    {
+      "path": "ports/current-acceptance/sigma9-direct-review-20261007/contact-sheets/landscape-03.jpg",
+      "sha256": "d002319186c324501ee461879cabb973cbb2082c32b63576564decf674216de9",
+      "bytes": 96356,
+      "dimensions": [
+        1440,
+        1104
+      ],
+      "groups": 4
+    },
+    {
+      "path": "ports/current-acceptance/sigma9-direct-review-20261007/contact-sheets/portrait-04.jpg",
+      "sha256": "96a1f476c25bcddd1c21a2e21a32d092642ac697ba8e5002f699d7e6f21ed8e3",
+      "bytes": 550355,
+      "dimensions": [
+        1440,
+        1920
+      ],
+      "groups": 16
+    },
+    {
+      "path": "ports/current-acceptance/sigma9-direct-review-20261007/contact-sheets/portrait-05.jpg",
+      "sha256": "4a95cc0f2d42da0e27de2b9c1e68cef71796ad05a9d793e95547f96bdf9379fb",
+      "bytes": 588436,
+      "dimensions": [
+        1440,
+        1920
+      ],
+      "groups": 16
+    },
+    {
+      "path": "ports/current-acceptance/sigma9-direct-review-20261007/contact-sheets/portrait-06.jpg",
+      "sha256": "d9efea8bcd576cdde37364dd1c17ccd03aba98f02c13e22386f6013ccc65819c",
+      "bytes": 478831,
+      "dimensions": [
+        1440,
+        1920
+      ],
+      "groups": 16
+    },
+    {
+      "path": "ports/current-acceptance/sigma9-direct-review-20261007/contact-sheets/portrait-07.jpg",
+      "sha256": "ea56c57a33b97e1baab375f8c4c8f69989be456e5470bfec36f7d2ae9af3defa",
+      "bytes": 238681,
+      "dimensions": [
+        1440,
+        1920
+      ],
+      "groups": 6
+    }
+  ],
+  "groups": [
+    {
+      "screenshot_sha256": "48da295287b72f72aa446ecbbf8a8e4126c78e8aa7b3981fd8bf84a302b30d45",
+      "screenshot": "current-acceptance/sigma9/aesthetic-theme/artifacts/interactive/chromium/desktop/page-normal-settled-desktop-48da295287b72f72aa446ecbbf8a8e4126c78e8aa7b3981fd8bf84a302b30d45.png",
+      "records": [
+        {
+          "theme": "aesthetic-theme",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "5419caca49caf8f0be65724001a7edcf57daa52f75a01b324c98f4a869b6c117",
+          "candidate_source_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 1
+    },
+    {
+      "screenshot_sha256": "1354b9716b0d83fc8ab0a7d9dc01382197e05a82069276794a653a6e448fc890",
+      "screenshot": "current-acceptance/sigma9/basalt/artifacts/interactive/chromium/laptop/page-normal-settled-laptop-1354b9716b0d83fc8ab0a7d9dc01382197e05a82069276794a653a6e448fc890.png",
+      "records": [
+        {
+          "theme": "basalt",
+          "browser_engine": "chromium",
+          "viewport": "laptop",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "c1b44963493737105ecb19c33bb49a41c4b931c09a9b3dbecde0562b0f942823",
+          "candidate_source_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 2
+    },
+    {
+      "screenshot_sha256": "cdd287c48e982d11e40e73d5312cd92738134408d56e524b7e833bed09b2b171",
+      "screenshot": "current-acceptance/sigma9/black-highlighter-theme/artifacts/interactive/chromium/desktop/credit-view-open-desktop-cdd287c48e982d11e40e73d5312cd92738134408d56e524b7e833bed09b2b171.png",
+      "records": [
+        {
+          "theme": "black-highlighter-theme",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "credit.view",
+          "state": "open",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
+          "candidate_source_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 3
+    },
+    {
+      "screenshot_sha256": "be499c699df7d637f77c6a81e95037d3b41a79c48ea5a08665912fd3b4734dc1",
+      "screenshot": "current-acceptance/sigma9/black-highlighter-theme/artifacts/interactive/chromium/laptop/page-normal-settled-laptop-be499c699df7d637f77c6a81e95037d3b41a79c48ea5a08665912fd3b4734dc1.png",
+      "records": [
+        {
+          "theme": "black-highlighter-theme",
+          "browser_engine": "chromium",
+          "viewport": "laptop",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
+          "candidate_source_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 4
+    },
+    {
+      "screenshot_sha256": "e8874d64acb5cd45913694e78e7ed76453e3a0adf0f7341257eb096ee0fea4dc",
+      "screenshot": "current-acceptance/sigma9/cosmonaut/artifacts/interactive/chromium/desktop/content-tabview-second-tab-selected-desktop-e8874d64acb5cd45913694e78e7ed76453e3a0adf0f7341257eb096ee0fea4dc.png",
+      "records": [
+        {
+          "theme": "cosmonaut",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "content.tabview",
+          "state": "second-tab-selected",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce",
+          "candidate_source_sha256": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 5
+    },
+    {
+      "screenshot_sha256": "0956fa9bfb7744ecb4efc49b4bf4ade80eabe433e14a56ee2bc71fca2593e716",
+      "screenshot": "current-acceptance/sigma9/cosmonaut/artifacts/interactive/chromium/desktop/credit-variant-no-rate-view-desktop-0956fa9bfb7744ecb4efc49b4bf4ade80eabe433e14a56ee2bc71fca2593e716.png",
+      "records": [
+        {
+          "theme": "cosmonaut",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "credit.variant.no-rate",
+          "state": "view",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce",
+          "candidate_source_sha256": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 6
+    },
+    {
+      "screenshot_sha256": "b8a865744815ab60a454ba5ea2b4052146f936adc27bf05a8a515bbbbb3d7871",
+      "screenshot": "current-acceptance/sigma9/cosmonaut/artifacts/interactive/chromium/desktop/credit-view-open-desktop-b8a865744815ab60a454ba5ea2b4052146f936adc27bf05a8a515bbbbb3d7871.png",
+      "records": [
+        {
+          "theme": "cosmonaut",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "credit.view",
+          "state": "open",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce",
+          "candidate_source_sha256": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 7
+    },
+    {
+      "screenshot_sha256": "167d4be0929216bec4573af0d66959c858ad77654644d9a118695034d831ad0f",
+      "screenshot": "current-acceptance/sigma9/cosmonaut/artifacts/interactive/chromium/desktop/nav-desktop-top-keyboard-focus-desktop-167d4be0929216bec4573af0d66959c858ad77654644d9a118695034d831ad0f.png",
+      "records": [
+        {
+          "theme": "cosmonaut",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "nav.desktop-top",
+          "state": "keyboard-focus",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce",
+          "candidate_source_sha256": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 8
+    },
+    {
+      "screenshot_sha256": "61327b98a0c6481c6fd69dd68b6dc3f5ee19e6fb310195d69d88fc56eca5c5cf",
+      "screenshot": "current-acceptance/sigma9/cosmonaut/artifacts/interactive/chromium/desktop/page-files-list-desktop-61327b98a0c6481c6fd69dd68b6dc3f5ee19e6fb310195d69d88fc56eca5c5cf.png",
+      "records": [
+        {
+          "theme": "cosmonaut",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "page.files",
+          "state": "list",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce",
+          "candidate_source_sha256": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 9
+    },
+    {
+      "screenshot_sha256": "f5ea3c75aed10a9e8cc674a5a86045fe8c1157713086113a81962181d8fbcd8d",
+      "screenshot": "current-acceptance/sigma9/cosmonaut/artifacts/interactive/chromium/desktop/page-normal-settled-desktop-f5ea3c75aed10a9e8cc674a5a86045fe8c1157713086113a81962181d8fbcd8d.png",
+      "records": [
+        {
+          "theme": "cosmonaut",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce",
+          "candidate_source_sha256": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 10
+    },
+    {
+      "screenshot_sha256": "120a0dd2b3bf4ad09a14305417723d69ed1ae804bd776de4c009b39953660913",
+      "screenshot": "current-acceptance/sigma9/extra-black-highlighter-theme/artifacts/interactive/chromium/desktop/credit-variant-heritage-view-desktop-120a0dd2b3bf4ad09a14305417723d69ed1ae804bd776de4c009b39953660913.png",
+      "records": [
+        {
+          "theme": "extra-black-highlighter-theme",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "credit.variant.heritage",
+          "state": "view",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "1942887e382d16b8150cf95086a4944c7589def1ea0c2783d5d6dc341c445400",
+          "candidate_source_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 11
+    },
+    {
+      "screenshot_sha256": "40ff375cd22f990ba4899536caccd2f68d0494bc654d879ba69c27c0745e535d",
+      "screenshot": "current-acceptance/sigma9/extra-black-highlighter-theme/artifacts/interactive/chromium/desktop/page-normal-settled-desktop-40ff375cd22f990ba4899536caccd2f68d0494bc654d879ba69c27c0745e535d.png",
+      "records": [
+        {
+          "theme": "extra-black-highlighter-theme",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "1942887e382d16b8150cf95086a4944c7589def1ea0c2783d5d6dc341c445400",
+          "candidate_source_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 12
+    },
+    {
+      "screenshot_sha256": "82ba7ec378ebc9e1a11937289a85af17c91e2484fa2f6ea20ee77b7d332f284f",
+      "screenshot": "current-acceptance/sigma9/hansarp/artifacts/interactive/chromium/desktop/credit-variant-heritage-view-desktop-82ba7ec378ebc9e1a11937289a85af17c91e2484fa2f6ea20ee77b7d332f284f.png",
+      "records": [
+        {
+          "theme": "hansarp",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "credit.variant.heritage",
+          "state": "view",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319",
+          "candidate_source_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 13
+    },
+    {
+      "screenshot_sha256": "a245e597fc3e7f99e9ae4c0d125817873de94f55ca86f994ba69dea712270488",
+      "screenshot": "current-acceptance/sigma9/hansarp/artifacts/interactive/chromium/desktop/credit-variant-no-rate-view-desktop-a245e597fc3e7f99e9ae4c0d125817873de94f55ca86f994ba69dea712270488.png",
+      "records": [
+        {
+          "theme": "hansarp",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "credit.variant.no-rate",
+          "state": "view",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319",
+          "candidate_source_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 14
+    },
+    {
+      "screenshot_sha256": "100597bf7b7c91ea75687bea3125b57318699130bb3a0ec04a32593e206ecf07",
+      "screenshot": "current-acceptance/sigma9/hansarp/artifacts/interactive/chromium/desktop/credit-view-open-desktop-100597bf7b7c91ea75687bea3125b57318699130bb3a0ec04a32593e206ecf07.png",
+      "records": [
+        {
+          "theme": "hansarp",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "credit.view",
+          "state": "open",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319",
+          "candidate_source_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 15
+    },
+    {
+      "screenshot_sha256": "255ccb4f43979653c159fad686973fbe9c24ac071de3c70b9e9cd5532e0bf534",
+      "screenshot": "current-acceptance/sigma9/hansarp/artifacts/interactive/chromium/desktop/nav-desktop-top-keyboard-focus-desktop-255ccb4f43979653c159fad686973fbe9c24ac071de3c70b9e9cd5532e0bf534.png",
+      "records": [
+        {
+          "theme": "hansarp",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "nav.desktop-top",
+          "state": "keyboard-focus",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319",
+          "candidate_source_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-01.jpg",
+      "tile_index": 16
+    },
+    {
+      "screenshot_sha256": "7f0c0a5830a249764499562a94e5ff38c1f25a6952158510d1724a8e860fe3fc",
+      "screenshot": "current-acceptance/sigma9/hansarp/artifacts/interactive/chromium/desktop/page-normal-settled-desktop-7f0c0a5830a249764499562a94e5ff38c1f25a6952158510d1724a8e860fe3fc.png",
+      "records": [
+        {
+          "theme": "hansarp",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319",
+          "candidate_source_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 1
+    },
+    {
+      "screenshot_sha256": "7c20dc767c0fc59de6829d29bea372c4ce95a6cda5f7d8018aa7b5ce337c267b",
+      "screenshot": "current-acceptance/sigma9/hansarp/artifacts/interactive/chromium/laptop/page-normal-settled-laptop-7c20dc767c0fc59de6829d29bea372c4ce95a6cda5f7d8018aa7b5ce337c267b.png",
+      "records": [
+        {
+          "theme": "hansarp",
+          "browser_engine": "chromium",
+          "viewport": "laptop",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319",
+          "candidate_source_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 2
+    },
+    {
+      "screenshot_sha256": "42e23ec5ddbf018e787dfb6ae60f04a52b5d3dc9c3041a9f1fc26c0cdb970284",
+      "screenshot": "current-acceptance/sigma9/isolated-terminal/artifacts/interactive/chromium/desktop/content-tabview-second-tab-selected-desktop-42e23ec5ddbf018e787dfb6ae60f04a52b5d3dc9c3041a9f1fc26c0cdb970284.png",
+      "records": [
+        {
+          "theme": "isolated-terminal",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "content.tabview",
+          "state": "second-tab-selected",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+          "candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 3
+    },
+    {
+      "screenshot_sha256": "e64517c881d63e05b962108c872ff63ca7f28e0d799669378f2b46be3844653a",
+      "screenshot": "current-acceptance/sigma9/isolated-terminal/artifacts/interactive/chromium/desktop/credit-otherwise-open-desktop-e64517c881d63e05b962108c872ff63ca7f28e0d799669378f2b46be3844653a.png",
+      "records": [
+        {
+          "theme": "isolated-terminal",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "credit.otherwise",
+          "state": "open",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+          "candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 4
+    },
+    {
+      "screenshot_sha256": "0e5b63f556e1e57b83a60956b0d20895e951764acbd03dda3a88fca6e3b171c3",
+      "screenshot": "current-acceptance/sigma9/isolated-terminal/artifacts/interactive/chromium/desktop/credit-variant-no-rate-view-desktop-0e5b63f556e1e57b83a60956b0d20895e951764acbd03dda3a88fca6e3b171c3.png",
+      "records": [
+        {
+          "theme": "isolated-terminal",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "credit.variant.no-rate",
+          "state": "view",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+          "candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 5
+    },
+    {
+      "screenshot_sha256": "436f2430947f2245cb321bcd0f8c07560ea7fe641abd1531aa61ea4a74adbbf7",
+      "screenshot": "current-acceptance/sigma9/isolated-terminal/artifacts/interactive/chromium/desktop/credit-view-open-desktop-436f2430947f2245cb321bcd0f8c07560ea7fe641abd1531aa61ea4a74adbbf7.png",
+      "records": [
+        {
+          "theme": "isolated-terminal",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "credit.view",
+          "state": "open",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+          "candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 6
+    },
+    {
+      "screenshot_sha256": "3cae0141c2b47b8eb2fd38567d7011c8f8b8792dc9d67595ebdc42ca12fd2351",
+      "screenshot": "current-acceptance/sigma9/isolated-terminal/artifacts/interactive/chromium/desktop/nav-desktop-top-keyboard-focus-desktop-3cae0141c2b47b8eb2fd38567d7011c8f8b8792dc9d67595ebdc42ca12fd2351.png",
+      "records": [
+        {
+          "theme": "isolated-terminal",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "nav.desktop-top",
+          "state": "keyboard-focus",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+          "candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 7
+    },
+    {
+      "screenshot_sha256": "405f394c0ec243d2a288116f5e9b2251a49d842df0ffb28d3821a3d04ca59078",
+      "screenshot": "current-acceptance/sigma9/isolated-terminal/artifacts/interactive/chromium/desktop/nav-desktop-top-submenu-hover-desktop-405f394c0ec243d2a288116f5e9b2251a49d842df0ffb28d3821a3d04ca59078.png",
+      "records": [
+        {
+          "theme": "isolated-terminal",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "nav.desktop-top",
+          "state": "submenu-hover",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+          "candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 8
+    },
+    {
+      "screenshot_sha256": "c8174cf04e8ff8a5a89a1feffa2e58901a65a78d1632dd503fc14c829cfb4da9",
+      "screenshot": "current-acceptance/sigma9/isolated-terminal/artifacts/interactive/chromium/desktop/page-files-list-desktop-c8174cf04e8ff8a5a89a1feffa2e58901a65a78d1632dd503fc14c829cfb4da9.png",
+      "records": [
+        {
+          "theme": "isolated-terminal",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "page.files",
+          "state": "list",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+          "candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 9
+    },
+    {
+      "screenshot_sha256": "9dbc883dd997bbd09ac16abe74d743f260eeef3ded4a25e6f74ce941b0cbb916",
+      "screenshot": "current-acceptance/sigma9/isolated-terminal/artifacts/interactive/chromium/desktop/page-history-diff-desktop-9dbc883dd997bbd09ac16abe74d743f260eeef3ded4a25e6f74ce941b0cbb916.png",
+      "records": [
+        {
+          "theme": "isolated-terminal",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "page.history",
+          "state": "diff",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+          "candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 10
+    },
+    {
+      "screenshot_sha256": "bafe35c971086fe907460063b127d2ae61abe4ebe2b3d0e23196adef5aac1a85",
+      "screenshot": "current-acceptance/sigma9/ouroborous-theme/artifacts/interactive/chromium/desktop/credit-otherwise-open-desktop-bafe35c971086fe907460063b127d2ae61abe4ebe2b3d0e23196adef5aac1a85.png",
+      "records": [
+        {
+          "theme": "ouroborous-theme",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "credit.otherwise",
+          "state": "open",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "e3ca8e1a29abcba717d8e638af2eb2526f85b0ae134cd76918157a2b7f5a3fb1",
+          "candidate_source_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 11
+    },
+    {
+      "screenshot_sha256": "ea86049de2c55f94e9316db3f904216ed3f40683a6ddd09a8f1eaae53c9edc90",
+      "screenshot": "current-acceptance/sigma9/ouroborous-theme/artifacts/interactive/chromium/desktop/page-normal-settled-desktop-ea86049de2c55f94e9316db3f904216ed3f40683a6ddd09a8f1eaae53c9edc90.png",
+      "records": [
+        {
+          "theme": "ouroborous-theme",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "e3ca8e1a29abcba717d8e638af2eb2526f85b0ae134cd76918157a2b7f5a3fb1",
+          "candidate_source_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 12
+    },
+    {
+      "screenshot_sha256": "081d81f69de44ee6610ccf2e4da44e0f3db5954f7c974903e65c9494f6666dbe",
+      "screenshot": "current-acceptance/sigma9/pataphysics/artifacts/interactive/chromium/desktop/content-collapsible-expanded-desktop-081d81f69de44ee6610ccf2e4da44e0f3db5954f7c974903e65c9494f6666dbe.png",
+      "records": [
+        {
+          "theme": "pataphysics",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "content.collapsible",
+          "state": "expanded",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "98f233f2f3161e085fe9c764c87a2e07b95501977e69702236582d1e39923b17",
+          "candidate_source_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 13
+    },
+    {
+      "screenshot_sha256": "685758b63a82c2ab067dd9ff8960b81a8f57ecf93a9fdccc0eee4d2cb081a727",
+      "screenshot": "current-acceptance/sigma9/pataphysics/artifacts/interactive/chromium/desktop/nav-desktop-top-submenu-hover-desktop-685758b63a82c2ab067dd9ff8960b81a8f57ecf93a9fdccc0eee4d2cb081a727.png",
+      "records": [
+        {
+          "theme": "pataphysics",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "nav.desktop-top",
+          "state": "submenu-hover",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "98f233f2f3161e085fe9c764c87a2e07b95501977e69702236582d1e39923b17",
+          "candidate_source_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 14
+    },
+    {
+      "screenshot_sha256": "95d8d32f8aa42094abbff6022be76d9292ec6005044ea88518b3e53f45714db8",
+      "screenshot": "current-acceptance/sigma9/pataphysics/artifacts/interactive/chromium/desktop/page-normal-settled-desktop-95d8d32f8aa42094abbff6022be76d9292ec6005044ea88518b3e53f45714db8.png",
+      "records": [
+        {
+          "theme": "pataphysics",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "98f233f2f3161e085fe9c764c87a2e07b95501977e69702236582d1e39923b17",
+          "candidate_source_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 15
+    },
+    {
+      "screenshot_sha256": "b56d5446e10f5543df4aaca23fd0dc3fb33b3ee33ecba4d308dd50c9b44af67a",
+      "screenshot": "current-acceptance/sigma9/pataphysics/artifacts/interactive/chromium/laptop/page-normal-settled-laptop-b56d5446e10f5543df4aaca23fd0dc3fb33b3ee33ecba4d308dd50c9b44af67a.png",
+      "records": [
+        {
+          "theme": "pataphysics",
+          "browser_engine": "chromium",
+          "viewport": "laptop",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "98f233f2f3161e085fe9c764c87a2e07b95501977e69702236582d1e39923b17",
+          "candidate_source_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-02.jpg",
+      "tile_index": 16
+    },
+    {
+      "screenshot_sha256": "214aee1e59f9d26f9add20308fc6840c37ade854ba4cdecb2d1ec4ee17cb5cf8",
+      "screenshot": "current-acceptance/sigma9/scheme/artifacts/interactive/chromium/laptop/page-normal-settled-laptop-214aee1e59f9d26f9add20308fc6840c37ade854ba4cdecb2d1ec4ee17cb5cf8.png",
+      "records": [
+        {
+          "theme": "scheme",
+          "browser_engine": "chromium",
+          "viewport": "laptop",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "13b6176aa6fddeeaeaf1a8e493163fe1fa6c8f72888e27d9631a66dfc0950fce",
+          "candidate_source_sha256": "292624abd9238b7a3c0cca9fe0f603fbd18476610740084e2b5315a01e8348fc",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-03.jpg",
+      "tile_index": 1
+    },
+    {
+      "screenshot_sha256": "2f26ae4ebbcc3de3c64f8749cab6dbe36b1bcb555a02673510a64337a3a669b1",
+      "screenshot": "current-acceptance/sigma9/scp-offices-theme/artifacts/interactive/chromium/desktop/credit-otherwise-open-desktop-2f26ae4ebbcc3de3c64f8749cab6dbe36b1bcb555a02673510a64337a3a669b1.png",
+      "records": [
+        {
+          "theme": "scp-offices-theme",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "credit.otherwise",
+          "state": "open",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "f3d5d0cec11e9092bed5913399d302ed8a19dea98a4e43ee71845afe4e803545",
+          "candidate_source_sha256": "1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-03.jpg",
+      "tile_index": 2
+    },
+    {
+      "screenshot_sha256": "3f93d98db22c46faa0a8bc3dea61b865e38bf084898aca7cf286ae7bf125cb9b",
+      "screenshot": "current-acceptance/sigma9/scp-offices-theme/artifacts/interactive/chromium/desktop/credit-variant-heritage-view-desktop-3f93d98db22c46faa0a8bc3dea61b865e38bf084898aca7cf286ae7bf125cb9b.png",
+      "records": [
+        {
+          "theme": "scp-offices-theme",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "credit.variant.heritage",
+          "state": "view",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "f3d5d0cec11e9092bed5913399d302ed8a19dea98a4e43ee71845afe4e803545",
+          "candidate_source_sha256": "1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-03.jpg",
+      "tile_index": 3
+    },
+    {
+      "screenshot_sha256": "cdb79c980e3a1baa4b2bfb1d07fe2d490fe93d0d01c9cc9c624594c93d38847e",
+      "screenshot": "current-acceptance/sigma9/scp-offices-theme/artifacts/interactive/chromium/desktop/credit-view-open-desktop-cdb79c980e3a1baa4b2bfb1d07fe2d490fe93d0d01c9cc9c624594c93d38847e.png",
+      "records": [
+        {
+          "theme": "scp-offices-theme",
+          "browser_engine": "chromium",
+          "viewport": "desktop",
+          "surface": "credit.view",
+          "state": "open",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "f3d5d0cec11e9092bed5913399d302ed8a19dea98a4e43ee71845afe4e803545",
+          "candidate_source_sha256": "1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "landscape-03.jpg",
+      "tile_index": 4
+    },
+    {
+      "screenshot_sha256": "8a07191c813242d281cce1ca978a88bb965c6ceb518c48d5a6e8b8ce00ecad69",
+      "screenshot": "current-acceptance/sigma9/aesthetic-theme/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-8a07191c813242d281cce1ca978a88bb965c6ceb518c48d5a6e8b8ce00ecad69.png",
+      "records": [
+        {
+          "theme": "aesthetic-theme",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "5419caca49caf8f0be65724001a7edcf57daa52f75a01b324c98f4a869b6c117",
+          "candidate_source_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 1
+    },
+    {
+      "screenshot_sha256": "e31d09126e9ff96cb50c509ede6d987f1319ce8abab96c519cda42d080dd631b",
+      "screenshot": "current-acceptance/sigma9/aesthetic-theme/artifacts/interactive/chromium/tablet/nav-tablet-top-active-navigation-expanded-tablet-e31d09126e9ff96cb50c509ede6d987f1319ce8abab96c519cda42d080dd631b.png",
+      "records": [
+        {
+          "theme": "aesthetic-theme",
+          "browser_engine": "chromium",
+          "viewport": "tablet",
+          "surface": "nav.tablet-top",
+          "state": "active-navigation-expanded",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "5419caca49caf8f0be65724001a7edcf57daa52f75a01b324c98f4a869b6c117",
+          "candidate_source_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 2
+    },
+    {
+      "screenshot_sha256": "cf8f51e8d546f4d13dd37f1737251d2b2f79e5834fb7f7feba3e23ccfb5e84c2",
+      "screenshot": "current-acceptance/sigma9/al-slop/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-cf8f51e8d546f4d13dd37f1737251d2b2f79e5834fb7f7feba3e23ccfb5e84c2.png",
+      "records": [
+        {
+          "theme": "al-slop",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "00a8fff90043b8cc9164700b07080367ec1c29d29529635e34e6404a071e21e9",
+          "candidate_source_sha256": "f6809160ccf1b35e74340d5e0421efecf8585246310203debbb5f0727b95eb8b",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 3
+    },
+    {
+      "screenshot_sha256": "4713ab54666b70cfdca0918ded7cd6a2d74b55e06e02e777382d6cbc9986eff0",
+      "screenshot": "current-acceptance/sigma9/basalt/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-4713ab54666b70cfdca0918ded7cd6a2d74b55e06e02e777382d6cbc9986eff0.png",
+      "records": [
+        {
+          "theme": "basalt",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "c1b44963493737105ecb19c33bb49a41c4b931c09a9b3dbecde0562b0f942823",
+          "candidate_source_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 4
+    },
+    {
+      "screenshot_sha256": "33e40fe98f53f82ae847b889c0390539d1b40d36c8358489c1fc44d39539f42a",
+      "screenshot": "current-acceptance/sigma9/bedrock/artifacts/interactive/chromium/mobile/credit-default-normal-mobile-33e40fe98f53f82ae847b889c0390539d1b40d36c8358489c1fc44d39539f42a.png",
+      "records": [
+        {
+          "theme": "bedrock",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "credit.default",
+          "state": "normal",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "210621c337510276613df2496a6fcc1ee98843d5175b0cc07404d82c416236ea",
+          "candidate_source_sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423",
+          "unconfirmed_items": [],
+          "prior_visual_review": {
+            "method": "direct-image-vision-review",
+            "reviewed_at": "2026-10-06T12:53:36.032Z",
+            "reviewer": "Codex visual review",
+            "screenshot_sha256": "33e40fe98f53f82ae847b889c0390539d1b40d36c8358489c1fc44d39539f42a",
+            "note": "Reviewed screenshot tile on sigma9-014.jpg (bedrock / chromium mobile; credit.default.normal, page.normal.settled, shell.interwiki.visible). The expected control/content state is visible; no unintended overlap, clipping, or contrast failure was found.",
+            "candidate_sha256": "210621c337510276613df2496a6fcc1ee98843d5175b0cc07404d82c416236ea",
+            "candidate_source_sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423"
+          }
+        },
+        {
+          "theme": "bedrock",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "shell.search",
+          "state": "compact-submit",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "210621c337510276613df2496a6fcc1ee98843d5175b0cc07404d82c416236ea",
+          "candidate_source_sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 5
+    },
+    {
+      "screenshot_sha256": "2027f6848fde6675712d4f65b3d59ec7a4d7f642ef7a6b10974c74eb036e764d",
+      "screenshot": "current-acceptance/sigma9/bedrock/artifacts/interactive/chromium/mobile/credit-variant-heritage-default-mobile-2027f6848fde6675712d4f65b3d59ec7a4d7f642ef7a6b10974c74eb036e764d.png",
+      "records": [
+        {
+          "theme": "bedrock",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "credit.variant.heritage",
+          "state": "default",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "210621c337510276613df2496a6fcc1ee98843d5175b0cc07404d82c416236ea",
+          "candidate_source_sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 6
+    },
+    {
+      "screenshot_sha256": "706bc10541e669558557089b45f87474796c89ca7bfc7e68f849a62f7248d595",
+      "screenshot": "current-acceptance/sigma9/bedrock/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-706bc10541e669558557089b45f87474796c89ca7bfc7e68f849a62f7248d595.png",
+      "records": [
+        {
+          "theme": "bedrock",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "210621c337510276613df2496a6fcc1ee98843d5175b0cc07404d82c416236ea",
+          "candidate_source_sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 7
+    },
+    {
+      "screenshot_sha256": "61128f967dd68e0f77da58461e635a7a4429f8b4499d0ae07e10edce3fcf1ea7",
+      "screenshot": "current-acceptance/sigma9/bedrock/artifacts/interactive/chromium/mobile/page-normal-settled-mobile-61128f967dd68e0f77da58461e635a7a4429f8b4499d0ae07e10edce3fcf1ea7.png",
+      "records": [
+        {
+          "theme": "bedrock",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "210621c337510276613df2496a6fcc1ee98843d5175b0cc07404d82c416236ea",
+          "candidate_source_sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 8
+    },
+    {
+      "screenshot_sha256": "1417d1d6e6de8e29d004cd665d96149e6109b734c354f3d2cdba2528921a8efe",
+      "screenshot": "current-acceptance/sigma9/black-highlighter-theme/artifacts/interactive/chromium/mobile/nav-mobile-top-submenu-expanded-mobile-1417d1d6e6de8e29d004cd665d96149e6109b734c354f3d2cdba2528921a8efe.png",
+      "records": [
+        {
+          "theme": "black-highlighter-theme",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.mobile-top",
+          "state": "submenu-expanded",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
+          "candidate_source_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 9
+    },
+    {
+      "screenshot_sha256": "322029ca0e583bedab74c79e2f32cdd0422ee8f5e535e83d5458c35d7af4c7f3",
+      "screenshot": "current-acceptance/sigma9/black-highlighter-theme/artifacts/interactive/chromium/tablet/page-normal-settled-tablet-322029ca0e583bedab74c79e2f32cdd0422ee8f5e535e83d5458c35d7af4c7f3.png",
+      "records": [
+        {
+          "theme": "black-highlighter-theme",
+          "browser_engine": "chromium",
+          "viewport": "tablet",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
+          "candidate_source_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 10
+    },
+    {
+      "screenshot_sha256": "2f9c46f0e0d3538d7140c4e8517a709df9f823f53ed1cc0cc215fa511edfe984",
+      "screenshot": "current-acceptance/sigma9/classic/artifacts/interactive/chromium/mobile/nav-sidebar-open-mobile-2f9c46f0e0d3538d7140c4e8517a709df9f823f53ed1cc0cc215fa511edfe984.png",
+      "records": [
+        {
+          "theme": "classic",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open",
+          "visual_class": "C",
+          "risk_triggers": [
+            "state-target-outside-allowed-bounds",
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376",
+          "candidate_source_sha256": "9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 11
+    },
+    {
+      "screenshot_sha256": "c384afe38169d8796a8e5de43adf8ee44e35a1c300eef3d08c86a8216240f5db",
+      "screenshot": "current-acceptance/sigma9/classic/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-c384afe38169d8796a8e5de43adf8ee44e35a1c300eef3d08c86a8216240f5db.png",
+      "records": [
+        {
+          "theme": "classic",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "state-target-outside-allowed-bounds",
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376",
+          "candidate_source_sha256": "9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 12
+    },
+    {
+      "screenshot_sha256": "82c705b9945832aaeb191835fa24cbcbcd2830e8b4765aa7638f470e92a7e506",
+      "screenshot": "current-acceptance/sigma9/cosmonaut/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-82c705b9945832aaeb191835fa24cbcbcd2830e8b4765aa7638f470e92a7e506.png",
+      "records": [
+        {
+          "theme": "cosmonaut",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce",
+          "candidate_source_sha256": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 13
+    },
+    {
+      "screenshot_sha256": "73dc23280f3ecf0ff3b1d7ba50475bb6523acfb5e3d86e69735c48f32d498b78",
+      "screenshot": "current-acceptance/sigma9/cosmonaut/artifacts/interactive/chromium/tablet/nav-tablet-top-active-navigation-expanded-tablet-73dc23280f3ecf0ff3b1d7ba50475bb6523acfb5e3d86e69735c48f32d498b78.png",
+      "records": [
+        {
+          "theme": "cosmonaut",
+          "browser_engine": "chromium",
+          "viewport": "tablet",
+          "surface": "nav.tablet-top",
+          "state": "active-navigation-expanded",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce",
+          "candidate_source_sha256": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 14
+    },
+    {
+      "screenshot_sha256": "aa4eb72a2e3618c8f514d93eeea57f17e390f69699001f36cd87ed6a6f0fcf28",
+      "screenshot": "current-acceptance/sigma9/cosmonaut/artifacts/interactive/chromium/tablet/page-normal-settled-tablet-aa4eb72a2e3618c8f514d93eeea57f17e390f69699001f36cd87ed6a6f0fcf28.png",
+      "records": [
+        {
+          "theme": "cosmonaut",
+          "browser_engine": "chromium",
+          "viewport": "tablet",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce",
+          "candidate_source_sha256": "155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 15
+    },
+    {
+      "screenshot_sha256": "65453f8fdd57bf4d7a6907c0a8e0ba3ca25e64dabebc1b93901cc508497a83d5",
+      "screenshot": "current-acceptance/sigma9/dear-dictator/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-65453f8fdd57bf4d7a6907c0a8e0ba3ca25e64dabebc1b93901cc508497a83d5.png",
+      "records": [
+        {
+          "theme": "dear-dictator",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "f249a01833c6df378ccbd9d8a954fd2745311d10093cd9c55ead1d70eeaaeaeb",
+          "candidate_source_sha256": "6cb9b6f38b760ac446014f2f4c4671c05df909a7f102624e5b374d4dbab15b40",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-04.jpg",
+      "tile_index": 16
+    },
+    {
+      "screenshot_sha256": "a11a093920bce4c2f660eaf64227b07bf26a20ffeebf9600b8b5dac98e7b0476",
+      "screenshot": "current-acceptance/sigma9/extra-black-highlighter-theme/artifacts/interactive/chromium/mobile/nav-mobile-top-submenu-expanded-mobile-a11a093920bce4c2f660eaf64227b07bf26a20ffeebf9600b8b5dac98e7b0476.png",
+      "records": [
+        {
+          "theme": "extra-black-highlighter-theme",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.mobile-top",
+          "state": "submenu-expanded",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "1942887e382d16b8150cf95086a4944c7589def1ea0c2783d5d6dc341c445400",
+          "candidate_source_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 1
+    },
+    {
+      "screenshot_sha256": "56936b2cdc89f16fecdeb60c4a7f46897c068e30f8b6a3c09924d9d5c1c6e11e",
+      "screenshot": "current-acceptance/sigma9/extra-black-highlighter-theme/artifacts/interactive/chromium/mobile/nav-sidebar-open-mobile-56936b2cdc89f16fecdeb60c4a7f46897c068e30f8b6a3c09924d9d5c1c6e11e.png",
+      "records": [
+        {
+          "theme": "extra-black-highlighter-theme",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "1942887e382d16b8150cf95086a4944c7589def1ea0c2783d5d6dc341c445400",
+          "candidate_source_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 2
+    },
+    {
+      "screenshot_sha256": "f03cdb4be992ca952c8a91b1feba339c6cd43b15003abc6883aa0475c11eeb6d",
+      "screenshot": "current-acceptance/sigma9/extra-black-highlighter-theme/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-f03cdb4be992ca952c8a91b1feba339c6cd43b15003abc6883aa0475c11eeb6d.png",
+      "records": [
+        {
+          "theme": "extra-black-highlighter-theme",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "1942887e382d16b8150cf95086a4944c7589def1ea0c2783d5d6dc341c445400",
+          "candidate_source_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 3
+    },
+    {
+      "screenshot_sha256": "a520a16069a950f34563bb02284370221aedf0bb00b96da043a4e47c9ef96c30",
+      "screenshot": "current-acceptance/sigma9/extra-black-highlighter-theme/artifacts/interactive/chromium/mobile/page-normal-settled-mobile-a520a16069a950f34563bb02284370221aedf0bb00b96da043a4e47c9ef96c30.png",
+      "records": [
+        {
+          "theme": "extra-black-highlighter-theme",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "1942887e382d16b8150cf95086a4944c7589def1ea0c2783d5d6dc341c445400",
+          "candidate_source_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 4
+    },
+    {
+      "screenshot_sha256": "bd310a51ca7a65cb329d79f8fb5d051288eb17738c80b37b5ab674a79837357b",
+      "screenshot": "current-acceptance/sigma9/extra-black-highlighter-theme/artifacts/interactive/chromium/tablet/nav-tablet-top-active-navigation-expanded-tablet-bd310a51ca7a65cb329d79f8fb5d051288eb17738c80b37b5ab674a79837357b.png",
+      "records": [
+        {
+          "theme": "extra-black-highlighter-theme",
+          "browser_engine": "chromium",
+          "viewport": "tablet",
+          "surface": "nav.tablet-top",
+          "state": "active-navigation-expanded",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "1942887e382d16b8150cf95086a4944c7589def1ea0c2783d5d6dc341c445400",
+          "candidate_source_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 5
+    },
+    {
+      "screenshot_sha256": "32dd22417e912fce7378215f55ccd4726c1b3743199c9858daf66584b8684a3d",
+      "screenshot": "current-acceptance/sigma9/extra-black-highlighter-theme/artifacts/interactive/chromium/tablet/page-normal-settled-tablet-32dd22417e912fce7378215f55ccd4726c1b3743199c9858daf66584b8684a3d.png",
+      "records": [
+        {
+          "theme": "extra-black-highlighter-theme",
+          "browser_engine": "chromium",
+          "viewport": "tablet",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "1942887e382d16b8150cf95086a4944c7589def1ea0c2783d5d6dc341c445400",
+          "candidate_source_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 6
+    },
+    {
+      "screenshot_sha256": "0b04479811f6ceb6cbf263edc50e333bd6cb14473ce66e829770329d7ddcdcf1",
+      "screenshot": "current-acceptance/sigma9/flopstyle-dark/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-0b04479811f6ceb6cbf263edc50e333bd6cb14473ce66e829770329d7ddcdcf1.png",
+      "records": [
+        {
+          "theme": "flopstyle-dark",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "state-target-outside-allowed-bounds"
+          ],
+          "candidate_sha256": "cfb5865dd28e562413dc1cbed44ace29ff4d08eb4bdc8daafcfc87b4e98c8161",
+          "candidate_source_sha256": "2b9004a9304ed089aa69da78d140bc03aa333b792751b57133d7429b499aa1e3",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 7
+    },
+    {
+      "screenshot_sha256": "5238ba8a49ac932c96a312b5a3115c0012a4e90467fbf88bd24ea092cb44d7db",
+      "screenshot": "current-acceptance/sigma9/foxtrot/artifacts/interactive/chromium/mobile/nav-mobile-top-submenu-expanded-mobile-5238ba8a49ac932c96a312b5a3115c0012a4e90467fbf88bd24ea092cb44d7db.png",
+      "records": [
+        {
+          "theme": "foxtrot",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.mobile-top",
+          "state": "submenu-expanded",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "db15469bd49cb604c373918859834372b1cfc07b79157c0d66747c8f61c69912",
+          "candidate_source_sha256": "e0bbf7be650005b5f7d5e3893e598e16febd6f06d0bc26fc86f90163520b4e47",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 8
+    },
+    {
+      "screenshot_sha256": "c067c8a6a07772790bbe5ddaf3362c917c86d13a3f0e8dbb7d0c4be54ec34bf7",
+      "screenshot": "current-acceptance/sigma9/foxtrot/artifacts/interactive/chromium/mobile/page-source-open-mobile-c067c8a6a07772790bbe5ddaf3362c917c86d13a3f0e8dbb7d0c4be54ec34bf7.png",
+      "records": [
+        {
+          "theme": "foxtrot",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "page.source",
+          "state": "open",
+          "visual_class": "C",
+          "risk_triggers": [
+            "state-target-outside-allowed-bounds"
+          ],
+          "candidate_sha256": "db15469bd49cb604c373918859834372b1cfc07b79157c0d66747c8f61c69912",
+          "candidate_source_sha256": "e0bbf7be650005b5f7d5e3893e598e16febd6f06d0bc26fc86f90163520b4e47",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 9
+    },
+    {
+      "screenshot_sha256": "62df60434f8a1d941d2fb0df32728b32a228f88beea1e2ae37565985e62b6553",
+      "screenshot": "current-acceptance/sigma9/hansarp/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-62df60434f8a1d941d2fb0df32728b32a228f88beea1e2ae37565985e62b6553.png",
+      "records": [
+        {
+          "theme": "hansarp",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319",
+          "candidate_source_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 10
+    },
+    {
+      "screenshot_sha256": "954a0d9c839e38db448780e51f72bb9c8143ccf4041423593cfb6c7a0c4f0214",
+      "screenshot": "current-acceptance/sigma9/inkblot/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-954a0d9c839e38db448780e51f72bb9c8143ccf4041423593cfb6c7a0c4f0214.png",
+      "records": [
+        {
+          "theme": "inkblot",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "state-target-outside-allowed-bounds"
+          ],
+          "candidate_sha256": "fd7e2ae9c01c3d31160b1e7017e441b3abcd8d5eab309c631ef2ebf139fc3406",
+          "candidate_source_sha256": "679a88f60fb72ac72743a09380e121bfbb03207800e41b1ad74e59b1f66bc9ac",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 11
+    },
+    {
+      "screenshot_sha256": "ed412e3b6140c1e5a6ca2e5ce586326818a3efcb829f104754b25d789b8f457b",
+      "screenshot": "current-acceptance/sigma9/isolated-terminal/artifacts/interactive/chromium/mobile/nav-mobile-top-submenu-expanded-mobile-ed412e3b6140c1e5a6ca2e5ce586326818a3efcb829f104754b25d789b8f457b.png",
+      "records": [
+        {
+          "theme": "isolated-terminal",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.mobile-top",
+          "state": "submenu-expanded",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+          "candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 12
+    },
+    {
+      "screenshot_sha256": "f9b004ba9b6f846d556bd3d4072130ca5fb7dd931e3b10aecfb0cd20bda85708",
+      "screenshot": "current-acceptance/sigma9/isolated-terminal/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-f9b004ba9b6f846d556bd3d4072130ca5fb7dd931e3b10aecfb0cd20bda85708.png",
+      "records": [
+        {
+          "theme": "isolated-terminal",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+          "candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 13
+    },
+    {
+      "screenshot_sha256": "199a4e95c014b24e7d837ba417cf61e26996dcd82397195baced079ffc62f008",
+      "screenshot": "current-acceptance/sigma9/isolated-terminal/artifacts/interactive/chromium/mobile/page-normal-settled-mobile-199a4e95c014b24e7d837ba417cf61e26996dcd82397195baced079ffc62f008.png",
+      "records": [
+        {
+          "theme": "isolated-terminal",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+          "candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 14
+    },
+    {
+      "screenshot_sha256": "2193be739ed6cbf60004b66aac1284f1f90571d7d2f4f5440bdd8f90df97f20c",
+      "screenshot": "current-acceptance/sigma9/isolated-terminal/artifacts/interactive/chromium/tablet/nav-tablet-top-active-navigation-expanded-tablet-2193be739ed6cbf60004b66aac1284f1f90571d7d2f4f5440bdd8f90df97f20c.png",
+      "records": [
+        {
+          "theme": "isolated-terminal",
+          "browser_engine": "chromium",
+          "viewport": "tablet",
+          "surface": "nav.tablet-top",
+          "state": "active-navigation-expanded",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+          "candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 15
+    },
+    {
+      "screenshot_sha256": "aca85639014687704603a4fbd9718606853121260d752a8628965adfd4818cb0",
+      "screenshot": "current-acceptance/sigma9/isolated-terminal/artifacts/interactive/chromium/tablet/page-normal-settled-tablet-aca85639014687704603a4fbd9718606853121260d752a8628965adfd4818cb0.png",
+      "records": [
+        {
+          "theme": "isolated-terminal",
+          "browser_engine": "chromium",
+          "viewport": "tablet",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+          "candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-05.jpg",
+      "tile_index": 16
+    },
+    {
+      "screenshot_sha256": "ba56d46859aef3dacd816388f312ae0efb1f5013c835042230290fac76db5fe7",
+      "screenshot": "current-acceptance/sigma9/jakstyle/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-ba56d46859aef3dacd816388f312ae0efb1f5013c835042230290fac76db5fe7.png",
+      "records": [
+        {
+          "theme": "jakstyle",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "a4b0f7c1cb6262b4ee6ac62e5d9e4846919bf50d57766de6968d3a58ea6ff8e6",
+          "candidate_source_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 1
+    },
+    {
+      "screenshot_sha256": "431984ef885de09fc451e1a28e6035278b6ce8590f966aecaa4c83256276f4c4",
+      "screenshot": "current-acceptance/sigma9/jakstyle/artifacts/interactive/chromium/mobile/page-normal-settled-mobile-431984ef885de09fc451e1a28e6035278b6ce8590f966aecaa4c83256276f4c4.png",
+      "records": [
+        {
+          "theme": "jakstyle",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "a4b0f7c1cb6262b4ee6ac62e5d9e4846919bf50d57766de6968d3a58ea6ff8e6",
+          "candidate_source_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 2
+    },
+    {
+      "screenshot_sha256": "1139833581a2418d72fbdc86a37ef6064ee7c41934eeb7e907144eb9888da0e1",
+      "screenshot": "current-acceptance/sigma9/jakstyle/artifacts/interactive/chromium/tablet/nav-tablet-top-active-navigation-expanded-tablet-1139833581a2418d72fbdc86a37ef6064ee7c41934eeb7e907144eb9888da0e1.png",
+      "records": [
+        {
+          "theme": "jakstyle",
+          "browser_engine": "chromium",
+          "viewport": "tablet",
+          "surface": "nav.tablet-top",
+          "state": "active-navigation-expanded",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "a4b0f7c1cb6262b4ee6ac62e5d9e4846919bf50d57766de6968d3a58ea6ff8e6",
+          "candidate_source_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 3
+    },
+    {
+      "screenshot_sha256": "a3ac315d1eb7ed870c4c200efb8fe4613ebe7f7746e2d8b89c26bc1b6aab79ce",
+      "screenshot": "current-acceptance/sigma9/jakstyle/artifacts/interactive/chromium/tablet/page-normal-settled-tablet-a3ac315d1eb7ed870c4c200efb8fe4613ebe7f7746e2d8b89c26bc1b6aab79ce.png",
+      "records": [
+        {
+          "theme": "jakstyle",
+          "browser_engine": "chromium",
+          "viewport": "tablet",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "a4b0f7c1cb6262b4ee6ac62e5d9e4846919bf50d57766de6968d3a58ea6ff8e6",
+          "candidate_source_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 4
+    },
+    {
+      "screenshot_sha256": "4111ae61d96917dd419d42673aa15174984421630333bf09bd057bca779e6ef5",
+      "screenshot": "current-acceptance/sigma9/minimalist-bhl/artifacts/interactive/chromium/mobile/nav-sidebar-open-mobile-4111ae61d96917dd419d42673aa15174984421630333bf09bd057bca779e6ef5.png",
+      "records": [
+        {
+          "theme": "minimalist-bhl",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "bb4018bd604b2abfbd17e84f3fd884d13c3891be34fdac52c3a6d30af295d245",
+          "candidate_source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 5
+    },
+    {
+      "screenshot_sha256": "91c3fa383439d05527d414e2ee42ad93392229d9fb9543582a1a098711f93586",
+      "screenshot": "current-acceptance/sigma9/minimalist-bhl/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-91c3fa383439d05527d414e2ee42ad93392229d9fb9543582a1a098711f93586.png",
+      "records": [
+        {
+          "theme": "minimalist-bhl",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "bb4018bd604b2abfbd17e84f3fd884d13c3891be34fdac52c3a6d30af295d245",
+          "candidate_source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 6
+    },
+    {
+      "screenshot_sha256": "4b65f12df958a050ce79608d24768a97756b7e69fc8b4cf48cf6425408b77194",
+      "screenshot": "current-acceptance/sigma9/minimalist-bhl/artifacts/interactive/chromium/mobile/page-normal-settled-mobile-4b65f12df958a050ce79608d24768a97756b7e69fc8b4cf48cf6425408b77194.png",
+      "records": [
+        {
+          "theme": "minimalist-bhl",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "bb4018bd604b2abfbd17e84f3fd884d13c3891be34fdac52c3a6d30af295d245",
+          "candidate_source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 7
+    },
+    {
+      "screenshot_sha256": "9435eb3a40729488c56e7b440ccfe62a44f3500466da23a1ae9daa2f8de38e5f",
+      "screenshot": "current-acceptance/sigma9/minimalist-bhl/artifacts/interactive/chromium/tablet/nav-tablet-top-active-navigation-expanded-tablet-9435eb3a40729488c56e7b440ccfe62a44f3500466da23a1ae9daa2f8de38e5f.png",
+      "records": [
+        {
+          "theme": "minimalist-bhl",
+          "browser_engine": "chromium",
+          "viewport": "tablet",
+          "surface": "nav.tablet-top",
+          "state": "active-navigation-expanded",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "bb4018bd604b2abfbd17e84f3fd884d13c3891be34fdac52c3a6d30af295d245",
+          "candidate_source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 8
+    },
+    {
+      "screenshot_sha256": "244441632f9ed42f02971d6924322e41123e0b97a6ae6881138bfe3039596b10",
+      "screenshot": "current-acceptance/sigma9/minimalist-bhl/artifacts/interactive/chromium/tablet/page-normal-settled-tablet-244441632f9ed42f02971d6924322e41123e0b97a6ae6881138bfe3039596b10.png",
+      "records": [
+        {
+          "theme": "minimalist-bhl",
+          "browser_engine": "chromium",
+          "viewport": "tablet",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "bb4018bd604b2abfbd17e84f3fd884d13c3891be34fdac52c3a6d30af295d245",
+          "candidate_source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 9
+    },
+    {
+      "screenshot_sha256": "cb1e43b4199ad0e2dcab75e81c9b6e4fc5c81220cd396724d74eb79782a9d243",
+      "screenshot": "current-acceptance/sigma9/much-cool/artifacts/interactive/chromium/mobile/credit-variant-heritage-view-mobile-cb1e43b4199ad0e2dcab75e81c9b6e4fc5c81220cd396724d74eb79782a9d243.png",
+      "records": [
+        {
+          "theme": "much-cool",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "credit.variant.heritage",
+          "state": "view",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "d6232bbe6f3e7da786f975a4960754dd86b71fdf16abbbc58bd07c2052293468",
+          "candidate_source_sha256": "5b80ba7f55a5f70b6569fef18e95056bf223ec143f7c2ef549d88aba7a3d096a",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 10
+    },
+    {
+      "screenshot_sha256": "7fa079941266e636c555c7ee06ff5f0b8072cfa21786f8985019297addef96f1",
+      "screenshot": "current-acceptance/sigma9/much-cool/artifacts/interactive/chromium/mobile/nav-sidebar-open-mobile-7fa079941266e636c555c7ee06ff5f0b8072cfa21786f8985019297addef96f1.png",
+      "records": [
+        {
+          "theme": "much-cool",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open",
+          "visual_class": "C",
+          "risk_triggers": [
+            "state-target-outside-allowed-bounds",
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "d6232bbe6f3e7da786f975a4960754dd86b71fdf16abbbc58bd07c2052293468",
+          "candidate_source_sha256": "5b80ba7f55a5f70b6569fef18e95056bf223ec143f7c2ef549d88aba7a3d096a",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 11
+    },
+    {
+      "screenshot_sha256": "c6eb04e501dd9aa9d9bc06021f87a82845279a4b5ace8bc2f6613e60f1eacad9",
+      "screenshot": "current-acceptance/sigma9/much-cool/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-c6eb04e501dd9aa9d9bc06021f87a82845279a4b5ace8bc2f6613e60f1eacad9.png",
+      "records": [
+        {
+          "theme": "much-cool",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "state-target-outside-allowed-bounds",
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "d6232bbe6f3e7da786f975a4960754dd86b71fdf16abbbc58bd07c2052293468",
+          "candidate_source_sha256": "5b80ba7f55a5f70b6569fef18e95056bf223ec143f7c2ef549d88aba7a3d096a",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 12
+    },
+    {
+      "screenshot_sha256": "6d06c14b52d69dbc21716080e538f36a744442ce6bdf1bda15f2c7f397fe0e68",
+      "screenshot": "current-acceptance/sigma9/night-rush-theme/artifacts/interactive/chromium/mobile/credit-variant-heritage-view-mobile-6d06c14b52d69dbc21716080e538f36a744442ce6bdf1bda15f2c7f397fe0e68.png",
+      "records": [
+        {
+          "theme": "night-rush-theme",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "credit.variant.heritage",
+          "state": "view",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "6ecbb80fc4aa2e7fbf948a2ced01153aa816bd2911cfcb6cfa398bc3f534245b",
+          "candidate_source_sha256": "5d0cc657cd638addbb28f8278832126dc863b1ae0ae339f216dceff45ef2f98c",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 13
+    },
+    {
+      "screenshot_sha256": "1644c81718755b338d5d360e8d54f08507748a55177266bca4ca9ce53cf72d1e",
+      "screenshot": "current-acceptance/sigma9/night-rush-theme/artifacts/interactive/chromium/mobile/credit-variant-no-rate-view-mobile-1644c81718755b338d5d360e8d54f08507748a55177266bca4ca9ce53cf72d1e.png",
+      "records": [
+        {
+          "theme": "night-rush-theme",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "credit.variant.no-rate",
+          "state": "view",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "6ecbb80fc4aa2e7fbf948a2ced01153aa816bd2911cfcb6cfa398bc3f534245b",
+          "candidate_source_sha256": "5d0cc657cd638addbb28f8278832126dc863b1ae0ae339f216dceff45ef2f98c",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 14
+    },
+    {
+      "screenshot_sha256": "77bff3fc197968326075c6fb2f94dbd41259147fe59482f4935c06136a4f222a",
+      "screenshot": "current-acceptance/sigma9/night-rush-theme/artifacts/interactive/chromium/mobile/nav-sidebar-open-mobile-77bff3fc197968326075c6fb2f94dbd41259147fe59482f4935c06136a4f222a.png",
+      "records": [
+        {
+          "theme": "night-rush-theme",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open",
+          "visual_class": "C",
+          "risk_triggers": [
+            "state-target-outside-allowed-bounds",
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "6ecbb80fc4aa2e7fbf948a2ced01153aa816bd2911cfcb6cfa398bc3f534245b",
+          "candidate_source_sha256": "5d0cc657cd638addbb28f8278832126dc863b1ae0ae339f216dceff45ef2f98c",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 15
+    },
+    {
+      "screenshot_sha256": "cc41744399909c7e35f5ec6fde48dbd5e04c1977ca0524ad7186ed61a375b6fd",
+      "screenshot": "current-acceptance/sigma9/night-rush-theme/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-cc41744399909c7e35f5ec6fde48dbd5e04c1977ca0524ad7186ed61a375b6fd.png",
+      "records": [
+        {
+          "theme": "night-rush-theme",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "state-target-outside-allowed-bounds",
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "6ecbb80fc4aa2e7fbf948a2ced01153aa816bd2911cfcb6cfa398bc3f534245b",
+          "candidate_source_sha256": "5d0cc657cd638addbb28f8278832126dc863b1ae0ae339f216dceff45ef2f98c",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-06.jpg",
+      "tile_index": 16
+    },
+    {
+      "screenshot_sha256": "e15b29ef003709dbdde664172031346aba0f12b44b86a2ca00648a01e9da6bf8",
+      "screenshot": "current-acceptance/sigma9/ouroborous-theme/artifacts/interactive/chromium/mobile/nav-sidebar-open-mobile-e15b29ef003709dbdde664172031346aba0f12b44b86a2ca00648a01e9da6bf8.png",
+      "records": [
+        {
+          "theme": "ouroborous-theme",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "e3ca8e1a29abcba717d8e638af2eb2526f85b0ae134cd76918157a2b7f5a3fb1",
+          "candidate_source_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-07.jpg",
+      "tile_index": 1
+    },
+    {
+      "screenshot_sha256": "abf8242cab75b3eeb2a03adcfc2fc32587ad455218297417a51a120745c79718",
+      "screenshot": "current-acceptance/sigma9/ouroborous-theme/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-abf8242cab75b3eeb2a03adcfc2fc32587ad455218297417a51a120745c79718.png",
+      "records": [
+        {
+          "theme": "ouroborous-theme",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "visible-title-composition"
+          ],
+          "candidate_sha256": "e3ca8e1a29abcba717d8e638af2eb2526f85b0ae134cd76918157a2b7f5a3fb1",
+          "candidate_source_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-07.jpg",
+      "tile_index": 2
+    },
+    {
+      "screenshot_sha256": "cc94a452d1f7f73e3543011c7c2e95337a2ac2bbfa6ffd4582acd4687b43059a",
+      "screenshot": "current-acceptance/sigma9/ouroborous-theme/artifacts/interactive/chromium/mobile/page-normal-settled-mobile-cc94a452d1f7f73e3543011c7c2e95337a2ac2bbfa6ffd4582acd4687b43059a.png",
+      "records": [
+        {
+          "theme": "ouroborous-theme",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "e3ca8e1a29abcba717d8e638af2eb2526f85b0ae134cd76918157a2b7f5a3fb1",
+          "candidate_source_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-07.jpg",
+      "tile_index": 3
+    },
+    {
+      "screenshot_sha256": "b6ead109f7e80a67983344f90be2cdd1f64a6d4e80757a2674ffd90b34d56834",
+      "screenshot": "current-acceptance/sigma9/paperstack/artifacts/interactive/chromium/mobile/nav-sidebar-open-submenu-mobile-b6ead109f7e80a67983344f90be2cdd1f64a6d4e80757a2674ffd90b34d56834.png",
+      "records": [
+        {
+          "theme": "paperstack",
+          "browser_engine": "chromium",
+          "viewport": "mobile",
+          "surface": "nav.sidebar",
+          "state": "open-submenu",
+          "visual_class": "C",
+          "risk_triggers": [
+            "state-target-outside-allowed-bounds"
+          ],
+          "candidate_sha256": "5c388bc9f4e8c9a888c71e72ca59c6dc7a64f5aab0f791f7a789f8478d77e0aa",
+          "candidate_source_sha256": "5939181e533d5c02d39ac16dad70f9ae9b80efa7fcd79ebb4c8ba8b75ab16854",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-07.jpg",
+      "tile_index": 4
+    },
+    {
+      "screenshot_sha256": "5da7b299f3a5191fc0fcee8a1c797c2dca58a25214b516ba09d8bbd7aa2b1a8b",
+      "screenshot": "current-acceptance/sigma9/pataphysics/artifacts/interactive/chromium/tablet/nav-tablet-top-active-navigation-expanded-tablet-5da7b299f3a5191fc0fcee8a1c797c2dca58a25214b516ba09d8bbd7aa2b1a8b.png",
+      "records": [
+        {
+          "theme": "pataphysics",
+          "browser_engine": "chromium",
+          "viewport": "tablet",
+          "surface": "nav.tablet-top",
+          "state": "active-navigation-expanded",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "98f233f2f3161e085fe9c764c87a2e07b95501977e69702236582d1e39923b17",
+          "candidate_source_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-07.jpg",
+      "tile_index": 5
+    },
+    {
+      "screenshot_sha256": "1cafbfd1604cf32ede7369f022d7ede87e00a1b3f1780046af03f9cb34212705",
+      "screenshot": "current-acceptance/sigma9/pataphysics/artifacts/interactive/chromium/tablet/page-normal-settled-tablet-1cafbfd1604cf32ede7369f022d7ede87e00a1b3f1780046af03f9cb34212705.png",
+      "records": [
+        {
+          "theme": "pataphysics",
+          "browser_engine": "chromium",
+          "viewport": "tablet",
+          "surface": "page.normal",
+          "state": "settled",
+          "visual_class": "V",
+          "risk_triggers": [],
+          "candidate_sha256": "98f233f2f3161e085fe9c764c87a2e07b95501977e69702236582d1e39923b17",
+          "candidate_source_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b",
+          "unconfirmed_items": [
+            "screenshot captured but awaiting image review"
+          ],
+          "prior_visual_review": null
+        }
+      ],
+      "sheet": "portrait-07.jpg",
+      "tile_index": 6
+    }
+  ]
+}

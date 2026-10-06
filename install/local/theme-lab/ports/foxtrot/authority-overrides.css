@@ -1,14 +1,10 @@
-/* SCP-JP Wikidot Foxtrot background correction: allow the source dark body palette to show through the Sigma-9 wrapper. */
-div#container-wrap { background-image: none; }
-
-
-/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
-
 /* SCP-JP Wikidot Foxtrot navigation correction: separate the drawer toggle from the header menu and contain row endpoint submenus. */
 @media (max-width: 767px) {
   #top-bar .open-menu a { top: 14px !important; bottom: auto !important; }
   #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul { left: auto !important; right: 0 !important; }
 }
-@media (min-width: 360px) and (max-width: 767px) {
-  #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto !important; right: 0 !important; }
-}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Foxtrot WebKit row endpoint: contain the fourth submenu where the engine keeps all parents on one row. */
+@supports(-webkit-hyphens:none){@media(min-width:360px) and (max-width:767px){#top-bar .mobile-top-bar > ul > li:last-child > ul{left:auto!important;right:0!important;}}}

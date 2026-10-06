@@ -52,7 +52,7 @@
     },
     "existing_jp_audit": "existing-jp-current-and-valid",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn"
   },
   "dependencies": {
     "slug": "theme:ouroborous-theme",
@@ -129,10 +129,10 @@
       "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; "
     }
   ],
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-current-and-valid",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/ouroborous-theme/assets.json",
-  "asset_dependency_decision_count": 40,
+  "asset_dependency_decision_count": 52,
   "maintenance_source": {
     "base": "maintenance/base.wikidot.txt",
     "jp_overrides": "maintenance/jp-overrides.css",
@@ -161,11 +161,13 @@
       "showcase_css_modules_removed_exact": 1,
       "showcase_css_modules_removed_truncated": 0,
       "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 0,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "3a0e10e723d0e231e62e8c2ca65994265257429fd5a354059e8acf507bd15f22",
+      "candidate_css_sha256": "e3ca8e1a29abcba717d8e638af2eb2526f85b0ae134cd76918157a2b7f5a3fb1",
       "asset_receipt_path": "assets.json",
-      "assets": 33,
-      "imports": 5,
+      "assets": 42,
+      "imports": 8,
       "localization_transforms": 0,
       "localization_transform_manifest": {
         "path": "localization-transforms.json",
@@ -180,7 +182,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

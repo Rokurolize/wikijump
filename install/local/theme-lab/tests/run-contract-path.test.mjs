@@ -32,3 +32,18 @@ test('run-contract paths reject missing and escaping artifacts', async () => {
     await fs.rm(root, {recursive: true, force: true});
   }
 });
+
+test('run-contract paths reject an existing symlink that escapes Theme Lab', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'run-contract-path-'));
+  const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'run-contract-outside-'));
+  try {
+    const contractDir = path.join(root, 'campaign');
+    await fs.mkdir(contractDir);
+    await fs.writeFile(path.join(outside, 'outside.css'), 'outside');
+    await fs.symlink(path.join(outside, 'outside.css'), path.join(contractDir, 'linked.css'));
+    assert.throws(() => resolveRunContractPath(root, contractDir, 'linked.css'), /escapes Theme Lab through a symlink/u);
+  } finally {
+    await fs.rm(root, {recursive: true, force: true});
+    await fs.rm(outside, {recursive: true, force: true});
+  }
+});

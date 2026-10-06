@@ -1,0 +1,58 @@
+{
+  "schema": "theme_lab_theme_publication_source.v1",
+  "slug": "theme:quand-le-soleil-se-couche",
+  "target_branch": "jp",
+  "action": "update-existing-page",
+  "current_target": {
+    "revision": 2,
+    "updated_at": "2026-09-29T15:10:19Z",
+    "source_sha256": "d42659934387cf19af43b9135db16820ecef9e8fe478c9ee645e794b4c71a881",
+    "live_serialized_source_sha256": "79650874ae52b22c901e86c83a17f60ecca2eb814b9ddd90a499a352b0262851",
+    "difference": "blank-line whitespace only"
+  },
+  "source_file": "source.wikidot.txt",
+  "source_sha256": "c44ef95cf9a648f5b2eb9bc3854e95cb4e7005d5c9f656078e795508c7c7c47a",
+  "source_rebase": {
+    "preserved_from_current_target": [
+      "translation credit",
+      "Japanese usage documentation",
+      "theme showcase and example states"
+    ],
+    "functional_css_source": "ports/quand-le-soleil-se-couche/publishable-theme.wikidot.txt",
+    "functional_css_rebased": true,
+    "removed_stale_foreign_theme_import": true
+  },
+  "source_authority": {
+    "branch": "fr",
+    "slug": "theme:quand-le-soleil-se-couche",
+    "revision": 13,
+    "updated_at": "2025-08-12T09:09:31Z",
+    "source_sha256": "eebdb3d7e620550d2921ff5814fa44df29a98ecc96e953ba29423ad525ec281d"
+  },
+  "assets": [
+    {
+      "filename": "header-logo.png",
+      "path": "assets/header-logo.png",
+      "sha256": "e242245d05519a8b2b8d672837f580ce483ded9691f8f14c1c7653fc4c2a336a",
+      "target_attachment_exists": false
+    },
+    {
+      "filename": "body_bg_grey.png",
+      "path": "assets/body_bg_grey.png",
+      "sha256": "bec371b36d3f250ca4b45a03ab46d6a31a5536481ba334cd4ec06eb985db7b0a",
+      "target_attachment_exists": false
+    }
+  ],
+  "acceptance": {
+    "sigma9": "pending-after-rebase",
+    "sigma10": "pending-after-rebase",
+    "fresh_visual_review": "pending",
+    "separate_publication_attachments": 2
+  },
+  "evidence": "evidence/audits/theme-lab-quand-dear-dictator-publication-audit-20261005.json",
+  "publication": {
+    "manual_publish_required": true,
+    "public_writes": 0,
+    "publish_before": []
+  }
+}

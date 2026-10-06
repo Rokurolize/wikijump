@@ -7,16 +7,19 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {gunzipSync} from 'node:zlib';
+import {prepareContainedOutputFile,resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from '../src/package-path.mjs';
 
 const defaultRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 
 export function assembleCurrentCampaign(root,{output='current-campaign-acceptance.json'}={}) {
   const absoluteRoot=path.resolve(root);
-  const readJson=relative=>JSON.parse(fs.readFileSync(path.join(absoluteRoot,relative),'utf8'));
+  const canonicalOutput=path.join(fs.realpathSync(absoluteRoot),'current-campaign-acceptance.json');
+  if(path.resolve(absoluteRoot,output)!==canonicalOutput)throw new Error('Campaign output must be current-campaign-acceptance.json at the Theme Lab root');
+  const target=prepareContainedOutputFile(absoluteRoot,output,'Campaign output');
+  const readJson=relative=>JSON.parse(fs.readFileSync(resolveExistingContainedFile(absoluteRoot,relative,'Campaign input'),'utf8'));
   const bind=relative=>{
-    const absolute=path.resolve(absoluteRoot,relative);
-    if(!absolute.startsWith(absoluteRoot+path.sep))throw new Error(`Artifact escapes Theme Lab: ${relative}`);
+    const absolute=resolveExistingContainedFile(absoluteRoot,relative,'Artifact');
     const bytes=fs.readFileSync(absolute);
     return {path:path.relative(absoluteRoot,absolute),sha256:sha(bytes)};
   };
@@ -33,17 +36,17 @@ export function assembleCurrentCampaign(root,{output='current-campaign-acceptanc
   if(!names.length)throw new Error('Maintained package inventory is empty');
   const packages=names.map(name=>{
     const directory=`ports/current-acceptance/${name}`;
+    const packageDir=resolveExistingPackageDirectory(path.join(absoluteRoot,'ports'),name,`${name}: package directory`),sourceFile=ledger.packages[name].source_file??'candidate.wikidot.source.txt';
+    const sourcePath=resolveExistingPackageFile(packageDir,sourceFile,`${name}: source file`);
     return {package:name,
-      inputs:{css:bind(`ports/${name}/candidate.css`),source:bind(`ports/${name}/${ledger.packages[name].source_file??'candidate.wikidot.source.txt'}`),preview:bind(`ports/${name}/candidate.wikidot.txt`)},
+      inputs:{css:bind(`ports/${name}/candidate.css`),source:bind(path.relative(absoluteRoot,sourcePath)),preview:bind(`ports/${name}/candidate.wikidot.txt`)},
       receipt:bind(`${directory}/accepted-result.json`),
-      browser_audit:bindAudit(`${directory}/browser-audit.json`)};
+      browser_audit:bindAudit(`${directory}/browser-audit.json`),
+      visual_review:bind(`${directory}/visual-review.json`)};
   });
   const migrationDirectory='sigma10-migration/current-campaign';
   const migration={receipt:bind(`${migrationDirectory}/accepted-result.json`),browser_audit:bindAudit(`${migrationDirectory}/browser-audit.json`)};
   const document={schema:'theme_lab_current_campaign_acceptance.v1',packages,migration};
-  const target=path.resolve(absoluteRoot,output);
-  if(!target.startsWith(absoluteRoot+path.sep))throw new Error('Output must remain inside Theme Lab');
-  fs.mkdirSync(path.dirname(target),{recursive:true});
   fs.writeFileSync(target,`${JSON.stringify(document,null,2)}\n`);
   return {path:path.relative(absoluteRoot,target),sha256:sha(fs.readFileSync(target)),packages:names.length};
 }

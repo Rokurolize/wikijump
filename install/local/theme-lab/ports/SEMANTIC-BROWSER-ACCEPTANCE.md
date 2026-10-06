@@ -14,6 +14,48 @@ The exhaustive browser matrix remains mandatory, including Chromium's 320px
 viewport and the maintained Firefox/WebKit core states. A screenshot records
 an observation; its existence does not create another visual judgment.
 
+Each capture run contract pins `expected_runtime_source_sha256`. The matrix
+runner checks the built-runtime fingerprint and probes the served fixture's
+`X-Theme-Lab-Runtime-Source-Sha` response header before starting child captures;
+each browser fixture navigation checks the same header and records the
+measured `runtime_source_sha256`. This served-runtime identity is separate from
+`runtime_surface_contract_sha256`, which describes local source dependencies.
+Completion requires the measured value to match the run contract.
+
+Each active run contract also pins `expected_backend_runtime_identity`, which
+binds the current Deepwell source fingerprint and FTML git revision to the
+actual running container ID, image ID, executable SHA-256, and active config
+SHA-256. Before a matrix child starts, the runner verifies that the live
+Deepwell mounts come from this checkout, that the built Framerail container
+resolves `deepwell` to that container, and that Deepwell answers its RPC ping.
+The fixture probe and every browser fixture navigation must return the same
+backend identity. Browser records, machine assertions, semantic observation
+digests, and environment contracts retain that measured identity; completion
+requires an exact match with the run contract. A prior C row without a
+measured backend identity is not comparable and is promoted to direct review.
+
+The final current-campaign visual gate keeps all 145 canonical observations
+and uses `current-acceptance/visual-gate-policy.json`, bound by SHA-256 in both
+run contracts. Its 35 V rows always require a screenshot and direct review of
+that exact screenshot bound to the current candidate/source. Its 76 C rows
+require a state-specific machine assertion for the active target, geometry,
+interaction or scroll state, plus the normal candidate, source, asset, run,
+action, fixture, runtime and viewport bindings. A C row's risk assessment
+stores the prior candidate CSS/source/structure, asset dependency, fixture,
+action, scoped run, served-runtime and local runtime-surface identities, plus
+the browser version. The gate recomputes the comparison: a missing prior
+identity or any changed identity promotes the row to screenshot and direct
+review. The same applies when there is no comparable prior capture, a relevant
+browser version changed, visible title overlap occurs, or measured document
+overflow exceeds the target-baseline state. In particular, a legacy row with no
+measured served-runtime SHA is not a comparable prior when the current runtime
+has one. Candidate CSS/source/structure and asset changes conservatively cover
+selector, breakpoint/media-query, component, font and asset risks; the scoped
+run identity covers changed authority inputs. Its 34 M rows retain
+structured action evidence on success; failed actions retain a diagnostic
+screenshot. Theme-specific evidence such as BetterFootnotes and the BHL option
+scenarios remains separately required.
+
 The optional `theme_lab_semantic_browser_acceptance.v1` audit model replaces
 the historical per-record image classification with recomputed facts and
 specific question reviews. It does not accept a record merely because the
@@ -23,7 +65,7 @@ stale provenance and unanswered questions block completion.
 | Obligation | Evidence and decision |
 | --- | --- |
 | Current inputs and observations | Candidate/source/baseline/fixture/asset/action/runtime hashes; completion independently opens bound artifacts and checks the current inventory. |
-| Capture safety | Explicit action responses, errors, assets, network counts and exact screenshot binding. Pending image review is not an action failure. Other unknown items remain blocking. |
+| Capture safety | Explicit action responses, errors, assets and network counts on every row. Exact screenshot binding is required for V and risk-promoted C rows; M and unpromoted C success rows use their structured machine evidence. Pending image review is not an action failure. Other unknown items remain blocking. |
 | Maintained action execution | The known action contract and clean execution. This establishes execution only. Search types/focuses a visible query; a concealed query instead requires a real visible-button native navigation request, the exact encoded current value and a current source-side action receipt. An unexercised or unbound alternative remains a source-authority gap. |
 | Document containment | Measured document and client widths with the existing one-pixel rounding tolerance. When the candidate exceeds the viewport, measure the same already-reached DOM/action state with only the SCP-JP target-baseline layers painted. Equal inherited overflow passes this theme-attribution fact; candidate overflow beyond that baseline fails. A required baseline measurement that is absent or stale remains missing evidence, not a visual-review question. |
 | Title intersections | Geometry plus effective ancestor visibility and overflow clipping. Hidden intersections and menus crossing only empty title-container space are machine facts. Visible title text ranges must actually intersect the other element before a composition question is created. Missing visibility/text geometry requires another measurement. |

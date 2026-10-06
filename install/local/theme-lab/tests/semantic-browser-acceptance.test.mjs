@@ -2,28 +2,74 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {measuredFacts, titleCompositionFact, planBrowserAcceptance, validateSemanticBrowserAcceptance, TITLE_COMPOSITION_CONTRACT_SHA256, TITLE_TEXT_CONTRACT_SHA256, observationKey} from '../src/semantic-browser-acceptance.mjs';
 import {BASELINE_DOCUMENT_CONTAINMENT_CONTRACT_SHA256,BASELINE_DOCUMENT_CONTAINMENT_SCHEMA} from '../src/baseline-document-containment.mjs';
+import {VISUAL_GATE_POLICY_SHA256,visualGatePolicyRow,visualGateSelectorsFor,buildVisualGateAssertion,visualGateGlobalRuntimeDrift} from '../src/visual-gate.mjs';
+import {createDeepwellRuntimeIdentity} from '../src/deepwell-runtime-identity.mjs';
 const sha = 'a'.repeat(64);
-const row = overrides => ({theme: 'example', browser_engine: 'chromium', browser_version: '1',
-  viewport: 'desktop', viewport_size: {width: 1440, height: 1000}, surface: 'page.normal', state: 'settled',
-  screenshot: 'example.png', screenshot_sha256: sha, candidate_sha256: sha, candidate_source_sha256: sha,
-  baseline_theme_css_sha256: sha, capture_state_action_contract_sha256: sha,
-  asset_dependency_sha256: sha, fixture_contract_sha256: sha, runtime_surface_contract_sha256: sha,
-  external_requests_sent: 0, asset_failures: [], page_errors: [], action_responses: [],
-  unconfirmed_items: ['screenshot captured but awaiting image review'],
-  visual_diagnostics: {viewport: {width: 1440, documentWidth: 1440}, title_overlaps: []}, ...overrides});
+const backendRuntimeIdentity=createDeepwellRuntimeIdentity({source_sha256:'b'.repeat(64),ftml_git_revision:'c'.repeat(40),container_id:'d'.repeat(64),image_id:`sha256:${'e'.repeat(64)}`,binary_sha256:'f'.repeat(64),config_sha256:'1'.repeat(64)});
+const row = (overrides={}) => {
+  const record={theme:'example',browser_engine:'chromium',browser_version:'1',viewport:'desktop',viewport_size:{width:1440,height:1000},surface:'page.normal',state:'settled',
+    candidate_sha256:sha,candidate_source_sha256:sha,baseline_theme_css_sha256:sha,capture_state_action_contract_sha256:sha,
+    asset_dependency_sha256:sha,fixture_contract_sha256:sha,runtime_surface_contract_sha256:sha,runtime_source_sha256:sha,
+    backend_runtime_identity:backendRuntimeIdentity,backend_runtime_identity_sha256:backendRuntimeIdentity.identity_sha256,
+    run_contract_sha256:'2'.repeat(64),scoped_run_contract_sha256:'3'.repeat(64),environment_contract_sha256:'4'.repeat(64),
+    external_requests_sent:0,asset_failures:[],page_errors:[],action_responses:[],unconfirmed_items:['screenshot captured but awaiting image review'],
+    visual_diagnostics:{viewport:{width:1440,height:1000,client_width:1440,client_height:1000,document_width:1440,documentWidth:1440},title_overlaps:[]},...overrides};
+  const policy=visualGatePolicyRow(record),size=record.viewport_size??{width:1440,height:1000};
+  const suppliedViewport=record.visual_diagnostics?.viewport;
+  const measuredViewport=Object.hasOwn(overrides??{},'visual_diagnostics')?{...suppliedViewport}:{width:size.width,height:size.height,...suppliedViewport};
+  measuredViewport.height??=size.height;
+  if(measuredViewport.width!==undefined)measuredViewport.client_width??=measuredViewport.width;
+  if(measuredViewport.height!==undefined)measuredViewport.client_height??=measuredViewport.height;
+  if(measuredViewport.document_width!==undefined)measuredViewport.documentWidth??=measuredViewport.document_width;
+  if(measuredViewport.documentWidth!==undefined)measuredViewport.document_width??=measuredViewport.documentWidth;
+  record.visual_diagnostics={...record.visual_diagnostics,viewport:measuredViewport,title_overlaps:record.visual_diagnostics?.title_overlaps??[],elements:{...record.visual_diagnostics?.elements}};
+  record.visual_diagnostics_contract_sha256='5'.repeat(64);
+  record.action_sequence=[...(record.action_sequence??[]),{type:'focusin'},{type:'pointerover'}];
+  const riskTriggers=policy?.class==='C'?['no-comparable-prior-capture',...(record.visual_diagnostics.title_overlaps.some(item=>item.effectively_visible===true)?['visible-title-composition']:[])]:[];
+  record.visual_gate={policy_sha256:VISUAL_GATE_POLICY_SHA256,class:policy?.class??null,risk_triggers:riskTriggers,
+    ...(policy?.class==='C'?{risk_assessment:{scope:'same-theme-surface-state-engine-viewport',identity_comparison_schema:'theme_lab_visual_risk_identity.v3',previous_capture_found:false,global_runtime_drift:visualGateGlobalRuntimeDrift({},record,{hasPriorCapture:false})}}:{})};
+  if(policy?.class==='C'){
+    for(const selector of visualGateSelectorsFor(policy,record))record.visual_diagnostics.elements[selector]={visibility:'visible',display:'block',rect:{x:4,y:4,width:120,height:36}};
+    const action=record.action_contract_observation;
+    if(action?.control==='#search-top-box-input'&&action.display==='none')record.visual_diagnostics.elements['#search-top-box-input']={visibility:'hidden',display:'none',rect:{x:0,y:0,width:0,height:0}};
+    if(policy.key==='credit.view.open'&&!record.baseline_theme)record.action_contract_observation={...action,location_hash:'#u-credit-view'};
+    if(policy.key==='credit.otherwise.open'&&!record.baseline_theme)record.action_contract_observation={...action,location_hash:'#u-credit-otherwise'};
+    record.state_machine_assertion=buildVisualGateAssertion(record);
+    if(policy.key==='content.tabview.second-tab-selected')record.state_machine_assertion.selected=true;
+  }
+  if(policy?.class==='M'){
+    delete record.screenshot;delete record.screenshot_sha256;delete record.visual_review;
+    record.functional_assertion={schema:'theme_lab_functional_assertion.v1',policy_sha256:VISUAL_GATE_POLICY_SHA256,key:policy.key,
+      action_contract_sha256:record.capture_state_action_contract_sha256,action_completed:true,action_sequence_count:record.action_sequence.length,
+      candidate_sha256:record.candidate_sha256,candidate_source_sha256:record.candidate_source_sha256,asset_dependency_sha256:record.asset_dependency_sha256,
+      runtime_source_sha256:record.runtime_source_sha256,backend_runtime_identity_sha256:record.backend_runtime_identity_sha256,run_contract_sha256:record.run_contract_sha256,
+      browser_engine:record.browser_engine,browser_version:record.browser_version,viewport:record.viewport};
+    delete record.visual_gate.risk_assessment;record.visual_gate.risk_triggers=[];
+  }else{
+    record.screenshot??='example.png';record.screenshot_sha256??=sha;record.classification??='PASS_NATURAL';
+    record.visual_review={method:'direct-image-vision-review',screenshot_sha256:record.screenshot_sha256,candidate_sha256:record.candidate_sha256,
+      candidate_source_sha256:record.candidate_source_sha256,reviewer:'test',note:'Exact screenshot checked against the current candidate and source.',reviewed_at:'2026-10-01T00:00:00Z'};
+  }
+  return record;
+};
 const withTextIntersections = record => ({...record, title_text_contract_sha256: TITLE_TEXT_CONTRACT_SHA256,
   title_text_measurement: {schema: 'theme_lab_title_text_intersections.v1', complete: true,
     title_text_rects: [{x: 0, y: 0, width: 100, height: 30}], intersections: record.visual_diagnostics.title_overlaps}});
 
 test('measured facts are independent of a pending screenshot judgment', () => {
-  assert.deepEqual(measuredFacts(row()), {observation_identity: 'pass', capture_safety: 'pass', maintained_action_execution: 'pass', document_containment: 'pass'});
+  assert.deepEqual(measuredFacts(row()), {observation_identity: 'pass', capture_safety: 'pass', maintained_action_execution: 'pass', state_specific_assertion:'pass', document_containment: 'pass'});
   const audit = {records: [row(), row({viewport: 'mobile'})]};
   const plan = planBrowserAcceptance(audit);
   assert.equal(plan.accounting.browser_records, 2);
   assert.equal(plan.accounting.distinct_visual_questions, 1);
   assert.equal(plan.visual_questions[0].observations.length, 2);
-  assert.equal(audit.records[0].classification, undefined);
+  assert.equal(audit.records[0].classification, 'PASS_NATURAL');
   assert.equal(audit.records[0].reviewed_after_last_change, undefined);
+});
+
+test('runtime source identity is mandatory observation evidence',()=>{
+  assert.equal(measuredFacts(row({runtime_source_sha256:undefined})).observation_identity,'missing');
+  assert.equal(measuredFacts(row({runtime_source_sha256:'invalid'})).observation_identity,'missing');
 });
 
 test('unknown safety and failed actions cannot be cleared by image review', () => {
@@ -52,7 +98,7 @@ test('a hidden query observation is a source-authority gap, not completed typing
   const hidden = row({surface: 'shell.search', state: 'typed-focused', action_contract_observation: {control: '#search-top-box-input', display: 'none'}});
   const plan = planBrowserAcceptance({records: [hidden]});
   assert.equal(plan.accounting.additional_source_authority_records, 1);
-  assert.match(validateSemanticBrowserAcceptance({records: [hidden]}).failures[0], /requested action was not exercised/u);
+  assert.ok(validateSemanticBrowserAcceptance({records: [hidden]}).failures.some(failure=>/requested action was not exercised/u.test(failure)));
 });
 
 test('source-hidden search execution needs a real matching route and bound source proof', () => {
@@ -63,6 +109,22 @@ test('source-hidden search execution needs a real matching route and bound sourc
   assert.equal(measuredFacts(input(action)).maintained_action_execution, 'pass');
   assert.equal(measuredFacts(input({...action, source_authority: null})).maintained_action_execution, 'source-required');
   assert.equal(measuredFacts(input({...action, observed_path: '/search:site/q/wrong'})).maintained_action_execution, 'source-required');
+});
+
+test('source-replaced sidebar actions need both exact source authority and a successful alternate navigation observation', () => {
+  const failure='No reachable ordinary or source-owned sidebar control';
+  const authority={path:'authority.json',sha256:sha};
+  const replacement={key:'["monotypical","webkit","mobile","nav.mobile-top","submenu-expanded"]',
+    screenshot_sha256:sha,dependencies_sha256:sha};
+  const sourceAction={schema:'theme_lab_source_action_applicability.v1',mode:'source-navigation-replaces-sidebar',
+    surface:'nav.sidebar',state:'open',viewport:'mobile',expected_failure:failure,
+    candidate_sha256:sha,candidate_source_sha256:sha,replacement,source_authority:authority};
+  const record=row({theme:'monotypical',browser_engine:'webkit',viewport:'mobile',surface:'nav.sidebar',state:'open',
+    failure,unconfirmed_items:[`action/capture failed: ${failure}`],action_contract_observation:sourceAction});
+  assert.equal(measuredFacts(record).capture_safety,'pass');
+  assert.equal(measuredFacts(record).maintained_action_execution,'pass');
+  assert.equal(measuredFacts({...record,action_contract_observation:{...sourceAction,replacement:{...replacement,screenshot_sha256:'invalid'}}}).capture_safety,'fail');
+  assert.equal(measuredFacts({...record,action_contract_observation:{...sourceAction,expected_failure:'different failure'}}).maintained_action_execution,'fail');
 });
 
 test('hidden intersections are machine facts; unmeasured visibility requires a probe, not vision', () => {

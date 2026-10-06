@@ -1,6 +1,6 @@
 :where(:root) {
-    --header-title: "SCP Foundation";
-    --header-subtitle: "Secure, Contain, Protect";
+    --header-title: "SCP財団";
+    --header-subtitle: "確保・収容・保護";
 
     --sp_header-title-size: min(calc(2.675rem * var(--sp_header-title-scale)), calc(1.25rem * var(--sp_header-title-scale) + 2.5vw));
     --sp_header-subtitle-size: min(calc(.875rem * var(--sp_header-subtitle-scale)), calc(0.475rem * var(--sp_header-subtitle-scale) + 1.25vw));
@@ -1569,4 +1569,11 @@ table.page-files .highlight { background: transparent; }
     #top-bar :is(.top-bar, .mobile-top-bar) ul li ul li a {
         padding: 0.75em 0.675em;
     }
+}
+
+
+
+/* SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  #side-bar { overflow-x: auto !important; }
 }

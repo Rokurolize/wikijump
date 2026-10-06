@@ -51,7 +51,7 @@
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn"
   },
   "dependencies": {
     "slug": "theme:extra-black-highlighter-theme",
@@ -118,7 +118,7 @@
       "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; "
     }
   ],
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/assets.json",
   "asset_dependency_decision_count": 40,
@@ -150,11 +150,13 @@
       "showcase_css_modules_removed_exact": 1,
       "showcase_css_modules_removed_truncated": 0,
       "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 0,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "a551fbd0df47a904de211d625e1f1c4fdd6cb6b0dd3c75688de41e1f444f0ca7",
+      "candidate_css_sha256": "1942887e382d16b8150cf95086a4944c7589def1ea0c2783d5d6dc341c445400",
       "asset_receipt_path": "assets.json",
-      "assets": 33,
-      "imports": 6,
+      "assets": 32,
+      "imports": 7,
       "localization_transforms": 0,
       "localization_transform_manifest": null,
       "missing": 0,
@@ -172,7 +174,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

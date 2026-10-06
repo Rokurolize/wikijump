@@ -11,16 +11,27 @@ import path from "node:path";
 import {fileURLToPath} from "node:url";
 
 import {parseStyleSheet} from "./css-probe.mjs";
+import {deepwellRuntimeIdentityFromHeaders} from "./deepwell-runtime-identity.mjs";
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_BROWSER_ROOT = path.resolve(MODULE_DIR, "../../../../framerail");
 
 export function loadChromium(browserRoot = DEFAULT_BROWSER_ROOT) {
+  return resolveBrowser('chromium',browserRoot,['playwright','@playwright/test']);
+}
+
+export function loadBrowser(engine, browserRoot = DEFAULT_BROWSER_ROOT) {
+  // Interactive capture uses the Framerail test runner's installed engines.
+  return resolveBrowser(engine,browserRoot,['@playwright/test','playwright']);
+}
+
+function resolveBrowser(engine,browserRoot,packages){
+  if(!['chromium','firefox','webkit'].includes(engine))throw new Error('unsupported browser engine');
   const requireFromRoot = createRequire(path.join(browserRoot, "package.json"));
-  for (const name of ["playwright", "@playwright/test"]) {
+  for (const name of packages) {
     try {
       const loaded = requireFromRoot(name);
-      if (loaded?.chromium) return loaded.chromium;
+      if (loaded?.[engine]) return loaded[engine];
     } catch {
       // try the next candidate
     }
@@ -30,15 +41,20 @@ export function loadChromium(browserRoot = DEFAULT_BROWSER_ROOT) {
   );
 }
 
-export async function launchBrowser({chromium, cdpEndpoint = null, executablePath = null, headless = true, args = []} = {}) {
-  if (cdpEndpoint) return chromium.connectOverCDP(cdpEndpoint);
-  return chromium.launch({executablePath: executablePath ?? undefined, headless, args});
+export function loadBrowserType(engine = "chromium", browserRoot = DEFAULT_BROWSER_ROOT) {
+  return loadBrowser(engine, browserRoot);
 }
 
-export async function openPage(browser, {url = "about:blank", viewport = null, ignoreHttpsErrors = true, localOnly = false} = {}) {
+export async function launchBrowser({chromium, cdpEndpoint = null, executablePath = null, headless = true, args = [], proxy = undefined} = {}) {
+  if (cdpEndpoint) return chromium.connectOverCDP(cdpEndpoint);
+  return chromium.launch({executablePath: executablePath ?? undefined, headless, args, ...(proxy?{proxy}:{})});
+}
+
+export async function openPage(browser, {url = "about:blank", viewport = null, ignoreHttpsErrors = true, localOnly = false, storageState = undefined} = {}) {
   const context = await browser.newContext({
     ignoreHTTPSErrors: ignoreHttpsErrors,
     ...(viewport ? {viewport} : {}),
+    ...(storageState ? {storageState} : {}),
   });
   const network = {blocked_external_attempts: 0, blocked_urls: [], failed_requests: []};
   if (localOnly) {
@@ -70,7 +86,18 @@ export async function openPage(browser, {url = "about:blank", viewport = null, i
     }
   });
   if (url && url !== "about:blank") {
-    await page.goto(url, {waitUntil: "domcontentloaded", timeout: 30_000});
+    const response = await page.goto(url, {waitUntil: "domcontentloaded", timeout: 30_000});
+    if (response) {
+      const runtimeSourceSha = await response.headerValue("x-theme-lab-runtime-source-sha").catch(() => null);
+      if (runtimeSourceSha) page.__themeLabRuntimeIdentity = {
+        schema: "theme_lab_built_target_runtime.v1",
+        transport_origin: new URL(response.url()).origin,
+        header_source_sha256: runtimeSourceSha,
+        response_url: response.url(),
+        response_status: response.status(),
+        backend_runtime_identity: deepwellRuntimeIdentityFromHeaders(await response.allHeaders().catch(() => ({}))),
+      };
+    }
   }
   return page;
 }
@@ -110,7 +137,7 @@ export async function clearStylesheet(page, id = "theme-lab-live-css") {
 
 // Report actual platform fonts used to paint a DOM node, rather than only the
 // CSS font-family stack. This makes Japanese fallback/glyph coverage auditable.
-export async function inspectPlatformFonts(page, selector) {
+export async function inspectPlatformFonts(page, selector, {engine = "chromium"} = {}) {
   const requested = await page.evaluate(async (sourceSelector) => {
     const source = document.querySelector(sourceSelector) ?? document.querySelector("#page-content") ?? document.body;
     const computed = getComputedStyle(source);
@@ -125,9 +152,38 @@ export async function inspectPlatformFonts(page, selector) {
       lineHeight: computed.lineHeight, letterSpacing: computed.letterSpacing,
     });
     document.body.append(probe);
-    await document.fonts.ready;
-    return {selector: sourceSelector, requested_font_family: computed.fontFamily};
+    // WebKit can resolve an earlier FontFaceSet.ready promise and only then
+    // transition back to "loading" when the newly inserted probe causes its
+    // computed family to be requested. Re-observe `ready` until the font set
+    // is actually quiescent instead of sampling that transient state and
+    // falsely rejecting otherwise painted Japanese glyphs.
+    // A page can keep unrelated FontFaceSet entries pending indefinitely. Wait
+    // on the exact font/text pair used by this probe instead of requiring the
+    // entire document font set to become idle.
+    const fontDeadline = performance.now() + 5_000;
+    const probeFont = `${computed.fontStyle} ${computed.fontWeight} ${computed.fontSize} ${computed.fontFamily}`;
+    // `check()` over a family stack can be false solely because an unused
+    // fallback face has not been requested yet. Load this exact text/font pair
+    // first, still bounded by the same deadline, then measure availability.
+    await Promise.race([
+      document.fonts.load(probeFont, probe.textContent),
+      new Promise((resolve) => setTimeout(resolve, Math.max(0, fontDeadline - performance.now()))),
+    ]).catch(() => {});
+    let fontCheck = document.fonts.check(probeFont, probe.textContent);
+    while (!fontCheck && performance.now() < fontDeadline) {
+      // Poll without awaiting FontFaceSet.ready: unrelated downloads may leave
+      // that promise pending beyond this bounded probe deadline.
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      fontCheck = document.fonts.check(probeFont, probe.textContent);
+    }
+    const rect = probe.getBoundingClientRect();
+    return {selector: sourceSelector, requested_font_family: computed.fontFamily, probe_width: rect.width, probe_height: rect.height, rendered_codepoints: Array.from(probe.textContent).length, document_fonts_status: document.fonts.status, font_check: fontCheck};
   }, selector);
+  const portable_glyph_measurement = {status: requested.probe_width > 0 && requested.probe_height > 0 && requested.rendered_codepoints > 0 && requested.font_check === true ? "pass" : "fail", width: requested.probe_width, height: requested.probe_height, codepoints: requested.rendered_codepoints, document_fonts_status: requested.document_fonts_status, font_check: requested.font_check};
+  if (engine !== "chromium") {
+    await page.evaluate(() => document.getElementById("theme-lab-font-diagnostic-probe")?.remove()).catch(() => {});
+    return {status: "rendered-glyphs-measured", ...requested, portable_glyph_measurement, fonts: []};
+  }
   const client = await page.context().newCDPSession(page);
   try {
     await Promise.all([client.send("DOM.enable"), client.send("CSS.enable")]);
@@ -138,6 +194,7 @@ export async function inspectPlatformFonts(page, selector) {
     return {
       status: "measured",
       ...requested,
+      portable_glyph_measurement,
       fonts: fonts.map(({familyName, postScriptName, isCustomFont, glyphCount}) => ({family_name: familyName, postscript_name: postScriptName, custom: isCustomFont, glyph_count: glyphCount})),
     };
   } finally {
@@ -271,7 +328,7 @@ export async function exercisePreviewInteractions(page) {
   let pointerResult = {status: "not-applicable", control_count: count};
   if (visibleCount) {
     let lastError = null;
-    for (let index = 0; index < Math.min(visibleCount, 5); index += 1) {
+    for (let index = 0; index < Math.min(visibleCount, 20); index += 1) {
       const control = controls.nth(index);
       try {
         const focusEvidence = await control.evaluate((element) => {
@@ -300,7 +357,7 @@ export async function exercisePreviewInteractions(page) {
     }
     // Restore the probe's transient interaction state after measurement.
     await page.evaluate(() => document.activeElement?.blur?.()).catch(() => {});
-    await page.mouse.move(0, 0).catch(() => {});
+    await page.mouse.move(-16, -16).catch(() => {});
   }
   return {...widgets, pointer_focus: pointerResult};
 }
@@ -696,7 +753,11 @@ export async function collectViewportOverflow(page, viewports) {
         // drawer. It cannot contribute to document width, so only report an
         // edge escape when the box intersects the viewport or crosses the
         // right edge as before.
-        const intersectsViewport = rect.right > 0 && rect.left < root.clientWidth;
+        // A drawer placed exactly at the viewport edge can leave a fractional
+        // CSS-pixel sliver after device-scale rounding. Treat under-one-pixel
+        // contact as closed/off-canvas; larger visible intersections still
+        // retain the full escaped-box measurement below.
+        const intersectsViewport = rect.right > 1 && rect.left < root.clientWidth - 1;
         const overflowPx = intersectsViewport ? Math.max(leftOverflow, rightOverflow) : rightOverflow;
         const clippedLeft = clippingLeft !== null && rect.left < clippingLeft - 2;
         const clipped = clippingRight !== null && rect.right > clippingRight + 2;

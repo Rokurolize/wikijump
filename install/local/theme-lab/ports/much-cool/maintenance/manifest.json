@@ -103,7 +103,7 @@
         },
         {
           "path": "much-cool/existing-jp.wikidot.txt",
-          "sha256": "0305019f63ac920a0451b2fe9c17aa8c84992d86ae8b2243692e3d29c7354833",
+          "sha256": "aff88b307f9e26ce47d632a6f29bb786a62f9b89b1e2b41ed9ab0e74d9272988",
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]

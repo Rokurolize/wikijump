@@ -76,7 +76,9 @@
         "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-2000-jp",
         "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=theme:pataphysics",
         "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-1428-jp",
-        "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-1214"
+        "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-1214",
+        "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-173",
+        "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-914"
       ]
     },
     "4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7": {
@@ -429,7 +431,8 @@
       "content_type": "image/jpeg",
       "bytes": 791,
       "original_urls": [
-        "https://www.wikidot.com/avatar.php?userid=175861&amp;amp;size=small&amp;amp;timestamp=1775117602"
+        "https://www.wikidot.com/avatar.php?userid=175861&amp;amp;size=small&amp;amp;timestamp=1775117602",
+        "https://www.wikidot.com/avatar.php?userid=175861&amp;amp;size=small&amp;amp;timestamp=1790408062"
       ]
     },
     "eabe424dd70c56173c2cfcfe8ca6b328ef2077d6ce9b3243540148a2d76f20ab": {
@@ -2334,6 +2337,48 @@
       "bytes": 45587,
       "original_urls": [
         "https://scp-jp.wikidot.com/scp-1214"
+      ]
+    },
+    "7ea072e9a220d11713dd399ea999ef06c1152a938696ac6ad6777e01d9d9c29b": {
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 43477,
+      "original_urls": [
+        "https://scp-jp.wikidot.com/scp-173"
+      ]
+    },
+    "3ab23874f6f8ef0d70a0a5a52aed3f1f38ff025571373e863c8887a3caeca9ee": {
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 43304,
+      "original_urls": [
+        "https://scp-jp.wikidot.com/scp-173"
+      ]
+    },
+    "d98ce82c7b5d5b73350f5eebb9efe3077b03906a2cb457b258bd4e1313df2e05": {
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 43422,
+      "original_urls": [
+        "https://scp-jp.wikidot.com/scp-173"
+      ]
+    },
+    "6b2fe094bd69ff94c2fdf246643bf6c1b849161d187961c1863d80f7df244258": {
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 36837,
+      "original_urls": [
+        "https://scp-jp.wikidot.com/scp-914"
+      ]
+    },
+    "4121e9c24c23b34fd0a6eaec2e9e00db0eeb4196dc2c09214a6491e042cd99a3": {
+      "content_type": "image/jpeg; charset=utf-8",
+      "bytes": 63050,
+      "original_urls": [
+        "https://scp-jp.wdfiles.com/local--files/scp-914/gears.jpg"
+      ]
+    },
+    "fe41eb55acebe4878a8fb235755eedf80def83395305f2ca91917e3784d5d646": {
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 36836,
+      "original_urls": [
+        "https://scp-jp.wikidot.com/scp-914"
       ]
     }
   },
@@ -4953,6 +4998,42 @@
       "final_url": "https://scp-jp.wdfiles.com/local--files/scp-1214/RANDOM_NUMBER_TEST.png",
       "content_type": "image/png; charset=utf-8",
       "fetched_at": "2026-10-01T08:32:10.457Z"
+    },
+    "https://scp-jp.wikidot.com/scp-173": {
+      "digest": "7ea072e9a220d11713dd399ea999ef06c1152a938696ac6ad6777e01d9d9c29b",
+      "final_url": "https://scp-jp.wikidot.com/scp-173",
+      "content_type": "text/html; charset=utf-8",
+      "fetched_at": "2026-10-01T12:04:30.388Z"
+    },
+    "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-173": {
+      "digest": "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a",
+      "final_url": "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-173",
+      "content_type": "image/png",
+      "fetched_at": "2026-10-01T12:04:31.519Z"
+    },
+    "https://www.wikidot.com/avatar.php?userid=175861&amp;amp;size=small&amp;amp;timestamp=1790408062": {
+      "digest": "12ba0dac0f83457461a9158d710f3026edfba3848e37b785c448456756e875e9",
+      "final_url": "https://scontent-itm1-1.xx.fbcdn.net/v/t1.30497-1/84628273_176159830277856_972693363922829312_n.jpg?stp=c379.0.1290.1290a_cp0_dst-jpg_s50x50_tt6&_nc_cat=1&ccb=1-7&_nc_sid=7565cd&_nc_ohc=_NTic_xoUvQQ7kNvwGebP66&_nc_oc=Ado24zR4TbLAcaowskenFxZ1jdR4RLLkrh0l_8fWJ4KezmbjtBYUeGH0GeMAXt91Qg4&_nc_zt=24&_nc_ht=scontent-itm1-1.xx&edm=AHgPADgEAAAA&oh=00_AQMIP1aOnBgWQOo2lJxTw5WKJcZ6NcImi5y7LqNhOhttQQ&oe=6AE5B219",
+      "content_type": "image/jpeg",
+      "fetched_at": "2026-10-01T12:04:32.447Z"
+    },
+    "https://scp-jp.wikidot.com/scp-914": {
+      "digest": "6b2fe094bd69ff94c2fdf246643bf6c1b849161d187961c1863d80f7df244258",
+      "final_url": "https://scp-jp.wikidot.com/scp-914",
+      "content_type": "text/html; charset=utf-8",
+      "fetched_at": "2026-10-01T18:57:31.311Z"
+    },
+    "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-914": {
+      "digest": "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a",
+      "final_url": "https://manage.scp-jp.com/api/public/assets/analytics.png?s_id=578002&amp;fn=scp-914",
+      "content_type": "image/png",
+      "fetched_at": "2026-10-01T18:57:32.254Z"
+    },
+    "https://scp-jp.wdfiles.com/local--files/scp-914/gears.jpg": {
+      "digest": "4121e9c24c23b34fd0a6eaec2e9e00db0eeb4196dc2c09214a6491e042cd99a3",
+      "final_url": "https://scp-jp.wdfiles.com/local--files/scp-914/gears.jpg",
+      "content_type": "image/jpeg; charset=utf-8",
+      "fetched_at": "2026-10-01T18:57:33.258Z"
     }
   },
   "snapshots": {
@@ -6074,6 +6155,147 @@
         "8aab16649c61f865e40a66b550fc954c8e1e42e317c06b22970a14a5390e8123",
         "8814de07a0445f47adffed154a0cd18ed228dcf88faaebaeed1a9f71a280cd80"
       ]
+    },
+    "https://scp-jp.wikidot.com/scp-173": {
+      "entry": "/o/d98ce82c7b5d5b73350f5eebb9efe3077b03906a2cb457b258bd4e1313df2e05",
+      "created_at": "2026-10-01T12:24:48.344Z",
+      "assets": 52,
+      "failed_assets": 3,
+      "failed_asset_details": [
+        {
+          "url": "https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png",
+          "code": "reference_http_error",
+          "message": "reference fetch returned HTTP 500 for https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png"
+        },
+        {
+          "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+          "code": "reference_http_error",
+          "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+        },
+        {
+          "url": "https://scp-jp.github.io/files/util/common/media/_default/heritage-collection-jp/heritage-emblem.png",
+          "code": "reference_http_error",
+          "message": "reference fetch returned HTTP 404 for https://scp-jp.github.io/files/util/common/media/_default/heritage-collection-jp/heritage-emblem.png"
+        }
+      ],
+      "replay_complete": true,
+      "object_digests": [
+        "d98ce82c7b5d5b73350f5eebb9efe3077b03906a2cb457b258bd4e1313df2e05",
+        "58cab0208fa4ab61053eb9d92a99a1a1999ad6e3dc63f8fd80828e33cb069d53",
+        "f53bdeec5d0316301982c49cf86701d13680dc6f44efb3a8eb1ca93ca183e3ba",
+        "86bfb8fa53fdca123db5feecf7e995eb6de67edbe39ca0a800134c69258c2ba1",
+        "7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387",
+        "49bcabdb14d446bb93d261f9c967bedfa7cdf7b214807a8180974cbd00b21f11",
+        "574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c",
+        "12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941",
+        "c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc",
+        "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a",
+        "4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7",
+        "87aad0dc9ad5c1f9db2d990c6d74b34b4fefd31e27488eb827e3dfc2c3652f45",
+        "549744a269e491a062f48d3947843e7eba635c281a195698d82283ecb18dd8a5",
+        "12ba0dac0f83457461a9158d710f3026edfba3848e37b785c448456756e875e9",
+        "b75a0d1f4c6203805ef6e432eb5c06ad5065255119e1cbd3b3c64baaadb9005e",
+        "5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583",
+        "dab79d3aeee7dc23243a53e417f1b8dc4cb0f397f06aa17bac4c1f373abd5ede",
+        "c893531613ca348b0217ea5976a52c4dfe7cda7ffa0ca002ef24a0980a201825",
+        "6d59328357ba699fae7fe1ce66e403bcb430c4a86fb750e2c240d483f6ff2201",
+        "8ee173565b2e771fecf3b471a79bdf072aaa1bd9dc27582cfda2b2a322beeba8",
+        "841dadb079124d00a289640d7ddae9ecd8b9e8b245d59c33593d3905863b568a",
+        "d4b09792783e799e3dfd3acc0590f59783a9875909b5baf88f43f5d384d6acd3",
+        "222902c16fcda2ffbe6acf20f48a9a3b1ce3ec1b1f37e4cea2df449c3b053ff8",
+        "2b3f53a407d5b25bc91bd9920f164b13e14d944bc95a7bf32a5138b30cef07c6",
+        "fbfecc922b34a8921eadef91c1763804baa9dc5fe8c9299ccaa94dad3bb31604",
+        "77aa03dfe99dca77dd663d465c87fa642d26267f5190208c11d5498e7c7fe697",
+        "7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c",
+        "44d631b2507c9bfceabf960599f9f3d2093a3e19f5d6f04d27d375efb8012f84",
+        "7668781daf80240168d1142c72b3502f75617be40fbbe081caae66ac7d38d571",
+        "231630b39af902bf9ad98a22bd77b3c5359b18a9336b63bf599c31a76f1e08cd",
+        "cbb644d0ee730ea57dd5fbae35ef5ba4a41d57a254a6b1215de5c9ff8a321c2d",
+        "aadc3580d2b64ff5a7e6f1425587db4e8b033efcbf8f5c332ca52a5ed580c87c",
+        "e3870de89716b72cb61a4bba0e17c75783b361cdaba35ea96961c3070bd8ca18",
+        "9e540a087924a6e64790149d735cac022640e4fa6bff6bd65f5e9f41529bf0b3",
+        "bfdef833219a6edffd9c3cbc28db72739d22bb4d20cc2e2f8d56a7a4d408a206",
+        "ed0652b49899259e10ff2b7270ffee4d9f07b4c2a46c8d95a7f86fa3e94e01d8",
+        "40723fa718237c74623d7b64ce186a02b872f7fb4b3a917013fcc8b6aec3ded6",
+        "2eb982d8faa4ab9bcc8bc39c31cad8f1d73e1d8df8e4aebd3970af1e38620841",
+        "41950d74f0aae0ee95ca1381b8096f1d19dc4154971505c8bdc3b18dce70912d",
+        "1a9b14799594702e4d0350164623d9e71261d70042ed4b3979808b08ba6e38b6",
+        "3ee20e2529a17cdd369a6c89edb23d5662ecfa9007936786d33c22c38fac14de",
+        "d8e1808c4f33e6bd075bd13b7aafc8596a1937495d5c57732322502b9c711a03",
+        "aa602c40276279d9b8e782b8c4d1e466d51e5349dbe55d1756db93976584bcab",
+        "f458790e7e2d0b83533b4d0f3669630adcb473673455815fd38c5c2496c06a46",
+        "d65d63e6581b8c1210bed42a30dc766a0f0273018cb163947fdb8c0e160f3cb5",
+        "1d7378ae112da2d33aafdf0ce83bd2bccb36d6786a5c58317444367f2b9b4604",
+        "8aab16649c61f865e40a66b550fc954c8e1e42e317c06b22970a14a5390e8123",
+        "8814de07a0445f47adffed154a0cd18ed228dcf88faaebaeed1a9f71a280cd80",
+        "a0eff05be5c5cce5a449c80f7a6c98cbf0be2f55c10be5ad6269ee378e9dfe18"
+      ]
+    },
+    "https://scp-jp.wikidot.com/scp-914": {
+      "entry": "/o/fe41eb55acebe4878a8fb235755eedf80def83395305f2ca91917e3784d5d646",
+      "created_at": "2026-10-01T18:57:33.326Z",
+      "assets": 47,
+      "failed_assets": 2,
+      "failed_asset_details": [
+        {
+          "url": "https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png",
+          "code": "reference_http_error",
+          "message": "reference fetch returned HTTP 500 for https://scp-jp.wikidot.com/local--iosicon/iosicon_57.png"
+        },
+        {
+          "url": "https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif",
+          "code": "reference_http_error",
+          "message": "reference fetch returned HTTP 441 for https://www.napyfab.com/ajax-indicators/images/indicator_medium.gif"
+        }
+      ],
+      "replay_complete": true,
+      "object_digests": [
+        "fe41eb55acebe4878a8fb235755eedf80def83395305f2ca91917e3784d5d646",
+        "58cab0208fa4ab61053eb9d92a99a1a1999ad6e3dc63f8fd80828e33cb069d53",
+        "f53bdeec5d0316301982c49cf86701d13680dc6f44efb3a8eb1ca93ca183e3ba",
+        "86bfb8fa53fdca123db5feecf7e995eb6de67edbe39ca0a800134c69258c2ba1",
+        "7009f254a0b7a3833c3752ea3b10c175fca21c2c1ceee3bcac32d774ddb98387",
+        "49bcabdb14d446bb93d261f9c967bedfa7cdf7b214807a8180974cbd00b21f11",
+        "574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c",
+        "12d76a7e7646312cb8bd8819216b0081fce6637f4b827af2bff2a203d87be941",
+        "c0fad68653c3344aa16c574b1571bd21973a0394d0bcac27994005cbf0ed5cdc",
+        "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a",
+        "4f8c6d416f09671777934e57bc67fb52ccc97145dc6f1869e628d9ffd7d8f6e7",
+        "4121e9c24c23b34fd0a6eaec2e9e00db0eeb4196dc2c09214a6491e042cd99a3",
+        "5da265dc849871cd2201875b63a803c9a6b348419a048981960c746a18bfc583",
+        "dab79d3aeee7dc23243a53e417f1b8dc4cb0f397f06aa17bac4c1f373abd5ede",
+        "c893531613ca348b0217ea5976a52c4dfe7cda7ffa0ca002ef24a0980a201825",
+        "6d59328357ba699fae7fe1ce66e403bcb430c4a86fb750e2c240d483f6ff2201",
+        "8ee173565b2e771fecf3b471a79bdf072aaa1bd9dc27582cfda2b2a322beeba8",
+        "841dadb079124d00a289640d7ddae9ecd8b9e8b245d59c33593d3905863b568a",
+        "d4b09792783e799e3dfd3acc0590f59783a9875909b5baf88f43f5d384d6acd3",
+        "222902c16fcda2ffbe6acf20f48a9a3b1ce3ec1b1f37e4cea2df449c3b053ff8",
+        "2b3f53a407d5b25bc91bd9920f164b13e14d944bc95a7bf32a5138b30cef07c6",
+        "fbfecc922b34a8921eadef91c1763804baa9dc5fe8c9299ccaa94dad3bb31604",
+        "77aa03dfe99dca77dd663d465c87fa642d26267f5190208c11d5498e7c7fe697",
+        "7090e0cbe6dd7a326f49a184824ae4e205fcfea8c89a19346e81f8bc4d26df7c",
+        "44d631b2507c9bfceabf960599f9f3d2093a3e19f5d6f04d27d375efb8012f84",
+        "7668781daf80240168d1142c72b3502f75617be40fbbe081caae66ac7d38d571",
+        "231630b39af902bf9ad98a22bd77b3c5359b18a9336b63bf599c31a76f1e08cd",
+        "cbb644d0ee730ea57dd5fbae35ef5ba4a41d57a254a6b1215de5c9ff8a321c2d",
+        "aadc3580d2b64ff5a7e6f1425587db4e8b033efcbf8f5c332ca52a5ed580c87c",
+        "e3870de89716b72cb61a4bba0e17c75783b361cdaba35ea96961c3070bd8ca18",
+        "9e540a087924a6e64790149d735cac022640e4fa6bff6bd65f5e9f41529bf0b3",
+        "bfdef833219a6edffd9c3cbc28db72739d22bb4d20cc2e2f8d56a7a4d408a206",
+        "ed0652b49899259e10ff2b7270ffee4d9f07b4c2a46c8d95a7f86fa3e94e01d8",
+        "40723fa718237c74623d7b64ce186a02b872f7fb4b3a917013fcc8b6aec3ded6",
+        "2eb982d8faa4ab9bcc8bc39c31cad8f1d73e1d8df8e4aebd3970af1e38620841",
+        "41950d74f0aae0ee95ca1381b8096f1d19dc4154971505c8bdc3b18dce70912d",
+        "1a9b14799594702e4d0350164623d9e71261d70042ed4b3979808b08ba6e38b6",
+        "3ee20e2529a17cdd369a6c89edb23d5662ecfa9007936786d33c22c38fac14de",
+        "d8e1808c4f33e6bd075bd13b7aafc8596a1937495d5c57732322502b9c711a03",
+        "aa602c40276279d9b8e782b8c4d1e466d51e5349dbe55d1756db93976584bcab",
+        "f458790e7e2d0b83533b4d0f3669630adcb473673455815fd38c5c2496c06a46",
+        "d65d63e6581b8c1210bed42a30dc766a0f0273018cb163947fdb8c0e160f3cb5",
+        "1d7378ae112da2d33aafdf0ce83bd2bccb36d6786a5c58317444367f2b9b4604",
+        "8aab16649c61f865e40a66b550fc954c8e1e42e317c06b22970a14a5390e8123",
+        "8814de07a0445f47adffed154a0cd18ed228dcf88faaebaeed1a9f71a280cd80"
+      ]
     }
   },
   "failures": {
@@ -6109,17 +6331,9 @@
       "code": "reference_http_error",
       "message": "reference fetch returned HTTP 404 for https://scp-jp.github.io/files/util/common/media/_default/heritage-collection-jp/heritage-emblem.png"
     },
-    "https://s.nitropay.com/ads-143.js": {
-      "code": "ENOENT",
-      "message": "ENOENT: no such file or directory, open '/home/roku/.devspace/worktrees/theme-final-audit/install/local/theme-lab/ports/authority-evidence/replay/objects/57/574afb78975ad4667318347484d72e8f6d580513fd22c365656ef337ab1ca42c'"
-    },
     "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg": {
       "code": "reference_http_error",
       "message": "reference fetch returned HTTP 500 for https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg"
-    },
-    "https://scp-jp.github.io/files/util/common/credit/style/style.css": {
-      "code": "ENOENT",
-      "message": "ENOENT: no such file or directory, open '/home/roku/.devspace/worktrees/theme-final-audit/install/local/theme-lab/ports/authority-evidence/replay/objects/f2/f27a7eb696b6195c1dd3ba328f0b9459808a55c21edb3286b60c6a953bb368b5'"
     }
   }
 }

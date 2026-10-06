@@ -3,17 +3,49 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {planBrowserAcceptance, semanticSourceRenderings} from './semantic-browser-acceptance.mjs';
 import {NAVIGATION_OVERLAY_SOURCE} from './navigation-overlay-provenance.mjs';
+import {resolveExistingContainedFile} from './package-path.mjs';
+
+const validHash = value => /^[a-f0-9]{64}$/u.test(value ?? '');
+
+export function semanticSourceReferenceHtmlSha(root, audit, theme) {
+  const questions = planBrowserAcceptance(audit).visual_questions
+    .filter(question => question.kind === 'source_visual_identity' && question.theme === theme);
+  if (!questions.length) throw new Error(`${theme}: no current source visual identity question`);
+  const hashes = new Set();
+  for (const question of questions) {
+    const review=audit.semantic_reviews?.[question.id];
+    for(const rendering of semanticSourceRenderings(question,review)){
+    if (!validHash(rendering.source_html?.sha256)) throw new Error(`${theme}: source visual identity review lacks a frozen source HTML binding`);
+    const file=resolveExistingContainedFile(root,rendering.source_rendering_receipt?.path??'',`${theme}: source rendering receipt`);
+    const bytes=fs.readFileSync(file);
+    if(crypto.createHash('sha256').update(bytes).digest('hex')!==rendering.source_rendering_receipt?.sha256)throw new Error(`${theme}: stale source rendering receipt`);
+    const document=JSON.parse(bytes), result=document.result??document;
+    let value;
+    if(document.schema==='theme_lab_wikidot_adaptation_ab.v1'){
+      const match=document.snapshot?.entry?.match(/^\/o\/([a-f0-9]{64})$/u);
+      if(!match)throw new Error(`${theme}: retained source rendering lacks a frozen root HTML object`);
+      value=match[1];
+    }else{
+      value=result.reference_identity?.original_html_sha256;
+      if(value!==rendering.source_html.sha256)throw new Error(`${theme}: source rendering receipt disagrees with its frozen source HTML`);
+    }
+    if (!validHash(value)) throw new Error(`${theme}: source rendering receipt lacks an original HTML identity`);
+    hashes.add(value);
+    }
+  }
+  if (hashes.size !== 1) throw new Error(`${theme}: source visual identity reviews disagree on frozen source HTML`);
+  return [...hashes][0];
+}
 
 // Opening a hash-bound artifact is necessary but insufficient: a candidate
 // source or another theme's source must not impersonate the upstream oracle.
 export function validateSemanticSourceAuthority(root, audit) {
   const failures = [];
-  const read = file => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
+  const read = file => JSON.parse(fs.readFileSync(resolveExistingContainedFile(root,file,`Source authority input ${file}`), 'utf8'));
   const normalize = url => new URL(url).href.replace(/^http:/u, 'https:');
   const opened = new Map();
   const open = binding => {
-    const file = path.resolve(root, binding?.path ?? '');
-    if (!file.startsWith(path.resolve(root) + path.sep)) throw new Error('Source artifact escapes Theme Lab');
+    const file = resolveExistingContainedFile(root,binding?.path??'','Source artifact');
     if (!opened.has(file)) {
       const bytes = fs.readFileSync(file);
       opened.set(file, {bytes, sha256: crypto.createHash('sha256').update(bytes).digest('hex')});
@@ -23,6 +55,58 @@ export function validateSemanticSourceAuthority(root, audit) {
     return artifact.bytes;
   };
   const plan=planBrowserAcceptance(audit);
+  const sourceApplicabilityRows=(audit.records??[]).filter(row=>row.action_contract_observation?.mode==='source-navigation-replaces-sidebar');
+  for(const row of sourceApplicabilityRows){
+    try{
+      const action=row.action_contract_observation, document=JSON.parse(open(action.source_authority));
+      if(document.schema!=='theme_lab_source_action_applicability.v1'||document.theme!==row.theme||
+        row.surface!=='nav.sidebar'||!['open','open-submenu'].includes(row.state)||row.viewport!=='mobile'||
+        action.schema!==document.schema||action.surface!==row.surface||action.state!==row.state||action.viewport!==row.viewport||
+        action.expected_failure!==row.failure||action.candidate_sha256!==row.candidate_sha256||
+        action.candidate_source_sha256!==row.candidate_source_sha256)throw new Error('Inapplicable sidebar action is not bound to its failed observation');
+      const manifest=read(`ports/${row.theme}/manifest.json`), source=document.source_identity, candidate=document.candidate_identity;
+      if(source?.url!==(manifest.source_url??manifest.reference_url)||source?.path!==`ports/${row.theme}/${manifest.source_identity?.en?.source_path}`||
+        source?.sha256!==manifest.source_identity?.en?.sha256||candidate?.css_path!==`ports/${row.theme}/${manifest.candidate_css}`||
+        candidate?.source_path!==`ports/${row.theme}/candidate.wikidot.source.txt`||candidate?.css_sha256!==row.candidate_sha256||
+        candidate?.source_sha256!==row.candidate_source_sha256)throw new Error('Sidebar exception belongs to another maintained candidate/source identity');
+      const css=open({path:candidate.css_path,sha256:candidate.css_sha256}).toString('utf8');
+      const candidateSource=open({path:candidate.source_path,sha256:candidate.source_sha256}).toString('utf8');
+      if(!/#top-bar\s+\.mobile-top-bar\s+\.open-menu\s*,\s*#side-bar\s+a\.close-menu\s*\{\s*display:\s*none\s*;/u.test(css)||
+        !/#side-bar\s*\{[^}]*z-index:\s*-1\s*;/su.test(css)||
+        !/nix the sidebar button in favor of my own/u.test(candidateSource)||
+        !/@media[^{}]*\{[\s\S]{0,1200}#top-bar div\.mobile-top-bar\s*\{\s*display:\s*block\s*;[\s\S]{0,300}#top-bar div\.top-bar\s*\{\s*display:\s*none\s*;/u.test(css))
+        throw new Error('Candidate source does not declare the replacement navigation behavior');
+      const sourceRendering=JSON.parse(open(document.source_rendering).toString('utf8'));
+      const sourceResult=sourceRendering.result??sourceRendering;
+      if(sourceRendering.schema!=='theme_lab_source_rendering_receipt.v1'||
+        sourceRendering.source_url!==(manifest.source_url??manifest.reference_url)||
+        sourceRendering.source_snapshot?.sha256!==source?.sha256||
+        sourceRendering.frozen_html?.sha256!==document.source_rendering?.source_html_sha256||
+        sourceResult.reference_identity?.original_html_sha256!==document.source_rendering?.source_html_sha256||
+        sourceResult.reference_identity?.offline!==true||
+        sourceResult.visual?.viewports?.mobile?.reference_screenshot_sha256!==document.source_rendering?.reference_screenshot_sha256)
+        throw new Error('Source rendering does not bind the maintained mobile navigation identity');
+      const replacement=document.observations?.replacement, replacementRow=(audit.records??[]).find(candidateRow=>
+        JSON.stringify([candidateRow.theme,candidateRow.browser_engine,candidateRow.viewport,candidateRow.surface,candidateRow.state])===replacement?.key);
+      const replacementPlan=plan.observations.find(candidateRow=>candidateRow.key===replacement?.key);
+      if(!replacementRow||replacementRow.theme!==row.theme||replacementRow.browser_engine!=='webkit'||replacementRow.viewport!=='mobile'||
+        replacementRow.surface!=='nav.mobile-top'||replacementRow.state!=='submenu-expanded'||replacementRow.failure||
+        replacementRow.screenshot_sha256!==replacement?.screenshot_sha256||
+        replacementPlan?.dependencies_sha256!==replacement?.dependencies_sha256||
+        action.replacement?.key!==replacement.key||action.replacement?.screenshot_sha256!==replacement.screenshot_sha256||
+        action.replacement?.dependencies_sha256!==replacement.dependencies_sha256)
+        throw new Error('Source-owned replacement navigation lacks its exact WebKit action observation');
+      const replacementScreenshot=fs.readFileSync(resolveExistingContainedFile(root,`ports/${replacementRow.screenshot}`,'Replacement navigation screenshot'));
+      if(crypto.createHash('sha256').update(replacementScreenshot).digest('hex')!==replacementRow.screenshot_sha256)
+        throw new Error('Replacement navigation screenshot is stale');
+      if(!document.observations?.inapplicable?.some(item=>item.engine===row.browser_engine&&item.state===row.state&&
+        item.expected_failure===row.failure&&item.screenshot_sha256===row.screenshot_sha256))
+        throw new Error('Inapplicable action failure is absent from source applicability evidence');
+      const screenshot=fs.readFileSync(resolveExistingContainedFile(root,`ports/${row.screenshot}`,'Inapplicable sidebar screenshot'));
+      if(crypto.createHash('sha256').update(screenshot).digest('hex')!==row.screenshot_sha256)
+        throw new Error('Inapplicable sidebar screenshot is stale');
+    }catch(error){failures.push(`${row.theme}/${row.browser_engine}/${row.viewport}/${row.surface}.${row.state}: source action applicability unavailable: ${error.message}`)}
+  }
   if(plan.observations.some(row=>row.source_fact_authority)) {
     try {
       const proof=JSON.parse(open(NAVIGATION_OVERLAY_SOURCE));
@@ -38,12 +122,28 @@ export function validateSemanticSourceAuthority(root, audit) {
     if (action?.mode !== 'source-hidden-submit') continue;
     try {
       const document = JSON.parse(open(action.source_authority));
-      const manifest = read(`ports/${row.theme}/manifest.json`);
-      const sourceUrl = manifest.source_url ?? manifest.reference_url;
-      const sourceHash = manifest.source_sha256 ?? manifest.en_source_sha256;
+      const baselineAuthority=document.schema==='theme_lab_wikidot_baseline_search_control.v1';
+      let sourceUrl,sourceHash;
+      if(baselineAuthority){
+        const binding=document.target_baseline;
+        if(binding?.name!=='Sigma-10'||binding.source_manifest?.path!=='sigma10-migration/source-manifest.json'||binding.css?.path!=='sigma10-migration/sigma10-offline.css'||binding.run_contract_path!=='sigma10-migration/current-campaign/run-contract.json')throw new Error('Noncanonical baseline search authority');
+        const sources=JSON.parse(open(binding.source_manifest)),contract=read(binding.run_contract_path),source=sources.pages?.['pseudo-scp-jp:sigma-10:main'];
+        if(!source||contract.schema!=='scp_jp_sigma10_migration_run.v1'||row.baseline_theme!=='Sigma-10'||row.baseline_theme_mode!=='replacement'||row.target_site!==contract.target_site.slug||row.baseline_theme_css_sha256!==binding.css.sha256||contract.baseline_theme.replacement_css_sha256!==binding.css.sha256)throw new Error('Hidden query authority belongs to another target baseline');
+        const baselineCss=open(binding.css).toString('utf8');sourceUrl=source.source_url;sourceHash=source.sha256;
+        if(document.source_snapshot?.path!=='sigma10-migration/'+source.file||document.source_snapshot.sha256!==sourceHash)throw new Error('Baseline search source snapshot differs');
+        open(document.source_snapshot);
+        const names=new Set(baselineCss.match(/[a-f0-9]{64}\.[a-z0-9]+/gu)??[]);
+        const supplied=new Map((document.target_css_dependencies??[]).map(dependency=>[dependency.path,dependency]));
+        for(const name of names){const assetPath='ports/shared-replay-assets/'+name,dependency=supplied.get(assetPath);if(!dependency||dependency.sha256!==name.slice(0,64))throw new Error('Missing baseline search CSS dependency');const bytes=open(dependency);if(name.endsWith('.css'))for(const nested of bytes.toString('utf8').match(/[a-f0-9]{64}\.[a-z0-9]+/gu)??[])names.add(nested);}
+        if(supplied.size!==names.size)throw new Error('Noncanonical baseline search CSS dependencies');
+      }else{
+        const manifest = read(`ports/${row.theme}/manifest.json`);
+        sourceUrl = manifest.source_url ?? manifest.reference_url;
+        sourceHash = manifest.source_sha256 ?? manifest.en_source_sha256;
+      }
       const source = document.source_measurements?.find(item => item.viewport === row.viewport);
       const hidden = query => query?.display === 'none' || query?.visibility === 'hidden' || query?.width === 0 || query?.height === 0;
-      if (document.schema !== 'theme_lab_wikidot_search_control.v1' || document.theme !== row.theme ||
+      if ((!baselineAuthority&&(document.schema !== 'theme_lab_wikidot_search_control.v1' || document.theme !== row.theme)) ||
           normalize(document.source_url) !== normalize(sourceUrl) || document.source_sha256 !== sourceHash ||
           document.public_writes !== 0 || document.external_requests_sent !== 0 || document.offline !== true ||
           source?.source_sha256 !== sourceHash || source?.original_html_sha256 !== document.original_html_sha256 ||
@@ -80,8 +180,7 @@ export function validateSemanticSourceAuthority(root, audit) {
       }
       for (const rendering of semanticSourceRenderings(question, review)) {
       const binding = rendering.source_rendering_receipt;
-      const file = path.resolve(root, binding?.path ?? '');
-      if (!file.startsWith(path.resolve(root) + path.sep)) throw new Error('Source rendering receipt escapes Theme Lab');
+      const file = resolveExistingContainedFile(root,binding?.path ?? '','Source rendering receipt');
       const bytes = fs.readFileSync(file);
       if (crypto.createHash('sha256').update(bytes).digest('hex') !== binding?.sha256) throw new Error('Stale source rendering receipt');
       const document = JSON.parse(bytes), result = document.result ?? document;

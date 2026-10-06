@@ -15,3 +15,9 @@
     left: auto; right: 0;
   }
 }
+
+@media (max-width: 359px) {
+  #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul {
+    left: auto; right: 0;
+  }
+}

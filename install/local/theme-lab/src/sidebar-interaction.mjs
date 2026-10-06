@@ -55,11 +55,23 @@ export async function closeSidebar(page,openHash){
 export async function sidebarIsClosed(page,openHash){return page.evaluate(hash=>{
  const side=document.querySelector('#side-bar');if(!side)return true;
  const style=getComputedStyle(side),r=side.getBoundingClientRect();
- const occupies=style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)>0&&r.width>0&&r.height>0&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight;
- return location.hash!==hash&&!occupies;
+ const intersects=style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)>0&&r.width>0&&r.height>0&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight;
+ const sampleX=Math.max(0,Math.min(innerWidth-1,r.left+Math.min(24,Math.max(1,r.width/4))));
+ const sampleY=Math.max(0,Math.min(innerHeight-1,r.top+Math.min(24,Math.max(1,r.height/4))));
+ const hit=intersects?document.elementFromPoint(sampleX,sampleY):null;
+ const painted=!!hit&&(hit===side||side.contains(hit));
+ return location.hash!==hash&&(!intersects||!painted);
  },openHash)}
 export async function sidebarOccupiesViewport(page){return page.evaluate(()=>{
  const side=document.querySelector('#side-bar');if(!side)return false;
  const style=getComputedStyle(side),r=side.getBoundingClientRect();
- return style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)>0&&r.width>0&&r.height>0&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight;
+ if(style.display==='none'||style.visibility==='hidden'||Number(style.opacity)<=0||r.width<=0||r.height<=0||r.right<=0||r.bottom<=0||r.left>=innerWidth||r.top>=innerHeight)return false;
+ // A drawer can retain an in-viewport box while its negative stacking order
+ // leaves it painted behind the page. Treat it as open only when it is the
+ // hit-tested surface at an interior point; geometry alone misclassifies that
+ // closed Monotypical drawer and skips the actual opener click.
+ const sampleX=Math.max(0,Math.min(innerWidth-1,r.left+Math.min(24,Math.max(1,r.width/4))));
+ const sampleY=Math.max(0,Math.min(innerHeight-1,r.top+Math.min(24,Math.max(1,r.height/4))));
+ const hit=document.elementFromPoint(sampleX,sampleY);
+ return !!hit&&(hit===side||side.contains(hit));
 })}

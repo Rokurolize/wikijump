@@ -26,7 +26,7 @@
 **作成年:** 2022
 [[include :scp-jp:credit:end-preview]]
 
-このテーマは[[[http://scp-jp.wikidot.com/are-we-cool-yet-hub|Are We Cool Yet]]] GoIFとかのためにc_bonefishが作ったんだ。
+このテーマは[[[https://scp-jp.wikidot.com/are-we-cool-yet-hub|Are We Cool Yet]]] GoIFとかのためにc_bonefishが作ったんだ。
 
 このテーマをページにインポートするには、ページの中に下のテキストを入力してくれ:
 [[div class="code"]]

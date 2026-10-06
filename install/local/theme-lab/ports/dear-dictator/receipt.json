@@ -6,12 +6,18 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "candidate_source_sha256": "4d547ad7d87c7efab4a35decf68a7c684269cedd4a4a4437b86fa4361300a5c0",
-  "candidate_css_sha256": "65243e70234f596b4bb022f96a08c659b117a5a4b3415b9db75b31c5999e04f2",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "candidate_source_sha256": "6cb9b6f38b760ac446014f2f4c4671c05df909a7f102624e5b374d4dbab15b40",
+  "candidate_css_sha256": "f249a01833c6df378ccbd9d8a954fd2745311d10093cd9c55ead1d70eeaaeaeb",
+  "candidate_preview_sha256": "6cb9b6f38b760ac446014f2f4c4671c05df909a7f102624e5b374d4dbab15b40",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/dear-dictator/accepted-result.json",
+    "sha256": "9b7a08a965b11415f083e6ecd4803624a19d460ca205f8189df34f82cba0fbfc"
+  }
 }

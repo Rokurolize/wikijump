@@ -16,8 +16,63 @@ already accepted package.
 
 Read `docs/agents/compatibility/evidence.md` before live acquisition.
 
-Do not reconstruct the theme source from rendered HTML. Fetch the public page
-source through Wikidot's observed anonymous ViewSource boundary:
+Do not reconstruct the theme source from rendered HTML.
+
+Before fetching anything live, check the shared Wikidot corpus owned by
+`/home/roku/src/Rokurolize/scp-wiki-translation`. Read
+`/home/roku/src/Rokurolize/scp-wiki-translation/corpus/README.md` first. On
+this workstation the shared corpus root is:
+
+```text
+/home/roku/src/Rokurolize/scp-wiki-translation/corpus
+```
+
+The normal source path is:
+
+```text
+<branch>/pages/<slug>/source.wikidot.txt
+```
+
+Inspect sibling `meta.json` (`revisions`, `updated_at`), `current.json`, and the
+corpus run provenance before deciding whether the retained page is fresh enough
+for the port. The
+corpus is the shared storage owner, **not a guarantee that its bytes are the
+newest observation on the machine**. Compare it with any later retained live
+observation already present in Theme Lab or another repository. If such an
+observation is newer, refresh that slug into the shared corpus first; do not
+declare the older corpus snapshot authoritative merely because it is in the
+corpus, and do not continue indefinitely from the newer ad-hoc copy either.
+This applies to dependencies and components as well as the top-level theme: for
+example, an EN/JP component comparison should first inspect
+`corpus/en/pages/component:<slug>/` and
+`corpus/jp/pages/component:<slug>/`.
+
+When two retained copies disagree and their ordering is not obvious, perform a
+read-only live cross-check with the repository-pinned `wikidot.py` client.
+Compare `page.revisions_count` and `page.updated_at` against `meta.json`; use
+`page.latest_revision` when the exact latest revision needs confirmation. Do
+not infer which copy is newer from SHA-256 alone. Different acquisition paths
+can preserve the same Wikidot revision with harmless whitespace/line-ending
+serialization differences, while revision count and edit timestamp identify
+the actual Wikidot page state.
+
+If the corpus does not contain a sufficiently current source, prefer the
+repository-owned acquisition tooling under
+`/home/roku/src/Rokurolize/scp-wiki-translation`
+(`scripts/fetch_wikidot.py`, `scripts/corpus_sync.py`,
+`scp_wiki_wikidot/`) when the result belongs in the shared corpus. Its
+direct/Ajax fallback is the local `wikidot.py` checkout at
+`/home/roku/src/Rokurolize/wikidot.py`; read that checkout's `AGENTS.md`
+and `llms.txt` rather than reimplementing Wikidot page-source access.
+
+For a targeted stale page, `corpus_sync.py --slug <fullname>` is the
+repository-owned repair path. `--slug` is a page-core targeted repair and is
+not combined with the `xmlrpc-complete` profile. Use the transport appropriate
+to the site/runtime contract; `--transport fallback` uses the Wikidot Ajax
+client and does not require XML-RPC credentials.
+
+For a Theme-Lab-owned one-off evidence snapshot, fetch the public page source
+through Wikidot's observed anonymous ViewSource boundary:
 
 ```sh
 python3 install/local/theme-lab/scripts/acquire_wikidot_source.py \

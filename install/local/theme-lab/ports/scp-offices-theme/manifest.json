@@ -52,7 +52,7 @@
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn"
   },
   "dependencies": {
     "slug": "theme:scp-offices-theme",
@@ -129,10 +129,10 @@
       "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; the JP-hosted counterpart returned HTTP 500, so the current EN image with the same theme showcase role is bundled."
     }
   ],
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/scp-offices-theme/assets.json",
-  "asset_dependency_decision_count": 40,
+  "asset_dependency_decision_count": 58,
   "maintenance_source": {
     "base": "maintenance/base.wikidot.txt",
     "jp_overrides": "maintenance/jp-overrides.css",
@@ -161,11 +161,13 @@
       "showcase_css_modules_removed_exact": 1,
       "showcase_css_modules_removed_truncated": 0,
       "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 0,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "3948ce93c88a3e89cd6279c5ce88bb882cfabd37f02fd79ab54122bcf181a6c1",
+      "candidate_css_sha256": "f3d5d0cec11e9092bed5913399d302ed8a19dea98a4e43ee71845afe4e803545",
       "asset_receipt_path": "assets.json",
-      "assets": 33,
-      "imports": 5,
+      "assets": 49,
+      "imports": 7,
       "localization_transforms": 0,
       "localization_transform_manifest": null,
       "missing": 0,
@@ -177,7 +179,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

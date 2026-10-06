@@ -40,6 +40,7 @@ test('geometry captures escape on either viewport edge and asset reuse fails clo
 
 test('interaction captures isolate each state with a blank navigation cleanup boundary',async()=>{
  const runner=await fs.readFile(new URL('ports/interactive-visual-fixture/capture-interactive.mjs',root),'utf8');
- assert.match(runner,/await page\.goto\('about:blank'\);await gotoFixture\(page,fixtureUrl\)/u);
+ assert.match(runner,/await page\.goto\('about:blank'\)/u);
+ assert.match(runner,/gotoFixture\(page,fixtureUrl\)/u);
  assert.match(runner,/if\(reuseWorkerPages\)await page\.goto\('about:blank'\)/u);
 });

@@ -161,7 +161,7 @@ SCP-NUMBER
 **オブジェクトクラス**
 [[/div]]
 
-[[[http://scp-jp.wikidot.com/scp-0110-j|LIGMA]]]
+[[[https://scp-jp.wikidot.com/scp-0110-j|LIGMA]]]
 
 [[div class="heading"]]
 **特別収容プロトコル**
@@ -549,13 +549,13 @@ SCP-NUMBERは何でもありません。全くもって、何でもありませ�
 テーマ・モード
 [[/div]]
 
-ターボ・ビジョン テーマを “テーマ・モード” で使用している場合は、[[[http://scp-jp.wikidot.com/component:toggle-sidebar|component:toggle-sidebar]]]が付属しており、ページコンテンツを中央揃えにして、水平方向のスペースを可能な限り広く確保します。全てのオフセットクラスを自由に使用できます。
+ターボ・ビジョン テーマを “テーマ・モード” で使用している場合は、[[[component:toggle-sidebar]]]が付属しており、ページコンテンツを中央揃えにして、水平方向のスペースを可能な限り広く確保します。全てのオフセットクラスを自由に使用できます。
 
 [[div class="heading"]]
 コンポーネント・モード
 [[/div]]
 
-ターボ・ビジョン テーマを “コンポーネント・モード” で使用している場合、デフォルトでは[[[http://scp-jp.wikidot.com/component:toggle-sidebar|component:toggle-sidebar]]]は付属していません。これにより、水平方向のスペースが制限されます。
+ターボ・ビジョン テーマを “コンポーネント・モード” で使用している場合、デフォルトでは[[[component:toggle-sidebar]]]は付属していません。これにより、水平方向のスペースが制限されます。
 
 もしトグル式サイドバーを使用している場合は、ページ本体が中央揃えになり、すべてのオフセットクラスを自由に使用できます。
 
@@ -597,7 +597,7 @@ TL;DR
 [[/div]]
 
 > **ファイル名:** scpimage.png
-> **ファイルページ:** [[[http://scp-jp-storage.wikidot.com/file:9042763-26-mn41]]]
+> **ファイルページ:** [[[https://scp-jp-storage.wikidot.com/file:9042763-26-mn41]]]
 > **ソース:** [[[https://scp-wiki.wdfiles.com/local--files/theme%3Aturbo-vision/scpimage.png]]]
 > **著作者:** [[*user Placeholder McD]]
 > **ライセンス:** CC BY SA 3.0
@@ -612,7 +612,7 @@ TL;DR
 
 [[collapsible show="フォント情報について"]]
 > **フォント名:** JFドットM+12
-> **ファイルページ:** [[[http://scp-jp-storage.wikidot.com/file:9042763-13-vzwf]]]
+> **ファイルページ:** [[[https://scp-jp-storage.wikidot.com/file:9042763-13-vzwf]]]
 > **ソース:** [[[http://jikasei.me/font/jf-dotfont/]]]
 > **著作権者:** 森下浩司
 > **ライセンス:** M+ FONTS LICENSE

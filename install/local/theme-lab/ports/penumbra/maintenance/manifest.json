@@ -341,7 +341,7 @@
         },
         {
           "path": "penumbra/existing-jp.wikidot.txt",
-          "sha256": "f164a9b83100be37a9695d067604cc3563032bcd1cfd6016e7e5200ad21a72b7",
+          "sha256": "9ab03d7a81385d6867dd7cf6fabcad33b3257b8f11296479924031b9eb1cbec0",
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]

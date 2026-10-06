@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import {bindVisualAcceptance} from './visual-acceptance.mjs';
 import {overallAcceptance,summarizeVisual} from './verdict.mjs';
 import {ACCEPTANCE_VIEWPORT_IDS} from './acceptance-viewports.mjs';
+import {TARGET_ACCEPTANCE_CONTRACT_SHA256} from './target-acceptance-contract.mjs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 export function reviewCompletionTime(review){
  const times=ACCEPTANCE_VIEWPORT_IDS.map(viewport=>review?.viewports?.[viewport]?.reviewed_at).filter(value=>typeof value==='string'&&!Number.isNaN(Date.parse(value))).sort();
@@ -10,7 +11,9 @@ export function reviewCompletionTime(review){
 }
 // Review completes the image dimension of a captured full check. It does not
 // rerender unchanged surfaces or reinterpret any failed/unknown port dimension.
-export async function finalizeVisualAcceptance({result,review,css,baseCss='',source,preview}){
+export async function finalizeVisualAcceptance({result,review,css,baseCss='',source,preview,fullCheckInputBindings=null}){
+ if(result.target_acceptance_contract_sha256!==TARGET_ACCEPTANCE_CONTRACT_SHA256)throw new Error('Current full check uses a superseded target acceptance contract');
+ if(fullCheckInputBindings&&result.full_check_input_bindings?.sha256!==fullCheckInputBindings.sha256)throw new Error('Current full check uses superseded package check inputs');
  for(const [key,bytes] of [['candidate_css_sha256',css],['candidate_source_sha256',source],['candidate_preview_sha256',preview]])if(result[key]!==sha(bytes))throw new Error(`Current full check uses superseded ${key}`);
  if((result.candidate_base_css_sha256??null)!==(baseCss?sha(baseCss):null))throw new Error('Current full check uses superseded base CSS');
  if(result.verification_scope?.mode!=='full'||result.verification_scope.deferred?.length)throw new Error('Iteration/deferred checks cannot finish acceptance');
@@ -32,7 +35,14 @@ export async function finalizeVisualAcceptance({result,review,css,baseCss='',sou
  const output=structuredClone(result);
  output.visual={...visual,decision_authority:'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY'};
  const targetStatus=visual.status==='warn'||target.issue_count>0||target.style_change_count>0||target.torture_changed_component_count>0||tortureVerdict==='warn'?'warn':'pass';
- output.local_target_acceptance={...target,status:targetStatus,visual_status:visual.status};
+ const finalizedTarget={...target,status:targetStatus,visual_status:visual.status};
+ // Preserve whichever target-acceptance field shape the captured full check
+ // uses. Current checks emit `target_acceptance`; older fixtures/tests may use
+ // `local_target_acceptance`. Leaving an existing field stale makes the
+ // combined-acceptance validator prefer the old inconclusive value.
+ if(result.target_acceptance)output.target_acceptance=finalizedTarget;
+ if(result.local_target_acceptance)output.local_target_acceptance=finalizedTarget;
+ if(!result.target_acceptance&&!result.local_target_acceptance)output.local_target_acceptance=finalizedTarget;
  output.local_target_acceptance_status=targetStatus;
  const overall=overallAcceptance(result.port_decision.verdict,targetStatus);
  output.overall_acceptance={status:overall,port_verdict:result.port_decision.verdict,target_status:targetStatus};

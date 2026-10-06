@@ -4,6 +4,7 @@ import states from '../fixtures/browser-acceptance-states.json' with {type: 'jso
 import {measureTitleComposition} from './title-composition.mjs';
 import {measureTitleTextIntersections} from './title-text-intersections.mjs';
 import {BASELINE_DOCUMENT_CONTAINMENT_CONTRACT_SHA256,BASELINE_DOCUMENT_CONTAINMENT_SCHEMA} from './baseline-document-containment.mjs';
+import {validateVisualGateRecord,visualGateNeedsScreenshot} from './visual-gate.mjs';
 
 export const SEMANTIC_BROWSER_MODEL = 'theme_lab_semantic_browser_acceptance.v1';
 const hash = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -33,11 +34,17 @@ export function observationDependencies(row) {
     'theme', 'candidate_sha256', 'candidate_source_sha256', 'base_css_sha256',
     'candidate_structure_sha256', 'baseline_theme_css_sha256', 'baseline_theme_mode',
     'asset_dependency_sha256', 'fixture_contract_sha256',
-    'capture_state_action_contract_sha256', 'runtime_surface_contract_sha256',
+    'capture_state_action_contract_sha256', 'runtime_surface_contract_sha256', 'runtime_source_sha256',
+    'backend_runtime_identity_sha256', 'run_contract_sha256', 'scoped_run_contract_sha256',
+    'environment_contract_sha256',
     'title_composition_contract_sha256',
     'browser_engine', 'browser_version', 'viewport', 'viewport_size',
     'surface', 'state', 'session_state', 'target_site', 'locale', 'transport_origin'
   ].map(key => [key, row[key] ?? null]));
+  dependencies.visual_gate_policy_sha256=row.visual_gate?.policy_sha256??null;
+  dependencies.visual_gate_class=row.visual_gate?.class??null;
+  dependencies.state_machine_assertion_sha256=row.state_machine_assertion?hash(row.state_machine_assertion):null;
+  dependencies.functional_assertion_sha256=row.functional_assertion?hash(row.functional_assertion):null;
   if (row.title_text_contract_sha256) dependencies.title_text_contract_sha256 = row.title_text_contract_sha256;
   if (row.action_contract_observation?.source_authority) dependencies.source_action_authority = row.action_contract_observation.source_authority;
   return dependencies;
@@ -49,7 +56,29 @@ function safety(row) {
     if (!Array.isArray(row[key])) return 'missing';
   }
   if (row.external_requests_sent !== 0 || row.asset_failures.length || row.page_errors.length || row.action_responses.some(failureResponse)) return 'fail';
-  if (!validHash(row.screenshot_sha256) || !row.screenshot) return 'missing';
+  if (visualGateNeedsScreenshot(row,{failure:!!row.failure})&&(!validHash(row.screenshot_sha256)||!row.screenshot)) return 'missing';
+  if(validateVisualGateRecord(row).length)return 'fail';
+  return 'pass';
+}
+
+function sourceReplacedSidebarAction(row) {
+  const action=row.action_contract_observation;
+  return action?.schema==='theme_lab_source_action_applicability.v1'&&
+    action.mode==='source-navigation-replaces-sidebar'&&action.surface===row.surface&&
+    action.state===row.state&&action.viewport===row.viewport&&
+    action.expected_failure===row.failure&&action.candidate_sha256===row.candidate_sha256&&
+    action.candidate_source_sha256===row.candidate_source_sha256&&
+    validHash(action.replacement?.screenshot_sha256)&&validHash(action.replacement?.dependencies_sha256)&&
+    typeof action.replacement?.key==='string'&&action.replacement.key.length>0&&
+    typeof action.source_authority?.path==='string'&&validHash(action.source_authority?.sha256);
+}
+
+function sourceReplacedSidebarSafety(row) {
+  const allowedUnconfirmed=new Set([pendingImage,`action/capture failed: ${row.failure}`]);
+  const cleanArrays=['asset_failures','page_errors','action_responses','unconfirmed_items'].every(key=>Array.isArray(row[key]));
+  if(!sourceReplacedSidebarAction(row)||row.external_requests_sent!==0||!cleanArrays||
+    row.asset_failures.length||row.page_errors.length||row.action_responses.some(failureResponse)||
+    row.unconfirmed_items.some(item=>!allowedUnconfirmed.has(item))||!validHash(row.screenshot_sha256)||!row.screenshot)return null;
   return 'pass';
 }
 
@@ -73,14 +102,16 @@ export function measuredFacts(row) {
       search.observed_path === '/search:site/q/' + encodeURIComponent(search.query?.value) &&
       (search.query?.display === 'none' || search.query?.visibility === 'hidden' || search.query?.width === 0 || search.query?.height === 0) &&
       typeof search.source_authority?.path === 'string' && validHash(search.source_authority?.sha256));
-  const action = search?.control === '#search-top-box-input' && !exercisedSearch ? 'source-required' : knownStates.has(`${row.surface}.${row.state}`) && validHash(row.capture_state_action_contract_sha256)
+  const sourceReplacedAction=sourceReplacedSidebarAction(row);
+  const action = sourceReplacedAction?'pass':search?.control === '#search-top-box-input' && !exercisedSearch ? 'source-required' : knownStates.has(`${row.surface}.${row.state}`) && validHash(row.capture_state_action_contract_sha256)
     ? safety(row) : 'missing';
   return {
     observation_identity: ['candidate_sha256', 'candidate_source_sha256', 'baseline_theme_css_sha256',
       'asset_dependency_sha256', 'fixture_contract_sha256', 'capture_state_action_contract_sha256',
-      'runtime_surface_contract_sha256'].every(key => validHash(row[key])) ? 'pass' : 'missing',
-    capture_safety: safety(row),
+      'runtime_surface_contract_sha256', 'runtime_source_sha256', 'backend_runtime_identity_sha256'].every(key => validHash(row[key])) ? 'pass' : 'missing',
+    capture_safety: sourceReplacedSidebarSafety(row)??safety(row),
     maintained_action_execution: action,
+    state_specific_assertion: validateVisualGateRecord(row).length?'fail':'pass',
     document_containment: candidateOverflow===null?'missing':candidateOverflow<=1?'pass':
       baselineOverflow===null?'missing':candidateOverflow<=baselineOverflow+1?'pass':'fail'
   };
@@ -111,14 +142,14 @@ const readingContext = row => Object.fromEntries([
   'theme', 'candidate_sha256', 'candidate_source_sha256', 'base_css_sha256',
   'candidate_structure_sha256', 'baseline_theme_css_sha256', 'baseline_theme_mode',
   'asset_dependency_sha256', 'fixture_contract_sha256',
-  'browser_engine', 'browser_version', 'viewport', 'viewport_size', 'session_state',
+  'runtime_source_sha256', 'backend_runtime_identity_sha256', 'browser_engine', 'browser_version', 'viewport', 'viewport_size', 'session_state',
   'target_site', 'locale'
 ].map(key => [key, row[key] ?? null]));
 
 const titleReadingContext = row => Object.fromEntries([
   'theme', 'candidate_sha256', 'candidate_source_sha256', 'base_css_sha256',
   'candidate_structure_sha256', 'baseline_theme_css_sha256', 'baseline_theme_mode',
-  'asset_dependency_sha256', 'browser_engine', 'browser_version', 'viewport', 'viewport_size',
+  'asset_dependency_sha256', 'runtime_source_sha256', 'backend_runtime_identity_sha256', 'browser_engine', 'browser_version', 'viewport', 'viewport_size',
   'session_state', 'target_site', 'locale'
 ].map(key => [key, row[key] ?? null]));
 

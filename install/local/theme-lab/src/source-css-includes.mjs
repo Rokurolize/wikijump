@@ -2,11 +2,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {extractUnconditionalCssModules} from '../ports/scripts/extract-css-modules.mjs';
+import {resolveExistingPackageFile} from './package-path.mjs';
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 export async function sourceCssIncludes(directory){
  let spec;try{spec=JSON.parse(await fs.readFile(path.join(directory,'source-css-includes.json'),'utf8'))}catch(error){if(error.code==='ENOENT')return null;throw error}
  if(spec.schema!=='theme_lab_source_css_includes.v1'||spec.authority!=='RUNTIME_INDEPENDENT'||!spec.includes?.length)throw new Error('Unsupported source CSS include resolution');
- const read=async name=>{const file=path.resolve(directory,name);if(!file.startsWith(path.resolve(directory)+path.sep))throw new Error('Include source escapes package');return fs.readFile(file,'utf8')};
+ const read=async name=>fs.readFile(resolveExistingPackageFile(directory,name,'Include source'),'utf8');
  const candidate=await read(spec.candidate_source);
  const upstream=await read(spec.upstream_source);
  const css=[];

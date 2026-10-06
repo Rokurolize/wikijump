@@ -1,0 +1,227 @@
+{
+  "schema": "theme_lab_current_sigma10_acceptance.v1",
+  "run_contract_sha256": "7c7fef86dcca136348c0628676c0835aa49e94b45ce07d85b1705ad8f49dfa22",
+  "overall_acceptance": {
+    "status": "pass",
+    "reason": "Current 5,365-row Sigma-10 audit, V/C/M gate, 36 canonical scenario matrices, and all current semantic visual questions validate against the frozen candidate/runtime identities."
+  },
+  "browser_audit_sha256": "e9f145b5f7021b21160ea95684dc8d39099158b46602e73f387823509681b5df",
+  "canonical_scenario_evidence": {
+    "aesthetic-theme": {
+      "generation": "sigma10",
+      "scenario_sha256": "e5ec3bff6ead92b6e47cfbf5a6705fdc4c8fb56d9405633d278d153e9df816d7",
+      "matrix_receipt_sha256": "518a07665d21f4f8f2c183b79d0844558ea98b430329420d9804465efeb660e4",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "al-slop": {
+      "generation": "sigma10",
+      "scenario_sha256": "39d3044f6c43d7f039a08727ea21ad0cf0f1a12dfeaa85499df4d6c60dd9e91d",
+      "matrix_receipt_sha256": "419afa1fbefca1b05fe133a4097570f89c5ff9656a65bf00988aae3eae571c68",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "basalt": {
+      "generation": "sigma10",
+      "scenario_sha256": "8d8084127472f5b4670334c5a46a65e239d332f09e3a069b1f917b206a50e849",
+      "matrix_receipt_sha256": "8dcf7098c166552ae99301cd4044a8ace57a5104cd43b9aaa09ba915e3173c22",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "bedrock": {
+      "generation": "sigma10",
+      "scenario_sha256": "72b80802c6337afdb5a54386ed948984368495c6008e26413691ee984a1c17df",
+      "matrix_receipt_sha256": "4c25b653cff4c53215a3ebc5a5934af9de34c2389291735635ee24e5d8ae7026",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "black-highlighter-theme": {
+      "generation": "sigma10",
+      "scenario_sha256": "09a1edaa50efe5c8284fb946e1654fafa94e7943ec58b28b6df10c9ca5f94c7d",
+      "matrix_receipt_sha256": "343b6b0feecd675cdc9f71f41b4cccf12dce070c2b7ca8ed3d894426d948c3a5",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "classic": {
+      "generation": "sigma10",
+      "scenario_sha256": "092fc5f11b7c9dd6765609ea9dcf58d2dba4aedee307ea0e376a81b152e121f6",
+      "matrix_receipt_sha256": "40504ab2f433cf685641e6a1f8db6953496a34167c67db2940c54b70735379b9",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "cosmonaut": {
+      "generation": "sigma10",
+      "scenario_sha256": "14bdec1de28df800857b4b94c140815fca54de122a6427274acd0acd5e1b8ab7",
+      "matrix_receipt_sha256": "e908422802c05d936112e2c5ddbaea31825301296c15bc443bf00aef55c8083f",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "dear-dictator": {
+      "generation": "sigma10",
+      "scenario_sha256": "52842ec2235b73712daccdef821a74ba08dad858e1c74ab9b7dcdb0d6aa4f6fe",
+      "matrix_receipt_sha256": "8602862050ca110d9582d380bff0284ff467857e1f7b6542208d2b3e0b9e8732",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "extra-black-highlighter-theme": {
+      "generation": "sigma10",
+      "scenario_sha256": "850ff6f8ce92524551e18cf3fb8eec9bdb587969cd8a0895eed7b3570940904f",
+      "matrix_receipt_sha256": "4c4ea0b2f16107f23080ca88fd740a5145b3fe9bce564f3b7fbe8b8faf906e38",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "flopstyle-dark": {
+      "generation": "sigma10",
+      "scenario_sha256": "2c3642cc317a1f2eaa853b396b28645687943f3766354bfddff4934ec96eb809",
+      "matrix_receipt_sha256": "e26db08b1227b810798d4d61e16d3c5018b4e59dccfc0185fbeaf9335f36be08",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "foxtrot": {
+      "generation": "sigma10",
+      "scenario_sha256": "d5e7d200ca3720d771265973b5c77f3732528c29a518f00d06dd7cbd88a4cdb1",
+      "matrix_receipt_sha256": "86a659137e1e3370afbdce499399c09e1f6075fe7438fa2d66fae7433ec282d8",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "hansarp": {
+      "generation": "sigma10",
+      "scenario_sha256": "a77d0c53ec9ee079dfeb1f54f7a21e2ddd72a0ce3e8074066cf13e10713ffe9c",
+      "matrix_receipt_sha256": "49ed5568dee52012dda1245aa23e9626a1a2988b3f2864340d68569d089ddf27",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "inkblot": {
+      "generation": "sigma10",
+      "scenario_sha256": "b9da0cd3a003b4a8fc315f8e79d68bf1ae3df0f5aa00ed173f311f509dde5fa6",
+      "matrix_receipt_sha256": "a66c8d5fb59e24a19abbb5f6cb79a487d2ba8aea856da371fc2ede093844c9c0",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "isolated-terminal": {
+      "generation": "sigma10",
+      "scenario_sha256": "7f756970864ecffb0a9ec52522a81db05749fd27ee97f73c4185118e81b70782",
+      "matrix_receipt_sha256": "2f08059d6fa613874a63bf865346bd84e573e15dddbce800425e388c02cc5e66",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "jakstyle": {
+      "generation": "sigma10",
+      "scenario_sha256": "7ab45bdc8dc9309612c2be207858801da55f06f4fcdbf6b55b97a730f30ac12c",
+      "matrix_receipt_sha256": "99b16ddb9f2c38099b861b2285bf57db7346d2954cb50185ef99c69b3c048acf",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "minimalist-bhl": {
+      "generation": "sigma10",
+      "scenario_sha256": "c1eb4b83dd80fdc3878259131ebc8df1882e5ca20ce3422eda5b3e436542569d",
+      "matrix_receipt_sha256": "8be01776b1880ecdc05916b44eb5f83ccc8926d2cca0333ae726c0df154d34f1",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "monotypical": {
+      "generation": "sigma10",
+      "scenario_sha256": "f2101933f9b4204c9a518fdc24d7889ae15821ce2240ea423653c90f8804848f",
+      "matrix_receipt_sha256": "ab56cf161b572383290967bb7af3cac823e5b2e1a08a5a96ceb98f01e0ddc328",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "much-cool": {
+      "generation": "sigma10",
+      "scenario_sha256": "efdce39cecbd591a4dfc1e50bb78acba3959b82ae7cc405ee844a23f22631212",
+      "matrix_receipt_sha256": "3600682fd49fc21ed91b8615bc12bbab66c7d386cefd8e5e9ecff520a01c7265",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "night-rush-theme": {
+      "generation": "sigma10",
+      "scenario_sha256": "86d683f14902d1a4650954b98c18650cf1141246b7321e7f5fac1f2f86af3556",
+      "matrix_receipt_sha256": "26eeb3e6beee4db783406db5343ab6306e10a21bb2725cddadc7b248e78bb437",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "ouroborous-theme": {
+      "generation": "sigma10",
+      "scenario_sha256": "6d06774369df0d03a516d8a180e83bc39aeeb56f434f1b8b4f2ea92be16722f4",
+      "matrix_receipt_sha256": "b7c602e792a6cd9bdc3dbef1b72919946e369df6949b17be0769877df4b15f64",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "paperstack": {
+      "generation": "sigma10",
+      "scenario_sha256": "f94febc48a9de8e8382a31a0170c62231aeabd866ee72ae3f5ae5aae0587d12f",
+      "matrix_receipt_sha256": "d3323c01b1bfa9d50c01d6312a9d345d405a9d371640655400f275282e7baccb",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "pataphysics": {
+      "generation": "sigma10",
+      "scenario_sha256": "55109c00b4de72143bbf8e3afd22c2a9020602a8516f1fd5fca915a997b260c0",
+      "matrix_receipt_sha256": "f16bd76353582037a23dd636dbb7c72b7bf958f416039fa285a138cf799dbdd8",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "penumbra": {
+      "generation": "sigma10",
+      "scenario_sha256": "f217ee95ac2be97542ba466bffbcdc57b943ba4dc979424b71e6828c74f9e34c",
+      "matrix_receipt_sha256": "99ba8801cad7af6284acf80f3e2838549a3706efb37f92bc3fe9a888a52493ad",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "quand-le-soleil-se-couche": {
+      "generation": "sigma10",
+      "scenario_sha256": "afb145f66faac3f0736e6040526e5cd7a5107ccefe0ac1730f044f381ca99468",
+      "matrix_receipt_sha256": "40852a708ba43331826f135fcc179d1d490f43953f0f0928ebcc92d8d5368d7d",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "redtape": {
+      "generation": "sigma10",
+      "scenario_sha256": "4e77225176efb4df200d9c89eee521da214c44c1e0d5f92abc5a7414ac13c670",
+      "matrix_receipt_sha256": "e2b5dd2aa2b9a506a7eadbf2e9da377ee4ad9142cb98407a10dfe005fb7432d4",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "scheme": {
+      "generation": "sigma10",
+      "scenario_sha256": "c98b5c652497054c0057f46f45b92680072bf8bed4b50b2aa92c07c3a5c1a05b",
+      "matrix_receipt_sha256": "f4eab8c4b4d3bbbaf2bdcc83db61309e6cf25c8622b2531a514d89c4a3792502",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "scp-offices-theme": {
+      "generation": "sigma10",
+      "scenario_sha256": "e73a073c852e787050e02d16a957b03f5bb830f3240a84b7360bb04dbb8928bc",
+      "matrix_receipt_sha256": "1de7bc756c55df0059ec841f3d3526b8cceccad73a68cbbc7b986aec7746c4df",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "scpedia": {
+      "generation": "sigma10",
+      "scenario_sha256": "83c76a27273ad21bc9d8a9122a3a8f2c346713af08a539ed4ca77263ea3ee533",
+      "matrix_receipt_sha256": "2ad05f27e593d6d3a30cd5f302ebbf4081fc2ef589d8658b4ef6c3bbb2800822",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "sigma": {
+      "generation": "sigma10",
+      "scenario_sha256": "b9d4106eec5be290a3ea930d738081462b276f5388ee45beef91d41c8b27fac0",
+      "matrix_receipt_sha256": "cecbca479fd6d16664617f978698619452c547aa8876e84b4061e03acdcdf02c",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "site": {
+      "generation": "sigma10",
+      "scenario_sha256": "884e1cab523ac2759360a174b057aa157cf25a0df27c475053f971bae7cc5511",
+      "matrix_receipt_sha256": "576076048c5b898af0a1c0b6c2ca1108b42e331e7e043a61c82ea2910820c257",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "skipos": {
+      "generation": "sigma10",
+      "scenario_sha256": "13d1e3e0c3920d82980924a694d3c259674d47434b05a67966468b11b4e04241",
+      "matrix_receipt_sha256": "2dfc686d172341938b08c6a428ef14c2f3ac16050f9928c04f38fbd7000cb7eb",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "space": {
+      "generation": "sigma10",
+      "scenario_sha256": "9c2b61b5216892a5aa02b6d69164c0893424f2045d944845fe7c3a3daf894317",
+      "matrix_receipt_sha256": "8f24cd86f5d9befa45791525d08b38ef467e6352d94e445912cc2b1c5636b00b",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "turbo-vision": {
+      "generation": "sigma10",
+      "scenario_sha256": "e55145df1d9923a1330de9471c583c5ef61aeda817563fc8bacd90243dc91747",
+      "matrix_receipt_sha256": "59d10630685f0f33956555a99f1a8970d3e8caeb37a66810f1af44f94c8feb65",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "wikifot": {
+      "generation": "sigma10",
+      "scenario_sha256": "9586375e05d26f14567efb3d764d673b55f2d47fe500371b9447247368f1ad19",
+      "matrix_receipt_sha256": "779910d9637b0405534abed71c7d28a9abcdfba3a8afa48b2fb09b7eddd23bb4",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "y2k": {
+      "generation": "sigma10",
+      "scenario_sha256": "c5df3f7b5a6a40e7c6ceb40ad47f1abda2012ea47206b1958870cb79ce383221",
+      "matrix_receipt_sha256": "b9eeac3914201ec0c988713170a14800b215341a77d72471b33e3b957977133c",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    },
+    "yossistyle": {
+      "generation": "sigma10",
+      "scenario_sha256": "974ac19ffd5d124ff40948e1eef192f890c444cd695ecde8f23117aa98a0dc14",
+      "matrix_receipt_sha256": "59c725e37d37aa612fa6a6c9c2299c55676fdf32e54e93c6a034085bd5d29c13",
+      "measurement_contract_sha256": "b60477a2fb2b39dac2fd1fee75c87d3eeb1354888495f7f86995f79b7a371e01"
+    }
+  }
+}

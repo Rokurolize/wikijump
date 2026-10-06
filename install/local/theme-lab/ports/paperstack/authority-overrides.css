@@ -13,3 +13,14 @@
 @media (max-width: 479px) {
   .scp-image-block.block-right { max-width: calc(100% - 2em - 2px) !important; }
 }
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Paperstack narrow masthead: fit its generated title without overlapping lines. */
+@media(max-width:359px){#header h1 a::before{font-size:1.15em;}}
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  #side-bar { overflow-x: auto !important; }
+}

@@ -36,11 +36,15 @@ test('candidate asset dependency state records missing referenced assets fail-cl
 
 test('candidate asset dependencies bind package-local ./assets references',t=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'theme-lab-assets-legacy-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
-  const ports=path.join(root,'ports'),theme=path.join(ports,'example'),assets=path.join(theme,'assets');fs.mkdirSync(assets,{recursive:true});
+  const ports=path.join(root,'ports'),theme=path.join(ports,'example'),assets=path.join(theme,'assets');fs.mkdirSync(path.join(assets,'nested'),{recursive:true});
   fs.writeFileSync(path.join(assets,'header-logo.png'),'legacy-image-bytes');
-  const state=candidateAssetDependencyState({portsDir:ports,themeDir:theme,candidateCss:'header{background:url("./assets/header-logo.png")}'});
-  assert.deepEqual(state.referenced_asset_names,['header-logo.png']);
-  assert.deepEqual(state.asset_dependencies,[{name:'header-logo.png',sha256:sha(Buffer.from('legacy-image-bytes')),status:'local-cache'}]);
+  fs.writeFileSync(path.join(assets,'nested','footer-logo.png'),'nested-legacy-image-bytes');
+  const state=candidateAssetDependencyState({portsDir:ports,themeDir:theme,candidateCss:'header{background:url("./assets/header-logo.png")} footer{background:url("./assets/nested/footer-logo.png")}'});
+  assert.deepEqual(state.referenced_asset_names,['header-logo.png','nested/footer-logo.png']);
+  assert.deepEqual(state.asset_dependencies,[
+    {name:'header-logo.png',sha256:sha(Buffer.from('legacy-image-bytes')),status:'local-cache'},
+    {name:'nested/footer-logo.png',sha256:sha(Buffer.from('nested-legacy-image-bytes')),status:'local-cache'},
+  ]);
 });
 
 test('candidate asset dependencies reject symlinks escaping local asset roots',t=>{

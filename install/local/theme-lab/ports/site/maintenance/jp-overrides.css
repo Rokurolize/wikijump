@@ -4,3 +4,17 @@
     max-width: calc(100% - 2em - 2px) !important;
   }
 }
+
+/* SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  #side-bar {
+    overflow-x: auto !important;
+  }
+}
+
+/* SCP-JP Wikidot narrow mobile navigation: keep the penultimate submenu within its owning row. */
+@media (max-width: 359px) {
+  #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul {
+    left: -4px; right: auto;
+  }
+}

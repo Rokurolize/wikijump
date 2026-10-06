@@ -103,7 +103,7 @@
         },
         {
           "path": "black-highlighter-theme/existing-jp.wikidot.txt",
-          "sha256": "809901626419de877645afccb36574a01ef943cfbd5d70a4b167210ebe4db939",
+          "sha256": "760ef1fb2d85d2c956c7ae59c6792c22c651faf05dc547669a86e66f5702c10e",
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]

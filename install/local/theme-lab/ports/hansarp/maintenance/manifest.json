@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
+  "frozen_candidate_source_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
   "base_source_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "90599f7ede0caf4f45cd80063f0d7b2d5de39c2259a67954d408a0350e1f9ae3",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "802009c4f689b85bbd33f27359cabfd48e56ef33f2f6ebd4c51014686f9c4833",
+  "jp_overrides_sha256": "d7e0c1fffc095347fe92b2d0830aefac88f9ce1da707cd5b5d9562c723ed4735",
+  "semantic_css_sha256": "0757ad885e740752392ac0e159de5336b8d572c4f5a438054deaa9fe98bba7cf",
+  "canonical_override_sha256": "d3629905f86daa2d4e7fe437321b04ac2076d1f531462de987e8cef8a668d545",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
+  "final_source_sha256": "666f330ad966549c2ce1fb87ebd8b5caa6f36f1749464eddbb7944dc5e4e6720",
   "final_source_inputs": {
     "base_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "d7e0c1fffc095347fe92b2d0830aefac88f9ce1da707cd5b5d9562c723ed4735"
   },
   "ordered_include_sha256": "c78e9a83788409eaefc15c359fcb4481f5a4db39f8b72b619cf819a452412df2",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 4,
+  "raw_override_rule_count": 5,
+  "canonical_override_rule_count": 5,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -177,8 +177,201 @@
           "decision_authority": "FROZEN_ASSET_TRANSFORM"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot Hansarp narrow masthead: contain its rotated source title within the article viewport.",
+      "sha256": "77c4de92ff775201eb0bfa608ca6386e2ac97cc077c043507d1744c39be8363e",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "The source rotated masthead extends left of the native SCP-JP viewport at 320, 390 and 768px. Translate the existing title by 20px at tablet/mobile widths and reduce only its 320px type scale enough to retain both edges, preserving rotation, face and wider layout.",
+      "evidence": [
+        {
+          "path": "authority-evidence/hansarp-final-four-block-12-20261004/receipt.json",
+          "sha256": "3c45e962ff9fdec6a00eaa39b9c31fa29bdfab6d21ae2e24bf83997614bb0436",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "state": "header-title-search",
+        "viewports": [
+          320,
+          390,
+          768,
+          1440
+        ],
+        "selectors": [
+          "#header h1",
+          "#header h1 a span"
+        ]
+      },
+      "published_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319"
+    },
+    {
+      "marker": "SCP-JP Wikidot Hansarp narrow header slot: keep its rotated box within the available inline width.",
+      "sha256": "55e00ecc1f63db55f89a57e978e7fa5c3b02dec1ec5012494e5891ae770a9b33",
+      "authority": "REMOVE",
+      "origin": "target-certified-replacement",
+      "rationale": "The independently source-certified generated-lettering fit makes this outer-slot width/max-width correction redundant. Exact current native A/B fits at 320/390/768/1440 with and without the slot block; preserve its former evidence, but remove it from publication.",
+      "evidence": [
+        {
+          "path": "authority-evidence/hansarp-final-five-block-13-20261004/receipt.json",
+          "sha256": "cee1c25830130d6523f0faee2d1895fcc83e42742d31ab27c4973e8c63fdd5ee",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://pseudo-scp-jp.wikidot.com/sigma-10:main",
+        "state": "normal",
+        "viewports": [
+          320,
+          390,
+          768,
+          1440
+        ],
+        "selectors": [
+          "#header h1"
+        ]
+      },
+      "superseded_evidence": [
+        {
+          "path": "authority-evidence/hansarp-final-three-authority-13-normal-v3-20261002/receipt.json",
+          "sha256": "2d40bcef6af0baac87887f27f8d4ff2db75b5bb25c48fe97ef2f82fd8d8b4040",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ]
+    },
+    {
+      "marker": "SCP-JP Wikidot Hansarp nested credit panels: keep the otherwise panel fixed to the viewport.",
+      "sha256": "c9d7e360fac1ddcdf5c38306c91cb8bc7924171b0c50784d03cde1b707fef7ab",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "origin": "target-certified-replacement",
+      "rationale": "The theme transforms the view-panel container, making its nested otherwise panel fixed relative to that container instead of the viewport. Native trusted otherwise clicks demonstrate 51–597px of panel escape. Remove only that containing transform and retain vertical centering with top/bottom and auto margins.",
+      "evidence": [
+        {
+          "path": "authority-evidence/hansarp-final-four-block-14-20261004/receipt.json",
+          "sha256": "467515d0d6b790a1cdac5b97dae43c7b25b73f9fbbc092ceeb59560e9e3fb2d5",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://pseudo-scp-jp.wikidot.com/sigma-10:main",
+        "state": "credit-fold-otherwise",
+        "viewports": [
+          320,
+          390,
+          768,
+          1440
+        ],
+        "selectors": [
+          "#u-credit-otherwise .modalbox"
+        ]
+      },
+      "published_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319"
+    },
+    {
+      "marker": "SCP-JP Wikidot Hansarp generated masthead title: fit its source lettering within the narrow title slot.",
+      "sha256": "2961f9505858fc96e9f995c5eb32eda3fd08c4eddadfdef9e6fd0b7458736e54",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "origin": "target-certified-replacement",
+      "rationale": "The source generated HANSARP lettering expands the native Firefox target to 357/410px at 320/390, while the same unthemed target fits. Fit only the narrow source lettering to the remaining header slot, preserving face, rotation, source repeated shadow, colors and zero-line-height layout.",
+      "evidence": [
+        {
+          "path": "authority-evidence/hansarp-final-four-block-15-20261004/receipt.json",
+          "sha256": "fb9943e7fa697c3eb46572c4de232a571ac982ffa031cb011560fd1b90274143",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://pseudo-scp-jp.wikidot.com/sigma-10:main",
+        "state": "normal",
+        "viewports": [
+          320,
+          390,
+          768,
+          1440
+        ],
+        "selectors": [
+          "#header h1 a::before"
+        ]
+      },
+      "published_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319"
+    },
+    {
+      "marker": "SCP-JP Wikidot Hansarp credit fader anchors: retain native backdrop stacking under the visible controls.",
+      "sha256": "bbd8cd176e69656fa84abcba9aa00bd0fee182b4c5872316d82e48a12d19561b",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "origin": "target-certified-replacement",
+      "rationale": "The source generic link hover/focus rule transforms and raises the invisible native fader close anchor over modal controls. Native scrolled-return A/B fails without the correction and succeeds with it. Restore only the native absolute/auto-stack/untransformed backdrop anchor, retaining real outside-panel close clicks.",
+      "evidence": [
+        {
+          "path": "authority-evidence/hansarp-final-four-block-16-20261004/receipt.json",
+          "sha256": "ff8a77510af45034b2fd907d90224b58909322acfafd1faa5e4709a3926cbc10",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://pseudo-scp-jp.wikidot.com/sigma-10:main",
+        "state": "credit-fold-return",
+        "viewports": [
+          320,
+          390,
+          768,
+          1440
+        ],
+        "selectors": [
+          "#u-credit-view .modalbox"
+        ]
+      },
+      "published_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot Hansarp narrow masthead: contain its rotated source title within the article viewport.",
+      "rationale": "SCP-JP Wikidot Hansarp narrow masthead: contain its rotated source title within the article viewport.",
+      "sha256": "77c4de92ff775201eb0bfa608ca6386e2ac97cc077c043507d1744c39be8363e",
+      "selectors": [
+        "#header h1"
+      ],
+      "at_contexts": [
+        "@media(max-width:1024px)",
+        "@media(max-width:359px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot Hansarp nested credit panels: keep the otherwise panel fixed to the viewport.",
+      "rationale": "SCP-JP Wikidot Hansarp nested credit panels: keep the otherwise panel fixed to the viewport.",
+      "sha256": "c9d7e360fac1ddcdf5c38306c91cb8bc7924171b0c50784d03cde1b707fef7ab",
+      "selectors": [
+        ".creditRate > li > #u-credit-view > .modalcontainer"
+      ],
+      "at_contexts": [],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot Hansarp generated masthead title: fit its source lettering within the narrow title slot.",
+      "rationale": "SCP-JP Wikidot Hansarp generated masthead title: fit its source lettering within the narrow title slot.",
+      "sha256": "2961f9505858fc96e9f995c5eb32eda3fd08c4eddadfdef9e6fd0b7458736e54",
+      "selectors": [
+        "#header h1 a::before"
+      ],
+      "at_contexts": [
+        "@media(max-width:767px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot Hansarp credit fader anchors: retain native backdrop stacking under the visible controls.",
+      "rationale": "SCP-JP Wikidot Hansarp credit fader anchors: retain native backdrop stacking under the visible controls.",
+      "sha256": "bbd8cd176e69656fa84abcba9aa00bd0fee182b4c5872316d82e48a12d19561b",
+      "selectors": [
+        "#main-content :is(#u-credit-view,#u-credit-otherwise) >.fader.foldable-list-container>a"
+      ],
+      "at_contexts": [],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    }
+  ]
 }
