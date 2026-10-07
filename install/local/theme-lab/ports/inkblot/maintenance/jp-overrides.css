@@ -1,0 +1,13 @@
+/* SCP-JP Wikidot Inkblot navigation correction: contain the third narrow mobile submenu. */
+@media (max-width: 359px) {
+  .mobile-top-bar > ul > li:nth-child(3) > ul {
+    left: auto; right: 0;
+  }
+}
+
+/* SCP-JP Wikidot Inkblot mobile endpoint correction: contain the last submenu at its parent right edge. */
+@media (min-width: 360px) and (max-width: 767px) {
+  #top-bar .mobile-top-bar > ul > li:last-child > ul {
+    left: auto; right: 0;
+  }
+}

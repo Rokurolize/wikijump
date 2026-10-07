@@ -1,0 +1,48 @@
+{
+  "schema": "theme_lab_component_publication_source.v1",
+  "slug": "component:toggle-sidebar-bhl",
+  "target_branch": "jp",
+  "action": "reuse-existing",
+  "source_file": "source.wikidot.txt",
+  "source_sha256": "b498d2bbcd7a503ac89beb04a63041a5cb8d49f980630e82155ddbf7b2857a05",
+  "authority": {
+    "current_jp_source": {
+      "revision": 3,
+      "updated_at": "2023-09-18T04:40:36+00:00",
+      "source_sha256": "b498d2bbcd7a503ac89beb04a63041a5cb8d49f980630e82155ddbf7b2857a05"
+    },
+    "live_metadata_crosscheck": "evidence/audits/theme-lab-bhl-option-runtime-coverage-audit-20261005.json",
+    "source_intent_review": "ports/black-highlighter-theme/option-scenarios/authority.json"
+  },
+  "acceptance": {
+    "targeted_bhl_combined_sigma9_sigma10": {
+      "chromium": "passed",
+      "firefox": "passed",
+      "webkit": "passed",
+      "receipts": [
+        "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+        "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+        "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+        "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+        "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+        "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json"
+      ],
+      "review": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json"
+    },
+    "targeted_bhl_collapsible_sigma9_sigma10": {
+      "status": "passed",
+      "review": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json"
+    },
+    "visual_review": "human-reviewed",
+    "standalone_full_matrix": "not-applicable-optional-theme-component",
+    "consumer_theme": "theme:black-highlighter-theme"
+  },
+  "publication": {
+    "manual_publish_required": false,
+    "public_writes": 0,
+    "action": "reuse-existing-current-scp-jp-revision-3"
+  },
+  "files": [
+    "source.wikidot.txt"
+  ]
+}

@@ -54,39 +54,5 @@
   "pruned_fonts": [],
   "template_placeholders": [],
   "asset_replacements": {},
-  "omitted_assets": [],
-  "dependency_decisions": [
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD.ttf",
-      "sha256": "ae17feb6f10d68546a191a8d9419d5bef76ad13785c9b5d7aa1492c8428e648b",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-135-dh1g/pataphysics-header-updated.png",
-      "sha256": "a62a15a6b56287171cc9127041ea8225655529851e49501a069f1fa852037d35",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4053112-134-dh1l/pataphysicslogo-ani.svg",
-      "sha256": "f3f2789e588b964cd6a3e453b70a10d33a06d7deaf73440b3a64c4fef8032bb1",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://fonts.googleapis.com/css2?family=Carrois+Gothic&display=swap",
-      "sha256": "1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df",
-      "asset_file": "1d7b1fb632081ef35d2d332628dfd25e30776b15a6ce4073dfaa85a04f0a21df.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-jp.wdfiles.com/local--code_/theme%3Apataphysics/1",
-      "sha256": "96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922",
-      "asset_file": "96e8f281c2ab90b7c4fc2e1b142a31e404452c1c0a11a293f44007fe70954922.css",
-      "decision": "freeze-source-stylesheet"
-    }
-  ]
+  "omitted_assets": []
 }

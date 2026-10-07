@@ -1,4 +1,4 @@
-[[include :scp-wiki:component:sigma-plus]]
+[[include :scp-jp:component:sigma-plus]]
 [[module css]]
 @import url(https://scp-jp.wdfiles.com/local--code/theme%3Aspace/1);
 [[/module]]
@@ -952,27 +952,10 @@ table.page-files .highlight { background: transparent; }
 [[/iftags]]
 
 [[module CSS]]
-/* SCP-JP Wikidot Space mobile header grid: retain the distinct localized title rule. */
-@media (max-width: 767px) {
-  #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul {
-    left: auto; right: 0;
-  }
-}
-
-@media (min-width: 360px) and (max-width: 767px) {
-  #top-bar .mobile-top-bar > ul > li:last-child > ul {
-    left: auto; right: 0;
-  }
-}
-
-@media screen and (max-width: 767px) {
-  #header {
-    grid-template-columns: minmax(0,1fr) minmax(0,2fr) minmax(0,2fr) minmax(0,1fr) !important;
-  }
-
-  #header h1,
-  #header h2 {
-    grid-column: 1 / -1 !important; width: auto !important; max-width: calc(100vw - 2rem) !important; margin-inline: auto !important; justify-self: center !important;
+/* SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  #side-bar {
+    overflow-x: auto !important;
   }
 }
 [[/module]]

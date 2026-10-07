@@ -14,9 +14,12 @@
 // single JSON document, so an agent can consume the verdict directly.
 
 import fs from "node:fs";
+import {execFileSync} from "node:child_process";
 import net from "node:net";
 import path from "node:path";
 import process from "node:process";
+import {StringDecoder} from "node:string_decoder";
+import {stringifyAsciiJson} from "../src/ascii-json.mjs";
 
 import {loadChromium} from "../src/browser-lab.mjs";
 import {stopDaemon} from "../src/daemon.mjs";
@@ -24,6 +27,7 @@ import {createDeepwellPreviewClient} from "../src/deepwell-preview.mjs";
 import {ThemeLabError} from "../src/errors.mjs";
 import {ReferenceCache, defaultCacheDir} from "../src/reference-cache.mjs";
 import {startSessionServer} from "../src/session-server.mjs";
+import {loadCandidateStructure} from "../src/candidate-structure.mjs";
 
 function parseArgs(argv) {
   const args = {_positional: []};
@@ -61,16 +65,28 @@ function readSurfaceContract(value) {
 function sendRequest(socketPath, request) {
   return new Promise((resolve, reject) => {
     const socket = net.connect(socketPath);
+    const decoder = new StringDecoder("utf8");
     let buffer = "";
-    socket.on("connect", () => socket.write(`${JSON.stringify(request)}\n`));
+    let settled = false;
+    socket.on("connect", () => socket.write(`${stringifyAsciiJson(request)}\n`));
     socket.on("data", (chunk) => {
-      buffer += chunk.toString("utf8");
+      buffer += decoder.write(chunk);
       const newline = buffer.indexOf("\n");
-      if (newline === -1) return;
+      if (newline === -1 || settled) return;
+      settled = true;
       socket.end();
       resolve(JSON.parse(buffer.slice(0, newline)));
     });
+    socket.on("end", () => {
+      if (settled) return;
+      buffer += decoder.end();
+      if (buffer.trim()) {
+        settled = true;
+        resolve(JSON.parse(buffer));
+      }
+    });
     socket.on("error", (error) => {
+      if (settled) return;
       if (error.code === "ENOENT" || error.code === "ECONNREFUSED") {
         reject(
           new ThemeLabError(
@@ -85,8 +101,25 @@ function sendRequest(socketPath, request) {
   });
 }
 
+function preflightCandidateUrl(value) {
+  if (typeof value !== "string" || !value) return;
+  let url;
+  try { url = new URL(value); } catch { throw new ThemeLabError("invalid_candidate_url", `invalid candidate URL: ${value}`); }
+  if (!url.hostname.endsWith(".wikijump.localhost")) return;
+  let status;
+  try {
+    status = Number.parseInt(execFileSync("curl", ["-ksS", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "8", value], {encoding: "utf8"}).trim(), 10);
+  } catch (error) {
+    throw new ThemeLabError("candidate_preflight_failed", `candidate URL preflight failed: ${value}: ${error.message}`);
+  }
+  if (!Number.isInteger(status) || status < 200 || status >= 400) {
+    throw new ThemeLabError("candidate_preflight_failed", `candidate URL returned HTTP ${Number.isInteger(status) ? status : "unknown"}: ${value}`);
+  }
+}
+
 async function serve(args) {
   const socketPath = path.resolve(args.socket ?? "/tmp/theme-lab.sock");
+  preflightCandidateUrl(args["candidate-url"] ?? null);
   const chromium = loadChromium(args["browser-root"] ? path.resolve(args["browser-root"]) : undefined);
   const rpcToken = args["rpc-token"] ?? process.env.DEEPWELL_RPC_TOKEN;
   const previewClient = rpcToken
@@ -115,6 +148,10 @@ async function serve(args) {
     referenceAssets,
     assetDir: args["asset-dir"] ? path.resolve(args["asset-dir"]) : null,
     sidebarHtml: args["sidebar-html"] ? fs.readFileSync(path.resolve(args["sidebar-html"]), "utf8") : null,
+    interwikiHtml: args["interwiki-html"] ? fs.readFileSync(path.resolve(args["interwiki-html"]), "utf8") : null,
+    headerHtml: args["header-html"] ? fs.readFileSync(path.resolve(args["header-html"]), "utf8") : null,
+    baselineCss: args["baseline-css"] ? fs.readFileSync(path.resolve(args["baseline-css"]), "utf8") : null,
+    navigationHtml: args["navigation-html"] ? fs.readFileSync(path.resolve(args["navigation-html"]), "utf8") : null,
   });
   process.stdout.write(
     `${JSON.stringify({
@@ -215,7 +252,11 @@ async function main() {
     request = {
       op: "check",
       css,
+      baseCss: args["css-base"] ? fs.readFileSync(path.resolve(args["css-base"]), "utf8") : "",
+      sourceStructure: args["source-structure"] ? await loadCandidateStructure(path.dirname(path.resolve(args["source-structure"]))) : null,
       wikitext,
+      savedCandidate: args["saved-candidate"] === true,
+      source: args.source ? fs.readFileSync(path.resolve(args.source), "utf8") : null,
       pageAssets: args["page-assets"] ? JSON.parse(fs.readFileSync(path.resolve(args["page-assets"]), "utf8")).assets ?? [] : [],
       title: args.title ?? "Preview",
       syntaxOnly: args["syntax-only"] === true,
@@ -227,6 +268,7 @@ async function main() {
       torture: args["no-torture"] !== true && siteId !== null,
       viewports: args["no-viewports"] !== true,
       visual: args.visual === true,
+      visualReview: args["visual-review"] ? JSON.parse(fs.readFileSync(path.resolve(args["visual-review"]), "utf8")) : null,
       artifactDir: args["artifact-dir"] ? path.resolve(args["artifact-dir"]) : null,
       surfaceContract,
       verbose: args.verbose === true || args["json-full"] === true,

@@ -286,6 +286,7 @@ pub(super) struct ProtectedWikidotCompatLink {
 #[derive(Debug)]
 struct ExpandedRenderWikitext {
     wikitext: String,
+    theme_previewer_blank: bool,
     included_pages: Vec<PageRef>,
     expanded_include_count: usize,
     url_offset_list_pages_content_bytes: usize,
@@ -1100,6 +1101,7 @@ impl RenderService {
             mut html_output,
             errors,
             compiled_hash: compiled_body_html_hash,
+            theme_previewer_blank,
             ..
         } = Self::render_inner(
             ctx,
@@ -1204,7 +1206,8 @@ impl RenderService {
         html_output.styles.extend(side_bar_styles);
         html_output.styles.extend(body_styles);
         let styles_json =
-            serde_json::to_string(&html_output.styles).or_raise(make_error)?;
+            super::compiled_styles::encode(&html_output.styles, theme_previewer_blank)
+                .or_raise(make_error)?;
         let compiled_body_styles_hash = Self::persist_or_hash_compiled_text(
             ctx,
             None,
@@ -1296,6 +1299,7 @@ impl RenderService {
             wikidot_compat_text,
         } = input;
         let expanded = ExpandedRenderWikitext {
+            theme_previewer_blank: false,
             wikitext,
             included_pages,
             expanded_include_count: 0,
@@ -1517,6 +1521,8 @@ impl RenderService {
         wikitext = expanded_wikitext;
         included_pages.extend(list_pages_included_pages);
         include_budget.consume(list_pages_expanded_include_count);
+        let theme_previewer_blank =
+            !page_preview && super::runtime_modules::has_theme_previewer_blank(&wikitext);
         wikitext = Box::pin(Self::expand_secondary_runtime_modules(
             ctx,
             wikitext,
@@ -1693,6 +1699,7 @@ impl RenderService {
         }
 
         Ok(ExpandedRenderWikitext {
+            theme_previewer_blank,
             wikitext,
             included_pages,
             expanded_include_count: initial_include_expansions
@@ -2049,6 +2056,7 @@ impl RenderService {
         Self::render_inner_expanded(
             ctx,
             ExpandedRenderWikitext {
+                theme_previewer_blank: false,
                 wikidot_compat_html: CompatHtmlFragments::new(&wikitext),
                 wikidot_compat_text: CompatTextFragments::new(&wikitext),
                 wikitext,
@@ -2093,6 +2101,7 @@ impl RenderService {
         let config = ctx.config();
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
+        let theme_previewer_blank = expanded.theme_previewer_blank && !page_preview;
         let expanded_include_count = expanded.expanded_include_count;
         let mut expanded = expanded;
         if !allow_wikidot_styleframe {
@@ -2350,6 +2359,7 @@ impl RenderService {
             }
 
             return Ok(RenderInnerOutput {
+                theme_previewer_blank,
                 html_output,
                 errors: Vec::new(),
                 compiled_hash,
@@ -2754,6 +2764,7 @@ impl RenderService {
 
         // Build and return
         Ok(RenderInnerOutput {
+            theme_previewer_blank,
             html_output,
             errors,
             compiled_hash,
@@ -3616,6 +3627,7 @@ fn corpus_replay_syntax_features(wikitext: &str) -> CorpusReplaySyntaxFeatures {
 
 #[derive(Debug)]
 pub(super) struct RenderInnerOutput {
+    pub(super) theme_previewer_blank: bool,
     pub(super) html_output: HtmlOutput,
     pub(super) errors: Vec<ParseError>,
     pub(super) compiled_hash: TextHash,

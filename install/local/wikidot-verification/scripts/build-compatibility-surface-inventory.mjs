@@ -97,7 +97,9 @@ const AUDITED_OWNERSHIP_REPORTS = Object.freeze([
     sha256: "ef87c37c9bd2ebf661d003c361f386c5d979b30aeebb18a6b44c307124f0636c"
   }
 ])
-const AUDITED_CATALOG_SHA256 = "ce9a798b7d1d076085e634e1e61ef338fff89bb3dc797449f90f06aae4f61714"
+// Audited ownership attaches to the catalog's feature identity set. Other
+// catalog metadata, such as live observation bindings, does not alter owners.
+const AUDITED_CATALOG_SURFACE_IDS_SHA256 = "230b734b715f15dc5b82e94f224bb8ae4a2717696d6bf23e9e57a103b83e1e28"
 async function loadSupportedWikidotPySource(root) {
   const value = await readJson(root, "docs/development/wikidot-py-supported-source.json")
   if (value.schema !== "wikijump.wikidot_py_supported_source.v1" ||
@@ -597,8 +599,9 @@ async function buildInventory(root, sourceRevision) {
       readGitBlobBatch: pinnedSource.readGitBlobBatch
     }
   )
-  const auditedOwnershipActive =
-    sha256(SOURCE_INPUTS.get("docs/wikidot-specifications/catalog.json")) === AUDITED_CATALOG_SHA256
+  const auditedOwnershipActive = sha256(
+    `${catalog.map(({ surface_id: surfaceId }) => surfaceId).sort().join("\n")}\n`
+  ) === AUDITED_CATALOG_SURFACE_IDS_SHA256
   const projectedFramerailRoutes = auditedOwnershipActive
     ? await applyFramerailRouteActionEvidence(
         root,

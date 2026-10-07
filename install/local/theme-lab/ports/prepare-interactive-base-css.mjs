@@ -60,7 +60,7 @@ async function resolveStylesheet(url,seen,assets,depth=0){
   const refs=extractCssReferences(css,baseUrl);
   const localByUrl=new Map();
   for(const assetRef of refs.assets){
-    if(/^\/[0-9a-f]{64}\.[a-z0-9]{2,5}$/iu.test(assetRef.raw))continue;
+    if(/^(?:\/)?[0-9a-f]{64}\.[a-z0-9]{2,5}$/iu.test(assetRef.raw))continue;
     const cached=await cachedBytes(assetRef.url);
     const extension=assetExtension(assetRef.url);
     const name=`${cached.entry.digest}.${extension.slice(1)}`;
@@ -68,8 +68,10 @@ async function resolveStylesheet(url,seen,assets,depth=0){
     await fs.mkdir(path.dirname(target),{recursive:true});
     try{const existing=await fs.readFile(target);if(digest(existing)!==cached.entry.digest)throw new Error(`Existing shared asset hash mismatch: ${name}`)}catch(error){if(error.code!=='ENOENT')throw error;await fs.writeFile(target,cached.bytes)}
     const absolute=new URL(assetRef.url);absolute.hash='';
-    localByUrl.set(assetRef.url,`/${name}`);
-    localByUrl.set(absolute.href,`/${name}`);
+    // Injected stylesheets resolve through the explicit local asset pool.
+    // A leading slash would instead request this filename from Framerail.
+    localByUrl.set(assetRef.url,name);
+    localByUrl.set(absolute.href,name);
     assets.set(name,{path:`install/local/theme-lab/ports/shared-replay-assets/${name}`,sha256:cached.entry.digest,source_url:assetRef.url,bytes:cached.bytes.length});
   }
   css=rewriteCssReferences(css,baseUrl,localByUrl);

@@ -1,5 +1,27 @@
 import { expect, test } from "./hermetic-playwright"
 
+test("replacement article tabviews receive native initialization and keep delegated controls", async ({
+  page
+}) => {
+  await page.setExtraHTTPHeaders(headers)
+  await page.goto("/wikidot-tabview", { waitUntil: "load" })
+  await expect(page.locator("#page-content > .yui-navset")).toHaveClass(/yui-navset-top/)
+  await page.locator("#page-content").evaluate((content) => {
+    const replacement = content
+      .querySelector(".yui-navset")!
+      .cloneNode(true) as HTMLElement
+    replacement.classList.remove("yui-navset-top")
+    replacement.querySelector("li.selected")!.removeAttribute("title")
+    content.replaceChildren(replacement)
+  })
+  const tabview = page.locator("#page-content > .yui-navset")
+  await expect(tabview).toHaveClass(/yui-navset-top/)
+  await expect(tabview.locator("li.selected")).toHaveAttribute("title", "active")
+  await tabview.locator(".yui-nav li a").nth(1).click()
+  await expect(tabview.locator(".yui-content > div").nth(1)).toBeVisible()
+  await expect(tabview.locator(".yui-content > div").nth(0)).toBeHidden()
+})
+
 const headers = {
   "X-Wikijump-Site-Id": "6000005",
   "X-Wikijump-Site-Slug": "scp-wiki"

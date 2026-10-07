@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "c38af875eb8a1b8a78d4cac779af3c56ebf2641a193410a7a81e019a6c7f46f0",
+  "frozen_candidate_source_sha256": "292624abd9238b7a3c0cca9fe0f603fbd18476610740084e2b5315a01e8348fc",
   "base_source_sha256": "c38af875eb8a1b8a78d4cac779af3c56ebf2641a193410a7a81e019a6c7f46f0",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "f8d849beb04b6c20cc3b0c61556c74236a0f911db5147f92655f8ee9d1f5c81b",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "fea0e9f73e9f52da92031c856307a8e82d1ae41fec8adc047cc84df409d487e2",
+  "jp_overrides_sha256": "007894b825d2b929d64ce540669e0966a73a7fde6cda928bca3bae4d1812f8bd",
+  "semantic_css_sha256": "b623824e366ba4de09a4de90f36f19f97d1083cd7f7146203419489d80a3130f",
+  "canonical_override_sha256": "4c8b7e348f080f21441ced12eb4714c2e0dc362c6f30814104f9b5387c25f67c",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "c38af875eb8a1b8a78d4cac779af3c56ebf2641a193410a7a81e019a6c7f46f0",
+  "final_source_sha256": "591cad1f5738a5e93b28121f9db713d7ed730dbb1e888e789acca49577fc632d",
   "final_source_inputs": {
     "base_sha256": "c38af875eb8a1b8a78d4cac779af3c56ebf2641a193410a7a81e019a6c7f46f0",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "007894b825d2b929d64ce540669e0966a73a7fde6cda928bca3bae4d1812f8bd"
   },
   "ordered_include_sha256": "08fe729c8869c5afbeb2a6cfaceef80cb81cc7aa515dd1754979f0e1d7ef8da7",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 2,
+  "raw_override_rule_count": 8,
+  "canonical_override_rule_count": 8,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -242,8 +242,93 @@
           "decision_authority": "FROZEN_ASSET_TRANSFORM"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot Scheme header correction: wrap the masthead and separate the visible JP search control.",
+      "sha256": "2594fb1e6d38f819578540a4afe794c60b86e0a1f606723b10e3699b7767c660",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "Read-only real SCP-JP A/B demonstrates clipped generated subtitle/search overlap and an animated rack extending document width. Wrap only the mobile subtitle, separate the visible JP search control, and bound only the animated rack.",
+      "evidence": [
+        {
+          "path": "authority-evidence/scheme-final-navigation-header-title-search-15-0-20261001/receipt.json",
+          "sha256": "2cd0cfa5bf41d961663eaeb871821b2e32bd5e439d80c6d33945c40a71b5d461",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "state": "header-title-search",
+        "viewports": [
+          320,
+          390,
+          768,
+          1440
+        ],
+        "selectors": [
+          "#header h1",
+          "#header h2",
+          "#extra-div-6"
+        ]
+      },
+      "published_css_sha256": "13b6176aa6fddeeaeaf1a8e493163fe1fa6c8f72888e27d9631a66dfc0950fce"
+    },
+    {
+      "marker": "SCP-JP Wikidot Scheme navigation correction: keep decorative gears out of pointer hit tests and contain row endpoint submenus.",
+      "sha256": "7094fbf322935d0bf8e5f27f9db31acc1e64aabe8237e424156ae20c68237a6e",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "Real target gear layers intercept the first parents, and row endpoint submenus escape the viewport. Keep the decorative paint while excluding pointer interception, and anchor only the evidenced overflow endpoints.",
+      "evidence": [
+        {
+          "path": "authority-evidence/scheme-navigation-action-authority-20261001/receipt.json",
+          "sha256": "b2a0246c5baffa5844f85200cfb997b4a7a1c4d61b5c891424cd54c3d05ffcc0",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "state": "navigation-action",
+        "viewports": [
+          320,
+          390
+        ]
+      },
+      "published_css_sha256": "13b6176aa6fddeeaeaf1a8e493163fe1fa6c8f72888e27d9631a66dfc0950fce"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot Scheme header correction: wrap the masthead and separate the visible JP search control.",
+      "rationale": "SCP-JP Wikidot Scheme header correction: wrap the masthead and separate the visible JP search control.",
+      "sha256": "2594fb1e6d38f819578540a4afe794c60b86e0a1f606723b10e3699b7767c660",
+      "selectors": [
+        "#header h2",
+        "#header h2::after",
+        "#search-top-box",
+        "div#extra-div-6"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot Scheme navigation correction: keep decorative gears out of pointer hit tests and contain row endpoint submenus.",
+      "rationale": "SCP-JP Wikidot Scheme navigation correction: keep decorative gears out of pointer hit tests and contain row endpoint submenus.",
+      "sha256": "7094fbf322935d0bf8e5f27f9db31acc1e64aabe8237e424156ae20c68237a6e",
+      "selectors": [
+        "#extra-div-2",
+        "#extra-div-5",
+        "#top-bar .mobile-top-bar > ul > li:last-child > ul",
+        "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)",
+        "@media (min-width: 360px) and (max-width: 767px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    }
+  ]
 }

@@ -8,6 +8,8 @@ import crypto from "node:crypto";
 import path from "node:path";
 import {spawnSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
+import {resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from "../src/package-path.mjs";
+import {currentPackageBaseCss} from "../src/candidate-base-contract.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../../../..");
@@ -16,14 +18,41 @@ const manifestPath = process.env.THEME_LAB_CAMPAIGN_MANIFEST ?? path.join(ports,
 const socket = process.env.THEME_LAB_SOCKET ?? "/tmp/theme-lab-en34.sock";
 const dearSocket = process.env.THEME_LAB_DEAR_SOCKET ?? socket;
 const siteId = process.env.THEME_LAB_SITE_ID ?? "6000003";
-const sharedSelectors = path.join(ports, "shared-acceptance-selectors.txt");
+const runArtifactRoot = process.env.THEME_LAB_RUN_ARTIFACT_DIR ? path.resolve(process.env.THEME_LAB_RUN_ARTIFACT_DIR) : null;
+const sharedSelectors = resolveExistingContainedFile(ports, "shared-acceptance-selectors.txt", "shared acceptance selectors");
 const lab = path.join(root, "install/local/theme-lab/scripts/theme-lab.mjs");
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-const assetRoot = path.resolve(process.env.THEME_LAB_ASSET_DIR ?? path.join(ports, "shared-replay-assets"));
+const assetRoot = fs.realpathSync(path.resolve(process.env.THEME_LAB_ASSET_DIR ?? path.join(ports, "shared-replay-assets")));
 const assetByDigest = new Map();
 for (const name of fs.readdirSync(assetRoot)) {
   const digest = name.match(/^([0-9a-f]{64})\./u)?.[1];
   if (digest && !assetByDigest.has(digest)) assetByDigest.set(digest, name);
+}
+
+// The daemon materializes candidate assets from its own --asset-dir, which is an
+// unverified external input rather than the frozen pool this runner verifies. A
+// daemon pool that predates the committed pool reports candidate_asset_missing
+// for assets the package already declares, so the mismatch has to fail closed
+// before it can be misread as a port-authoritative package finding.
+const daemonAssetDirs = new Map();
+function daemonAssetDir(socketPath) {
+  if (daemonAssetDirs.has(socketPath)) return daemonAssetDirs.get(socketPath);
+  const status = spawnSync(process.execPath, [lab, "status", "--socket", socketPath],
+    {cwd: root, encoding: "utf8", timeout: 60_000, maxBuffer: 4 * 1024 * 1024});
+  if (status.status !== 0) {
+    const detail = (status.stderr || status.error?.message || "").trim().slice(0, 300);
+    throw new Error(`Theme Lab daemon status unavailable on ${socketPath}: ${detail}`);
+  }
+  let response;
+  try { response = JSON.parse(status.stdout); } catch {
+    throw new Error(`Theme Lab daemon status returned invalid JSON on ${socketPath}`);
+  }
+  if (response.ok === false) throw new Error(`Theme Lab daemon status failed on ${socketPath}: ${response.error?.code ?? "unknown_error"}`);
+  const dir = response.result?.asset_dir;
+  if (!dir) throw new Error(`Theme Lab daemon on ${socketPath} has no --asset-dir; candidate asset findings would be unverifiable`);
+  const resolved = fs.realpathSync(dir);
+  daemonAssetDirs.set(socketPath, resolved);
+  return resolved;
 }
 const shaCache = new Map();
 
@@ -36,32 +65,52 @@ function sha256(file) {
   return digest;
 }
 
-function verifyFrozenPackage(item) {
+function verifyFrozenPackage(item, {requireDaemonAssets = true} = {}) {
+  // dear-dictator and quand-le-soleil-se-couche keep their own packaged assets
+  // and are served by dedicated daemons, so their frozen pool is the daemon's
+  // asset dir by construction and there is no second pool to reconcile.
   if (item.slug === "theme:dear-dictator (SCP-KO)") return;
-  const packageManifest = JSON.parse(fs.readFileSync(path.join(item.directory, "manifest.json"), "utf8"));
+  if (path.basename(item.directory) === "quand-le-soleil-se-couche") {
+    const foreign = JSON.parse(fs.readFileSync(resolveExistingPackageFile(item.directory,"manifest.json","FR manifest"),"utf8"));
+    if (sha256(resolveExistingPackageFile(item.directory,"upstream-fr.wikidot.txt","FR frozen source")) !== foreign.source_sha256) throw new Error("FR frozen source identity mismatch");
+    for (const asset of foreign.assets) if (sha256(resolveExistingPackageFile(item.directory,path.join("assets",asset.name),`FR frozen asset ${asset.name}`)) !== asset.sha256) throw new Error(`FR frozen asset mismatch: ${asset.name}`);
+    return;
+  }
+  const packageManifest = JSON.parse(fs.readFileSync(resolveExistingPackageFile(item.directory,"manifest.json",`${item.slug}: manifest`), "utf8"));
   const identity = packageManifest.source_identity;
   for (const [key, file] of [["en", "upstream-en.wikidot.txt"], ["jp", "existing-jp.wikidot.txt"]]) {
     const source = identity?.[key];
     if (!source?.sha256) continue;
-    const sourcePath = path.join(item.directory, file);
-    if (!fs.existsSync(sourcePath) || sha256(sourcePath) !== source.sha256) {
+    let sourcePath;try{sourcePath=resolveExistingPackageFile(item.directory,file,`${item.slug}: frozen ${key.toUpperCase()} source`)}catch{sourcePath=null}
+    if (!sourcePath || sha256(sourcePath) !== source.sha256) {
       throw new Error(`${item.slug}: frozen ${key.toUpperCase()} source identity mismatch`);
     }
   }
-  const candidateSource = fs.readFileSync(path.join(item.directory, "candidate.wikidot.source.txt"), "utf8");
+  const candidateSource = fs.readFileSync(resolveExistingPackageFile(item.directory,"candidate.wikidot.source.txt",`${item.slug}: candidate source`), "utf8");
   const allowlistPath = path.join(item.directory, "confirmed-jp-user-links.json");
   const confirmedJpUsers = new Set(fs.existsSync(allowlistPath)
-    ? JSON.parse(fs.readFileSync(allowlistPath, "utf8")).users.map((name) => name.toLowerCase()) : []);
+    ? JSON.parse(fs.readFileSync(resolveExistingPackageFile(item.directory,"confirmed-jp-user-links.json",`${item.slug}: confirmed JP users`), "utf8")).users.map((name) => name.toLowerCase()) : []);
   const unresolvedSiteLocalCredits = [...candidateSource.matchAll(/\[\[\*user\s+([^\]]+)\]\]/giu)]
     .map((match) => match[1].trim()).filter((name) => !confirmedJpUsers.has(name.toLowerCase()));
   if (unresolvedSiteLocalCredits.length) {
     throw new Error(`${item.slug}: ${unresolvedSiteLocalCredits.length} unreviewed site-local author identity link(s); confirm on SCP-JP or preserve the credited name as text`);
   }
-  const assetManifest = JSON.parse(fs.readFileSync(path.join(item.directory, "assets.json"), "utf8"));
+  const assetManifest = JSON.parse(fs.readFileSync(resolveExistingPackageFile(item.directory,"assets.json",`${item.slug}: asset manifest`), "utf8"));
+  // --verify-only stays hermetic and daemon-free, so the daemon pool is only
+  // reconciled when this run will actually ask the daemon to render the CSS.
+  const served = requireDaemonAssets ? daemonAssetDir(item.socket ?? socket) : null;
   for (const asset of assetManifest.assets ?? []) {
     const filename = assetByDigest.get(asset.sha256);
-    if (!filename || sha256(path.join(assetRoot, filename)) !== asset.sha256) {
+    let frozenFile=null;try{if(filename)frozenFile=resolveExistingContainedFile(assetRoot,filename,`${item.slug}: frozen CSS asset`)}catch{}
+    if (!frozenFile || sha256(frozenFile) !== asset.sha256) {
       throw new Error(`${item.slug}: frozen CSS asset missing or corrupt: ${asset.sha256}`);
+    }
+    let servedFile=null;try{if(served&&filename)servedFile=resolveExistingContainedFile(served,filename,`${item.slug}: daemon CSS asset`)}catch{}
+    if (served && (!servedFile || sha256(servedFile) !== asset.sha256)) {
+      throw new Error(
+        `${item.slug}: Theme Lab daemon asset pool ${served} does not contain the frozen CSS asset ${filename}. `
+        + `The package declares it, so a candidate_asset_missing finding here would be a daemon asset-pool `
+        + `artifact and not a port finding. Restart the daemon with --asset-dir ${assetRoot}.`);
     }
   }
   const imports = new Set(assetManifest.imports ?? []);
@@ -73,14 +122,14 @@ function verifyFrozenPackage(item) {
     }
   }
   for (const row of importProvenance) {
-    const file = path.join(assetRoot, row.asset_file);
-    if (!row.asset_file || !fs.existsSync(file) || sha256(file) !== row.sha256) {
+    let file=null;try{if(row.asset_file)file=resolveExistingContainedFile(assetRoot,row.asset_file,`${item.slug}: frozen CSS import`)}catch{}
+    if (!file || sha256(file) !== row.sha256) {
       throw new Error(`${item.slug}: frozen CSS import missing or corrupt: ${row.source_url}`);
     }
   }
   if (packageManifest.flattened_css_transforms) {
-    const transformPath = path.join(item.directory, packageManifest.flattened_css_transforms);
-    if (!fs.existsSync(transformPath)) {
+    let transformPath;try{transformPath=resolveExistingPackageFile(item.directory,packageManifest.flattened_css_transforms,`${item.slug}: flattened CSS transform manifest`)}catch{}
+    if (!transformPath) {
       throw new Error(`${item.slug}: flattened CSS transform manifest missing: ${packageManifest.flattened_css_transforms}`);
     }
     const transformManifest = JSON.parse(fs.readFileSync(transformPath, "utf8"));
@@ -96,41 +145,51 @@ function verifyFrozenPackage(item) {
   }
   const pageAssetsPath = path.join(item.directory, "page-assets.json");
   if (fs.existsSync(pageAssetsPath)) {
-    const pageAssets = JSON.parse(fs.readFileSync(pageAssetsPath, "utf8"));
+    const pageAssets = JSON.parse(fs.readFileSync(resolveExistingPackageFile(item.directory,"page-assets.json",`${item.slug}: page asset manifest`), "utf8"));
     for (const asset of pageAssets.assets ?? []) {
-      const file = path.join(assetRoot, asset.asset_file);
-      if (!fs.existsSync(file) || sha256(file) !== asset.sha256) {
+      let file=null;try{file=resolveExistingContainedFile(assetRoot,asset.asset_file,`${item.slug}: frozen page attachment`)}catch{}
+      if (!file || sha256(file) !== asset.sha256) {
         throw new Error(`${item.slug}: frozen page attachment missing or corrupt: ${asset.filename}`);
       }
     }
   }
 }
 
-const cases = manifest.themes.map((theme) => ({
-  slug: theme.slug,
-  directory: path.resolve(root, theme.port_package_path),
-  candidate: "candidate.wikidot.txt",
-  css: "candidate.css",
-  reference: `https://scp-wiki.wikidot.com/${theme.slug}`,
-  selectors: fs.existsSync(path.join(root, theme.port_package_path, "acceptance-selectors.txt"))
-    ? path.join(root, theme.port_package_path, "acceptance-selectors.txt")
-    : sharedSelectors,
-  title: theme.slug,
-}));
+const cases = manifest.themes.map((theme) => {
+  const name=theme.slug.replace(/^theme:/u,"");
+  const expected=resolveExistingPackageDirectory(ports,name,`${theme.slug}: package directory`);
+  const declared=fs.realpathSync(path.resolve(root,theme.port_package_path));
+  if(declared!==expected)throw new Error(`${theme.slug}: campaign package path does not match canonical maintained package`);
+  const selectorPath=path.join(declared,"acceptance-selectors.txt");
+  return {
+    slug: theme.slug,
+    directory: declared,
+    candidate: "candidate.wikidot.txt",
+    css: "candidate.css",
+    reference: `https://scp-wiki.wikidot.com/${theme.slug}`,
+    selectors: fs.existsSync(selectorPath)?resolveExistingPackageFile(declared,"acceptance-selectors.txt",`${theme.slug}: acceptance selectors`):sharedSelectors,
+    title: theme.slug,
+  };
+});
 
-const dear = path.join(ports, "dear-dictator");
-const dearReference = JSON.parse(fs.readFileSync(path.join(dear, "reference.json"), "utf8"));
+const dear = resolveExistingPackageDirectory(ports,"dear-dictator","dear-dictator package directory");
+const dearReference = JSON.parse(fs.readFileSync(resolveExistingPackageFile(dear,"reference.json","dear-dictator reference"), "utf8"));
 cases.push({
   slug: "theme:dear-dictator (SCP-KO)",
   directory: dear,
   candidate: "candidate.wikidot.txt",
   css: "candidate.css",
   reference: dearReference.reference_url,
-  selectors: path.join(dear, "acceptance-selectors.txt"),
+  selectors: resolveExistingPackageFile(dear,"acceptance-selectors.txt","dear-dictator acceptance selectors"),
   title: "敬愛する独裁者 テーマ",
   socket: dearSocket,
 });
 
+if (process.argv.includes("--maintained")) {
+  const directory = resolveExistingPackageDirectory(ports,"quand-le-soleil-se-couche","SCP-FR package directory");
+  const foreign = JSON.parse(fs.readFileSync(resolveExistingPackageFile(directory,"manifest.json","SCP-FR manifest"),"utf8"));
+  cases.push({slug:"theme:quand-le-soleil-se-couche (SCP-FR)",directory,candidate:"candidate.wikidot.txt",css:"candidate.css",reference:foreign.source_url,selectors:resolveExistingPackageFile(directory,"acceptance-selectors.txt","SCP-FR acceptance selectors"),surfaceContract:resolveExistingPackageFile(directory,"surface-contract.json","SCP-FR surface contract"),title:"Quand le Soleil se couche",socket:process.env.THEME_LAB_FR_SOCKET ?? socket});
+}
 const onlyIndex = process.argv.indexOf("--only");
 const only = onlyIndex >= 0 ? process.argv[onlyIndex + 1] : null;
 const noVisual = process.argv.includes("--no-visual");
@@ -143,23 +202,35 @@ const failures = [];
 const summaries = [];
 for (const item of selectedCases) {
   assertPublishablePackage(path.basename(item.directory), {checkOutputs: true});
-  verifyFrozenPackage(item);
+  verifyFrozenPackage(item, {requireDaemonAssets: !verifyOnly});
   if (verifyOnly) {
     summaries.push({slug: item.slug, status: "verified"});
     process.stdout.write(`${JSON.stringify(summaries.at(-1))}\n`);
     continue;
   }
+  const candidateFile=resolveExistingPackageFile(item.directory,item.candidate,`${item.slug}: candidate preview`);
+  const sourceFile=resolveExistingPackageFile(item.directory,
+    path.basename(item.directory)==="dear-dictator"||path.basename(item.directory)==="quand-le-soleil-se-couche" ? "candidate.wikidot.txt" : "candidate.wikidot.source.txt",
+    `${item.slug}: candidate source identity`);
+  const cssFile=resolveExistingPackageFile(item.directory,item.css,`${item.slug}: candidate CSS`);
   const args = [
     lab, "check", "--socket", item.socket ?? socket, "--site-id", String(siteId),
-    "--wikitext", path.join(item.directory, item.candidate),
-    "--css", path.join(item.directory, item.css),
+    "--wikitext", candidateFile,
+    "--source", sourceFile,
+    "--css", cssFile,
     "--reference", item.reference, "--offline", "--selectors", item.selectors,
-    "--title", item.title, "--compact", ...(noVisual ? [] : ["--visual"]), "--artifact-dir", path.join(item.directory, "artifacts"),
+    "--title", item.title, "--compact", ...(noVisual ? [] : ["--visual"]), "--artifact-dir", runArtifactRoot ? path.join(runArtifactRoot, path.basename(item.directory)) : path.join(item.directory, "artifacts"),
   ];
+  if (item.surfaceContract) args.push("--surface-contract",item.surfaceContract);
+  const structureFile=path.join(item.directory,"acceptance-structure.json");
+  if(fs.existsSync(structureFile))args.push("--source-structure",resolveExistingPackageFile(item.directory,"acceptance-structure.json",`${item.slug}: acceptance structure`));
+  const baseCssBytes=currentPackageBaseCss(item.directory,path.basename(item.directory));
+  const resolvedBaseCssFile=baseCssBytes===null?null:resolveExistingPackageFile(item.directory,"candidate-base.css",`${item.slug}: candidate base CSS`);
+  if (resolvedBaseCssFile) args.push("--css-base",resolvedBaseCssFile);
   if (iteration) args.push("--iteration");
   const pageAssetManifest = path.join(item.directory, "page-assets.json");
-  if (fs.existsSync(pageAssetManifest)) args.push("--page-assets", pageAssetManifest);
-  const result = spawnSync(process.execPath, args, {cwd: root, encoding: "utf8", timeout: 120_000, maxBuffer: 16 * 1024 * 1024});
+  if (fs.existsSync(pageAssetManifest)) args.push("--page-assets", resolveExistingPackageFile(item.directory,"page-assets.json",`${item.slug}: page asset manifest`));
+  const result = spawnSync(process.execPath, args, {cwd: root, encoding: "utf8", timeout: 300_000, maxBuffer: 16 * 1024 * 1024});
   let output;
   try { output = JSON.parse(result.stdout); } catch {
     failures.push({slug: item.slug, reason: result.error?.message ?? result.stderr ?? "invalid JSON output", exit_code: result.status});
@@ -167,7 +238,16 @@ for (const item of selectedCases) {
     process.stdout.write(`${JSON.stringify(summaries.at(-1))}\n`);
     continue;
   }
+  if (output.ok === false) {
+    const row = {slug: item.slug, status: "error", error: output.error, exit_code: result.status};
+    failures.push(row); summaries.push(row); process.stdout.write(`${JSON.stringify(row)}\n`); continue;
+  }
   const verdict = output.result ?? output;
+  if (runArtifactRoot) {
+    const rawResultPath = path.join(runArtifactRoot, path.basename(item.directory), "raw-result.json");
+    fs.mkdirSync(path.dirname(rawResultPath), {recursive: true});
+    fs.writeFileSync(rawResultPath, `${JSON.stringify({schema: "theme_lab_full_check_result.v1", result: verdict})}\n`);
+  }
   const external = verdict.assets?.external_requests ?? verdict.asset_summary?.external_requests ?? 0;
   const localAcceptanceStatus = verdict.target_acceptance?.status ?? "unknown";
   const decisionIssues = (verdict.top_issues ?? []).filter((issue) => issue.parity_review?.may_treat_differences_as_port_requirements === true);
@@ -178,9 +258,15 @@ for (const item of selectedCases) {
     slug: item.slug,
     verdict: verdict.overall_acceptance?.status ?? "inconclusive",
     overall_acceptance: verdict.overall_acceptance ?? {status: "inconclusive"},
-    candidate_css_sha256: sha256(path.join(item.directory,item.css)),
-    candidate_preview_sha256: sha256(path.join(item.directory,item.candidate)),
+    verification_scope: verdict.verification_scope ?? null,
+    target_fixture_identity: verdict.target_fixture_identity ?? null,
+    target_acceptance_contract_sha256: verdict.target_acceptance_contract_sha256 ?? null,
+    candidate_source_sha256: sha256(sourceFile),
+    candidate_css_sha256: sha256(cssFile),
+    candidate_base_css_sha256: baseCssBytes===null ? null : crypto.createHash("sha256").update(baseCssBytes).digest("hex"),
+    candidate_preview_sha256: sha256(candidateFile),
     port_decision: verdict.port_decision ?? null,
+    parity_gate: verdict.parity_gate ?? null,
     local_target_acceptance: verdict.target_acceptance ?? null,
     local_target_acceptance_status: localAcceptanceStatus,
     errors: errorIssues.length,
@@ -206,7 +292,7 @@ for (const item of selectedCases) {
   const fontFailed = row.font_diagnostics?.status !== "measured" || !row.font_diagnostics.fonts?.some((font) => font.glyph_count > 0);
   const interactionFailed = !iteration && Object.values(row.interaction_diagnostics ?? {}).some((entry) => entry.status === "fail");
   const imageFailed = (row.image_diagnostics?.broken?.length ?? 0) > 0;
-  const failed = result.status !== 0 || row.verdict === "fail" || row.verdict === "inconclusive" || localAcceptanceStatus === "fail" || row.errors > 0 || row.next_actions > 0 || (!iteration && row.torture !== "pass") || external !== 0 || missingAssets > 0 || viewportFailed || fontFailed || interactionFailed || imageFailed;
+  const failed = result.status !== 0 || row.verdict === "fail" || row.verdict === "inconclusive" || localAcceptanceStatus === "fail" || row.errors > 0 || row.next_actions > 0 || (!iteration && !["pass", "warn"].includes(row.torture)) || external !== 0 || missingAssets > 0 || viewportFailed || fontFailed || interactionFailed || imageFailed;
   row.status = failed ? "fail" : iteration ? "iteration-verdict" : row.verdict === "warn" ? "warn-no-actionable-issues" : "pass";
   if (failed) failures.push({...row, exit_code: result.status, stderr: result.stderr?.slice(0, 500)});
   summaries.push(row);

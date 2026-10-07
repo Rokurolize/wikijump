@@ -657,6 +657,7 @@ impl ViewService {
                 wikidot_snapshot: Option<WikidotPageSnapshotView>,
                 wikidot_breadcrumbs: Vec<WikidotPageBreadcrumbView>,
                 attributions: Vec<PageAttribution>,
+                theme_previewer_blank: bool,
             },
             Missing,
             Private,
@@ -823,11 +824,16 @@ impl ViewService {
                     .or_raise(make_error)?;
 
                     let compiled_body_styles = compiled_body_styles
-                        .map(|styles| serde_json::from_str(&styles))
+                        .map(|styles| {
+                            crate::services::render::compiled_styles::decode(&styles)
+                        })
                         .transpose()
                         .or_raise(make_error)?
                         .unwrap_or_default();
 
+                    let theme_previewer_blank =
+                        compiled_body_styles.theme_previewer_blank;
+                    let compiled_body_styles = compiled_body_styles.styles;
                     let attributions = RelationService::get_page_attributions(
                         ctx,
                         GetPageAttributions {
@@ -949,6 +955,7 @@ impl ViewService {
                             wikidot_snapshot,
                             wikidot_breadcrumbs,
                             attributions,
+                            theme_previewer_blank,
                         },
                         wikitext,
                         new_page_wikitext: None,
@@ -1327,6 +1334,7 @@ impl ViewService {
                 wikidot_snapshot,
                 wikidot_breadcrumbs,
                 attributions,
+                theme_previewer_blank,
             } => {
                 let theme_previewer_no_ui = has_theme_previewer_no_ui(&wikitext);
                 let legacy_actions = LegacyActionRegistry::from_wikidot_source_bounded(
@@ -1395,6 +1403,7 @@ impl ViewService {
                     rate_actions,
                     membership_actions,
                     theme_previewer_no_ui,
+                    theme_previewer_blank,
                     redirect_page,
                     redirect_kind,
                     wikitext,

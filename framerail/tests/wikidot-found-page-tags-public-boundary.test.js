@@ -78,24 +78,24 @@ const renderFoundPage = (data) =>
     context: new Map([[PAGE_LAYOUT_CONTEXT_KEY, { current: Layout.WIKIDOT }]])
   }).body
 
-test("normal found-page route SSR renders ordered tag links directly in page-tags", () => {
+test("default Wikidot found-page route SSR preserves the native span around ordered tag links", () => {
   const body = renderFoundPage(foundPageData)
 
   assert.match(body, /<!--page-source-note-->/u)
   assert.match(
     body,
-    /<div class="page-tags"><!--1dsqzw2--><a href="\/system:page-tags\/tag\/_lp-holder-hidden#pages">_lp-holder-hidden<\/a><a href="\/system:page-tags\/tag\/lp-same-a-20260727#pages">lp-same-a-20260727<\/a><a href="\/system:page-tags\/tag\/lp-same-b-20260727#pages">lp-same-b-20260727<\/a><!----><\/div>/u
+    /<div class="page-tags"><span><!--1dsqzw2--><a href="\/system:page-tags\/tag\/_lp-holder-hidden#pages">_lp-holder-hidden<\/a><a href="\/system:page-tags\/tag\/lp-same-a-20260727#pages">lp-same-a-20260727<\/a><a href="\/system:page-tags\/tag\/lp-same-b-20260727#pages">lp-same-b-20260727<\/a><!----><\/span><\/div>/u
   )
 })
 
-test("display-only found-page tag leaf SSR renders supplied revision tags directly", () => {
+test("default Wikidot tag leaf SSR preserves the span around supplied revision tags", () => {
   const body = render(pageTagsComponent, {
     props: { tags: ["lp-range-20260727", "older-revision-tag"], hidden: false }
   }).body
 
   assert.equal(
     body,
-    '<!--[--><!--[0--><div class="page-tags"><!--1s3gosb--><a href="/system:page-tags/tag/lp-range-20260727#pages">lp-range-20260727</a><a href="/system:page-tags/tag/older-revision-tag#pages">older-revision-tag</a><!----></div><!--]--><!--]-->'
+    '<!--[--><!--[0--><div class="page-tags"><span><!--1s3gosb--><a href="/system:page-tags/tag/lp-range-20260727#pages">lp-range-20260727</a><a href="/system:page-tags/tag/older-revision-tag#pages">older-revision-tag</a><!----></span></div><!--]--><!--]-->'
   )
 })
 
@@ -117,6 +117,6 @@ test("editing found-page route SSR preserves the hidden page-tags state", () => 
 
   assert.match(
     body,
-    /<div class="page-tags hidden"><!--1dsqzw2--><a href="\/system:page-tags\/tag\/_lp-holder-hidden#pages">/u
+    /<div class="page-tags hidden"><span><!--1dsqzw2--><a href="\/system:page-tags\/tag\/_lp-holder-hidden#pages">/u
   )
 })

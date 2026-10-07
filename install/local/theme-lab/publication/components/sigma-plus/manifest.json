@@ -1,0 +1,60 @@
+{
+  "schema": "theme_lab_component_publication_source.v1",
+  "slug": "component:sigma-plus",
+  "target_branch": "jp",
+  "action": "create",
+  "source_file": "source.wikidot.txt",
+  "source_sha256": "dccfb8c281e6bf0268f7f472ef86690aa64181d3d916d1385838886bd89eafbf",
+  "authority": {
+    "en": {
+      "revision": 38,
+      "updated_at": "2025-12-11T06:28:08Z",
+      "source_sha256": "2ee01c9b8a8b4ad082abc030944a41e4d9624d7eda46ea3ecf1dcf9046d66498",
+      "corpus_serialized_source_sha256": "553d99a68fe402347d23670f19e053462a9d589632e56688fc26cc2606c29bd1",
+      "live_metadata_crosscheck": "evidence/audits/theme-lab-foreign-dependency-policy-audit-20261005.json",
+      "retained_source_copy": "evidence/upstream-en-rev38.wikidot.txt"
+    },
+    "jp_before": {
+      "exists": false
+    }
+  },
+  "publication_files": [
+    {
+      "target_name": "local-code/1",
+      "path": "local-code/1.css",
+      "sha256": "5bd2d00b494a875d43fcd5e270a4b323c9ddbe16b6238fb5f5b80992c3b37b0a"
+    }
+  ],
+  "localization": {
+    "documentation_language": "ja",
+    "default_header_title": "SCP財団",
+    "default_header_subtitle": "確保・収容・保護",
+    "default_logo_hosted_on_target_page": false,
+    "local_code_import_host": "scp-jp.wdfiles.com",
+    "logo_asset_policy": "Reuse the existing upstream Sigma logo asset URL; no separate attachment."
+  },
+  "dependents": [
+    "theme:al-slop",
+    "theme:space"
+  ],
+  "acceptance": {
+    "sigma9": "pending",
+    "sigma10": "pending",
+    "source_visual_review": "pending",
+    "consumer_Al_Slop": "pending-after-source-rebind",
+    "consumer_Space": "pending-after-source-rebind"
+  },
+  "publication": {
+    "manual_publish_required": true,
+    "public_writes": 0,
+    "publish_before_themes": [
+      "theme:al-slop",
+      "theme:space"
+    ]
+  },
+  "attachments": [],
+  "files": [
+    "source.wikidot.txt",
+    "local-code/1.css"
+  ]
+}

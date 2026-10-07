@@ -28,6 +28,7 @@ test('discoverable matrix entrypoint delegates to the canonical runner from any 
   assert.equal(wrapperFromRoot.stdout,canonicalResult.stdout);
   assert.match(wrapperFromRoot.stdout,/--themes=a,b/u);
   assert.match(wrapperFromRoot.stdout,/--transport=built\|dev/u);
+  assert.match(wrapperFromRoot.stdout,/--transport-origin=https:\/\/HOST:PORT/u);
   assert.match(wrapperFromRoot.stdout,/--anonymous/u);
 });
 
@@ -42,7 +43,9 @@ test('matrix entrypoint rejects invalid CLI arguments before starting a runtime'
     [['--theme=bedrock','--state='],/states must be non-empty/u],
     [['--theme=bedrock','--themes=basalt'],/exactly one of --theme or --themes is required/u],
     [['--theme=bedrock','--jobs=0'],/--jobs must be an integer from 1 to 9/u],
-    [['--theme=bedrock','--transport=bogus'],/--transport must be built or dev/u]
+    [['--theme=bedrock','--transport=bogus'],/--transport must be built or dev/u],
+    [['--theme=bedrock','--transport-origin=http:\/\/scpaiueouiuiuiui.wikijump.localhost:3398'],/--transport-origin must be an HTTPS origin/u],
+    [['--theme=bedrock','--transport-origin=https:\/\/example.com:3398'],/--transport-origin must be an HTTPS origin for scpaiueouiuiuiui.wikijump.localhost/u]
   ]){
     const result=invoke(wrapper,cwd,args);
     assert.notEqual(result.status,0,`unexpected success for ${args.join(' ')}`);

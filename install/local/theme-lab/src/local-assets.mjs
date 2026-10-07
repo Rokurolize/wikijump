@@ -15,55 +15,18 @@ const TYPES = {
   ".webp": "image/webp",
   ".woff": "font/woff",
   ".woff2": "font/woff2",
+  ".gif": "image/gif",
+  ".ttf": "font/ttf",
+  ".eot": "application/vnd.ms-fontobject",
 };
 
-const LOCAL_ASSET_URL = /url\(\s*["']?\.\/assets\/([^)'"\s]+)["']?\s*\)/gu;
-
-// Blank CSS comments and quoted strings while preserving offsets. A url(...)
-// written inside either is documentation or a disabled declaration, not a live
-// asset reference, so scanning and inlining must not read or rewrite it.
-function maskCssLiterals(css) {
-  const output = css.split("");
-  let index = 0;
-  while (index < css.length) {
-    const char = css[index];
-    if (char === "/" && css[index + 1] === "*") {
-      const end = css.indexOf("*/", index + 2);
-      const stop = end < 0 ? css.length : end + 2;
-      for (let cursor = index; cursor < stop; cursor += 1) output[cursor] = " ";
-      index = stop;
-      continue;
-    }
-    if (char === '"' || char === "'") {
-      const quote = char;
-      let cursor = index + 1;
-      while (cursor < css.length) {
-        if (css[cursor] === "\\") {
-          cursor += 2;
-          continue;
-        }
-        if (css[cursor] === quote) {
-          cursor += 1;
-          break;
-        }
-        cursor += 1;
-      }
-      for (let mark = index; mark < cursor; mark += 1) output[mark] = " ";
-      index = cursor;
-      continue;
-    }
-    index += 1;
-  }
-  return output.join("");
-}
+// The deterministic freezer emits bare content-addressed filenames. Standalone
+// ports also retain the original ./assets/name form. Both resolve only in the
+// explicitly supplied asset pool; arbitrary relative URLs are not widened.
+const LOCAL_ASSET_URL = /url\(\s*["']?(?:\.\/assets\/([^)'"\s]+)|(?:\.\/)?([a-f0-9]{64}\.[a-z0-9]+))["']?\s*\)/gu;
 
 function assetNames(css) {
-  const masked = maskCssLiterals(css);
-  const names = [];
-  for (const match of css.matchAll(LOCAL_ASSET_URL)) {
-    if (masked[match.index] !== css[match.index]) continue;
-    names.push(match[1]);
-  }
+  const names = [...css.matchAll(LOCAL_ASSET_URL)].map((match) => match[1] ?? match[2]);
   for (const name of names) {
     if (!name || name === "." || name === ".." || name.includes("..") || name.includes("/") || name.includes("\\")) {
       fail("invalid_candidate_asset", `invalid candidate asset URL: ${name}`);
@@ -100,9 +63,8 @@ export async function materializeCandidateCssAssets(css, rootDir) {
       // inspectCandidateAssets reports the missing file in the verdict.
     }
   }
-  const masked = maskCssLiterals(css);
-  return css.replace(LOCAL_ASSET_URL, (whole, name, offset) => {
-    if (masked[offset] !== css[offset]) return whole;
+  return css.replace(LOCAL_ASSET_URL, (whole, legacy, digest) => {
+    const name = legacy ?? digest;
     return replacements.has(name) ? `url("${replacements.get(name)}")` : whole;
   });
 }

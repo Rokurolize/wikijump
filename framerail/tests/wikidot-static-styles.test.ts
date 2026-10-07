@@ -153,6 +153,36 @@ test("the modern page-tag layout cannot override imported Wikidot theme CSS", as
   )
 })
 
+test("the Wikidot shell never claims layout ownership of the imported mobile nav", async () => {
+  const layout = await fs.readFile(
+    new URL("../src/lib/sigma-esque/wikidot.svelte", import.meta.url),
+    "utf8"
+  )
+
+  const styles = /<style\b[^>]*>(?<body>[\s\S]*?)<\/style>/u.exec(layout)?.groups?.body
+  assert.ok(styles)
+
+  const root = postcss().process(styles, { from: "wikidot.svelte", parser: scss }).root
+  const offending: string[] = []
+
+  root.walkRules((rule) => {
+    if (!/\.(?:mobile-top-bar|open-menu)\b/u.test(rule.selector)) return
+
+    for (const node of rule.nodes) {
+      if (node.type !== "decl") continue
+      if (
+        /^(?:position|(?:inset|(?:top|right|bottom|left))|float|transform|display|margin)$/u.test(
+          node.prop
+        )
+      ) {
+        offending.push(`${rule.selector} { ${node.prop}: ${node.value} }`)
+      }
+    }
+  })
+
+  assert.deepEqual(offending, [])
+})
+
 test("the Wikidot header exposes the three legacy extension hooks in source order", async () => {
   const layout = await fs.readFile(
     new URL("../src/lib/sigma-esque/wikidot.svelte", import.meta.url),
@@ -172,6 +202,21 @@ test("the Wikidot header exposes the three legacy extension hooks in source orde
     "header-extra-div-3"
   ])
   assert.match(header, /@render loginStatus\?\.\(\)[\s\S]*header-extra-div-1/u)
+})
+
+test("the Wikidot sidebar exposes the legacy close-menu control", async () => {
+  const layout = await fs.readFile(
+    new URL("../src/lib/sigma-esque/wikidot.svelte", import.meta.url),
+    "utf8"
+  )
+  const sidebar =
+    /<div id="side-bar">(?<body>[\s\S]*?)<\/div>\s*<div id="main-content">/u.exec(layout)
+      ?.groups?.body
+
+  assert.ok(sidebar)
+  assert.match(sidebar, /@render sideBar\?\.\(\)/u)
+  assert.match(sidebar, /<a class="close-menu" href="##">/u)
+  assert.match(sidebar, /<img[^>]*alt="black\.png"[^>]*class="image"/u)
 })
 
 test("the Wikidot shell preserves the legacy two-input search chrome", async () => {

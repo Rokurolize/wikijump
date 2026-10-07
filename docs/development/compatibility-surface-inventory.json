@@ -11390,7 +11390,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "7b1420841710a0d7731746787805ca384bffabfa83ace4ddbc6047f221c120f4"
+      "source_input_set_sha256": "a62e86f2591ddb4f3f1c38071ad89591289f349aa68cc326af42baf0913a1c48"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11491,7 +11491,7 @@
       },
       {
         "path": "deepwell/src/endpoints/page_revision.rs",
-        "sha256": "d006371ce742207cff80be85839327a2e621c22738d6d5f5524d2987bb7b8954"
+        "sha256": "d1a8e23a86a28046f9da3ec2aef1eecfcc739e80ae8219926f16854266be7350"
       },
       {
         "path": "deepwell/src/endpoints/page.rs",
@@ -11543,7 +11543,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "e2074a00fe48901c3f2704536255544ecb5dadda28434e7d66f6ea13d9dca59a"
+        "sha256": "a01cb2dd8fae78d426a07338f4f8d91de26054afddf6b15dfdb2c84e7d0546a3"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11551,7 +11551,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "03cf6bc91297a6086f91d9e17d6153e6f1dbf20fc19b569e5533a5a9d6fbd756"
+        "sha256": "d6002de878abc0bc7eb41deafa74b31cdce50a63b364ff2a56ed4c14ee68b868"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11615,19 +11615,19 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "7a48964120133a9706a85b2da0f2b6ede56277db6dda4b8233b540cd88e89adb"
+        "sha256": "650ba58f919e8864a3ebf2e83d696b10dda7b0591beea5029f81cd73d302826a"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
-        "sha256": "ce9a798b7d1d076085e634e1e61ef338fff89bb3dc797449f90f06aae4f61714"
+        "sha256": "2929d5634f1e1b598ef90e1e3d01b963ad0c7d76d0aff8c491f9a11338db28e4"
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "0897f082c2e616dcbbce886b9fd84a76136a81d1d694aa66b73fb1c9aaf4a8b6"
+        "sha256": "fdcdbd1b057a59b11daeca245a2ccae7f7e38b6c4e10fffaf59396680039f419"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "553dbdf60f809e8af6dbfb029650fda8de4101008777adaa99fd4b4d9d6f3518"
+        "sha256": "7c9984fe6e1e208c8044c3738b5158df1cbaf674c1dd985c1b105d06d840eeba"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -11875,7 +11875,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "0897f082c2e616dcbbce886b9fd84a76136a81d1d694aa66b73fb1c9aaf4a8b6"
+        "sha256": "fdcdbd1b057a59b11daeca245a2ccae7f7e38b6c4e10fffaf59396680039f419"
       },
       {
         "path": "wws/src/route.rs",
@@ -19381,7 +19381,7 @@
         "cases": [],
         "tests": [
           "framerail/tests/wikidot-found-page-tags-public-boundary.test.js",
-          "framerail/tests/wikidot-found-page-tags-public-boundary.test.js#normal found-page route SSR renders ordered tag links directly in page-tags",
+          "framerail/tests/wikidot-found-page-tags-public-boundary.test.js#default Wikidot found-page route SSR preserves the native span around ordered tag links",
           "framerail/tests/wikidot-page-tags.test.js"
         ]
       },

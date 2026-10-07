@@ -1,0 +1,30 @@
+/* SCP-JP Wikidot Al Slop responsive header grid: let the native localized search control fit at narrow widths. */
+#header {
+  grid-template-columns: var(--sp_area-comp-margin) minmax(0, 1fr) auto var(--sp_area-comp-margin);
+}
+
+/* SCP-JP Wikidot Al Slop desktop submenu fit: keep the long second-to-last target menu within the viewport. */
+@media (min-width: 768px) and (max-width: 1100px) {
+  #top-bar .top-bar > ul > li:nth-last-child(2) > ul {
+    inset-inline-start: auto; inset-inline-end: 0;
+  }
+}
+
+/* SCP-JP Wikidot Al Slop heritage rating callouts: anchor tooltip images at the narrow article edge. */
+@media (max-width:479px) {
+  .heritage-rating-module :is(.rateup,.ratedown,.cancel)::before {
+    left:auto;right:0;transform:none;
+  }
+}
+
+/* SCP-JP Wikidot Al Slop saved credit callouts: retain tooltip images inside their rating edge. */
+.creditRate > li :is(.rateup,.ratedown,.cancel)::before {
+  left:auto;right:0;transform:none;
+}
+
+/* SCP-JP Wikidot Al Slop narrow saved navigation: anchor the wrapped penultimate submenu at its row endpoint. */
+@media(max-width:359px) {
+  #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul {
+    left:auto;right:0;
+  }
+}

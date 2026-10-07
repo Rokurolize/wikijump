@@ -52,7 +52,7 @@
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn"
   },
   "dependencies": {
     "slug": "theme:scp-offices-theme",
@@ -129,10 +129,10 @@
       "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; the JP-hosted counterpart returned HTTP 500, so the current EN image with the same theme showcase role is bundled."
     }
   ],
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/scp-offices-theme/assets.json",
-  "asset_dependency_decision_count": 41,
+  "asset_dependency_decision_count": 58,
   "maintenance_source": {
     "base": "maintenance/base.wikidot.txt",
     "jp_overrides": "maintenance/jp-overrides.css",
@@ -153,12 +153,21 @@
       "source_sha256": "71ce312197a6261037e1123658a49f6d7b3a3d5a4eb7bb8d4653c20b8d5c8ad7",
       "active_tags": [],
       "candidate_source_sha256": "1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8",
-      "candidate_active_tags": [],
+      "candidate_active_tags": [
+        "en",
+        "テーマ"
+      ],
+      "runtime_active_tags": [],
+      "showcase_css_modules_removed_exact": 1,
+      "showcase_css_modules_removed_truncated": 0,
+      "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 0,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "57c4819dd215211e62d3f35fe92ed2a106a345434d5fac5e2a943153beeb59e6",
+      "candidate_css_sha256": "f3d5d0cec11e9092bed5913399d302ed8a19dea98a4e43ee71845afe4e803545",
       "asset_receipt_path": "assets.json",
-      "assets": 34,
-      "imports": 5,
+      "assets": 49,
+      "imports": 7,
       "localization_transforms": 0,
       "localization_transform_manifest": null,
       "missing": 0,
@@ -170,7 +179,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

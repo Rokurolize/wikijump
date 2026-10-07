@@ -131,6 +131,8 @@ pub enum GetPageViewOutput {
         membership_actions: Vec<MembershipBrowserAction>,
         #[serde(default)]
         theme_previewer_no_ui: bool,
+        #[serde(default)]
+        theme_previewer_blank: bool,
         redirect_page: Option<String>,
         #[serde(default)]
         redirect_kind: Option<PageRedirectKind>,

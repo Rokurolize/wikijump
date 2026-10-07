@@ -25,9 +25,9 @@
   "existing_jp_audit": "new-jp-candidate-verified",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/scpedia",
-  "candidate_source_hash": "c72a8efe05d1b61db6186108038dbfaca435d076a00f78319464deed5cfbb7c5",
+  "candidate_source_hash": "a03ffcf8189adfaf7d9e43fd3084c61957f9f4910a6096b32d9073ad699d70f8",
   "source_candidate_path": "install/local/theme-lab/ports/scpedia/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "c72a8efe05d1b61db6186108038dbfaca435d076a00f78319464deed5cfbb7c5",
+  "source_candidate_sha256": "a03ffcf8189adfaf7d9e43fd3084c61957f9f4910a6096b32d9073ad699d70f8",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -35,11 +35,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/scpedia/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "c72a8efe05d1b61db6186108038dbfaca435d076a00f78319464deed5cfbb7c5",
+  "candidate_source_sha256": "a03ffcf8189adfaf7d9e43fd3084c61957f9f4910a6096b32d9073ad699d70f8",
   "human_port_candidate_path": "install/local/theme-lab/ports/scpedia/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "5316c14f73b16462234cdbd4b06e8174fa41c57910492058df171404ad3a8e96",
-  "candidate_preview_sha256": "0a7c8111df8d7ccb66c0dcabf6449c2ab6d5b093d827440cb1a8788c9f38aa71",
-  "candidate_css_sha256": "0c084e07a8809a2f33fdee800c793293a7835412d5fb279d387e966d6de928de",
+  "candidate_preview_sha256": "db15bd1d29bbdd3c9afc7df0394d7a5e0dae707c9c6d24d55629d7801f7bd44e",
+  "candidate_css_sha256": "68d1cdb84e515d1c7693a3663d70915f05e7bf5d4de3b9294f7c2a9774b21924",
   "page_assets": [
     {
       "filename": "u.png",
@@ -81,10 +81,15 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/scpedia/accepted-result.json",
+    "sha256": "fbe67ea30d01014681c87ad976b3781b5cd0b13ab8db7afee57eb2e7d29c054e"
+  }
 }

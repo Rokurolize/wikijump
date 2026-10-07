@@ -1,0 +1,66 @@
+[[module CSS]]
+@import url(https://scp-jp.wdfiles.com/local--code/component%3Afade-in/1);
+[[/module]]
+
+[[iftags +コンポーネント]]
+[[div style="border: 1px solid #ddd; padding: 1em;"]]
+このコンポーネントは、ページの読み込み時に内容を瞬時に表示する代わりに、滑らかにフェードインさせます。
+
+多くの場合、あえて使用する必要はありませんが、この演出が必要なページ向けのコンポーネントです。
+
+フェードインはページ本文全体、ページタイトル、パンくずリストに適用されます。サイドバーやヘッダーなど、ページのその他の部分には適用されません。
+
++ 使い方
+
+[[div class="code"]]
+@@[[include :scp-jp:component:fade-in]]@@
+[[/div]]
+
++ 他のテーマで無効化する
+
+一部のCSSテーマはFade Inを標準で組み込んでいます。そのようなテーマでFade Inを無効化したい場合は、次のCSSを追加してください。
+
+[[div class="code"]]
+@@[[module CSS]]@@
+:root {
+@@  --@@fade-in: none;
+}
+@@[[/module]]@@
+[[/div]]
+
+[[/div]]
+
+-----
+
++ ソースコード
+
+[[code type="css"]]
+/* https://scp-jp.wikidot.com/component:fade-in */
+
+:where(:root) {
+  --fade-in: fadeIn;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :where(#page-title, #breadcrumbs, #page-content) {
+    animation-name: var(--fade-in);
+    animation-duration: 0.5s;
+    animation-iteration-count: 1;
+    animation-timing-function: ease-out;
+    animation-fill-mode: backwards;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(0,15px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0,0);
+  }
+}
+[[/code]]
+
+[[/iftags]]

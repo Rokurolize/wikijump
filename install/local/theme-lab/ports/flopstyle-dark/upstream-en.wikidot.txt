@@ -2188,7 +2188,7 @@ Any targeted rating module remains in an "inactive" state by default, and will b
 
  .top-bar::before {
     position: absolute;
-    top: -.5em;
+    top: -.4em;
     left: calc(100% / 4);
     width: calc(100% / 2);
     height: 5px;

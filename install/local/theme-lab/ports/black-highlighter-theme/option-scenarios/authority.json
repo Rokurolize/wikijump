@@ -1,0 +1,161 @@
+{
+  "schema": "theme_lab_bhl_option_authority.v1",
+  "observed_at": "2026-10-06",
+  "authority": "shared SCP-JP corpus current snapshots plus retained exact public stylesheet response",
+  "pages": [
+    {
+      "slug": "theme:black-highlighter-theme",
+      "branch": "jp",
+      "revision": 74,
+      "updated_at": "2026-09-25T01:25:13+00:00",
+      "entity_id": "41755b0d-969f-4210-b9a6-a1ce9791b29d",
+      "source_sha256": "760ef1fb2d85d2c956c7ae59c6792c22c651faf05dc547669a86e66f5702c10e",
+      "snapshot_path": "sources/theme--black-highlighter-theme.wikidot.txt",
+      "corpus_capture_id": "d56e0997d8db9ab368b6b7a0922f5b6324da2476db72e02301f784e587f2b0a6",
+      "corpus_run_id": "xmlrpc-resume-jp-20260807-text-only-rate1"
+    },
+    {
+      "slug": "component:centered-header-bhl",
+      "branch": "jp",
+      "revision": 3,
+      "updated_at": "2023-09-18T04:38:13+00:00",
+      "entity_id": "df961ed1-0b59-46d5-b0b8-7daea0cd32e0",
+      "source_sha256": "be0cec9e1373b49ea771184edf19efda85a9b7b09ef6788f89ce266874b9a28c",
+      "snapshot_path": "sources/component--centered-header-bhl.wikidot.txt",
+      "corpus_capture_id": "0fd4f8412bcd1c673a8e1dfbae2969c569caddaadfb82c6ad463044db0bbd74d",
+      "corpus_run_id": "xmlrpc-resume-jp-20260807-text-only-rate1"
+    },
+    {
+      "slug": "component:toggle-sidebar-bhl",
+      "branch": "jp",
+      "revision": 3,
+      "updated_at": "2023-09-18T04:40:36+00:00",
+      "entity_id": "cf87e343-b671-4ecd-bef9-35975cf7e0ff",
+      "source_sha256": "b498d2bbcd7a503ac89beb04a63041a5cb8d49f980630e82155ddbf7b2857a05",
+      "snapshot_path": "sources/component--toggle-sidebar-bhl.wikidot.txt",
+      "corpus_capture_id": "8af7bf6094c4c461a2dd5ed7d24f6d8939f4e7ff05f055dd1e66cc13226ebd53",
+      "corpus_run_id": "xmlrpc-resume-jp-20260807-text-only-rate1"
+    },
+    {
+      "slug": "component:bhl-dark-sidebar",
+      "branch": "jp",
+      "revision": 2,
+      "updated_at": "2023-01-20T09:58:55+00:00",
+      "entity_id": "c7d5c8f1-96ad-4b44-b2e7-75ddd6e0f3e6",
+      "source_sha256": "ac6bdcbd357fda304db94439c8140a3e3b6fc379d4ba558ecf0add845e903357",
+      "snapshot_path": "sources/component--bhl-dark-sidebar.wikidot.txt",
+      "corpus_capture_id": "0545c06862980e13653d47d0138c8977167e17134f3b7d8d6756b7d293fe5f6d",
+      "corpus_run_id": "xmlrpc-resume-jp-20260807-text-only-rate1",
+      "stylesheet": {
+        "url": "https://scp-jp.github.io/files/component/bhl-dark-sidebar/style0.css",
+        "sha256": "937c49b92021245dc02ce5e62f11d369ef778e3b565d07d96c4f9c4d827acce4",
+        "path": "../../shared-fixtures/current-source-components-jp/bhl-dark-sidebar-style0.css",
+        "bytes": 7444
+      }
+    },
+    {
+      "slug": "component:collapsible-sidebar",
+      "branch": "jp",
+      "revision": 4,
+      "updated_at": "2026-09-25T04:20:00+00:00",
+      "entity_id": "e677792b-7d64-42cb-8ded-dbce50ffefc6",
+      "source_sha256": "b0ae91dbf313be853ab0a8e130176b2dc6bd5a9543d1f97687fc4cf9432db55f",
+      "snapshot_path": "sources/component--collapsible-sidebar.wikidot.txt",
+      "corpus_capture_id": "36cfb8ac4e9ea4056a647102a2254b46b024dd3f34a6ed9e44a02a13815c33b4",
+      "corpus_run_id": "xmlrpc-resume-jp-20260807-text-only-rate1"
+    },
+    {
+      "slug": "fragment:collapsible-sidebar-bhl",
+      "branch": "jp",
+      "revision": 5,
+      "updated_at": "2023-01-20T10:01:32+00:00",
+      "entity_id": "99e9d0da-4b59-4911-aa7f-66537826f649",
+      "source_sha256": "2e8e7c132c50ab0c046f42bda185472d4ed19e7d8eb1725085835561e07bf2c3",
+      "snapshot_path": "sources/fragment--collapsible-sidebar-bhl.wikidot.txt",
+      "corpus_capture_id": "dac7a0f37779c96b22cb6aa2c3c38ae8cce9b8eee2219fdc5e7bf03b96da0414",
+      "corpus_run_id": "xmlrpc-resume-jp-20260807-text-only-rate1"
+    }
+  ],
+  "candidate": {
+    "source_path": "../candidate.wikidot.source.txt",
+    "source_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
+    "css_path": "../candidate.css",
+    "css_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
+    "base_css_path": null,
+    "base_css_sha256": null
+  },
+  "source_intent_review": {
+    "reviewed_at": "2026-10-06",
+    "question": "Is opening the closed desktop toggle sidebar by hovering the screen edge an evidenced publication behavior?",
+    "english_current": {
+      "branch": "en",
+      "slug": "component:toggle-sidebar-bhl",
+      "revision": 55,
+      "updated_at": "2024-12-24T15:03:53+00:00",
+      "entity_id": "34d99add-0889-495c-8c93-7385761dcdbd",
+      "source_sha256": "ccfabddbc5f4903b74fb79ae6c58122152f3c5319b0193f5bd6e1d97a3abdd05"
+    },
+    "japanese_current": {
+      "branch": "jp",
+      "slug": "component:toggle-sidebar-bhl",
+      "revision": 3,
+      "updated_at": "2023-09-18T04:40:36+00:00",
+      "source_sha256": "b498d2bbcd7a503ac89beb04a63041a5cb8d49f980630e82155ddbf7b2857a05"
+    },
+    "comparison_component": {
+      "branch": "jp",
+      "slug": "component:collapsible-sidebar",
+      "revision": 4,
+      "source_sha256": "b0ae91dbf313be853ab0a8e130176b2dc6bd5a9543d1f97687fc4cf9432db55f"
+    },
+    "conclusion": "The current English and Japanese toggle descriptions specify a corner button. They explicitly distinguish the collapsible sidebar as hover-based rather than click-based. The toggle source has hover selectors for an already reachable sidebar, but no source authority requires a closed sidebar to expose an edge activation rail. Edge-hover-open from rest is non-normative; button/focus opening and hover after opening remain distinct observations."
+  },
+  "option_candidates": [
+    {
+      "slug": "component:bhl-dark-sidebar",
+      "action": "update",
+      "source_path": "sources-candidates/component--bhl-dark-sidebar-hover-composition.wikidot.txt",
+      "source_sha256": "a00d21e5e4272ba0b598b59609f50523c7f0b7961f86d53f9d00a66566f72b7e",
+      "derived_from_revision": 2,
+      "derived_from_source_sha256": "ac6bdcbd357fda304db94439c8140a3e3b6fc379d4ba558ecf0add845e903357",
+      "rationale": "Preserve the dark sidebar palette while the JP rev3 toggle-sidebar opens it by pointer hover or keyboard focus; scope credit-preview sizing away from native rating controls, which otherwise cause Sigma-10 narrow/mobile overflow."
+    }
+  ],
+  "superseded_option_candidates": [
+    {
+      "slug": "component:toggle-sidebar-bhl",
+      "derived_from_revision": 3,
+      "derived_from_source_sha256": "b498d2bbcd7a503ac89beb04a63041a5cb8d49f980630e82155ddbf7b2857a05",
+      "source_path": "sources-candidates/component--toggle-sidebar-bhl-hover-repair.wikidot.txt",
+      "source_sha256": "a7bacfe38dbcf6fe6904548932572d06788ddfd990a4ca123fec884c56d63a39",
+      "change": "Historical proposed update with a 24px activation rail. Superseded by the 2026-10-06 source-intent review; retain as historical candidate evidence, not publication authority."
+    }
+  ],
+  "framerail": {
+    "fingerprint_tool": "../../../../src/framerail-source-fingerprint.mjs",
+    "fingerprint_sha256": "d67899e66baa58c3504ec8d93fb81bfb31509c80eb8d4785b93fbb9974127caa",
+    "runtime_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3395",
+    "runtime_source_header": "x-theme-lab-runtime-source-sha",
+    "runtime_version": "captured by runner at execution"
+  },
+  "external_assets": [
+    {
+      "url": "https://scp-wiki.wdfiles.com/local--files/component%3Acollapsible-sidebar/sidebar-tab.svg",
+      "sha256": "396b98969a7d1b53713d6ab36be3e25025c75f11b1cf2653d701aaba03948bbd",
+      "content_type": "image/svg+xml",
+      "path": "../../shared-replay-assets/396b98969a7d1b53713d6ab36be3e25025c75f11b1cf2653d701aaba03948bbd.svg",
+      "bytes": 585,
+      "captured_at": "2026-10-05"
+    }
+  ],
+  "backend_runtime_identity": {
+    "schema": "wikijump_deepwell_runtime_identity.v1",
+    "source_sha256": "e305cb837753e27e7504ccad0e87d237a721bdd0d6fc234312e9488b94232637",
+    "ftml_git_revision": "bf49d32fe980611fed368661396a3d6c1f02c51f",
+    "container_id": "9c70840b9fb2b5f7a3ec9906a5661c69719c94152c55577418e967354a18376e",
+    "image_id": "sha256:d3f14cc0be8dc6689987564b68eb6d85078981ef33f6220f833653ed09ed6a6e",
+    "binary_sha256": "f15625c1413755e69d6e30aaad9612553c410a7bb48540181cf2166c8efbf77b",
+    "config_sha256": "46c242e2d7c63d03606647f71e038756edfef6455feb125a753dbde01426b73c",
+    "identity_sha256": "33db6564f49af2ef3afb9769ce3bcbee1f8e2cb92efd710b7e6f50c3b1bc7a2e"
+  }
+}

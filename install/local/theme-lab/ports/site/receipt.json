@@ -24,9 +24,9 @@
   "existing_jp_audit": "new-jp-candidate-verified",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/site",
-  "candidate_source_hash": "9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343",
+  "candidate_source_hash": "b62171f0df44d62ebe3af75eca1cb53ef854f0b8e747dedade2ed0ee399e9c48",
   "source_candidate_path": "install/local/theme-lab/ports/site/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343",
+  "source_candidate_sha256": "b62171f0df44d62ebe3af75eca1cb53ef854f0b8e747dedade2ed0ee399e9c48",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -34,11 +34,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/site/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343",
+  "candidate_source_sha256": "b62171f0df44d62ebe3af75eca1cb53ef854f0b8e747dedade2ed0ee399e9c48",
   "human_port_candidate_path": "install/local/theme-lab/ports/site/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "266aebc62fbeadb0fe493c6da1a89c8c340f0c30058a527a09ed6571ff02e003",
-  "candidate_preview_sha256": "2fcfc80fbfccbe23475133039714f1556a762fa65cbe95da0fc59e96b019c10d",
-  "candidate_css_sha256": "18768d711c87cec0cb6ed1b79a2d7023a53a422f35f39e841417374be0de3a69",
+  "candidate_preview_sha256": "84e8437250d8e678be52a6c54fd12dc095fe9a0e9977f20311c5f322729e2924",
+  "candidate_css_sha256": "28a72ef325901611e12a505fa1e94ea40a315c80cb316f787d6ec6c2ee3606a4",
   "page_attachment_manifest": null,
   "new_port_reconciliation": {
     "source_authority": "current-en-source",
@@ -55,7 +55,7 @@
   "asset_dependency_decision_count": 0,
   "page_asset_dependency_decisions_path": null,
   "candidate_base_css_path": "install/local/theme-lab/ports/site/candidate-base.css",
-  "candidate_base_css_sha256": "869c96d0a83b3beef1775abe5c08801a319443a301ea6e8f056b0a38ad9e6833",
+  "candidate_base_css_sha256": "23b32297ee4252de0f78d0cc40ec6fc43b0c6c75ae2a3f8b78e7a71e4cba6440",
   "candidate_base_css_network_requests": 0,
   "historical_acceptance": {
     "status": "SUPERSEDED_CANDIDATE",
@@ -69,10 +69,15 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/site/accepted-result.json",
+    "sha256": "2bb66ff94663fbcf0a239c9acb1f4378439d70888d30ae7624abfd85bcb9c073"
+  }
 }

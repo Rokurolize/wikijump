@@ -4,8 +4,8 @@
   "en_updated_at": "2026-07-12T20:13:59+00:00",
   "en_entity_uuid": "13d65bb3-c9a5-4451-9a7b-7c6df54ec9c4",
   "jp_previous_status": "present",
-  "jp_previous_source_sha256": "261f3dbdd16444999df3fa36301ff4323237ab4bfed4ca50b2f99c13794e683e",
-  "jp_previous_updated_at": "2025-12-26T07:04:03+00:00",
+  "jp_previous_source_sha256": "fa167734c0345030acd8ac869edf0505a91aad74be1bb87fc9f26ec59d38584a",
+  "jp_previous_updated_at": "2026-09-25T00:46:02+00:00",
   "jp_previous_entity_uuid": "12eac644-b172-42e8-a603-7469436be637",
   "technical_spec_version": "1.4",
   "reference_url": "https://scp-wiki.wikidot.com/theme:classic",
@@ -37,8 +37,8 @@
     "jp": {
       "status": "present",
       "source_path": "existing-jp.wikidot.txt",
-      "sha256": "261f3dbdd16444999df3fa36301ff4323237ab4bfed4ca50b2f99c13794e683e",
-      "updated_at": "2025-12-26T07:04:03+00:00",
+      "sha256": "fa167734c0345030acd8ac869edf0505a91aad74be1bb87fc9f26ec59d38584a",
+      "updated_at": "2026-09-25T00:46:02+00:00",
       "entity_uuid": "12eac644-b172-42e8-a603-7469436be637",
       "tags": [
         "en",
@@ -49,11 +49,20 @@
         "kind": "scp-corpus-page",
         "branch": "jp",
         "slug": "theme:classic"
-      }
+      },
+      "revisions": 11
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "inconclusive",
+    "existing_jp_rebase": {
+      "previous_sha256": "261f3dbdd16444999df3fa36301ff4323237ab4bfed4ca50b2f99c13794e683e",
+      "previous_snapshot": "existing-jp-pre-rebase-20261005.wikidot.txt",
+      "current_revision": 11,
+      "current_updated_at": "2026-09-25T00:46:02+00:00",
+      "current_sha256": "fa167734c0345030acd8ac869edf0505a91aad74be1bb87fc9f26ec59d38584a",
+      "diff_assessment": "provenance refresh; source freshness audit found no theme CSS/runtime behavior delta"
+    }
   },
   "dependencies": {
     "slug": "theme:classic",
@@ -133,11 +142,11 @@
     "jp_overrides": "maintenance/jp-overrides.css",
     "manifest": "maintenance/manifest.json",
     "base_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "semantic_css_sha256": "6d90d7fc3a0c76b350b7bc45d14f0ceee0cbc569179eb34e095495f1ae0608d8",
-    "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "jp_overrides_sha256": "f624af884489ebe0ec695086818f0a136087d12a3a54b41be06777e189a66306",
+    "semantic_css_sha256": "fa8254125634be4f44b54b22a4a9f9bda47e3d285836e99ed2df88cb8910dc6a",
+    "canonical_override_sha256": "52adf0aa241e85974d1170b7cfadc147c7341c175c0e61d65cbac98a45fd1cca",
     "final_source": "maintenance/final.wikidot.txt",
-    "final_source_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
+    "final_source_sha256": "a9e1ec087457f2cae9bb3d9ee173d35f6285aa3408fc590a79f5552a40e6d196",
     "exact_duplicate_rules_removed": 0,
     "redundant_same_value_declarations_removed": 0,
     "empty_rules_removed": 0
@@ -147,10 +156,19 @@
       "source_path": "candidate-input.css",
       "source_sha256": "1f2d3cde0f8ffde0ef454d68df3cd989008970842182d573be6210b58d1aa24c",
       "active_tags": [],
-      "candidate_source_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
-      "candidate_active_tags": [],
+      "candidate_source_sha256": "9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09",
+      "candidate_active_tags": [
+        "en",
+        "テーマ"
+      ],
+      "runtime_active_tags": [],
+      "showcase_css_modules_removed_exact": 1,
+      "showcase_css_modules_removed_truncated": 0,
+      "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 1,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "447015860c880f261854f7e0a46536ff126f02e44f1da7cd7b51eb90f58b2c27",
+      "candidate_css_sha256": "8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376",
       "asset_receipt_path": "assets.json",
       "assets": 1,
       "imports": 1,

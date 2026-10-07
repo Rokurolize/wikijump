@@ -958,3 +958,19 @@ div#action-area h1 {
 [[module CSS]]
 @import url('https://scp-wiki.wdfiles.com/local--code/theme%3Ascpedia/1');
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot SCPedia masthead correction: keep the source title inside the narrow tablet viewport. */
+@media (min-width: 768px) and (max-width: 800px) {
+  div#extra-div-2 {
+    left: 16.75rem;
+  }
+}
+
+/* SCP-JP Wikidot native history list: preserve the seven columns inside their own horizontal scroller. */
+@media(max-width:767px) {
+  #revision-list {
+    max-width:100%;overflow-x:auto;
+  }
+}
+[[/module]]

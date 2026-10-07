@@ -1,3 +1,18 @@
 @import url(https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/1);
 
-@import url(https://scp-jp.wdfiles.com/local--code/theme%3Acosmonaut/2);
+
+/* SCP-JP Wikidot cosmonaut credit correction: keep the modal rating in document flow below the license control. */
+#u-credit-view .modalbox .modalbox-ratemodule { position: static; }
+@media (max-width: 359px) {
+  #u-credit-view .modalbox { box-sizing: border-box; }
+}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Cosmonaut navigation correction: anchor the rightmost mobile submenu to its source menu endpoint. */
+@media (max-width: 767px) {
+  #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
+}
+@media (max-width: 359px) {
+  #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul { left: auto; right: 0; }
+}

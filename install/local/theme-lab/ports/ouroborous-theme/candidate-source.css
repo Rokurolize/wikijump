@@ -1,19 +1,4 @@
 @import url("https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css");
 @import url("https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css");
-#breadcrumbs,
-#page-title {
-    text-align: center;
-}
-
-.scp-image-block.block-right {
-    margin: 1em 0 1em 2em;
-}
-
-.scp-image-block img {
-    width: 100%;
-    min-width: 100%;
-    border: 0.5rem solid rgba(var(--pale-gray-monochrome));
-    box-sizing: border-box;
-}
 
 @import url("https://pseudo-scp-jp.wdfiles.com/local--code/theme%3Aouroborous-theme/1")

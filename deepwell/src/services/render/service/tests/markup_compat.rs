@@ -377,6 +377,7 @@ fn protects_css_before_list_pages_and_rejoins_the_outer_pipeline() {
     let page_info = fallback_test_page_info("css-list-pages", "CSS ListPages");
     let outer = RenderService::prepare_outer_render_wikitext(
         super::super::ExpandedRenderWikitext {
+            theme_previewer_blank: false,
             wikidot_compat_html: CompatHtmlFragments::new(&source),
             wikidot_compat_text: CompatTextFragments::new(&source),
             wikitext: source,

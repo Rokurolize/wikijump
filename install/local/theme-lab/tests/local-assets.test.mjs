@@ -41,15 +41,12 @@ test("candidate page images use verified local attachment bytes", async (t) => {
   ], dir), /invalid content-addressed page asset/u);
 });
 
-test("candidate asset scanning and inlining ignore url() inside comments and strings", async (t) => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "theme-lab-assets-literals-"));
-  t.after(() => fs.rm(dir, {recursive: true, force: true}));
-  await fs.writeFile(path.join(dir, "paper.png"), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
-  const css = '/* url("./assets/absent.png") */ .x::before{content:"url(\'./assets/absent.png\')"} .paper{background:url("./assets/paper.png")}';
-  assert.deepEqual(await inspectCandidateAssets(css, dir), {referenced: 1, missing: []});
-  const out = await materializeCandidateCssAssets(css, dir);
-  assert.ok(out.includes('/* url("./assets/absent.png") */'));
-  assert.ok(out.includes("url('./assets/absent.png')"));
-  assert.equal(out.match(/url\("data:image\/png;base64,[^"]+"\)/gu).length, 1);
-  assert.ok(out.includes('.paper{background:url("data:image/png;base64,'));
+test('freezer filenames use the frozen asset pool without widening arbitrary relative URLs',async t=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'theme-lab-frozen-assets-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+ const bytes=Buffer.from('frozen font');const digest=crypto.createHash('sha256').update(bytes).digest('hex');
+ await fs.writeFile(path.join(dir,`${digest}.woff2`),bytes);
+ const css=`@font-face{src:url("${digest}.woff2")} .logo{background:url("./${digest}.png")} .unowned{background:url("relative.png")}`;
+ assert.deepEqual(await inspectCandidateAssets(css,dir),{referenced:2,missing:[`${digest}.png`]});
+ const injected=await materializeCandidateCssAssets(css,dir);
+ assert.ok(injected.includes('data:font/woff2;base64,'));assert.ok(injected.includes('url("relative.png")'));assert.ok(injected.includes(`url("./${digest}.png")`));
 });

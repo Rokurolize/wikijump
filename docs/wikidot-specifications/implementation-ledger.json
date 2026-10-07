@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-09-05",
-  "catalog_sha256": "ce9a798b7d1d076085e634e1e61ef338fff89bb3dc797449f90f06aae4f61714",
+  "catalog_sha256": "2929d5634f1e1b598ef90e1e3d01b963ad0c7d76d0aff8c491f9a11338db28e4",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -4915,7 +4915,7 @@
         "evidence": [
           "live:found-page-tag-wrapper-dom-20260727",
           "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures.json",
-          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#normal found-page route SSR renders ordered tag links directly in page-tags"
+          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#default Wikidot found-page route SSR preserves the native span around ordered tag links"
         ],
         "observation_gaps": [
           "The retained captures establish displayed tag order only. Wider selection, ordering, and counting behavior remains unobserved."
@@ -4926,7 +4926,7 @@
         "evidence": [
           "live:found-page-tag-wrapper-dom-20260727",
           "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures.json",
-          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#normal found-page route SSR renders ordered tag links directly in page-tags"
+          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#default Wikidot found-page route SSR preserves the native span around ordered tag links"
         ],
         "observation_gaps": [
           "The retained captures establish only the displayed /system:page-tags/tag/<tag>#pages anchor form. URL encoding, HTTP, API, Ajax, and navigation behavior remains unobserved."
@@ -4937,10 +4937,10 @@
         "evidence": [
           "live:found-page-tag-wrapper-dom-20260727",
           "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures.json",
-          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#normal found-page route SSR renders ordered tag links directly in page-tags",
+          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#default Wikidot found-page route SSR preserves the native span around ordered tag links",
           "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#tagless found-page route SSR omits page-tags",
           "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#editing found-page route SSR preserves the hidden page-tags state",
-          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#display-only found-page tag leaf SSR renders supplied revision tags directly"
+          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#default Wikidot tag leaf SSR preserves the span around supplied revision tags"
         ],
         "observation_gaps": [
           "The retained captures establish only the settled found-page wrapper shape. Broader CSS, resource, geometry, interaction, client revision-selection, and intermediate-state behavior remains unobserved."

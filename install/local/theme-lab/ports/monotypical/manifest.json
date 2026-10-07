@@ -51,7 +51,7 @@
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn"
   },
   "dependencies": {
     "slug": "theme:monotypical",
@@ -144,7 +144,7 @@
       "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; "
     }
   ],
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/monotypical/assets.json",
   "asset_dependency_decision_count": 40,
@@ -153,11 +153,11 @@
     "jp_overrides": "maintenance/jp-overrides.css",
     "manifest": "maintenance/manifest.json",
     "base_sha256": "9293fdfd3ee9faf3b644dc690c9abe8c2ce71f49d08fff711446edae8d45035a",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "semantic_css_sha256": "99032659941c71343cf42cc752ff74eb596476ede568342a2d36426c6c9ffb1b",
-    "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "jp_overrides_sha256": "9f4098d406425e39f976091a053968610fc8a4ba32cc986f11ae23bb5bf362f3",
+    "semantic_css_sha256": "2da251478a190349c9000025f124596dd1144d8924246ea8722b23183b2af856",
+    "canonical_override_sha256": "3f893bc312638c63f2e3fe4f393aedbdc41577ad2a32124dcf74da6e70bcdfda",
     "final_source": "maintenance/final.wikidot.txt",
-    "final_source_sha256": "9293fdfd3ee9faf3b644dc690c9abe8c2ce71f49d08fff711446edae8d45035a",
+    "final_source_sha256": "4b93f8e0316e0f11b2c0911af4d6b5118378ab87af69ced9657245236bba5590",
     "exact_duplicate_rules_removed": 0,
     "redundant_same_value_declarations_removed": 0,
     "empty_rules_removed": 0
@@ -167,10 +167,19 @@
       "source_path": "candidate-input.css",
       "source_sha256": "c68c0419d7151c59226543e14eb46ff021fc9f3b972c55f03bbf4401777d1d0c",
       "active_tags": [],
-      "candidate_source_sha256": "9293fdfd3ee9faf3b644dc690c9abe8c2ce71f49d08fff711446edae8d45035a",
-      "candidate_active_tags": [],
+      "candidate_source_sha256": "2b1757725694a02df9618f21e2e4326f37500b6f751d005558199df72f9913e5",
+      "candidate_active_tags": [
+        "en",
+        "テーマ"
+      ],
+      "runtime_active_tags": [],
+      "showcase_css_modules_removed_exact": 0,
+      "showcase_css_modules_removed_truncated": 0,
+      "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 0,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "36571271b31534f4344673a8c4ef8f26aa4ceaeef4cd36aa22e5f0c4f14d942e",
+      "candidate_css_sha256": "f2883666196dd7cad910db816eba36924273e206d35ef01c410443f3b48bfd23",
       "asset_receipt_path": "assets.json",
       "assets": 32,
       "imports": 5,
@@ -185,7 +194,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

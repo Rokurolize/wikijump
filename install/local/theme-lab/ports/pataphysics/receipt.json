@@ -16,15 +16,16 @@
   },
   "jp": {
     "status": "present",
-    "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:pataphysics/source.wikidot.txt",
-    "sha256": "c2de53df254304f9cc88cb9955003855ecaafb336b24a11355dbd51ae832796b",
-    "updated_at": "2024-03-06T17:53:58+00:00",
+    "source_path": "existing-jp.wikidot.txt",
+    "sha256": "010bec1cd52b910ae33ba244dd04b5141304142ba7210c53f3347ef68944504a",
+    "updated_at": "2026-09-25T03:22:03+00:00",
     "entity_uuid": "8112e551-59c5-459c-9bbd-f324f880b922",
     "tags": [
       "en",
       "テーマ"
     ],
-    "absence_run": null
+    "absence_run": null,
+    "revisions": 40
   },
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
@@ -42,8 +43,8 @@
   "candidate_source_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b",
   "human_port_candidate_path": "install/local/theme-lab/ports/pataphysics/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "2e04ee0458e97fd36c12cab2e40aab0bf77d846beb0064018efa5c32650e87fb",
-  "candidate_preview_sha256": "1434a752af664eb0f55c0b84a9e8db08f7d518612a8542b491585b92e64fd9a9",
-  "candidate_css_sha256": "df264c1927fbe7bc8fe3e3f6f7fa594293d814f1e3d90386a03bfe475f6c02de",
+  "candidate_preview_sha256": "3f6aae40dabedb436984739f00c357ff88c8803f576a4fc7e507fb558386ab48",
+  "candidate_css_sha256": "98f233f2f3161e085fe9c764c87a2e07b95501977e69702236582d1e39923b17",
   "page_attachment_manifest": null,
   "existing_jp_reconciliation": {
     "previous_source_sha256": "c2de53df254304f9cc88cb9955003855ecaafb336b24a11355dbd51ae832796b",
@@ -53,12 +54,17 @@
     "en_revision_newer_than_jp": true,
     "candidate_source_delta": {
       "unchanged": false,
-      "inserted_lines": 30,
-      "removed_lines": 5,
+      "inserted_lines": 6,
+      "removed_lines": 6,
       "diff_path": "install/local/theme-lab/ports/pataphysics/existing-jp-candidate.diff"
     },
     "source_action": "adapted-existing-jp-source",
-    "technical_validation": "current EN reference and local SCP-JP DOM were compared; all required viewport, rating fixture, asset, font, interaction, offline, and torture gates are bound in final_theme_lab_check"
+    "technical_validation": "current EN reference and local SCP-JP DOM were compared; all required viewport, rating fixture, asset, font, interaction, offline, and torture gates are bound in final_theme_lab_check",
+    "current_source_sha256": "010bec1cd52b910ae33ba244dd04b5141304142ba7210c53f3347ef68944504a",
+    "current_updated_at": "2026-09-25T03:22:03+00:00",
+    "current_revision": 40,
+    "rebase_kind": "provenance-only-no-theme-css-or-runtime-behavior-delta",
+    "previous_source_sha256_before_rebase": "c2de53df254304f9cc88cb9955003855ecaafb336b24a11355dbd51ae832796b"
   },
   "foreign_site_user_credit_links": {
     "adapted_count": 3,
@@ -80,10 +86,15 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/pataphysics/accepted-result.json",
+    "sha256": "0286efd1ae21b90b35f8c22a9998749ae0cb6fd0850a1c464505cd9793b6ad91"
+  }
 }

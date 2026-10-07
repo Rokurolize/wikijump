@@ -41,6 +41,22 @@ authority audit. `historical_adaptations` retains every historical disposition;
 An upstream refresh must rebind the reviewed inputs and recapture affected
 real-Wikidot evidence when its exact CSS identity changes.
 
+If the flattened input omitted an active source module or included an inactive
+variant, inspect the module inventory before repairing it. The explicit offline
+repair reads only the hash-bound publication base and selects the default
+article modules, in source order:
+
+```sh
+node install/local/theme-lab/ports/scripts/materialize-publication-input.mjs --theme=foxtrot
+node install/local/theme-lab/ports/scripts/materialize-publication-input.mjs --theme=foxtrot --write
+```
+
+It records module hashes, the previous input hash, and the source hash in
+`runtime-css-materialization.json`. Rebuild the maintained source, frozen CSS,
+and preview afterward; recapture invalidated authority and acceptance evidence.
+This repairs the input inventory without changing the frozen source bytes or
+automatically acquiring dependencies. Existing identical repairs are preserved.
+
 ## Preflight a refreshed upstream page
 
 Acquire a prospective upstream source into a separate file first. Do not overwrite the frozen snapshot before review. Then run:

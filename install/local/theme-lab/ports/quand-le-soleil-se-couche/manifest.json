@@ -44,7 +44,9 @@
     "source_sha256": "ad58489823ebe90644008ddb2df87c794c71e0eced39fc0762d5f31cd6fedf5d",
     "local_theme_page": {
       "url": "https://scp-jp.wikidot.com/theme:quand-le-soleil-se-couche",
-      "http_status": 404
+      "http_status": 200,
+      "revision": 2,
+      "updated_at": "2026-09-29T15:10:19Z"
     },
     "active_theme_include": ":scpko:theme:quand-le-soleil-se-couche",
     "documented_foreign_include": ":fondationscp:theme:quand-le-soleil-se-couche",
@@ -82,11 +84,15 @@
   "technical_spec_version": "1.4",
   "current_jp_theme_page": {
     "url": "https://scp-jp.wikidot.com/theme:quand-le-soleil-se-couche",
-    "status": "absent",
-    "http_status": 404,
-    "observed_at": "2026-09-27T19:40:09.311127Z"
+    "status": "present",
+    "http_status": 200,
+    "revision": 2,
+    "updated_at": "2026-09-29T15:10:19Z",
+    "source_sha256": "d42659934387cf19af43b9135db16820ecef9e8fe478c9ee645e794b4c71a881",
+    "observed_at": "2026-10-05",
+    "authority": "live metadata crosscheck and current shared corpus"
   },
-  "authority_refresh_verified_at": "2026-09-27T19:40:09.311157Z",
+  "authority_refresh_verified_at": "2026-10-05",
   "adaptation_authority": {
     "ledger": "../adaptation-authority.json",
     "publishable_without_authority": 0
@@ -95,5 +101,18 @@
   "overall_acceptance": {
     "status": "inconclusive",
     "reason": "Historical candidate acceptance superseded"
+  },
+  "current_jp_theme_target": {
+    "branch": "jp",
+    "slug": "theme:quand-le-soleil-se-couche",
+    "status": "present",
+    "revision": 2,
+    "updated_at": "2026-09-29T15:10:19Z",
+    "entity_id": "d0274bdf-5274-4ca2-be67-1027e5c34983",
+    "source_path": "current-jp-theme.wikidot.txt",
+    "sha256": "d42659934387cf19af43b9135db16820ecef9e8fe478c9ee645e794b4c71a881",
+    "live_serialized_source_sha256": "79650874ae52b22c901e86c83a17f60ecca2eb814b9ddd90a499a352b0262851",
+    "difference": "blank-line whitespace only",
+    "latest_observation_run": "theme-lab-refresh-jp-20261005-auto1"
   }
 }

@@ -40,26 +40,5 @@
   "asset_replacements": {
     "http://scp-jp-storage.wikidot.com/local--files/file:7974444-51-jv2x/night-rush-icon.png": "https://scp-wiki.wdfiles.com/local--files/theme%3Anight-rush-theme/night-rush-icon.png"
   },
-  "omitted_assets": [],
-  "dependency_decisions": [
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wikidot.com/local--files/file:7974444-50-9wqt/night-rush-header.png",
-      "sha256": "ba187e02986e39f618d471f85d3e7f4ab45902124a67c7e330d186e113b952ed",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "http://scp-jp-storage.wikidot.com/local--files/file:7974444-51-jv2x/night-rush-icon.png",
-      "sha256": "b6d283fad22b250af1e8041ffcca895cc2fa5bea8586b9dbaac3389591dfd213",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-jp.github.io/files/theme/night-rush-theme/style0.css",
-      "sha256": "e70df47be73e7572ae4d1597226cf06ad86eba650a511a51e689749a3a24f658",
-      "asset_file": "e70df47be73e7572ae4d1597226cf06ad86eba650a511a51e689749a3a24f658.css",
-      "decision": "freeze-source-stylesheet"
-    }
-  ]
+  "omitted_assets": []
 }

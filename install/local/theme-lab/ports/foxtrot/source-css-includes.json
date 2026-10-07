@@ -1,0 +1,64 @@
+{
+  "schema": "theme_lab_source_css_includes.v1",
+  "authority": "RUNTIME_INDEPENDENT",
+  "candidate_source": "candidate.wikidot.source.txt",
+  "upstream_source": "upstream-en.wikidot.txt",
+  "includes": [
+    {
+      "locator": "component:toggle-sidebar",
+      "source": {
+        "path": "source-includes/toggle-sidebar.wikidot.txt",
+        "sha256": "5e6e6bf79aa9b08344865b1209693254db4c8d1aef7d579092bc6dd9c7c55e35"
+      },
+      "kind": "unconditional-modules",
+      "css": {
+        "path": "source-includes/toggle-sidebar-input.css",
+        "sha256": "d4d80ebcc0e2afb61490420a96b3f0b4cc29dfc9de532029e062af1ee80028ae"
+      }
+    },
+    {
+      "locator": "component:fade-in",
+      "kind": "wikidot-local-code",
+      "parameters": {
+        "speed": "1"
+      },
+      "source": {
+        "path": "source-includes/fade-in.wikidot.txt",
+        "sha256": "a4882c56f2c0be3af6f9c4d1d0b6d6054ddbf86c16e6fa584342e2a6adb71f90"
+      },
+      "css": {
+        "path": "source-includes/fade-in-input.css",
+        "sha256": "f08bd5ec39fd99fa194e1614c1523191b66f7168e8d332b9eac0bf384222cd17"
+      },
+      "code_index": 1
+    },
+    {
+      "locator": "component:betterfootnotes",
+      "kind": "wikidot-local-code",
+      "parameters": {},
+      "source": {
+        "path": "source-includes/betterfootnotes.wikidot.txt",
+        "sha256": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d"
+      },
+      "css": {
+        "path": "source-includes/betterfootnotes-input.css",
+        "sha256": "4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5"
+      },
+      "code_index": 1
+    },
+    {
+      "locator": "component:acs-animation",
+      "kind": "unconditional-modules",
+      "parameters": {},
+      "source": {
+        "path": "source-includes/acs-animation.wikidot.txt",
+        "sha256": "9d275b2ce4a8399a5754801e943ce8962c597d2515d9b4bd3ec8101711161de8"
+      },
+      "css": {
+        "path": "source-includes/acs-animation-input.css",
+        "sha256": "9c2d54387591ead58b15b16791039c675b87d47c268b98800b48eed8f6662690"
+      }
+    }
+  ],
+  "base_import_count": 0
+}

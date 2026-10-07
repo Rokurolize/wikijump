@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "125e50c40b0349ef982256b192fa88f713db3ab7127efbacc9c1b65288304bd4",
+  "frozen_candidate_source_sha256": "5b80ba7f55a5f70b6569fef18e95056bf223ec143f7c2ef549d88aba7a3d096a",
   "base_source_sha256": "125e50c40b0349ef982256b192fa88f713db3ab7127efbacc9c1b65288304bd4",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "e79810a4608f0666b0f0798acbcdbb89f288fbcea6a1220637a78d08e7afd2a9",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "02d5b9e31f21601d028bfdeb1c39a70d9cfdc6be0adc41f0981ed7b1db8d81ef",
+  "jp_overrides_sha256": "6bb842d4628fbfbb3f678ac91aa43e9fd92851dfcbf758bc993760e75d5e4b6a",
+  "semantic_css_sha256": "d9dc7449424cb05849a6443e0ffe788940a81811ff9c29dec71960e20ba18cd1",
+  "canonical_override_sha256": "e1a858662b957bc93c66081d17a03e716f39d852e9cf3a5c7414669823273ab0",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "125e50c40b0349ef982256b192fa88f713db3ab7127efbacc9c1b65288304bd4",
+  "final_source_sha256": "d8f98d7c02e1754c5e2eb5c7892c58b6eef02a205b8a45458c4fecc3bb6fc47e",
   "final_source_inputs": {
     "base_sha256": "125e50c40b0349ef982256b192fa88f713db3ab7127efbacc9c1b65288304bd4",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "6bb842d4628fbfbb3f678ac91aa43e9fd92851dfcbf758bc993760e75d5e4b6a"
   },
   "ordered_include_sha256": "e9f30608842976191b376319c29641e6486dc3186e85b134368beceb6862db6e",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 1,
+  "raw_override_rule_count": 1,
+  "canonical_override_rule_count": 1,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -103,12 +103,56 @@
         },
         {
           "path": "much-cool/existing-jp.wikidot.txt",
-          "sha256": "0305019f63ac920a0451b2fe9c17aa8c84992d86ae8b2243692e3d29c7354833",
+          "sha256": "aff88b307f9e26ce47d632a6f29bb786a62f9b89b1e2b41ed9ab0e74d9272988",
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width.",
+      "sha256": "fc06f37bb5a09fcb74697be2d29c21e2fb1f41059795d75bc6117955b3679006",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "The native SCP-JP image-block component at 320px loses its caption/content past the viewport left edge. Subtract its evidenced right margin and border/padding from the available content width. Real article A/B proves containment and unchanged 390px/desktop geometry.",
+      "selectors": [
+        ".scp-image-block.block-right"
+      ],
+      "at_contexts": [
+        "@media (max-width: 479px)"
+      ],
+      "evidence": [
+        {
+          "path": "authority-evidence/much-cool-final-image-image-block-6-0-20261001/receipt.json",
+          "sha256": "45967845bf784e1418e758de217c617ebd608383f23defce875b5b91b08f4ace",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-1428-jp",
+        "state": "image-block",
+        "viewports": [
+          320,
+          390,
+          1440
+        ]
+      },
+      "published_css_sha256": "d6232bbe6f3e7da786f975a4960754dd86b71fdf16abbbc58bd07c2052293468",
+      "published_base_css_sha256": null
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width.",
+      "rationale": "SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width.",
+      "sha256": "fc06f37bb5a09fcb74697be2d29c21e2fb1f41059795d75bc6117955b3679006",
+      "selectors": [
+        ".scp-image-block.block-right"
+      ],
+      "at_contexts": [
+        "@media (max-width: 479px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    }
+  ]
 }

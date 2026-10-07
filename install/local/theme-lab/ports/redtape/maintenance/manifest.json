@@ -4,7 +4,7 @@
   "base_source_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
   "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "2f527ecd78d719ae691e1ec49fa5fdea271bcaeac9bf3896a9a3ef3404357dd4",
+  "semantic_css_sha256": "0c6cc4b9b20eb44c9744c4a57462101b180d2aab3ca38896d3dca4763305ef72",
   "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
   "final_source": "maintenance/final.wikidot.txt",
   "final_source_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
@@ -166,6 +166,27 @@
           "path": "redtape/existing-jp.wikidot.txt",
           "sha256": "b0f436a038cfd2c4f1bb0e153995a5ba911c92682d5a058eba578724563632af",
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+        }
+      ]
+    },
+    {
+      "marker": "Resolve preserved source CSS component includes",
+      "origin": "source-css-include-resolution",
+      "authority": "RUNTIME_INDEPENDENT",
+      "sha256": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022",
+      "rationale": "Exact CSS from the preserved upstream include chain, materialized before main source CSS; no JP adaptation.",
+      "evidence": [
+        {
+          "path": "redtape/source-css-includes.json",
+          "sha256": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022"
+        },
+        {
+          "path": "shared-fixtures/current-toggle-sidebar-bhl/receipt.json",
+          "sha256": "afca79891442ed6f8a5aa5bdc5e1a8c27105b1ceae6af0dc893bf0d5cd88f90a"
+        },
+        {
+          "path": "shared-fixtures/current-source-components/receipt.json",
+          "sha256": "38a3de3d2a1987b57615dfa215eeaddde2fe31e5ffb5d7ce4f190656c18dcee2"
         }
       ]
     }

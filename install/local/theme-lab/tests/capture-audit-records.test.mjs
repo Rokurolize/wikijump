@@ -63,3 +63,11 @@ test('current and superseded SCP-JP captures retain local-only decision authorit
     assert.equal(record.port_conclusion_eligible, false);
   }
 });
+
+test('superseded history preserves the measured Deepwell identity for later risk comparison',()=>{
+  const backend={schema:'wikijump_deepwell_runtime_identity.v1',source_sha256:'a'.repeat(64),ftml_git_revision:'b'.repeat(40),container_id:'c'.repeat(64),image_id:`sha256:${'d'.repeat(64)}`,binary_sha256:'e'.repeat(64),config_sha256:'f'.repeat(64),identity_sha256:'1'.repeat(64)};
+  const superseded=compactSupersededRecord(baseRecord({backend_runtime_identity:backend,backend_runtime_identity_sha256:backend.identity_sha256,scoped_run_contract_sha256:'2'.repeat(64)}));
+  assert.equal(superseded.backend_runtime_identity_sha256,backend.identity_sha256);
+  assert.equal(superseded.backend_runtime_identity.container_id,backend.container_id);
+  assert.equal(superseded.scoped_run_contract_sha256,'2'.repeat(64));
+});

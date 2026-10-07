@@ -5,9 +5,26 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {candidateIdentity} from '../ports/scripts/candidate-identity.mjs';
 import {assertPublishablePackage} from '../src/adaptation-authority.mjs';
+import {validatePublicationCandidateSet} from '../src/publication-candidate-freeze.mjs';
 import {validateSigmaPreviewFinding} from './preview-authority.mjs';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
+if(process.argv.slice(2).some(arg=>arg!=='--historical-only')){
+ console.log(JSON.stringify({command:'sigma10-migration-check',result:'INVALID COMMAND',failures:['Use --historical-only to inspect archived evidence, or no option for current campaign completion.']},null,2));
+ process.exit(64);
+}
+const historicalOnly=process.argv.includes('--historical-only');
+if(!historicalOnly){
+ const {checkCampaignCompletion}=await import('../src/campaign-completion.mjs');
+ const themeLabRoot=path.resolve(root,'..');
+ const sigma10Contract=JSON.parse(await fs.readFile(path.join(root,'current-campaign/run-contract.json'),'utf8'));
+ const publicationFailures=validatePublicationCandidateSet(themeLabRoot,{expectedCandidateSetSha256:sigma10Contract.candidate_set_sha256,contract:sigma10Contract,label:'Sigma-10 publication candidate set'});
+ const result=checkCampaignCompletion(themeLabRoot);
+ const failures=[...new Set([...(result.failures??[]),...publicationFailures])];
+ const status=publicationFailures.length?'fail':result.status;
+ console.log(JSON.stringify({command:'current-campaign-completion',result:status==='pass'?'CURRENT CAMPAIGN ACCEPTED':'CURRENT CAMPAIGN NOT ACCEPTED',overall_acceptance:{status},...result,status,failures,publication_candidate_set:{candidate_set_sha256:sigma10Contract.candidate_set_sha256,status:publicationFailures.length?'fail':'pass',failures:publicationFailures}},null,2));
+ process.exit(status==='pass'?0:status==='inconclusive'?2:1);
+}
 const ports=path.resolve(root,'../ports');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const fail=[];
@@ -119,4 +136,4 @@ const gitRoot=path.resolve(root,'../../../../');
 const touched=execFileSync('git',['diff','--name-only','HEAD','--','install/local/theme-lab/ports/interactive-visual-audit.json'],{cwd:gitRoot,encoding:'utf8'});
 if(touched.trim())fail.push('accepted Sigma-9 audit was modified / normal campaign evidence was contaminated');
 if(fail.length){console.error(JSON.stringify({result:'FINAL-ZERO FAIL',failures:fail.length,details:fail.slice(0,100)},null,2));process.exitCode=1}
-else console.log(JSON.stringify({result:'HISTORICAL AND SOURCE EVIDENCE VERIFIED',evidence_integrity:{status:'pass'},overall_acceptance:{status:'inconclusive',reason:'Historical local migration screenshots do not accept authority-cleaned candidates or an unverified Wikidot preview hypothesis'},sigma10_preview_authority:previewFinding.classification,candidates:candidates.length,page_normal_cells:candidates.length*matrix.length,current_records:audit.records.length,superseded_records:audit.superseded_records?.length??0,unique_screenshots:seenShots.size,fixture_manifest_sha256:manifestSha,run_contract_sha256:contractSha},null,2));
+else console.log(JSON.stringify({result:'HISTORICAL AND SOURCE EVIDENCE VERIFIED',evidence_integrity:{status:'pass'},overall_acceptance:{status:'inconclusive',reason:'Historical local migration screenshots do not accept authority-cleaned candidates or an unverified Wikidot preview hypothesis'},sigma10_preview_authority:previewFinding.classification,candidates:candidates.length,page_normal_cells:candidates.length*matrix.length,current_records:audit.records.length,superseded_records:audit.superseded_history?.record_count??audit.superseded_records?.length??0,unique_screenshots:seenShots.size,fixture_manifest_sha256:manifestSha,run_contract_sha256:contractSha},null,2));

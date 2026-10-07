@@ -1,4 +1,4 @@
-[[include :scp-wiki:component:sigma-plus]]
+[[include :scp-jp:component:sigma-plus]]
 [[module css]]
 @import url(https://scp-jp.wdfiles.com/local--code/theme%3Aspace/1);
 [[/module]]

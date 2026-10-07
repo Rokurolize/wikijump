@@ -1,0 +1,101 @@
+{
+  "schema": "theme_lab_component_publication_source.v1",
+  "slug": "component:bhl-dark-sidebar",
+  "target_branch": "jp",
+  "action": "update",
+  "source_file": "source.wikidot.txt",
+  "source_sha256": "a00d21e5e4272ba0b598b59609f50523c7f0b7961f86d53f9d00a66566f72b7e",
+  "authority": {
+    "jp_before": {
+      "revision": 2,
+      "updated_at": "2023-01-20T09:58:55+00:00",
+      "source_sha256": "ac6bdcbd357fda304db94439c8140a3e3b6fc379d4ba558ecf0add845e903357",
+      "corpus_capture_id": "0545c06862980e13653d47d0138c8977167e17134f3b7d8d6756b7d293fe5f6d",
+      "corpus_run_id": "xmlrpc-resume-jp-20260807-text-only-rate1"
+    },
+    "candidate": {
+      "source_path": "ports/black-highlighter-theme/option-scenarios/sources-candidates/component--bhl-dark-sidebar-hover-composition.wikidot.txt",
+      "source_sha256": "a00d21e5e4272ba0b598b59609f50523c7f0b7961f86d53f9d00a66566f72b7e",
+      "derived_from_revision": 2,
+      "derived_from_source_sha256": "ac6bdcbd357fda304db94439c8140a3e3b6fc379d4ba558ecf0add845e903357",
+      "source_authority_path": "ports/black-highlighter-theme/option-scenarios/authority.json",
+      "source_authority_sha256": "32390ce05b5d1d0bd1622eda6d03370e3e4f777377b908a35c2726343e6b52a5"
+    }
+  },
+  "change_summary": [
+    "Keep BHL dark sidebar colors while the JP rev3 toggle sidebar is open through pointer hover or keyboard focus.",
+    "Scope preview width to .creditModule:not(.creditRate) so native Sigma-10 rating controls do not inherit preview sizing."
+  ],
+  "publication_files": [],
+  "attachments": [],
+  "files": [
+    "source.wikidot.txt"
+  ],
+  "dependents": [
+    "theme:black-highlighter-theme",
+    "theme:extra-black-highlighter-theme"
+  ],
+  "acceptance": {
+    "targeted_option_scenario": "bhl-options-toggle-header-dark",
+    "sigma9_sigma10_engines": {
+      "chromium": "pass",
+      "firefox": "pass",
+      "webkit": "pass"
+    },
+    "visual_review": "pass",
+    "full_theme_sigma9": "pending-after-final-freeze",
+    "full_theme_sigma10": "pending-after-final-freeze",
+    "evidence": {
+      "source_authority": {
+        "path": "ports/black-highlighter-theme/option-scenarios/authority.json",
+        "sha256": "32390ce05b5d1d0bd1622eda6d03370e3e4f777377b908a35c2726343e6b52a5"
+      },
+      "receipts": [
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "sha256": "be310c902b619a20b2330d5886cbca25c26537e35d66632c8942466d6b7ea3f1",
+          "receipt_sha256": "234ada39d90723d8b3440cd864471bf3172f9a6d68ce214304d4bbda9264e63d"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+          "sha256": "f592ed931269b068a867f9054cd066899763a0ad98c02826fae44a10c988b2a2",
+          "receipt_sha256": "0cd2c1684f275bf39de6438091f8d4f1d33b3ca112a1d0d4eadd088610756ce6"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+          "sha256": "2a54dbb29fe7433cdc3c56f9e345b3a02c8cf41344d8cbbadcef6d5e73238ed5",
+          "receipt_sha256": "41041758ca99fcb104341150d839f4b8a06a547cbbe742784b84a3040f94811c"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "sha256": "4b91bad5287c44e6ce92b38b89fba1c225e7ca1ac850943421bf1e3976700b47",
+          "receipt_sha256": "45f9d3e082db9d1dc5c7b9f7e57e629dc8c9fbb81536bf65b84ab95217b2e08b"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+          "sha256": "779356860d63b5884471b234ef7d18d5679854cbaee5a13e729f2d6d195a8ba9",
+          "receipt_sha256": "8a98e333343f12a0c98b2c0e0b515f75d511481fd673285f58e08ff95295d0db"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+          "sha256": "5d2f5df795355edfc25605b5be536162333079b83b2c4c241fb188fbc6221aec",
+          "receipt_sha256": "c10e9df73987a902e256cacd8de70edb671a1485918e19945a97165b2000cf0d"
+        }
+      ],
+      "visual_review": {
+        "path": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json",
+        "sha256": "8ff2d95035a525a971dbe2e27bf413d61045cf4cbc39caa97d60425e0116f46b"
+      }
+    },
+    "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36"
+  },
+  "publication": {
+    "manual_publish_required": true,
+    "public_writes": 0,
+    "action": "update-existing-SCP-JP-component-revision-2; do not create a duplicate page.",
+    "publish_before_themes": [
+      "theme:black-highlighter-theme",
+      "theme:extra-black-highlighter-theme"
+    ]
+  }
+}

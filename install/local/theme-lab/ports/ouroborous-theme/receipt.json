@@ -41,8 +41,8 @@
   "candidate_source_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
   "human_port_candidate_path": "install/local/theme-lab/ports/ouroborous-theme/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "b3447aef6f075093b637b8c07dbeb087e669e33fa860ad90623b974f610d88be",
-  "candidate_preview_sha256": "637e2461ae2b19e64391f24cdde52479a6ee49302bf997dc29905d6906dc88d4",
-  "candidate_css_sha256": "7607562cc3c4be9caba5d23f3855214ed78fd3e0332a17626c01dfde99b150c7",
+  "candidate_preview_sha256": "cf7f337ed0cc7b6d651bf58887aa7c58259f9ad646b32df459b4d28de697c5a8",
+  "candidate_css_sha256": "e3ca8e1a29abcba717d8e638af2eb2526f85b0ae134cd76918157a2b7f5a3fb1",
   "page_assets": [
     {
       "filename": "black-highlighter-logo.svg",
@@ -91,7 +91,7 @@
     "source_evidence": "candidate screenshots visibly rendered unresolved SCP-EN usernames against SCP-JP identity links; preserve display names and freeze upstream/human-port originals"
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/ouroborous-theme/assets.json",
-  "asset_dependency_decision_count": 40,
+  "asset_dependency_decision_count": 52,
   "page_asset_dependency_decisions_path": "install/local/theme-lab/ports/ouroborous-theme/page-assets.json",
   "historical_acceptance": {
     "status": "SUPERSEDED_CANDIDATE",
@@ -105,10 +105,15 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/ouroborous-theme/accepted-result.json",
+    "sha256": "aac42f5c271712949aa6a32a76c6e15b1026a1430378e6b0ffdd253f4daa09ad"
+  }
 }

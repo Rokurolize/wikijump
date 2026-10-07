@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import {spawn} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {withAuditLock} from '../scripts/audit-lock.mjs';
+import {mergeInteractiveAuditShards} from '../scripts/audit-shard-merge.mjs';
+import {validateVisualGateRecord,visualGateNeedsScreenshot} from '../../src/visual-gate.mjs';
+import {assertDeepwellRuntimeIdentity,deepwellRuntimeIdentityMatchesContract,parseCurlDeepwellRuntimeHeaders,requireDeepwellRuntimeIdentity} from '../../src/deepwell-runtime-identity.mjs';
+import {assertRuntimeSourceSha,parseCurlRuntimeResponseHeaders,requireRuntimeSourceSha} from '../../src/runtime-source-identity.mjs';
 
 const scriptDir=path.dirname(fileURLToPath(import.meta.url));
 const portsDir=path.resolve(scriptDir,'..');
@@ -16,14 +18,15 @@ const themeArg=process.argv.find(value=>value.startsWith('--theme='))?.slice(8);
 const themesArg=process.argv.find(value=>value.startsWith('--themes='))?.slice(9);
 const stateArg=process.argv.find(value=>value.startsWith('--state='))?.slice(8);
 const runContractArg=process.argv.find(value=>value.startsWith('--run-contract='))?.slice(15);
-// Built transport, 4 themes x 9 engine/viewports x 4 core states (120
-// requested rows) against a shadow copy of the full 4,947-row audit: jobs
-// 3/4/5/6/7 took 82.9/78.7/75.6/75.1/75.0 s with zero failed, retried,
-// asset, page-error or external-request rows in every run of issue #1964.
-// Seven is the measured plateau (six is within noise); keep it. Callers on
-// smaller hosts can set --jobs explicitly.
-const jobsArg=Number(process.argv.find(value=>value.startsWith('--jobs='))?.slice(7)??7);
+const engineArg=process.argv.find(value=>value.startsWith('--engine='))?.slice(9);
+const viewportArg=process.argv.find(value=>value.startsWith('--viewport='))?.slice(11);
+// Current full-workload captures were stable at two browser jobs and three
+// sessions per child. The older 120-row benchmark's 7/6 setting caused
+// browser/context closes on the current workload.
+const jobsArg=Number(process.argv.find(value=>value.startsWith('--jobs='))?.slice(7)??2);
+const captureConcurrencyArg=Number(process.argv.find(value=>value.startsWith('--capture-concurrency='))?.slice(22)??3);
 const transportArg=process.argv.find(value=>value.startsWith('--transport='))?.slice(12)??'built';
+const transportOriginArg=process.argv.find(value=>value.startsWith('--transport-origin='))?.slice(19)??null;
 const force=process.argv.includes('--force');
 const anonymous=process.argv.includes('--anonymous');
 const seenOptions=new Set();
@@ -33,11 +36,16 @@ for(const argument of process.argv.slice(2)){
  seenOptions.add(name);
 }
 const accepted=new Set(['--force','--anonymous','--help']);
-for(const arg of process.argv.slice(2)){if(accepted.has(arg)||/^--(?:theme|themes|state|jobs|transport|run-contract)=/u.test(arg))continue;throw new Error(`unknown argument: ${arg}`)}
-if(process.argv.includes('--help')){console.log('Usage: capture-theme-matrix.mjs (--theme=slug|--themes=a,b) [--state=surface.state,...] [--jobs=1..9] [--transport=built|dev] [--run-contract=/path/to/contract.json] [--anonymous] [--force]');console.log('--anonymous only captures states that work without the authenticated administrator; admin-only states (page.edit, page.rename, page.delete) fail closed. Pass --state for a public subset.');process.exit(0)}
+for(const arg of process.argv.slice(2)){if(accepted.has(arg)||/^--(?:theme|themes|state|engine|viewport|jobs|capture-concurrency|transport|transport-origin|run-contract)=/u.test(arg))continue;throw new Error(`unknown argument: ${arg}`)}
+if(process.argv.includes('--help')){console.log('Usage: capture-theme-matrix.mjs (--theme=slug|--themes=a,b) [--state=surface.state,...] [--engine=chromium|firefox|webkit] [--viewport=desktop|laptop|tablet|mobile|narrow-mobile] [--jobs=1..9] [--capture-concurrency=1..8] [--transport=built|dev] [--transport-origin=https://HOST:PORT] [--run-contract=/path/to/contract.json] [--anonymous] [--force]');console.log('--transport-origin uses an existing task-owned transport without bootstrapping, then probes the fixture runtime-source header against the run contract; it must use the target Wikijump hostname over HTTPS.');console.log('--anonymous only captures states that work without the authenticated administrator; admin-only states (page.edit, page.rename, page.delete) fail closed. Pass --state for a public subset.');process.exit(0)}
 if((!themeArg&&!themesArg)||(themeArg&&themesArg))throw new Error('exactly one of --theme or --themes is required');
 if(!Number.isInteger(jobsArg)||jobsArg<1||jobsArg>9)throw new Error('--jobs must be an integer from 1 to 9');
+if(!Number.isInteger(captureConcurrencyArg)||captureConcurrencyArg<1||captureConcurrencyArg>8)throw new Error('--capture-concurrency must be an integer from 1 to 8');
 if(!['built','dev'].includes(transportArg))throw new Error('--transport must be built or dev');
+if(transportOriginArg!==null){
+ let parsed;try{parsed=new URL(transportOriginArg)}catch{throw new Error('--transport-origin must be an absolute HTTPS URL')}
+ if(parsed.protocol!=='https:'||parsed.hostname!=='scpaiueouiuiuiui.wikijump.localhost'||parsed.username||parsed.password||parsed.pathname!=='/'||parsed.search||parsed.hash)throw new Error('--transport-origin must be an HTTPS origin for scpaiueouiuiuiui.wikijump.localhost');
+}
 const themes=themeArg?[themeArg]:themesArg.split(',');
 if(themes.some(theme=>!theme.trim())||new Set(themes).size!==themes.length)throw new Error('themes must be non-empty and unique');
 if(stateArg!==undefined&&stateArg.split(',').some(state=>!state.trim()))throw new Error('states must be non-empty');
@@ -46,15 +54,19 @@ const registered=new Set(['dear-dictator',...manifest.themes.map(theme=>theme.sl
 const runContractPath=runContractArg?path.resolve(runContractArg):null;
 const runContract=runContractPath?JSON.parse(await fs.readFile(runContractPath,'utf8')):null;
 for(const name of Object.keys(runContract?.additional_candidates??{})){
- if(!/^[a-z0-9-]+$/u.test(name)||registered.has(name))throw new Error(`invalid or colliding additional candidate: ${name}`);
+ if(!/^[a-z0-9-]+$/u.test(name)||registered.has(name)&&runContract?.schema!=='scp_jp_sigma10_migration_run.v1')throw new Error(`invalid or colliding additional candidate: ${name}`);
  registered.add(name);
 }
 if(runContract&&!runContract.artifact_namespace?.split('/').every(segment=>/^[a-z0-9-]+$/u.test(segment)))throw new Error('custom run contract needs a valid isolated artifact namespace');
 if(themes.some(theme=>!registered.has(theme)))throw new Error('requested theme is not registered in the campaign or run contract');
-const matrix=[
+const fullMatrix=[
  ['chromium','desktop'],['chromium','laptop'],['chromium','tablet'],['chromium','mobile'],['chromium','narrow-mobile'],
  ['firefox','desktop'],['firefox','mobile'],['webkit','desktop'],['webkit','mobile']
 ];
+const matrix=fullMatrix.filter(([engine,viewport])=>(!engineArg||engine===engineArg)&&(!viewportArg||viewport===viewportArg));
+if(engineArg&&!['chromium','firefox','webkit'].includes(engineArg))throw new Error('--engine must be chromium, firefox, or webkit');
+if(viewportArg&&!['desktop','laptop','tablet','mobile','narrow-mobile'].includes(viewportArg))throw new Error('--viewport must be desktop, laptop, tablet, mobile, or narrow-mobile');
+if(!matrix.length)throw new Error('requested engine and viewport have no matrix cell');
 const auditPath=process.env.THEME_LAB_INTERACTIVE_AUDIT_PATH
  ? path.resolve(process.env.THEME_LAB_INTERACTIVE_AUDIT_PATH)
  : runContract?.audit_path
@@ -79,6 +91,7 @@ function run(command,args,{capture=false,env=process.env}={}){
   children.add(child);
   child.once('close',()=>children.delete(child));
   let stdout='',stderr='';
+  if(!capture){child.stderr?.on('data',chunk=>stderr+=chunk)}
   if(child.stdout)child.stdout.on('data',chunk=>stdout+=chunk);
   if(child.stderr)child.stderr.on('data',chunk=>stderr+=chunk);
   child.once('error',reject);
@@ -87,54 +100,61 @@ function run(command,args,{capture=false,env=process.env}={}){
 }
 
 let transportOrigin=null;
-if(transportArg==='built'){
- const ensured=await run(process.execPath,[ensureBuiltScript],{capture:true});
+const runtimeContract=runContract??JSON.parse(await fs.readFile(path.join(scriptDir,'acceptance-run-contract.json'),'utf8'));
+const expectedRuntimeSourceSha=requireRuntimeSourceSha(runtimeContract.expected_runtime_source_sha256,'matrix run contract');
+const expectedBackendRuntimeIdentity=requireDeepwellRuntimeIdentity(runtimeContract.expected_backend_runtime_identity,'matrix run contract');
+if(transportArg==='built'&&!transportOriginArg){
+ const ensured=await run(process.execPath,[ensureBuiltScript,`--run-contract=${runContractPath??path.join(scriptDir,'acceptance-run-contract.json')}`],{capture:true});
  const line=ensured.stdout.trim().split('\n').at(-1);
- transportOrigin=JSON.parse(line).transport_origin;
+ const ensuredRuntime=JSON.parse(line);
+ assertRuntimeSourceSha(expectedRuntimeSourceSha,ensuredRuntime.source_sha256,'ensure-built-framerail result');
+ assertDeepwellRuntimeIdentity(expectedBackendRuntimeIdentity,ensuredRuntime.backend_runtime_identity,'ensure-built-framerail result');
+ if(ensuredRuntime.backend_probe?.ok!==true)throw new Error('ensure-built-framerail did not verify current Deepwell from the built Framerail network');
+ transportOrigin=transportOriginArg??ensuredRuntime.transport_origin;
+}
+if(!transportOrigin)transportOrigin=transportOriginArg??runtimeContract.target_site?.origin;
+if(typeof transportOrigin!=='string')throw new Error('matrix run contract needs a target origin for runtime source verification');
+const runtimeFixtureUrl=new URL('/run-owned%3Atheme-lab-visual-acceptance-imported-20260924',transportOrigin).href;
+const runtimeProbe=await run('curl',['-ksSf','-D','-','-o','/dev/null','--max-time','5',runtimeFixtureUrl],{capture:true});
+const runtimeResponse=parseCurlRuntimeResponseHeaders(runtimeProbe.stdout);
+assertRuntimeSourceSha(expectedRuntimeSourceSha,runtimeResponse.runtimeSourceSha,`matrix fixture response from ${transportOrigin}`);
+const backendResponse=parseCurlDeepwellRuntimeHeaders(runtimeProbe.stdout);
+const measuredBackendIdentity=assertDeepwellRuntimeIdentity(expectedBackendRuntimeIdentity,backendResponse.backendRuntimeIdentity,`matrix fixture response from ${transportOrigin}`);
+
+const auditShardDir=path.join(path.dirname(auditPath),`${path.basename(auditPath)}.shards`,`run-${Date.now()}-${process.pid}`);
+await fs.mkdir(auditShardDir,{recursive:true});
+let cleanupShardsOnExit=true;
+process.once('exit',()=>{if(cleanupShardsOnExit)fsSync.rmSync(auditShardDir,{recursive:true,force:true})});
+const captureEnv={...process.env,THEME_LAB_AUDIT_SHARD_DIR:auditShardDir};
+async function commitAuditShards(){
+ try{
+  const summary=await mergeInteractiveAuditShards({auditPath,shardDirectory:auditShardDir,portsDir});
+  return summary.shards;
+ }catch(error){cleanupShardsOnExit=false;throw error}
 }
 
-const auditShardDir=await fs.mkdtemp(path.join(os.tmpdir(),'theme-lab-audit-shards-'));
-process.once('exit',()=>fsSync.rmSync(auditShardDir,{recursive:true,force:true}));
-const captureEnv={...process.env,THEME_LAB_AUDIT_SHARD_DIR:auditShardDir};
-const auditRowKey=row=>`${row.theme}|${row.browser_engine}|${row.viewport}|${row.surface}|${row.state}`;
-async function commitAuditShards(){
- const files=(await fs.readdir(auditShardDir)).filter(name=>name.endsWith('.json')).sort();
- if(!files.length)return 0;
- const shards=[];
- for(const name of files)shards.push(JSON.parse(await fs.readFile(path.join(auditShardDir,name),'utf8')));
- await withAuditLock(auditPath,async()=>{
-  let previous={};try{previous=JSON.parse(await fs.readFile(auditPath,'utf8'))}catch(error){if(error.code!=='ENOENT')throw error}
-  const removeKeys=new Set();const replacements=new Map();const superseded=[];
-  let reviewReuse=0,lastPatch=null;
-  for(const shard of shards){
-   if(shard.schema!=='theme_lab_interactive_audit_delta.v1')throw new Error(`invalid audit shard schema: ${shard.schema}`);
-   for(const key of shard.remove_keys??[])removeKeys.add(key);
-   for(const row of shard.records??[])replacements.set(auditRowKey(row),row);
-   superseded.push(...(shard.superseded_records??[]));
-   reviewReuse+=shard.visual_review_reuse_updates??0;
-   lastPatch=shard.document_patch??lastPatch;
-  }
-  const retained=(previous.records??[]).filter(row=>!removeKeys.has(auditRowKey(row))&&!replacements.has(auditRowKey(row)));
-  const records=[...retained,...[...replacements.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([,row])=>row)];
-  const patch=lastPatch??{};
-  const next={
-   ...previous,...patch,updated_at:new Date().toISOString(),records,
-   superseded_records:[...(previous.superseded_records??[]),...superseded],
-   network_policy:{
-    external_requests_sent:records.reduce((sum,row)=>sum+(row.external_requests_sent??0),0),
-    external_requests_blocked_during_auth:patch.auth_bootstrap_blocked??previous.network_policy?.external_requests_blocked_during_auth??null,
-    external_requests_blocked_during_states:records.reduce((sum,row)=>sum+(row.external_requests_blocked??0),0)
-   },
-   visual_review_reuse_updates:(previous.visual_review_reuse_updates??0)+reviewReuse
-  };
-  delete next.auth_bootstrap_blocked;
-  const temporary=`${auditPath}.${process.pid}.tmp`;await fs.writeFile(temporary,JSON.stringify(next)+'\n');await fs.rename(temporary,auditPath);
- });
- await Promise.all(files.map(name=>fs.unlink(path.join(auditShardDir,name))));
- return files.length;
+// Pin prior rows once per matrix invocation. Retries must compare against the
+// same accepted prior, not an earlier failed attempt already merged this run.
+let initialAuditSnapshotPromise=null;
+async function readAuditSnapshot(){
+ if(!initialAuditSnapshotPromise)initialAuditSnapshotPromise=(async()=>{
+  try{return JSON.parse(await fs.readFile(auditPath,'utf8'))}
+  catch(error){if(error.code!=='ENOENT')throw error;return{records:[]}}
+ })();
+ return initialAuditSnapshotPromise;
+}
+async function writeAuditSeed(filename,themeNames,engine,viewport){
+ const snapshot=await readAuditSnapshot();
+ const themeSet=new Set(themeNames);
+ const records=(snapshot.records??[]).filter(row=>themeSet.has(row.theme)&&row.browser_engine===engine&&row.viewport===viewport);
+ const seedPath=path.join(auditShardDir,'seeds',filename);
+ await fs.mkdir(path.dirname(seedPath),{recursive:true});
+ await fs.writeFile(seedPath,JSON.stringify({schema:snapshot.schema??'scp_jp_interactive_visual_audit.v1',records}));
+ return seedPath;
 }
 
 const common=[themes.length===1?`--theme=${themes[0]}`:`--themes=${themes.join(',')}`];
+common.push(`--concurrency=${captureConcurrencyArg}`);
 if(runContractPath)common.push(`--run-contract=${runContractPath}`);
 if(stateArg)common.push(`--state=${stateArg}`);
 if(force)common.push('--force');
@@ -153,7 +173,8 @@ await Promise.all(Array.from({length:Math.min(jobsArg,matrix.length)},async()=>{
   const [engine,viewport]=matrix[index];
   const childStarted=Date.now();
   try{
-   await run(process.execPath,[captureScript,`--engine=${engine}`,`--viewport=${viewport}`,...common],{env:captureEnv});
+   const seed=await writeAuditSeed(`${engine}__${viewport}.json`,themes,engine,viewport);
+   await run(process.execPath,[captureScript,`--engine=${engine}`,`--viewport=${viewport}`,...common],{env:{...captureEnv,THEME_LAB_AUDIT_SEED_PATH:seed}});
    results.push({engine,viewport,elapsed_ms:Date.now()-childStarted});
   }catch(error){
    firstWorkerError??=error;
@@ -161,11 +182,13 @@ await Promise.all(Array.from({length:Math.min(jobsArg,matrix.length)},async()=>{
   }
  }
 }));
-if(firstWorkerError){await fs.rm(auditShardDir,{recursive:true,force:true});throw firstWorkerError}
 await commitAuditShards();
+if(firstWorkerError)throw firstWorkerError;
 const requestedStates=stateArg?new Set(stateArg.split(',').filter(Boolean)):null;
 const isRequestedRow=row=>
  themes.includes(row.theme) &&
+ (!engineArg||row.browser_engine===engineArg) &&
+ (!viewportArg||row.viewport===viewportArg) &&
  (!requestedStates||requestedStates.has(`${row.surface}.${row.state}`));
 let retries=0;
 for(let pass=0;pass<2;pass++){
@@ -187,7 +210,8 @@ for(let pass=0;pass<2;pass++){
   if(runContractPath)args.push(`--run-contract=${runContractPath}`);
   if(anonymous)args.push('--anonymous');
   if(transportOrigin)args.push(`--transport-origin=${transportOrigin}`);
-  await run(process.execPath,args,{env:captureEnv});
+  const seed=await writeAuditSeed(`${group.theme}__${group.engine}__${group.viewport}__retry-${pass}.json`,[group.theme],group.engine,group.viewport);
+  await run(process.execPath,args,{env:{...captureEnv,THEME_LAB_AUDIT_SEED_PATH:seed}});
  }
  await commitAuditShards();
 }
@@ -195,15 +219,26 @@ for(let pass=0;pass<2;pass++){
 const finalAudit=JSON.parse(await fs.readFile(auditPath,'utf8'));
 const runRows=(finalAudit.records??[]).filter(isRequestedRow);
 const remainingFailures=runRows.filter(row=>row.unconfirmed_items?.some(item=>String(item).startsWith('action/capture failed')));
-const invalidEvidence=runRows.filter(row=>!row.screenshot||!Array.isArray(row.asset_failures)||row.asset_failures.length||!Array.isArray(row.page_errors)||row.page_errors.length||row.external_requests_sent!==0);
-if(invalidEvidence.length){await fs.rm(auditShardDir,{recursive:true,force:true});throw new Error(`matrix capture has ${invalidEvidence.length} rows with missing screenshots or failed runtime evidence`)}
+const invalidEvidence=runRows.flatMap(row=>{
+ const failures=[];
+ if(visualGateNeedsScreenshot(row,{failure:!!row.failure})&&(!row.screenshot||!/^[a-f0-9]{64}$/u.test(row.screenshot_sha256??'')))failures.push('required screenshot is missing');
+ if(!Array.isArray(row.asset_failures)||row.asset_failures.length)failures.push('asset failure');
+ if(!Array.isArray(row.page_errors)||row.page_errors.length)failures.push('page error');
+ if(row.external_requests_sent!==0)failures.push('external request sent');
+ failures.push(...validateVisualGateRecord(row,{requirePolicyBinding:true,requireVisualReview:false}));
+ return failures.map(reason=>({theme:row.theme,engine:row.browser_engine,viewport:row.viewport,state:`${row.surface}.${row.state}`,reason}));
+});
+if(invalidEvidence.length){await fs.rm(auditShardDir,{recursive:true,force:true});throw new Error(`matrix capture has ${invalidEvidence.length} rows with policy or runtime evidence failures; first=${JSON.stringify(invalidEvidence.slice(0,5))}`)}
 if(remainingFailures.length){await fs.rm(auditShardDir,{recursive:true,force:true});throw new Error(`matrix capture still has ${remainingFailures.length} action failures after targeted retries`)}
 console.log(JSON.stringify({
  schema:'theme_lab_matrix_capture.v1',
  themes,
- transport:transportArg,
+ transport:transportOriginArg?'explicit':transportArg,
  transport_origin:transportOrigin,
+ runtime_source_sha256:runtimeResponse.runtimeSourceSha,
+ backend_runtime_identity:measuredBackendIdentity,
  jobs:jobsArg,
+ capture_concurrency:captureConcurrencyArg,
  elapsed_ms:Date.now()-started,
  successful_states:runRows.filter(row=>row.screenshot&&!row.unconfirmed_items?.some(item=>String(item).startsWith('action/capture failed'))).length,
  action_failures:remainingFailures.length,
@@ -214,3 +249,4 @@ console.log(JSON.stringify({
  job_results:results.sort((a,b)=>a.engine.localeCompare(b.engine)||a.viewport.localeCompare(b.viewport))
 }));
 await fs.rm(auditShardDir,{recursive:true,force:true});
+cleanupShardsOnExit=false;

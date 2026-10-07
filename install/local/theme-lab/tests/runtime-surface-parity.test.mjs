@@ -10,6 +10,7 @@ import {
   annotateRuntimeSurfaceUsage,
   applyRuntimeSurfaceParityGate,
   parityReviewForSurfaceIds,
+  reviewRuntimeSurfaceFinding,
 } from "../src/runtime-surface-parity.mjs";
 import {buildVerdict} from "../src/verdict.mjs";
 import accounting from "../fixtures/runtime-surface-parity-accounting.json" with {type: "json"};
@@ -100,6 +101,17 @@ test("surface CSS auto-discovery includes History and Files even when evidence i
   assert.equal(reviewed.surfaces.find((row) => row.id === "page.files").parity_review.may_treat_differences_as_port_requirements, false);
 });
 
+test("Inkblot picker tab selectors map to uncertified local tabview scope", () => {
+  const review = reviewRuntimeSurfaceFinding({
+    kind: "style_change",
+    selector: ":root:has(.picker li:nth-child(8).selected), .picker li:nth-child(8) em",
+  });
+  assert.deepEqual(review.surface_ids, ["content.tabview"]);
+  assert.equal(review.conclusion_resolution, "LOCAL_TARGET_ACCEPTANCE_ONLY");
+  assert.equal(review.port_conclusion_eligible, false);
+  assert.equal(review.blocks_port_conclusion, false);
+});
+
 test("uncertified and unclassified runtime findings cannot become port next-actions", () => {
   const verdict = buildVerdict({extraIssues: [
     {severity: "error", kind: "surface_fixture_missing", surface: "page.history", selector: ".page-history"},
@@ -179,4 +191,21 @@ test("synthetic Theme Lab states stay identified as synthetic and never certify 
   assert.equal(review.quarantined, true);
   assert.equal(review.decision_authority, "THEME_LAB_SYNTHETIC_DIAGNOSTIC_ONLY");
   assert.equal(review.blocks_port_conclusion, false);
+});
+
+test('observed decorative shell scaffolding stays local-only and unmatched scaffolding stays fail closed',()=>{
+ for(const selector of ['#extra-div-1','#extra-div-4','#header-extra-div-1']){
+  const review=reviewRuntimeSurfaceFinding({kind:'style_change',anchor:selector});
+  assert.equal(review.decision_authority,'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY');
+  assert.equal(review.port_conclusion_eligible,false);assert.equal(review.blocks_port_conclusion,false);
+ }
+ assert.equal(reviewRuntimeSurfaceFinding({kind:'style_change',anchor:'#extra-div-7'}).blocks_port_conclusion,true);
+});
+
+test('the observed Sigma blink demonstration remains article styling without adaptation authority',()=>{
+ const review=reviewRuntimeSurfaceFinding({kind:'style_change',selector:'.blink'});
+ assert.equal(review.blocks_port_conclusion,false);
+ assert.equal(review.port_conclusion_eligible,false);
+ assert.equal(review.conclusion_resolution,'LOCAL_TARGET_ACCEPTANCE_ONLY');
+ assert.equal(reviewRuntimeSurfaceFinding({kind:'style_change',selector:'.unobserved-animation'}).blocks_port_conclusion,true);
 });
