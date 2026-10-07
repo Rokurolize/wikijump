@@ -1,9 +1,9 @@
 {
   "schema": "wikijump.framerail_route_action_evidence.v1",
-  "source_revision": "1666e49950b7da4cff7b450df25972c945cbf644",
+  "source_revision": "e427ff0497235f84cf095bffc876c92103f396db",
   "inventory": {
     "path": "docs/development/compatibility-surface-inventory.json",
-    "sha256": "3cd92c971282ea05e8d30b8f4b63f5badbc86b718461601b6008a1498aaa8084"
+    "sha256": "1906d7229472694d2afbbea30e65e9e33c39dbc40481f794f4676a4000ac57cb"
   },
   "records": [
     {
@@ -413,6 +413,18 @@
       "tracking": [
         {
           "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/feed/forum/{feed}",
+      "tests": [
+        "framerail/tests/forum-feed.test.ts::forum RSS uses local identifiers, public channel metadata, and safe CDATA"
+      ],
+      "tracking": [
+        {
+          "issue": 2091
         }
       ],
       "temporal": []

@@ -89,6 +89,7 @@ pub(crate) use self::diagnostics::{
     is_corpus_render_timing,
 };
 pub use self::forum_read_routes::{
+    WikidotForumFeedItem, WikidotForumFeedKind, WikidotForumFeedOutput,
     WikidotForumModuleRequest, WikidotForumModuleResponse,
 };
 pub(crate) use self::generator::{
