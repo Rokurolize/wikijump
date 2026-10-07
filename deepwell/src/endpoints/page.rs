@@ -47,11 +47,12 @@ use crate::services::page_query::PageQueryService;
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::render::{
-    LegacyActionRegistry, LegacyBrowserAction, SiteChangesLoad,
-    WikidotForumModuleRequest, WikidotForumModuleResponse, WikidotListPagesFeedInput,
-    WikidotListPagesFeedOutput, WikidotMembersListModuleResponse,
-    WikidotSiteChangesFilter, WikidotSiteChangesModuleRequest,
-    WikidotSiteChangesModuleResponse, wikidot_site_changes_empty_response,
+    LegacyActionRegistry, LegacyBrowserAction, SiteChangesLoad, WikidotForumFeedKind,
+    WikidotForumFeedOutput, WikidotForumModuleRequest, WikidotForumModuleResponse,
+    WikidotListPagesFeedInput, WikidotListPagesFeedOutput,
+    WikidotMembersListModuleResponse, WikidotSiteChangesFilter,
+    WikidotSiteChangesModuleRequest, WikidotSiteChangesModuleResponse,
+    wikidot_site_changes_empty_response,
 };
 use crate::services::settings::PageRatingVisibility;
 use crate::services::{MutationAuthorization, SettingsService, TextService};
@@ -588,6 +589,41 @@ pub async fn wikidot_forum_module(
             ErrorType::Page,
         )
     })
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct WikidotForumFeedInput {
+    site_id: i64,
+    kind: String,
+}
+
+pub async fn wikidot_forum_feed(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<WikidotForumFeedOutput>> {
+    let input: WikidotForumFeedInput = parse!(params, Page);
+    if ctx
+        .request()
+        .site_id
+        .is_some_and(|request_site_id| request_site_id != input.site_id)
+    {
+        return Err(Error::new(
+            "forum feed site does not match the request context",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+    let kind = match input.kind.as_str() {
+        "threads" => WikidotForumFeedKind::Threads,
+        "posts" => WikidotForumFeedKind::Posts,
+        _ => {
+            return Err(
+                Error::new("invalid forum feed kind", ErrorType::BadRequest).into()
+            );
+        }
+    };
+    RenderService::wikidot_forum_feed(ctx, input.site_id, kind).await
 }
 
 pub async fn wikidot_members_list_module(

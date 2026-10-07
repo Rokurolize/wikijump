@@ -3757,6 +3757,11 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:wikidot_forum_feed",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:wikidot_forum_module",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
@@ -4033,6 +4038,11 @@
     },
     {
       "source": "framerail-route:/common--images/jquery-raty/{asset}",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-route:/feed/forum/{feed}",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -11390,7 +11400,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "ecc7e58822a55a11e8d6df69d7b3b17c2e59bfd4374df93ae7fba1e92dc42f6b"
+      "source_input_set_sha256": "1613f082736b903cf95b1498e2016df38d8e0bc58f916676a8fa99ec49b8f3d7"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11407,7 +11417,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "a5dff7d1ef92fa4595329423d097c4907810a40e6e30b52acab3a949ebd6c9d1"
+        "sha256": "f984618edcd5769093d450e97b99a1254042daab419dda9ef288d90309b68f8f"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11495,7 +11505,7 @@
       },
       {
         "path": "deepwell/src/endpoints/page.rs",
-        "sha256": "e183ea1e8deaac105225beb8bbac16879ecfa70415b191b96fe48903dab3513c"
+        "sha256": "ab62692b2ef49ea8806a9248199197429565a924deb6a8e06ac97df1855b8ddf"
       },
       {
         "path": "deepwell/src/endpoints/parent.rs",
@@ -11551,7 +11561,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "d6002de878abc0bc7eb41deafa74b31cdce50a63b364ff2a56ed4c14ee68b868"
+        "sha256": "35bf0e05642bf881df0b80f815a78b6bf6ea63c96a96430c83185a01b6012a46"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11559,7 +11569,7 @@
       },
       {
         "path": "docs/development/framerail-route-action-evidence.json",
-        "sha256": "e3ad2d5fbe22695ebf0756bf247ee7626a361fc74a50e2396c33f255a3862e0e"
+        "sha256": "44b831b1e61bf66746461c05038ca18d48f7352bda5d31c003019a4d538b97e8"
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
@@ -11615,7 +11625,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "95536b268f50a506e4f1c6097c41fefee0dfdc6875cb46250f05a70dc2d7dafc"
+        "sha256": "3b5c731be07401e510aedf802c86caa71c314a3093f0c0262d80514bb0128c41"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11780,6 +11790,10 @@
       {
         "path": "framerail/src/routes/common--images/jquery-raty/[asset]/+server.ts",
         "sha256": "58243be691e16e0f6a075f6a4aa1214fe057e3fa886c0871d1a6e029c599e372"
+      },
+      {
+        "path": "framerail/src/routes/feed/forum/[feed]/+server.ts",
+        "sha256": "969c7914bc3212aeb071489f7c7f7b2f6a44b2ecd6b8a170b6a96846866bf5c7"
       },
       {
         "path": "framerail/src/routes/feed/pages/[argument]/[...extra]/+server.ts",
@@ -11970,13 +11984,13 @@
     ]
   },
   "counts": {
-    "total": 955,
+    "total": 957,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 178,
+      "deepwell_jsonrpc_method": 179,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
-      "framerail_route": 30,
+      "framerail_route": 31,
       "framerail_server_action": 107,
       "framerail_xmlrpc_method": 17,
       "missing_page_control": 2,
@@ -29828,6 +29842,51 @@
       ]
     },
     {
+      "surface_id": "deepwell-jsonrpc:wikidot_forum_feed",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:wikidot_forum_feed",
+        "deepwell/src/endpoints/page.rs#wikidot_forum_feed"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/page/forum.rs#wikidot_forum_feeds_are_bounded_newest_first_and_hide_invisible_groups"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/page.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
       "surface_id": "deepwell-jsonrpc:wikidot_forum_module",
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
@@ -32162,6 +32221,46 @@
         "cases": [],
         "tests": [
           "framerail/tests/release-route-action-boundaries.test.js#reserved compatibility routes expose their public fail-closed responses"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-route",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-route:/feed/forum/{feed}",
+      "kind": "framerail_route",
+      "public_reference": [
+        "framerail/src/routes/feed/forum/[feed]/+server.ts#methods:GET"
+      ],
+      "existing_refs": {
+        "issues": [
+          2091
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/forum-feed.test.ts#forum RSS uses local identifiers, public channel metadata, and safe CDATA"
         ]
       },
       "evidence": {

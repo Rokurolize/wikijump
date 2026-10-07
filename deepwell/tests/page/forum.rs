@@ -4242,3 +4242,343 @@ async fn forum_module_dispatch_is_fail_closed_on_unexpected_parameters() {
         "not_ok",
     );
 }
+
+#[tokio::test]
+async fn wikidot_forum_feeds_are_bounded_newest_first_and_hide_invisible_groups() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    let visible_group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "RSS visible group".to_owned(),
+            description: String::new(),
+            visible: true,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("visible feed group should be created");
+    let visible_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: visible_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "RSS visible category".to_owned(),
+            description: String::new(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("visible feed category should be created");
+    let visible_thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: visible_category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: None,
+            title: "Visible RSS thread".to_owned(),
+            description: "Visible thread summary".to_owned(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("visible feed thread should be created");
+    let visible_post = ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: visible_thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: ADMIN_USER_ID,
+            title: "Visible RSS post".to_owned(),
+            wikitext: "Visible feed body <safe>".to_owned(),
+            comments: "create visible forum feed post".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("visible feed post should be created");
+    let mut recent_post_ids = Vec::with_capacity(61);
+    for index in 0..61 {
+        let post = ForumPostService::create(
+            runner.context(),
+            CreateForumPost {
+                forum_thread_id: visible_thread.forum_thread_id,
+                parent_post_id: Some(visible_post.forum_post_id),
+                user_id: ADMIN_USER_ID,
+                title: format!("Visible RSS reply {index}"),
+                wikitext: format!("Visible feed reply body {index}"),
+                comments: "create bounded forum feed post".to_owned(),
+                from_wikidot: false,
+            },
+        )
+        .await
+        .expect("visible feed reply should be created");
+        recent_post_ids.push(post.forum_post_id);
+    }
+
+    let hidden_group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "RSS hidden group".to_owned(),
+            description: String::new(),
+            visible: false,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("hidden feed group should be created");
+    let hidden_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: hidden_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "RSS hidden category".to_owned(),
+            description: String::new(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("hidden feed category should be created");
+    let hidden_thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: hidden_category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: None,
+            title: "Hidden RSS thread marker".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("hidden feed thread should be created");
+    ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: hidden_thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: ADMIN_USER_ID,
+            title: "Hidden RSS post marker".to_owned(),
+            wikitext: "Hidden feed body marker".to_owned(),
+            comments: "create hidden forum feed post".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("hidden feed post should be created");
+
+    let deleted_thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: visible_category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: None,
+            title: "Deleted RSS thread marker".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("deleted feed thread should be created");
+    let deleted_thread_post = ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: deleted_thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: ADMIN_USER_ID,
+            title: "Deleted RSS thread post marker".to_owned(),
+            wikitext: "Deleted thread body marker".to_owned(),
+            comments: "create deleted forum feed thread post".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("deleted feed thread post should be created");
+    let mut deleted_thread_model =
+        ForumThreadTable::find_by_id(deleted_thread.forum_thread_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("deleted feed thread lookup should succeed")
+            .expect("deleted feed thread should exist")
+            .into_active_model();
+    deleted_thread_model.deleted_by = Set(Some(ADMIN_USER_ID));
+    deleted_thread_model.deleted_at = Set(Some(time::OffsetDateTime::now_utc()));
+    deleted_thread_model.updated_by = Set(Some(ADMIN_USER_ID));
+    deleted_thread_model.updated_at = Set(Some(time::OffsetDateTime::now_utc()));
+    deleted_thread_model
+        .update(runner.context().transaction())
+        .await
+        .expect("feed thread should be soft-deleted");
+
+    let deleted_post_thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: visible_category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: None,
+            title: "RSS deleted-post-only thread marker".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("deleted-post-only feed thread should be created");
+    let deleted_post = ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: deleted_post_thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: ADMIN_USER_ID,
+            title: "Deleted RSS post marker".to_owned(),
+            wikitext: "Deleted post body marker".to_owned(),
+            comments: "create deleted forum feed post".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("feed post should be created before deletion");
+    ForumPostService::delete(
+        runner.context(),
+        DeleteForumPost {
+            forum_post_id: deleted_post.forum_post_id,
+            user_id: ADMIN_USER_ID,
+        },
+    )
+    .await
+    .expect("feed post should be soft-deleted");
+
+    const PRIVATE_PAGE_SLUG: &str = "fixture-forum-feed-private-page";
+    const PRIVATE_PAGE_CATEGORY: &str = "fixture-forum-feed-private-category";
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_PAGE_CATEGORY)
+        .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE_SLUG,
+        "Forum Feed Private Page",
+        "private forum feed fixture",
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        PRIVATE_PAGE_SLUG,
+        PRIVATE_PAGE_CATEGORY,
+    )
+    .await;
+    let private_page_id =
+        listpages_test_page_id(&runner, site_id, PRIVATE_PAGE_SLUG).await;
+    let private_page_thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: visible_category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: Some(private_page_id),
+            title: "Private RSS thread marker".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("private-page forum feed thread should be created");
+    ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: private_page_thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: ADMIN_USER_ID,
+            title: "Private RSS post marker".to_owned(),
+            wikitext: "Private page feed body marker".to_owned(),
+            comments: "create private-page forum feed post".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("private-page forum feed post should be created");
+
+    runner.set_request_context(RequestContext {
+        user_id: None,
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let threads = run_endpoint!(
+        runner,
+        wikidot_forum_feed,
+        json!({"site_id": site_id, "kind": "threads"}),
+    )
+    .expect("public thread feed should be viewable");
+    assert_eq!(threads.items.len(), 1);
+    assert_eq!(
+        threads.items[0].forum_thread_id,
+        visible_thread.forum_thread_id
+    );
+    assert_eq!(threads.items[0].thread_title, "Visible RSS thread");
+    assert!(threads.items[0].content_html.contains("Visible feed body"));
+    assert!(threads.items.iter().all(|item| {
+        item.forum_thread_id != deleted_thread.forum_thread_id
+            && item.forum_thread_id != deleted_post_thread.forum_thread_id
+            && item.forum_thread_id != hidden_thread.forum_thread_id
+            && item.forum_thread_id != private_page_thread.forum_thread_id
+    }));
+
+    let posts = run_endpoint!(
+        runner,
+        wikidot_forum_feed,
+        json!({"site_id": site_id, "kind": "posts"}),
+    )
+    .expect("public post feed should be viewable");
+    assert_eq!(posts.items.len(), 60);
+    assert_eq!(
+        posts.items[0].forum_post_id,
+        *recent_post_ids.last().unwrap()
+    );
+    assert!(
+        posts
+            .items
+            .windows(2)
+            .all(|items| { items[0].forum_post_id > items[1].forum_post_id })
+    );
+    assert_eq!(
+        posts.items[0].forum_thread_id,
+        visible_thread.forum_thread_id
+    );
+    assert_eq!(posts.items[0].title, "Visible RSS reply 60");
+    assert!(
+        !posts.items[0]
+            .content_html
+            .contains("Hidden feed body marker")
+    );
+    assert!(
+        posts
+            .items
+            .iter()
+            .all(|item| item.forum_thread_id == visible_thread.forum_thread_id)
+    );
+    assert!(posts.items.iter().all(|item| {
+        item.forum_post_id != deleted_thread_post.forum_post_id
+            && item.forum_post_id != deleted_post.forum_post_id
+            && item.forum_thread_id != private_page_thread.forum_thread_id
+    }));
+}
