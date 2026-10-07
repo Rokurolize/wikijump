@@ -55,8 +55,8 @@
       },
       {
         "path": "wws/Cargo.lock",
-        "git_blob": "d03f17ec96a477bd4935459fa8b45b8b46055c07",
-        "sha256": "433c5665e982a648f4dbdcbe266d208f99c8be1dc6ef0c9004750771d26dc534"
+        "git_blob": "71203d80ed83d25cf7aeacab76112f18170b2c45",
+        "sha256": "56cf86775ebaa4f1ce3b8a6375cd9017fb85c73cf5331238a0fbae8436e4ebc0"
       },
       {
         "path": "wws/Cargo.toml",
