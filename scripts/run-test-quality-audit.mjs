@@ -12,7 +12,9 @@ import {
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
-const ledgerPath = resolve(root, "docs/development/test-quality-audit.json");
+const ledgerPath = process.env.WIKIJUMP_TEST_QUALITY_LEDGER
+  ? resolve(process.env.WIKIJUMP_TEST_QUALITY_LEDGER)
+  : resolve(root, "docs/development/test-quality-audit.json");
 const commandName = process.argv[2];
 process.chdir(root);
 
@@ -338,6 +340,24 @@ async function mutate(outputDir, ownerId, shard, mutationRun) {
   });
 }
 
+function verifyMutationEvidence(owner) {
+  for (const evidence of owner.mutation?.completed_evidence ?? []) {
+    const label = `${owner.id} ${evidence.run} shard ${evidence.shard ?? "all"}`;
+    const total = evidence.caught + evidence.missed + evidence.unviable + evidence.timeout;
+    if (total !== evidence.mutants) {
+      fail(`contradictory mutation evidence for ${label}: outcomes sum to ${total}, expected ${evidence.mutants}`);
+    }
+    if (owner.status !== "accepted") continue;
+    const dispositions = evidence.survivor_dispositions ?? [];
+    if (dispositions.length !== evidence.missed) {
+      fail(`accepted owner ${label} has ${evidence.missed} survivor(s) but ${dispositions.length} disposition(s)`);
+    }
+    if (dispositions.some(({classification}) => /pending/iu.test(classification ?? ""))) {
+      fail(`accepted owner ${label} has a survivor disposition pending review`);
+    }
+  }
+}
+
 function verifyIdentity(identity, label) {
   const path = resolve(root, identity.path);
   if (!existsSync(path)) fail(`${label} is missing: ${identity.path}`);
@@ -365,6 +385,7 @@ async function verify(outputDir, ownerId) {
     if (owner.status === "accepted" && owner.acceptance_gaps?.length) {
       fail(`accepted owner ${owner.id} still has unresolved acceptance gaps`);
     }
+    verifyMutationEvidence(owner);
     if (owner.mutation) {
       const count = await listedMutationCount(owner);
       if (count !== owner.mutation.inventory_count) {
