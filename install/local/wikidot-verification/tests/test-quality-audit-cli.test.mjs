@@ -94,3 +94,22 @@ test("audit mutate rejects a removed owner before starting services", (t) => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /was removed after reviewed mutation evidence/u);
 });
+
+test("audit inventory resolves side-effect suite imports and transitive owners", (t) => {
+  const fixture = withLedger(t);
+  const result = audit("inventory", fixture);
+  assert.equal(result.status, 0, result.stderr);
+
+  const report = JSON.parse(readFileSync(join(fixture.directory, "output/inventory.json"), "utf8"));
+  const owner = report.executable_owners.find(({path}) => path === "framerail/tests/article-response-cache.test.js");
+  assert.ok(owner, "the imported Framerail suite wrapper must be inventoried");
+  assert.deepEqual(owner.imported_modules, [
+    "framerail/tests/article-response-cache/fences.test.js",
+    "framerail/tests/article-response-cache/hot.test.js",
+    "framerail/tests/article-response-cache/primitives.test.js",
+    "framerail/tests/article-response-cache/redis.test.js",
+    "framerail/tests/article-response-cache/storage.test.js",
+  ]);
+  assert.ok(owner.reachable_imported_modules.includes("framerail/src/lib/server/cache/article-response/index.js"));
+  assert.ok(owner.reachable_imported_modules.includes("framerail/tests/article-response-fast-path/helpers.js"));
+});

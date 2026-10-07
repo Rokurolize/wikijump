@@ -97,7 +97,10 @@ function testFiles() {
 function relativeImports(path) {
   const text = readFileSync(path, "utf8");
   const results = new Set();
-  const pattern = /(?:from\s*|import\s*\()\s*["'](\.{1,2}\/[^"']+)["']/gu;
+  // Resolve ordinary imports/exports, bare side-effect imports used by test
+  // suite wrappers, and static import()/require() edges. Dynamic expressions
+  // have no statically provable target and must not be invented here.
+  const pattern = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\(\s*)["'](\.{1,2}\/[^"']+)["']/gu;
   for (const match of text.matchAll(pattern)) {
     const base = resolve(dirname(path), match[1]);
     for (const candidate of [base, ...[".mjs", ".js", ".ts", ".svelte"].map((suffix) => `${base}${suffix}`)]) {
@@ -110,12 +113,29 @@ function relativeImports(path) {
   return [...results].sort();
 }
 
+function reachableRelativeImports(path) {
+  const start = repositoryPath(path);
+  const visited = new Set([start]);
+  const pending = [path];
+  while (pending.length > 0) {
+    const next = pending.pop();
+    for (const imported of relativeImports(next)) {
+      if (visited.has(imported)) continue;
+      visited.add(imported);
+      if (sourceLike(imported)) pending.push(resolve(root, imported));
+    }
+  }
+  visited.delete(start);
+  return [...visited].sort();
+}
+
 function nodeOwnerRecord(path) {
   const text = readFileSync(path, "utf8");
   return {
     path: repositoryPath(path),
     sha256: sha256File(path),
     imported_modules: relativeImports(path),
+    reachable_imported_modules: reachableRelativeImports(path),
     browser_owner: /\b(?:playwright|chromium|firefox|webkit|page\.goto)\b/u.test(text),
     wrapper_suite: /(?:spawn|execFile|execFileSync|runValidationCommand)[\s\S]{0,400}\b(?:test|playwright|cargo)\b/u.test(text),
   };

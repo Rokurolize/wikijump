@@ -49,8 +49,11 @@ removed, and stop replaying it. `mutate` rejects removed owners; `verify`
 instead confirms that the recorded symbol is absent from the current source.
 
 `inventory` discovers production files independently of coverage output. It
-also records executable test owners, test-imported modules, wrapper/browser
-owners, Cargo targets, Deepwell binaries, and proc-macro targets. `verify`
+also records executable test owners, direct test imports and their transitive
+reachable modules, wrapper/browser owners, Cargo targets, Deepwell binaries,
+and proc-macro targets. Its static import graph includes side-effect-only
+suite imports, relative re-exports, and literal dynamic-import/require edges;
+computed dynamic imports are not represented as known targets. `verify`
 rejects stale source/test/lockfile hashes, missing or invalid test anchors,
 missing owners, accepted owners with unresolved gaps, and changed mutation
 inventories.
