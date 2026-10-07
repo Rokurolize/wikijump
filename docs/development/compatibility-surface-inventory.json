@@ -11390,7 +11390,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "a62e86f2591ddb4f3f1c38071ad89591289f349aa68cc326af42baf0913a1c48"
+      "source_input_set_sha256": "ecc7e58822a55a11e8d6df69d7b3b17c2e59bfd4374df93ae7fba1e92dc42f6b"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11399,7 +11399,7 @@
     "registries": [
       {
         "path": "deepwell/Cargo.lock",
-        "sha256": "dbad50e18ff49e80e0bce51c4bf42c14680ef0b86e90c9a417d22ea15cd90b43"
+        "sha256": "7d89d3d117677a3891d0f319d75864c22887bddd77fecdf4f45b83f358aeb4a7"
       },
       {
         "path": "deepwell/Cargo.toml",
@@ -11599,7 +11599,7 @@
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
-        "sha256": "3ada718def94d133c10083e91e52a5e8f62a86969b09324d993bef103a2eb3df"
+        "sha256": "c5268302383ce1c7449704ce3ce74ed047daf899669d3b62d0fbc458d9e15f59"
       },
       {
         "path": "docs/development/wikidot-py-amc-client-parity.json",
@@ -11615,7 +11615,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "650ba58f919e8864a3ebf2e83d696b10dda7b0591beea5029f81cd73d302826a"
+        "sha256": "95536b268f50a506e4f1c6097c41fefee0dfdc6875cb46250f05a70dc2d7dafc"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11644,6 +11644,10 @@
       {
         "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
         "sha256": "03bf8790bbd004ed6094ee9c5fa043bb1241fabebbb1881f420c7363b4c2f3ee"
+      },
+      {
+        "path": "framerail/src/lib/server/load/page/page.ts",
+        "sha256": "0e3fec2b0244071855e51d3e8bbd68ae6dfae50d11ac8098f253593c65510e6e"
       },
       {
         "path": "framerail/src/lib/server/wikidot-site-changes.js",
@@ -11759,7 +11763,7 @@
       },
       {
         "path": "framerail/src/routes/+error.svelte",
-        "sha256": "17cf841cb923a59de2d4fe5a75be25a19f07ae3a82ceed9864db5a20b64f1a2f"
+        "sha256": "22292c890efc5e5d7a82585f28377c3784d9cc3be69d3c07091ddf0b6379f78c"
       },
       {
         "path": "framerail/src/routes/+page.server.ts",
@@ -37657,7 +37661,8 @@
       "existing_refs": {
         "issues": [
           1371,
-          1372
+          1372,
+          2090
         ],
         "cases": [],
         "tests": [
@@ -37713,7 +37718,7 @@
       "source_identities": [
         {
           "path": "framerail/src/routes/+error.svelte",
-          "sha256": "17cf841cb923a59de2d4fe5a75be25a19f07ae3a82ceed9864db5a20b64f1a2f"
+          "sha256": "22292c890efc5e5d7a82585f28377c3784d9cc3be69d3c07091ddf0b6379f78c"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -37734,15 +37739,18 @@
         "framerail/src/lib/server/load/page/page-actions.ts#action:deletedGet",
         "framerail/src/lib/server/load/page/page-actions.ts#action:restore",
         "framerail/src/lib/server/load/page/page-revision-actions.ts",
+        "framerail/src/lib/server/load/page/page.ts",
         "framerail/src/routes/+error.svelte"
       ],
       "existing_refs": {
         "issues": [
           1371,
-          1372
+          1372,
+          2090
         ],
         "cases": [],
         "tests": [
+          "framerail/tests/data-form-create-flow.spec.ts",
           "framerail/tests/page-deleted-authorization.test.js"
         ]
       },
@@ -37755,6 +37763,7 @@
         "references": [
           "framerail/src/lib/server/load/page/page-actions.ts",
           "framerail/src/lib/server/load/page/page-revision-actions.ts",
+          "framerail/src/lib/server/load/page/page.ts",
           "framerail/src/routes/+error.svelte"
         ]
       },
@@ -37803,11 +37812,15 @@
       "source_identities": [
         {
           "path": "framerail/src/routes/+error.svelte",
-          "sha256": "17cf841cb923a59de2d4fe5a75be25a19f07ae3a82ceed9864db5a20b64f1a2f"
+          "sha256": "22292c890efc5e5d7a82585f28377c3784d9cc3be69d3c07091ddf0b6379f78c"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
           "sha256": "13bfc494f60d509442ab91ae58fdfc0b8509c281bb992d78cdfea4ea55adf813"
+        },
+        {
+          "path": "framerail/src/lib/server/load/page/page.ts",
+          "sha256": "0e3fec2b0244071855e51d3e8bbd68ae6dfae50d11ac8098f253593c65510e6e"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
