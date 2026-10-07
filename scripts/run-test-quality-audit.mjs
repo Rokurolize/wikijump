@@ -308,13 +308,13 @@ async function mutate(outputDir, ownerId, shard, mutationRun) {
           "--baseline", "run", "--output", runOutput,
           ...(shard ? ["--shard", shard] : []),
           ...run.cargo_mutants_args,
-        ], {env, cwd: root, acceptableExitCodes: [0, 2]});
+        ], {env, cwd: root, acceptableExitCodes: [0, 2, 3]});
         exitCode = result.exitCode;
       });
       outcomes.push({
         id: run.id,
         output: repositoryPath(runOutput),
-        status: exitCode === 0 ? "completed" : "completed_with_survivors",
+        status: exitCode === 0 ? "completed" : "completed_with_findings",
         exit_code: exitCode,
         ...summarizeMutationRun(runOutput),
       });
