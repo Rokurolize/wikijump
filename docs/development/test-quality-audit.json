@@ -87,12 +87,24 @@
               "list_pages",
               "--cargo-test-arg",
               "listpages_created_by_id_comment_gates_resolve_after_row_substitution",
-              "--cargo-test-arg",
-              "--exact"
+              "--cargo-test-arg=--",
+              "--cargo-test-arg=--exact"
             ]
           }
         ],
         "completed_evidence": [
+          {
+            "date": "2026-10-07",
+            "run": "scanner-result-and-complexity",
+            "shard": "0/8",
+            "mutants": 5,
+            "caught": 5,
+            "unviable": 0,
+            "missed": 0,
+            "timeout": 0,
+            "baseline": "passed with cargo-mutants baseline-derived 20s test timeout",
+            "restoration": "source SHA-256 restored to fba6a6f254ecbdbeabdf49a65642917d40d95ff11b714242943431459b7835fb and task-owned services cleaned"
+          },
           {
             "date": "2026-10-07",
             "run": "scanner-result-and-complexity",
@@ -220,6 +232,29 @@
               }
             ]
           }
+        ],
+        "scanner_result_and_complexity_aggregate": {
+          "shards": "0/8 through 7/8 complete",
+          "inventory_count": 39,
+          "caught": 32,
+          "missed": 3,
+          "unviable": 1,
+          "timeout": 3,
+          "missed_disposition": "all 3 are provisionally equivalent from current-source byte/token invariants and require independent review",
+          "timeout_disposition": "all 3 are mutation-induced nonprogress and therefore killed by timeout rather than surviving behaviorally"
+        },
+        "rendered_listpages_evidence": [
+          {
+            "date": "2026-10-07",
+            "shard": "0/8",
+            "mutants": 5,
+            "caught": 0,
+            "missed": 5,
+            "unviable": 0,
+            "timeout": 0,
+            "classification": "regression-owner gap",
+            "evidence": "The declared rendered ListPages test passes even when generated_gate_module_close is replaced with None, Some(0), Some(1), and two arithmetic mutations. Its fixture contains generated comment gates but no comment-owned [[/module]] decoy, so normal scanner closure succeeds before the recovery helper is needed. The test validates row-substitution rendering but is not an executable owner of generated_gate_module_close. Remaining rendered shards are blocked until a rendered fixture that actually reaches the recovery path is justified as a local invariant or by retained Wikidot evidence."
+          }
         ]
       },
       "classifications": [
@@ -228,7 +263,8 @@
         "rendered behavioral owner"
       ],
       "acceptance_gaps": [
-        "Scanner-result/complexity shards 1/8, 2/8, and 5/8 caught all 15 assigned mutants; shard 3/8 caught 3 with 2 provisionally equivalent survivors; shard 4/8 caught 4 with 1 provisionally equivalent survivor; shard 6/8 caught 3 with 1 unviable mutant and 1 mutation-induced nonprogress timeout; shard 7/8 caught 2 with 2 mutation-induced nonprogress timeouts. Shard 8/8 and every rendered-ListPages shard remain to be replayed for the current 39-entry inventory.",
+        "Scanner-result/complexity is complete across cargo-mutants zero-based shards 0/8 through 7/8: 32 caught, 3 provisionally equivalent survivors, 1 unviable mutant, and 3 mutation-induced nonprogress timeouts across the fixed 39-entry inventory.",
+        "Rendered-ListPages shard 0/8 missed all 5 assigned mutants because the declared integration test does not execute the generated-gate recovery path. This is an owner/regression gap, not five accepted survivors; remaining rendered shards are blocked until that owner is repaired with independently justified behavior.",
         "The three shard 3/8 and 4/8 survivor dispositions are derived from current byte/token invariants but still require the authorized independent reviewer before acceptance."
       ]
     }

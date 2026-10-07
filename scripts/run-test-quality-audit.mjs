@@ -31,8 +31,11 @@ function parseOptions(argv) {
     else fail(`unknown argument: ${argument}`);
   }
   if (!options.outputDir) fail("--output-dir <directory> is required");
-  if (options.shard && !/^[1-9][0-9]*\/[1-9][0-9]*$/u.test(options.shard)) {
-    fail("--shard must look like I/N, for example 1/4");
+  if (options.shard) {
+    const match = /^(0|[1-9][0-9]*)\/([1-9][0-9]*)$/u.exec(options.shard);
+    if (!match || Number(match[1]) >= Number(match[2])) {
+      fail("--shard must use cargo-mutants zero-based k/n form with 0 <= k < n, for example 0/4");
+    }
   }
   options.outputDir = resolve(root, options.outputDir);
   return options;
@@ -272,7 +275,7 @@ function summarizeMutationRun(runOutput) {
   for (const row of rows) {
     if (row.summary === "CaughtMutant") counts.caught += 1;
     else if (row.summary === "MissedMutant") counts.missed += 1;
-    else if (row.summary === "UnviableMutant") counts.unviable += 1;
+    else if (row.summary === "Unviable" || row.summary === "UnviableMutant") counts.unviable += 1;
     else if (row.summary === "Timeout") counts.timeout += 1;
   }
   return counts;

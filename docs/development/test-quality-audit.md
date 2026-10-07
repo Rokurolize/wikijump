@@ -22,7 +22,8 @@ node scripts/run-test-quality-audit.mjs mutate --output-dir /tmp/wj-test-quality
 node scripts/run-test-quality-audit.mjs verify --output-dir /tmp/wj-test-quality
 ```
 
-For long mutation inventories, `mutate` also accepts `--shard I/N`. Sharding
+For long mutation inventories, `mutate` also accepts cargo-mutants' zero-based
+`--shard k/N` form (`0 <= k < N`). Sharding
 does not weaken the inventory check: the driver first verifies the complete
 reviewed `cargo mutants --list` count, then passes the requested shard to
 cargo-mutants. This lets a reviewed inventory be completed across bounded
