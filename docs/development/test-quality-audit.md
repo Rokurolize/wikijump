@@ -71,6 +71,14 @@ rejects `NODE_V8_COVERAGE`, the driver records that observed instrumentation
 failure and runs the same suite uninstrumented as a control rather than
 changing the behavior under test.
 
+The report's `measurements` field contains source-scoped LLVM counts and V8
+function-range observations, plus the declared source files not emitted by
+each instrumentation mode. Missing files and uncovered lines remain explicitly
+**unreviewed**, not auto-classified as test gaps. Each command's completion or
+failure is preserved in `coverage-summary.json`, even if a later suite fails.
+Use a **fresh output directory** for every coverage run so that old raw V8
+profiles cannot inflate or contaminate the result.
+
 `mutate` is owner-scoped. It requires the unmutated source identity and current
 `cargo mutants --list` count to match the reviewed ledger before it starts,
 uses baseline-derived timeouts, and verifies restoration of the original
@@ -102,6 +110,18 @@ repository builds on stable, so branch coverage is a documented tooling
 limitation; line, region, function, and instantiation coverage plus targeted
 mutation are used instead.
 
+**2026-10-08 bounded evidence, not combined coverage:** Deepwell `--lib`
+completed 1,613 passing tests (one ignored). Of 521 declared production source
+files under `deepwell/src/`, LLVM emitted 410 files: **51,124 / 105,520
+instrumented lines (48.45%)**, **4,449 / 9,063 functions (49.09%)**,
+72,308 / 141,245 regions (51.19%), and 4,610 / 11,061 instantiations
+(41.68%). The other 111 files were **not emitted**; they are not silently
+counted as tested or untested. The proc-macro is measured separately: seven
+source files, two passing unit tests, **232 / 507 lines (45.76%)** and
+10 / 25 functions (40%). Integration and union-of-suite coverage remain
+outstanding; a zero-unit-hit production line must be checked against its
+integration owner rather than immediately classified as an absent test.
+
 ### Framerail
 
 ```sh
@@ -112,6 +132,13 @@ Framerail action tests run through a Vite SSR bootstrap. Node's built-in V8
 coverage does not observe many modules loaded that way, so a module missing
 from a V8 report is an instrumentation blind spot, not an untested module.
 Judge action coverage from the behavioral action-boundary tests.
+
+In the dated 2026-10-08 V8 run, **667/667** Framerail unit tests passed with
+instrumentation: 117 raw profiles observed 113 of 315 inventoried `framerail/src`
+files. V8 saw 1,808 executed function-entry ranges among 3,127 observed
+function-entry records, potentially repeated across profiles. Neither their
+ratio nor 113/315 is claimed to be source-line or branch coverage; the missing
+202 source files need separate instrumentation/ownership review.
 
 ### wikidot-verification
 
@@ -126,7 +153,14 @@ child-process tests intentionally freeze their environment objects
 (`Cannot add property NODE_V8_COVERAGE, object is not extensible`). Coverage
 measurement must not change the semantics being measured, so subprocess-heavy
 code is treated as an instrumentation blind spot and measured directly where
-that is transparent.
+that is transparent. The 2026-10-08 instrumented full run reproduced this
+failure; the previously run uninstrumented suite passed **2,072/2,072** tests.
+The dated raw summary of the independently measured Rust and Framerail runs is
+preserved outside the checkout at
+`/tmp/wj-1990-coverage-evidence-20261008.json` (SHA-256
+`14b4309eed1a3ffec2e062d551f6b616a042259398bddb04bd758ce41ded5d7f`).
+These figures are historical evidence for that source state, not the combined
+coverage acceptance verdict for issue #1990.
 
 ## Mutation testing
 

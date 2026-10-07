@@ -135,6 +135,12 @@ test("audit inventory resolves side-effect suite imports and transitive owners",
   assert.equal(result.status, 0, result.stderr);
 
   const report = JSON.parse(readFileSync(join(fixture.directory, "output/inventory.json"), "utf8"));
+  assert.ok(report.production.some(({path}) => path === "deepwell/relation-impl-derive/src/lib.rs"),
+    "proc-macro production sources must be included in the independent inventory");
+  assert.ok(report.production.some(({path}) => path === "framerail/article-response-fast-path.js"),
+    "production entrypoints outside Framerail src must not be omitted");
+  assert.ok(report.executable_owners.some(({path}) => path === "deepwell/relation-impl-derive/src/lib.rs"),
+    "proc-macro inline test ownership must be inventoried");
   const owner = report.executable_owners.find(({path}) => path === "framerail/tests/article-response-cache.test.js");
   assert.ok(owner, "the imported Framerail suite wrapper must be inventoried");
   assert.deepEqual(owner.imported_modules, [

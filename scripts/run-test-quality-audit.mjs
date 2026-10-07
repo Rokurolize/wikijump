@@ -9,6 +9,7 @@ import {
   runValidationCommand,
   withDeepwellIntegrationStack,
 } from "../install/local/wikidot-verification/src/deepwell-integration-stack.mjs";
+import {summarizeLlvmCoverage, summarizeRawV8Coverage} from "./test-quality-coverage-metrics.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
@@ -78,7 +79,10 @@ function containsInlineRustTests(path) {
 function productionFiles() {
   return [
     ...walk(resolve(root, "deepwell/src"), (path) => sourceLike(path) && !dedicatedTestModule(path)),
+    ...walk(resolve(root, "deepwell/relation-impl-derive/src"), (path) => sourceLike(path) && !dedicatedTestModule(path)),
     ...walk(resolve(root, "framerail/src"), sourceLike),
+    ...["article-response-fast-path.js", "server.js", "startup-readiness.js"]
+      .map((name) => resolve(root, "framerail", name)).filter(existsSync),
     ...walk(resolve(root, "install/local/wikidot-verification/src"), sourceLike),
     ...walk(resolve(root, "install/local/wikidot-verification/scripts"), sourceLike),
   ];
@@ -88,6 +92,7 @@ function testFiles() {
   const files = [
     ...walk(resolve(root, "deepwell/tests"), sourceLike),
     ...walk(resolve(root, "deepwell/src"), (path) => sourceLike(path) && (dedicatedTestModule(path) || containsInlineRustTests(path))),
+    ...walk(resolve(root, "deepwell/relation-impl-derive/src"), (path) => sourceLike(path) && containsInlineRustTests(path)),
     ...walk(resolve(root, "framerail/tests"), sourceLike),
     ...walk(resolve(root, "install/local/wikidot-verification/tests"), sourceLike),
   ];
@@ -221,6 +226,15 @@ async function runCoverageCommand(command, args, {env, capture = false} = {}) {
 
 async function coverage(outputDir) {
   mkdirSync(outputDir, {recursive: true});
+  const summaryPath = resolve(outputDir, "coverage-summary.json");
+  if (existsSync(summaryPath)) {
+    fail(`coverage output already has a run manifest; use a fresh --output-dir: ${summaryPath}`);
+  }
+  const production = productionFiles();
+  const expectedFiles = (relativePrefix) => production
+    .map(repositoryPath)
+    .filter((path) => path.startsWith(`${relativePrefix}/`))
+    .map((path) => path.slice(relativePrefix.length + 1));
   const report = {
     schema: 1,
     generated_at: new Date().toISOString(),
@@ -228,46 +242,88 @@ async function coverage(outputDir) {
     rust_branch_instrumentation: "unsupported on the repository stable toolchain; line/function/region coverage plus mutation is retained instead",
     commands: [],
     instrumentation_limitations: [],
+    measurements: {},
+    complete: false,
   };
 
   const record = async (name, command, args, options = {}) => {
-    report.commands.push({name, command: [command, ...args]});
-    return runCoverageCommand(command, args, options);
+    const row = {name, command: [command, ...args], status: "running"};
+    report.commands.push(row);
+    writeJson(summaryPath, report);
+    try {
+      const result = await runCoverageCommand(command, args, options);
+      row.status = "completed";
+      return result;
+    } catch (error) {
+      row.status = "failed";
+      row.error = String(error.message).slice(0, 1000);
+      throw error;
+    } finally {
+      writeJson(summaryPath, report);
+    }
+  };
+
+  const recordLlvm = (name, filename, sourceDir, relativePrefix) => {
+    report.measurements[name] = summarizeLlvmCoverage(
+      JSON.parse(readFileSync(resolve(outputDir, filename), "utf8")),
+      {sourcePrefix: resolve(root, sourceDir), expectedFiles: expectedFiles(relativePrefix)},
+    );
+    writeJson(summaryPath, report);
   };
 
   await record("deepwell-unit", "cargo", [
     "llvm-cov", "--lib", "--json", "--output-path", resolve(outputDir, "deepwell-unit.json"),
     "--offline", "--locked", "--manifest-path", "deepwell/Cargo.toml",
   ]);
+  recordLlvm("deepwell-unit", "deepwell-unit.json", "deepwell/src", "deepwell/src");
 
   await withDeepwellIntegrationStack(async ({env, cargo}) => {
     await record("deepwell-integration", cargo, [
       "llvm-cov", "--tests", "--json", "--output-path", resolve(outputDir, "deepwell-integration.json"),
       "--offline", "--locked", "--manifest-path", "deepwell/Cargo.toml", "--", "--test-threads", "1",
     ], {env});
+    recordLlvm("deepwell-integration", "deepwell-integration.json", "deepwell/src", "deepwell/src");
     await record("deepwell-combined", cargo, [
       "llvm-cov", "--lib", "--tests", "--json", "--output-path", resolve(outputDir, "deepwell-combined.json"),
       "--offline", "--locked", "--manifest-path", "deepwell/Cargo.toml", "--", "--test-threads", "1",
     ], {env});
+    recordLlvm("deepwell-combined", "deepwell-combined.json", "deepwell/src", "deepwell/src");
   });
 
   await record("relation-proc-macro", "cargo", [
     "llvm-cov", "--json", "--output-path", resolve(outputDir, "relation-proc-macro.json"),
     "--offline", "--locked", "--manifest-path", "deepwell/relation-impl-derive/Cargo.toml",
   ]);
+  recordLlvm("relation-proc-macro", "relation-proc-macro.json", "deepwell/relation-impl-derive/src", "deepwell/relation-impl-derive/src");
 
   const framerailCoverage = resolve(outputDir, "framerail-v8");
   mkdirSync(framerailCoverage, {recursive: true});
+  if (readdirSync(framerailCoverage).some((name) => /^coverage-.*\.json$/u.test(name))) {
+    fail("Framerail V8 output contains previous raw profiles; use a fresh --output-dir");
+  }
   await record("framerail-v8", "scripts/run-framerail-unit-tests.sh", [], {
     env: {...process.env, NODE_V8_COVERAGE: framerailCoverage},
   });
+  report.measurements["framerail-v8"] = summarizeRawV8Coverage(framerailCoverage, {
+    sourcePrefix: resolve(root, "framerail/src"), expectedFiles: expectedFiles("framerail/src"),
+  });
+  writeJson(summaryPath, report);
 
   const verifierCoverage = resolve(outputDir, "wikidot-verification-v8");
   mkdirSync(verifierCoverage, {recursive: true});
+  if (readdirSync(verifierCoverage).some((name) => /^coverage-.*\.json$/u.test(name))) {
+    fail("wikidot-verification V8 output contains previous raw profiles; use a fresh --output-dir");
+  }
   try {
     await record("wikidot-verification-v8", "pnpm", ["--dir", "install/local/wikidot-verification", "run", "test:ci"], {
       env: {...process.env, NODE_V8_COVERAGE: verifierCoverage},
       capture: true,
+    });
+    report.measurements["wikidot-verification-v8"] = summarizeRawV8Coverage(verifierCoverage, {
+      sourcePrefix: resolve(root, "install/local/wikidot-verification"),
+      expectedFiles: production.map(repositoryPath)
+        .filter((path) => path.startsWith("install/local/wikidot-verification/"))
+        .map((path) => path.slice("install/local/wikidot-verification/".length)),
     });
   } catch (error) {
     report.instrumentation_limitations.push({
@@ -278,7 +334,8 @@ async function coverage(outputDir) {
     await record("wikidot-verification-uninstrumented-control", "pnpm", ["--dir", "install/local/wikidot-verification", "run", "test:ci"]);
   }
 
-  writeJson(resolve(outputDir, "coverage-summary.json"), report);
+  report.complete = true;
+  writeJson(summaryPath, report);
 }
 
 async function listedMutationCount(owner) {
