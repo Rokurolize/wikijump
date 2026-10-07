@@ -161,7 +161,7 @@ async function verifyRegistry(registry) {
     .filter(({ kind }) => kind === "framerail_route" || kind === "framerail_server_action")
     .map(({ surface_id }) => surface_id)
   const actual = registry.records.map(({ surface_id }) => surface_id)
-  assert.equal(actual.length, 137)
+  assert.equal(actual.length, 138)
   assert.deepEqual(actual, expected)
   assert.equal(new Set(actual).size, actual.length)
 
@@ -207,7 +207,10 @@ async function verifyRegistry(registry) {
           `${record.surface_id} has an unresolved issue/case link`
         )
       }
-      else assert.equal(link.issue, 1372, `${record.surface_id} has an unresolved issue link`)
+      else {
+        const expectedIssue = record.surface_id === "framerail-route:/feed/forum/{feed}" ? 2091 : 1372
+        assert.equal(link.issue, expectedIssue, `${record.surface_id} has an unresolved issue link`)
+      }
     }
 
     for (const gap of record.temporal) {
