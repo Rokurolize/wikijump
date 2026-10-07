@@ -2,6 +2,7 @@
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { goto } from "$app/navigation"
   import { resolve } from "$app/paths"
+  import { authCancelDestination } from "$lib/auth-cancel.js"
   import { untrack } from "svelte"
   import { superForm } from "sveltekit-superforms"
 
@@ -12,6 +13,10 @@
 
   let isLoggedIn = $derived<boolean>(data.isLoggedIn)
   let isRegistered = $state<boolean>(false)
+
+  const cancelRegistration = async () => {
+    await goto(authCancelDestination(), { replaceState: true })
+  }
 
   const { form, enhance, errors } = superForm(
     untrack(() => data.registerForm),
@@ -127,7 +132,11 @@
     </div>
 
     <div class="action-row auth-actions">
-      <button class="action-button auth-button button-cancel clickable" type="button">
+      <button
+        class="action-button auth-button button-cancel clickable"
+        onclick={cancelRegistration}
+        type="button"
+      >
         {data.internationalization?.cancel}
       </button>
       <button class="action-button auth-button button-create clickable" type="submit">
