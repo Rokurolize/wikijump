@@ -1,0 +1,113 @@
+{
+  "schema": 1,
+  "updated_at": "2026-10-07",
+  "tracking_issue": 1990,
+  "baseline_commit": "520e2ee1ae8332f22196ced2c5db202b12f1971d",
+  "scope": {
+    "included": [
+      "deepwell",
+      "framerail",
+      "install/local/wikidot-verification"
+    ],
+    "excluded": [
+      "install/local/theme-lab",
+      "locales",
+      "CI configuration"
+    ],
+    "wws_regression_validation_retained": true
+  },
+  "lockfiles": [
+    {
+      "path": "deepwell/Cargo.lock",
+      "sha256": "7d89d3d117677a3891d0f319d75864c22887bddd77fecdf4f45b83f358aeb4a7"
+    },
+    {
+      "path": "deepwell/relation-impl-derive/Cargo.lock",
+      "sha256": "9bb3b172e340d6f55d62a5ebfafa1bbaef57d1b32621cb7cadbf11b8d8354ad0"
+    },
+    {
+      "path": "framerail/pnpm-lock.yaml",
+      "sha256": "c0f021590ba58ba94b5382f6f65ad60e890b4c673afc57d766c2dea372bacfaf"
+    }
+  ],
+  "owners": [
+    {
+      "id": "deepwell:listpages:generated_gate_module_close",
+      "status": "in_progress",
+      "source": {
+        "path": "deepwell/src/services/render/list_pages/scanner.rs",
+        "sha256": "fba6a6f254ecbdbeabdf49a65642917d40d95ff11b714242943431459b7835fb"
+      },
+      "symbol": "generated_gate_module_close",
+      "tests": [
+        {
+          "path": "deepwell/src/services/render/list_pages/scanner/tests.rs",
+          "sha256": "490385cfd9a2edd3b3ae4b02064eaff40ed003b6bb3a9c15aa24ed3de3c2e4c0",
+          "anchors": [
+            "scanner_keeps_generated_comment_gate_rows_inside_the_module",
+            "generated_gate_close_uses_the_first_structural_close_after_inactive_branches"
+          ]
+        },
+        {
+          "path": "deepwell/src/services/render/list_pages/scanner/tests/stress.rs",
+          "sha256": "84b6346e5407769487f44a7c72ca413dd11a413b5d1d4a72f0898b4e627f02b7",
+          "anchors": [
+            "generated_gate_close_range_checks_stay_linear"
+          ]
+        },
+        {
+          "path": "deepwell/tests/list_pages.rs",
+          "sha256": "6955dc400653979b046380cf012b64a8e22c19c5b7c6eb98015e9b61695e7f61",
+          "anchors": [
+            "listpages_created_by_id_comment_gates_resolve_after_row_substitution"
+          ]
+        }
+      ],
+      "mutation": {
+        "file": "src/services/render/list_pages/scanner.rs",
+        "function": "generated_gate_module_close",
+        "inventory_count": 39,
+        "historical_inventory_count": 36,
+        "runs": [
+          {
+            "id": "scanner-result-and-complexity",
+            "cargo_mutants_args": [
+              "-C",
+              "--lib",
+              "--cargo-test-arg",
+              "generated_gate"
+            ]
+          },
+          {
+            "id": "rendered-listpages",
+            "cargo_mutants_args": [
+              "-C",
+              "--test",
+              "-C",
+              "list_pages",
+              "--cargo-test-arg",
+              "listpages_created_by_id_comment_gates_resolve_after_row_substitution",
+              "--cargo-test-arg",
+              "--exact"
+            ]
+          }
+        ]
+      },
+      "classifications": [
+        "scanner-result owner",
+        "complexity owner",
+        "rendered behavioral owner"
+      ],
+      "acceptance_gaps": [
+        "The current 39-entry mutation inventory has not yet been replayed through both declared owner layers on this baseline.",
+        "Survivor dispositions must be re-reviewed against current source bytes rather than inherited from the historical 36-entry run."
+      ]
+    }
+  ],
+  "remaining_frontier": [
+    "remaining ListPages scanner, substitution, template, query, expansion, delayed-rendering, and runtime owners",
+    "forum service and remaining forum read-route owners",
+    "other production owners identified by current coverage and ownership mapping, including newer render/view/history changes",
+    "Framerail action-owner and wikidot-verification scanner/registry ownership re-audit"
+  ]
+}

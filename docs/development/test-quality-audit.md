@@ -5,6 +5,51 @@ reproducible and so a coverage number is never mistaken for an ownership
 judgement. It supports issue #1990 and the Deepwell owner-boundary work in
 #1977.
 
+The compact reviewed ledger lives at `docs/development/test-quality-audit.json`.
+It binds audited owners to source/test/lockfile identities, named behavioral
+owners, mutation inventory sizes, current dispositions, and unresolved
+acceptance gaps. Large generated reports stay outside tracked source.
+
+## Reproducible audit commands
+
+The audit driver is opt-in and always requires an explicit output directory:
+
+```sh
+node scripts/run-test-quality-audit.mjs inventory --output-dir /tmp/wj-test-quality
+node scripts/run-test-quality-audit.mjs coverage --output-dir /tmp/wj-test-quality
+node scripts/run-test-quality-audit.mjs mutate --output-dir /tmp/wj-test-quality \
+  --owner deepwell:listpages:generated_gate_module_close
+node scripts/run-test-quality-audit.mjs verify --output-dir /tmp/wj-test-quality
+```
+
+`inventory` discovers production files independently of coverage output. It
+also records executable test owners, test-imported modules, wrapper/browser
+owners, Cargo targets, Deepwell binaries, and proc-macro targets. `verify`
+rejects stale source/test/lockfile hashes, missing or invalid test anchors,
+missing owners, accepted owners with unresolved gaps, and changed mutation
+inventories.
+
+`coverage` records separate Deepwell unit, integration, combined, and
+`relation-impl-derive` proc-macro coverage. Deepwell integration measurement
+uses the same task-owned PostgreSQL/Valkey/MinIO lifecycle as ordinary
+integration validation. The shared lifecycle resolves the built seed binary
+from Cargo metadata, so an alternate `CARGO_TARGET_DIR` cannot accidentally
+seed with a stale `target/debug/deepwell` from another target tree.
+
+For Node owners, the driver collects V8 coverage where instrumentation
+preserves execution. If wikidot-verification's frozen subprocess environment
+rejects `NODE_V8_COVERAGE`, the driver records that observed instrumentation
+failure and runs the same suite uninstrumented as a control rather than
+changing the behavior under test.
+
+`mutate` is owner-scoped. It requires the unmutated source identity and current
+`cargo mutants --list` count to match the reviewed ledger before it starts,
+uses baseline-derived timeouts, and verifies restoration of the original
+source bytes after every run, including interruption/failure paths. The first
+replayed owner is `generated_gate_module_close`: its current inventory is 39
+entries, not the historical 36. Its scanner-result/complexity owners and its
+rendered ListPages owner are separate mutation runs.
+
 ## Measured coverage
 
 ### Deepwell (Rust)
