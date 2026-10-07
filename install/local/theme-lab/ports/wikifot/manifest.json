@@ -45,7 +45,7 @@
     },
     "existing_jp_audit": "new-jp-candidate-verified",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn"
   },
   "dependencies": {
     "slug": "theme:wikifot",
@@ -83,7 +83,7 @@
       "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; "
     }
   ],
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/wikifot/assets.json",
   "asset_dependency_decision_count": 1,
@@ -92,11 +92,11 @@
     "jp_overrides": "maintenance/jp-overrides.css",
     "manifest": "maintenance/manifest.json",
     "base_sha256": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "semantic_css_sha256": "142bc69a3dd7fad4340296829c9bd2f69edc98f4cd265acc5da376dbcc2ff0fa",
-    "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "jp_overrides_sha256": "e79ef547b4245d535105989ecc2d9d4815b9a4c03d999a439223af480cebb41b",
+    "semantic_css_sha256": "2344b3233bb7aeb0aaa3248cb9c28404f24ba6b0e050fa889c85bab61c6eeceb",
+    "canonical_override_sha256": "0604861828c091b52bf5ef10e2c969f233aac5aef6addb0f1f8f0aa5b211e4c6",
     "final_source": "maintenance/final.wikidot.txt",
-    "final_source_sha256": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45",
+    "final_source_sha256": "6a31e41e829e560ad343f0dcdf4ff0d40d4f5cd352e4604809a7bc3debffd69b",
     "exact_duplicate_rules_removed": 0,
     "redundant_same_value_declarations_removed": 0,
     "empty_rules_removed": 0
@@ -106,10 +106,18 @@
       "source_path": "candidate-input.css",
       "source_sha256": "db9c78dff364e2e87a17ee86e79a8a37d6e16ff4442a37e8b8561e61621edce3",
       "active_tags": [],
-      "candidate_source_sha256": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45",
-      "candidate_active_tags": [],
+      "candidate_source_sha256": "403335fe611db4be2ef13a0349e8215dade54727318494551221bb5671cc5e55",
+      "candidate_active_tags": [
+        "テーマ"
+      ],
+      "runtime_active_tags": [],
+      "showcase_css_modules_removed_exact": 0,
+      "showcase_css_modules_removed_truncated": 1,
+      "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 0,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "db9c78dff364e2e87a17ee86e79a8a37d6e16ff4442a37e8b8561e61621edce3",
+      "candidate_css_sha256": "738099d2701ec214769009074f34e060a0d05f6b7999e36aeeccc9ec833e1c9d",
       "asset_receipt_path": "assets.json",
       "assets": 0,
       "imports": 0,
@@ -124,7 +132,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

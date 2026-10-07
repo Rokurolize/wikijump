@@ -163,6 +163,8 @@ interface PageViewFound {
      * path.
      */
     theme_previewer_no_ui?: boolean
+    /** Source-owned blank ThemePreviewer selection on a saved page. */
+    theme_previewer_blank?: boolean
     meta_tags: PageMetaTagView[]
   }
 }

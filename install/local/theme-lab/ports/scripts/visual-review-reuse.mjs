@@ -9,6 +9,18 @@ const validIdentity = row =>
   [row?.theme, row?.browser_engine, row?.viewport, row?.surface, row?.state]
     .every(value => typeof value === 'string' && value.trim().length > 0);
 const validHash = value => typeof value === 'string' && /^[a-f0-9]{64}$/u.test(value);
+const RUNTIME_REVIEW_IDENTITIES = [
+  'runtime_source_sha256', 'backend_runtime_identity_sha256', 'fixture_contract_sha256',
+  'capture_state_action_contract_sha256', 'scoped_run_contract_sha256', 'environment_contract_sha256'
+];
+export function visualReviewRuntimeIdentityCompatible(current, prior) {
+  return RUNTIME_REVIEW_IDENTITIES.every(key => {
+    const currentValue = current?.[key] ?? null;
+    const priorValue = prior?.[key] ?? null;
+    if (currentValue === null && priorValue === null) return true;
+    return validHash(currentValue) && validHash(priorValue) && currentValue === priorValue;
+  });
+}
 const explanations = value => Array.isArray(value) && value.length > 0 &&
   value.every(item => typeof item === 'string' && item.trim().length > 0);
 // Carry only well-formed explanation arrays forward; a malformed companion
@@ -133,14 +145,17 @@ export function buildExactVisualReviewIndex(rows) {
     }
     // Callers pass historical rows first and current rows last, so the newest
     // authoritative reviewed row wins for a duplicate key/hash pair.
-    byHash.set(row.screenshot_sha256, row);
+    const candidates = byHash.get(row.screenshot_sha256) ?? [];
+    candidates.push(row);
+    byHash.set(row.screenshot_sha256, candidates);
   }
   return index;
 }
 
 export function applyExactVisualReviewReuse(row, index) {
   if (!currentRowAllowsVisualReuse(row)) return false;
-  const prior = index.get(visualReviewRowKey(row))?.get(row.screenshot_sha256);
+  const prior = index.get(visualReviewRowKey(row))?.get(row.screenshot_sha256)
+    ?.slice().reverse().find(candidate => visualReviewRuntimeIdentityCompatible(row, candidate));
   if (!prior) return false;
   const review = reusableVisualReview(prior);
   if (!review) return false;
@@ -152,6 +167,7 @@ export function applyExactVisualReviewReuse(row, index) {
       reason: 'byte-identical',
       source_screenshot_sha256: prior.screenshot_sha256,
       source_candidate_sha256: prior.candidate_sha256 ?? null,
+      source_candidate_source_sha256: prior.candidate_source_sha256 ?? null,
       source_classification: prior.classification,
       source_reviewed_at: review.review_provenance.reviewed_at,
       source_reviewer: review.review_provenance.reviewer,
@@ -159,7 +175,15 @@ export function applyExactVisualReviewReuse(row, index) {
       source_review_screenshot_sha256: review.review_provenance.screenshot_sha256
     }
   });
-  delete row.visual_review; // a replaced judgement must not shadow its new attribution
+  // The judgement belongs to the exact screenshot bytes. Bind that retained
+  // judgement to the current capture identity while keeping its original
+  // reviewer provenance and source candidate in the reuse trail. Finalizers
+  // require visual_review's candidate fields to match the current row.
+  row.visual_review = {
+    ...structuredClone(review.review_provenance),
+    candidate_sha256: row.candidate_sha256 ?? null,
+    candidate_source_sha256: row.candidate_source_sha256 ?? null
+  };
   return true;
 }
 

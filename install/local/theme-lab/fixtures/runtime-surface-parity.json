@@ -38,7 +38,7 @@
       "surface_id": "content.article",
       "status": "INSUFFICIENT_EVIDENCE",
       "scope": "whole surface",
-      "evidence_reference": [],
+      "evidence_reference": "ports/sigma/upstream-en.wikidot.txt#blink-demonstration; existing article contract remains local-only; ports/shared-fixtures/component-theme-squares.jp.wikidot.txt (frozen source-owned palette DOM; local-only, no parity certificate)",
       "implementation_reference": [
         "install/local/theme-lab/src/theme-surface-contract.mjs",
         "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
@@ -55,7 +55,9 @@
         "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
       ],
       "selector_patterns": [
-        "#page-title|#page-content|#page-info|#main-content"
+        "#page-title|#page-content|#page-info|#main-content",
+        "^\\.blink(?:$|[\\s>+~.#:\\[])",
+        "^\\.(?:colors-container|colors|color|subcolors|subcolor)(?:$|[\\s>+~.#:\\[])"
       ],
       "theme_lab_activity": "ACTIVE_CSS_OR_INTERACTION_SURFACE",
       "conclusion_resolution": "LOCAL_TARGET_ACCEPTANCE_ONLY",
@@ -396,7 +398,7 @@
         "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
       ],
       "selector_patterns": [
-        "\\.yui-navset|\\.yui-nav|\\.yui-content"
+        "\\.yui-navset|\\.yui-nav|\\.yui-content|\\.picker\\s+(?:li|em)"
       ],
       "theme_lab_activity": "ACTIVE_CSS_OR_INTERACTION_SURFACE",
       "conclusion_resolution": "LOCAL_TARGET_ACCEPTANCE_ONLY",
@@ -1408,7 +1410,9 @@
       "surface_id": "shell.header",
       "status": "INSUFFICIENT_EVIDENCE",
       "scope": "whole surface",
-      "evidence_reference": [],
+      "evidence_reference": [
+        "install/local/theme-lab/ports/authority-evidence/replay/objects/5c/5c92d7dc050a72ac4e130aab62f56fa70105a044aa610da940c17b7fe66d2fb6#header-and-extra-div-scaffolding"
+      ],
       "implementation_reference": [
         "install/local/theme-lab/src/theme-surface-contract.mjs",
         "install/local/theme-lab/ports/interactive-visual-fixture/capture-interactive.mjs"
@@ -1425,7 +1429,8 @@
         "No source-side Wikidot capture currently binds the DOM, selectors, interaction states, and responsive behavior used by Theme Lab for this surface."
       ],
       "selector_patterns": [
-        "^#header(?:$|[\\s>+~.#:\\[])"
+        "^#header(?:$|[\\s>+~.#:\\[])",
+        "^#(?:header-)?extra-div-[1-6](?:$|[\\s>+~.#:\\[])"
       ],
       "theme_lab_activity": "ACTIVE_CSS_OR_INTERACTION_SURFACE",
       "conclusion_resolution": "LOCAL_TARGET_ACCEPTANCE_ONLY",
@@ -1433,7 +1438,7 @@
       "port_conclusion_eligible": false,
       "blocks_port_conclusion": false,
       "decision_scope": "Candidate CSS effects and screenshots on the SCP-JP/Wikijump runtime remain in target acceptance. They do not assert Wikidot parity and cannot create a parity-based port requirement, next action, or source-intent conclusion.",
-      "resolution_reason": "The complete Wikidot-facing DOM/state contract is not certified. The active local acceptance probes remain enabled, while runtime-parity findings are removed from port-decision authority until this exact scope is certified."
+      "resolution_reason": "The complete Wikidot-facing DOM/state contract is not certified. The active local acceptance probes remain enabled, while runtime-parity findings are removed from port-decision authority until this exact scope is certified. The observed extra-div/header-extra-div scaffolding belongs to this existing shell observation scope; its styles remain local target acceptance only and confer no adaptation authority."
     },
     {
       "surface_id": "shell.interwiki",

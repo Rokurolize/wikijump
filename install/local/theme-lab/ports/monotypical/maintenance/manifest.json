@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "9293fdfd3ee9faf3b644dc690c9abe8c2ce71f49d08fff711446edae8d45035a",
+  "frozen_candidate_source_sha256": "2b1757725694a02df9618f21e2e4326f37500b6f751d005558199df72f9913e5",
   "base_source_sha256": "9293fdfd3ee9faf3b644dc690c9abe8c2ce71f49d08fff711446edae8d45035a",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "99032659941c71343cf42cc752ff74eb596476ede568342a2d36426c6c9ffb1b",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "1a50fd340488faad65b33cba08643e9c1a18bd9d3e961bc3a0173bf54fa67b86",
+  "jp_overrides_sha256": "9f4098d406425e39f976091a053968610fc8a4ba32cc986f11ae23bb5bf362f3",
+  "semantic_css_sha256": "2da251478a190349c9000025f124596dd1144d8924246ea8722b23183b2af856",
+  "canonical_override_sha256": "3f893bc312638c63f2e3fe4f393aedbdc41577ad2a32124dcf74da6e70bcdfda",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "9293fdfd3ee9faf3b644dc690c9abe8c2ce71f49d08fff711446edae8d45035a",
+  "final_source_sha256": "4b93f8e0316e0f11b2c0911af4d6b5118378ab87af69ced9657245236bba5590",
   "final_source_inputs": {
     "base_sha256": "9293fdfd3ee9faf3b644dc690c9abe8c2ce71f49d08fff711446edae8d45035a",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "9f4098d406425e39f976091a053968610fc8a4ba32cc986f11ae23bb5bf362f3"
   },
   "ordered_include_sha256": "c47c94efa882638bbc2fc4eb7a123efebdeee284125a7197d7a6f279bd5619f0",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 1,
+  "raw_override_rule_count": 1,
+  "canonical_override_rule_count": 1,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -215,8 +215,48 @@
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot monotypical credit correction: keep the modal rating in document flow below the license control.",
+      "sha256": "d162f234f6fcb68c199c225a962166fc679dfe5b9939fcaf0d85d541cb691ff6",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "Read-only real current SCP-JP Sigma-9 Credit A/B shows the absolute rating row intercepts the license link. Preserve the source rating styling and place only that row in normal flow. This selector does not match the Sigma-10 return component.",
+      "evidence": [
+        {
+          "path": "authority-evidence/monotypical-credit-license-published-current-v5/receipt.json",
+          "sha256": "02e71243ab2af6df6073aa9b7b771e9aebd0bf5b31ec70691f1b65170b98aafc",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-2000-jp",
+        "state": "credit-license",
+        "viewports": [
+          320,
+          390,
+          1440
+        ],
+        "selectors": [
+          "#u-credit-view .modalbox .modalbox-ratemodule",
+          "#u-credit-view a[href=\"#u-credit-otherwise\"]"
+        ],
+        "target_version": "SCP-JP Sigma-9 Credit; current source receipt current-acceptance/authority-evidence/scp-jp-credit-current/receipt.json"
+      },
+      "published_css_sha256": "f2883666196dd7cad910db816eba36924273e206d35ef01c410443f3b48bfd23"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot monotypical credit correction: keep the modal rating in document flow below the license control.",
+      "rationale": "SCP-JP Wikidot monotypical credit correction: keep the modal rating in document flow below the license control.",
+      "sha256": "d162f234f6fcb68c199c225a962166fc679dfe5b9939fcaf0d85d541cb691ff6",
+      "selectors": [
+        "#u-credit-view .modalbox .modalbox-ratemodule"
+      ],
+      "at_contexts": [],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    }
+  ]
 }

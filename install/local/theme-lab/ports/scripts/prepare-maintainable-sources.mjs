@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {parseStyleSheet,stripCssComments} from '../../src/css-probe.mjs';
 import {analyzeOverrideCascade,extractSCPJPAdaptationBlocks,isEnCampaignMaintenanceManifest,parseCssDeclarations} from '../../src/port-maintenance.mjs';
 import {extractUnconditionalCssModules} from './extract-css-modules.mjs';
-import {assertPublishablePackage, authorityInventory} from '../../src/adaptation-authority.mjs';
+import {assertPublishablePackage, authorityInventory, composeAuthoritySource} from '../../src/adaptation-authority.mjs';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const portsDir=path.dirname(here);
@@ -369,7 +369,7 @@ export function compactExactDuplicateRules(overlays){
     rendered.push(parts.join('\n'));
   }
   const css=rendered.join('\n\n').trim();
-  const raw=overlays.map(block=>block.css).filter(Boolean).join('\n\n').trim();
+  const raw=overlays.map(block=>block.css).filter(Boolean).join('\n\n/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */\n\n').trim();
   if(canonicalExactRuleIdentity(raw)!==canonicalExactRuleIdentity(css))throw new Error('exact duplicate compaction changed the canonical JP override rule cascade');
   return {css:css+(css?'\n':''),removed,raw_rule_count:entries.length,canonical_rule_count:entries.length-removed};
 }
@@ -403,14 +403,12 @@ export function splitMaintainableCandidate(source,{unmarkedAdaptations=[]}={}){
     cursor=match.index+match[0].length;
   }
   base+=source.slice(cursor);
-  const overlayCss=overlays.map(block=>block.css).filter(Boolean).join('\n\n').trim();
+  const overlayCss=overlays.map(block=>block.css).filter(Boolean).join('\n\n/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */\n\n').trim();
   return {base:base.replace(/\n{4,}/gu,'\n\n\n').trimEnd()+'\n',overlayCss:overlayCss+(overlayCss?'\n':''),overlays};
 }
 
 export function composeMaintainableCandidate(base,overlayCss){
-  const suffix=overlayCss.trim();
-  if(!suffix)return base.trimEnd()+'\n';
-  return `${base.trimEnd()}\n\n[[module CSS]]\n${suffix}\n[[/module]]\n`;
+  return composeAuthoritySource(base,overlayCss);
 }
 
 function normalizeMaintenanceRationales(css){
@@ -510,13 +508,23 @@ export async function preparePackage(name,{write=false,check=false}={}){
     if(classification.schema_version!==1||!Array.isArray(classification.unmarked_adaptation_modules))throw new Error(`${name}: invalid maintenance classification`);
   }
   const {base,overlayCss:rawOverlayCss,overlays}=splitMaintainableCandidate(original,{unmarkedAdaptations:classification.unmarked_adaptation_modules});
-  assertPublishablePackage(name);
   const authority=authorityInventory(name);
   const exactCompacted=compactExactDuplicateRules(overlays);
   const declarationCompacted=canonicalizeShadowedDeclarations(exactCompacted.css);
   declarationCompacted.css=normalizeMaintenanceRationales(declarationCompacted.css);
   const overlayCss=declarationCompacted.css;
   const verification=verifyEquivalentCandidate({original,base,rawOverlayCss,overlayCss,activeTags});
+  if(write&&authority.inputs['maintenance/jp-overrides.css']){
+    // Rebinding is permitted only after the generated overlay has proved its
+    // equivalence to the authority-composed publication source.
+    await fs.writeFile(path.join(dir,'maintenance/jp-overrides.css'),overlayCss);
+    const ledgerPath=path.join(portsDir,'adaptation-authority.json');
+    const ledger=JSON.parse(await fs.readFile(ledgerPath,'utf8'));
+    ledger.packages[name].inputs['maintenance/jp-overrides.css']=sha256(overlayCss);
+    await fs.writeFile(ledgerPath,JSON.stringify(ledger,null,2)+'\n');
+    authority.inputs['maintenance/jp-overrides.css']=sha256(overlayCss);
+  }
+  assertPublishablePackage(name);
   const finalSource=composeMaintainableCandidate(base,overlayCss);
   const finalSourceSha256=sha256(finalSource);
   const history=extractSCPJPAdaptationBlocks(original);

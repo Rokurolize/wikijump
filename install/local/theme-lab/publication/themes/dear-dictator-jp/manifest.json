@@ -1,0 +1,46 @@
+{
+  "schema": "theme_lab_theme_publication_source.v1",
+  "slug": "theme:dear-dictator-jp",
+  "target_branch": "jp",
+  "action": "create",
+  "source_file": "source.wikidot.txt",
+  "source_sha256": "32739731fe39263816ea42f378f2541286186b93d477938feb6d489279e42022",
+  "source_authority": {
+    "branch": "ko",
+    "slug": "theme:dear-dictator",
+    "revision": 67,
+    "updated_at": "2025-10-04T04:06:35Z",
+    "source_sha256": "c1ea9924128e15584be83c20a30866244e56561b2a18ec2151c87f7802ea0c78"
+  },
+  "page_existence": {
+    "target_page_exists": false,
+    "evidence": "evidence/audits/theme-lab-quand-dear-dictator-publication-audit-20261005.json"
+  },
+  "assets": {
+    "embedded_png_data_urls": 5,
+    "external_asset_urls": 0,
+    "separate_attachments": []
+  },
+  "acceptance": {
+    "sigma9": "pending",
+    "sigma10": "pending",
+    "visual_review": "pending"
+  },
+  "publication": {
+    "manual_publish_required": true,
+    "public_writes": 0,
+    "publish_after_dependencies": []
+  },
+  "source_generation": {
+    "evidence": "evidence/audits/theme-lab-dear-dictator-publication-source-rebuild-20261006.json",
+    "candidate_css_sha256": "f249a01833c6df378ccbd9d8a954fd2745311d10093cd9c55ead1d70eeaaeaeb",
+    "generator": "node ports/dear-dictator/build.mjs <output.wikidot.txt>; use generated -theme.wikidot.txt output",
+    "independent_build_sha256s": [
+      "32739731fe39263816ea42f378f2541286186b93d477938feb6d489279e42022",
+      "32739731fe39263816ea42f378f2541286186b93d477938feb6d489279e42022"
+    ],
+    "embedded_png_data_urls": 5,
+    "external_asset_urls": 0,
+    "separate_attachments": []
+  }
+}

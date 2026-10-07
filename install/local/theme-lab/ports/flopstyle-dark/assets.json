@@ -1,6 +1,34 @@
 {
   "assets": [
     {
+      "sha256": "edc273e94e72c8ee4279c8406f65373d96c518e3fea9cc3f121fed51283e0e70",
+      "bytes": 178748,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sFVc.ttf",
+      "final_url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sFVc.ttf"
+    },
+    {
+      "sha256": "67941ae3787edeffd80ab437e8ba99667002d9fae22c2cbb80c1553f2d90ab79",
+      "bytes": 179384,
+      "content_type": "font/ttf",
+      "original_url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_NprFVc.ttf",
+      "final_url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_NprFVc.ttf"
+    },
+    {
+      "sha256": "faa24ec881e6040655c187a681d6dc496eb8aa41e1bd0652a180b3a40b457187",
+      "bytes": 34641,
+      "content_type": "image/png",
+      "original_url": "https://scp-wiki.wdfiles.com/local--files/component%3Acroqstyle/imgurblock.png",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/component%3Acroqstyle/imgurblock.png"
+    },
+    {
+      "sha256": "d545b9845df5f120e894f3f3207a147719584ed11a629c27bb29006aaa521c9a",
+      "bytes": 32912,
+      "content_type": "image/gif",
+      "original_url": "https://scp-wiki.wdfiles.com/local--files/component%3Acroqstyle/loading.gif",
+      "final_url": "https://scp-wiki.wdfiles.com/local--files/component%3Acroqstyle/loading.gif"
+    },
+    {
       "sha256": "ba826fb84c2e961578adf3a08b5778b87905d4443445d1d56d84f9f157d5ea4b",
       "bytes": 19012,
       "content_type": "font/woff2",
@@ -173,6 +201,8 @@
   "imports": [
     "https://fonts.bunny.net/css2?family=Comic+Neue&display=swap",
     "https://fonts.bunny.net/css2?family=Montserrat:wght@800&display=swap",
+    "https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700",
+    "https://scp-wiki.wdfiles.com/local--code/component%3Acroqstyle/1",
     "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/1",
     "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/2",
     "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/3",
@@ -202,6 +232,26 @@
       "provenance_basis": "frozen-cache-exact-at-build"
     },
     {
+      "source_url": "https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700",
+      "final_url": "https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700",
+      "sha256": "c2714a976d659d0376202cd04513db747bf1e4977379b3300958c51c69398130",
+      "normalized_text_sha256": "c2714a976d659d0376202cd04513db747bf1e4977379b3300958c51c69398130",
+      "bytes": 404,
+      "content_type": "text/css",
+      "asset_file": "c2714a976d659d0376202cd04513db747bf1e4977379b3300958c51c69398130.css",
+      "provenance_basis": "frozen-cache-exact-at-build"
+    },
+    {
+      "source_url": "https://scp-wiki.wdfiles.com/local--code/component%3Acroqstyle/1",
+      "final_url": "https://scp-wiki.wdfiles.com/local--code/component%3Acroqstyle/1",
+      "sha256": "f9a4fa40a5771a81b8b88435837fa5c3d4e72193b734ec62331a269adac0a91e",
+      "normalized_text_sha256": "f9a4fa40a5771a81b8b88435837fa5c3d4e72193b734ec62331a269adac0a91e",
+      "bytes": 10822,
+      "content_type": "text/css",
+      "asset_file": "f9a4fa40a5771a81b8b88435837fa5c3d4e72193b734ec62331a269adac0a91e.css",
+      "provenance_basis": "frozen-cache-exact-at-build"
+    },
+    {
       "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/1",
       "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/1",
       "sha256": "8cf06073da2e0980bf4226b1d5e6916133b63d2a6ce243a76d39df1e6d3f7f6c",
@@ -214,11 +264,11 @@
     {
       "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/2",
       "final_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/2",
-      "sha256": "c6d34160c1a607c5b96b7a574854dfde35467e2b5a26fd9a7588b5a419c22592",
-      "normalized_text_sha256": "c6d34160c1a607c5b96b7a574854dfde35467e2b5a26fd9a7588b5a419c22592",
+      "sha256": "e8d487a0bea8978efb7a53e3fc1b866eb6e1bea7b56e577be5183a0c37b2b93a",
+      "normalized_text_sha256": "e8d487a0bea8978efb7a53e3fc1b866eb6e1bea7b56e577be5183a0c37b2b93a",
       "bytes": 68501,
       "content_type": "text/css",
-      "asset_file": "c6d34160c1a607c5b96b7a574854dfde35467e2b5a26fd9a7588b5a419c22592.css",
+      "asset_file": "e8d487a0bea8978efb7a53e3fc1b866eb6e1bea7b56e577be5183a0c37b2b93a.css",
       "provenance_basis": "frozen-cache-exact-at-build"
     },
     {
@@ -256,200 +306,5 @@
   "pruned_fonts": [],
   "template_placeholders": [],
   "asset_replacements": {},
-  "omitted_assets": [],
-  "dependency_decisions": [
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-800-normal.woff2",
-      "sha256": "ba826fb84c2e961578adf3a08b5778b87905d4443445d1d56d84f9f157d5ea4b",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-800-normal.woff",
-      "sha256": "26f9e611260b72c43467d0a0ab4f56c5068ec431e41d9e3088fa74117ca086d8",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-800-normal.woff2",
-      "sha256": "e9796e8de1954ee72e8d5de23d26bb8f577d4b903abae1fe11db8904279516ef",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-800-normal.woff",
-      "sha256": "5e25e27cb096fc27d247878d088c43ce2dc2839f5fe8bdf80114c7af0fa1a030",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-800-normal.woff2",
-      "sha256": "59f6ebeb71a14c64edc538eba78a010c1c9ef680a66a559ec3cf4b0d12db1a8b",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-latin-ext-800-normal.woff",
-      "sha256": "d54740b154f92d9fff855599f16bb2435ea68803b9795388574432d45092d7b7",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-800-normal.woff2",
-      "sha256": "24f149c36fd7d848a1f7beb294f829a8764927181d3002f7b02021295e75f8fd",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-vietnamese-800-normal.woff",
-      "sha256": "20ece9e9814aa6304cd7cab78f244962b80f2693460e711e8706b7bf295e43ab",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-800-normal.woff2",
-      "sha256": "f61413d2fbb61e639bdb53e4e47b7b6f275953b408b18eeb0b200fb66d55c4cf",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/montserrat/files/montserrat-cyrillic-ext-800-normal.woff",
-      "sha256": "9693830cf4c1b4304095ae7f80dfcc3bc4401514f56d4250d57b0118d3772c70",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/comic-neue/files/comic-neue-latin-400-normal.woff2",
-      "sha256": "b7753f30f8bd4925cf48a2ffe936c52ff1f16fe441f8c0245acf046296ac590f",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/comic-neue/files/comic-neue-latin-400-normal.woff",
-      "sha256": "54c45748205d08203132f268717d38a32e107a369081a0467e9aa7750668c10d",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/alt_logo_bw.png",
-      "sha256": "25d2d7acf204d85c5fb0867b93c4df5feab84257fa74fda436753e6d0174722e",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/wkUri0y.webp",
-      "sha256": "a5f9b60dd4733b1ca39be370959b1ddfd4da9bf82e05fea11979b5796de8eb39",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/CQCcN7e.webp",
-      "sha256": "1506e2662da1b9aaa65315c0fe0cbb016e18544b6ad0590cd617f6ed4c4e3849",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/desk-of-junior-designer-s-yvonne/miscdept.png",
-      "sha256": "2e8c85ad5e1ee5089890d9d94bd2bdb942cedbe9e3eae746aa4da5f487f8325b",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/spc_logo.png",
-      "sha256": "5c7750b9c5b59fa75e159fdd49655bcb82b8277b1e81fc8f86d9f9af8fa47df0",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/water_ripples.webp",
-      "sha256": "eabe424dd70c56173c2cfcfe8ca6b328ef2077d6ce9b3243540148a2d76f20ab",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/Q2TCZnd.webp",
-      "sha256": "1f778b4a92e2a2f42b9481818a638bc5c06ac614a69d87d8d80cd86325878e95",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/4uLBoQ3.webp",
-      "sha256": "d88e7360de7975504b8d0a5676930793c1ae33e6d67aeda84e484f35cc816152",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/alt_logo_trans.png",
-      "sha256": "d2e837d1e7e52173f4f531c9d89e1e00dcec4c4ff733560c7cd9c1469161ea0e",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/wl_hr.png",
-      "sha256": "0f80a46802573730c8c18aab2022761d1ec548268dd5d2734b50ad4a27dc6303",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:flopstyle-dark/wl_border.png",
-      "sha256": "69d997478237b769cda0f420d39f6932a9d9ce71d6c2738426aeec117a051abe",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/alt_loader.gif",
-      "sha256": "069bad48e1d52238bb71e1ba1ab5f05eb6c3f7029247dfbcb262070f801f3c87",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://fonts.bunny.net/css2?family=Comic+Neue&display=swap",
-      "sha256": "969131113dbed9e6b06675ee289e7f51e44df81816d51f6b46871090c3f2ffe5",
-      "asset_file": "969131113dbed9e6b06675ee289e7f51e44df81816d51f6b46871090c3f2ffe5.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://fonts.bunny.net/css2?family=Montserrat:wght@800&display=swap",
-      "sha256": "94d644cf707265fb6aaa71c53b3b5c91fc7b4f6c298dc5120b178d0f188565d7",
-      "asset_file": "94d644cf707265fb6aaa71c53b3b5c91fc7b4f6c298dc5120b178d0f188565d7.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/1",
-      "sha256": "8cf06073da2e0980bf4226b1d5e6916133b63d2a6ce243a76d39df1e6d3f7f6c",
-      "asset_file": "8cf06073da2e0980bf4226b1d5e6916133b63d2a6ce243a76d39df1e6d3f7f6c.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/2",
-      "sha256": "c6d34160c1a607c5b96b7a574854dfde35467e2b5a26fd9a7588b5a419c22592",
-      "asset_file": "c6d34160c1a607c5b96b7a574854dfde35467e2b5a26fd9a7588b5a419c22592.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--code/theme%3Aflopstyle-dark/3",
-      "sha256": "d5b4c4dbe64e06c60590785c7797d1dd8ccca1b822b4c7dce8f048af1d1997e8",
-      "asset_file": "d5b4c4dbe64e06c60590785c7797d1dd8ccca1b822b4c7dce8f048af1d1997e8.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/tabview.css",
-      "sha256": "ffbd600548cdc73701d60c84766746224b3abacafd2397a2830242b3451876a0",
-      "asset_file": "ffbd600548cdc73701d60c84766746224b3abacafd2397a2830242b3451876a0.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme%3Aflopstyle-dark/backend.css",
-      "sha256": "88e08cff5396971983867d39a616dbf09ce80e48d9c675efe7e4d531d0fcc1f0",
-      "asset_file": "88e08cff5396971983867d39a616dbf09ce80e48d9c675efe7e4d531d0fcc1f0.css",
-      "decision": "freeze-source-stylesheet"
-    }
-  ]
+  "omitted_assets": []
 }

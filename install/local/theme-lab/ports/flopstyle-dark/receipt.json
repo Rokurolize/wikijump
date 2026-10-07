@@ -26,9 +26,9 @@
   "existing_jp_audit": "new-jp-candidate-verified",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/flopstyle-dark",
-  "candidate_source_hash": "77a303e9d2dc6e64c5332492fd979a8aced278ac199348cf9e7d0ba5fd66e6c5",
+  "candidate_source_hash": "2b9004a9304ed089aa69da78d140bc03aa333b792751b57133d7429b499aa1e3",
   "source_candidate_path": "install/local/theme-lab/ports/flopstyle-dark/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "77a303e9d2dc6e64c5332492fd979a8aced278ac199348cf9e7d0ba5fd66e6c5",
+  "source_candidate_sha256": "2b9004a9304ed089aa69da78d140bc03aa333b792751b57133d7429b499aa1e3",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
   "existing_jp_source_differs_from_candidate": false,
   "preview_fixture_components": {
@@ -36,11 +36,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/flopstyle-dark/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "77a303e9d2dc6e64c5332492fd979a8aced278ac199348cf9e7d0ba5fd66e6c5",
+  "candidate_source_sha256": "2b9004a9304ed089aa69da78d140bc03aa333b792751b57133d7429b499aa1e3",
   "human_port_candidate_path": "install/local/theme-lab/ports/flopstyle-dark/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "1ba3503438000f4271894059e06dd0075bfcc10c416217af08042eff360b2abe",
-  "candidate_preview_sha256": "ee23608343f562b35939a1308694ad2bad26d113307f866a93936b8ea9be5ab8",
-  "candidate_css_sha256": "c278c3077175eba0b34580708f7d11790c9552d2896fe059a8b60e7b964e846f",
+  "candidate_preview_sha256": "a29c62ad16f1a380c47c63f74904a7875798e4a359dd7aa8503fc09bacab3e49",
+  "candidate_css_sha256": "cfb5865dd28e562413dc1cbed44ace29ff4d08eb4bdc8daafcfc87b4e98c8161",
   "page_assets": [
     {
       "filename": "alt_logo_tyrian.png",
@@ -80,7 +80,7 @@
     "source_evidence": "candidate screenshots visibly rendered unresolved SCP-EN usernames against SCP-JP identity links; preserve display names and freeze upstream/human-port originals"
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/flopstyle-dark/assets.json",
-  "asset_dependency_decision_count": 33,
+  "asset_dependency_decision_count": 39,
   "page_asset_dependency_decisions_path": "install/local/theme-lab/ports/flopstyle-dark/page-assets.json",
   "historical_acceptance": {
     "status": "SUPERSEDED_CANDIDATE",
@@ -94,10 +94,15 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/flopstyle-dark/accepted-result.json",
+    "sha256": "2fb786cb888da090ebe4f46f5a2cc2eea124e6afbc2e946e0f913feb2d60bcc9"
+  }
 }

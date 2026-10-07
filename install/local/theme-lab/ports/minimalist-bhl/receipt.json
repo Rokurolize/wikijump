@@ -15,15 +15,16 @@
   },
   "jp": {
     "status": "present",
-    "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:minimalist-bhl/source.wikidot.txt",
-    "sha256": "6e5daba96afeb10ce3e4f49bc436920f6c0ba2ac4937c072030c59e43e80f3a0",
-    "updated_at": "2023-10-23T11:53:19+00:00",
+    "source_path": "existing-jp.wikidot.txt",
+    "sha256": "7d870ffc63b1f7a700201a7b585a7aca8aa57a52d5f673c6eafd76d2f1426848",
+    "updated_at": "2026-09-24T20:45:09+00:00",
     "entity_uuid": "398bad62-9c4b-460b-90ca-1bd483ed636a",
     "tags": [
       "en",
       "テーマ"
     ],
-    "absence_run": null
+    "absence_run": null,
+    "revisions": 2
   },
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
@@ -41,8 +42,8 @@
   "candidate_source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
   "human_port_candidate_path": "install/local/theme-lab/ports/minimalist-bhl/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "66d2b5303c6b5c4530835fd993c8f9a9e48ab9ac15d3d81eb367d17a038a5391",
-  "candidate_preview_sha256": "d6592bd64af90d046f74fef0eaa041de5d0a66f5416457b30990107af6dc6589",
-  "candidate_css_sha256": "45789c3c04061480fe9e0999f13043df306cbee6c574555071f7143d99d55bb0",
+  "candidate_preview_sha256": "90ea3a6c9b8e830c3a9f11bf7f04c74c22d76b64dfb9bdf61c0180e90248215c",
+  "candidate_css_sha256": "bb4018bd604b2abfbd17e84f3fd884d13c3891be34fdac52c3a6d30af295d245",
   "page_attachment_manifest": null,
   "existing_jp_reconciliation": {
     "previous_source_sha256": "6e5daba96afeb10ce3e4f49bc436920f6c0ba2ac4937c072030c59e43e80f3a0",
@@ -52,12 +53,17 @@
     "en_revision_newer_than_jp": true,
     "candidate_source_delta": {
       "unchanged": false,
-      "inserted_lines": 148,
-      "removed_lines": 4,
+      "inserted_lines": 7,
+      "removed_lines": 7,
       "diff_path": "install/local/theme-lab/ports/minimalist-bhl/existing-jp-candidate.diff"
     },
     "source_action": "adapted-existing-jp-source",
-    "technical_validation": "current EN reference and local SCP-JP DOM were compared; all required viewport, rating fixture, asset, font, interaction, offline, and torture gates are bound in final_theme_lab_check"
+    "technical_validation": "current EN reference and local SCP-JP DOM were compared; all required viewport, rating fixture, asset, font, interaction, offline, and torture gates are bound in final_theme_lab_check",
+    "current_source_sha256": "7d870ffc63b1f7a700201a7b585a7aca8aa57a52d5f673c6eafd76d2f1426848",
+    "current_updated_at": "2026-09-24T20:45:09+00:00",
+    "current_revision": 2,
+    "rebase_kind": "provenance-only-no-theme-css-or-runtime-behavior-delta",
+    "previous_source_sha256_before_rebase": "6e5daba96afeb10ce3e4f49bc436920f6c0ba2ac4937c072030c59e43e80f3a0"
   },
   "foreign_site_user_credit_links": {
     "adapted_count": 4,
@@ -65,7 +71,7 @@
     "source_evidence": "candidate screenshots visibly rendered unresolved SCP-EN usernames against SCP-JP identity links; preserve display names and freeze upstream/human-port originals"
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/minimalist-bhl/assets.json",
-  "asset_dependency_decision_count": 38,
+  "asset_dependency_decision_count": 39,
   "page_asset_dependency_decisions_path": null,
   "historical_acceptance": {
     "status": "SUPERSEDED_CANDIDATE",
@@ -79,10 +85,15 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/minimalist-bhl/accepted-result.json",
+    "sha256": "5eb921f3ab5059a872d3d4de58d48f1061da0f632725c3df126c995afd40bc44"
+  }
 }

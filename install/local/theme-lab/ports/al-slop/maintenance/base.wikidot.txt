@@ -1,4 +1,4 @@
-[[include :scp-wiki:component:sigma-plus]]
+[[include :scp-jp:component:sigma-plus]]
 
 [[module CSS]]
 @import url(https://scp-jp.wikidot.com/theme:al-slop/code/1);
@@ -340,7 +340,7 @@ div.page-rate-widget-box {
 }
 [[/code]]
 
-[[include :scp-wiki:component:license-box-theme
+[[include :scp-jp:component:license-box-backend
 |author=HaydenSaintPascal, AWhiteBoy and BAD_DATA]]
 
 > **ファイル名:** alBanner.png

@@ -79,7 +79,12 @@ These seams are recommendations. The implementation agent must present and confi
 
 ## Feature-specific implementation notes
 
-- No feature-specific implementation note beyond the corpus contract.
+- Frozen native `WIKIDOT.page.fixers.fixFoldableMenus` and `_foldableMenuToggle` establish browser behavior independently of the initial PagePreview DOM. The retained script object is SHA-256 `49bcabdb14d446bb93d261f9c967bedfa7cdf7b214807a8180974cbd00b21f11` in `install/local/theme-lab/ports/authority-evidence/replay/objects/49/`.
+- The fixer hides each nested UL, remembers its authored inline display, adds `folded` to its nearest LI before the container boundary, and wraps that LI's first child in an anchor when necessary. Links to the current page unfold their ancestor list items.
+- A container owns its click listener; the nearest authored LI owns `folded`/`unfolded` state. A control-only container can therefore operate on a surrounding LI. Real navigation links retain their navigation behavior. Fold controls toggle the first descendant UL and restore its remembered display when opened.
+- These controls do not change the URL hash, create history entries, or send page mutations. Nested containers retain their native event bubbling behavior.
+- The frozen Sigma-10 credit controls provide an independent settled-state browser proof: `install/local/theme-lab/ports/authority-evidence/native-sigma10-fold-controls-settled-20261002/receipt.json`. Trusted clicks cover open, nested otherwise, return, and close. The ordinary nested-list and replacement-article cases are exercised by `install/local/theme-lab/tests/wikidot-foldable-lists.test.mjs`.
+- Framerail owns this browser action; FTML continues to render the authored initial tree. Newly rendered article content must receive the same initialization, and obsolete listeners must be removed when its owner is destroyed.
 
 ## Source inventory
 

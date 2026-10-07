@@ -16,8 +16,63 @@ already accepted package.
 
 Read `docs/agents/compatibility/evidence.md` before live acquisition.
 
-Do not reconstruct the theme source from rendered HTML. Fetch the public page
-source through Wikidot's observed anonymous ViewSource boundary:
+Do not reconstruct the theme source from rendered HTML.
+
+Before fetching anything live, check the shared Wikidot corpus owned by
+`/home/roku/src/Rokurolize/scp-wiki-translation`. Read
+`/home/roku/src/Rokurolize/scp-wiki-translation/corpus/README.md` first. On
+this workstation the shared corpus root is:
+
+```text
+/home/roku/src/Rokurolize/scp-wiki-translation/corpus
+```
+
+The normal source path is:
+
+```text
+<branch>/pages/<slug>/source.wikidot.txt
+```
+
+Inspect sibling `meta.json` (`revisions`, `updated_at`), `current.json`, and the
+corpus run provenance before deciding whether the retained page is fresh enough
+for the port. The
+corpus is the shared storage owner, **not a guarantee that its bytes are the
+newest observation on the machine**. Compare it with any later retained live
+observation already present in Theme Lab or another repository. If such an
+observation is newer, refresh that slug into the shared corpus first; do not
+declare the older corpus snapshot authoritative merely because it is in the
+corpus, and do not continue indefinitely from the newer ad-hoc copy either.
+This applies to dependencies and components as well as the top-level theme: for
+example, an EN/JP component comparison should first inspect
+`corpus/en/pages/component:<slug>/` and
+`corpus/jp/pages/component:<slug>/`.
+
+When two retained copies disagree and their ordering is not obvious, perform a
+read-only live cross-check with the repository-pinned `wikidot.py` client.
+Compare `page.revisions_count` and `page.updated_at` against `meta.json`; use
+`page.latest_revision` when the exact latest revision needs confirmation. Do
+not infer which copy is newer from SHA-256 alone. Different acquisition paths
+can preserve the same Wikidot revision with harmless whitespace/line-ending
+serialization differences, while revision count and edit timestamp identify
+the actual Wikidot page state.
+
+If the corpus does not contain a sufficiently current source, prefer the
+repository-owned acquisition tooling under
+`/home/roku/src/Rokurolize/scp-wiki-translation`
+(`scripts/fetch_wikidot.py`, `scripts/corpus_sync.py`,
+`scp_wiki_wikidot/`) when the result belongs in the shared corpus. Its
+direct/Ajax fallback is the local `wikidot.py` checkout at
+`/home/roku/src/Rokurolize/wikidot.py`; read that checkout's `AGENTS.md`
+and `llms.txt` rather than reimplementing Wikidot page-source access.
+
+For a targeted stale page, `corpus_sync.py --slug <fullname>` is the
+repository-owned repair path. `--slug` is a page-core targeted repair and is
+not combined with the `xmlrpc-complete` profile. Use the transport appropriate
+to the site/runtime contract; `--transport fallback` uses the Wikidot Ajax
+client and does not require XML-RPC credentials.
+
+For a Theme-Lab-owned one-off evidence snapshot, fetch the public page source
+through Wikidot's observed anonymous ViewSource boundary:
 
 ```sh
 python3 install/local/theme-lab/scripts/acquire_wikidot_source.py \
@@ -227,6 +282,16 @@ for the fast loop. Fix only evidence-backed issues:
 - unreadable/fallback Japanese typography;
 - failed interaction states.
 
+`new horizontal overflow` means overflow introduced or worsened by the theme
+relative to the same SCP-JP target DOM/state without the candidate theme
+layers. An equal or worse overflow already present in that target baseline is
+not evidence that the port introduced a defect and cannot by itself authorize
+a theme-specific correction. Keep the inherited target issue visible in the
+diagnostics and repair the runtime/component separately when that is the real
+owner. If the theme does worsen the target baseline, fix and certify the
+theme-added regression; do not infer causality merely because a candidate-only
+CSS patch can make the shared target defect disappear.
+
 For SCP-JP navigation, longer Japanese labels frequently expose submenu
 min-content/positioning problems that do not appear on the source branch.
 `TECHNICAL-LOCALIZATION-SPEC.md` defines expanded navigation geometry as an
@@ -407,3 +472,17 @@ For a later upstream refresh:
 
 If this workflow becomes common enough to automate, add a standalone-port
 planner rather than weakening the EN maintenance manifest guard.
+
+## Campaign closure
+
+Source integrity, deterministic generation, and adaptation authority do not
+substitute for current browser acceptance. Finish the full port check with exact
+paired image review and the applicable interaction matrix. Unreviewed visual
+results are inconclusive even when raw pixel comparison succeeds. A separate
+`candidate-base.css` must be included with `--css-base`.
+
+For maintained campaigns, run
+`node install/local/theme-lab/scripts/check-campaign-completion.mjs`. Completion
+requires current combined package acceptance and current Sigma-10 acceptance,
+complete current-identity browser coverage, and reviewed screenshot hashes.
+`check-final.mjs --historical-only` is evidence inspection, never promotion.

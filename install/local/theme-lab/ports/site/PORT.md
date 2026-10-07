@@ -1,7 +1,18 @@
 <!-- adaptation-authority-current -->
 Current publication inputs have passed the adaptation-authority gate. Historical campaign/local-runtime screenshots describe the superseded candidate; they are not acceptance for this CSS. See ../ADAPTATION-AUTHORITY-AUDIT.md and maintenance/historical-receipt.json where present.
-Current source SHA-256: 9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343; CSS SHA-256: 18768d711c87cec0cb6ed1b79a2d7023a53a422f35f39e841417374be0de3a69. Full port acceptance remains a separate combined result.
+Current source SHA-256: b62171f0df44d62ebe3af75eca1cb53ef854f0b8e747dedade2ed0ee399e9c48; CSS SHA-256: 28a72ef325901611e12a505fa1e94ea40a315c80cb316f787d6ec6c2ee3606a4. Full port acceptance remains a separate combined result.
 <!-- adaptation-authority-end -->
+
+## Current acceptance selector scope
+
+The package uses `acceptance-selectors.txt` to apply the maintained SCP-JP
+runtime selector contract during its full check. The frozen EN showcase
+contains the Wikidot-specific `.ios-cache-issue-notification` notice and its
+dismissal markup; that source-page UI is absent from the localized JP target
+fixture. It is retained in the frozen source/CSS evidence but is not a JP
+target acceptance requirement. Source-theme identity is reviewed separately
+against the exact paired screenshots and the current interactive browser
+matrix.
 
 # SCP-EN → SCP-JP port: `theme:site`
 

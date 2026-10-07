@@ -50,7 +50,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/bedrock/assets.json",
-      "dependency_decision_count": 52,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -300,7 +300,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:basalt",
@@ -387,7 +392,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/basalt/assets.json",
-      "dependency_decision_count": 243,
+      "dependency_decision_count": 1,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -621,7 +626,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      },
+      "final_verdict": "warn"
     },
     {
       "slug": "theme:foxtrot",
@@ -818,7 +828,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/foxtrot/assets.json",
-      "dependency_decision_count": 47,
+      "dependency_decision_count": 24,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -1228,6 +1238,11 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      },
       "final_verdict": "inconclusive"
     },
     {
@@ -1301,7 +1316,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/black-highlighter-theme/assets.json",
-      "dependency_decision_count": 38,
+      "dependency_decision_count": 1,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -1541,7 +1556,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:site",
@@ -1784,7 +1804,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:isolated-terminal",
@@ -1881,7 +1906,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/isolated-terminal/assets.json",
-      "dependency_decision_count": 39,
+      "dependency_decision_count": 1,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -2148,7 +2173,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:penumbra",
@@ -2205,7 +2235,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/penumbra/assets.json",
-      "dependency_decision_count": 77,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -2452,7 +2482,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:scpedia",
@@ -2492,7 +2527,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/scpedia/assets.json",
-      "dependency_decision_count": 22,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -2730,7 +2765,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:al-slop",
@@ -2801,7 +2841,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/al-slop/assets.json",
-      "dependency_decision_count": 20,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -3035,6 +3075,11 @@
       "adaptation_authority": {
         "status": "pass",
         "publishable_without_authority": 0
+      },
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
       },
       "final_verdict": "inconclusive"
     },
@@ -3315,7 +3360,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:classic",
@@ -3616,6 +3666,11 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      },
       "final_verdict": "inconclusive"
     },
     {
@@ -3655,7 +3710,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/sigma/assets.json",
-      "dependency_decision_count": 37,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -3881,7 +3936,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:y2k",
@@ -3933,7 +3993,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/y2k/assets.json",
-      "dependency_decision_count": 3,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -4162,7 +4222,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:yossistyle",
@@ -4422,7 +4487,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:space",
@@ -4496,7 +4566,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/space/assets.json",
-      "dependency_decision_count": 21,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -4804,7 +4874,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/jakstyle/assets.json",
-      "dependency_decision_count": 38,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -5034,7 +5104,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:pataphysics",
@@ -5090,7 +5165,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/pataphysics/assets.json",
-      "dependency_decision_count": 5,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -5336,7 +5411,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:turbo-vision",
@@ -5426,7 +5506,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/turbo-vision/assets.json",
-      "dependency_decision_count": 26,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -5656,7 +5736,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:skipos",
@@ -5699,7 +5784,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/skipos/assets.json",
-      "dependency_decision_count": 100,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -5926,7 +6011,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:extra-black-highlighter-theme",
@@ -5991,7 +6081,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/assets.json",
-      "dependency_decision_count": 39,
+      "dependency_decision_count": 1,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -6245,7 +6335,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:aesthetic-theme",
@@ -6319,7 +6414,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/aesthetic-theme/assets.json",
-      "dependency_decision_count": 40,
+      "dependency_decision_count": 2,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -6574,7 +6669,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:flopstyle-dark",
@@ -6736,7 +6836,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/flopstyle-dark/assets.json",
-      "dependency_decision_count": 33,
+      "dependency_decision_count": 2,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -7033,6 +7133,11 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      },
       "final_verdict": "inconclusive"
     },
     {
@@ -7093,7 +7198,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/much-cool/assets.json",
-      "dependency_decision_count": 5,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -7322,7 +7427,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:inkblot",
@@ -7366,7 +7476,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/inkblot/assets.json",
-      "dependency_decision_count": 47,
+      "dependency_decision_count": 1,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -7619,6 +7729,11 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      },
       "final_verdict": "inconclusive"
     },
     {
@@ -7673,7 +7788,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/scheme/assets.json",
-      "dependency_decision_count": 195,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -7881,7 +7996,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:paperstack",
@@ -7946,7 +8066,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/paperstack/assets.json",
-      "dependency_decision_count": 70,
+      "dependency_decision_count": 1,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -8216,7 +8336,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:cosmonaut",
@@ -8289,7 +8414,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/cosmonaut/assets.json",
-      "dependency_decision_count": 22,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -8516,7 +8641,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:monotypical",
@@ -8583,7 +8713,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/monotypical/assets.json",
-      "dependency_decision_count": 40,
+      "dependency_decision_count": 3,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -8835,7 +8965,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:minimalist-bhl",
@@ -8911,7 +9046,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/minimalist-bhl/assets.json",
-      "dependency_decision_count": 38,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -9159,7 +9294,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:hansarp",
@@ -9223,7 +9363,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/hansarp/assets.json",
-      "dependency_decision_count": 39,
+      "dependency_decision_count": 1,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -9468,7 +9608,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:night-rush-theme",
@@ -9520,7 +9665,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/night-rush-theme/assets.json",
-      "dependency_decision_count": 3,
+      "dependency_decision_count": 0,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -9749,7 +9894,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:scp-offices-theme",
@@ -9812,7 +9962,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/scp-offices-theme/assets.json",
-      "dependency_decision_count": 41,
+      "dependency_decision_count": 2,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -10065,7 +10215,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:redtape",
@@ -10199,7 +10354,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/redtape/assets.json",
-      "dependency_decision_count": 66,
+      "dependency_decision_count": 3,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -10454,7 +10609,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     },
     {
       "slug": "theme:ouroborous-theme",
@@ -10516,7 +10676,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/ouroborous-theme/assets.json",
-      "dependency_decision_count": 40,
+      "dependency_decision_count": 2,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -10769,7 +10929,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "inconclusive"
+      "final_verdict": "warn",
+      "overall_acceptance": {
+        "status": "warn",
+        "port_verdict": "pass",
+        "target_status": "warn"
+      }
     }
   ],
   "regression_corpus": [

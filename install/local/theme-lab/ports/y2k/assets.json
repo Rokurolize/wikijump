@@ -36,26 +36,5 @@
   "pruned_fonts": [],
   "template_placeholders": [],
   "asset_replacements": {},
-  "omitted_assets": [],
-  "dependency_decisions": [
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-5-12sw/bg.png",
-      "sha256": "3f58b41c46a373cbb4c505a328c103726feeaf490a17dc0c7e4a00efde7e6a50",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-jp-storage.wdfiles.com/local--files/file%3A4094174-4-k55r/logo.png",
-      "sha256": "69ddec8c42128b72449ee2058d8c4a68501c44c2c1b35c8efc98a7d83b0d712e",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-jp.wdfiles.com/local--code/theme:y2k/1",
-      "sha256": "0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4",
-      "asset_file": "0ec5422ef2cd30ca2c762ad6aa3299b165a7024620f53e4ef0f05043d75efaa4.css",
-      "decision": "freeze-source-stylesheet"
-    }
-  ]
+  "omitted_assets": []
 }

@@ -68,14 +68,19 @@
     {
       "marker": "source-theme-and-localized-document-input",
       "origin": "preserved-source",
-      "sha256": "8f99adadb50538f45d7c287b81f5070ca6128cb72d170e4a42f890e65584fc8c",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
       "authority": "SOURCE_THEME",
-      "rationale": "Preserve source-theme imports, source declarations, include parameters and localized documentation before the historical campaign suffix. Asset freezing and include expansion are separate runtime-independent transforms.",
+      "rationale": "Materialize the exact active default article CSS modules from the already authority-bound publishable localization base. Exclude commented/false variant and theme-page presentation modules; source component includes and certified overlays remain their separate layers.",
       "evidence": [
         {
           "path": "sigma/upstream-en.wikidot.txt",
           "sha256": "e2f126ba6f6debd4cbde5f1712f04da794e2820f0180a6501b54dbe4e318639c",
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+        },
+        {
+          "path": "sigma/runtime-css-materialization.json",
+          "sha256": "9a0116f69921f5c80fc23fb9a376ee56d87e5c5abd8b42d79270e94d22a09262",
+          "decision_authority": "FROZEN_WIKIDOT_SOURCE_MODULES"
         }
       ]
     }

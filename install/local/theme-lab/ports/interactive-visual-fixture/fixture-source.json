@@ -32,7 +32,15 @@
     "table",
     "blockquote",
     "code",
-    "image-block",
     "footnote"
+  ],
+  "uncovered_features": [
+    "h3-h6 headings",
+    "ordered and nested lists",
+    "scp-image-block",
+    "wide five-column table",
+    "blockquote class",
+    "long unbroken link",
+    "bibliography module"
   ]
 }

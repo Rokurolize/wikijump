@@ -1,6 +1,13 @@
 {
   "assets": [
     {
+      "sha256": "fcd9f75940109475f878f0702d7eb0e1c55cd461369244c86203bb032b6dbe31",
+      "bytes": 7532,
+      "content_type": "image/svg+xml",
+      "original_url": "https://scpwiki.github.io/sigma/images/header-logo.svg",
+      "final_url": "https://scpwiki.github.io/sigma/images/header-logo.svg"
+    },
+    {
       "sha256": "61ff476ab12ef621ba34a8631e0db1bb9fb5f6d953cbf7081f12df8971e25778",
       "bytes": 10276,
       "content_type": "font/woff2",
@@ -157,131 +164,6 @@
     {
       "url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alDespair.png",
       "reason": "upstream HTTP 500; optional downvote artwork unavailable"
-    }
-  ],
-  "dependency_decisions": [
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/boogaloo/files/boogaloo-latin-400-normal.woff2",
-      "sha256": "61ff476ab12ef621ba34a8631e0db1bb9fb5f6d953cbf7081f12df8971e25778",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/boogaloo/files/boogaloo-latin-400-normal.woff",
-      "sha256": "45d300613a9fbfd22c31f85f102de4817787d06546d57e6550a2edef7ce82225",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/margarine/files/margarine-latin-400-normal.woff2",
-      "sha256": "1a08b7b6bbd1e449704e980cdba005b37ae9ae26decee8183c6b7fdf72c29cd0",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/margarine/files/margarine-latin-400-normal.woff",
-      "sha256": "04c588bb5653e3ea46188e0697287b90b391122df213e26850f8904b91be5fa8",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/margarine/files/margarine-latin-ext-400-normal.woff2",
-      "sha256": "d24d2ae94d53d7278c05a82e9d9caec23cee4198eec7ad799fcea9cf04d923b4",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://fonts.bunny.net/margarine/files/margarine-latin-ext-400-normal.woff",
-      "sha256": "6d645853f4594b2f5860efa615b4b72fa06cafc279c8efa602db70fd679df94e",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alLogo.webp",
-      "sha256": "81747e19b4014ee6f7167e4916989d2f240ce3c1fd1f50c2937532d9ccea8c32",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alBanner.png",
-      "sha256": "2e1879853e4bdc633d3c72898f5781de8e2443f6f99cbf79caf42b8e3c24035a",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/ALCANYON.png",
-      "sha256": "7a0ac450db02100cad752059cca5630b03261d33305bd883abcf3d85d3425f51",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/Fallen.webp",
-      "sha256": "b00050ee6ac176566d740481634cb53d2d9413d2c774bd8eb69d044b5351ac3e",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/Like_one_of_your_french_girls.webp",
-      "sha256": "fea1fe7051f5f1c1774d4eef5c5f76333a0e05f92b880fb19e4a1bcd1751628f",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alBunker.webp",
-      "sha256": "98bb332d2ebfc48232626e15ed0686228c6c80ccfce191810ff302a3d1bde1f1",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alJoy.png",
-      "sha256": "ec8db191a5fceb088ed11219a6d08f1559e5fe568e53a0dedf7bfc60d58b99c9",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alPiracy.png",
-      "sha256": "cb5f8dd1803bdd881f5f8ca53f7a85a8c5283d631b026c8ae2a0b48dca12f2d8",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/M_lady.webp",
-      "sha256": "0d42fb052c3b516b6085a089b9f87520df13679db00f7f3cddd5810d5b0e1cf8",
-      "decision": "freeze-runtime-independent-asset"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://fonts.bunny.net/css2?family=Boogaloo&display=swap",
-      "sha256": "d727d1b3e804f4a704712fa41ba691ced483cb9123a7c6791f61f001b94ada64",
-      "asset_file": "d727d1b3e804f4a704712fa41ba691ced483cb9123a7c6791f61f001b94ada64.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://fonts.bunny.net/css2?family=Margarine&display=swap",
-      "sha256": "d78b7a68ef88f97e9b60bf10951c82638773cca266a0edd9a991a68785a73b17",
-      "asset_file": "d78b7a68ef88f97e9b60bf10951c82638773cca266a0edd9a991a68785a73b17.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-import",
-      "source_url": "https://scp-wiki.wikidot.com/theme:al-slop/code/1",
-      "sha256": "c7e210a6b2dd0fd3ba9753eb98e2d3f857523053ab82716ecd51d2704c1ec607",
-      "asset_file": "c7e210a6b2dd0fd3ba9753eb98e2d3f857523053ab82716ecd51d2704c1ec607.css",
-      "decision": "freeze-source-stylesheet"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alSCP.webp",
-      "decision": "omit",
-      "rationale": "upstream HTTP 500; SCP header mark unavailable"
-    },
-    {
-      "resource_type": "candidate-css-asset",
-      "source_url": "https://scp-wiki.wikidot.com/local--files/theme:al-slop/alDespair.png",
-      "decision": "omit",
-      "rationale": "upstream HTTP 500; optional downvote artwork unavailable"
     }
   ]
 }

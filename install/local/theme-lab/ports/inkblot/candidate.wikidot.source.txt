@@ -1,6 +1,3 @@
-[[iftags +theme]]
-[[include :scp-wiki:component:croqstyle]]
-[[/iftags]]
 
 [[module CSS]]
 @import url('https://scp-wiki.wdfiles.com/local--code/theme%3Ainkblot/1');
@@ -11,7 +8,7 @@
 [[/module]]
 
 [[iftags -theme]]
-[[include :scp-wiki:component:interwiki-style
+[[include :scp-jp:component:interwiki-style
 | priority=1
 | theme=https://scp-wiki.wdfiles.com/local--code/theme%3Ainkblot/1
 | css=%3Aroot%7B--inkblot-accent%3A{$accent}%7D
@@ -20,7 +17,7 @@
 
 [[iftags +theme]]
 
-[[include :scp-wiki:component:interwiki-style
+[[include :scp-jp:component:interwiki-style
 | priority=1
 | theme=https://scp-wiki.wdfiles.com/local--code/theme%3Ainkblot/1
 | css=%3Aroot%7B--inkblot-accent%3Acoral%7D
@@ -1013,3 +1010,17 @@ blockquote, div.blockquote {
 [[/collapsible]]
 
 [[/iftags]]
+
+[[module CSS]]
+/* SCP-JP Wikidot Inkblot navigation correction: contain the third narrow mobile submenu. */
+@media (max-width: 359px) {
+  .mobile-top-bar > ul > li:nth-child(3) > ul { left: auto; right: 0; }
+}
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot Inkblot mobile endpoint correction: contain the last submenu at its parent right edge. */
+@media (min-width: 360px) and (max-width: 767px) {
+  #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
+}
+[[/module]]

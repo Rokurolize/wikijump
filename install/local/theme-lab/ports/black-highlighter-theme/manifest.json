@@ -4,8 +4,8 @@
   "en_updated_at": "2024-09-03T02:55:28+00:00",
   "en_entity_uuid": "9e70e331-f9c0-4086-b237-e15680108311",
   "jp_previous_status": "present",
-  "jp_previous_source_sha256": "809901626419de877645afccb36574a01ef943cfbd5d70a4b167210ebe4db939",
-  "jp_previous_updated_at": "2025-11-16T06:26:19+00:00",
+  "jp_previous_source_sha256": "760ef1fb2d85d2c956c7ae59c6792c22c651faf05dc547669a86e66f5702c10e",
+  "jp_previous_updated_at": "2026-09-25T01:25:13+00:00",
   "jp_previous_entity_uuid": "41755b0d-969f-4210-b9a6-a1ce9791b29d",
   "technical_spec_version": "1.4",
   "reference_url": "https://scp-wiki.wikidot.com/theme:black-highlighter-theme",
@@ -36,8 +36,8 @@
     "jp": {
       "status": "present",
       "source_path": "existing-jp.wikidot.txt",
-      "sha256": "809901626419de877645afccb36574a01ef943cfbd5d70a4b167210ebe4db939",
-      "updated_at": "2025-11-16T06:26:19+00:00",
+      "sha256": "760ef1fb2d85d2c956c7ae59c6792c22c651faf05dc547669a86e66f5702c10e",
+      "updated_at": "2026-09-25T01:25:13+00:00",
       "entity_uuid": "41755b0d-969f-4210-b9a6-a1ce9791b29d",
       "tags": [
         "en",
@@ -49,11 +49,20 @@
         "kind": "scp-corpus-page",
         "branch": "jp",
         "slug": "theme:black-highlighter-theme"
-      }
+      },
+      "revisions": 74
     },
     "existing_jp_audit": "existing-jp-current-and-valid",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn",
+    "existing_jp_rebase": {
+      "previous_sha256": "809901626419de877645afccb36574a01ef943cfbd5d70a4b167210ebe4db939",
+      "previous_snapshot": "existing-jp-pre-current-rev74.wikidot.txt",
+      "current_revision": 74,
+      "current_updated_at": "2026-09-25T01:25:13+00:00",
+      "current_sha256": "760ef1fb2d85d2c956c7ae59c6792c22c651faf05dc547669a86e66f5702c10e",
+      "diff_assessment": "provenance refresh; only CSS indentation serialization and documentation URL scheme normalization changed"
+    }
   },
   "dependencies": {
     "slug": "theme:black-highlighter-theme",
@@ -128,7 +137,7 @@
       "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; "
     }
   ],
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-current-and-valid",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/black-highlighter-theme/assets.json",
   "asset_dependency_decision_count": 38,
@@ -152,9 +161,19 @@
       "source_sha256": "2d8dcd8b6835d303b1da6204a56f2fc3539bb9ac0dd37ce35e67c0a7fc489e1f",
       "active_tags": [],
       "candidate_source_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
-      "candidate_active_tags": [],
+      "candidate_active_tags": [
+        "en",
+        "テーマ",
+        "要翻訳"
+      ],
+      "runtime_active_tags": [],
+      "showcase_css_modules_removed_exact": 1,
+      "showcase_css_modules_removed_truncated": 0,
+      "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 0,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "6f0e9913498dfadabaff54fae9ce131e3399ddd22949fd2ce2edf3dadf80dbd7",
+      "candidate_css_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
       "asset_receipt_path": "assets.json",
       "assets": 32,
       "imports": 5,
@@ -169,7 +188,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

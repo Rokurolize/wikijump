@@ -395,7 +395,10 @@ async fn filter_and_populate_revision(
     let compiled_body_styles = if details.compiled_html {
         Some(
             compiled_body_styles
-                .map(|styles| serde_json::from_str(&styles))
+                .map(|styles| {
+                    crate::services::render::compiled_styles::decode(&styles)
+                        .map(|compiled| compiled.styles)
+                })
                 .transpose()
                 .or_raise(make_error)?
                 .unwrap_or_default(),

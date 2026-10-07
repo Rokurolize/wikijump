@@ -1,0 +1,29 @@
+/* SCP-JP Wikidot Hansarp narrow masthead: contain its rotated source title within the article viewport. */
+@media(max-width:1024px) {
+  #header h1 {
+    translate:20px 0;
+  }
+}
+
+@media(max-width:359px) {
+  #header h1 {
+    --header-h1-font-size:calc(var(--base-font-size)*2.6);
+  }
+}
+
+/* SCP-JP Wikidot Hansarp nested credit panels: keep the otherwise panel fixed to the viewport. */
+.creditRate > li > #u-credit-view > .modalcontainer {
+  transform:none;translate:none;top:0;bottom:0;margin:auto;
+}
+
+/* SCP-JP Wikidot Hansarp generated masthead title: fit its source lettering within the narrow title slot. */
+@media(max-width:767px) {
+  #header h1 a::before {
+    font-size:min(1em,calc((100vw - 40px - var(--header-height-on-desktop) + .75rem)/6.4));
+  }
+}
+
+/* SCP-JP Wikidot Hansarp credit fader anchors: retain native backdrop stacking under the visible controls. */
+#main-content :is(#u-credit-view,#u-credit-otherwise) >.fader.foldable-list-container>a {
+  position:absolute;z-index:auto;transform:none;translate:none;
+}

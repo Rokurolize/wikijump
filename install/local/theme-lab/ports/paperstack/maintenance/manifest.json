@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "269ade2ec56414c951616e92d9155865cb1365c06a8af1ad514c960d26259a85",
+  "frozen_candidate_source_sha256": "5939181e533d5c02d39ac16dad70f9ae9b80efa7fcd79ebb4c8ba8b75ab16854",
   "base_source_sha256": "39dc4c06547aa7c7e49ac6f35fe38480a35dd7687331496ac6c4f6ef54c0fd99",
-  "raw_jp_overrides_sha256": "31a9d4100ea8cb3381865610e35db9af6412bf82fc383dd8d7e68ce9abf0ba2c",
-  "jp_overrides_sha256": "a42e244864d10873553aa3aa20e98486c917aad02ab49075a191b142a607cfb7",
-  "semantic_css_sha256": "3ee9bb40f26a754c5626a2b94716820b21aaa0997499ec5d3369cce54c453002",
-  "canonical_override_sha256": "d95804e43b7d1f644b1747aa101b37fd6a5243080b0a6128b61138883a2b2c9f",
+  "raw_jp_overrides_sha256": "4a0cc8e33a60ba82a49e88d310a41ecf0a1456da6cce96ca24359cf0992cc82e",
+  "jp_overrides_sha256": "66af346b6d395eb3dd369939a568cd2a5d37cb2ce6813d00a3865993c9e89da7",
+  "semantic_css_sha256": "bdff0b7143ce77f890fb7523a65a2358f83df41ac5b06d210807c8a7668c8967",
+  "canonical_override_sha256": "3cdc8c615bfa211f3910866ab7d5f982bc85baf3971a2b7657a36510054f02a8",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "9dfaa367184c28d63b88caf37356f6c1e85f3e45852a921cfaf4bbfc9dad4da0",
+  "final_source_sha256": "3698d103a394615869d927b52895e88af94f753eca4b58ceb5790e841c49113a",
   "final_source_inputs": {
     "base_sha256": "39dc4c06547aa7c7e49ac6f35fe38480a35dd7687331496ac6c4f6ef54c0fd99",
-    "jp_overrides_sha256": "a42e244864d10873553aa3aa20e98486c917aad02ab49075a191b142a607cfb7"
+    "jp_overrides_sha256": "66af346b6d395eb3dd369939a568cd2a5d37cb2ce6813d00a3865993c9e89da7"
   },
   "ordered_include_sha256": "f2e12da5db7f6b294c147b516bb281ef511cb2d3a3994a90e3882d49917d0d84",
   "declaration_reviews": {},
-  "adaptation_block_count": 1,
-  "raw_override_rule_count": 2,
-  "canonical_override_rule_count": 2,
+  "adaptation_block_count": 4,
+  "raw_override_rule_count": 5,
+  "canonical_override_rule_count": 5,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -270,9 +270,9 @@
     {
       "marker": "source-theme-and-localized-document-input",
       "origin": "preserved-source",
-      "sha256": "bbd1bbd60b65aa9c185aedc85f50ea426f5e473d2ceaa2be5b311c86814d0c82",
+      "sha256": "6067a4ad25d5ecd4d0ae64b51ed7e75d7bdcb19a31c9e544b9403e78707053ee",
       "authority": "SOURCE_THEME",
-      "rationale": "Preserve source-theme imports, source declarations, include parameters and localized documentation before the historical campaign suffix. Asset freezing and include expansion are separate runtime-independent transforms.",
+      "rationale": "Materialize the exact active default article CSS modules from the already authority-bound publishable localization base. Exclude commented/false variant and theme-page presentation modules; source component includes and certified overlays remain their separate layers.",
       "evidence": [
         {
           "path": "paperstack/upstream-en.wikidot.txt",
@@ -281,8 +281,13 @@
         },
         {
           "path": "paperstack/existing-jp.wikidot.txt",
-          "sha256": "6c36f989fdefaab3f2dbeff63bc5770e57b638650911eb9263e1b814dea27ee0",
+          "sha256": "a6d81604d54acbe2626a625fcd1b839636fdb8a53d6b7de292338280ac6b8fc6",
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
+        },
+        {
+          "path": "paperstack/runtime-css-materialization.json",
+          "sha256": "28ae34f459cc0429c38cd82da9e599b427d7ab9f8c84466fbc0a168b3922d475",
+          "decision_authority": "FROZEN_WIKIDOT_SOURCE_MODULES"
         }
       ]
     },
@@ -294,12 +299,11 @@
       "rationale": "Per-theme real SCP-JP A/B at 320px and 390px; every submenu/item/link stays inside both viewport edges. Preserve the wrapped row, source menu widths, palette and link layout. Space also retains its separate header grid correction; Turbo bounds only the invisible masthead responsible for remaining 320px document overflow.",
       "evidence": [
         {
-          "path": "authority-evidence/paperstack-published-final/receipt.json",
-          "sha256": "e52500dead015b14f5ca5694b591d9d908e8f77845cde20f96d5f29748093f92",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/paperstack-navigation-final-css-v2-20261004/receipt.json",
+          "sha256": "f7ad020f54df8f098e05051640e81c585877bbf5c185fca75131baacac48c58d"
         }
       ],
-      "published_css_sha256": "76f4a14b16d53108068e2cd2f7cf8beeb9fd7a1d46d2215de9c7b6d5677b8053",
+      "published_css_sha256": "5c388bc9f4e8c9a888c71e72ca59c6dc7a64f5aab0f791f7a789f8478d77e0aa",
       "scope": {
         "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
         "state": "navigation",
@@ -313,6 +317,76 @@
           ".mobile-top-bar > ul > li > ul a"
         ]
       }
+    },
+    {
+      "marker": "SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width.",
+      "sha256": "7d3e8accd22b3e82aa80834b444dd208b38fe8e6931410d9c716a744b83d57e9",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "The native SCP-JP image-block component at 320px loses its caption/content past the viewport left edge. Subtract its evidenced right margin and border/padding from the available content width. Real article A/B proves containment and unchanged 390px/desktop geometry.",
+      "selectors": [
+        ".scp-image-block.block-right"
+      ],
+      "at_contexts": [
+        "@media (max-width: 479px)"
+      ],
+      "evidence": [
+        {
+          "path": "authority-evidence/paperstack-image-final-css-v2-20261004/receipt.json",
+          "sha256": "901835a8f4d6641bb28d41c1d9b1d215d1db478e4e63048714a60753afb80d42"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-1428-jp",
+        "state": "image-block",
+        "viewports": [
+          320,
+          390,
+          1440
+        ]
+      },
+      "published_css_sha256": "5c388bc9f4e8c9a888c71e72ca59c6dc7a64f5aab0f791f7a789f8478d77e0aa",
+      "published_base_css_sha256": null
+    },
+    {
+      "marker": "SCP-JP Wikidot Paperstack narrow masthead: fit its generated title without overlapping lines.",
+      "sha256": "05f0d83482e947cfd0082ffd45ce01d419f622362a9c3cb2f004ac156c5c8ca9",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "origin": "target-certified-replacement",
+      "rationale": "The frozen SCP-JP shell inherits a zero line height. This theme introduces the longer generated English title; at 320px its two ink ranges occupy the same 32px-high line. Scale only that generated title from 1.3em to 1.15em below 360px, retaining its source face, text, weight and color. Native A/B demonstrates one readable line and unchanged 390/768/1440 layouts; the old header refinements remain quarantined.",
+      "evidence": [
+        {
+          "path": "authority-evidence/paperstack-title-final-css-v2-20261004/receipt.json",
+          "sha256": "2ea4967fb934ad2e9e5770a99a7ab563f18086674ea077296fc496b09ca2c412"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "state": "header-line-layout",
+        "viewports": [
+          320,
+          390,
+          768,
+          1440
+        ],
+        "selectors": [
+          "#header h1 a::before"
+        ]
+      },
+      "published_css_sha256": "5c388bc9f4e8c9a888c71e72ca59c6dc7a64f5aab0f791f7a789f8478d77e0aa"
+    },
+    {
+      "marker": "SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access.",
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "sha256": "d0f6ee5e3aee7abe85a50b3a3c934b55ba2ad17fea9f3915b4922d8028644487",
+      "rationale": "Wikidot PagePreview keeps HTML blocks literal. Keep a long literal frame source within the tablet sidebar while preserving horizontal access; the rule is media-limited and removes no content.",
+      "evidence": [
+        {
+          "path": "authority-evidence/sigma10-preview-sidebar-containment.json",
+          "sha256": "f1e70f4fffaefbbb888cda9bfa748f283d0cae7657f34483f9876485f4a05bab"
+        }
+      ]
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -330,6 +404,42 @@
         "@media (min-width: 360px) and (max-width: 767px)"
       ],
       "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width.",
+      "rationale": "SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width.",
+      "sha256": "7d3e8accd22b3e82aa80834b444dd208b38fe8e6931410d9c716a744b83d57e9",
+      "selectors": [
+        ".scp-image-block.block-right"
+      ],
+      "at_contexts": [
+        "@media (max-width: 479px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot Paperstack narrow masthead: fit its generated title without overlapping lines.",
+      "rationale": "SCP-JP Wikidot Paperstack narrow masthead: fit its generated title without overlapping lines.",
+      "sha256": "05f0d83482e947cfd0082ffd45ce01d419f622362a9c3cb2f004ac156c5c8ca9",
+      "selectors": [
+        "#header h1 a::before"
+      ],
+      "at_contexts": [
+        "@media(max-width:359px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access.",
+      "rationale": "SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access.",
+      "sha256": "d0f6ee5e3aee7abe85a50b3a3c934b55ba2ad17fea9f3915b4922d8028644487",
+      "selectors": [
+        "#side-bar"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px) and (max-width: 1023px)"
+      ],
+      "authority": "RUNTIME_INDEPENDENT"
     }
   ]
 }

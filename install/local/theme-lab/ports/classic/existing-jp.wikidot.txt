@@ -11,10 +11,10 @@
 [[module CSS]]
 /* ---- PRESENTATION ---- */
 .templateInfo {
-	margin: 1em 0;
-	padding: 0 1em;
-	background: hsl(0, 0%, 100%);
-	border: 1px solid hsl(0, 0%, 87%);
+    margin: 1em 0;
+    padding: 0 1em;
+    background: hsl(0, 0%, 100%);
+    border: 1px solid hsl(0, 0%, 87%);
 }
 [[/module]]
 
@@ -118,7 +118,7 @@
 @@}@@
 [[/div]]
 
-[[[http://scp-jp.wikidot.com/#|リンク]]] ([https://google.com アクセスしたことがあるであろうリンク])
+[[[https://scp-jp.wikidot.com/#|リンク]]] ([https://google.com アクセスしたことがあるであろうリンク])
 
 [[collapsible show="+ 折り畳み" hide="- 折り畳み"]]
 折り畳み内の何か

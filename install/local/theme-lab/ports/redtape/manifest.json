@@ -52,7 +52,7 @@
     },
     "existing_jp_audit": "existing-jp-current-and-valid",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn"
   },
   "dependencies": {
     "slug": "theme:redtape",
@@ -212,7 +212,7 @@
       "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; "
     }
   ],
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "existing-jp-current-and-valid",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/redtape/assets.json",
   "asset_dependency_decision_count": 66,
@@ -222,7 +222,7 @@
     "manifest": "maintenance/manifest.json",
     "base_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
     "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "semantic_css_sha256": "2f527ecd78d719ae691e1ec49fa5fdea271bcaeac9bf3896a9a3ef3404357dd4",
+    "semantic_css_sha256": "0c6cc4b9b20eb44c9744c4a57462101b180d2aab3ca38896d3dca4763305ef72",
     "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
     "final_source": "maintenance/final.wikidot.txt",
     "final_source_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
@@ -236,9 +236,18 @@
       "source_sha256": "e715aff3bea062e42ab06f0e59259c6319ec716c4defd43623191ead7b0d368b",
       "active_tags": [],
       "candidate_source_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
-      "candidate_active_tags": [],
+      "candidate_active_tags": [
+        "en",
+        "テーマ"
+      ],
+      "runtime_active_tags": [],
+      "showcase_css_modules_removed_exact": 2,
+      "showcase_css_modules_removed_truncated": 0,
+      "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 1,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "c895056a60734a46d38798eb026f1902bbbed2919379bc0af4006e58aa87400d",
+      "candidate_css_sha256": "e68651742177907f32d7870a383a86a432159fe581e4a005e1d9f1a0da227016",
       "asset_receipt_path": "assets.json",
       "assets": 53,
       "imports": 10,
@@ -246,6 +255,12 @@
       "localization_transform_manifest": null,
       "missing": 0,
       "external_requests_during_build": 0
+    },
+    "source_css_includes": {
+      "manifest": "source-css-includes.json",
+      "materialized_css_sha256": "875497dc164526da0940bc91a56d9b3cb6839e30cb02881e47245d662982a621",
+      "cascade": "before-main-source-css",
+      "public_writes": 0
     }
   },
   "adaptation_authority": {
@@ -253,7 +268,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

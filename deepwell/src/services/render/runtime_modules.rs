@@ -5,6 +5,9 @@ mod page_calendar;
 mod rate;
 mod rated_pages;
 mod tag_cloud;
+mod theme_previewer;
+pub(crate) use theme_previewer::has_theme_previewer_no_ui;
+pub(super) use theme_previewer::{has_theme_previewer_blank, theme_previewer_blank_head};
 mod user_lists;
 mod www;
 
@@ -495,44 +498,6 @@ pub(crate) fn join_module_action_count(wikitext: &str) -> usize {
                     .is_some_and(|name| name.as_str().eq_ignore_ascii_case("Join"))
         })
         .count()
-}
-
-/// Recognize the source-owned ThemePreviewer path that permits the browser to
-/// consume `theme_url`. Literal and malformed/unknown argument surfaces stay
-/// disabled so examples and unsupported module shapes cannot authorize a
-/// stylesheet request.
-pub(crate) fn has_theme_previewer_no_ui(wikitext: &str) -> bool {
-    if !STATIC_ACCOUNT_MODULE_REGEX.is_match(wikitext) {
-        return false;
-    }
-    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
-    STATIC_ACCOUNT_MODULE_REGEX
-        .captures_iter(wikitext)
-        .any(|captures| {
-            let matched = captures
-                .get(0)
-                .expect("a static account module capture always has a complete match");
-            if literal_regions.contains(matched.start()) {
-                return false;
-            }
-            if !captures
-                .name("name")
-                .is_some_and(|name| name.as_str().eq_ignore_ascii_case("ThemePreviewer"))
-            {
-                return false;
-            }
-            let Some(head) = captures.name("head").map(|head| head.as_str()) else {
-                return false;
-            };
-            let Some(arguments) = wikidot_module_arguments(head) else {
-                return false;
-            };
-            arguments.len() == 1
-                && arguments[0].key == "noUi"
-                && arguments[0].op == "="
-                && arguments[0].value_kind == WikidotModuleArgumentValueKind::DoubleQuoted
-                && arguments[0].value == "true"
-        })
 }
 
 pub(crate) fn membership_apply_action_count(wikitext: &str) -> usize {
@@ -1164,6 +1129,13 @@ impl RenderService {
                 .expect("a static account module capture always has a name")
                 .as_str();
             let head = captures.name("head").map_or("", |head| head.as_str());
+            if name.eq_ignore_ascii_case("ThemePreviewer")
+                && theme_previewer_blank_head(head)
+            {
+                output.push_str(&wikitext[cursor..matched.start()]);
+                cursor = matched.end();
+                continue;
+            }
             let opaque_token_surface = name
                 .eq_ignore_ascii_case("AnonymousNotificationsUnsubscribe")
                 || name.eq_ignore_ascii_case("MembershipEmailInvitation");
@@ -1765,6 +1737,58 @@ mod runtime_module_residual_tests {
                 !rendered.contains("<p>\n\n\n\n\n</p>"),
                 "{source} must not collapse to the empty block:\n{rendered}",
             );
+        }
+    }
+
+    #[test]
+    fn native_blank_theme_previewer_has_no_visible_body_and_preserves_literal_regions() {
+        assert!(super::has_theme_previewer_blank(
+            r#"[[module themepreviewer noUi="true"theme_url=" "]]"#
+        ));
+        assert!(super::has_theme_previewer_blank(
+            r#"[[module ThemePreviewer noUi="true" theme_url=" "]]"#
+        ));
+        for inactive in [
+            r#"[[code]][[module ThemePreviewer noUi="true" theme_url=" "]][[/code]]"#,
+            r#"[!-- [[module ThemePreviewer noUi="true" theme_url=" "]] --]"#,
+            r#"[[module ThemePreviewer noUi="true" theme_url="https://example.invalid/theme.css"]]"#,
+            r#"[[module ThemePreviewer noUi="true" theme_url=" " other="true"]]"#,
+        ] {
+            assert!(!super::has_theme_previewer_blank(inactive));
+        }
+
+        fn expand(source: &str) -> String {
+            let settings =
+                WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+            let mut fragments = CompatHtmlFragments::new(source);
+            let output = RenderService::expand_static_account_modules(
+                source.to_owned(),
+                &settings,
+                &mut fragments,
+            );
+            fragments.restore(&output)
+        }
+        for source in [
+            "[[module themepreviewer noUi=\"true\"theme_url=\" \"]]",
+            "[[module ThemePreviewer noUi=\"true\" theme_url=\" \"]]",
+        ] {
+            assert_eq!(
+                expand(&format!("before\n{source}\nafter")),
+                "before\n\nafter"
+            );
+            for literal in [
+                format!("[[code]]{source}[[/code]]"),
+                format!("[!-- {source} --]"),
+            ] {
+                assert_eq!(expand(&literal), literal);
+            }
+        }
+        for source in [
+            "[[module ThemePreviewer noUi=\"true\" theme_url=\"https://example.test/style.css\"]]",
+            "[[module ThemePreviewer noUi=\"true\" theme_url=\" \" foo=\"bar\"]]",
+            "[[module ThemePreviewer noUi=\"false\" theme_url=\" \"]]",
+        ] {
+            assert_eq!(expand(source), source);
         }
     }
 

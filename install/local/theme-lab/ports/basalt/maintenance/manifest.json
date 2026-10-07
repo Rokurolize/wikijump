@@ -162,6 +162,25 @@
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]
+    },
+    {
+      "marker": "Resolve preserved source CSS component includes",
+      "origin": "source-css-include-resolution",
+      "authority": "RUNTIME_INDEPENDENT",
+      "sha256": "91a598f39414626016af54112e912f4d7f3ed958e883ed2737fefb08c576ae9b",
+      "rationale": "Materialize the reviewed SCP-JP component publication-source CSS locally before the theme declarations. This removes the temporary EN-component oracle while preserving the exact component behavior that will be published to SCP-JP.",
+      "evidence": [
+        {
+          "path": "basalt/source-css-includes.json",
+          "sha256": "91a598f39414626016af54112e912f4d7f3ed958e883ed2737fefb08c576ae9b",
+          "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_BINDING"
+        },
+        {
+          "path": "basalt/source-includes/betterfootnotes.wikidot.txt",
+          "sha256": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d",
+          "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_SOURCE"
+        }
+      ]
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",

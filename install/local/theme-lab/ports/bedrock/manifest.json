@@ -44,7 +44,7 @@
     },
     "existing_jp_audit": "new-jp-candidate-verified",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn"
   },
   "dependencies": {
     "slug": "theme:bedrock",
@@ -73,7 +73,7 @@
   "candidate_input": "human-port-candidate.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/bedrock/assets.json",
   "asset_dependency_decision_count": 52,
@@ -97,9 +97,17 @@
       "source_sha256": "c24bad7d056ed84e0e3dfe0762e599ca5a62bb414cc6659597bd89e59348a747",
       "active_tags": [],
       "candidate_source_sha256": "c077ff195b55327cd0de0e3310c39ed078045a87cc75f8ebe48dabaff594e423",
-      "candidate_active_tags": [],
+      "candidate_active_tags": [
+        "テーマ"
+      ],
+      "runtime_active_tags": [],
+      "showcase_css_modules_removed_exact": 1,
+      "showcase_css_modules_removed_truncated": 0,
+      "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 0,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "9e7e79c109fcefe79b31bf7b351f79beac28b4b047795a177ff00180f6c5129b",
+      "candidate_css_sha256": "210621c337510276613df2496a6fcc1ee98843d5175b0cc07404d82c416236ea",
       "asset_receipt_path": "assets.json",
       "assets": 49,
       "imports": 3,
@@ -114,7 +122,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

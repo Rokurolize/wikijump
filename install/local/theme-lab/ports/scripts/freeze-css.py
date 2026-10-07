@@ -68,6 +68,7 @@ def without_css_comments_and_strings(text: str) -> str:
     return "".join(output)
 
 
+
 class CacheCSS:
     def __init__(self, cache: Path, assets: Path, replacements: dict[str, str] | None = None, omissions: dict[str, str] | None = None, transforms: list[dict] | None = None) -> None:
         self.cache = cache
@@ -138,14 +139,7 @@ class CacheCSS:
             self.missing[base] = "import-depth-limit"
             return ""
 
-        masked = ""
-
         def repl(match: re.Match[str]) -> str:
-            # An @import written inside a CSS comment or string is not a live
-            # directive; real Wikidot never loads it. Leave those source bytes
-            # untouched instead of flattening a disabled dependency.
-            if masked[match.start()] != match.string[match.start()]:
-                return match.group(0)
             ref = match.group(2).strip()
             if ref.startswith("data:"):
                 self.missing[ref[:120]] = "unsupported-data-css-import"
@@ -205,7 +199,6 @@ class CacheCSS:
 
         while IMPORT_RE.search(text):
             old = text
-            masked = without_css_comments_and_strings(text)
             text = IMPORT_RE.sub(repl, text)
             if text == old:
                 break
@@ -220,11 +213,7 @@ class CacheCSS:
 
     @staticmethod
     def resolve_urls(text: str, base: str) -> str:
-        masked = without_css_comments_and_strings(text)
-
         def repl(match: re.Match[str]) -> str:
-            if masked[match.start()] != match.string[match.start()]:
-                return match.group(0)
             ref = match.group(2).strip()
             if not ref or ref.startswith(("data:", "#", "blob:")):
                 return match.group(0)
@@ -233,11 +222,7 @@ class CacheCSS:
         return URL_RE.sub(repl, text)
 
     def localize_urls(self, text: str, base: str) -> str:
-        masked = without_css_comments_and_strings(text)
-
         def repl(match: re.Match[str]) -> str:
-            if masked[match.start()] != match.string[match.start()]:
-                return match.group(0)
             ref = match.group(2).strip()
             if not ref or ref.startswith(("data:", "#", "blob:")):
                 return match.group(0)

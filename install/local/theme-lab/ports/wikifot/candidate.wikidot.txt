@@ -134,11 +134,24 @@ wikidot.comをソーシャルウェブプロジェクトに使っている1,000,
 [[/collapsible]]
 
 
+
+
+
+
 + Theme Lab runtime fixture
 
-[[div class="creditRate"]][[div class="rateBox"]][[div class="rate-box-with-credit-button"]]
-[[module Rate]]
-[[/div]][[/div]][[/div]]
+[[div class="creditRate"]]
+[[div class="rateBox"]]
+[[div class="rate-box-with-credit-button"]]
+[[div class="page-rate-widget-box"]]
+[[span class="rate-points"]]評価: +1[[/span]]
+[[span class="rateup btn btn-default"]]+[[/span]]
+[[span class="ratedown btn btn-default"]]–[[/span]]
+[[span class="cancel btn btn-default"]]x[[/span]]
+[[/div]]
+[[/div]]
+[[/div]]
+[[/div]]
 [[span class="theme-lab-jp-font-probe"]]日本語の字形を確認する検体です。漢字、ひらがな、カタカナ。[[/span]]
 [[toc]]
 [[tabview]]

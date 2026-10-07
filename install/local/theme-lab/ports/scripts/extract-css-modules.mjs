@@ -4,7 +4,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
-const tokens=/\{\{|\}\}|@@|\[\[code(?:\s+[^\]]*)?\]\]|\[\[\/code\]\]|\[\[iftags(?:\s+[^\]]+)?\]\]|\[\[\/iftags\]\]|\[\[ift\{[^}]+\}gs(?:\s+[^\]]+)?\]\]|\[\[\/ift\{[^}]+\}gs\]\]|\[\[module\s+CSS\]\]/giu;
+const tokens=/\[!--[\s\S]*?--\]|\{\{|\}\}|@@|\[\[code(?:\s+[^\]]*)?\]\]|\[\[\/code\]\]|\[\[iftags(?:\s+[^\]]+)?\]\]|\[\[\/iftags\]\]|\[\[ift\{[^}]+\}gs(?:\s+[^\]]+)?\]\]|\[\[\/ift\{[^}]+\}gs\]\]|\[\[module\s+CSS(?:\s+[^\]]*)?\]\]/giu;
 
 function findCssModuleClose(source,start){
   let string=null;
@@ -40,17 +40,24 @@ function findCssModuleClose(source,start){
   return null;
 }
 
-export function extractUnconditionalCssModules(source,{activeTags=[]}={}){
+export function extractCssModules(source,{activeTags=[],includeCommented=false,includeInactive=false,resolveUnboundIncludeVariables=false}={}){
   const output=[];
   const tags=new Set(activeTags.map(tag=>String(tag).toLowerCase()));
   const conditions=[];
   let inCode=false;
   let inEscapedCode=false;
   let inWikidotEscape=false;
-  tokens.lastIndex=0;
+  const scanner=new RegExp(tokens.source,tokens.flags);
   let match;
-  while((match=tokens.exec(source))!==null){
+  while((match=scanner.exec(source))!==null){
     const token=match[0].toLowerCase();
+    if(token.startsWith('[!--')){
+      if(includeCommented&&!inCode&&!inEscapedCode&&!inWikidotEscape){
+        const body=match[0].slice(4,-3);
+        for(const module of extractCssModules(body,{activeTags}))output.push({...module,index:match.index+4+module.index,owner:'wikidot-comment'});
+      }
+      continue;
+    }
     if(token==='{{'){inWikidotEscape=true;continue;}
     if(token==='}}'&&inWikidotEscape){inWikidotEscape=false;continue;}
     if(inWikidotEscape)continue;
@@ -66,21 +73,33 @@ export function extractUnconditionalCssModules(source,{activeTags=[]}={}){
         if(term.startsWith('-'))return !tags.has(term.slice(1));
         return false;
       });
-      conditions.push(active);continue;
+      conditions.push({active,name:'iftags'});continue;
     }
-    if(token.startsWith('[[ift{')){conditions.push(false);continue;}
-    if(token==='[[/iftags]]'||token.startsWith('[[/ift{')){conditions.pop();continue;}
-    if(token==='[[module css]]'){
+    if(token.startsWith('[[ift{')){conditions.push({active:resolveUnboundIncludeVariables,name:token.slice(2,-2).split(/\s/u)[0]});continue;}
+    if(token==='[[/iftags]]'){if(conditions.at(-1)?.name==='iftags')conditions.pop();continue;}
+    // An unresolved include parameter does not spell a real closing tag.
+    // It must not release an enclosing inactive iftags guard.
+    if(token.startsWith('[[/ift{')){
+      if(conditions.at(-1)?.name===token.slice(3,-2))conditions.pop();
+      continue;
+    }
+    if(/^\[\[module\s+css(?:\s|\]\])/u.test(token)){
       const moduleStart=match.index+match[0].length;
       const close=findCssModuleClose(source,moduleStart);
       if(!close)throw new Error('Unterminated [[module CSS]] block');
-      if(conditions.every(Boolean))output.push(source.slice(moduleStart,close.start));
-      tokens.lastIndex=close.end;
+      if(conditions.every(row=>row.active))output.push({index:match.index,css:source.slice(moduleStart,close.start)});
+      else if(includeInactive)output.push({index:match.index,css:source.slice(moduleStart,close.start),owner:'inactive-iftags'});
+      scanner.lastIndex=close.end;
       continue;
     }
   }
+  return output;
+}
+
+export function extractUnconditionalCssModules(source,{activeTags=[]}={}){
+  const output=extractCssModules(source,{activeTags});
   if(!output.length)throw new Error('No unconditional CSS modules found');
-  return output.join('\n\n').trim()+'\n';
+  return output.map(row=>row.css).join('\n\n').trim()+'\n';
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){

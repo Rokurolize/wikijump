@@ -3445,7 +3445,7 @@ async fn rerender_uses_latest_navigation_page_revision() {
     assert!(
         rerendered_home
             .compiled_generator
-            .ends_with("; deepwell-render/v11")
+            .ends_with("; deepwell-render/v12")
     );
 }
 
@@ -4262,12 +4262,12 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
         .article_page_cache_key
         .expect("imported static page should have an anonymous cache key");
     assert!(
-        current_key.starts_with("deepwell:article-view:page:v11:"),
+        current_key.starts_with("deepwell:article-view:page:v12:"),
         "source-freeze cache key must carry the final renderer epoch: {current_key}",
     );
     let stale_key = current_key.replacen(
+        "deepwell:article-view:page:v12:",
         "deepwell:article-view:page:v11:",
-        "deepwell:article-view:page:v10:",
         1,
     );
     assert_ne!(stale_key, current_key);
@@ -4277,7 +4277,7 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
     redis
         .set::<_, _, ()>(&stale_key, &stale_json)
         .await
-        .expect("stale v10 page should be inserted into the test cache");
+        .expect("stale v11 page should be inserted into the test cache");
     redis
         .set::<_, _, ()>(&current_key, &stale_json)
         .await
@@ -4396,7 +4396,7 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     assert!(
         page_revision
             .compiled_generator
-            .ends_with("; deepwell-render/v11")
+            .ends_with("; deepwell-render/v12")
     );
     assert!(compiled_body_html.contains(CURRENT_BODY));
     assert!(!compiled_body_html.contains(STALE_BODY));
@@ -4421,7 +4421,7 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     assert!(
         page_revision
             .compiled_generator
-            .ends_with("; deepwell-render/v11"),
+            .ends_with("; deepwell-render/v12"),
         "page view must expose the current compiled generator",
     );
     assert!(compiled_body_html.contains(CURRENT_BODY));
@@ -4435,7 +4435,7 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     assert!(
         persisted
             .compiled_generator
-            .ends_with("; deepwell-render/v11"),
+            .ends_with("; deepwell-render/v12"),
         "read-time refresh should persist the current compiled generator",
     );
     let persisted_body =

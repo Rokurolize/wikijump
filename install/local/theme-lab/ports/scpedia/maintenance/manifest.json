@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "c72a8efe05d1b61db6186108038dbfaca435d076a00f78319464deed5cfbb7c5",
+  "frozen_candidate_source_sha256": "a03ffcf8189adfaf7d9e43fd3084c61957f9f4910a6096b32d9073ad699d70f8",
   "base_source_sha256": "c72a8efe05d1b61db6186108038dbfaca435d076a00f78319464deed5cfbb7c5",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "80e9de287277df66540f64f123cd4a3987b6a6dfcbdf8384dccb5f7ee46e5fd8",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "d7a619f67c81f5b1bd398740b0e63045be2575f01752eadd2c2550bd8b2f023e",
+  "jp_overrides_sha256": "301bd46a3731b354212eccf782c23aa4b1e00b7a2a40dd4cac69a857b3fc132c",
+  "semantic_css_sha256": "b6d889d1e6f5dbd3437e7cc288192ce85dbe54c496c1240968464967ddc8461f",
+  "canonical_override_sha256": "d0ee83aeeaf72ccc04730dc0db579be33c2c1c7435ca7a0d01a77dc895526721",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "c72a8efe05d1b61db6186108038dbfaca435d076a00f78319464deed5cfbb7c5",
+  "final_source_sha256": "bf2e81396c35166d28fc55a7b61c932d31102739753c889521580dd362b1565f",
   "final_source_inputs": {
     "base_sha256": "c72a8efe05d1b61db6186108038dbfaca435d076a00f78319464deed5cfbb7c5",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "301bd46a3731b354212eccf782c23aa4b1e00b7a2a40dd4cac69a857b3fc132c"
   },
   "ordered_include_sha256": "1f3212340e16b73ac02a68884449d985e2ba45c168e7d9804476f8d9fdf0b44f",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 2,
+  "raw_override_rule_count": 2,
+  "canonical_override_rule_count": 2,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -262,8 +262,88 @@
           "decision_authority": "FROZEN_ASSET_TRANSFORM"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot SCPedia masthead correction: keep the source title inside the narrow tablet viewport.",
+      "sha256": "bde392e881aef31bcbc9204fcde1d1c1dc38eff67ec369e8b3f5fc6dacbec22c",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "Frozen real SCP-JP A/B establishes this specific target regression and verifies the minimum correction. Source styling, palette, dimensions, and unrelated menus remain owned by the imported theme.",
+      "evidence": [
+        {
+          "path": "authority-evidence/scpedia-current-generated-authority-15-settled-20261002/receipt.json",
+          "sha256": "52e5082923dd1ff38d2d7884e109467007d5f5904d260a41da5ed4bb0ea552b7",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "state": "settled",
+        "viewports": [
+          320,
+          390,
+          768,
+          800,
+          1024,
+          1440
+        ],
+        "source_intent": {
+          "path": "scpedia/upstream-en.wikidot.txt",
+          "sha256": "195a9d70bbfed2cf6cb177aec6b7f8f236c7ca161af19b040d1a653f8da16284"
+        }
+      },
+      "published_css_sha256": "68d1cdb84e515d1c7693a3663d70915f05e7bf5d4de3b9294f7c2a9774b21924"
+    },
+    {
+      "marker": "SCP-JP Wikidot native history list: preserve the seven columns inside their own horizontal scroller.",
+      "sha256": "2094c32464d499abf47df40b62cc958016249707445299f7775fbf9df36f8832",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "The exact retained native History responses stay within the unthemed SCP-JP viewport, while this theme expands the document. Keep all seven columns and native radios in their own horizontal scroller. This proof establishes list geometry only.",
+      "evidence": [
+        {
+          "path": "authority-evidence/scpedia-chromium-generated-final-history-20261002-v2/receipt.json",
+          "sha256": "15fb53f20108315d31f8e1338bab3526487db539b522be30d09c42c67beb8dbe",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173",
+        "state": "history-list",
+        "viewports": [
+          320,
+          390,
+          1440
+        ]
+      },
+      "published_css_sha256": "68d1cdb84e515d1c7693a3663d70915f05e7bf5d4de3b9294f7c2a9774b21924"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot SCPedia masthead correction: keep the source title inside the narrow tablet viewport.",
+      "rationale": "SCP-JP Wikidot SCPedia masthead correction: keep the source title inside the narrow tablet viewport.",
+      "sha256": "bde392e881aef31bcbc9204fcde1d1c1dc38eff67ec369e8b3f5fc6dacbec22c",
+      "selectors": [
+        "div#extra-div-2"
+      ],
+      "at_contexts": [
+        "@media (min-width: 768px) and (max-width: 800px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot native history list: preserve the seven columns inside their own horizontal scroller.",
+      "rationale": "SCP-JP Wikidot native history list: preserve the seven columns inside their own horizontal scroller.",
+      "sha256": "2094c32464d499abf47df40b62cc958016249707445299f7775fbf9df36f8832",
+      "selectors": [
+        "#revision-list"
+      ],
+      "at_contexts": [
+        "@media(max-width:767px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    }
+  ]
 }

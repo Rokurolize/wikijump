@@ -110,7 +110,7 @@
 @@}@@
 [[/div]]
 
-[http://ja.scp-wiki.net/ リンク] ([https://google.com 多分あなたが訪問したことのあるリンク])
+[https://scp-jp.wikidot.com/ リンク] ([https://google.com 多分あなたが訪問したことのあるリンク])
 
 [[collapsible show="+ 折りたたみ" hide="- 折りたたみ"]]
 折りたたみの中身

@@ -5,16 +5,20 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {digest} from '../../src/adaptation-authority.mjs';
+import {validateCombinedAcceptance} from '../../src/campaign-completion.mjs';
 const ports=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const ledgerPath=path.join(ports,'adaptation-authority.json');
 const ledger=JSON.parse(await fs.readFile(ledgerPath,'utf8'));
+const selected=new Set(process.argv.slice(2).filter(arg=>arg.startsWith('--theme=')).map(arg=>arg.slice(8)));
 const exists=async file=>fs.access(file).then(()=>true,error=>{if(error.code==='ENOENT')return false;throw error});
+const retainedAcceptances=new Map();
 const acceptanceKeys=['final_verdict','final_status','theme_lab_findings','theme_lab_checks','final_theme_lab_check','font_diagnostics','viewport_status','torture_status','visual_status','interaction_status','warnings','intentional_style_differences','screenshots','interaction_diagnostics','visual_review','final_check','manual_visual_review','surface_contract','asset_status','offline_external_request_count','theme_lab_css_iteration_benchmark','image_diagnostics','page_image_assets','technical_requirements','interactive_visual_findings','initial_actionable_finding','inline_css_bytes','check_count','edit_iterations','manual_devtools_fallback_count','manual_visual_inspection_count','theme_lab_final_check_count','check_count_note','edit_iterations_note'];
 for(const [name,pkg] of Object.entries(ledger.packages)) {
+  if(selected.size&&!selected.has(name))continue;
   const dir=path.join(ports,name);
-  if(name==='dear-dictator') await fs.writeFile(path.join(dir,'candidate.css'),await fs.readFile(path.join(dir,'candidate-input.css'),'utf8'));
+  if(name==='dear-dictator') await fs.writeFile(path.join(dir,'candidate.css'),[await fs.readFile(path.join(dir,'candidate-input.css'),'utf8'),await fs.readFile(path.join(dir,'authority-overrides.css'),'utf8')].filter(css=>css.trim()).join('\n\n'));
   pkg.outputs={};
-  for(const file of ['candidate.css','candidate-source.css',pkg.source_file,'candidate.wikidot.txt',
+  for(const file of ['candidate.css','candidate-source.css',...(await exists(path.join(dir,'candidate-base.css'))?['candidate-base.css']:[]),pkg.source_file,'candidate.wikidot.txt',
     ...(name==='quand-le-soleil-se-couche'?['publishable-theme.wikidot.txt']:['maintenance/base.wikidot.txt','maintenance/jp-overrides.css','maintenance/final.wikidot.txt'])]) {
     if(await exists(path.join(dir,file)))pkg.outputs[file]=digest(await fs.readFile(path.join(dir,file)));
   }
@@ -36,6 +40,21 @@ for(const [name,pkg] of Object.entries(ledger.packages)) {
     const archive=path.join(dir,'maintenance/historical-receipt.json');
     if(name!=='dear-dictator'&&!await exists(archive))await fs.copyFile(receiptFile,archive);
     const receipt=await exists(receiptFile)?JSON.parse(await fs.readFile(receiptFile,'utf8')):{slug:'theme:dear-dictator'};
+    let retained=false;
+    const binding=receipt.current_acceptance;
+    if(binding?.path && binding.sha256 && receipt.candidate_source_sha256===pkg.outputs[pkg.source_file] && receipt.candidate_css_sha256===pkg.outputs['candidate.css']) {
+      const proof=path.resolve(dir,binding.path);
+      if(proof.startsWith(ports+path.sep) && await exists(proof)) {
+        const bytes=await fs.readFile(proof),result=JSON.parse(bytes);
+        retained=digest(bytes)===binding.sha256 && validateCombinedAcceptance(result,name).length===0
+          && result.candidate_source_sha256===pkg.outputs[pkg.source_file]
+          && result.candidate_css_sha256===pkg.outputs['candidate.css']
+          && result.candidate_preview_sha256===pkg.outputs['candidate.wikidot.txt'];
+      }
+    }
+    if(retained)retainedAcceptances.set(name,receipt.overall_acceptance);
+    if(!retained) {
+    delete receipt.current_acceptance;
     for(const key of acceptanceKeys)delete receipt[key];
     if(name!=='dear-dictator')receipt.historical_acceptance={status:'SUPERSEDED_CANDIDATE',path:'maintenance/historical-receipt.json',sha256:digest(await fs.readFile(archive)),scope:'Old local Wikijump/fixture review only; cannot authorize current published adaptations or current screenshot acceptance.'};
     receipt.adaptation_authority={ledger:'../adaptation-authority.json',status:'pass',publishable_without_authority:0};
@@ -61,6 +80,7 @@ for(const [name,pkg] of Object.entries(ledger.packages)) {
         adaptation_authority:receipt.adaptation_authority,
         historical_result:{path:'maintenance/historical-acceptance-verdict.json',sha256:digest(await fs.readFile(historicalVerdict))}}},null,2)+'\n');
     }
+    }
     if(name==='quand-le-soleil-se-couche') Object.assign(receipt.candidate,{
       template_css_sha256:digest(await fs.readFile(path.join(dir,'candidate-template.css'))),
       validation_css_sha256:pkg.outputs['candidate.css'],
@@ -72,10 +92,10 @@ for(const [name,pkg] of Object.entries(ledger.packages)) {
   const manifestFile=path.join(dir,'manifest.json');
   if(await exists(manifestFile)) {
     const manifest=JSON.parse(await fs.readFile(manifestFile,'utf8'));
-    if(manifest.source_identity)manifest.source_identity.final_verdict='inconclusive';
+    if(manifest.source_identity)manifest.source_identity.final_verdict=retainedAcceptances.get(name)?.status??'inconclusive';
     if(dependencyCount!==null)manifest.asset_dependency_decision_count=dependencyCount;
-    manifest.final_verdict='inconclusive';
-    manifest.overall_acceptance={status:'inconclusive',reason:'Historical candidate acceptance superseded'};
+    manifest.final_verdict=retainedAcceptances.get(name)?.status??'inconclusive';
+    manifest.overall_acceptance=retainedAcceptances.get(name)??{status:'inconclusive',reason:'Historical candidate acceptance superseded'};
     manifest.adaptation_authority={ledger:'../adaptation-authority.json',publishable_without_authority:0};
     await fs.writeFile(manifestFile,JSON.stringify(manifest,null,2)+'\n');
   }
@@ -92,6 +112,9 @@ await fs.writeFile(ledgerPath,JSON.stringify(ledger,null,2)+'\n');
 const campaignFile=path.join(ports,'en-theme-campaign.json');
 const campaign=JSON.parse(await fs.readFile(campaignFile,'utf8'));
 for(const theme of campaign.themes) {
+  if(selected.size&&!selected.has(theme.slug.replace(/^theme:/u,'')))continue;
+  const retained=retainedAcceptances.get(theme.slug.replace(/^theme:/u,''));
+  if(retained){theme.final_verdict=retained.status;theme.overall_acceptance=retained;continue;}
   const historical={};
   for(const key of acceptanceKeys)if(key in theme){historical[key]=theme[key];delete theme[key];}
   if(!theme.historical_acceptance)theme.historical_acceptance={status:'SUPERSEDED_CANDIDATE',...historical};
@@ -114,7 +137,7 @@ for(const theme of campaign.themes) {
   if(await exists(path.join(dir,'candidate-base.css')))for(const match of (await fs.readFile(path.join(dir,'candidate-base.css'),'utf8')).matchAll(/([a-f0-9]{64})\.[a-z0-9]+/gu))use(match[1],name);
   const data=JSON.parse(await fs.readFile(path.join(dir,'assets.json'),'utf8'));
   const pageFile=path.join(dir,'page-assets.json');
-  theme.dependency_decision_count=data.dependency_decisions.length+(await exists(pageFile)?JSON.parse(await fs.readFile(pageFile,'utf8')).dependency_decisions?.length??0:0);
+  theme.dependency_decision_count=(data.dependency_decisions?.length??0)+(await exists(pageFile)?JSON.parse(await fs.readFile(pageFile,'utf8')).dependency_decisions?.length??0:0);
 }
 const assetRoot=path.join(ports,'shared-replay-assets');
 index.assets=[];

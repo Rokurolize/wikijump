@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import {assertPublishablePackage} from "../../src/adaptation-authority.mjs";
+import {assertPublishablePackage, composeAuthoritySource} from "../../src/adaptation-authority.mjs";
+import {composeThemeCss} from "../../src/candidate-css-composition.mjs";
 
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
@@ -12,13 +13,18 @@ import {
 } from "../../src/local-assets.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-assertPublishablePackage(path.basename(here), {checkOutputs: true});
+const refresh = process.argv.includes('--refresh');
+assertPublishablePackage(path.basename(here), {checkOutputs: !refresh});
 const output = process.argv[2];
 if (!output) {
   throw new Error("usage: node build.mjs /absolute/output.wikidot.txt");
 }
 
 const templateCss = await fs.readFile(path.join(here, "candidate-template.css"), "utf8");
+const authorityCss = await fs.readFile(path.join(here, "authority-overrides.css"), "utf8").catch(error=>{if(error.code==='ENOENT')return '';throw error});
+const combinedCss = composeThemeCss(templateCss, authorityCss);
+const expectedValidationCss = combinedCss.replace("{$sous-titre}", "夜明けまで忘れるな");
+if (refresh) await fs.writeFile(path.join(here, "candidate.css"), expectedValidationCss);
 const validationCss = await fs.readFile(path.join(here, "candidate.css"), "utf8");
 const demoSource = await fs.readFile(path.join(here, "candidate.wikidot.txt"), "utf8");
 const shell = await fs.readFile(path.join(here, "theme-shell.wikidot.txt"), "utf8");
@@ -26,9 +32,8 @@ const manifest = JSON.parse(await fs.readFile(path.join(here, "manifest.json"), 
 const assetDir = path.join(here, "assets");
 const digest = (value) => crypto.createHash("sha256").update(value).digest("hex");
 
-const expectedValidationCss = templateCss.replace("{$sous-titre}", "夜明けまで忘れるな");
 if (validationCss !== expectedValidationCss) {
-  throw new Error("candidate.css is not the deterministic validation expansion of candidate-template.css");
+  throw new Error("candidate.css is not the deterministic authority-bound validation expansion");
 }
 
 for (const [file, expected] of [
@@ -43,7 +48,7 @@ for (const [file, expected] of [
   }
 }
 
-const assets = await inspectCandidateAssets(templateCss, assetDir);
+const assets = await inspectCandidateAssets(combinedCss, assetDir);
 if (assets.missing.length) {
   throw new Error(`missing assets: ${assets.missing.join(", ")}`);
 }
@@ -54,7 +59,7 @@ for (const row of manifest.assets ?? []) {
   }
 }
 
-const inlineTemplateCss = await materializeCandidateCssAssets(templateCss, assetDir);
+const inlineTemplateCss = await materializeCandidateCssAssets(combinedCss, assetDir);
 const inlineDemoCss = inlineTemplateCss.replace("{$sous-titre}", "夜明けまで忘れるな");
 const publishAssetRoot =
   "https://scp-jp.wdfiles.com/local--files/theme:quand-le-soleil-se-couche";
@@ -85,8 +90,8 @@ if (
   throw new Error("build left a foreign runtime asset dependency");
 }
 
-const cssModule = `[[module CSS]]\n${publishCss}\n[[/module]]`;
-const themeSource = shell.replace("__THEME_CSS_MODULE__", cssModule);
+const cssModule = composeAuthoritySource(`[[module CSS]]\n${publishCss}\n[[/module]]`, authorityCss);
+const themeSource = shell.replace("__THEME_CSS_MODULE__", cssModule).replace("[[module CSS]]", '[[module CSS show="true"]]');
 const demo = `[[module CSS]]\n${inlineDemoCss}\n[[/module]]\n\n${demoSource}`;
 
 await fs.mkdir(path.dirname(path.resolve(output)), {recursive: true});

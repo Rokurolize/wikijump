@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "de3113777c594f85a686e5cff3a31f22252448db1a5fc70f980bbcce0bf263a1",
+  "frozen_candidate_source_sha256": "267413c5754294971d048457f9712b6929d5421ffe2d3e54dfa47c47140e8bf0",
   "base_source_sha256": "de3113777c594f85a686e5cff3a31f22252448db1a5fc70f980bbcce0bf263a1",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "dabb1650efa4aff85169bc7e55e7d41e0d255dbe225ae62f1e9c278aa478a67f",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "b210672faf63caddcb3ad82c09bafd3d2d7a4a9ecc7580d0d5c36f1385b1e5a2",
+  "jp_overrides_sha256": "9bf2bda1d7a611d947759a558600095c54e645fb1a082e29c69f8753e473c725",
+  "semantic_css_sha256": "14ccc0278bf3e337927b8c365c41d66d2fd9d4bd69a397c4aade9bfc1b994222",
+  "canonical_override_sha256": "8ea2cc39d90a2148c5f4702bc4a830f73be446d8d882cd6dc66b814c7e06e613",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "de3113777c594f85a686e5cff3a31f22252448db1a5fc70f980bbcce0bf263a1",
+  "final_source_sha256": "00009eeef6e77b229e63462999bb914629c3920f6644b77add8151d9d0458b34",
   "final_source_inputs": {
     "base_sha256": "de3113777c594f85a686e5cff3a31f22252448db1a5fc70f980bbcce0bf263a1",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "9bf2bda1d7a611d947759a558600095c54e645fb1a082e29c69f8753e473c725"
   },
   "ordered_include_sha256": "607e1ae1fcdb25ff85a2e3035ef0ac3eb9aa8b47ae2da0cedf2f8e5a52de0925",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 2,
+  "raw_override_rule_count": 3,
+  "canonical_override_rule_count": 3,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -284,12 +284,97 @@
         },
         {
           "path": "y2k/existing-jp.wikidot.txt",
-          "sha256": "da489a08caa3f51ed73125e40b823a1e5e647a711769d6962721ef4a958191d5",
+          "sha256": "49187df24c3c7c454aa0a01eeec6f33e2f625074495bbb91c1f2d7b811705aab",
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot Y2K navigation correction: anchor only the overflowing rightmost menus at their mobile row endpoints.",
+      "sha256": "7af955d21909e8e1694e30eed4ae6ada92082aa12549e377ec22f16204c79bb1",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "Read-only real SCP-JP A/B demonstrates right-edge submenu escape. Anchor only each overflowing menu at its actual row endpoint; retain source menu sizing, wrapping, palette and header.",
+      "evidence": [
+        {
+          "path": "authority-evidence/y2k-final-image-navigation-15-0-20261001/receipt.json",
+          "sha256": "02126ed805c95ac9b7fba2cffb92596868dfc8512be1be24dbe1e97dac9bd4f5",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
+        "state": "navigation",
+        "viewports": [
+          320,
+          390
+        ],
+        "selectors": [
+          ".mobile-top-bar > ul > li > ul",
+          ".mobile-top-bar > ul > li > ul a"
+        ]
+      },
+      "published_css_sha256": "65f2796fb65882751c4b2d521878ddb78a6a542425023a9a83eea30a90a92f5e"
+    },
+    {
+      "marker": "SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width.",
+      "sha256": "7d3e8accd22b3e82aa80834b444dd208b38fe8e6931410d9c716a744b83d57e9",
+      "origin": "target-certified-replacement",
+      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "rationale": "The native SCP-JP image-block component at 320px loses its caption/content past the viewport left edge. Subtract its evidenced right margin and border/padding from the available content width. Real article A/B proves containment and unchanged 390px/desktop geometry.",
+      "selectors": [
+        ".scp-image-block.block-right"
+      ],
+      "at_contexts": [
+        "@media (max-width: 479px)"
+      ],
+      "evidence": [
+        {
+          "path": "authority-evidence/y2k-image-block-authority-20261001/receipt.json",
+          "sha256": "9f87f8e838b8ae9f34c8d8ff7a8e3a4a9e086134cc8cfd1a9153caa5e0f8e988",
+          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+        }
+      ],
+      "scope": {
+        "target_url": "https://scp-jp.wikidot.com/scp-1428-jp",
+        "state": "image-block",
+        "viewports": [
+          320,
+          390,
+          1440
+        ]
+      },
+      "published_css_sha256": "65f2796fb65882751c4b2d521878ddb78a6a542425023a9a83eea30a90a92f5e",
+      "published_base_css_sha256": null
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot Y2K navigation correction: anchor only the overflowing rightmost menus at their mobile row endpoints.",
+      "rationale": "SCP-JP Wikidot Y2K navigation correction: anchor only the overflowing rightmost menus at their mobile row endpoints.",
+      "sha256": "7af955d21909e8e1694e30eed4ae6ada92082aa12549e377ec22f16204c79bb1",
+      "selectors": [
+        "#top-bar .mobile-top-bar > ul > li:last-child > ul",
+        "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul"
+      ],
+      "at_contexts": [
+        "@media (max-width: 359px)",
+        "@media (min-width: 360px) and (max-width: 767px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width.",
+      "rationale": "SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width.",
+      "sha256": "7d3e8accd22b3e82aa80834b444dd208b38fe8e6931410d9c716a744b83d57e9",
+      "selectors": [
+        ".scp-image-block.block-right"
+      ],
+      "at_contexts": [
+        "@media (max-width: 479px)"
+      ],
+      "authority": "TARGET_WIKIDOT_CERTIFIED"
+    }
+  ]
 }

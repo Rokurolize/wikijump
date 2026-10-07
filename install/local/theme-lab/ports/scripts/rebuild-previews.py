@@ -8,6 +8,7 @@ from pathlib import Path
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[5])
+    parser.add_argument("--theme", action="append", default=[])
     args = parser.parse_args()
     root = args.root.resolve()
     ports = root / "install/local/theme-lab/ports"
@@ -16,6 +17,8 @@ def main() -> int:
     manifest = json.loads((ports / "en-theme-campaign.json").read_text())
     count = 0
     for theme in manifest["themes"]:
+        if args.theme and theme["slug"].split(":", 1)[1] not in args.theme:
+            continue
         package = ports / theme["slug"].split(":", 1)[1]
         source = (package / "candidate.wikidot.source.txt").read_text(encoding="utf-8")
         preview, expanded, omitted = build(source, squares_source)

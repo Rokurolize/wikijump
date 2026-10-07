@@ -2710,7 +2710,7 @@
       ],
       "anchors": [
         "framerail/tests/wikidot-found-page-tags-public-boundary.test.js",
-        "framerail/tests/wikidot-found-page-tags-public-boundary.test.js#normal found-page route SSR renders ordered tag links directly in page-tags",
+        "framerail/tests/wikidot-found-page-tags-public-boundary.test.js#default Wikidot found-page route SSR preserves the native span around ordered tag links",
         "framerail/tests/wikidot-page-tags.test.js"
       ],
       "migrated_from_campaign_only": false

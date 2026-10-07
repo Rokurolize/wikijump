@@ -1,6 +1,138 @@
 --- existing-jp.wikidot.txt
 +++ candidate.wikidot.source.txt
-@@ -94,12 +94,12 @@
+@@ -16,90 +16,90 @@
+ [[iftags +テーマ -nobhl]]
+ [[module CSS]]
+ .scp-image-block.block-right {
+-    padding: 1em !important;
+-    background: var(--gradient-header);
++	padding: 1em !important;
++	background: var(--gradient-header);
+ }
+ .scp-image-block img {
+-    padding-bottom: 1em;
++	padding-bottom: 1em;
+ }
+ .status {
+-    font-family: var(--title-font);
+-    font-weight: 900;
+-    font-size: 200%;
+-    display: -webkit-box;
+-    display: -webkit-flex;
+-    display: -moz-box;
+-    display: -ms-flexbox;
+-    display: flex;
+-    -webkit-flex-wrap: wrap;
+-    	-ms-flex-wrap: wrap;
+-    		flex-wrap: wrap;
+-    -webkit-align-content: center;
+-    	-ms-flex-line-pack: center;
+-    		align-content: center;
+-    -webkit-box-pack: center;
+-    -webkit-justify-content: center;
+-    	-moz-box-pack: center;
+-    	-ms-flex-pack: center;
+-    		justify-content: center;
+-    text-align: center;
++	font-family: var(--title-font);
++	font-weight: 900;
++	font-size: 200%;
++	display: -webkit-box;
++	display: -webkit-flex;
++	display: -moz-box;
++	display: -ms-flexbox;
++	display: flex;
++	-webkit-flex-wrap: wrap;
++		-ms-flex-wrap: wrap;
++			flex-wrap: wrap;
++	-webkit-align-content: center;
++		-ms-flex-line-pack: center;
++			align-content: center;
++	-webkit-box-pack: center;
++	-webkit-justify-content: center;
++		-moz-box-pack: center;
++		-ms-flex-pack: center;
++			justify-content: center;
++	text-align: center;
+ }
+ 
+ .status span.active {
+-    color: rgb(var(--white-monochrome));
+-    margin-left: 0.5rem;
+-    -webkit-box-shadow:
+-    inset 100vw 0 0 0 rgb(var(--rating-module-button-plus-color)),
+-     0.25rem 0.25rem 0 rgb(var(--rating-module-button-plus-color)),
+-     -0.25rem -0.25rem 0 rgb(var(--rating-module-button-plus-color)),
+-     -0.25rem 0.25rem 0 rgb(var(--rating-module-button-plus-color)),
+-     0.25rem -0.25rem 0 rgb(var(--rating-module-button-plus-color));
+-    	-moz-box-shadow:
+-    inset 100vw 0 0 0 rgb(var(--rating-module-button-plus-color)),
+-     0.25rem 0.25rem 0 rgb(var(--rating-module-button-plus-color)),
+-     -0.25rem -0.25rem 0 rgb(var(--rating-module-button-plus-color)),
+-     -0.25rem 0.25rem 0 rgb(var(--rating-module-button-plus-color)),
+-     0.25rem -0.25rem 0 rgb(var(--rating-module-button-plus-color));
+-    		box-shadow:
+-    inset 100vw 0 0 0 rgb(var(--rating-module-button-plus-color)),
+-     0.25rem 0.25rem 0 rgb(var(--rating-module-button-plus-color)),
+-     -0.25rem -0.25rem 0 rgb(var(--rating-module-button-plus-color)),
+-     -0.25rem 0.25rem 0 rgb(var(--rating-module-button-plus-color)),
+-     0.25rem -0.25rem 0 rgb(var(--rating-module-button-plus-color));
++	color: rgb(var(--white-monochrome));
++	margin-left: 0.5rem;
++	-webkit-box-shadow:
++	inset 100vw 0 0 0 rgb(var(--rating-module-button-plus-color)),
++	 0.25rem 0.25rem 0 rgb(var(--rating-module-button-plus-color)),
++	 -0.25rem -0.25rem 0 rgb(var(--rating-module-button-plus-color)),
++	 -0.25rem 0.25rem 0 rgb(var(--rating-module-button-plus-color)),
++	 0.25rem -0.25rem 0 rgb(var(--rating-module-button-plus-color));
++		-moz-box-shadow:
++	inset 100vw 0 0 0 rgb(var(--rating-module-button-plus-color)),
++	 0.25rem 0.25rem 0 rgb(var(--rating-module-button-plus-color)),
++	 -0.25rem -0.25rem 0 rgb(var(--rating-module-button-plus-color)),
++	 -0.25rem 0.25rem 0 rgb(var(--rating-module-button-plus-color)),
++	 0.25rem -0.25rem 0 rgb(var(--rating-module-button-plus-color));
++			box-shadow:
++	inset 100vw 0 0 0 rgb(var(--rating-module-button-plus-color)),
++	 0.25rem 0.25rem 0 rgb(var(--rating-module-button-plus-color)),
++	 -0.25rem -0.25rem 0 rgb(var(--rating-module-button-plus-color)),
++	 -0.25rem 0.25rem 0 rgb(var(--rating-module-button-plus-color)),
++	 0.25rem -0.25rem 0 rgb(var(--rating-module-button-plus-color));
+ }
+ .fonts-display {
+-    font-size: 1.25em;
++	font-size: 1.25em;
+ }
+ .title-font {
+-    font-family: var(--title-font);
+-    font-weight: 700;
++	font-family: var(--title-font);
++	font-weight: 700;
+ }
+ .header-font {
+-    font-family: var(--title-font);
+-    font-weight: 900;
++	font-family: var(--title-font);
++	font-weight: 900;
+ }
+ .UI-font {
+-    font-family: var(--UI-font);
++	font-family: var(--UI-font);
+ }
+ .mono-font {
+-    --MONO: 1;
+-    --CASL: 0;
+-    --CRSV: 0;
+-    font-family: var(--mono-font);
++	--MONO: 1;
++	--CASL: 0;
++	--CRSV: 0;
++	font-family: var(--mono-font);
+ }
+ .japanese-font {
+-    font-family: "M Plus 1p", sans-serif;
++	font-family: "M Plus 1p", sans-serif;
+ }
+ [[/module]]
  
  [[include :scp-jp:credit:start-preview]]
  **タイトル:** Black Highlighterテーマ
@@ -15,6 +147,15 @@
  
  [[=]]
  [[div_ class="status"]]
+@@ -146,7 +146,7 @@
+ 
+ + これは何
+ 
+-[https://scptestwiki.wikidot.com/ Black Highlighter]テーマをあなたの記事に適用するためのコンポーネントです。
++[http://scptestwiki.wikidot.com/ Black Highlighter]テーマをあなたの記事に適用するためのコンポーネントです。
+ 
+ このコンポーネントは安定版Black Highlighterテーマを適用しますが、アップデートの際に表示が崩れる場合があります。
+ 
 @@ -154,7 +154,7 @@
  
  Githubアカウントを持っているなら、 [https://github.com/Nu-SCPTheme/Black-Highlighter/issues ここで]Issueを作成し、その(美的・技術的あるいはなんでも)問題を詳述してください。
@@ -24,32 +165,8 @@
  
  -----
  
-@@ -291,4 +291,28 @@
+@@ -291,4 +291,4 @@
  [[/=]]
  
  -----
 -[[/iftags]]+[[/iftags]]
-+
-+[[module CSS]]
-+/* SCP-JP interaction adaptation: reveal Sigma's collapsed query input while the search control is hovered or keyboard-focused. */
-+@media (min-width: 768px) {
-+  #search-top-box-form:hover #search-top-box-input,
-+  #search-top-box-form:focus-within #search-top-box-input {
-+    display: inline-block !important;
-+  }
-+}
-+[[/module]]
-+
-+[[module CSS]]
-+/* SCP-JP interactive visual acceptance mobile header refinement v5: black-highlighter-theme */
-+
-+/* The inherited mobile drawer clips its close label against the screen edge; reserve a small inner text inset while retaining the full-screen dimmer anchor. */
-+@media (max-width: 767px) { #side-bar a.close-menu { padding-inline-start: .65rem !important; box-sizing: border-box !important; } }
-+[[/module]]
-+
-+[[module CSS]]
-+/* SCP-JP interactive visual acceptance interaction repair v1: black-highlighter-theme */
-+
-+/* Keep BHL's credit return action as one compact Japanese control instead of splitting it across vertical lines at phone widths. */
-+@media (max-width: 600px) { #u-credit-otherwise .modalbox a[href="#u-credit-view"] { display: inline-flex !important; width: max-content !important; min-width: 0 !important; max-width: 100% !important; white-space: nowrap !important; word-break: keep-all !important; overflow-wrap: normal !important; line-height: 1.25 !important; } }
-+[[/module]]

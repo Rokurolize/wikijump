@@ -6,8 +6,10 @@
 
 import fs from "node:fs/promises";
 import net from "node:net";
+import crypto from "node:crypto";
 import os from "node:os";
 import path from "node:path";
+import {fileURLToPath} from "node:url";
 
 import {
   assertSocketPath,
@@ -56,9 +58,16 @@ import {
   suggestCandidateAnchors,
 } from "./semantic-anchors.mjs";
 import {TORTURE_VIEWPORTS, runTortureCorpus} from "./torture-corpus.mjs";
+import {ACCEPTANCE_VIEWPORTS} from "./acceptance-viewports.mjs";
 import {buildVerdict, expandVerdict} from "./verdict.mjs";
 import {annotateRuntimeSurfaceUsage, applyRuntimeSurfaceParityGate} from "./runtime-surface-parity.mjs";
 import {captureVisualPair} from "./visual-diff.mjs";
+import {bindVisualAcceptance} from "./visual-acceptance.mjs";
+import {TARGET_ACCEPTANCE_CONTRACT_SHA256} from "./target-acceptance-contract.mjs";
+import {measureTargetBaselineViewportOverflow} from "./target-baseline-viewport-probe.mjs";
+import {fullCheckInputBindings} from "./full-check-input-bindings.mjs";
+import {framerailSourceFingerprintSync} from "./framerail-source-fingerprint.mjs";
+import {dedupeCssLayers} from "./css-layers.mjs";
 import {inspectCandidateAssets, materializeCandidateCssAssets, materializeCandidatePageImages} from "./local-assets.mjs";
 import {
   captureCustomSelectorCoverage,
@@ -93,25 +102,52 @@ const DEFAULT_PROPERTIES = [
   "z-index",
 ];
 
-const DEFAULT_VIEWPORTS = [
-  {id: "desktop", width: 1440, height: 1000},
-  {id: "laptop", width: 1024, height: 768},
-  {id: "tablet", width: 768, height: 1024},
-  {id: "mobile", width: 390, height: 844},
-];
+const DEFAULT_VIEWPORTS = ACCEPTANCE_VIEWPORTS;
+
+function verifyScenarioEvidence(evidence,{candidateUrl,siteId,css,baseCss,source}){
+  if(evidence===null||evidence===undefined)return null;
+  if(evidence.schema!=="theme_lab_scenario_execution_evidence.v1")fail("invalid_scenario_evidence","unsupported scenario execution evidence schema");
+  const {execution_evidence_sha256:recorded,...unsigned}=evidence;
+  const actual=crypto.createHash("sha256").update(JSON.stringify(unsigned)).digest("hex");
+  if(recorded!==actual)fail("invalid_scenario_evidence","scenario execution evidence hash mismatch");
+  for(const field of ["scenario_sha256","live_site_state_receipt_sha256","measurement_contract_sha256","theme_asset_dependency_sha256","theme_css_sha256","theme_source_sha256"]){
+    if(!/^[0-9a-f]{64}$/u.test(evidence[field]??""))fail("invalid_scenario_evidence",`invalid ${field}`);
+  }
+  if(!['anonymous','authenticated'].includes(evidence.session_profile))fail("invalid_scenario_evidence","invalid scenario session profile");
+  if(evidence.rendered_shell_sha256!==null&&!/^[0-9a-f]{64}$/u.test(evidence.rendered_shell_sha256??""))fail("invalid_scenario_evidence","invalid rendered_shell_sha256");
+  if(evidence.theme_base_css_sha256!==null&&!/^[0-9a-f]{64}$/u.test(evidence.theme_base_css_sha256??""))fail("invalid_scenario_evidence","invalid theme_base_css_sha256");
+  if(!Number.isSafeInteger(evidence.site_id)||evidence.site_id!==siteId)fail("invalid_scenario_evidence","scenario evidence site id does not match check");
+  if(new URL(evidence.candidate_url).href!==new URL(candidateUrl).href)fail("invalid_scenario_evidence","scenario evidence candidate URL does not match opened page");
+  if(typeof css!=="string"||crypto.createHash("sha256").update(css).digest("hex")!==evidence.theme_css_sha256)fail("invalid_scenario_evidence","scenario evidence theme CSS does not match check bytes");
+  if(evidence.theme_base_css_sha256===null?(baseCss??'')!=='':typeof baseCss!=="string"||crypto.createHash("sha256").update(baseCss).digest("hex")!==evidence.theme_base_css_sha256)fail("invalid_scenario_evidence","scenario evidence theme base CSS does not match check bytes");
+  if(typeof source!=="string"||crypto.createHash("sha256").update(source).digest("hex")!==evidence.theme_source_sha256)fail("invalid_scenario_evidence","scenario evidence theme source does not match check bytes");
+  return evidence;
+}
 
 export function createSession({
   chromium,
   browser,
+  browserEngine = 'chromium',
+  browserVersion = null,
+  candidateStorageState = null,
+  scenarioEvidence = null,
   previewClient = null,
   referenceAssets = null,
   localAssets = null,
   sidebarHtml = null,
+  interwikiHtml = null,
+  navigationHtml = null,
+  baselineCss = null,
+  headerHtml = null,
   pages = {candidate: null, reference: null},
 }) {
   const session = {
     chromium,
     browser,
+    browserEngine,
+    browserVersion,
+    candidateStorageState,
+    scenarioEvidence,
     previewClient,
     referenceAssets,
     localAssets,
@@ -122,25 +158,54 @@ export function createSession({
     pristine: null,
     referenceMeasurementCache: null,
     async ensureSidebarFixture() {
-      if (sidebarHtml === null || !pages.candidate) return;
-      const applied = await pages.candidate.evaluate((html) => {
+      if (!pages.candidate || (sidebarHtml===null&&interwikiHtml===null)) return;
+      const applied = await pages.candidate.evaluate(({sidebarHtml,interwikiHtml}) => {
         const sidebar = document.querySelector("#side-bar");
         if (!sidebar) return false;
-        if (!sidebar.querySelector(".side-block")) sidebar.innerHTML = html;
+        if(sidebarHtml!==null)sidebar.innerHTML=sidebarHtml;
+        if(interwikiHtml!==null){sidebar.querySelectorAll('.scpnet-interwiki-wrapper').forEach(node=>node.remove());sidebar.insertAdjacentHTML('beforeend',interwikiHtml)}
         return true;
-      }, sidebarHtml);
+      }, {sidebarHtml,interwikiHtml});
       if (!applied) fail("missing_candidate_sidebar", "candidate page has no #side-bar for sidebar fixture");
     },
     async open({target = "candidate", url, viewport = null}) {
       let page = pages[target];
+      if (page && (page.isClosed() || page.__themeLabCrashed)) {
+        url ??= page.url();
+        await closePage(page);
+        delete pages[target];
+        page = null;
+      }
       if (!page) {
-        page = await openPage(browser, {url, viewport, localOnly: true});
+        page = await openPage(browser, {url, viewport, localOnly: true,...(target==='candidate'&&session.candidateStorageState?{storageState:session.candidateStorageState}:{})});
+        page.__themeLabCrashed = false;
+        page.on("crash", () => {page.__themeLabCrashed = true;});
         pages[target] = page;
       } else if (url && page.url() !== url) {
         await navigate(page, url);
       }
       if (target === "candidate") {
-        if (sidebarHtml !== null) {
+        if (new URL(page.url()).hostname.endsWith(".wikijump.localhost")) {
+          await page.waitForFunction(() => {
+            const control = document.querySelector("#history-button");
+            if (!control) return true;
+            return Object.getOwnPropertySymbols(control).some(symbol => symbol.description === "events" && typeof control[symbol]?.click === "function");
+          }, null, {timeout: 15000});
+        }
+        if (baselineCss !== null) {
+          await page.locator('link[rel="stylesheet"][href^="/wikidot/styles/sigma-"]').evaluateAll(links => links.forEach(link => {link.disabled = true; link.media = "not all";}));
+          await applyStylesheet(page, baselineCss, "theme-lab-target-baseline");
+        }
+        if (headerHtml !== null) {
+          await page.locator("#header").evaluate((header, html) => {
+            const source = document.createElement("template"); source.innerHTML = html;
+            for (const tag of ["h1", "h2"]) header.querySelector(tag).replaceWith(source.content.querySelector(tag).cloneNode(true));
+          }, headerHtml);
+        }
+        if (navigationHtml !== null) {
+          await page.locator("#top-bar").evaluate((element, html) => { element.innerHTML = html; }, navigationHtml);
+        }
+        if (sidebarHtml !== null || interwikiHtml !== null) {
           await page.waitForLoadState("load");
           await session.ensureSidebarFixture();
         }
@@ -423,7 +488,10 @@ export function createSession({
     },
     async check({
       css = null,
+      baseCss = "",
       wikitext = null,
+      savedCandidate = false,
+      source = null,
       title = "Preview",
       syntaxOnly = false,
       pageAssets = [],
@@ -434,15 +502,21 @@ export function createSession({
       torture = false,
       viewports = true,
       visual = false,
+      visualReview = null,
       iteration = false,
       artifactDir = null,
       surfaceContract = null,
+      sourceStructure = null,
       properties = DEFAULT_PROPERTIES,
       max = 60,
       verbose = false,
     }) {
+      if (pages.candidate?.isClosed() || pages.candidate?.__themeLabCrashed) await session.open({target:"candidate"});
       const candidate = pages.candidate;
       if (!candidate) fail("no_candidate_page", "no candidate page is open");
+      const verifiedScenarioEvidence=verifyScenarioEvidence(session.scenarioEvidence,{candidateUrl:candidate.url(),siteId,css,baseCss,source});
+      if(savedCandidate && wikitext !== null && wikitext !== undefined)fail("saved_candidate_with_preview","savedCandidate cannot be combined with preview wikitext");
+      const inspectCandidateDocument=(wikitext !== null && wikitext !== undefined)||savedCandidate;
       if ((wikitext !== null && wikitext !== undefined) || torture) {
         if (!Number.isSafeInteger(siteId)) fail("invalid_site_id", "siteId is required for preview/torture");
       }
@@ -455,7 +529,7 @@ export function createSession({
       let imageDiagnostics = null;
       let pageImageAssets = null;
       let interactionDiagnostics = null;
-      let effectiveCss = typeof css === "string" ? css : null;
+      let effectiveCss = typeof css === "string" ? dedupeCssLayers([baseCss, css]).join("\n") : null;
       let surfaceContractDiagnostics = null;
 
       // Undo any destructive operation (torture fixture, previous preview)
@@ -480,15 +554,15 @@ export function createSession({
       }
       if (typeof css === "string") {
         const step = performance.now();
-        candidateAssets = localAssets ? await inspectCandidateAssets(css, localAssets.root) : null;
-        effectiveCss = localAssets ? await materializeCandidateCssAssets(css, localAssets.root) : css;
+        candidateAssets = localAssets ? await inspectCandidateAssets(effectiveCss, localAssets.root) : null;
+        effectiveCss = localAssets ? await materializeCandidateCssAssets(effectiveCss, localAssets.root) : effectiveCss;
         await applyStylesheet(candidate, effectiveCss, session.cssId);
         timing.css_ms = Number((performance.now() - step).toFixed(1));
       }
-      if (wikitext !== null && wikitext !== undefined) {
+      if (inspectCandidateDocument) {
         const specimenSelector = "#page-content .theme-lab-jp-font-probe";
         const specimenCount = await candidate.locator(specimenSelector).count();
-        fontDiagnostics = await inspectPlatformFonts(candidate, specimenCount ? specimenSelector : "#page-content");
+        fontDiagnostics = await inspectPlatformFonts(candidate, specimenCount ? specimenSelector : "#page-content", {engine: session.browserEngine});
         fontDiagnostics.evidence = specimenCount ? "japanese-glyph-specimen" : "candidate-japanese-article-content";
         full.font_diagnostics = fontDiagnostics;
         imageDiagnostics = await inspectBrokenImages(candidate);
@@ -510,9 +584,16 @@ export function createSession({
       }
 
       let viewportOverflow = null;
+      let baselineViewportOverflow = null;
       if (viewports && !iteration) {
         const step = performance.now();
-        viewportOverflow = await collectViewportOverflow(candidate, DEFAULT_VIEWPORTS);
+        if (typeof css === "string") {
+          const measured=await measureTargetBaselineViewportOverflow({page:candidate,styleId:session.cssId,effectiveCss,viewports:DEFAULT_VIEWPORTS});
+          baselineViewportOverflow=measured.baseline;
+          viewportOverflow=measured.candidate;
+          full.baseline_viewports = baselineViewportOverflow;
+        }
+        if(viewportOverflow===null)viewportOverflow = await collectViewportOverflow(candidate, DEFAULT_VIEWPORTS);
         timing.viewports_ms = Number((performance.now() - step).toFixed(1));
         full.viewports = viewportOverflow;
       }
@@ -531,7 +612,7 @@ export function createSession({
         full.visual = visualResult;
       }
 
-      if (wikitext !== null && wikitext !== undefined && !iteration) {
+      if (inspectCandidateDocument && !iteration) {
         interactionDiagnostics = await exercisePreviewInteractions(candidate);
         full.interaction_diagnostics = interactionDiagnostics;
       }
@@ -547,11 +628,13 @@ export function createSession({
         const step = performance.now();
         const customSelectors = await captureCustomSelectorCoverage(candidate, contract);
         const surfaceFixture = await fs.readFile(SURFACE_CONTRACT_FIXTURE, "utf8");
-        const rendered = await session.previewClient.preview({
+        // Anonymous preview omits both iftags bodies. Surface acceptance needs
+        // the saved article context, including the native negative tag branch.
+        const rendered = await session.previewClient.savedPage({
           siteId,
-          title: "Theme Lab SCP-JP Surface Contract",
+          page: "run-owned:theme-lab-visual-acceptance-20260924",
           wikitext: surfaceFixture,
-          syntaxOnly: false,
+          tags: ["theme-lab-visual-acceptance", "jp", "日本語"],
         });
         await applyPreview(candidate, {
           body: rendered.body,
@@ -560,12 +643,28 @@ export function createSession({
           containerSelector: "#page-content",
           styleId: "theme-lab-surface-contract-fixture-styles",
         });
-        const known = await runKnownSurfaceContract(candidate, {
-          css,
-          effectiveCss,
-          styleId: session.cssId,
-          contractValue: contract,
-        });
+        let structureOriginal = null;
+        if(sourceStructure) {
+          structureOriginal = await candidate.locator('#page-content').innerHTML();
+          await candidate.locator('#page-content').evaluate((element,html)=>element.insertAdjacentHTML('afterbegin',html),sourceStructure.html);
+        }
+        let known;
+        try {
+          known = await runKnownSurfaceContract(candidate, {
+            css,
+            effectiveCss,
+            styleId: session.cssId,
+            contractValue: contract,
+          });
+          known.fixture_identity = {...rendered.identity,
+            source_sha256: crypto.createHash("sha256").update(surfaceFixture).digest("hex"),
+            body_sha256: crypto.createHash("sha256").update(rendered.body).digest("hex")};
+        } finally {
+          // Source-owned structure is a contract probe fixture, not part of
+          // the candidate page. Restore it before interaction/torture checks
+          // so a probe cannot leak synthetic DOM into later dimensions.
+          if(structureOriginal !== null) await candidate.locator('#page-content').evaluate((element,html)=>{element.innerHTML=html},structureOriginal);
+        }
         const customIssues = issuesFromCustomSelectorCoverage(customSelectors, contract.strict);
         const surfaceIssues = applyRuntimeSurfaceParityGate([...known.issues, ...customIssues]);
         surfaceContractDiagnostics = {
@@ -591,11 +690,13 @@ export function createSession({
         full.torture = tortureResult;
       }
 
+      if (visualResult) await bindVisualAcceptance(visualResult, visualReview, {css, baseCss, wikitext, source});
       timing.total = Number((performance.now() - started).toFixed(1));
       const verdict = buildVerdict({
         reference,
         torture: tortureResult,
         viewports: viewportOverflow,
+        baselineViewports: baselineViewportOverflow,
         fontDiagnostics,
         interactionDiagnostics,
         imageDiagnostics,
@@ -638,9 +739,42 @@ export function createSession({
           parity_gate: surfaceContractDiagnostics.parity_gate,
         };
       }
+      verdict.target_fixture_identity = Object.fromEntries(Object.entries({baseline:baselineCss,sidebar:sidebarHtml,interwiki:interwikiHtml,header:headerHtml,navigation:navigationHtml}).map(([name,bytes])=>[name,bytes===null?null:crypto.createHash("sha256").update(bytes).digest("hex")]));
+      verdict.target_acceptance_contract_sha256 = TARGET_ACCEPTANCE_CONTRACT_SHA256;
+      verdict.full_check_input_bindings = fullCheckInputBindings({selectors,surfaceContract,sourceStructure,pageAssets,referenceUrl});
+      if (loadedReference) {
+        const manifest = await session.referenceAssets.load();
+        verdict.reference_identity = {source_url: loadedReference.root_url,
+          original_html_sha256: manifest.urls[loadedReference.root_url]?.digest ?? null,
+          replay_entry: loadedReference.entry, offline: loadedReference.offline,
+          snapshot_sha256: crypto.createHash('sha256').update(JSON.stringify(manifest.snapshots[loadedReference.root_url])).digest('hex')};
+      }
+      for (const [key, bytes] of Object.entries({candidate_css_sha256: css, candidate_source_sha256: source, candidate_preview_sha256: wikitext, candidate_base_css_sha256: baseCss || null})) {
+        verdict[key] = typeof bytes === "string" ? crypto.createHash("sha256").update(bytes).digest("hex") : null;
+      }
+      if (visualResult) {
+        verdict.visual_pair_context = {
+          schema: "theme_lab_visual_pair_context.v1",
+          comparison_scope: "cross-document-theme-identity",
+          pixel_metric_decision_authority: false,
+          reference_source_url: loadedReference?.root_url ?? referenceUrl ?? null,
+          candidate_source_sha256: verdict.candidate_source_sha256,
+          candidate_preview_sha256: verdict.candidate_preview_sha256,
+          note: "Reference and candidate may contain localized or otherwise different document content; pixel RMSE is diagnostic and exact image review must judge theme identity rather than page-text equality.",
+        };
+      }
+      const candidateDocumentStep=savedCandidate?"saved candidate document":"preview";
       verdict.verification_scope = iteration
         ? {mode: "iteration", completed: ["reference comparison", "candidate stylesheet", "preview", "assets", "Japanese fonts", "page images"], deferred: ["all viewports", "torture", "widget interactions", "visual screenshots"]}
-        : {mode: "full", completed: ["reference comparison", "candidate stylesheet", "preview", "assets", "Japanese fonts", "page images", "all viewports", "torture", "widget interactions", ...(visual ? ["visual screenshots"] : [])], deferred: []};
+        : {mode: "full", completed: ["reference comparison", "candidate stylesheet", candidateDocumentStep, "assets", "Japanese fonts", "page images", "all viewports", "torture", "widget interactions", ...(visual ? ["visual screenshots"] : [])], deferred: []};
+      if(savedCandidate)verdict.verification_scope.candidate_document_source="saved-page";
+      if(verifiedScenarioEvidence)verdict.scenario_execution_evidence=verifiedScenarioEvidence;
+      verdict.browser_runtime={engine:session.browserEngine,version:session.browserVersion,session_profile:verifiedScenarioEvidence?.session_profile??null};
+      if (pages.candidate?.__themeLabRuntimeIdentity) verdict.target_runtime_identity = {
+        ...structuredClone(pages.candidate.__themeLabRuntimeIdentity),
+        source_sha256: framerailSourceFingerprintSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..')),
+        scope: 'Task-owned built Framerail source verified by the candidate response header',
+      };
       return verbose ? expandVerdict(verdict, full) : verdict;
     },
     async screenshot({target = "candidate", path: outputPath, fullPage = true, viewport = null}) {
@@ -680,6 +814,9 @@ export function createSession({
 export async function startSessionServer({
   socketPath,
   chromium,
+  browserEngine = 'chromium',
+  candidateStorageState = null,
+  scenarioEvidence = null,
   cdpEndpoint = null,
   executablePath = null,
   headless = true,
@@ -688,6 +825,10 @@ export async function startSessionServer({
   referenceAssets = null,
   assetDir = null,
   sidebarHtml = null,
+  interwikiHtml = null,
+  navigationHtml = null,
+  baselineCss = null,
+  headerHtml = null,
 }) {
   assertSocketPath(socketPath);
   await prepareSocketForStart(socketPath);
@@ -697,9 +838,16 @@ export async function startSessionServer({
   let server = null;
   let localAssets = null;
   try {
-    browser = await launchBrowser({chromium, cdpEndpoint, executablePath, headless});
+    // WebKitGTK's default proxy resolver fails every request in the current
+    // Linux runner. Give it a loopback-only bypass; openPage still aborts any
+    // request outside the local Wikijump origins before it reaches a proxy.
+    const proxy=browserEngine==='webkit'
+      ?{server:'http://127.0.0.1:9',bypass:'localhost,127.0.0.1,.localhost'}
+      :undefined;
+    browser = await launchBrowser({chromium, cdpEndpoint, executablePath, headless, proxy});
+    const browserVersion=typeof browser.version==='function'?browser.version():null;
     if (assetDir) localAssets = {root: await fs.realpath(assetDir)};
-    session = createSession({chromium, browser, previewClient, referenceAssets, localAssets, sidebarHtml});
+    session = createSession({chromium, browser, browserEngine, browserVersion, candidateStorageState, scenarioEvidence, previewClient, referenceAssets, localAssets, sidebarHtml, interwikiHtml, navigationHtml, baselineCss, headerHtml});
     if (candidateUrl) await session.open({target: "candidate", url: candidateUrl});
     server = net.createServer((socket) => {
       let buffer = "";

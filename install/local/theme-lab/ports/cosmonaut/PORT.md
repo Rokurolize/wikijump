@@ -1,6 +1,6 @@
 <!-- adaptation-authority-current -->
 Current publication inputs have passed the adaptation-authority gate. Historical campaign/local-runtime screenshots describe the superseded candidate; they are not acceptance for this CSS. See ../ADAPTATION-AUTHORITY-AUDIT.md and maintenance/historical-receipt.json where present.
-Current source SHA-256: e750036fbf808494c66552806ea74f30c8bbed43a239ee383d955c8c630fd0e1; CSS SHA-256: 96ebbdef128f42e32a324d617ee75a9b1e5644830a5185232f9a55a0e44e4bca. Full port acceptance remains a separate combined result.
+Current source SHA-256: 155fd2fa7eba52281b87c34e446bf6ad1b587936efdadd291dff0081c59da179; CSS SHA-256: 7f9e282e6cff16e19473549be91d979cf9f1037a8510ebe9bf318a6fd1a527ce. Full port acceptance remains a separate combined result.
 <!-- adaptation-authority-end -->
 
 # SCP-EN → SCP-JP port: `theme:cosmonaut`

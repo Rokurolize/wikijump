@@ -47,6 +47,7 @@ function activateTab(link: HTMLAnchorElement): boolean {
 export function wikidotTabviews(node: HTMLElement) {
   const controller = new AbortController()
   let cancelled = false
+  let observer: MutationObserver | null = null
 
   const activateInitialTabviews = () => {
     for (const tabView of node.querySelectorAll<HTMLElement>(".yui-navset")) {
@@ -65,6 +66,12 @@ export function wikidotTabviews(node: HTMLElement) {
       document.getElementById("dummy-ondomready-block")
     ) {
       activateInitialTabviews()
+      if (!observer) {
+        // Preview and client navigation can replace the rendered article while
+        // retaining this action. Native YUI initializes each new tabview too.
+        observer = new MutationObserver(activateInitialTabviews)
+        observer.observe(node, { childList: true, subtree: true })
+      }
       return
     }
     window.setTimeout(activateWhenWikidotReady, 200)
@@ -90,6 +97,7 @@ export function wikidotTabviews(node: HTMLElement) {
   return {
     destroy() {
       cancelled = true
+      observer?.disconnect()
       controller.abort()
     }
   }

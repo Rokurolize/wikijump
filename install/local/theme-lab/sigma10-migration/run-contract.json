@@ -1,5 +1,6 @@
 {
   "schema": "scp_jp_sigma10_migration_run.v1",
+  "expected_runtime_source_sha256": "d67899e66baa58c3504ec8d93fb81bfb31509c80eb8d4785b93fbb9974127caa",
   "target_site": {
     "slug": "scpaiueouiuiuiui",
     "origin": "https://scpaiueouiuiuiui.wikijump.localhost:18443",
@@ -22,13 +23,32 @@
     "side_slug": "run-owned:sigma10-nav-side"
   },
   "viewports": {
-    "desktop": { "width": 1440, "height": 1000 },
-    "laptop": { "width": 1024, "height": 900 },
-    "tablet": { "width": 768, "height": 1024 },
-    "mobile": { "width": 390, "height": 844 },
-    "narrow-mobile": { "width": 320, "height": 800 }
+    "desktop": {
+      "width": 1440,
+      "height": 1000
+    },
+    "laptop": {
+      "width": 1024,
+      "height": 900
+    },
+    "tablet": {
+      "width": 768,
+      "height": 1024
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844
+    },
+    "narrow-mobile": {
+      "width": 320,
+      "height": 800
+    }
   },
-  "browser_engines": ["chromium", "firefox", "webkit"],
+  "browser_engines": [
+    "chromium",
+    "firefox",
+    "webkit"
+  ],
   "network_policy": "block external requests before send",
   "artifact_namespace": "migration/sigma10",
   "audit_path": "evidence/interactive-visual-audit.json",

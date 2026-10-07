@@ -44,7 +44,7 @@
     },
     "existing_jp_audit": "new-jp-candidate-verified",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn"
   },
   "dependencies": {
     "slug": "theme:yossistyle",
@@ -71,7 +71,7 @@
   "candidate_input": "human-port-candidate.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/yossistyle/assets.json",
   "asset_dependency_decision_count": 0,
@@ -96,6 +96,12 @@
       "active_tags": [],
       "candidate_source_sha256": "c9987477d0e9079b7b15c55ac608b853e69c970484dc2b5b0e6f3cd6565c442c",
       "candidate_active_tags": [],
+      "runtime_active_tags": [],
+      "showcase_css_modules_removed_exact": 0,
+      "showcase_css_modules_removed_truncated": 0,
+      "showcase_css_modules_unmatched": 0,
+      "inactive_source_css_modules_removed_exact": 0,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
       "candidate_css_sha256": "84a214fc85344d262727f624b6319e2a4bdfa6537bd49ebd8678d854f009faab",
       "asset_receipt_path": "assets.json",
@@ -112,7 +118,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

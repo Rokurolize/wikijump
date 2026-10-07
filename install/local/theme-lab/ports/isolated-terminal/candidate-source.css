@@ -1,7 +1,508 @@
 @import url("https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css");
 @import url("https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css");
 
-.colors-container .colors .color:first-child { color: rgb(var(--darkColor)); }
+@supports(display: grid) {
+    :root {
+     --sidebar-width-on-desktop: calc((var(--base-font-size) * (14 / 15)) * 19);
+     --body-width-on-desktop: 45.75rem;
+    }
+    @media only screen and (min-width: 769px) {
+     #side-bar .close-menu {
+     display: block;
+     position: fixed;
+     top: unset;
+     bottom: 0.5rem;
+     left: 0.5rem;
+     width: 3rem;
+     height: 3rem;
+     background: unset;
+     opacity: 1;
+     pointer-events: all;
+     z-index: -1;
+     }
+
+     #side-bar .close-menu img {
+     color: transparent;
+     }
+
+     #side-bar .close-menu::before,
+     #side-bar .close-menu::after {
+     content: "";
+     box-sizing: border-box;
+     position: fixed;
+     display: block;
+     top: unset;
+     bottom: 0.5rem;
+     left: 0.5rem;
+     width: 3rem;
+     height: 3rem;
+     padding: 0;
+     margin: 0;
+     text-align: center;
+     pointer-events: all;
+     cursor: pointer;
+     transition:
+     opacity var(--sidebar-transition-timing);
+     }
+
+     #side-bar .close-menu::before {
+     --mask:url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='utf-8'%3F%3E%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' id='Hamburger' x='0' y='0' baseProfile='tiny' overflow='visible' version='1.2' viewBox='0 0 32 32' xml:space='preserve'%3E%3Cpath d='M4 10h24c1.1 0 2-.9 2-2s-.9-2-2-2H4c-1.1 0-2 .9-2 2s.9 2 2 2zm24 4H4c-1.1 0-2 .9-2 2s.9 2 2 2h24c1.1 0 2-.9 2-2s-.9-2-2-2zm0 8H4c-1.1 0-2 .9-2 2s.9 2 2 2h24c1.1 0 2-.9 2-2s-.9-2-2-2z'/%3E%3C/svg%3E");
+     z-index: -1;
+     background-color: var(--toggle-icon-color, rgb(var(--sidebar-links-text))) !important;
+     -webkit-mask: var(--mask);
+     mask: var(--mask);
+     -webkit-mask-repeat: no-repeat;
+     mask-repeat: no-repeat;
+     -webkit-mask-position: 50% 50%;
+     mask-position: 50% 50%;
+     -webkit-mask-size: 60%;
+     mask-size: 60%;
+     }
+
+     #side-bar .close-menu::after {
+     z-index: -2;
+     background-color: var(--toggle-button-bg, rgb(var(--sidebar-bg-color))) !important;
+     border-radius: var(--toggle-roundness, 50%);
+     border: var(--toggle-border-color, rgb(var(--sidebar-links-text))) var(--toggle-border-width, 0.25rem) solid;
+     }
+
+     #side-bar:focus-within .close-menu,
+     #side-bar:not(:has(.close-menu:hover)):not(:focus-within):hover .close-menu {
+     pointer-events: none;
+     }
+
+     #side-bar:focus-within .close-menu::before,
+     #side-bar:focus-within .close-menu::after {
+     opacity: 0;
+     pointer-events: none;
+     }
+
+     #side-bar:not(:has(.close-menu:hover)):not(:focus-within):hover .close-menu::before,
+     #side-bar:not(:has(.close-menu:hover)):not(:focus-within):hover .close-menu::after {
+     opacity: 0;
+     pointer-events: none;
+     }
+
+     #side-bar {
+     display: block;
+     position: fixed;
+     top: 0;
+     left: calc(var(--sidebar-width-on-desktop)*-1);
+     z-index: 10;
+     transition:
+     left 500ms cubic-bezier(0.4, 0, 0.2, 1) 100ms;
+     height: 100%;
+     overflow-y: auto;
+     overflow-x: hidden;
+     margin-top: 0;
+     }
+
+     #side-bar:focus-within {
+     left: 0;
+     }
+
+     #side-bar:not(:has(.close-menu:hover)):not(:focus-within):hover {
+     left: 0;
+     }
+
+     #side-bar .side-block {
+     margin-top: 1rem;
+     background-color: rgb(0, 0, 0, 0);
+     border-radius: 0;
+     border-left-width: 0px;
+     border-right-width: 0px;
+     }
+
+     #main-content::before {
+     content: "";
+     display: block;
+     position: fixed;
+     top: 0;
+     right: 0;
+     z-index: -1;
+     opacity: 0;
+     transition:
+     opacity 500ms cubic-bezier(0.4, 0, 0.2, 1) 100ms,
+     width 500ms cubic-bezier(0.4, 0, 0.2, 1) 100ms;
+     margin-left: var(--sidebar-width-on-desktop);
+     background: rgba(var(--swatch-menubg-black-color), .3) 1px 1px repeat;
+     padding-right: 0;
+     width: 100%;
+     height: 100vh;
+     pointer-events: none;
+     z-index: 99;
+     }
+
+     #side-bar:focus-within ~ #main-content::before {
+     width: calc(100% - var(--sidebar-width-on-desktop));
+     opacity: 1;
+     pointer-events: all;
+     }
+
+     #side-bar:not(:has(.close-menu:hover)):not(:focus-within):hover ~ #main-content::before {
+     width: calc(100% - var(--sidebar-width-on-desktop));
+     opacity: 1;
+     pointer-events: all;
+     }
+
+     @supports (-moz-appearance:none) and (background-attachment:local) and (not (-moz-osx-font-smoothing:auto)) { #side-bar {
+     padding: inherit;
+     } }
+
+     #content-wrap {
+     display: flex;
+     flex-direction: row;
+     width: calc(100vw - (100vw - 100%));
+     min-height: calc(100vh - calc(var(--final-header-height-on-desktop, 10.125rem)));
+     flex-grow: 2;
+     height: auto;
+     position: relative;
+     margin: 0 auto;
+     max-width: inherit;
+     }
+
+     #main-content {
+     width: 100%;
+     position: initial;
+     max-height: 100%;
+     padding: 2rem 1rem;
+     max-width: var(--body-width-on-desktop, 45.75rem);
+     margin: 0 auto;
+     }
+
+     #page-content {
+     max-width: min(90vw, var(--body-width-on-desktop, 45.75rem));
+     }
+
+     @supports (-webkit-hyphens:none) {
+     #side-bar {
+     transition:
+     left 500ms cubic-bezier(0.4, 0, 0.2, 1) 100ms,
+     padding-right 500ms cubic-bezier(0.4, 0, 0.2, 1) 100ms,
+     background-color 500ms cubic-bezier(0.4, 0, 0.2, 1) 100ms;
+     padding-right: 0;
+     background-color: rgb(0, 0, 0, 0);
+     pointer-events: all;
+     overflow-x: visible;
+     overflow-y: visible;
+     z-index: 999;
+     }
+
+     #side-bar::-webkit-scrollbar {
+     opacity: 0;
+     -webkit-transition: opacity 500ms cubic-bezier(0.4, 0, 0.2, 1) 100ms;
+     transition: opacity 500ms cubic-bezier(0.4, 0, 0.2, 1) 100ms;
+     }
+
+     #side-bar .close-menu::before {
+     z-index: 999;
+     }
+
+     #side-bar .close-menu::after {
+     z-index: 998;
+     }
+
+     #side-bar:hover .close-menu::before,
+     #side-bar:hover .close-menu::after {
+     opacity: 0;
+     }
+
+     #side-bar:hover {
+     left: 0;
+     background-color: rgba(var(--swatch-menubg-color), 1);
+     padding-right: 0;
+     }
+
+     #side-bar:hover::-webkit-scrollbar {
+     opacity: 1;
+     }
+
+     #side-bar:hover~#main-content::before {
+     width: calc(100% - var(--sidebar-width-on-desktop));
+     opacity: 1;
+     pointer-events: all;
+     }
+     }
+     }
+    }
+}
+
+:root {
+        /* header measurements */
+        --header-height-on-desktop: 10rem;
+        --header-height-on-mobile: 10rem;
+        --header-h1-font-size: clamp(2rem, 5vw, 2.8125rem);
+        --header-h2-font-size: clamp(0.875rem, 3vw, 0.9375rem);
+        --logo-image: url("https://scp-jp.github.io/Black-Highlighter/img/logo.svg");
+    }
+
+    #header {
+        --search-textbox-text-color: var(--swatch-secondary-color);
+        background: none;
+    }
+
+    #header::before {
+        content: " ";
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        left: 0;
+        top: 0.75rem;
+        background-image: var(--logo-image);
+        background-repeat: no-repeat;
+        background-position: center 0;
+        background-size: auto calc(var(--header-height-on-desktop) - 1.5rem);
+        opacity: 0.8;
+        pointer-events: none;
+    }
+
+    #header h1,
+    #header h2 {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: var(--header-height-on-desktop);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #header h1 a,
+    #header h1 a::before,
+    #header h2 span,
+    #header h2 span::before {
+        margin: 0;
+        padding: 0;
+        z-index: 0;
+        display: block;
+        text-align: center;
+    }
+
+    #header h1 {
+        z-index: 1;
+    }
+
+    #header h1 a::before,
+    #header h1 a::after {
+        content: var(--header-title);
+    }
+
+    #header h1 a::before  {
+        color: rgb(var(--swatch-text-tertiary-color));
+        z-index: -1;
+        -webkit-text-stroke: 0.325rem rgb(var(--swatch-text-dark));
+    }
+
+    #header h1 a::after {
+        color: rgb(var(--swatch-headerh1-color));
+        z-index: 1;
+    }
+
+    #header h2 {
+        z-index: 0;
+        text-transform: uppercase;
+        pointer-events: none;
+    }
+
+    #header h2 span {
+        margin-top: calc(var(--header-height-on-mobile)/2 + var(--header-h1-font-size)/1.6 - 2em);
+    }
+
+    #header h2 span::before,
+    #header h2 span::after {
+        --wght: 600;
+        content: var(--header-subtitle);
+        position: absolute;
+        left: 50%;
+        transform: translateY(-50%) translateX(-50%);
+        width: 100%;
+        text-align: center;
+    }
+
+    #header h2 span::before {
+        -webkit-text-stroke: 0.25rem rgb(var(--swatch-text-dark));
+    }
+
+    #header h2 span::after {
+        color: rgb(var(--swatch-headerh2-color));
+        z-index: 1;
+    }
+
+    #search-top-box form[id="search-top-box-form"]:not(:focus-within) input[type="text"] {
+        color: rgba(0, 0, 0, 0);
+    }
+
+    @media (min-width: 36rem) {
+
+        #login-status {
+            flex-grow: 1;
+            left: 3%;
+            right: initial;
+        }
+
+     #login-status::before {
+     --mask-image: none;
+     background-color: transparent;
+     }
+
+        #login-status:not(:focus-within) {
+            color: rgb(var(--login-line-divider-color));
+            -webkit-user-select: initial;
+            -moz-user-select: initial;
+            -ms-user-select: initial;
+            user-select: initial;
+        }
+
+        #login-status #account-topbutton,
+        #login-status:not(:focus-within) #account-topbutton {
+            --clip-path:
+                    polygon( 0 0, 100% 0, 100% 100%, 0 100% );
+            background-color: rgba(var(--login-arrow-color), 0);
+
+        }
+
+        #login-status #account-topbutton::before{
+            --clip-path:
+                    polygon( 30% 35%, 70% 35%, 50% 60%, 50% 60% );
+            --mask-image: initial;
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(var(--login-arrow-color), 1);
+            -webkit-clip-path: var(--clip-path);
+            clip-path: var(--clip-path);
+        }
+
+        #login-status #account-topbutton::before,
+        #login-status:not(:focus-within) #account-topbutton::before,
+        #login-status:not(:focus-within) #account-topbutton:hover::before {
+            --clip-path:
+                    polygon( 30% 35%, 70% 35%, 50% 60%, 50% 60% );
+            --mask-image: initial;
+        }
+
+        #login-status:not(:focus-within) #account-topbutton::after {
+            display: none;
+        }
+
+        #login-status:not(:focus-within) *:not(#account-topbutton):not([href*="account/messages"]) {
+            --clip-path:
+                    polygon(
+                        0 0,
+                        100% 0,
+                        100% 100%,
+                        0 100%
+                    );
+            pointer-events: all;
+            -webkit-clip-path: var(--clip-path);
+            clip-path: var(--clip-path);
+        }
+
+        #login-status:not(:focus-within) *:not(#account-topbutton):not(#account-options):not([href*="account/messages"]) {
+            opacity: 1;
+        }
+
+        #login-status #my-account {
+            --wght: 300;
+        }
+
+        #account-options {
+            background: var(--gradient-header);
+        }
+
+        #search-top-box {
+            top: 1.5em;
+            right: 3%;
+            background: rgba(var(--search-focus-textbox-bg-color), 0.4);
+        }
+
+     #search-top-box:focus-within ~ #login-status {
+     opacity: 1;
+     }
+
+        #search-top-box::after {
+            transition:
+                background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+                -webkit-clip-path 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            transition:
+                background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+                clip-path 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            transition:
+                background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+                clip-path 150ms cubic-bezier(0.4, 0, 0.2, 1),
+                -webkit-clip-path 150ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #search-top-box:not(:focus-within)::after {
+            --clip-path:
+                    polygon(
+                        0 0,
+                        100% 0,
+                        100% 100%,
+                        0% 100%
+                    );
+            background-color: rgba(var(--search-icon-bg-color, --dark-accent), 1);
+            -webkit-clip-path: var(--clip-path);
+            clip-path: var(--clip-path);
+        }
+
+        #search-top-box:not(:focus-within):hover::after {
+            --clip-path:
+                    polygon(
+                        0 0,
+                        100% 0,
+                        100% 100%,
+                        0 100%
+                    );
+            background-color: rgb(var(--search-icon-hover-bg-color));
+        }
+
+        #search-top-box form[id="search-top-box-form"]:not(:focus-within) {
+            max-width: var(--search-width);
+        }
+
+        #search-top-box form[id="search-top-box-form"]:not(:focus-within) input[type="text"] {
+            max-width: var(--search-width);
+            padding: 0 var(--search-height) 0 1em;
+            outline-width: 0;
+            background-color: rgb(var(--search-focus-textbox-bg-color), 0.35);
+            color: rgba(var(--search-textbox-text-color), 0.4);
+            cursor: pointer;
+        }
+
+        #search-top-box form[id="search-top-box-form"]:not(:focus-within) input[type="submit"],
+        #search-top-box form[id="search-top-box-form"]:focus-within input[type="submit"] {
+            pointer-events: all;
+            border: none;
+        }
+
+    }
+
+    #page-title::after,
+    .meta-title::after,
+    #page-title::before,
+    .meta-title::before {
+        content: "";
+        flex-grow: 1;
+        height: 0.0625rem;
+        background: rgb(var(--swatch-primary));
+    }
+
+    #page-title::before,
+    .meta-title::before {
+        margin: auto 1.25rem auto auto;
+    }
+
+
+
+
+
 
 @@
 div#extrac-div-1, div#extrac-div-2 {
@@ -15,4 +516,18 @@ div#extrac-div-1, div#extrac-div-2 {
 }
 @@
 
-@import url("https://scp-jp.wdfiles.com/local--code/theme%3Aisolated-terminal/1")
+@import url("https://scp-jp.wdfiles.com/local--code/theme%3Aisolated-terminal/1");
+
+
+/* SCP-JP Wikidot Isolated Terminal narrow login: wrap account links inside the masthead without changing their type scale. */
+@media(max-width:359px){#login-status{max-width:calc(100% - 2rem);white-space:normal;margin-left:0;}}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Isolated Terminal native History: retain form and revision columns inside horizontal scrollers. */
+@media(max-width:767px){#revision-list,#history-form-1 .form{max-width:100%;overflow-x:auto;}#history-form-1 .form{display:block;}}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Isolated Terminal narrow tables: preserve their columns in an intrinsic-width horizontal scroller. */
+@media(max-width:359px){#page-content table.wiki-content-table{display:block;max-width:100%;overflow-x:auto;width:max-content;}}

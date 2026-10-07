@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {extractUnconditionalCssModules} from '../ports/scripts/extract-css-modules.mjs';
+import {extractCssModules,extractUnconditionalCssModules} from '../ports/scripts/extract-css-modules.mjs';
 
 test('keeps unconditional CSS modules and drops conditional variants and examples',()=>{
   const source=`
@@ -68,4 +68,18 @@ test('ignores escaped Wikidot CSS-module examples in localized documentation',()
   const css=extractUnconditionalCssModules(source);
   assert.match(css,/\.live/u);
   assert.doesNotMatch(css,/copied example/u);
+});
+
+test('extracts attributed CSS modules while excluding commented and escaped examples',()=>{
+ const source='[!-- [[module CSS]] .wrong{} [[/module]] --]\n@@[[module CSS show="true"]] .escaped{} [[/module]]@@\n[[module CSS show="true"]] .actual{} [[/module]]';
+ assert.equal(extractUnconditionalCssModules(source),'.actual{}\n');
+});
+
+test('runtime extraction may unwrap an absent include variable without activating its empty iftags child',()=>{
+ const source='[[ift{$item}gs +theme]][[module CSS]].default-on{display:none}[[/module]][[iftags]][[module CSS]].opt-in{color:black}[[/module]][[/iftags]][[/ift{$item}gs]]';
+ assert.deepEqual(extractCssModules(source).map(row=>row.css),[]);
+ const runtime=extractCssModules(source,{activeTags:[],resolveUnboundIncludeVariables:true});
+ assert.equal(runtime.length,1);
+ assert.match(runtime[0].css,/default-on/u);
+ assert.doesNotMatch(runtime[0].css,/opt-in/u);
 });

@@ -1,0 +1,538 @@
+{
+  "schema": "theme_lab_component_browser_acceptance.v1",
+  "component": "component:fade-in",
+  "generated_at": "2026-10-05T06:41:23.275Z",
+  "summary": {
+    "records": 14,
+    "pass": 14,
+    "fail": 0
+  },
+  "records": [
+    {
+      "engine": "chromium",
+      "baseline": "sigma9",
+      "viewport": "desktop",
+      "component": "fadein",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1000,
+        "clientHeight": 1000
+      },
+      "details": {
+        "title": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "content": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "firstChild": {
+          "name": "none"
+        },
+        "animations": [
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          }
+        ]
+      }
+    },
+    {
+      "engine": "chromium",
+      "baseline": "sigma9",
+      "viewport": "mobile",
+      "component": "fadein",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "clientHeight": 844
+      },
+      "details": {
+        "title": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "content": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "firstChild": {
+          "name": "none"
+        },
+        "animations": [
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          }
+        ]
+      }
+    },
+    {
+      "engine": "chromium",
+      "baseline": "sigma10",
+      "viewport": "desktop",
+      "component": "fadein",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1000,
+        "clientHeight": 1000
+      },
+      "details": {
+        "title": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "content": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "firstChild": {
+          "name": "none"
+        },
+        "animations": [
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          }
+        ]
+      }
+    },
+    {
+      "engine": "chromium",
+      "baseline": "sigma10",
+      "viewport": "mobile",
+      "component": "fadein",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "clientHeight": 844
+      },
+      "details": {
+        "title": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "content": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "firstChild": {
+          "name": "none"
+        },
+        "animations": [
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          }
+        ]
+      }
+    },
+    {
+      "engine": "firefox",
+      "baseline": "sigma9",
+      "viewport": "desktop",
+      "component": "fadein",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1000,
+        "clientHeight": 1000
+      },
+      "details": {
+        "title": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "content": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "firstChild": {
+          "name": "none"
+        },
+        "animations": [
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          }
+        ]
+      }
+    },
+    {
+      "engine": "firefox",
+      "baseline": "sigma9",
+      "viewport": "mobile",
+      "component": "fadein",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "clientHeight": 844
+      },
+      "details": {
+        "title": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "content": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "firstChild": {
+          "name": "none"
+        },
+        "animations": [
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          }
+        ]
+      }
+    },
+    {
+      "engine": "firefox",
+      "baseline": "sigma10",
+      "viewport": "desktop",
+      "component": "fadein",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1000,
+        "clientHeight": 1000
+      },
+      "details": {
+        "title": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "content": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "firstChild": {
+          "name": "none"
+        },
+        "animations": [
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          }
+        ]
+      }
+    },
+    {
+      "engine": "firefox",
+      "baseline": "sigma10",
+      "viewport": "mobile",
+      "component": "fadein",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "clientHeight": 844
+      },
+      "details": {
+        "title": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "content": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "firstChild": {
+          "name": "none"
+        },
+        "animations": [
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          }
+        ]
+      }
+    },
+    {
+      "engine": "webkit",
+      "baseline": "sigma9",
+      "viewport": "desktop",
+      "component": "fadein",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1000,
+        "clientHeight": 1000
+      },
+      "details": {
+        "title": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "content": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "firstChild": {
+          "name": "none"
+        },
+        "animations": [
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          }
+        ]
+      }
+    },
+    {
+      "engine": "webkit",
+      "baseline": "sigma9",
+      "viewport": "mobile",
+      "component": "fadein",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "clientHeight": 844
+      },
+      "details": {
+        "title": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "content": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "firstChild": {
+          "name": "none"
+        },
+        "animations": [
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          }
+        ]
+      }
+    },
+    {
+      "engine": "webkit",
+      "baseline": "sigma10",
+      "viewport": "desktop",
+      "component": "fadein",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1000,
+        "clientHeight": 1000
+      },
+      "details": {
+        "title": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "content": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "firstChild": {
+          "name": "none"
+        },
+        "animations": [
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          }
+        ]
+      }
+    },
+    {
+      "engine": "webkit",
+      "baseline": "sigma10",
+      "viewport": "mobile",
+      "component": "fadein",
+      "status": "pass",
+      "failures": [],
+      "external_requests": 0,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "scrollHeight": 844,
+        "clientHeight": 844
+      },
+      "details": {
+        "title": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "content": {
+          "name": "fadeIn",
+          "duration": "0.5s"
+        },
+        "firstChild": {
+          "name": "none"
+        },
+        "animations": [
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          },
+          {
+            "name": "fadeIn",
+            "playState": "running"
+          }
+        ]
+      }
+    },
+    {
+      "engine": "chromium",
+      "baseline": "sigma9",
+      "viewport": "desktop",
+      "component": "fadein-reduced-motion",
+      "status": "pass",
+      "details": {
+        "title": "none",
+        "content": "none"
+      }
+    },
+    {
+      "engine": "chromium",
+      "baseline": "sigma10",
+      "viewport": "desktop",
+      "component": "fadein-reduced-motion",
+      "status": "pass",
+      "details": {
+        "title": "none",
+        "content": "none"
+      }
+    }
+  ]
+}

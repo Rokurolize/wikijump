@@ -1,0 +1,76 @@
+{
+  "schema": "theme_lab_frozen_component_css.v1",
+  "url": "https://pseudo-scp-jp.wdfiles.com/local--code/sigma-10%3Acredit%3Astyle/1",
+  "source_authority": "ports/authority-evidence/sigma-preview/receipt.json",
+  "saved_page_url": "https://pseudo-scp-jp.wikidot.com/sigma-10:main",
+  "cascade": {
+    "schema": "theme_lab_saved_credit_cascade.v1",
+    "order": [
+      "sigma10-baseline-replacement",
+      "credit:style stylesheet with its info:style @import expanded at the import position",
+      "credit:start saved module markup and its nested otherwise CSS module"
+    ],
+    "semantics": "The credit:style response imports info:style first, then applies its own remaining rules and Creative Commons icon rules. The saved main page loads this component after Sigma localization. Preview-only explanatory CSS is not part of the saved page.",
+    "sources": [
+      {
+        "identity": "pseudo-scp-jp:sigma-10:credit:style",
+        "path": "ports/authority-evidence/sigma-preview/sigma-10-credit-style.wikidot.txt",
+        "sha256": "3a63b14639af9ab5dd447567319156e9dee0baaa223b5e4b5725738ee113e645"
+      },
+      {
+        "identity": "pseudo-scp-jp:sigma-10:info:style",
+        "path": "ports/authority-evidence/sigma-preview/sigma-10-info-style.wikidot.txt",
+        "sha256": "d59fc333b77412ba8f49f095c5f5ec726d383f432d9ac46d35d59958a10318d0"
+      },
+      {
+        "identity": "pseudo-scp-jp:sigma-10:credit:start",
+        "path": "ports/authority-evidence/sigma-preview/sigma-10-credit-start.wikidot.txt",
+        "sha256": "61f1591ed7d3e90dca18e3d473a0387f30b35a14f495cf2a4276451a71a67c75"
+      }
+    ]
+  },
+  "css_sha256": "7a103ef5c5f62bb73f4051e2bb7228381dcc884f23b2aed49626b20288be8fae",
+  "dependencies": [
+    {
+      "url": "https://pseudo-scp-jp.wdfiles.com/local--code/sigma-10%3Acredit%3Astyle/1",
+      "sha256": "891dbb177781ef486cb94421a92f9e1ee2745d2cd418b1526ae411f9ff8bdc4e",
+      "observed_at": "2026-09-29T19:27:54.329Z"
+    },
+    {
+      "url": "https://pseudo-scp-jp.wdfiles.com/local--code/sigma-10%3Ainfo%3Astyle/1",
+      "sha256": "5ef3bbd811f2281c9c05faaa88cb7ca404af15b09a873864177c0b509475e2cc",
+      "observed_at": "2026-09-29T19:27:54.501Z"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/cc-icons/1.2.1/css/cc-icons.min.css",
+      "sha256": "cea128bf70e5dcd2d9c9d3ded35080f775cf564ea59d1a0380375f4748526722",
+      "observed_at": "2026-09-29T19:17:17.510Z"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/cc-icons/1.2.1/fonts/cc-icons.eot",
+      "sha256": "40723fa718237c74623d7b64ce186a02b872f7fb4b3a917013fcc8b6aec3ded6",
+      "observed_at": "2026-09-29T19:17:17.574Z"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/cc-icons/1.2.1/fonts/cc-icons.svg",
+      "sha256": "2eb982d8faa4ab9bcc8bc39c31cad8f1d73e1d8df8e4aebd3970af1e38620841",
+      "observed_at": "2026-09-29T19:17:17.597Z"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/cc-icons/1.2.1/fonts/cc-icons.otf",
+      "sha256": "41950d74f0aae0ee95ca1381b8096f1d19dc4154971505c8bdc3b18dce70912d",
+      "observed_at": "2026-09-29T19:17:17.621Z"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/cc-icons/1.2.1/fonts/cc-icons.woff",
+      "sha256": "1a9b14799594702e4d0350164623d9e71261d70042ed4b3979808b08ba6e38b6",
+      "observed_at": "2026-09-29T19:17:17.660Z"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/cc-icons/1.2.1/fonts/cc-icons.ttf",
+      "sha256": "3ee20e2529a17cdd369a6c89edb23d5662ecfa9007936786d33c22c38fac14de",
+      "observed_at": "2026-09-29T19:17:18.003Z"
+    }
+  ],
+  "public_writes": 0
+}

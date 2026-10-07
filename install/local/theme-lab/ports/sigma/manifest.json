@@ -45,7 +45,7 @@
     },
     "existing_jp_audit": "new-jp-candidate-verified",
     "technical_spec_version": "1.4",
-    "final_verdict": "inconclusive"
+    "final_verdict": "warn"
   },
   "dependencies": {
     "slug": "theme:sigma",
@@ -71,10 +71,10 @@
   "candidate_input": "human-port-candidate.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
   "candidate_origin": "human-made shared translation workspace; no current official JP counterpart",
-  "final_verdict": "inconclusive",
+  "final_verdict": "warn",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/sigma/assets.json",
-  "asset_dependency_decision_count": 37,
+  "asset_dependency_decision_count": 0,
   "maintenance_source": {
     "base": "maintenance/base.wikidot.txt",
     "jp_overrides": "maintenance/jp-overrides.css",
@@ -92,15 +92,23 @@
   "interactive_acceptance": {
     "resolved_theme_css": {
       "source_path": "candidate-input.css",
-      "source_sha256": "8f99adadb50538f45d7c287b81f5070ca6128cb72d170e4a42f890e65584fc8c",
+      "source_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
       "active_tags": [],
       "candidate_source_sha256": "2bc461f3a212385d4588debb88de6f20a7f9c1a739b41053f6fb6f95e503bb23",
-      "candidate_active_tags": [],
+      "candidate_active_tags": [
+        "テーマ"
+      ],
+      "runtime_active_tags": [],
+      "showcase_css_modules_removed_exact": 0,
+      "showcase_css_modules_removed_truncated": 0,
+      "showcase_css_modules_unmatched": 1,
+      "inactive_source_css_modules_removed_exact": 0,
+      "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "c7387bd0e72161e47fa8df5e55d57dbba572a3b08666b7cc05fa939825906f48",
+      "candidate_css_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
       "asset_receipt_path": "assets.json",
-      "assets": 32,
-      "imports": 5,
+      "assets": 0,
+      "imports": 0,
       "localization_transforms": 0,
       "localization_transform_manifest": null,
       "missing": 0,
@@ -112,7 +120,8 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical candidate acceptance superseded"
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   }
 }

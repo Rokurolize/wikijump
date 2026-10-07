@@ -54,9 +54,9 @@
 
 ------
 
-このテーマは[[[http://scp-jp.wikidot.com/scp-5999|SCP-5999]]]のヴィジュアルに由来して、[[*user EstrellaYoshte]]が作成したBlack Highlighterベースのテーマです。
+このテーマは[[[https://scp-jp.wikidot.com/scp-5999|SCP-5999]]]のヴィジュアルに由来して、[[*user EstrellaYoshte]]が作成したBlack Highlighterベースのテーマです。
 
-このテーマを使うためにはBlack Highlihghterテーマも導入する必要があります。Black Highlighterテーマについては[[[*http://scp-jp.wikidot.com/theme:black-highlighter-theme | こちら]]]。
+このテーマを使うためにはBlack Highlihghterテーマも導入する必要があります。Black Highlighterテーマについては[[[*https://scp-jp.wikidot.com/theme:black-highlighter-theme | こちら]]]。
 
 **このテーマを導入するには、以下のコードをあなたのページに追加してください。**
 

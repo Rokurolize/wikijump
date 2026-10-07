@@ -118,7 +118,8 @@ if group_selected theme_lab; then
     run_test "Theme Lab maintainable sources" node install/local/theme-lab/ports/scripts/prepare-maintainable-sources.mjs --check
     run_test "Theme Lab deterministic packages" node install/local/theme-lab/scripts/real-port-regression.mjs --verify-only
     run_test "Sigma-10 source evidence" node install/local/theme-lab/sigma10-migration/check-sources.mjs
-    run_test "Sigma-10 final evidence integrity" node install/local/theme-lab/sigma10-migration/check-final.mjs
+    run_test "Sigma-10 historical evidence integrity" node install/local/theme-lab/sigma10-migration/check-final.mjs --historical-only
+    run_test "Theme Lab current campaign completion" node install/local/theme-lab/scripts/check-campaign-completion.mjs
   fi
 fi
 

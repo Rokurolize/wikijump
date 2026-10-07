@@ -10,6 +10,8 @@ import path from "node:path";
 import {fileURLToPath} from "node:url";
 
 import {applyStylesheet, clearStylesheet, setViewport} from "./browser-lab.mjs";
+import {ACCEPTANCE_VIEWPORTS} from "./acceptance-viewports.mjs";
+import {loadTortureNativeRating} from './torture-native-components.mjs';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
@@ -18,12 +20,7 @@ export const DEFAULT_TORTURE_FIXTURE = path.resolve(
   "../fixtures/theme-torture.wikidot.txt",
 );
 
-export const TORTURE_VIEWPORTS = [
-  {id: "desktop", width: 1440, height: 1000},
-  {id: "laptop", width: 1024, height: 900},
-  {id: "tablet", width: 768, height: 1024},
-  {id: "mobile", width: 390, height: 844},
-];
+export const TORTURE_VIEWPORTS = ACCEPTANCE_VIEWPORTS;
 
 export const TORTURE_COMPONENTS = [
   {id: "heading", selector: ".tl-heading", expected: ".tl-heading h1, .tl-heading h2"},
@@ -35,7 +32,11 @@ export const TORTURE_COMPONENTS = [
   {id: "tabview", selector: ".tl-tabview", expected: ".tl-tabview .yui-navset"},
   {id: "footnote", selector: ".tl-footnote", expected: ".tl-footnote .footnoteref"},
   {id: "math", selector: ".tl-math", expected: ".tl-math .math-equation"},
-  {id: "toc", selector: ".tl-toc", expected: ".tl-toc #toc"},
+  // Wikidot source supports [[toc]], but the local PagePreviewModule does not
+  // materialize that module. Keep the probe visible while excluding this
+  // preview limitation from package acceptance until a retained DOM fixture
+  // establishes the real rendered structure.
+  {id: "toc", selector: ".tl-toc", expected: ".tl-toc #toc", unavailablePreview: true},
   {id: "rating", selector: ".tl-rate", expected: ".tl-rate .page-rate-widget-box"},
 ];
 
@@ -91,6 +92,7 @@ export async function captureTortureState(
               wrapper_present: Boolean(wrapper),
               expected_present: false,
               expected_selector: entry.expected,
+              unavailable_preview: entry.unavailablePreview === true,
               visible: false,
               rect: null,
               style: null,
@@ -116,6 +118,7 @@ export async function captureTortureState(
             wrapper_present: Boolean(wrapper),
             expected_present: Boolean(expected),
             expected_selector: entry.expected,
+            unavailable_preview: entry.unavailablePreview === true,
             visible,
             rect: {
               x: rect.x,
@@ -129,6 +132,16 @@ export async function captureTortureState(
             viewport_overflow_px: Math.max(leftOverflow, rightOverflow),
             own_overflow_px: Math.max(0, element.scrollWidth - element.clientWidth),
             own_overflow_scrollable: ["auto", "scroll"].includes(style.overflowX),
+            own_overflow_unclipped: style.overflowX === "visible",
+            // scrollWidth also includes intended pseudo-element decoration.
+            // Measure the text and controls independently before deciding
+            // whether border-box overflow actually loses usable content.
+            content_viewport_overflow_px: Math.max(0, ...[element, ...element.querySelectorAll("*")].flatMap(node => {
+              const computed = getComputedStyle(node);
+              if (computed.display === "none" || computed.visibility === "hidden") return [];
+              const range = document.createRange(); range.selectNodeContents(node);
+              return [...range.getClientRects(), node.getBoundingClientRect()].map(rect => Math.max(0, -rect.left, rect.right - viewportSpec.width));
+            })),
             font_size_px: px(values["font-size"]),
             line_height_px: px(values["line-height"]),
           };
@@ -226,6 +239,16 @@ export function diffTortureStates(
       if (!before) continue;
 
       if (!before.expected_present) {
+        if (before.unavailable_preview) {
+          issues.push({
+            severity: "warn",
+            viewport: viewportId,
+            component: componentId,
+            kind: "preview_structure_unavailable",
+            selector: before.expected_selector,
+          });
+          continue;
+        }
         issues.push({
           severity: "error",
           viewport: viewportId,
@@ -274,10 +297,14 @@ export function diffTortureStates(
         (after.own_overflow_px ?? 0) > (before.own_overflow_px ?? 0) + componentOverflowTolerancePx
       ) {
         issues.push({
-          severity: "error",
+          severity: after.own_overflow_unclipped === true && after.content_viewport_overflow_px <= overflowTolerancePx ? "warn" : "error",
           viewport: viewportId,
           component: componentId,
           kind: "new_component_overflow",
+          content_viewport_overflow_px: after.content_viewport_overflow_px ?? null,
+          rationale: after.own_overflow_unclipped === true && after.content_viewport_overflow_px <= overflowTolerancePx
+            ? "Border-box overflow is visible; measured text and controls remain inside both viewport edges. Review the intended decoration."
+            : "Content safety was not established independently of component scrollWidth.",
           before_px: before.own_overflow_px ?? 0,
           after_px: after.own_overflow_px ?? 0,
         });
@@ -323,7 +350,7 @@ export function diffTortureStates(
 
   changes.sort((left, right) => Math.abs(right.relative ?? 0) - Math.abs(left.relative ?? 0));
   return {
-    verdict: issues.length === 0 ? "pass" : "fail",
+    verdict: issues.some(issue => issue.severity === "error") ? "fail" : issues.length > 0 ? "warn" : "pass",
     issue_count: issues.length,
     changed_component_count: new Set(changes.map((row) => row.component)).size,
     issues,
@@ -348,13 +375,19 @@ export async function runTortureCorpus({
   const started = performance.now();
   const wikitext = await loadTortureFixture(fixturePath);
   const rendered = await previewClient.preview({siteId, title, wikitext, syntaxOnly});
+  const nativeRating=await loadTortureNativeRating();
   const rpcDone = performance.now();
 
   await page.evaluate(
-    ({body, styles}) => {
+    ({body, styles, nativeRating}) => {
       const container = document.querySelector("#page-content");
       if (!container) throw new Error("preview container not found: #page-content");
       container.innerHTML = body;
+      const slots=container.querySelectorAll('.tl-rate');
+      if(slots.length!==1)throw new Error('native rating fixture slot must be unique');
+      const template=document.createElement('template');template.innerHTML=nativeRating.html;
+      if(template.content.children.length!==1||!template.content.firstElementChild.matches('.page-rate-widget-box')||template.content.querySelectorAll('.page-rate-widget-box > span').length!==4||template.content.querySelectorAll('.page-rate-widget-box > span > a').length!==3)throw new Error('native rating fixture DOM differs');
+      slots[0].replaceChildren(template.content);
       let previewStyle = document.getElementById("theme-lab-preview-styles");
       if (!previewStyle) {
         previewStyle = document.createElement("style");
@@ -363,7 +396,7 @@ export async function runTortureCorpus({
       }
       previewStyle.textContent = styles.join("\n");
     },
-    {body: rendered.body, styles: rendered.styles},
+    {body: rendered.body, styles: rendered.styles,nativeRating},
   );
 
   const injectedCss = await readInjectedCss(page, styleId);
@@ -387,6 +420,8 @@ export async function runTortureCorpus({
       bytes: Buffer.byteLength(wikitext, "utf8"),
       syntax_only: syntaxOnly,
       rendered_body_bytes: Buffer.byteLength(rendered.body, "utf8"),
+      native_rating_sha256:nativeRating.sha256,
+      native_rating_source_sha256:nativeRating.source_sha256,
     },
     viewports: viewports.map((viewport) => viewport.id),
     components: TORTURE_COMPONENTS.map((component) => component.id),

@@ -69,3 +69,7 @@ L0021 which results in (you can try this now):
 L0022 
 L0023 [[module ThemePreviewer]]
 ```
+
+## Bounded native observation: blank saved-page theme
+
+Observation `theme-previewer-blank-saved-page-and-preview-20261003` in the [live observation registry](../../live-observations.json) binds the exact double-quoted `noUi="true" theme_url=" "` form, including abutted attributes. Anonymous PagePreview consumes the module with no visible body or CSS additions; code and comment instances are inert. Retained original HTML for Wikifot and two including articles independently proves that saved pages retain Wikidot base and PageRate styles while selecting a blank site-theme import. This saved-page effect belongs to resolved executable source and must be carried as page presentation state, independently of CSS-module output. PagePreview must not apply the saved-page shell effect. Unknown heads and other values remain outside this observation.

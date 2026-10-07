@@ -2175,7 +2175,7 @@ Aliquam fringilla eleifend tellus, feugiat pellentesque lacus auctor vitae. Prae
 
  .top-bar::before {
     position: absolute;
-    top: -.5em;
+    top: -.4em;
     left: calc(100% / 4);
     width: calc(100% / 2);
     height: 5px;
@@ -5306,3 +5306,19 @@ EstrellaYoshteのロゴは、このテーマで広く使われる定番素材で
 [[/module]]
 >[[/iftags]]
 >[[/ift{$peenumbra}gs]]
+
+[[module CSS]]
+/* SCP-JP Wikidot flopstyle-dark navigation correction: anchor only the overflowing mobile row endpoint menus. */
+@media (max-width: 359px) {
+ #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul { left: auto; right: 0; }
+}
+@media (min-width: 360px) and (max-width: 767px) {
+ #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul,
+ #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
+}
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot Flopstyle Dark Firefox submenu: anchor the third parent endpoint at mobile widths. */
+@supports (-moz-appearance:none){@media(max-width:359px){#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul {left:0;right:auto;}}@media(min-width:360px) and (max-width:767px){#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul {left:auto;right:0;}#top-bar .mobile-top-bar > ul > li:last-child > ul {left:0;right:auto;}}}
+[[/module]]

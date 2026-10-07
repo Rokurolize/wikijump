@@ -14,22 +14,23 @@
   },
   "jp": {
     "status": "present",
-    "source_path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/theme:foxtrot/source.wikidot.txt",
-    "sha256": "93f5876476041e7bc3f28e52fc7da233f1f78733f1ff687157086a64b05eb925",
-    "updated_at": "2024-08-16T17:44:19+00:00",
+    "source_path": "existing-jp.wikidot.txt",
+    "sha256": "d342ea8a6503fe16f975d74ff6646ff285ab8a382538e54c3e863d70bd055634",
+    "updated_at": "2026-09-24T19:03:04+00:00",
     "entity_uuid": "30ba8be2-1dab-4b61-9232-01ff1334a5e3",
     "tags": [
       "en",
       "テーマ"
     ],
-    "absence_run": null
+    "absence_run": null,
+    "revisions": 8
   },
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/foxtrot",
-  "candidate_source_hash": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
+  "candidate_source_hash": "e0bbf7be650005b5f7d5e3893e598e16febd6f06d0bc26fc86f90163520b4e47",
   "source_candidate_path": "install/local/theme-lab/ports/foxtrot/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
+  "source_candidate_sha256": "e0bbf7be650005b5f7d5e3893e598e16febd6f06d0bc26fc86f90163520b4e47",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -37,11 +38,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/foxtrot/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
+  "candidate_source_sha256": "e0bbf7be650005b5f7d5e3893e598e16febd6f06d0bc26fc86f90163520b4e47",
   "human_port_candidate_path": "install/local/theme-lab/ports/foxtrot/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "ef48bc7c63661a83a31aee7d8b4859f06a1db249ddb4d9ed8eda239c86f795cb",
-  "candidate_preview_sha256": "f1cdc11d2b318da881c92f9d2d81c5b94ceb13e7c1c239f77be5e973887a0341",
-  "candidate_css_sha256": "d13104886d38bd4a628f7e1b4937c498b80603110c9b371972b9f9b62085f72d",
+  "candidate_preview_sha256": "49e6c67780fa597483e84c34e92e1f69c9c883b0385aa2044076593154c34fcb",
+  "candidate_css_sha256": "db15469bd49cb604c373918859834372b1cfc07b79157c0d66747c8f61c69912",
   "page_assets": [
     {
       "filename": "canada_dark-JP.png",
@@ -341,12 +342,17 @@
     "en_revision_newer_than_jp": true,
     "candidate_source_delta": {
       "unchanged": false,
-      "inserted_lines": 187,
-      "removed_lines": 26,
+      "inserted_lines": 71,
+      "removed_lines": 59,
       "diff_path": "install/local/theme-lab/ports/foxtrot/existing-jp-candidate.diff"
     },
     "source_action": "adapted-existing-jp-source",
-    "technical_validation": "current EN reference and local SCP-JP DOM were compared; all required viewport, rating fixture, asset, font, interaction, offline, and torture gates are bound in final_theme_lab_check"
+    "technical_validation": "current EN reference and local SCP-JP DOM were compared; all required viewport, rating fixture, asset, font, interaction, offline, and torture gates are bound in final_theme_lab_check",
+    "current_source_sha256": "d342ea8a6503fe16f975d74ff6646ff285ab8a382538e54c3e863d70bd055634",
+    "current_updated_at": "2026-09-24T19:03:04+00:00",
+    "current_revision": 8,
+    "rebase_kind": "provenance-only-no-theme-css-or-runtime-behavior-delta",
+    "previous_source_sha256_before_rebase": "93f5876476041e7bc3f28e52fc7da233f1f78733f1ff687157086a64b05eb925"
   },
   "foreign_site_user_credit_links": {
     "adapted_count": 1,
@@ -354,7 +360,7 @@
     "source_evidence": "candidate screenshots visibly rendered unresolved SCP-EN usernames against SCP-JP identity links; preserve display names and freeze upstream/human-port originals"
   },
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/foxtrot/assets.json",
-  "asset_dependency_decision_count": 47,
+  "asset_dependency_decision_count": 96,
   "page_asset_dependency_decisions_path": "install/local/theme-lab/ports/foxtrot/page-assets.json",
   "historical_acceptance": {
     "status": "SUPERSEDED_CANDIDATE",
@@ -368,10 +374,15 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/foxtrot/accepted-result.json",
+    "sha256": "619f2c1a67a1659d84a3b053075fbdad18ab9ec3da7a6442ecb1ac5e7a0482f5"
+  }
 }

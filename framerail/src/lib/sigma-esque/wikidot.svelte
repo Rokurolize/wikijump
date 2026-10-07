@@ -29,6 +29,16 @@
         <div id="content-wrap">
           <div id="side-bar">
             {@render sideBar?.()}
+            <a class="close-menu" href="##">
+              <br />
+              <img
+                alt="black.png"
+                class="image"
+                src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAMSURBVBhXY2BgYAAAAAQAAVzN/2kAAAAASUVORK5CYII="
+                style="z-index:-1; opacity: 0.3;"
+              />
+              <br />
+            </a>
           </div>
           <div id="main-content">
             <div id="action-area-top"></div>
@@ -140,24 +150,14 @@
       height: initial;
     }
 
-    // Wikidot's Sigma-9 base CSS can position the mobile navigation bar and
-    // its open-menu control over page content. This DOM is imported HTML, so
-    // these selectors must be global: Svelte-scoped selectors silently miss
-    // the legacy nodes. Keep the navigation in document flow so it cannot
-    // cover header text or the first visible content in inline action panes.
-    :global(#skrollr-body #top-bar .mobile-top-bar) {
-      position: static !important;
-      inset: auto !important;
-      float: none !important;
-      transform: none !important;
-    }
-
-    :global(#skrollr-body #top-bar .mobile-top-bar .open-menu a) {
-      position: static !important;
-      inset: auto !important;
-      display: inline-flex !important;
-      vertical-align: middle;
-      margin: 1rem !important;
-    }
+    // Wikidot's Sigma-9 base stylesheet owns this shell's mobile navigation
+    // positioning, and the shell must not override it. Real Wikidot anchors
+    // `.mobile-top-bar` to the bottom left of the header box with
+    // `position: absolute; left: 1em; bottom: 0`, because `#header` is itself
+    // `position: relative`, and pins `.open-menu a` to a fixed bottom-left
+    // viewport button. Only navigation bars rendered inside page content are
+    // `position: static`, via a `#page-content` scoped rule. This DOM is
+    // imported navbar HTML rather than Svelte markup, so any shell rule here
+    // wins over the theme's own cascade and must leave the bar alone.
   }
 </style>

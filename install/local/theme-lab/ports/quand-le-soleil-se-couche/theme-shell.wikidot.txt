@@ -1,17 +1,86 @@
 [[iftags +テーマ]]
-このテーマは「[[[centre-quand-le-soleil-se-couche|太陽が沈む時]]]」カノン向けのSCP-JP移植候補です。
 
-記事で使用する場合の引数契約:
+[[include :scp-jp:credit:start-preview]]
+**タイトル:** 太陽が沈む時 テーマ
+**翻訳責任者:** [[*user koku4]]
+**翻訳年:** 2026
+**原題:** Thème de Quand le Soleil se Couche
+**著作権者:** [[*user Cyrielle Centori]]
+**作成年:** 2024
+**初訳時参照リビジョン:** 13
+**元記事リンク:** https://fondationscp.wikidot.com/theme:quand-le-soleil-se-couche
+[[include :scp-jp:credit:end-preview]]
 
-[[div class="code"]]
-@@[[include :scp-jp:theme:quand-le-soleil-se-couche
-|sous-titre=ここにサブタイトル
-]]@@
-[[/div]]
+これは「[[[centre-quand-le-soleil-se-couche|太陽が沈む時]]]」カノンのテーマです。記事でこのテーマを使用するには、以下のコードをページのコードの先頭にコピーしてください。
+> @@[[include :scp-jp:theme:quand-le-soleil-se-couche@@
+> @@|sous-titre=@@##808080|//ここにサブタイトルを入力//##
+> @@]]@@
+----
+[# これはリンクです]
 
-原版および現在のSCP-JPハブとの互換のため、include引数名 `sous-titre` は変更しません。
+[[[theme:quand-le-soleil-se-couche|これは訪問済みのリンクです]]]
+
+[[[404|これは存在しないリンクです]]]
+
+脚注付きのテキスト[[footnote]] 脚注テキスト [[/footnote]]
+
++ 1番目の見出し
+
+++ 2番目の見出し
+
++++ 3番目の見出し
+
+++++ 4番目の見出し
+
++++++ 5番目の見出し
+
+++++++ 6番目の見出し
+@@ @@
+[[tabview]]
+[[tab タブ]]
+これはタブです。
+[[/tab]]
+[[tab 別のタブ]]
+見てください、ここにもテキストがあります。
+
+意外ですね。
+[[/tab]]
+[[tab 長いタブ]]
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+
+これは長いタブです。テキストがたくさん入っています。
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[/tabview]]
+
+[[footnoteblock]]
+------
 [[/iftags]]
-
 [[div [[iftags -テーマ]]style="display: none"[[/iftags]]]]
 __THEME_CSS_MODULE__
 [[/div]]

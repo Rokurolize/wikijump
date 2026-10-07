@@ -586,7 +586,7 @@
     {
       "surface_id": "catalog-feature:page-tags",
       "sources": [{ "path": "framerail/src/lib/wikidot/wikidot-page-tags.js", "anchor": "export const buildWikidotPageTagsHtml = (" }],
-      "tests": [{ "path": "framerail/tests/wikidot-found-page-tags-public-boundary.test.js", "anchor": "normal found-page route SSR renders ordered tag links directly in page-tags" }]
+      "tests": [{ "path": "framerail/tests/wikidot-found-page-tags-public-boundary.test.js", "anchor": "default Wikidot found-page route SSR preserves the native span around ordered tag links" }]
     },
     {
       "surface_id": "catalog-feature:syntax-images",

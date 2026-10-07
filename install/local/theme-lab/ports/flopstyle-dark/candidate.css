@@ -1,3 +1,815 @@
+:root {
+    --timeScale: 1;
+    --timeDelay: 0s;
+}
+
+/* Converting middle divider from box-shadow to ::before pseudo-element */
+.anom-bar > .bottom-box { box-shadow: none!important; }
+.anom-bar > .bottom-box::before {
+    position: absolute;
+    content: " ";
+    width: 100%;
+    height: 0.5rem;
+    background-color: rgb(var(--black-monochrome, 12, 12, 12));
+    transform: translateY(-0.74rem);
+}
+
+/* DIVIDER */
+.anom-bar > .bottom-box::before {
+    animation-name: divider;
+    animation-duration: calc(0.74s * var(--timeScale));
+    animation-delay: calc(0.1s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: cubic-bezier(.32,.38,.39,.94);
+    animation-fill-mode: backwards;
+}
+
+/* CLASSIFIED LEVEL BARS */
+div.top-center-box  > * {
+    animation-name: bar;
+    animation-duration: calc(0.45s * var(--timeScale));
+    animation-iteration-count: 1;
+    animation-timing-function: ease-out;
+    animation-fill-mode: backwards;
+}
+div.top-center-box > :nth-child(1) { animation-delay: calc(0.2s * var(--timeScale) + var(--timeDelay)); }
+div.top-center-box > :nth-child(2) { animation-delay: calc(0.32s * var(--timeScale) + var(--timeDelay)); }
+div.top-center-box > :nth-child(3) { animation-delay: calc(0.45s * var(--timeScale) + var(--timeDelay)); }
+div.top-center-box > :nth-child(4) { animation-delay: calc(0.61s * var(--timeScale) + var(--timeDelay)); }
+div.top-center-box > :nth-child(5) { animation-delay: calc(0.75s * var(--timeScale) + var(--timeDelay)); }
+div.top-center-box > :nth-child(6) { animation-delay: calc(0.95s * var(--timeScale) + var(--timeDelay)); }
+
+/* TOP TEXT */
+div.top-left-box, div.top-right-box {
+    clip-path: polygon( 0% -50%, 150% -50%, 150% 100%, 0% 100%);
+}
+
+div.top-left-box > *, div.top-right-box > * {
+    position: relative;
+    animation-name: bottomup;
+    animation-duration: calc(0.65s * var(--timeScale));
+    animation-delay: calc(0.5s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: ease-out;
+    animation-fill-mode: backwards;
+}
+
+/*-----------------------------------*/
+/*-----------------------------------*/
+
+/* CONTAINMENT, DISRUPTION, RISK CLASSES */
+div.text-part > * {
+    clip-path: polygon( 0% 0%, 100% 0%, 100% 100%, 0% 100%);
+    animation-name: expand2;
+    animation-duration: calc(0.5s * var(--timeScale));
+    animation-iteration-count: 1;
+    animation-timing-function: cubic-bezier(.12,.41,.27,.99);
+    animation-fill-mode: backwards;
+}
+div.text-part > :nth-child(1) {
+    animation-name: expand1;
+}
+div.text-part > :nth-child(1) { animation-delay: calc(0.6s * var(--timeScale) + var(--timeDelay)); }
+div.text-part > :nth-child(2) { animation-delay: calc(0.75s * var(--timeScale) + var(--timeDelay)); }
+div.text-part > :nth-child(3) { animation-delay: calc(0.86s * var(--timeScale) + var(--timeDelay)); }
+
+div.main-class::before, div.main-class::after {
+    animation-name: iconslide;
+    animation-duration: calc(0.45s * var(--timeScale));
+    animation-delay: calc(0.8s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: cubic-bezier(.12,.41,.27,.99);
+    animation-fill-mode: backwards;
+}
+ /* BOTTOM TEXT */
+div.main-class > *,  div.disrupt-class > *, div.risk-class > * {
+    white-space: nowrap;
+    animation-name: flowIn;
+    animation-duration: calc(0.42s * var(--timeScale));
+    animation-delay: calc(0.75s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: ease-out;
+    animation-fill-mode: backwards;
+}
+
+/*-----------------------------------*/
+/*-----------------------------------*/
+
+/* DIAMOND */
+div.arrows {
+    animation-name: arrowspin;
+    animation-duration: calc(0.7s * var(--timeScale));
+    animation-delay: calc(0.6s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: cubic-bezier(.12,.41,.27,.99);
+    animation-fill-mode: backwards;
+}
+
+div.quadrants > * {
+    animation-name: fade;
+    animation-duration: calc(0.3s * var(--timeScale));
+    animation-delay: calc(1.4s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: cubic-bezier(.12,.41,.27,.99);
+    animation-fill-mode: backwards;
+}
+
+div.top-icon, div.right-icon, div.left-icon, div.bottom-icon {
+    animation-name: nodegrow;
+    animation-duration: calc(0.4s * var(--timeScale));
+    animation-delay: calc(1.4s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: cubic-bezier(.12,.41,.27,.99);
+    animation-fill-mode: backwards;
+}
+div.diamond-part {
+    clip-path: polygon( -10% 0.37%, 120% 0.37%, 120% 100%, -10% 100%);
+    animation-name: diamondBorder;
+    animation-duration: calc(0.8s * var(--timeScale));
+    animation-delay: calc(0.5s * var(--timeScale) + var(--timeDelay));
+    animation-iteration-count: 1;
+    animation-timing-function: cubic-bezier(.32,.38,.39,.94);
+    animation-fill-mode: backwards;
+    will-change: box-shadow;
+}
+
+/* MOBILE QUERY */
+@media (max-width: 480px ) {
+    .anom-bar > .bottom-box::before {
+        display:none;
+    }
+    .anom-bar > .bottom-box {
+        box-shadow: 0 -0.5rem 0 0 rgb(var(--black-monochrome, 12, 12, 12))!important;
+    }
+    div.top-center-box  > * {
+        animation-name: bar-mobile;
+        animation-duration: calc(0.9s * var(--timeScale));
+    }
+    div.top-center-box > :nth-child(1) { animation-delay: calc(0.1s * var(--timeScale) + var(--timeDelay)); }
+    div.top-center-box > :nth-child(2) { animation-delay: calc(0.2s * var(--timeScale) + var(--timeDelay)); }
+    div.top-center-box > :nth-child(3) { animation-delay: calc(0.3s * var(--timeScale) + var(--timeDelay)); }
+    div.top-center-box > :nth-child(4) { animation-delay: calc(0.4s * var(--timeScale) + var(--timeDelay)); }
+    div.top-center-box > :nth-child(5) { animation-delay: calc(0.5s * var(--timeScale) + var(--timeDelay)); }
+    div.top-center-box > :nth-child(6) { animation-delay: calc(0.6s * var(--timeScale) + var(--timeDelay)); }
+
+}
+
+/*--- Motion Accessibility ---*/
+@media screen and (prefers-reduced-motion: reduce) {
+    div.anom-bar-container { --timeScale: 0!important; }
+}
+
+/*-------------------------*/
+
+@keyframes divider {
+    from { max-width: 0%;  }
+    to { max-width: 100%; }
+}
+
+@keyframes bar {
+    from { max-width: 0%; }
+    to { max-width: 100%; }
+}
+@keyframes bar-mobile {
+    from { max-height: 0%; }
+    to { max-height: 100%; }
+}
+
+@keyframes bottomup {
+    from { top: 100px; }
+    to { top: 0; }
+}
+
+@keyframes expand1 {
+    from { opacity: 0; clip-path: inset(0 calc(100% - 0.75rem) 0 0); }
+    to { opacity: 1; clip-path: inset(0); }
+}
+@keyframes iconslide {
+    from { opacity: 0; transform: translateX(-5rem); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes expand2 {
+    from { opacity: 0; width: 1%; }
+    to { opacity: 1; width: calc(100% - 0.25rem); }
+}
+@keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes flowIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes arrowspin {
+    from { clip-path: circle(0%); transform: rotate(135deg); }
+    to { clip-path: circle(75%); transform: rotate(0deg); }
+}
+@keyframes nodegrow {
+    from { transform: scale(0);}
+    to {  transform: scale(1);}
+}
+@keyframes diamondBorder {
+    from { box-shadow: -0.5rem -20rem 0 0 rgb(var(--black-monochrome, 12, 12, 12)); }
+    to { box-shadow: -0.5rem 0 0 0 rgb(var(--black-monochrome, 12, 12, 12)); }
+}
+
+:root {
+    --posX: calc(50% - 358px - 12rem);
+    --fnTransition: 0.3s;
+    --fnLinger: 0.15s;
+    --fnInteract: calc(var(--fnTransition) + var(--fnLinger));
+}
+
+/*--- Footnote Auto-counter --*/
+#main-content {
+    counter-reset: megacount;
+}
+
+/*--- Footnote Superscript Number --*/
+.fnnum {
+    display: inline-block;
+    width: max-content;
+    text-indent: -0.475ex;
+    vertical-align: super;
+    line-height: 80%;
+    word-break: initial;
+    text-decoration: none;
+    font-weight: bold;
+    font-style: initial;
+    color: transparent;
+    position: relative;
+    font-size: 80%;
+    padding: .15em .05em;
+    margin-right: -0.25em;
+    counter-increment: megacount;
+    -webkit-user-select: none;
+    user-select: none;
+}
+.fnnum::after {
+    content: "" counter(megacount);
+    color: var(--fnColor, #E6283C);
+}
+.fnnum:hover {
+    text-decoration: none;
+    cursor: pointer;
+    background-color: var(--fnColor, #E6283C);
+}
+.fnnum:hover::after { color: white; }
+
+/*--- Footnote Content Wrapper --*/
+.fncon {
+    position: absolute;
+    right: calc(var(--posX) + 80px);
+    line-height: 1.25;
+    padding: 0.8125rem;
+    width: 12.5rem;
+    box-sizing: border-box;
+    background: white;
+    border: .125rem solid black;
+    font-size: .9125rem;
+    font-weight: initial;
+    font-style: normal;
+    text-align: initial;
+    visibility: hidden;
+    opacity: 0;
+    z-index: 9;
+    transition:
+        opacity 0.15s linear var(--fnLinger),
+        right var(--fnTransition) cubic-bezier(.08,.72,.5,.94) var(--fnLinger),
+        visibility 0.01s linear var(--fnInteract);
+}
+.fnnum:hover + .fncon, .fncon:is(:hover,:focus-within) {
+    opacity: 1;
+    z-index: 10;
+    right: var(--posX);
+    visibility: visible;
+    transition:
+        opacity 0.15s linear,
+        right var(--fnTransition) cubic-bezier(.08,.72,.5,.94);
+}
+
+.fncon::before {
+    position: absolute;
+    top: 0; left: 0;
+    transform: translateX(-52%) translateY(-55%) scale(1.15);
+    background-color: var(--fnColor, #E6283C);
+    color: white;
+    content: counter(megacount);
+    font-size: initial;
+    font-weight: bold;
+    font-style: initial;
+    padding: 0.18rem 0.32em 0.08rem;
+}
+
+/*--- Mobile Query --*/
+@media only screen and (max-width: 1279px) {
+    .fncon {
+        position: fixed;
+        bottom: 1.5rem;
+        left: calc(15% - 50px);
+        width: 70%;
+        transition:
+            opacity 0.15s linear var(--fnLinger),
+            left var(--fnTransition) cubic-bezier(.08,.72,.5,.94) var(--fnLinger),
+            visibility 0.01s linear var(--fnInteract);
+    }
+    .fnnum:hover + .fncon, .fncon:is(:hover,:focus-within) {
+        left: 15%;
+        transition:
+            opacity 0.15s linear,
+            left var(--fnTransition) cubic-bezier(.08,.72,.5,.94);
+    }
+}
+
+/* CROQSTYLE CSS */
+/* Source: https://scp-wiki.wikidot.com/component:croqstyle */
+
+@font-face {
+  font-family: 'Fira Code';
+  font-style: normal;
+  font-weight: 400;
+  src: url("edc273e94e72c8ee4279c8406f65373d96c518e3fea9cc3f121fed51283e0e70.ttf") format('truetype');
+}
+@font-face {
+  font-family: 'Fira Code';
+  font-style: normal;
+  font-weight: 700;
+  src: url("67941ae3787edeffd80ab437e8ba99667002d9fae22c2cbb80c1553f2d90ab79.ttf") format('truetype');
+}
+
+
+
+/* Little improvements */
+
+/* 1. Reasonably-sized footnotes */
+.hovertip { max-width: 400px; }
+
+/* 2. No more big avatar hover thingies */
+.avatar-hover { display: none !important; }
+
+/* 3. Monospace editor + code blocks */
+:root { --mono-font: "Fira Code", Cousine, monospace; }
+#edit-page-textarea, .code pre, .code p, .code, tt, .page-source {
+  font-family: var(--mono-font);
+}
+.code pre * { white-space: pre; }
+.code *, .pre * { font-feature-settings: unset; }
+.change-textarea-size { padding-right: 3em; }
+
+/* 4. Better image block positioning */
+@media (max-width: 550px), (min-width: 768px) and (max-width: 850px) {
+  .scp-image-block:is(.block-right, .block-left) {
+    float: none;
+    margin-inline: auto;
+  }
+}
+
+/* 5. Offsite image enforcement */
+img[src*="imgur.com"] {
+  content: url("faa24ec881e6040655c187a681d6dc496eb8aa41e1bd0652a180b3a40b457187.png");
+}
+
+
+/* Documentation helpers */
+
+/* 1. Teletype backgrounds */
+tt {
+  background-color: var(--swatch-something-bhl-idk-will-fix-later, #f4f4f4);
+  font-size: 85%;
+  padding: 0.2em 0.4em;
+  margin: 0;
+  border-radius: 6px;
+}
+
+/* 2. Code colours */
+:root {
+  --croqstyle-terminal-light-bg: #ffffff;
+  --croqstyle-terminal-light-syntax: #000000;
+  --croqstyle-terminal-light-comment: #008000;
+  --croqstyle-terminal-light-error: #e51602;
+  --croqstyle-terminal-light-value: #267f99;
+  --croqstyle-terminal-light-symbol: #795e26;
+  --croqstyle-terminal-light-string: #a31515;
+  --croqstyle-terminal-light-operator: #0000ff;
+  --croqstyle-terminal-light-builtin: #14238a;
+  --croqstyle-terminal-light-keyword: #af00db;
+  --croqstyle-terminal-light-border: 0.1rem solid #444444;
+
+  --croqstyle-terminal-dark-bg: #1f1f1f;
+  --croqstyle-terminal-dark-syntax: #d4d4d4;
+  --croqstyle-terminal-dark-comment: #6a9955;
+  --croqstyle-terminal-dark-error: #cd4343;
+  --croqstyle-terminal-dark-value: #4dc8af;
+  --croqstyle-terminal-dark-symbol: #d9d9a7;
+  --croqstyle-terminal-dark-string: #ce9178;
+  --croqstyle-terminal-dark-operator: #5294ca;
+  --croqstyle-terminal-dark-builtin: #9adafb;
+  --croqstyle-terminal-dark-keyword: #c384be;
+  --croqstyle-terminal-dark-border: 0.3rem solid #bbbbbb;
+}
+.code.terminal, .terminal > .code {
+  color: var(--c-syntax);
+  background-color: var(--c-bg);
+  border: var(--croqstyle-terminal-border);
+  border-radius: 0.3rem;
+  margin-inline: 1em;
+}
+:root, .terminal--light {
+  --c-bg: var(--croqstyle-terminal-light-bg);
+  --c-syntax: var(--croqstyle-terminal-light-syntax);
+  --c-comment: var(--croqstyle-terminal-light-comment);
+  --c-error: var(--croqstyle-terminal-light-error);
+  --c-value: var(--croqstyle-terminal-light-value);
+  --c-symbol: var(--croqstyle-terminal-light-symbol);
+  --c-string: var(--croqstyle-terminal-light-string);
+  --c-operator: var(--croqstyle-terminal-light-operator);
+  --c-builtin: var(--croqstyle-terminal-light-builtin);
+  --c-keyword: var(--croqstyle-terminal-light-keyword);
+  --croqstyle-terminal-border: var(--croqstyle-terminal-light-border);
+}
+.terminal--dark {
+  --c-bg: var(--croqstyle-terminal-dark-bg);
+  --c-syntax: var(--croqstyle-terminal-dark-syntax);
+  --c-comment: var(--croqstyle-terminal-dark-comment);
+  --c-error: var(--croqstyle-terminal-dark-error);
+  --c-value: var(--croqstyle-terminal-dark-value);
+  --c-symbol: var(--croqstyle-terminal-dark-symbol);
+  --c-string: var(--croqstyle-terminal-dark-string);
+  --c-operator: var(--croqstyle-terminal-dark-operator);
+  --c-builtin: var(--croqstyle-terminal-dark-builtin);
+  --c-keyword: var(--croqstyle-terminal-dark-keyword);
+  --croqstyle-terminal-border: var(--croqstyle-terminal-dark-border);
+}
+
+/* 3. Debug mode */
+.debug-mode, .debug-mode *, .debug-mode *::before, .debug-mode *::after {
+  outline: thin solid var(--debug-colour, red);
+  position: relative;
+}
+.debug-info {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Fira Code', monospace;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+.debug-info.over { top: -2.5rem; }
+.debug-info.under { bottom: -2.5rem; }
+.debug-info p { margin: 0; }
+
+
+/* Opt-in features */
+
+/* 1. Improved image block */
+/* Custom image block with alt text, hover zoom, high res swap and WEBP support
+ * Define low res (~300px wide) image via --image-url CSS var
+ * Define high res (~1000px wide) image via --image-large-url CSS var (optional)
+ * Define aspect ratio (as 'H / W') via --aspect-ratio CSS var
+ */
+.croqstyle-image-block .scp-image-alt {
+  position: relative;
+  font-size: 0;
+  aspect-ratio: var(--aspect-ratio);
+}
+.croqstyle-image-block .scp-image-alt::before {
+  content: ""; position: absolute; inset: 0;
+  pointer-events: none;
+  background-image: var(--image-url);
+  background-size: cover, 0.6rem, cover;
+  background-position: center, left 0.3rem bottom 0.3rem, center;
+  background-repeat: no-repeat;
+  transition: transform 0.3s ease-in-out;
+}
+@media (prefers-reduced-motion) {
+  .croqstyle-image-block .scp-image-alt::before {
+    transition-duration: 0s;
+  }
+}
+@media (min-width: 670px) and (max-width: 767px), (min-width: 940px) {
+  .croqstyle-image-block:not(.croqstyle-image-block--no-hover) .scp-image-alt:hover::before,
+  .croqstyle-image-block--no-hover .scp-image-alt::before {
+    background-image: var(--image-large-url, var(--image-url)), url("d545b9845df5f120e894f3f3207a147719584ed11a629c27bb29006aaa521c9a.gif"), var(--image-url);
+  }
+  .croqstyle-image-block:not(.croqstyle-image-block--no-hover) .scp-image-alt:hover::before {
+    transform: scale3d(1.6, 1.6, 1);
+    z-index: 1;
+  }
+}
+.croqstyle-image-block.block-right .scp-image-alt::before { transform-origin: 90% center }
+.croqstyle-image-block.block-left .scp-image-alt::before { transform-origin: 10% center }
+.croqstyle-image-block .scp-image-alt img {
+  width: 100%;
+  height: 100%;
+  object-fit: center;
+}
+
+/* 2. Image footnotes */
+/* Custom footnote that uses the same vars as the image block above */
+.croqstyle-img-footnote {
+  position: relative;
+  --croqstyle-img-footnote-link-color: rgb(var(--link-color, 187,0,17));
+  text-decoration: var(--croqstyle-img-footnote-link-color) dashed underline;
+  cursor: help;
+}
+.croqstyle-img-footnote::after {
+  content: "";
+  display: inline-block;
+  /* https://icon-sets.iconify.design/material-symbols/image-outline/ */
+  --croqstyle-img-footnote-icon-url: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1em' height='1em' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v14q0 .825-.587 1.413T19 21zm0-2h14V5H5zm1-2h12l-3.75-5l-3 4L9 13zm-1 2V5z'/%3E%3C/svg%3E");
+  -webkit-mask-image: var(--croqstyle-img-footnote-icon-url);
+          mask-image: var(--croqstyle-img-footnote-icon-url);
+  -webkit-mask-size: cover;
+          mask-size: cover;
+  -webkit-mask-position: center;
+          mask-position: center;
+  background-color: var(--croqstyle-img-footnote-link-color);
+  width: 1em; height: 1em;
+  vertical-align: super;
+  font-size: smaller;
+  line-height: normal;
+}
+.croqstyle-img-footnote::before {
+  content: "";
+  display: block;
+  position: absolute;
+  aspect-ratio: var(--aspect-ratio);
+  height: 16rem;
+  border: thin solid grey;
+  background-color: white;
+  background-image: var(--image-url);
+  background-size: 92.5%;
+  background-position: center;
+  background-repeat: no-repeat;
+  bottom: 0; left: 50%;
+  --croqstyle-img-footnote-icon-offset: 0px;
+  transform: translate(-50%, calc(100% + var(--croqstyle-img-footnote-icon-offset)));
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.croqstyle-img-footnote:hover { --croqstyle-img-footnote-link-color: purple; }
+.croqstyle-img-footnote:hover::before {
+  opacity: 1;
+  pointer-events: initial;
+  --croqstyle-img-footnote-icon-offset: 0.5em;
+}
+@media (max-width: 1200px) {
+  .croqstyle-img-footnote { position: static; }
+  .croqstyle-img-footnote::before {
+    bottom: auto;
+    left: 50%;
+    transform: translate(-50%, calc(0px + var(--croqstyle-img-footnote-icon-offset)));
+  }
+}
+
+/* 3. Simple responsive div */
+.croqstyle-responsive-div {
+  container-type: inline-size;
+}
+.croqstyle-responsive-div__desktop {
+  display: none;
+}
+.croqstyle-responsive-div__mobile table {
+  margin-left: 0; /* Left align for consistent header row placement */
+}
+@container (min-width: 550px) {
+  .croqstyle-responsive-div__desktop { display: revert !important }
+  .croqstyle-responsive-div__mobile { display: none }
+}
+
+/* 4. Reset tabview */
+/* Undoes base Wikidot tab styling. These reset styles are derived from Wikidot's base theme. They override and undo all the tab styles in the base theme, matching the selectors exactly to cancel them out.
+* It might look like these selectors can be simplified, merged, reduced in complexity - they can't, because otherwise they wouldn't cancel out the base theme styling.
+*/
+/* Entire tabview */
+:where(.croqstyle-reset-tabs) .yui-navset { padding: initial; position: initial }
+/* List of tabs */
+:where(.croqstyle-reset-tabs) .yui-nav { margin: initial; padding: initial; list-style: initial }
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav { width: initial; position: initial; border: initial }
+/* Internal wrapper for each tab */
+:where(.croqstyle-reset-tabs) .yui-nav li { margin: initial; padding: initial; list-style: initial }
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav li { display: initial; vertical-align: initial; cursor: initial; margin: initial; padding: initial }
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav .selected { margin: initial }
+/* Each tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav li a { background: initial; border: initial; color: initial; position: initial; text-decoration: initial; display: initial; vertical-align: initial }
+/* Selected tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav .selected a { border-color: initial }
+/* Hovered tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav a:is(:hover, :focus) { background: initial; outline: initial }
+/* Selected + hovered tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav .selected :is(a, a:focus, a:hover) { background: initial; color: initial }
+/* Text in each tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav li a em { font-style: initial; display: initial; border: initial; cursor: initial; padding: initial; left: initial; top: initial; position: initial }
+/* Text in the selected tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav .selected a em { padding: initial; border-color: initial }
+/* Content panel */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-content { background: initial; border: initial; padding: initial }
+
+
+/* https://scp-jp.wikidot.com/component:fade-in */
+
+:where(:root) {
+  --fade-in: fadeIn;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :where(#page-title, #breadcrumbs, #page-content) {
+    animation-name: var(--fade-in);
+    animation-duration: 0.5s;
+    animation-iteration-count: 1;
+    animation-timing-function: ease-out;
+    animation-fill-mode: backwards;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(0,15px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0,0);
+  }
+}
+
+/* Basic message code */
+.text-container .text {
+  border-radius: 18px;
+  text-align: left;
+  display:inline-block;
+  padding:8px 12px;
+  font-weight:500;
+  margin:1.5px 10px;
+  max-width: 300px;
+}
+
+/* Container for "received" messages */
+.recv {
+  text-align: left;
+  margin-right:20px;
+}
+
+/* Container for "sent" messages */
+.sent {
+  text-align: right;
+  margin-left:20px;
+}
+.sent .text {
+  border-bottom-right-radius: 3px;
+  background-color: #267AE9;
+  color: white;
+}
+.recv .text {
+  border-bottom-left-radius: 3px;
+  background-color: #dadada;
+  color: black;
+}
+
+/* Fancy stuff on the corners of messages with another message from same person above them */
+.sent .text:not(:first-child) {
+  border-top-right-radius: 4px;
+}
+.recv .text:not(:first-child) {
+  border-top-left-radius: 4px;
+}
+
+.text-container p {
+  margin:0 0 15px;
+}
+/* Message area stuff */
+/* Header styling */
+.text-container-wrap h1, .text-container-wrap h2, .text-container-wrap h3, .text-container-wrap h4, .text-container-wrap h5, .text-container-wrap h6 {
+  color: black;
+  font-weight: bold;
+  margin:0 auto 10px;
+  position:relative;
+  top:-8px;
+}
+
+/* External box */
+.text-container-wrap {
+  text-align:center;
+  margin:auto;
+  display:block;
+  margin-top: 25px;
+  width:400px;
+  padding-top: 25px;
+  border-radius:10px;
+  border:3px solid #666;
+  background-color:#fff;
+  overflow:none;
+  box-sizing:border-box;
+  position:relative;
+}
+
+/* Internal box */
+.text-container {
+  box-shadow:1px 1px 7px #aaa inset;
+  margin:0px auto 25px;
+  width:350px;
+  display:block;
+  padding:25px 0px 6px;
+  background-color:#f7f7f7;
+}
+
+/* source: https://ah-sandbox.wikidot.com/component:collapsible-sidebar-x1 */
+
+#top-bar .open-menu a {
+        position: fixed;
+        bottom: 0.5em;
+        left: 0.5em;
+        z-index: 15;
+        font-family: san-serif;
+        font-size: 30px;
+        font-weight: 700;
+        width: 30px;
+        height: 30px;
+        line-height: 0.9em;
+        text-align: center;
+        border: 0.2em solid #888 !important;
+        background-color: #fff !important;
+        border-radius: 3em;
+        color: #888 !important;
+        text-decoration: none!important;
+}
+
+@media (min-width: 768px) {
+
+    .mobile-top-bar {
+        display: block;
+    }
+
+    .mobile-top-bar li {
+        display: none;
+    }
+
+    #main-content {
+        max-width: 708px;
+        margin: 0 auto;
+        padding: 0;
+        transition: max-width 0.2s ease-in-out;
+    }
+
+    #side-bar {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: -25em;
+        width: 17em;
+        height: 100%;
+        background-color: rgb(184, 134, 134);
+        overflow-y: auto;
+        z-index: 10;
+        padding: 1em 1em 0 1em;
+        -webkit-transition: left 0.5s ease-in-out 0.1s;
+        -moz-transition: left 0.5s ease-in-out 0.1s;
+        -ms-transition: left 0.5s ease-in-out 0.1s;
+        -o-transition: left 0.5s ease-in-out 0.1s;
+        transition: left 0.5s ease-in-out 0.1s;
+    }
+
+    #side-bar:after {
+        content: "";
+        position: absolute;
+        top: 0;
+        width: 0;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.2);
+
+    }
+
+    #side-bar:target {
+        display: block;
+        left: 0;
+        width: 17em;
+        margin: 0;
+        border: 1px solid #dedede;
+        z-index: 10;
+    }
+
+    #side-bar:target + #main-content {
+        left: 0;
+    }
+
+    #side-bar:target .close-menu {
+        display: block;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        background: rgba(0,0,0,0.3) 1px 1px repeat;
+        z-index: -1;
+    }
+}
+
+
 /* ==== FONTS ==== */
 
 /**
@@ -432,7 +1244,7 @@
 
  .top-bar::before {
     position: absolute;
-    top: -.5em;
+    top: -.4em;
     left: calc(100% / 4);
     width: calc(100% / 2);
     height: 5px;
@@ -3518,3 +4330,19 @@
 		transition-duration: .001s !important;
     }
 }
+
+
+
+/* SCP-JP Wikidot flopstyle-dark navigation correction: anchor only the overflowing mobile row endpoint menus. */
+@media (max-width: 359px) {
+ #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul { left: auto; right: 0; }
+}
+@media (min-width: 360px) and (max-width: 767px) {
+ #top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul,
+ #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
+}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Flopstyle Dark Firefox submenu: anchor the third parent endpoint at mobile widths. */
+@supports (-moz-appearance:none){@media(max-width:359px){#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul {left:0;right:auto;}}@media(min-width:360px) and (max-width:767px){#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul {left:auto;right:0;}#top-bar .mobile-top-bar > ul > li:last-child > ul {left:0;right:auto;}}}
