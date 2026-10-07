@@ -288,6 +288,7 @@ async function mutate(outputDir, ownerId, shard, mutationRun) {
   const owner = loadLedger().owners.find((row) => row.id === ownerId);
   if (!owner) fail(`unknown audit owner: ${ownerId}`);
   if (!owner.mutation) fail(`owner ${ownerId} has no mutation descriptor`);
+  if (owner.mutation.removed) fail(`owner ${ownerId} was removed after reviewed mutation evidence; mutation replay is no longer applicable`);
   const sourcePath = resolve(root, owner.source.path);
   const originalHash = sha256File(sourcePath);
   if (originalHash !== owner.source.sha256) fail(`owner source hash is stale before mutation: ${owner.source.path}`);
@@ -387,9 +388,16 @@ async function verify(outputDir, ownerId) {
     }
     verifyMutationEvidence(owner);
     if (owner.mutation) {
-      const count = await listedMutationCount(owner);
-      if (count !== owner.mutation.inventory_count) {
-        fail(`mutation inventory mismatch for ${owner.id}: expected ${owner.mutation.inventory_count}, got ${count}`);
+      if (owner.mutation.removed) {
+        const sourceText = readFileSync(resolve(root, owner.source.path), "utf8");
+        if (sourceText.includes(owner.symbol)) {
+          fail(`removed owner ${owner.id} still contains symbol ${owner.symbol}`);
+        }
+      } else {
+        const count = await listedMutationCount(owner);
+        if (count !== owner.mutation.inventory_count) {
+          fail(`mutation inventory mismatch for ${owner.id}: expected ${owner.mutation.inventory_count}, got ${count}`);
+        }
       }
     }
   }

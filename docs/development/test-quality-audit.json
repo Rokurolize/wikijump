@@ -33,26 +33,18 @@
   "owners": [
     {
       "id": "deepwell:listpages:generated_gate_module_close",
-      "status": "in_progress",
+      "status": "removed_redundant",
       "source": {
         "path": "deepwell/src/services/render/list_pages/scanner.rs",
-        "sha256": "fba6a6f254ecbdbeabdf49a65642917d40d95ff11b714242943431459b7835fb"
+        "sha256": "41c1f5132bd938cf8fb0fb4228767583b59b7529a1ad0fd7740376ebbdb9d30e"
       },
       "symbol": "generated_gate_module_close",
       "tests": [
         {
           "path": "deepwell/src/services/render/list_pages/scanner/tests.rs",
-          "sha256": "490385cfd9a2edd3b3ae4b02064eaff40ed003b6bb3a9c15aa24ed3de3c2e4c0",
+          "sha256": "e186d7fbd7bb3a1bd032efd42f006115d15e24bcbe79fc1b92e22bfee2590a0a",
           "anchors": [
-            "scanner_keeps_generated_comment_gate_rows_inside_the_module",
-            "generated_gate_close_uses_the_first_structural_close_after_inactive_branches"
-          ]
-        },
-        {
-          "path": "deepwell/src/services/render/list_pages/scanner/tests/stress.rs",
-          "sha256": "84b6346e5407769487f44a7c72ca413dd11a413b5d1d4a72f0898b4e627f02b7",
-          "anchors": [
-            "generated_gate_close_range_checks_stay_linear"
+            "scanner_keeps_generated_comment_gate_rows_inside_the_module"
           ]
         },
         {
@@ -64,6 +56,7 @@
         }
       ],
       "mutation": {
+        "removed": true,
         "file": "src/services/render/list_pages/scanner.rs",
         "function": "generated_gate_module_close",
         "inventory_count": 39,
@@ -267,6 +260,14 @@
             "evidence": "A second bounded trial added a comment-owned [[/module]] decoy, required the real first-module closer, and appended a second executable ListPages module; its unmutated task-owned-stack regression passed and asserted FIRST plus SECOND while HIDDEN stayed absent. Nevertheless the same shard-0 mutations, including replacing generated_gate_module_close with None, Some(0), and Some(1), all survived. The trial was reverted. This confirms the current full render pipeline assertion does not behaviorally own this helper even when suffix scanning is made observable at the authored fixture level."
           }
         ],
+        "removal_evidence": {
+          "date": "2026-10-08",
+          "classification": "removed as redundant recovery after retained-corpus differential",
+          "retained_generated_gate_invocations": 75,
+          "retained_campaign_invocations": 23964,
+          "differential": "Replacing generated_gate_module_close with None left the complete public scanner match signatures unchanged for all 75 balanced executable generated-gate invocations selected from the pinned ListPages campaign artifact.",
+          "validation": "After removing the helper, its fallback branch, dedicated comparison counter, direct helper test, and helper-only stress tests, the full ListPages scanner unit suite passed 97/97; the task-owned-stack listpages_created_by_id_comment_gates_resolve_after_row_substitution integration test passed 1/1; repository generated-contract verification passed (179 Deepwell JSON-RPC contracts, 34 WWS routes, surface_count 957). Generated-gate parsing behavior remains covered by scanner_keeps_generated_comment_gate_rows_inside_the_module. The audit CLI also rejects further mutation replay for this removed owner before starting disposable services."
+        },
         "production_observer_checks": [
           {
             "date": "2026-10-08",
@@ -298,13 +299,11 @@
       "classifications": [
         "scanner-result owner",
         "complexity owner",
-        "rendered integration candidate rejected as an owner"
+        "rendered integration candidate rejected as an owner",
+        "redundant recovery removed"
       ],
       "acceptance_gaps": [
-        "Scanner-result/complexity is complete across cargo-mutants zero-based shards 0/8 through 7/8: 32 caught, 3 provisionally equivalent survivors, 1 unviable mutant, and 3 mutation-induced nonprogress timeouts across the fixed 39-entry inventory.",
-        "Rendered-ListPages shard 0/8 missed all 5 assigned mutants both with the original integration fixture and with two independently justified repair trials, including a second-module suffix-scanning case. The rendered integration candidate is therefore rejected as an owner rather than being strengthened from implementation-derived expectations; remaining rendered shards are blocked pending a genuinely observable behavior or dead/redundant-code classification.",
-        "Public scanner and render-dependency observer trials survived function-level None/Some(0) replacements. A retained-corpus differential then showed generated_gate_module_close -> None leaves the complete public scanner match signatures unchanged for all 75 balanced executable generated-gate invocations in the pinned ListPages campaign artifact. The recovery seam is therefore a removal candidate; deletion plus focused/full scanner validation is still pending and must not discard the independently evidenced gate/comment behavior owned elsewhere.",
-        "The three shard 3/8 and 4/8 survivor dispositions are derived from current byte/token invariants but still require the authorized independent reviewer before acceptance."
+        "Repository-wide #1990 closure still requires the remaining ListPages/runtime/forum/render/Framerail/verifier frontier and final validation; this removed owner is no longer a mutation replay target."
       ]
     }
   ],

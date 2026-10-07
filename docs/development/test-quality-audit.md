@@ -43,6 +43,11 @@ independent contract) and record that differential. Surviving higher-level
 owner trials are evidence of an ownership gap, not by themselves proof that
 the production code is removable.
 
+Once a reviewed owner is removed as redundant, retain its frozen mutation
+denominator and evidence in the ledger, mark the mutation descriptor as
+removed, and stop replaying it. `mutate` rejects removed owners; `verify`
+instead confirms that the recorded symbol is absent from the current source.
+
 `inventory` discovers production files independently of coverage output. It
 also records executable test owners, test-imported modules, wrapper/browser
 owners, Cargo targets, Deepwell binaries, and proc-macro targets. `verify`

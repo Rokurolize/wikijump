@@ -175,52 +175,6 @@ fn scanner_keeps_generated_comment_gate_rows_inside_the_module() {
 }
 
 #[test]
-fn generated_gate_close_uses_the_first_structural_close_after_inactive_branches() {
-    // A Wikidot comment owns module-shaped text inside the inactive branch.
-    // The gate recovery must skip those decoys and return the outer close.
-    let source = concat!(
-        "[[module ListPages name=\"gate\"]]\n",
-        "[!-- authored comment --]\n",
-        "  [[#ifexpr %%created_by_id%% < 42 |  | [!-- ]]\n",
-        "LOW [[/module]]\n",
-        "[!-- --]\n",
-        "  [[#ifexpr %%created_by_id%% > 42 |  | [!-- ]]\n",
-        "HIGH [[/module]]\n",
-        "[!-- --]\n",
-        "VISIBLE [[/module]]",
-    );
-    let body_start = source.find('\n').unwrap() + 1;
-    let expected_end = source.rfind("[[/module]]").unwrap() + "[[/module]]".len();
-    assert_eq!(
-        generated_gate_module_close(source, body_start),
-        Some(expected_end),
-    );
-
-    // Delayed-link scanning masks the equal-width `[[#` prefix before this
-    // helper sees parser-function gates. Their structural boundary stays at
-    // the same byte offset in that projection.
-    let projected = source.replace("[[#", "   ");
-    assert_eq!(
-        generated_gate_module_close(&projected, body_start),
-        Some(expected_end),
-    );
-
-    let prose = concat!(
-        "[[module ListPages name=\"gate\"]]\n",
-        "ordinary prose | [!-- ]]\n",
-        "COMMENT-OWNED [[/module]]\n",
-        "[!-- --]\n",
-        "VISIBLE [[/module]]",
-    );
-    let body_start = prose.find('\n').unwrap() + 1;
-    assert_eq!(
-        generated_gate_module_close(prose, body_start),
-        None,
-        "comment-shaped prose is not a generated parser-function gate",
-    );
-}
-
-#[test]
 fn scanner_ignores_inert_prose_after_supported_list_pages_arguments() {
     // Anonymous PagePreview boundary matrix:
     // listpages-head-recovery-{prose-ascii,prose-unicode,prose-nested-block,
