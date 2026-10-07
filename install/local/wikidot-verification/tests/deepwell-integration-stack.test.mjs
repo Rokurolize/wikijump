@@ -5,6 +5,7 @@ import {
   deepwellNextestPartition,
   deepwellTestImageName,
   deepwellTestThreads,
+  runValidationCommand,
   resolveDeepwellSeedBinary,
 } from "../src/deepwell-integration-stack.mjs";
 
@@ -40,4 +41,13 @@ test("Deepwell seed binary follows Cargo target-directory overrides", async () =
     env: {...process.env, CARGO_TARGET_DIR: targetDirectory},
   });
   assert.equal(path, `${targetDirectory}/debug/deepwell`);
+});
+
+test("validation command can explicitly accept a reviewed nonzero outcome", async () => {
+  const result = await runValidationCommand(
+    process.execPath,
+    ["-e", "process.exit(2)"],
+    {acceptableExitCodes: [0, 2]},
+  );
+  assert.equal(result.exitCode, 2);
 });

@@ -264,6 +264,20 @@ async function listedMutationCount(owner) {
   return stdout.split("\n").filter((line) => line.trim() !== "").length;
 }
 
+function summarizeMutationRun(runOutput) {
+  const path = resolve(runOutput, "mutants.out/outcomes.json");
+  if (!existsSync(path)) fail(`cargo-mutants did not write outcomes: ${repositoryPath(path)}`);
+  const rows = JSON.parse(readFileSync(path, "utf8")).outcomes ?? [];
+  const counts = {caught: 0, missed: 0, unviable: 0, timeout: 0};
+  for (const row of rows) {
+    if (row.summary === "CaughtMutant") counts.caught += 1;
+    else if (row.summary === "MissedMutant") counts.missed += 1;
+    else if (row.summary === "UnviableMutant") counts.unviable += 1;
+    else if (row.summary === "Timeout") counts.timeout += 1;
+  }
+  return counts;
+}
+
 async function mutate(outputDir, ownerId, shard, mutationRun) {
   if (!ownerId) fail("mutate requires --owner <id>");
   const owner = loadLedger().owners.find((row) => row.id === ownerId);
@@ -286,16 +300,24 @@ async function mutate(outputDir, ownerId, shard, mutationRun) {
   try {
     for (const run of runs) {
       const runOutput = resolve(outputDir, run.id);
+      let exitCode;
       await withDeepwellIntegrationStack(async ({env}) => {
-        await runValidationCommand("cargo", [
+        const result = await runValidationCommand("cargo", [
           "mutants", "--in-place", "--manifest-path", "deepwell/Cargo.toml",
           "-f", owner.mutation.file, "-F", owner.mutation.function,
           "--baseline", "run", "--output", runOutput,
           ...(shard ? ["--shard", shard] : []),
           ...run.cargo_mutants_args,
-        ], {env, cwd: root});
+        ], {env, cwd: root, acceptableExitCodes: [0, 2]});
+        exitCode = result.exitCode;
       });
-      outcomes.push({id: run.id, output: repositoryPath(runOutput), status: "completed"});
+      outcomes.push({
+        id: run.id,
+        output: repositoryPath(runOutput),
+        status: exitCode === 0 ? "completed" : "completed_with_survivors",
+        exit_code: exitCode,
+        ...summarizeMutationRun(runOutput),
+      });
     }
   } finally {
     const restoredHash = sha256File(sourcePath);

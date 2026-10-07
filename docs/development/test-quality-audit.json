@@ -104,6 +104,42 @@
             "timeout": 0,
             "baseline": "passed with cargo-mutants baseline-derived 20s test timeout",
             "restoration": "source SHA-256 restored to fba6a6f254ecbdbeabdf49a65642917d40d95ff11b714242943431459b7835fb and task-owned services cleaned"
+          },
+          {
+            "date": "2026-10-07",
+            "run": "scanner-result-and-complexity",
+            "shard": "2/8",
+            "mutants": 5,
+            "caught": 5,
+            "unviable": 0,
+            "missed": 0,
+            "timeout": 0,
+            "baseline": "passed with cargo-mutants baseline-derived 20s test timeout",
+            "restoration": "source SHA-256 restored to fba6a6f254ecbdbeabdf49a65642917d40d95ff11b714242943431459b7835fb and task-owned services cleaned"
+          },
+          {
+            "date": "2026-10-07",
+            "run": "scanner-result-and-complexity",
+            "shard": "3/8",
+            "mutants": 5,
+            "caught": 3,
+            "unviable": 0,
+            "missed": 2,
+            "timeout": 0,
+            "baseline": "passed with cargo-mutants baseline-derived 20s test timeout",
+            "restoration": "source SHA-256 restored to fba6a6f254ecbdbeabdf49a65642917d40d95ff11b714242943431459b7835fb and task-owned services cleaned",
+            "survivor_dispositions": [
+              {
+                "mutation": "line 233 marker_start: line_start + leading -> line_start - leading",
+                "classification": "provisionally equivalent pending independent review",
+                "evidence": "The shift can only add bytes from the gate opener/marker prefix to the inactive range. Because branch.trim() must equal exactly [!-- ]], that added interval cannot contain a [[/module]] candidate, so the candidate closer set is unchanged."
+              },
+              {
+                "mutation": "line 234 branch_start: marker_start + marker length -> marker_start - marker length",
+                "classification": "provisionally equivalent pending independent review",
+                "evidence": "The widened interval reaches only backward across the exact [!-- ]] branch token and adjacent branch whitespace required by branch.trim(). Neither can contain a [[/module]] candidate, so the candidate closer set is unchanged."
+              }
+            ]
           }
         ]
       },
@@ -113,8 +149,8 @@
         "rendered behavioral owner"
       ],
       "acceptance_gaps": [
-        "Scanner-result/complexity shard 1/8 caught all 5 assigned mutants; shards 2/8 through 8/8 and every rendered-ListPages shard remain to be replayed for the current 39-entry inventory.",
-        "Survivor dispositions must be re-reviewed against current source bytes rather than inherited from the historical 36-entry run."
+        "Scanner-result/complexity shards 1/8 and 2/8 caught all 10 assigned mutants; shard 3/8 caught 3 and produced 2 provisionally equivalent survivors. Shards 4/8 through 8/8 and every rendered-ListPages shard remain to be replayed for the current 39-entry inventory.",
+        "The two shard 3/8 survivor dispositions are derived from the current source/token invariant but still require the authorized independent reviewer before acceptance."
       ]
     }
   ],

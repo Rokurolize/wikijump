@@ -40,7 +40,12 @@ export function deepwellTestImageName(role, env = process.env) {
   return override?.trim() || DEFAULT_DEEPWELL_TEST_IMAGES[role];
 }
 
-export function runValidationCommand(commandName, args, {env = process.env, capture = false, cwd = REPOSITORY_ROOT} = {}) {
+export function runValidationCommand(commandName, args, {
+  env = process.env,
+  capture = false,
+  cwd = REPOSITORY_ROOT,
+  acceptableExitCodes = [0],
+} = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(commandName, args, {
       cwd,
@@ -57,7 +62,7 @@ export function runValidationCommand(commandName, args, {env = process.env, capt
     }
     child.on("error", reject);
     child.on("exit", (code, signal) => {
-      if (code === 0) return resolve({stdout, stderr});
+      if (code !== null && acceptableExitCodes.includes(code)) return resolve({stdout, stderr, exitCode: code});
       const detail = signal ? `signal ${signal}` : `status ${code}`;
       reject(new Error(`${commandName} failed with ${detail}${capture && stderr ? `: ${stderr.trim()}` : ""}`));
     });
