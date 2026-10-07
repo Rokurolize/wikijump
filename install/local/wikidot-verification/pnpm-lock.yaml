@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       devalue:
-        specifier: 5.9.1
-        version: 5.9.1
+        specifier: 5.9.3
+        version: 5.9.3
       parse5:
         specifier: ^8.0.1
         version: 8.0.1
@@ -154,8 +154,8 @@ packages:
   deep-is@0.1.4:
     resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==}
 
-  devalue@5.9.1:
-    resolution: {integrity: sha512-+17vil3EVQRzvtDJSFuTWEb8XJRvXqAiV3qZyQWD398QeXUa6CxsUyMdD1fxzEhUrd4FojitFz7lhIHBTlV4fw==}
+  devalue@5.9.3:
+    resolution: {integrity: sha512-xRumYOCUZN/EesqHEU3WOXanOZNvfZFZ/o1AHVFDX1yI0UAkZkOgDXt341CzKoBVIkgQba55/+DjGBKrIoKcHw==}
 
   entities@8.0.0:
     resolution: {integrity: sha512-zwfzJecQ/Uej6tusMqwAqU/6KL2XaB2VZ2Jg54Je6ahNBGNH6Ek6g3jjNCF0fG9EWQKGZNddNjU5F1ZQn/sBnA==}
@@ -561,7 +561,7 @@ snapshots:
 
   deep-is@0.1.4: {}
 
-  devalue@5.9.1: {}
+  devalue@5.9.3: {}
 
   entities@8.0.0: {}
 
