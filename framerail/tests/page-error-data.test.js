@@ -13,11 +13,32 @@ test("page-specific errors require validated site, options, and form payloads", 
   const pageError = {
     view: "missing",
     forms: {
-      pageEditForm: { id: "page-edit" },
-      pageRestoreForm: { id: "page-restore" }
+      pageEditForm: {
+        data: {},
+        errors: {},
+        constraints: {},
+        valid: true,
+        posted: false
+      },
+      pageRestoreForm: {
+        data: {},
+        errors: {},
+        constraints: {},
+        valid: true,
+        posted: false
+      }
     },
     site: { site_id: 6000005, default_page: "main" },
-    options: { edit: false },
+    options: {
+      edit: false,
+      no_redirect: false,
+      no_render: false,
+      debug: false,
+      renderer: false,
+      comments: false,
+      history: false,
+      data: ""
+    },
     compiled_body_html: "<p>missing page</p>",
     page_templates: []
   }
