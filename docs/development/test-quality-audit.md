@@ -22,6 +22,18 @@ node scripts/run-test-quality-audit.mjs mutate --output-dir /tmp/wj-test-quality
 node scripts/run-test-quality-audit.mjs verify --output-dir /tmp/wj-test-quality
 ```
 
+For long mutation inventories, `mutate` also accepts `--shard I/N`. Sharding
+does not weaken the inventory check: the driver first verifies the complete
+reviewed `cargo mutants --list` count, then passes the requested shard to
+cargo-mutants. This lets a reviewed inventory be completed across bounded
+work sessions without silently changing its denominator.
+
+When one production function has more than one independently meaningful test
+owner, `--mutation-run <id>` selects a single reviewed owner run from the
+ledger. For example, the generated-gate function keeps its scanner-result and
+complexity run distinct from its rendered ListPages integration run; shards
+from those runs must be reconciled separately before the owner is accepted.
+
 `inventory` discovers production files independently of coverage output. It
 also records executable test owners, test-imported modules, wrapper/browser
 owners, Cargo targets, Deepwell binaries, and proc-macro targets. `verify`

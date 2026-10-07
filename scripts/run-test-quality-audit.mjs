@@ -21,14 +21,19 @@ function fail(message) {
 }
 
 function parseOptions(argv) {
-  const options = {outputDir: null, owner: null};
+  const options = {outputDir: null, owner: null, shard: null, mutationRun: null};
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === "--output-dir") options.outputDir = argv[++index] ?? null;
     else if (argument === "--owner") options.owner = argv[++index] ?? null;
+    else if (argument === "--shard") options.shard = argv[++index] ?? null;
+    else if (argument === "--mutation-run") options.mutationRun = argv[++index] ?? null;
     else fail(`unknown argument: ${argument}`);
   }
   if (!options.outputDir) fail("--output-dir <directory> is required");
+  if (options.shard && !/^[1-9][0-9]*\/[1-9][0-9]*$/u.test(options.shard)) {
+    fail("--shard must look like I/N, for example 1/4");
+  }
   options.outputDir = resolve(root, options.outputDir);
   return options;
 }
@@ -259,7 +264,7 @@ async function listedMutationCount(owner) {
   return stdout.split("\n").filter((line) => line.trim() !== "").length;
 }
 
-async function mutate(outputDir, ownerId) {
+async function mutate(outputDir, ownerId, shard, mutationRun) {
   if (!ownerId) fail("mutate requires --owner <id>");
   const owner = loadLedger().owners.find((row) => row.id === ownerId);
   if (!owner) fail(`unknown audit owner: ${ownerId}`);
@@ -273,15 +278,20 @@ async function mutate(outputDir, ownerId) {
   }
 
   mkdirSync(outputDir, {recursive: true});
+  const runs = mutationRun
+    ? owner.mutation.runs.filter((run) => run.id === mutationRun)
+    : owner.mutation.runs;
+  if (mutationRun && runs.length === 0) fail(`unknown mutation run ${mutationRun} for ${ownerId}`);
   const outcomes = [];
   try {
-    for (const run of owner.mutation.runs) {
+    for (const run of runs) {
       const runOutput = resolve(outputDir, run.id);
       await withDeepwellIntegrationStack(async ({env}) => {
         await runValidationCommand("cargo", [
           "mutants", "--in-place", "--manifest-path", "deepwell/Cargo.toml",
           "-f", owner.mutation.file, "-F", owner.mutation.function,
           "--baseline", "run", "--output", runOutput,
+          ...(shard ? ["--shard", shard] : []),
           ...run.cargo_mutants_args,
         ], {env, cwd: root});
       });
@@ -293,7 +303,14 @@ async function mutate(outputDir, ownerId) {
       fail(`mutation runner did not restore ${owner.source.path}; expected ${originalHash}, got ${restoredHash}`);
     }
   }
-  writeJson(resolve(outputDir, "mutation-summary.json"), {schema: 1, owner: ownerId, inventory_count: count, outcomes});
+  writeJson(resolve(outputDir, "mutation-summary.json"), {
+    schema: 1,
+    owner: ownerId,
+    inventory_count: count,
+    shard,
+    mutation_run: mutationRun,
+    outcomes,
+  });
 }
 
 function verifyIdentity(identity, label) {
@@ -344,14 +361,14 @@ async function verify(outputDir, ownerId) {
 
 async function main() {
   if (!["inventory", "coverage", "mutate", "verify"].includes(commandName)) {
-    process.stderr.write("Usage: node scripts/run-test-quality-audit.mjs inventory|coverage|mutate|verify --output-dir <directory> [--owner <id>]\n");
+    process.stderr.write("Usage: node scripts/run-test-quality-audit.mjs inventory|coverage|mutate|verify --output-dir <directory> [--owner <id>] [--shard I/N] [--mutation-run <id>]\n");
     process.exitCode = 2;
     return;
   }
-  const {outputDir, owner} = parseOptions(process.argv.slice(3));
+  const {outputDir, owner, shard, mutationRun} = parseOptions(process.argv.slice(3));
   if (commandName === "inventory") await inventory(outputDir);
   else if (commandName === "coverage") await coverage(outputDir);
-  else if (commandName === "mutate") await mutate(outputDir, owner);
+  else if (commandName === "mutate") await mutate(outputDir, owner, shard, mutationRun);
   else await verify(outputDir, owner);
 }
 

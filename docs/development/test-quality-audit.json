@@ -91,6 +91,20 @@
               "--exact"
             ]
           }
+        ],
+        "completed_evidence": [
+          {
+            "date": "2026-10-07",
+            "run": "scanner-result-and-complexity",
+            "shard": "1/8",
+            "mutants": 5,
+            "caught": 5,
+            "unviable": 0,
+            "missed": 0,
+            "timeout": 0,
+            "baseline": "passed with cargo-mutants baseline-derived 20s test timeout",
+            "restoration": "source SHA-256 restored to fba6a6f254ecbdbeabdf49a65642917d40d95ff11b714242943431459b7835fb and task-owned services cleaned"
+          }
         ]
       },
       "classifications": [
@@ -99,7 +113,7 @@
         "rendered behavioral owner"
       ],
       "acceptance_gaps": [
-        "The current 39-entry mutation inventory has not yet been replayed through both declared owner layers on this baseline.",
+        "Scanner-result/complexity shard 1/8 caught all 5 assigned mutants; shards 2/8 through 8/8 and every rendered-ListPages shard remain to be replayed for the current 39-entry inventory.",
         "Survivor dispositions must be re-reviewed against current source bytes rather than inherited from the historical 36-entry run."
       ]
     }
