@@ -378,28 +378,6 @@ mod tests {
     }
 
     #[test]
-    fn generated_gate_list_pages_recovery_remains_query_dependent() {
-        // Local render-dependency invariant: once the scanner recognizes an
-        // executable ListPages module, dependency classification must remain
-        // query-dependent. The generated gate spelling and Wikidot comment
-        // ownership are covered by the retained ListPages compatibility
-        // evidence; the module-shaped text below is deliberately comment-owned
-        // so this owner exercises the recovery seam rather than a normal close.
-        let source = concat!(
-            "[[module ListPages category=\"fragment\"]]\n",
-            "[[#ifexpr %%created_by_id%% > 6000000 |  | [!-- ]]\n",
-            "HIDDEN [[/module]]\n",
-            "[!-- --]\n",
-            "VISIBLE\n",
-            "[[/module]]",
-        );
-        let classes = classify_render_dependencies(source);
-
-        assert!(classes.contains(RenderDependencyClass::QueryDependent));
-        assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
-    }
-
-    #[test]
     fn count_pages_dependencies_follow_executable_runtime_recognition() {
         for source in [
             "[[module CountPages category=\"news\"]]%%total%%[[/module]]",

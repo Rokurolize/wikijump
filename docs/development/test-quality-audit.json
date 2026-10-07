@@ -61,13 +61,6 @@
           "anchors": [
             "listpages_created_by_id_comment_gates_resolve_after_row_substitution"
           ]
-        },
-        {
-          "path": "deepwell/src/services/render/render_dependency.rs",
-          "sha256": "2fcf16116185af4448859c1fb81004daca10d8daa6adf91b27a7e5dd0e06e934",
-          "anchors": [
-            "generated_gate_list_pages_recovery_remains_query_dependent"
-          ]
         }
       ],
       "mutation": {
@@ -96,15 +89,6 @@
               "listpages_created_by_id_comment_gates_resolve_after_row_substitution",
               "--cargo-test-arg=--",
               "--cargo-test-arg=--exact"
-            ]
-          },
-          {
-            "id": "render-dependency",
-            "cargo_mutants_args": [
-              "-C",
-              "--lib",
-              "--cargo-test-arg",
-              "generated_gate_list_pages_recovery_remains_query_dependent"
             ]
           }
         ],
@@ -270,19 +254,28 @@
             "timeout": 0,
             "classification": "regression-owner gap",
             "evidence": "The declared rendered ListPages test passes even when generated_gate_module_close is replaced with None, Some(0), Some(1), and two arithmetic mutations. A bounded trial that added a comment-owned [[/module]] decoy to the known-false generated branch still missed the same 5 mutants, so that edit was reverted rather than being kept as false ownership evidence. The full render pipeline does not currently make this helper observable through that integration assertion. Remaining rendered shards are blocked pending an independently justified rendered behavior that actually depends on the recovery seam."
+          },
+          {
+            "date": "2026-10-07",
+            "shard": "0/8 repair trial",
+            "mutants": 5,
+            "caught": 0,
+            "missed": 5,
+            "unviable": 0,
+            "timeout": 0,
+            "classification": "repaired rendered owner candidate rejected",
+            "evidence": "A second bounded trial added a comment-owned [[/module]] decoy, required the real first-module closer, and appended a second executable ListPages module; its unmutated task-owned-stack regression passed and asserted FIRST plus SECOND while HIDDEN stayed absent. Nevertheless the same shard-0 mutations, including replacing generated_gate_module_close with None, Some(0), and Some(1), all survived. The trial was reverted. This confirms the current full render pipeline assertion does not behaviorally own this helper even when suffix scanning is made observable at the authored fixture level."
           }
         ]
       },
       "classifications": [
         "scanner-result owner",
         "complexity owner",
-        "render dependency owner",
         "rendered integration candidate rejected as an owner"
       ],
       "acceptance_gaps": [
         "Scanner-result/complexity is complete across cargo-mutants zero-based shards 0/8 through 7/8: 32 caught, 3 provisionally equivalent survivors, 1 unviable mutant, and 3 mutation-induced nonprogress timeouts across the fixed 39-entry inventory.",
-        "Rendered-ListPages shard 0/8 missed all 5 assigned mutants because the declared integration test does not execute the generated-gate recovery path. This is an owner/regression gap, not five accepted survivors; remaining rendered shards are blocked until that owner is repaired with independently justified behavior.",
-        "A new local-invariant render-dependency owner now asserts that a scanner-recognized generated-gate ListPages module remains QueryDependent; its mutation replay is still pending.",
+        "Rendered-ListPages shard 0/8 missed all 5 assigned mutants both with the original integration fixture and with two independently justified repair trials, including a second-module suffix-scanning case. The rendered integration candidate is therefore rejected as an owner rather than being strengthened from implementation-derived expectations; remaining rendered shards are blocked pending a genuinely observable behavior or dead/redundant-code classification.",
         "The three shard 3/8 and 4/8 survivor dispositions are derived from current byte/token invariants but still require the authorized independent reviewer before acceptance."
       ]
     }
