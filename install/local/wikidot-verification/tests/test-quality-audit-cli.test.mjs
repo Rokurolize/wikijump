@@ -85,6 +85,23 @@ test("audit verify rejects a removed owner whose symbol still exists", (t) => {
   assert.match(result.stderr, /removed owner.*still contains symbol/u);
 });
 
+test("audit verify rejects an omitted owner identity", (t) => {
+  const result = audit("verify", withLedger(t), ["--owner", "deepwell:nonexistent:owner"]);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /unknown audit owner/u);
+});
+
+test("audit verify rejects a changed live mutation inventory", (t) => {
+  const result = audit("verify", withLedger(t, (ledger) => {
+    const owner = auditedOwner(ledger);
+    owner.mutation.removed = false;
+    owner.mutation.function = "first_module_opening_candidate";
+    owner.mutation.inventory_count = 1;
+  }));
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /mutation inventory mismatch/u);
+});
+
 test("audit mutate rejects a removed owner before starting services", (t) => {
   const fixture = withLedger(t);
   const result = audit("mutate", fixture, [
