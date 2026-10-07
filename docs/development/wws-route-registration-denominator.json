@@ -5,8 +5,8 @@
     "inputs": [
       {
         "path": "deepwell/Cargo.lock",
-        "git_blob": "fe68e20a4d114453f31efbc38adf398c6a31326c",
-        "sha256": "01b489fc0c2282a0ceddf363a6de6636b68266a0bc3478e9d872af998cab8e2a"
+        "git_blob": "7409423328873ed9f7433a89004877c4b2750775",
+        "sha256": "fa5666de8066315831571fe7ba4c36ba822f5fecd7ac192212c8fd7061d72486"
       },
       {
         "path": "deepwell/Cargo.toml",
