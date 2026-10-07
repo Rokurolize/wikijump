@@ -121,6 +121,10 @@ source files, two passing unit tests, **232 / 507 lines (45.76%)** and
 10 / 25 functions (40%). Integration and union-of-suite coverage remain
 outstanding; a zero-unit-hit production line must be checked against its
 integration owner rather than immediately classified as an absent test.
+Of those 111 not-emitted Deepwell paths, 53 are `mod.rs` module files,
+two are `bin/` targets, and one each is `main.rs` and `lib.rs`. That explains
+some possible compilation boundaries, but does not classify the remaining
+54 files as untested without examining their actual owners.
 
 ### Framerail
 
@@ -138,7 +142,10 @@ instrumentation: 117 raw profiles observed 113 of 315 inventoried `framerail/src
 files. V8 saw 1,808 executed function-entry ranges among 3,127 observed
 function-entry records, potentially repeated across profiles. Neither their
 ratio nor 113/315 is claimed to be source-line or branch coverage; the missing
-202 source files need separate instrumentation/ownership review.
+202 source files (106 `.ts`, 90 `.svelte`, six `.js`) need separate
+instrumentation/ownership review. In particular, raw V8 output does not
+attribute transpiled SvelteKit/TypeScript execution back to those source
+files without an explicitly checked source-map/coverage pipeline.
 
 ### wikidot-verification
 
