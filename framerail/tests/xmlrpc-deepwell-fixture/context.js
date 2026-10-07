@@ -67,6 +67,8 @@ export const fixtureState = {
     userGet: [],
     voteSet: []
   },
+  /** @type {Array<Record<string, unknown>>} */
+  userCreateRequests: [],
   /** @type {Record<string, RecordedRpcRequest[]>} */
   fileRequests: {
     blobUpload: [],

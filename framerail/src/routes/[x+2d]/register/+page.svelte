@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { errorPopupState } from "$lib/layout/stores.svelte"
   import { goto } from "$app/navigation"
-  import { resolve } from "$app/paths"
+  import { errorPopupState } from "$lib/layout/stores.svelte"
   import { authCancelDestination } from "$lib/auth-cancel.js"
   import { untrack } from "svelte"
   import { superForm } from "sveltekit-superforms"
@@ -11,7 +10,6 @@
 
   let { data }: PageProps = $props()
 
-  let isLoggedIn = $derived<boolean>(data.isLoggedIn)
   let isRegistered = $state<boolean>(false)
 
   const cancelRegistration = async () => {
@@ -25,7 +23,6 @@
         if (result.type === "success" && result.data?.isRegistered) {
           isRegistered = true
           cancel()
-          await goto(resolve("/-/login", {}))
           return
         }
 
@@ -41,8 +38,11 @@
   )
 </script>
 
-{#if isLoggedIn || isRegistered}
-  {data.internationalization?.["register.toast"]}
+{#if isRegistered}
+  <p role="status" class="register-success">
+    {data.internationalization?.["register.toast"]}
+    <a href="/-/login">{data.internationalization?.login}</a>
+  </p>
 {:else}
   <form id="register" class="register-form" method="POST" use:enhance>
     <label for="username">

@@ -6,10 +6,14 @@ export const handleSiteRpc = ({ rpcRequest }) => {
 
   if (
     rpcRequest.method === "preload_view" &&
-    hasExactKeys(rpcRequest.params, ["site_id", "locales", "session_token"]) &&
+    (hasExactKeys(rpcRequest.params, ["site_id", "locales", "session_token"]) ||
+      hasExactKeys(rpcRequest.params, ["site_id", "locales"])) &&
     rpcRequest.params?.site_id === 6000005 &&
     Array.isArray(rpcRequest.params.locales) &&
-    rpcRequest.params.session_token === "fixture-session-token"
+    (rpcRequest.params.session_token === undefined ||
+      ["fixture-session-token", "fixture-authenticated-session-token"].includes(
+        rpcRequest.params.session_token
+      ))
   ) {
     result = {
       site: {
@@ -56,7 +60,19 @@ export const handleSiteRpc = ({ rpcRequest }) => {
       license_url: "https://creativecommons.org/licenses/by-sa/3.0/",
       license_kind: "standard",
       license_html: null,
-      user_session: null
+      user_session:
+        rpcRequest.params.session_token === "fixture-authenticated-session-token"
+          ? {
+              session_id: 6000008,
+              user: {
+                user_id: 6000008,
+                user_type: "regular",
+                name: "Fixture Member",
+                slug: "fixture-member",
+                locales: ["en"]
+              }
+            }
+          : null
     }
   } else if (
     rpcRequest.method === "admin_view" &&

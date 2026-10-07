@@ -59,6 +59,7 @@ export async function loadRegisterPage(request: Request, preloadData: PreloadDat
     "confirm-password": {},
     "register.toast": {},
     "create-account": {},
+    "login": {},
 
     // errors
     "error-form.password-mismatch": {},
