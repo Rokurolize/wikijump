@@ -35,6 +35,14 @@ ledger. For example, the generated-gate function keeps its scanner-result and
 complexity run distinct from its rendered ListPages integration run; shards
 from those runs must be reconciled separately before the owner is accepted.
 
+An implementation-only helper is not classified as dead or redundant merely
+because a direct unit owner catches its mutants while higher-level observers do
+not. Before deleting such a recovery seam, compare behavior with and without
+the seam across the retained accepted source/replay corpus (or another frozen
+independent contract) and record that differential. Surviving higher-level
+owner trials are evidence of an ownership gap, not by themselves proof that
+the production code is removable.
+
 `inventory` discovers production files independently of coverage output. It
 also records executable test owners, test-imported modules, wrapper/browser
 owners, Cargo targets, Deepwell binaries, and proc-macro targets. `verify`

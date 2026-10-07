@@ -266,6 +266,33 @@
             "classification": "repaired rendered owner candidate rejected",
             "evidence": "A second bounded trial added a comment-owned [[/module]] decoy, required the real first-module closer, and appended a second executable ListPages module; its unmutated task-owned-stack regression passed and asserted FIRST plus SECOND while HIDDEN stayed absent. Nevertheless the same shard-0 mutations, including replacing generated_gate_module_close with None, Some(0), and Some(1), all survived. The trial was reverted. This confirms the current full render pipeline assertion does not behaviorally own this helper even when suffix scanning is made observable at the authored fixture level."
           }
+        ],
+        "production_observer_checks": [
+          {
+            "date": "2026-10-08",
+            "observer": "scanner_keeps_generated_comment_gate_rows_inside_the_module",
+            "result": "generated_gate_module_close return replacements None, Some(0), and Some(1) survived the public scanner-match assertion; the remaining two shard-0 arithmetic mutants also survived",
+            "classification": "not a behavioral owner"
+          },
+          {
+            "date": "2026-10-08",
+            "observer": "temporary two-gate public scanner-boundary assertion",
+            "result": "the unmutated public scanner result was correct, but return replacements None and Some(0) survived before the bounded replay was interrupted; the temporary assertion was reverted",
+            "classification": "not sufficient ownership evidence"
+          },
+          {
+            "date": "2026-10-08",
+            "observer": "temporary render dependency classification using the same two-gate shape as the direct helper test",
+            "result": "the unmutated QueryDependent classification passed, but return replacements None and Some(0) survived before the bounded replay was interrupted; the temporary assertion was reverted",
+            "classification": "not sufficient ownership evidence"
+          },
+          {
+            "date": "2026-10-08",
+            "observer": "retained ListPages campaign generated-gate corpus differential",
+            "result": "Selected all 75 balanced executable corpus invocations containing an evidenced generated #if/#ifexpr [!-- ]] gate from the pinned 23,964-invocation ListPages campaign artifact. A temporary diagnostic captured the complete public scanner match signature for every case (module count plus start/body_start/end/head/body/runtime and preservation flags). Replaying the function-level mutation generated_gate_module_close -> None produced byte-for-byte identical signatures across all 75 cases; the diagnostic test was reverted after the comparison and the source SHA was restored.",
+            "classification": "redundant recovery candidate on retained accepted generated-gate corpus",
+            "source_artifact": "install/local/wikidot-verification/artifacts/listpages-campaign-matrix/corpus-invocation-cases.jsonl.gz"
+          }
         ]
       },
       "classifications": [
@@ -276,6 +303,7 @@
       "acceptance_gaps": [
         "Scanner-result/complexity is complete across cargo-mutants zero-based shards 0/8 through 7/8: 32 caught, 3 provisionally equivalent survivors, 1 unviable mutant, and 3 mutation-induced nonprogress timeouts across the fixed 39-entry inventory.",
         "Rendered-ListPages shard 0/8 missed all 5 assigned mutants both with the original integration fixture and with two independently justified repair trials, including a second-module suffix-scanning case. The rendered integration candidate is therefore rejected as an owner rather than being strengthened from implementation-derived expectations; remaining rendered shards are blocked pending a genuinely observable behavior or dead/redundant-code classification.",
+        "Public scanner and render-dependency observer trials survived function-level None/Some(0) replacements. A retained-corpus differential then showed generated_gate_module_close -> None leaves the complete public scanner match signatures unchanged for all 75 balanced executable generated-gate invocations in the pinned ListPages campaign artifact. The recovery seam is therefore a removal candidate; deletion plus focused/full scanner validation is still pending and must not discard the independently evidenced gate/comment behavior owned elsewhere.",
         "The three shard 3/8 and 4/8 survivor dispositions are derived from current byte/token invariants but still require the authorized independent reviewer before acceptance."
       ]
     }
