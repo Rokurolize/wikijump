@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated_at": "2026-10-07",
+  "updated_at": "2026-10-08",
   "tracking_issue": 1990,
   "baseline_commit": "520e2ee1ae8332f22196ced2c5db202b12f1971d",
   "scope": {
@@ -16,6 +16,24 @@
     ],
     "wws_regression_validation_retained": true
   },
+  "next_mutation_frontier": [
+    {
+      "status": "inventory_only_not_replayed",
+      "owner_candidate": "deepwell:listpages:scanner-match-and-work",
+      "source": "deepwell/src/services/render/list_pages/scanner.rs",
+      "source_sha256": "41c1f5132bd938cf8fb0fb4228767583b59b7529a1ad0fd7740376ebbdb9d30e",
+      "symbol": "find_list_pages_module_matches_with_cursor_work_context_lowercase",
+      "mutation_count": 136,
+      "mutation_list_sha256": "a64a819032a0d848dec32b067490fd65cf00a2c220e191320dd7c497e4050fd0",
+      "mutation_list_path": "/tmp/wj-1990-scanner-frontier-list-20261008.txt",
+      "owner_candidates": [
+        "deepwell/src/services/render/list_pages/scanner/tests.rs",
+        "deepwell/src/services/render/list_pages/scanner/tests/stress.rs",
+        "deepwell/tests/list_pages.rs"
+      ],
+      "next_action": "Review the 136-member mutation list, split independently meaningful scanner-match and bounded-work owner assertions, freeze each denominator, then run bounded replay without accepting inferred survivors. No mutation outcome has been claimed for this candidate."
+    }
+  ],
   "lockfiles": [
     {
       "path": "deepwell/Cargo.lock",
