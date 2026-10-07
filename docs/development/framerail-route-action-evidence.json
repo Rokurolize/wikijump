@@ -1,6 +1,6 @@
 {
   "schema": "wikijump.framerail_route_action_evidence.v1",
-  "source_revision": "1666e49950b7da4cff7b450df25972c945cbf644",
+  "source_revision": "546c93a0f007f702c9facd1f50e8d7353e7ed5e4",
   "inventory": {
     "path": "docs/development/compatibility-surface-inventory.json",
     "sha256": "3cd92c971282ea05e8d30b8f4b63f5badbc86b718461601b6008a1498aaa8084"
@@ -19,31 +19,7 @@
       "temporal": []
     },
     {
-      "surface_id": "framerail-route:/_admin",
-      "tests": [
-        "framerail/tests/site-settings-public-boundary.test.js::serves the legacy admin route through the same rendered page and action seam"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
       "surface_id": "framerail-route:/-",
-      "tests": [
-        "framerail/tests/corpus-route-ownership.test.js::platform information remains available under the reserved application prefix"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-route:/-/{slug}/{*extra}",
       "tests": [
         "framerail/tests/corpus-route-ownership.test.js::platform information remains available under the reserved application prefix"
       ],
@@ -175,9 +151,224 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-route:/-/{slug}/{*extra}",
+      "tests": [
+        "framerail/tests/corpus-route-ownership.test.js::platform information remains available under the reserved application prefix"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-route:/.well-known",
       "tests": [
         "framerail/tests/release-route-action-boundaries.test.js::reserved compatibility routes expose their public fail-closed responses"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/_admin",
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::serves the legacy admin route through the same rendered page and action seam"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/ajax-module-connector.php",
+      "tests": [
+        "framerail/tests/ajax-module-connector.test.js::dispatches ListPages forms and returns the Wikidot JSON envelope"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/common--images/jquery-raty/{asset}",
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::reserved compatibility routes expose their public fail-closed responses"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/feed/forum/{feed}",
+      "tests": [
+        "framerail/tests/forum-feed.test.ts::forum RSS uses local identifiers, public channel metadata, and safe CDATA"
+      ],
+      "tracking": [
+        {
+          "issue": 2091
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/feed/pages/{argument}/{*extra}",
+      "tests": [
+        "framerail/tests/feed-pages-route.test.js::anonymous exact feed/pages renders the generic missing-page shell"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/forum/c-{category}/{*name}",
+      "tests": [
+        "framerail/tests/forum-routes.test.js::the observed category pager suffix reaches the exact AMC page"
+      ],
+      "tracking": [
+        {
+          "issue": 1034,
+          "case": "Q1034_FORUM_LATER_PAGE_AND_PAGER_READ_MODEL"
+        },
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/forum/start/{*extra}",
+      "tests": [
+        "framerail/tests/forum-routes.test.js::forum route loads use the exact sealed read-only module requests"
+      ],
+      "tracking": [
+        {
+          "issue": 1034,
+          "case": "Q1034_DEDICATED_FORUM_ROUTES_AND_AJAX"
+        },
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/forum/t-{thread}/{*name}",
+      "tests": [
+        "framerail/tests/forum-routes.test.js::forum route loads use the exact sealed read-only module requests"
+      ],
+      "tracking": [
+        {
+          "issue": 1034,
+          "case": "Q1034_DEDICATED_FORUM_ROUTES_AND_AJAX"
+        },
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/forum/{fallback}/{*extra}",
+      "tests": [
+        "framerail/tests/forum-routes.test.js::unobserved forum suffixes terminate at the public 404 boundary"
+      ],
+      "tracking": [
+        {
+          "issue": 1034,
+          "case": "Q1034_DEDICATED_FORUM_ROUTES_AND_AJAX"
+        },
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/local--favicon/{filename}",
+      "tests": [
+        "framerail/tests/site-icon-source.test.js::local site icons redirect only to same-origin file routes"
+      ],
+      "tracking": [
+        {
+          "issue": 756,
+          "case": "M756_SAFE_ICON_SOURCE_POLICY"
+        },
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/local--iosicon/{filename}",
+      "tests": [
+        "framerail/tests/site-icons.test.js::iOS touch icons reproduce the three filenames and sizes Wikidot declares"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/local--wp8icon/{filename}",
+      "tests": [
+        "framerail/tests/site-icons.test.js::Windows 8 tile declaration keeps Wikidot's local route rather than the configured source"
+      ],
+      "tracking": [
+        {
+          "issue": 756,
+          "case": "M756_WINDOWS_TILE_DECLARATION"
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/printer--friendly/{*path}",
+      "tests": [
+        "framerail/tests/hooks-reroute.test.ts::printer-friendly doubled slash resolves to the single-slash route",
+        "framerail/tests/wikidot-print-view.test.js::printer-friendly URL preserves the live doubled slash"
+      ],
+      "tracking": [
+        {
+          "issue": 777,
+          "case": "A777_BROWSER_PRINT_LIFECYCLE"
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/user:info/{target}",
+      "tests": [
+        "framerail/tests/wikidot-user-info-target-route.test.js::GET /user:info/<target> has an encoded public route"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/xml-rpc-api.php",
+      "tests": [
+        "framerail/tests/xmlrpc-url-swap-public-boundary.test.js::the standard Python XML-RPC client resolves the documented API through the public route"
       ],
       "tracking": [
         {
@@ -392,365 +583,6 @@
           ]
         }
       ]
-    },
-    {
-      "surface_id": "framerail-route:/ajax-module-connector.php",
-      "tests": [
-        "framerail/tests/ajax-module-connector.test.js::dispatches ListPages forms and returns the Wikidot JSON envelope"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-route:/common--images/jquery-raty/{asset}",
-      "tests": [
-        "framerail/tests/release-route-action-boundaries.test.js::reserved compatibility routes expose their public fail-closed responses"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-route:/feed/pages/{argument}/{*extra}",
-      "tests": [
-        "framerail/tests/feed-pages-route.test.js::anonymous exact feed/pages renders the generic missing-page shell"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-route:/forum/{fallback}/{*extra}",
-      "tests": [
-        "framerail/tests/forum-routes.test.js::unobserved forum suffixes terminate at the public 404 boundary"
-      ],
-      "tracking": [
-        {
-          "issue": 1034,
-          "case": "Q1034_DEDICATED_FORUM_ROUTES_AND_AJAX"
-        },
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-route:/forum/c-{category}/{*name}",
-      "tests": [
-        "framerail/tests/forum-routes.test.js::the observed category pager suffix reaches the exact AMC page"
-      ],
-      "tracking": [
-        {
-          "issue": 1034,
-          "case": "Q1034_FORUM_LATER_PAGE_AND_PAGER_READ_MODEL"
-        },
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-route:/forum/start/{*extra}",
-      "tests": [
-        "framerail/tests/forum-routes.test.js::forum route loads use the exact sealed read-only module requests"
-      ],
-      "tracking": [
-        {
-          "issue": 1034,
-          "case": "Q1034_DEDICATED_FORUM_ROUTES_AND_AJAX"
-        },
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-route:/forum/t-{thread}/{*name}",
-      "tests": [
-        "framerail/tests/forum-routes.test.js::forum route loads use the exact sealed read-only module requests"
-      ],
-      "tracking": [
-        {
-          "issue": 1034,
-          "case": "Q1034_DEDICATED_FORUM_ROUTES_AND_AJAX"
-        },
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-route:/local--favicon/{filename}",
-      "tests": [
-        "framerail/tests/site-icon-source.test.js::local site icons redirect only to same-origin file routes"
-      ],
-      "tracking": [
-        {
-          "issue": 756,
-          "case": "M756_SAFE_ICON_SOURCE_POLICY"
-        },
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-route:/local--iosicon/{filename}",
-      "tests": [
-        "framerail/tests/site-icons.test.js::iOS touch icons reproduce the three filenames and sizes Wikidot declares"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-route:/local--wp8icon/{filename}",
-      "tests": [
-        "framerail/tests/site-icons.test.js::Windows 8 tile declaration keeps Wikidot's local route rather than the configured source"
-      ],
-      "tracking": [
-        {
-          "issue": 756,
-          "case": "M756_WINDOWS_TILE_DECLARATION"
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-route:/printer--friendly/{*path}",
-      "tests": [
-        "framerail/tests/hooks-reroute.test.ts::printer-friendly doubled slash resolves to the single-slash route",
-        "framerail/tests/wikidot-print-view.test.js::printer-friendly URL preserves the live doubled slash"
-      ],
-      "tracking": [
-        {
-          "issue": 777,
-          "case": "A777_BROWSER_PRINT_LIFECYCLE"
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-route:/user:info/{target}",
-      "tests": [
-        "framerail/tests/wikidot-user-info-target-route.test.js::GET /user:info/<target> has an encoded public route"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-route:/xml-rpc-api.php",
-      "tests": [
-        "framerail/tests/xmlrpc-url-swap-public-boundary.test.js::the standard Python XML-RPC client resolves the documented API through the public route"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/_admin?/analytics",
-      "tests": [
-        "framerail/tests/site-settings-public-boundary.test.js::routes settings writes through the trusted site and revision-bound action seam"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/_admin?/autonumber",
-      "tests": [
-        "framerail/tests/site-settings-public-boundary.test.js::routes settings writes through the trusted site and revision-bound action seam"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/_admin?/discussion",
-      "tests": [
-        "framerail/tests/forum-nesting-site-binding.test.js::discussion updates stay bound to the routed site"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/_admin?/forumNesting",
-      "tests": [
-        "framerail/tests/forum-nesting-site-binding.test.js::forum nesting updates stay bound to the routed site"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/_admin?/license",
-      "tests": [
-        "framerail/tests/admin-license.test.js::returns explicit and inherited custom licenses as stable sanitizer input"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/_admin?/membership",
-      "tests": [
-        "framerail/tests/site-settings-public-boundary.test.js::renders membership policy without exposing a configured password and binds review actions"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/_admin?/membershipReview",
-      "tests": [
-        "framerail/tests/site-settings-public-boundary.test.js::renders membership policy without exposing a configured password and binds review actions"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/_admin?/navigation",
-      "tests": [
-        "framerail/tests/admin-navigation.test.js::maps the inheritance control to nullable category overrides"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/_admin?/rating",
-      "tests": [
-        "framerail/tests/forum-nesting-site-binding.test.js::rating updates stay bound to the routed site"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/_admin?/site",
-      "tests": [
-        "framerail/tests/site-settings-public-boundary.test.js::routes settings writes through the trusted site and revision-bound action seam"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/_admin?/siteIcons",
-      "tests": [
-        "framerail/tests/forum-nesting-site-binding.test.js::site icon updates stay bound to the routed site"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/_admin?/siteLayout",
-      "tests": [
-        "framerail/tests/site-settings-public-boundary.test.js::routes settings writes through the trusted site and revision-bound action seam"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/_admin?/template",
-      "tests": [
-        "framerail/tests/site-settings-public-boundary.test.js::page template settings bind the category mutation to the trusted site actor"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/_admin?/theme",
-      "tests": [
-        "framerail/tests/site-settings-public-boundary.test.js::routes settings writes through the trusted site and revision-bound action seam"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/_admin?/toolbar",
-      "tests": [
-        "framerail/tests/site-settings-public-boundary.test.js::routes settings writes through the trusted site and revision-bound action seam"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
     },
     {
       "surface_id": "framerail-server-action:/-/admin?/analytics",
@@ -1420,6 +1252,186 @@
       "surface_id": "framerail-server-action:/?/watchers",
       "tests": [
         "framerail/tests/page-watchers-public-boundary.test.js::Watchers action derives the site from trusted context and remains anonymous"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/analytics",
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::routes settings writes through the trusted site and revision-bound action seam"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/autonumber",
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::routes settings writes through the trusted site and revision-bound action seam"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/discussion",
+      "tests": [
+        "framerail/tests/forum-nesting-site-binding.test.js::discussion updates stay bound to the routed site"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/forumNesting",
+      "tests": [
+        "framerail/tests/forum-nesting-site-binding.test.js::forum nesting updates stay bound to the routed site"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/license",
+      "tests": [
+        "framerail/tests/admin-license.test.js::returns explicit and inherited custom licenses as stable sanitizer input"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/membership",
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::renders membership policy without exposing a configured password and binds review actions"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/membershipReview",
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::renders membership policy without exposing a configured password and binds review actions"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/navigation",
+      "tests": [
+        "framerail/tests/admin-navigation.test.js::maps the inheritance control to nullable category overrides"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/rating",
+      "tests": [
+        "framerail/tests/forum-nesting-site-binding.test.js::rating updates stay bound to the routed site"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/site",
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::routes settings writes through the trusted site and revision-bound action seam"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/siteIcons",
+      "tests": [
+        "framerail/tests/forum-nesting-site-binding.test.js::site icon updates stay bound to the routed site"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/siteLayout",
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::routes settings writes through the trusted site and revision-bound action seam"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/template",
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::page template settings bind the category mutation to the trusted site actor"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/theme",
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::routes settings writes through the trusted site and revision-bound action seam"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/_admin?/toolbar",
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::routes settings writes through the trusted site and revision-bound action seam"
       ],
       "tracking": [
         {
