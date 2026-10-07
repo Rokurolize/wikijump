@@ -45,7 +45,8 @@ export const fixtureState = {
     parentDirectMetadata: [],
     parentRelationshipsGet: [],
     siteGet: [],
-    voteList: []
+    voteList: [],
+    pageGetScore: []
   },
   /** @type {null | ((outcome?: "success" | "failure") => void)} */
   pendingPageRevisionDiffResponse: null,
@@ -65,7 +66,8 @@ export const fixtureState = {
     parentUpdate: [],
     sessionGet: [],
     userGet: [],
-    voteSet: []
+    voteSet: [],
+    voteRemove: []
   },
   /** @type {Record<string, RecordedRpcRequest[]>} */
   fileRequests: {
@@ -85,7 +87,13 @@ export const fixtureState = {
     nextRevisionId: 9100000,
     nextFileId: 5000000,
     nextPendingBlobId: 1
-  }
+  },
+  ratingScores: {
+    3000341: 3,
+    3000342: 0
+  },
+  /** @type {Record<number, number>} */
+  voteValues: {}
 }
 
 const MIN_I64 = -(1n << 63n)

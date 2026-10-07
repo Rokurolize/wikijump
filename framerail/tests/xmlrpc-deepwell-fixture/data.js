@@ -314,6 +314,38 @@ x^2 + y^2 = z^2
     compiled_body_html:
       '<p>Page workflow probe</p><a id="navigate-history-target" href="/scp-173" data-sveltekit-reload="off">Navigate to history target</a>'
   },
+  "page-workflow-star-probe": {
+    page_id: 3000341,
+    revision_id: 9000341,
+    page_created_at: "2026-07-23T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-23T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Page Workflow Star Probe",
+    slug: "page-workflow-star-probe",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "Page workflow star probe",
+    compiled_body_html: "<p>Page workflow star probe</p>"
+  },
+  "page-workflow-rating-probe": {
+    page_id: 3000342,
+    revision_id: 9000342,
+    page_created_at: "2026-07-23T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-23T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Page Workflow Rating Probe",
+    slug: "page-workflow-rating-probe",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "Page workflow rating probe",
+    compiled_body_html: "<p>Page workflow rating probe</p>"
+  },
   "authoring-history-probe": {
     page_id: 3000345,
     revision_id: 9000345,
@@ -588,7 +620,19 @@ export const toArticleViewResult = (page) => ({
       },
       wikidot_snapshot: null,
       wikidot_breadcrumbs: [],
-      attributions: []
+      attributions: [],
+      page_rating: {
+        enabled: true,
+        permission: "registered",
+        visibility: "visible",
+        rating_type: page.slug === "page-workflow-star-probe" ? "stars" : "plus_minus"
+      },
+      page_discussion: { enabled: false },
+      data_form: null,
+      legacy_actions: [],
+      rate_actions: null,
+      membership_actions: [],
+      meta_tags: []
     }
   }
 })
