@@ -279,6 +279,43 @@ mod tests {
     use std::path::Path;
 
     #[test]
+    fn default_template_contains_working_search_and_management_pages_and_renderable_join_guidance()
+     {
+        let seeder_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("seeder");
+        let seed = SeedData::load(&seeder_path).expect("seed data should load");
+        let pages = seed
+            .pages
+            .get("template-en")
+            .expect("default template pages");
+
+        let search = pages
+            .iter()
+            .find(|page| page.slug == "search:site")
+            .expect("default search page");
+        assert_eq!(
+            search.wikitext.trim_end(),
+            "[[module Search]]\n\n[!-- please do not remove or change this page if you want to keep the search function working --]"
+        );
+
+        let manage = pages
+            .iter()
+            .find(|page| page.slug == "admin:manage")
+            .expect("default site manager page");
+        assert_eq!(manage.wikitext.trim(), "[[module ManageSite]]");
+
+        let join = pages
+            .iter()
+            .find(|page| page.slug == "system:join")
+            .expect("default join page");
+        assert!(!join.wikitext.contains("[[note]]"));
+        assert!(!join.wikitext.contains("[[/note]]"));
+        assert!(join.wikitext.contains("Site administrator"));
+        assert!(join.wikitext.contains("[[[admin:manage|Site Manager]]]"));
+        assert!(join.wikitext.contains("[[module MembershipApply]]"));
+        assert!(join.wikitext.contains("[[module MembershipByPassword]]"));
+    }
+
+    #[test]
     fn scp_jp_seed_claims_only_its_local_development_domain() {
         let seeder_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("seeder");
         let seed = SeedData::load(&seeder_path).expect("seed data should load");
