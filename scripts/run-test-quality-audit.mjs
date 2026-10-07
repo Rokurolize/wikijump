@@ -409,11 +409,21 @@ async function verify(outputDir, ownerId) {
     verifyMutationEvidence(owner);
     if (owner.mutation) {
       if (owner.mutation.removed) {
+        if (owner.status !== "removed_redundant") {
+          fail(`removed mutation owner ${owner.id} has contradictory status ${owner.status}`);
+        }
+        const evidence = owner.mutation.removal_evidence;
+        if (!evidence?.classification || !evidence?.differential || !evidence?.validation) {
+          fail(`removed mutation owner ${owner.id} lacks reviewed removal evidence`);
+        }
         const sourceText = readFileSync(resolve(root, owner.source.path), "utf8");
         if (sourceText.includes(owner.symbol)) {
           fail(`removed owner ${owner.id} still contains symbol ${owner.symbol}`);
         }
       } else {
+        if (owner.status === "removed_redundant") {
+          fail(`owner ${owner.id} claims removed status but retains a live mutation descriptor`);
+        }
         const count = await listedMutationCount(owner);
         if (count !== owner.mutation.inventory_count) {
           fail(`mutation inventory mismatch for ${owner.id}: expected ${owner.mutation.inventory_count}, got ${count}`);
