@@ -24,11 +24,15 @@ use super::service::{
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::text;
 use crate::services::forum::GetForumStructure;
-use crate::services::{ForumService, ServiceContext};
+use crate::services::{ForumService, ServiceContext, SiteService, TextService};
+use crate::types::Reference;
 use crate::utils::{normalize_page_slug, normalize_slug_without_category_separator};
 
 const THREADS_PER_PAGE: usize = 20;
 const THREAD_CANDIDATE_LIMIT: usize = 1_001;
+const FORUM_FEED_ITEM_LIMIT: usize = 60;
+const FORUM_FEED_BATCH_LIMIT: usize = 250;
+const FORUM_FEED_SCAN_LIMIT: usize = 10_000;
 const MAX_CATEGORY_PAGE: u32 = 50;
 const THREAD_POSTS_SCRIPT: &str = "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadPostsModule.js";
 const THREAD_SCRIPT: &str = "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadModule.js";
@@ -46,6 +50,62 @@ pub struct WikidotForumModuleResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thread_id: Option<i64>,
     pub js_include: Vec<String>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WikidotForumFeedKind {
+    Threads,
+    Posts,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct WikidotForumFeedItem {
+    pub forum_post_id: i64,
+    pub forum_thread_id: i64,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: time::OffsetDateTime,
+    pub title: String,
+    pub thread_title: String,
+    pub thread_slug: String,
+    pub page_slug: Option<String>,
+    pub forum_group_id: i64,
+    pub forum_group_name: String,
+    pub forum_category_id: i64,
+    pub forum_category_name: String,
+    pub forum_category_slug: String,
+    pub author_user_id: i64,
+    pub author_name: String,
+    pub content_html: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct WikidotForumFeedOutput {
+    pub site_name: String,
+    pub site_description: String,
+    pub items: Vec<WikidotForumFeedItem>,
+}
+
+#[derive(Debug, FromQueryResult)]
+struct ForumFeedCandidate {
+    forum_post_id: i64,
+    forum_thread_id: i64,
+    forum_category_id: i64,
+    forum_group_id: i64,
+    page_id: Option<i64>,
+    page_category_id: Option<i64>,
+    page_slug: Option<String>,
+    created_at: time::OffsetDateTime,
+    title: String,
+    thread_title: String,
+    group_name: String,
+    category_name: String,
+    author_user_id: i64,
+    author_wikidot_name: Option<String>,
+    author_wikidot_slug: Option<String>,
+    author_local_name: Option<String>,
+    author_local_slug: Option<String>,
+    guest_name: Option<String>,
+    compiled_html_hash: Vec<u8>,
 }
 
 #[derive(Debug, FromQueryResult)]
@@ -756,6 +816,106 @@ async fn load_category_context(
 }
 
 impl RenderService {
+    pub async fn wikidot_forum_feed(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        kind: WikidotForumFeedKind,
+    ) -> Result<Option<WikidotForumFeedOutput>> {
+        let viewer_user_id = ctx.request().user_id().ok();
+        let mut visibility = ForumPageVisibility::new(ctx, viewer_user_id);
+        if !visibility.site_is_viewable(site_id).await? {
+            return Ok(None);
+        }
+
+        let site = SiteService::get(ctx, Reference::Id(site_id)).await?;
+        let mut items = Vec::with_capacity(FORUM_FEED_ITEM_LIMIT);
+        let mut offset = 0usize;
+        let make_error =
+            || Error::new("failed to load public forum feed", ErrorType::Render);
+
+        while offset < FORUM_FEED_SCAN_LIMIT && items.len() < FORUM_FEED_ITEM_LIMIT {
+            let candidates =
+                ForumFeedCandidate::find_by_statement(Statement::from_sql_and_values(
+                    ctx.transaction().get_database_backend(),
+                    forum_feed_candidate_sql(kind),
+                    [
+                        Value::from(site_id),
+                        Value::from(FORUM_FEED_BATCH_LIMIT as i64),
+                        Value::from(offset as i64),
+                    ],
+                ))
+                .all(ctx.transaction())
+                .await
+                .or_raise(make_error)?;
+            if candidates.is_empty() {
+                break;
+            }
+            let batch_len = candidates.len();
+            for candidate in candidates {
+                if !visibility
+                    .page_is_viewable(
+                        site_id,
+                        candidate.page_id,
+                        candidate.page_category_id,
+                    )
+                    .await?
+                {
+                    continue;
+                }
+                let author_name = candidate
+                    .guest_name
+                    .or(candidate.author_wikidot_name)
+                    .or(candidate.author_wikidot_slug)
+                    .or(candidate.author_local_name)
+                    .or(candidate.author_local_slug)
+                    .unwrap_or_else(|| candidate.author_user_id.to_string());
+                let content_html = TextService::get(ctx, &candidate.compiled_html_hash)
+                    .await
+                    .or_raise(make_error)?;
+                items.push(WikidotForumFeedItem {
+                    forum_post_id: candidate.forum_post_id,
+                    forum_thread_id: candidate.forum_thread_id,
+                    created_at: candidate.created_at,
+                    title: candidate.title,
+                    thread_title: candidate.thread_title.clone(),
+                    thread_slug: normalize_slug_without_category_separator(
+                        &candidate.thread_title,
+                    ),
+                    page_slug: candidate.page_slug,
+                    forum_group_id: candidate.forum_group_id,
+                    forum_group_name: candidate.group_name,
+                    forum_category_id: candidate.forum_category_id,
+                    forum_category_slug: normalize_page_slug(
+                        candidate.category_name.clone(),
+                    ),
+                    forum_category_name: candidate.category_name,
+                    author_user_id: candidate.author_user_id,
+                    author_name,
+                    content_html,
+                });
+                if items.len() == FORUM_FEED_ITEM_LIMIT {
+                    break;
+                }
+            }
+            offset += batch_len;
+            if batch_len < FORUM_FEED_BATCH_LIMIT {
+                break;
+            }
+        }
+
+        // If a site has an unusual concentration of hidden rows, do not return
+        // an incomplete newest-first feed or continue scanning without a bound.
+        if offset >= FORUM_FEED_SCAN_LIMIT && items.len() < FORUM_FEED_ITEM_LIMIT {
+            return Ok(None);
+        }
+
+        Ok(Some(WikidotForumFeedOutput {
+            site_name: site.name,
+            site_description: site.description,
+            items,
+        }))
+    }
+
     pub async fn render_wikidot_forum_module(
         ctx: &ServiceContext<'_>,
         site_id: i64,
@@ -979,6 +1139,68 @@ impl RenderService {
             _ => Ok(response("not_ok", String::new())),
         }
     }
+}
+
+fn forum_feed_candidate_sql(kind: WikidotForumFeedKind) -> String {
+    let (site_column, created_at, order_id, title, revision_hash, body_post_join) =
+        match kind {
+            WikidotForumFeedKind::Posts => (
+                "fp.site_id",
+                "fp.created_at",
+                "fp.forum_post_id",
+                "fpr.title",
+                "fpr.compiled_html_hash",
+                concat!(
+                    "JOIN forum_post fp ON fp.forum_thread_id = t.forum_thread_id ",
+                    " AND fp.site_id = t.site_id AND fp.deleted_at IS NULL ",
+                    "JOIN forum_post_revision fpr ON fpr.forum_post_revision_id = fp.latest_revision_id ",
+                    " AND fpr.site_id = fp.site_id ",
+                    "LEFT JOIN wikidot_user wu ON wu.user_id = fp.user_id AND wu.is_deleted = FALSE ",
+                    "LEFT JOIN \"user\" local_user ON local_user.user_id = fp.user_id ",
+                    " AND local_user.deleted_at IS NULL ",
+                ),
+            ),
+            WikidotForumFeedKind::Threads => (
+                "t.site_id",
+                "t.created_at",
+                "t.forum_thread_id",
+                "fp.title",
+                "fp.compiled_html_hash",
+                concat!(
+                    "JOIN LATERAL (SELECT fp.forum_post_id, fp.user_id, fp.guest_name, ",
+                    "fp.created_at, fpr.title, fpr.compiled_html_hash ",
+                    "FROM forum_post fp JOIN forum_post_revision fpr ",
+                    "ON fpr.forum_post_revision_id = fp.latest_revision_id ",
+                    "AND fpr.site_id = fp.site_id ",
+                    "WHERE fp.forum_thread_id = t.forum_thread_id ",
+                    "AND fp.site_id = t.site_id AND fp.deleted_at IS NULL ",
+                    "ORDER BY fp.created_at ASC, fp.forum_post_id ASC LIMIT 1) fp ON TRUE ",
+                    "LEFT JOIN wikidot_user wu ON wu.user_id = fp.user_id AND wu.is_deleted = FALSE ",
+                    "LEFT JOIN \"user\" local_user ON local_user.user_id = fp.user_id ",
+                    " AND local_user.deleted_at IS NULL ",
+                ),
+            ),
+        };
+    format!(
+        "SELECT fp.forum_post_id, t.forum_thread_id, t.forum_category_id, \
+                t.forum_group_id, t.page_id, p.page_category_id, p.slug AS page_slug, \
+                {created_at} AS created_at, {title} AS title, t.title AS thread_title, \
+                g.name AS group_name, c.name AS category_name, fp.user_id AS author_user_id, \
+                wu.name AS author_wikidot_name, wu.slug AS author_wikidot_slug, \
+                local_user.name AS author_local_name, local_user.slug AS author_local_slug, \
+                fp.guest_name, {revision_hash} AS compiled_html_hash \
+         FROM forum_thread t \
+         JOIN forum_category c ON c.forum_category_id = t.forum_category_id \
+                              AND c.site_id = t.site_id AND c.deleted_at IS NULL \
+         JOIN forum_group g ON g.forum_group_id = t.forum_group_id \
+                           AND g.site_id = t.site_id AND g.deleted_at IS NULL AND g.visible = TRUE \
+         {body_post_join} \
+         LEFT JOIN page p ON p.page_id = t.page_id AND p.site_id = t.site_id AND p.deleted_at IS NULL \
+         WHERE {site_column} = $1 AND t.deleted_at IS NULL \
+           AND (t.page_id IS NULL OR p.page_id IS NOT NULL) \
+         ORDER BY {created_at} DESC, {order_id} DESC \
+         LIMIT $2 OFFSET $3"
+    )
 }
 
 #[cfg(test)]
