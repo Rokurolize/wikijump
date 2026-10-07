@@ -119,12 +119,19 @@ function dependencyLabel(row) {
 // Resolve the closure for one target row. Walks includes transitively
 // (bounded by maxDepth), collecting an import order of
 // parents -> theme/component -> other includes -> target.
-export function resolveDependencyClosure({ row, registry, readSource, maxDepth = 8 }) {
+export function resolveDependencyClosure({
+  row,
+  registry,
+  readSource,
+  scanIncludes = (source) => scanWikitextDependencies(source).includes,
+  maxDepth = 8,
+}) {
   const site = row.local_site ?? row.source_site;
   const inBundle = [];
   const outOfBundle = [];
   const cycles = [];
   const missingFiles = [];
+  const includeEdges = [];
   const dataModules = new Set();
   const seen = new Set();
   const activePath = [];
@@ -161,12 +168,18 @@ export function resolveDependencyClosure({ row, registry, readSource, maxDepth =
       outOfBundle.push({ dependency: dependencyLabel(pageRow), kind: 'source-unreadable' });
       return;
     }
-    const scan = scanWikitextDependencies(source);
-    for (const include of scan.includes) {
+    for (const include of scanIncludes(source)) {
       const includeSite = include.site ?? pageSite;
+      const sourceSlug = pageRow.slug ?? pageRow.fullname;
+      includeEdges.push({
+        source: `${pageSite}:${sourceSlug}`,
+        target: `${includeSite}:${include.page}`,
+        variables: include.variables ?? {},
+      });
       const kind = isThemeOrComponentSlug(include.page) ? 'theme-component' : 'include';
       visit(includeSite, include.page, kind, depth);
     }
+    const scan = scanWikitextDependencies(source);
     for (const moduleName of scan.dataModules) dataModules.add(moduleName);
     for (const ref of scan.localFiles) {
       missingFiles.push({ page: ref.page, file: ref.file, site: pageSite });
@@ -201,6 +214,7 @@ export function resolveDependencyClosure({ row, registry, readSource, maxDepth =
       in_bundle: inBundle.map((dep) => dep.label),
       out_of_bundle: outOfBundle,
       cycles,
+      include_edges: includeEdges,
       missing_files: missingFiles,
     },
     data_modules: [...dataModules],
