@@ -82,6 +82,7 @@ test("account route loads expose their public SvelteKit page data", async () => 
 
   const login = await routes.login.load({
     request: pageRequest("/-/login"),
+    cookies: { get: () => undefined, delete: () => {} },
     parent: async () => parentData
   })
   const logout = await routes.logout.load({
@@ -121,7 +122,11 @@ test("account route loads expose their public SvelteKit page data", async () => 
   assert.equal(logout.isLoggedIn, false)
   assert.equal(register.isLoggedIn, false)
   assert.equal(register.registerForm.valid, false)
-  assert.equal(settings.displaySettingsForm.data.locales, "en-US ja-JP")
+  assert.deepEqual(
+    register.userInterfaceLocales.map(({ value }) => value),
+    ["en", "ja", "ko", "pl", "vi", "zh-Hans"]
+  )
+  assert.deepEqual(settings.displaySettingsForm.data.locales, ["en-US", "ja-JP"])
   assert.equal(settings.displaySettingsForm.data.signature, "**Stored signature**")
   const settingsTranslate = translateCalls.find(
     (params) =>
@@ -132,6 +137,47 @@ test("account route loads expose their public SvelteKit page data", async () => 
   assert.equal(user.user.slug, "account-fixture")
   assert.equal(userSlug.view, "user_found")
   assert.deepEqual(userViewNames, [undefined, "account-fixture"])
+})
+
+test("registration feedback is consumed once and authenticated visits never claim new registration", async () => {
+  client.request = async (method) => {
+    if (method === "translate") return {}
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+
+  let registrationCookie = "1"
+  let deletedCookie
+  const login = await routes.login.load({
+    request: pageRequest("/-/login"),
+    cookies: {
+      get: () => registrationCookie,
+      delete: (name, options) => {
+        deletedCookie = { name, options }
+        registrationCookie = undefined
+      }
+    },
+    parent: async () => parentData
+  })
+  assert.equal(login.registrationSucceeded, true)
+  assert.deepEqual(deletedCookie, {
+    name: "wikijump_register_success",
+    options: { path: "/-/login" }
+  })
+
+  const reloadedLogin = await routes.login.load({
+    request: pageRequest("/-/login"),
+    cookies: { get: () => registrationCookie, delete: () => {} },
+    parent: async () => parentData
+  })
+  assert.equal(reloadedLogin.registrationSucceeded, false)
+
+  await assert.rejects(
+    routes.register.load({
+      request: pageRequest("/-/register"),
+      parent: async () => ({ ...parentData, user_session: { user: { user_id: 41 } } })
+    }),
+    (error) => error?.status === 303 && error?.location === "/"
+  )
 })
 
 test("display settings persist the forum signature through the existing account mutation", async () => {
@@ -154,7 +200,8 @@ test("display settings persist the forum signature through the existing account 
   }
 
   const formData = new FormData()
-  formData.set("locales", "en-US en")
+  formData.append("locales", "en-US")
+  formData.append("locales", "en")
   formData.set("signature", "**Forum signature**\nSecond line")
   const result = await routes.settings.actions.display({
     request: new Request("https://wikijump.test/-/settings?/display", {
@@ -191,7 +238,8 @@ test("display settings persist the forum signature through the existing account 
 
   calls.length = 0
   const tooManyLines = new FormData()
-  tooManyLines.set("locales", "en-US en")
+  tooManyLines.append("locales", "en-US")
+  tooManyLines.append("locales", "en")
   tooManyLines.set("signature", "one\ntwo\nthree\nfour\nfive")
   const rejected = await routes.settings.actions.display({
     request: new Request("https://wikijump.test/-/settings?/display", {
@@ -273,7 +321,7 @@ test("login shares a session across native Wikijump wiki hosts but not custom do
   }
 })
 
-test("register binds account creation to the request address and redacts submitted passwords", async () => {
+test("register persists Japanese locale selection and redirects with a one-time success flash", async () => {
   const calls = []
   client.request = async (method, params) => {
     calls.push({ method, params })
@@ -284,27 +332,52 @@ test("register binds account creation to the request address and redacts submitt
   }
 
   const password = "registration-password-fixture"
+  const unsupportedForm = new FormData()
+  unsupportedForm.set("username", "unsupported-locale-fixture")
+  unsupportedForm.set("email", "unsupported-locale-fixture@example.invalid")
+  unsupportedForm.set("password", password)
+  unsupportedForm.set("confirmPassword", password)
+  unsupportedForm.append("locale", "zz")
+  const unsupported = await routes.register.actions.default({
+    request: new Request("https://wikijump.test/-/register", {
+      method: "POST",
+      headers: siteHeaders,
+      body: unsupportedForm
+    }),
+    getClientAddress: () => "192.0.2.42",
+    cookies: { set: () => assert.fail("unsupported locale must not set success flash") }
+  })
+  assert.equal(unsupported.status, 400)
+  assert.equal(calls.length, 0)
+
   const formData = new FormData()
   formData.set("username", "registration-fixture")
   formData.set("email", "registration-fixture@example.invalid")
   formData.set("password", password)
   formData.set("confirmPassword", password)
-  formData.append("locale", "en")
+  formData.append("locale", "ja")
 
-  const result = await routes.register.actions.default({
-    request: new Request("https://wikijump.test/-/register", {
-      method: "POST",
-      headers: siteHeaders,
-      body: formData
+  const setCookies = []
+  await assert.rejects(
+    routes.register.actions.default({
+      request: new Request("https://wikijump.test/-/register", {
+        method: "POST",
+        headers: siteHeaders,
+        body: formData
+      }),
+      getClientAddress: () => "192.0.2.42",
+      cookies: {
+        set: (name, value, options) => setCookies.push({ name, value, options })
+      }
     }),
-    getClientAddress: () => "192.0.2.42"
-  })
+    (error) => error?.status === 303 && error?.location === "/-/login"
+  )
 
-  assert.equal(result.isRegistered, true)
-  assert.equal(result.form.valid, true)
-  assert.equal(result.form.data.password, "")
-  assert.equal(result.form.data.confirmPassword, "")
-  assert.equal(JSON.stringify(result).includes(password), false)
+  assert.equal(setCookies.length, 1)
+  assert.equal(setCookies[0].name, "wikijump_register_success")
+  assert.equal(setCookies[0].value, "1")
+  assert.equal(setCookies[0].options.path, "/-/login")
+  assert.equal(setCookies[0].options.httpOnly, true)
   assert.deepEqual(calls, [
     {
       method: "user_create",
@@ -312,7 +385,7 @@ test("register binds account creation to the request address and redacts submitt
         user_type: "regular",
         name: "registration-fixture",
         email: "registration-fixture@example.invalid",
-        locales: ["en"],
+        locales: ["ja"],
         password,
         ip_address: "192.0.2.42",
         bypass_filter: false,

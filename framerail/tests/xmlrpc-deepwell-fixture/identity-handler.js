@@ -11,6 +11,31 @@ export const handleIdentityRpc = ({ rpcRequest, request }) => {
   let result
 
   if (
+    rpcRequest.method === "user_create" &&
+    hasExactKeys(rpcRequest.params, [
+      "bypass_email_verification",
+      "bypass_filter",
+      "email",
+      "ip_address",
+      "locales",
+      "name",
+      "password",
+      "user_type"
+    ]) &&
+    rpcRequest.params.user_type === "regular" &&
+    typeof rpcRequest.params.name === "string" &&
+    typeof rpcRequest.params.email === "string" &&
+    Array.isArray(rpcRequest.params.locales) &&
+    typeof rpcRequest.params.password === "string" &&
+    typeof rpcRequest.params.ip_address === "string"
+  ) {
+    const user_id = 9000000 + fixtureState.registrationResults.length
+    fixtureState.registrationResults.push({
+      user_id,
+      locales: rpcRequest.params.locales.slice()
+    })
+    result = { user_id, name: rpcRequest.params.name, slug: rpcRequest.params.name }
+  } else if (
     rpcRequest.method === "login" &&
     hasExactKeys(rpcRequest.params, [
       "ip_address",

@@ -85,7 +85,9 @@ export const fixtureState = {
     nextRevisionId: 9100000,
     nextFileId: 5000000,
     nextPendingBlobId: 1
-  }
+  },
+  /** @type {{ locales: string[]; user_id: number }[]} */
+  registrationResults: []
 }
 
 const MIN_I64 = -(1n << 63n)

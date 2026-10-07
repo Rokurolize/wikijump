@@ -8,10 +8,14 @@ import {
 } from "$lib/server/load/action-error"
 import { getRequestContext } from "$lib/server/request-context"
 import { parseUserLocalePreferences } from "$lib/user-settings.js"
+import {
+  USER_INTERFACE_LOCALES,
+  isSupportedUserInterfaceLocale
+} from "$lib/user-interface-locales"
 import { fail, redirect } from "@sveltejs/kit"
 import { superValidate } from "sveltekit-superforms"
 import { valibot } from "sveltekit-superforms/adapters"
-import { maxLength, minLength, object, pipe, string } from "valibot"
+import { array, maxLength, minLength, object, pipe, string } from "valibot"
 
 import type { PreloadDataAsync } from "$lib/server/deepwell/views"
 import type { RequestEvent } from "@sveltejs/kit"
@@ -22,7 +26,13 @@ export async function loadUserSettings(parent: PreloadDataAsync) {
     redirect(303, "/-/login")
   }
 
-  const locales = parentData.user_session.user.locales?.join(" ") ?? ""
+  const locales = parentData.user_session.user.locales ?? ["en"]
+  const userInterfaceLocales = [
+    ...USER_INTERFACE_LOCALES,
+    ...locales
+      .filter((locale) => !isSupportedUserInterfaceLocale(locale))
+      .map((value) => ({ value, label: `${value} (current)` }))
+  ]
   const displaySettingsForm = await superValidate(
     {
       locales,
@@ -44,7 +54,8 @@ export async function loadUserSettings(parent: PreloadDataAsync) {
   return {
     ...parentData,
     displaySettingsForm,
-    internationalization
+    internationalization,
+    userInterfaceLocales
   }
 }
 
@@ -68,11 +79,11 @@ export async function userDisplaySettingsAction({
 
   try {
     const session = requireActionSession(await authGetSession(sessionToken))
-    const locales = parseUserLocalePreferences(form.data.locales)
+    const locales = parseUserLocalePreferences(form.data.locales.join(" "))
     if (locales.length === 0) {
       return fail(400, { form, message: "At least one display language is required." })
     }
-    form.data.locales = locales.join(" ")
+    form.data.locales = locales
 
     await userEdit(
       session.user_id,
@@ -87,7 +98,10 @@ export async function userDisplaySettingsAction({
 }
 
 export const userDisplaySettingsSchema = object({
-  locales: pipe(string(), minLength(1, "At least one display language is required.")),
+  locales: pipe(
+    array(string()),
+    minLength(1, "At least one display language is required.")
+  ),
   signature: pipe(
     string(),
     maxLength(400, "Forum signatures are limited to 400 characters.")

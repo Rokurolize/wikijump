@@ -6,10 +6,13 @@ export const handleSiteRpc = ({ rpcRequest }) => {
 
   if (
     rpcRequest.method === "preload_view" &&
-    hasExactKeys(rpcRequest.params, ["site_id", "locales", "session_token"]) &&
+    (hasExactKeys(rpcRequest.params, ["site_id", "locales", "session_token"]) ||
+      hasExactKeys(rpcRequest.params, ["site_id", "locales"])) &&
     rpcRequest.params?.site_id === 6000005 &&
     Array.isArray(rpcRequest.params.locales) &&
-    rpcRequest.params.session_token === "fixture-session-token"
+    (rpcRequest.params.session_token === "fixture-session-token" ||
+      rpcRequest.params.session_token === null ||
+      rpcRequest.params.session_token === undefined)
   ) {
     result = {
       site: {

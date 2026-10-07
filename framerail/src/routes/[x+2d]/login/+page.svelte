@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { resolve } from "$app/paths"
   import { invalidateAll } from "$app/navigation"
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { superForm } from "sveltekit-superforms"
@@ -41,6 +42,12 @@
   )
 </script>
 
+{#if data.registrationSucceeded}
+  <p class="registration-success" role="status" aria-live="polite">
+    {data.internationalization?.["register.toast"]}
+  </p>
+{/if}
+
 {#if isLoggedIn}
   {data.internationalization?.["login.toast"]}
 {:else if mfaSessionToken}
@@ -77,9 +84,12 @@
       bind:value={$form.password}
     />
     <div class="action-row auth-actions">
-      <button class="action-button auth-button button-cancel clickable" type="button">
+      <a
+        class="action-button auth-button button-cancel clickable"
+        href={resolve("/", {})}
+      >
         {data.internationalization?.cancel}
-      </button>
+      </a>
       <button class="action-button auth-button button-login clickable" type="submit">
         {data.internationalization?.login}
       </button>

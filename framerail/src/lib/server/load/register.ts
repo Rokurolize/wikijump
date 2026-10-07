@@ -12,7 +12,7 @@ import {
 } from "$lib/server/load/auth-form-redaction.js"
 import { failForActionError } from "$lib/server/load/action-error"
 import { loadSiteInfo } from "$lib/server/load/site-info"
-import { fail } from "@sveltejs/kit"
+import { fail, redirect } from "@sveltejs/kit"
 import { superValidate } from "sveltekit-superforms"
 import { valibot } from "sveltekit-superforms/adapters"
 import {
@@ -31,6 +31,10 @@ import {
 import type { PreloadDataAsync } from "$lib/server/deepwell/views"
 import { UserType, type TranslateKeys } from "$lib/types"
 import type { RequestEvent } from "@sveltejs/kit"
+import {
+  areSupportedUserInterfaceLocales,
+  USER_INTERFACE_LOCALES
+} from "$lib/user-interface-locales"
 
 export async function loadRegisterPage(request: Request, preloadData: PreloadDataAsync) {
   loadSiteInfo(request.headers)
@@ -39,6 +43,7 @@ export async function loadRegisterPage(request: Request, preloadData: PreloadDat
   const locales = parentData.locales
 
   const isLoggedIn = Boolean(parentData.user_session)
+  if (isLoggedIn) redirect(303, "/")
 
   const translateKeys: TranslateKeys = {
     ...defaults.translateKeys,
@@ -71,10 +76,21 @@ export async function loadRegisterPage(request: Request, preloadData: PreloadDat
   const registerForm = await superValidate(valibot(registerSchema))
 
   // Return to page for rendering
-  return { isLoggedIn, internationalization, registerForm }
+  return {
+    isLoggedIn,
+    internationalization,
+    registerForm,
+    userInterfaceLocales: USER_INTERFACE_LOCALES
+  }
 }
 
-export async function registerAction({ request, getClientAddress }: RequestEvent) {
+const REGISTER_SUCCESS_COOKIE = "wikijump_register_success"
+
+export async function registerAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
   const form = await superValidate(request, valibot(registerSchema))
   const submittedPasswords = [form.data.password, form.data.confirmPassword]
 
@@ -89,7 +105,7 @@ export async function registerAction({ request, getClientAddress }: RequestEvent
   const { data } = form
 
   try {
-    const res = await userCreate({
+    await userCreate({
       userType: UserType.Regular,
       name: data.username,
       email: data.email,
@@ -97,11 +113,6 @@ export async function registerAction({ request, getClientAddress }: RequestEvent
       password: data.password,
       ipAddress
     })
-
-    return redactAuthActionPayload(
-      { form: clearRegisterPasswords(form), res, isRegistered: true },
-      submittedPasswords
-    )
   } catch (error) {
     return failForActionError(
       error,
@@ -110,6 +121,18 @@ export async function registerAction({ request, getClientAddress }: RequestEvent
       (payload) => redactAuthActionPayload(payload, submittedPasswords)
     )
   }
+
+  // The one-time, non-secret flash moves registration feedback to the page
+  // the user sees after navigation. It is scoped to the login route and is
+  // consumed there so reload/back cannot replay a success message.
+  cookies.set(REGISTER_SUCCESS_COOKIE, "1", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: new URL(request.url).protocol === "https:",
+    path: "/-/login",
+    maxAge: 60
+  })
+  redirect(303, "/-/login")
 }
 
 const registerSchema = pipe(
@@ -121,7 +144,11 @@ const registerSchema = pipe(
       check(accountPasswordMeetsMinimum, ACCOUNT_PASSWORD_TOO_SHORT)
     ),
     confirmPassword: pipe(string(), minLength(1)),
-    locale: pipe(optional(array(string()), ["en"]), minLength(1))
+    locale: pipe(
+      optional(array(string()), ["en"]),
+      minLength(1),
+      check(areSupportedUserInterfaceLocales, "Choose a supported display language.")
+    )
   }),
   forward(
     partialCheck(

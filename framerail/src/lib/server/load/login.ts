@@ -20,7 +20,13 @@ import type { PreloadDataAsync } from "$lib/server/deepwell/views"
 import type { TranslateKeys } from "$lib/types"
 import type { Cookies, RequestEvent } from "@sveltejs/kit"
 
-export async function loadLoginPage(request: Request, preloadData: PreloadDataAsync) {
+const REGISTER_SUCCESS_COOKIE = "wikijump_register_success"
+
+export async function loadLoginPage(
+  request: Request,
+  preloadData: PreloadDataAsync,
+  cookies: Cookies
+) {
   loadSiteInfo(request.headers)
 
   const parentData = await preloadData()
@@ -39,6 +45,7 @@ export async function loadLoginPage(request: Request, preloadData: PreloadDataAs
     "specifier": {},
     "password": {},
     "login.toast": {},
+    "register.toast": {},
     "forgot-password": {},
     "remember-me": {},
     "create-account": {}
@@ -50,7 +57,12 @@ export async function loadLoginPage(request: Request, preloadData: PreloadDataAs
   const loginForm = await superValidate(valibot(loginSchema))
 
   // Return to page for rendering
-  return { isLoggedIn, internationalization, loginForm }
+  const registrationSucceeded = cookies.get(REGISTER_SUCCESS_COOKIE) === "1"
+  if (registrationSucceeded) {
+    cookies.delete(REGISTER_SUCCESS_COOKIE, { path: "/-/login" })
+  }
+
+  return { isLoggedIn, registrationSucceeded, internationalization, loginForm }
 }
 
 export async function loginAction({ request, getClientAddress, cookies }: RequestEvent) {

@@ -8,7 +8,7 @@
 
   let { data }: PageProps = $props()
   let savedLocales = $state(
-    untrack(() => data.user_session?.user.locales?.join(" ") ?? "")
+    untrack(() => [...(data.user_session?.user.locales ?? ["en"])])
   )
   let savedSignature = $state(
     untrack(() => data.user_session?.user.forum_signature ?? "")
@@ -19,7 +19,7 @@
     {
       onResult: async ({ result }) => {
         if (result.type === "success") {
-          savedLocales = $form.locales
+          savedLocales = [...$form.locales]
           savedSignature = $form.signature
           await invalidateAll()
         } else if (result.type === "failure" && result.data) {
@@ -40,13 +40,17 @@
   <label for="user-display-locales">
     {data.internationalization?.["user-profile-info.locales"]}
   </label>
-  <input
+  <select
     id="user-display-locales"
     name="locales"
     bind:value={$form.locales}
     required
-    type="text"
-  />
+    multiple
+  >
+    {#each data.userInterfaceLocales as locale (locale.value)}
+      <option value={locale.value}>{locale.label}</option>
+    {/each}
+  </select>
   <label for="forum-signature-source"> Forum signature </label>
   <textarea
     id="forum-signature-source"
@@ -61,7 +65,7 @@
     <button
       class="action-button button-cancel clickable"
       onclick={() => {
-        $form.locales = savedLocales
+        $form.locales = [...savedLocales]
         $form.signature = savedSignature
       }}
       type="button"

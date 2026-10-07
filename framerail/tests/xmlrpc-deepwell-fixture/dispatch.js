@@ -12,6 +12,15 @@ import { handleWriteRpc } from "./write-handler.js"
  * }} input
  */
 export const dispatchFixtureRpc = ({ rpcRequest, request, response, port }) => {
+  if (
+    (rpcRequest.method === "article_view" ||
+      rpcRequest.method === "article_view_cache_metadata") &&
+    rpcRequest.params?.route === null
+  ) {
+    // The fixture site's configured default page is `main`.
+    rpcRequest.params.route = { slug: "main", extra: "" }
+  }
+
   const input = { rpcRequest, request, response }
   const outcome =
     handleReadRpc(input) ?? handleWriteRpc(input) ?? handleFileRpc({ ...input, port })
