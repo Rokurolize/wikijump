@@ -237,6 +237,9 @@ export function parseArgs(argv) {
   if (args.rerenderAfterDbCreate && args.skipRerender) {
     throw new Error('--rerender-after-db-create cannot be combined with --skip-rerender');
   }
+  if (args.rerenderAfterDbCreate && !args.dryRun && !args.sessionToken) {
+    throw new Error('--rerender-after-db-create requires DEEPWELL_SESSION_TOKEN before importing pages');
+  }
   if (args.createMode === 'db' && !args.rerenderAfterDbCreate) args.skipRerender = true;
   if (args.createMode === 'db' && !args.dryRun && !args.textHashCommand && !args.textHashBatchCommand) {
     throw new Error('--create-mode db requires --text-hash-command/DEEPWELL_TEXT_HASH_COMMAND or --text-hash-batch-command/DEEPWELL_TEXT_HASH_BATCH_COMMAND');
