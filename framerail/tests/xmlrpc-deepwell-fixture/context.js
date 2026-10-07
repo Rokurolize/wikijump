@@ -47,6 +47,13 @@ export const fixtureState = {
     siteGet: [],
     voteList: []
   },
+  /**
+   * @type {{
+   *   headers: Record<string, string | string[] | undefined>
+   *   params: RpcParams
+   * }[]}
+   */
+  forumModuleRequests: [],
   /** @type {null | ((outcome?: "success" | "failure") => void)} */
   pendingPageRevisionDiffResponse: null,
   /** @type {Record<string, unknown[]>} */

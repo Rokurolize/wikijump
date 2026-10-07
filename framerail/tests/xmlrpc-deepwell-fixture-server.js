@@ -76,6 +76,12 @@ const handleDiagnosticRequest = (request, response) => {
     sendJson(response, snapshot)
     return true
   }
+  if (request.url === "/last-forum-module-requests") {
+    const snapshot = structuredClone(fixtureState.forumModuleRequests)
+    fixtureState.forumModuleRequests.length = 0
+    sendJson(response, snapshot)
+    return true
+  }
   if (request.url === "/last-page-write-requests") {
     const snapshot = structuredClone(fixtureState.pageWriteRequests)
     resetRequestGroups(fixtureState.pageWriteRequests)

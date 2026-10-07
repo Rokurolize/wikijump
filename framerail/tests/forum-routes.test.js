@@ -86,6 +86,39 @@ test("forum route loads use the exact sealed read-only module requests", async (
   )
 })
 
+test("ForumStart suffixes select hidden mode from the first segment only", async () => {
+  /** @type {ForumCall[]} */
+  const calls = []
+  const deps = dependencies(calls)
+  const cases = [
+    [undefined, {}],
+    ["hidden/show", { hidden: "true" }],
+    ["hidden/hide", { hidden: "true" }],
+    ["hidden/false", { hidden: "true" }],
+    ["hidden/show/extra", { hidden: "true" }],
+    ["garbage", {}],
+    ["garbage/extra", {}]
+  ]
+
+  for (const [extra] of cases) {
+    assert.deepEqual(await loadForumStartRoute(routeEvent({ extra }), deps), {
+      body: "<div>forum</div>"
+    })
+  }
+
+  assert.deepEqual(
+    calls.map(([, moduleName, parameters]) => [moduleName, parameters]),
+    cases.map(([, parameters]) => ["forum/ForumStartModule", parameters])
+  )
+  assert.ok(
+    calls.every(
+      ([, , parameters]) =>
+        JSON.stringify(parameters) === "{}" ||
+        JSON.stringify(parameters) === '{"hidden":"true"}'
+    )
+  )
+})
+
 test("forum thread route refuses a mismatched legacy thread-id script", async () => {
   /** @type {ForumCall[]} */
   const calls = []
@@ -106,7 +139,6 @@ test("unobserved forum suffixes terminate at the public 404 boundary", async () 
   const calls = []
   const deps = dependencies(calls)
   for (const run of [
-    () => loadForumStartRoute(routeEvent({ extra: "hidden" }), deps),
     () =>
       loadForumCategoryRoute(
         routeEvent({ category: "8503559", name: "open-topic/sort/start" }),
