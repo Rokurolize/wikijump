@@ -12,7 +12,7 @@
 
 ## Freeze後のtarget visual supplement
 
-Al Slop navigation、Flopstyle Dark Sigma-10 credit/otherwise、Space navigationについて、freeze後に同じcandidate source/CSS identityでreal-Wikidot A/Bをcaptureし、各receiptの全screenshotを直接reviewしました。SpaceとAl SlopはChromium 320px/390pxで16枚ずつ、Flopstyle Darkは同幅で4枚です。receiptとreviewは各`ports/authority-evidence/*-20261007/`にあり、`final-manual-publication-set.json`の`post_freeze_target_visual_reviews`でcandidate set、source/CSS SHA、receipt SHA、review SHAへbindしています。追跡対象にはPNG、receipt、review、measurement scriptsを含め、receipt内のper-state DOM SHAは保持していますが、大容量の圧縮DOM payload自体はtracked bundleへ含めていません。frozen candidate setとSigma-9/Sigma-10 run contractsは変更していません。
+Al Slop navigation、Flopstyle Dark Sigma-10 credit/otherwise、Space navigationについて、freeze後に同じcandidate source/CSS identityでreal-Wikidot A/Bをcaptureし、各receiptの全screenshotを直接reviewしました。SpaceとAl SlopはChromium 320px/390pxで16枚ずつ、Flopstyle Darkは同幅で4枚です。receiptとreviewは各`ports/authority-evidence/*-20261007/`にあり、`final-manual-publication-set.json`の`post_freeze_target_visual_reviews`でcandidate set、source/CSS SHA、receipt SHA、review SHAへbindしています。maintained repositoryはcandidate/publication source、契約、identityとarchive locatorを追跡します。exact PNG、receipt、review manifest、measurement scriptsはsigned tag内の既存fileまたはdurable external evidence archiveに保存します。receipt内のper-state DOM SHAは保持しますが、validator/review integrityに不要な大容量の圧縮DOM payloadはarchive対象外です。[ACCEPTANCE-ARCHIVE.md](ACCEPTANCE-ARCHIVE.md)にstorage境界とclean-tag再検証手順を記録しています。frozen candidate setとSigma-9/Sigma-10 run contractsは変更していません。
 
 Candidate側のheaderと4種類の展開menuは両幅で確認でき、receipt上もdocument widthはviewportと一致し、overlap/control occlusionは0です。長いEN range menuの下部はviewport画像より先へ続くため、このreviewは一画面内の全項目表示や下部項目のscroll操作までは主張しません。
 

@@ -15,3 +15,7 @@ Acceptance is bound to Framerail `d67899e66baa58c3504ec8d93fb81bfb31509c80eb8d47
 Before an update, confirm the live SCP-JP target still matches the listed revision/source identity. Upload required files using the listed target filename before writing the page source. Follow each `publish-before` edge. Reuse-existing and retain-cross-wiki rows are not page creation/update actions. If a publication source or candidate CSS changes after the freeze, refresh acceptance for that changed candidate.
 
 The separate rich-body visual review is supplemental. It does not replace the full matrices; bibliography presentation remains unverified because current Deepwell returns `[[bibliography]]` literally.
+
+## Durable acceptance evidence
+
+The signed tag and clean maintained repository do not contain every raw acceptance input. [ACCEPTANCE-ARCHIVE.md](ACCEPTANCE-ARCHIVE.md) defines the exact-byte external archive overlay, manifest verification and clean-tag replay procedure. [acceptance-evidence-archive.json](acceptance-evidence-archive.json) pins its locator and hashes. Existing evidence paths remain repository-relative overlay paths; they are not claims that every file is tracked in Git.

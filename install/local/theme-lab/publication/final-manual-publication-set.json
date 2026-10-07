@@ -3009,5 +3009,18 @@
       }
     }
   ],
-  "post_freeze_visual_review_payload_policy": "The exact PNG screenshots, capture receipts, and review manifests are retained. Receipts preserve row-specific DOM SHA-256 values; bulky compressed per-state DOM payloads are omitted from the tracked supplemental bundle."
+  "post_freeze_visual_review_payload_policy": "The exact PNG screenshots, capture receipts, measurement programs and review manifests are retained in the signed-tag tree or durable external acceptance evidence archive. Receipts preserve row-specific DOM SHA-256 values; bulky compressed per-state DOM payloads not needed by validators/review integrity are omitted from the archive. Maintained develop tracks small contracts, identities and archive metadata, not the raw supplemental bundle.",
+  "evidence_archive": {
+    "schema": "theme_lab_acceptance_evidence_archive_pointer.v1",
+    "archival_policy": "raw-evidence-external-exact-byte-overlay-on-signed-tag",
+    "descriptor_path": "install/local/theme-lab/publication/acceptance-evidence-archive.json",
+    "release_locator": "https://github.com/Rokurolize/wikijump/releases/tag/theme-lab-final-acceptance-20261007",
+    "archive_locator": "https://github.com/Rokurolize/wikijump/releases/download/theme-lab-final-acceptance-20261007/theme-lab-final-acceptance-20261007.tar.gz",
+    "archive_sha256": "6503b263b711ada5e3a60826d55dc784a9c4975d257a717ac9a6b909862c47b1",
+    "manifest_sha256": "f561ecb6fafa70d0dd8e9e83b47bd3b17c10d54b404a3315f01c2173f6b0c271",
+    "acceptance_tag_name": "theme-lab-final-acceptance-20261007",
+    "tag_object_sha": "d4b36a356a4eac3453c566d3c05e0647f53c9210",
+    "tag_peeled_commit_sha": "1685a1a976c6787ad6ec5f1d9f3b3380b56113b3",
+    "note": "Existing repository-relative evidence paths resolve in the signed-tag checkout plus archive overlay; they do not imply that each evidence file is tracked in maintained develop."
+  }
 }
