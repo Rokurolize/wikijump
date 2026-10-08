@@ -2,6 +2,7 @@
 import assert from "node:assert/strict"
 import { fileURLToPath } from "node:url"
 import { after, before, test } from "node:test"
+import { parse } from "svelte/compiler"
 
 import { createTestViteServer } from "./vite-test-server.js"
 
@@ -81,14 +82,27 @@ const renderFoundPage = (data) =>
 const assertTagTree = (body, tags, hidden = false) => {
   const tree = body.match(/<div class="page-tags(?: hidden)?"><span>[\s\S]*?<\/span><\/div>/u)
   assert.ok(tree, "tag links must retain their native div/span wrappers")
-  // Only this generated leaf contains compiler comments. Authored article
-  // comments remain observable and are asserted separately below.
-  const markup = tree[0].replace(/<!--[\s\S]*?-->/gu, "")
+  const root = parse(tree[0]).html.children
+  assert.equal(root.length, 1)
+  assert.equal(root[0].type, "Element")
+  assert.equal(root[0].name, "div")
   assert.equal(
-    markup,
-    `<div class="page-tags${hidden ? " hidden" : ""}"><span>${tags
-      .map((tag) => `<a href="/system:page-tags/tag/${tag}#pages">${tag}</a>`)
-      .join("")}</span></div>`
+    root[0].attributes.find((attribute) => attribute.name === "class")?.value[0]?.data,
+    `page-tags${hidden ? " hidden" : ""}`
+  )
+
+  const spans = root[0].children.filter((child) => child.type === "Element")
+  assert.equal(spans.length, 1)
+  assert.equal(spans[0].name, "span")
+  assert.ok(spans[0].children.every((child) => child.type === "Comment" || child.type === "Element"))
+
+  const links = spans[0].children.filter((child) => child.type === "Element")
+  assert.deepEqual(
+    links.map((link) => ({
+      href: link.attributes.find((attribute) => attribute.name === "href")?.value[0]?.data,
+      label: link.children.filter((child) => child.type === "Text").map((child) => child.data).join("")
+    })),
+    tags.map((tag) => ({ href: `/system:page-tags/tag/${tag}#pages`, label: tag }))
   )
 }
 
