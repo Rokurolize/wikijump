@@ -77,8 +77,8 @@ use crate::services::settings::PageRatingType;
 use crate::services::user::User;
 use crate::services::view::redirect::escape_wikidot_html_text as escape_redirect_notice_text;
 use crate::services::{
-    PageDraftPageType, PageDraftService, PageDraftView, PageRevisionService, PageService,
-    RelationService, ServiceContext, SiteService, UserService,
+    PageDraftService, PageDraftView, PageRevisionService, PageService, RelationService,
+    ServiceContext, SiteService, UserService,
 };
 use crate::types::Reference;
 use crate::types::{Action, Permission, RelationType, Resource};
@@ -1456,74 +1456,6 @@ fn wikidot_scope_head_is(source: &str, start: usize, expected: &str) -> bool {
         return false;
     };
     tail[..end].trim().eq_ignore_ascii_case(expected)
-}
-
-fn list_drafts_page_type(head: &str) -> Option<PageDraftPageType> {
-    if head.trim() == "pageType" {
-        return Some(PageDraftPageType::All);
-    }
-    let arguments = wikidot_module_arguments(head)?;
-    let exists = arguments.len() == 1
-        && arguments.iter().any(|argument| {
-            argument.key == "pageType"
-                && argument.op == "="
-                && argument.value_kind == WikidotModuleArgumentValueKind::DoubleQuoted
-                && argument.value == "exists"
-        });
-    Some(if exists {
-        PageDraftPageType::Exists
-    } else {
-        PageDraftPageType::All
-    })
-}
-
-#[cfg(test)]
-mod list_drafts_tests {
-    use super::{PageDraftPageType, PageDraftView, RenderService, list_drafts_page_type};
-
-    #[test]
-    fn page_type_filter_accepts_only_the_observed_exact_form() {
-        assert_eq!(
-            list_drafts_page_type(r#" pageType="exists""#),
-            Some(PageDraftPageType::Exists),
-        );
-        for head in [
-            "",
-            r#" pageType="notexists""#,
-            r#" pageType="""#,
-            r#" pageType="other""#,
-            " pageType='exists'",
-            " pageType=exists",
-            r#" PAGETYPE="exists""#,
-            r#" pageType!="exists""#,
-            r#" pageType="exists" other="value""#,
-            r#" pageType="exists" pageType="notexists""#,
-        ] {
-            assert_eq!(
-                list_drafts_page_type(head),
-                Some(PageDraftPageType::All),
-                "head: {head:?}",
-            );
-        }
-        assert_eq!(
-            list_drafts_page_type(" pageType"),
-            Some(PageDraftPageType::All),
-        );
-        assert_eq!(list_drafts_page_type(" malformed bare"), None);
-    }
-
-    #[test]
-    fn renderer_keeps_the_observed_row_hierarchy_and_escapes_values() {
-        let html = RenderService::render_list_drafts(&[PageDraftView {
-            slug: "run-owned:fixture".to_owned(),
-            title: "Draft <one>".to_owned(),
-        }]);
-        assert!(html.contains(r#"<div class="list-drafts-box">"#));
-        assert!(html.contains(r#"<div class="list-drafts-item">"#));
-        assert!(
-            html.contains(r#"<p><a href="/run-owned:fixture">Draft &lt;one&gt;</a></p>"#)
-        );
-    }
 }
 
 #[cfg(test)]
