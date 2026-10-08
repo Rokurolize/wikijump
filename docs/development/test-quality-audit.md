@@ -184,6 +184,23 @@ from fresh `/tmp/wj-1990-scanner-unit-llvm-20261008.json` (SHA-256
 The source SHA is
 `41c1f5132bd938cf8fb0fb4228767583b59b7529a1ad0fd7740376ebbdb9d30e`.
 
+**Unit plus ListPages integration (still not whole-Deepwell coverage):**
+A source-pinned `cargo llvm-cov --no-clean --test list_pages` run against a
+fresh task-owned Deepwell DB stack passed **82/82** ListPages integration
+tests after the passing unit run. As expected for two-suite accumulated
+profiles, instrumented scanner lines rose from **1,399/1,490 to 1,401/1,490
+(94.03%)**; functions rose from **56/57 to 57/57**. 32 surviving mutation
+sites received additional execution counts, but no location changed category:
+**14 zero, 35 positive, three not countable**. In particular the early
+ambiguous recovery branches with the 14 zero-count sites were not exercised
+by this integration suite. This must not be extrapolated to other Deepwell
+integration or browser suites. The union-source LLVM JSON is
+`/tmp/wj-1990-scanner-unit-plus-listpages-llvm-20261008.json` (SHA-256
+`6db5c93fea89111b30d89b2e61990652dbe65193a7427d29df5b99546f509b4c`),
+and the second 52-site report is
+`/tmp/wj-1990-scanner-site-unit-plus-listpages-coverage-20261008.json`
+(SHA-256 `98440885c3ab07b9110e4ff544df7f33366b454013692f5547ff4c7c5754f7f7`).
+
 ### Framerail
 
 ```sh

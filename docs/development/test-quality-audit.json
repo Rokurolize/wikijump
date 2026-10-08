@@ -154,6 +154,25 @@
           "scanner_file_instrumented_lines": 1490,
           "disposition": "none accepted; zero unit counts may have integration owners, positive counts do not prove assertions or short-circuited operands ran, and absent segments are not zero counts"
         },
+        "unit_plus_listpages_mutation_locus_coverage": {
+          "date": "2026-10-08",
+          "scope": "cargo llvm-cov --no-clean --test list_pages after freshly passed --lib; union of these two suites only",
+          "source_sha256": "41c1f5132bd938cf8fb0fb4228767583b59b7529a1ad0fd7740376ebbdb9d30e",
+          "integration_test_results": {"passed": 82, "ignored": 0, "failed": 0},
+          "llvm_json": "/tmp/wj-1990-scanner-unit-plus-listpages-llvm-20261008.json",
+          "llvm_sha256": "6db5c93fea89111b30d89b2e61990652dbe65193a7427d29df5b99546f509b4c",
+          "report": "/tmp/wj-1990-scanner-site-unit-plus-listpages-coverage-20261008.json",
+          "report_sha256": "98440885c3ab07b9110e4ff544df7f33366b454013692f5547ff4c7c5754f7f7",
+          "survivor_count": 52,
+          "zero_count": 14,
+          "positive_count": 35,
+          "no_countable_segment": 3,
+          "scanner_file_covered_lines": 1401,
+          "scanner_file_instrumented_lines": 1490,
+          "previously_uncovered_mutation_sites_newly_countable": 0,
+          "changed_execution_counts_without_status_transition": 32,
+          "disposition": "ListPages integration increased scanner file lines and execution counts but did not change the 52 survivor ownership categories; no survivor accepted"
+        },
         "survivor_triage": {
           "date": "2026-10-08",
           "source_sha256": "41c1f5132bd938cf8fb0fb4228767583b59b7529a1ad0fd7740376ebbdb9d30e",

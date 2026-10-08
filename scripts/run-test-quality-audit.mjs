@@ -506,6 +506,19 @@ async function verifyPlannedMutationFrontiers(frontiers = []) {
           fail(`mutation frontier ${frontier.owner_candidate} has contradictory unit mutation-site coverage`);
         }
       }
+      const expanded = replay.unit_plus_listpages_mutation_locus_coverage;
+      if (expanded) {
+        const total = expanded.zero_count + expanded.positive_count + expanded.no_countable_segment;
+        if (!coverage || total !== replay.missed || expanded.survivor_count !== replay.missed ||
+            expanded.source_sha256 !== coverage.source_sha256 ||
+            expanded.scanner_file_instrumented_lines !== coverage.scanner_file_instrumented_lines ||
+            expanded.scanner_file_covered_lines < coverage.scanner_file_covered_lines ||
+            expanded.integration_test_results?.failed !== 0 ||
+            !/^[0-9a-f]{64}$/u.test(expanded.llvm_sha256 ?? "") ||
+            !/^[0-9a-f]{64}$/u.test(expanded.report_sha256 ?? "")) {
+          fail(`mutation frontier ${frontier.owner_candidate} has contradictory unit-plus-integration mutation-site coverage`);
+        }
+      }
     }
     const {stdout} = await runValidationCommand("cargo", [
       "mutants", "--list", "--manifest-path", "deepwell/Cargo.toml",

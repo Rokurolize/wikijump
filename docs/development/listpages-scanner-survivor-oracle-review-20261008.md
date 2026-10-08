@@ -138,6 +138,16 @@ short-circuit/gap positions (`1645`, `1912`, `1913`) cannot be reported as
 zero-hit just because LLVM did not supply a direct count. No mutation has been
 accepted or reclassified as equivalent from this instrumentation.
 
+The follow-up accumulated coverage run included **82 passing DB-backed
+ListPages integration tests**, increasing scanner line coverage by two lines
+(1,401/1,490) and function coverage by one function (57/57). The **same
+14/35/3 site categories** remain, including zero execution in the two early
+ambiguous-return regions. Full JSON SHA-256:
+`6db5c93fea89111b30d89b2e61990652dbe65193a7427d29df5b99546f509b4c`;
+per-site reconciliation SHA-256:
+`98440885c3ab07b9110e4ff544df7f33366b454013692f5547ff4c7c5754f7f7`.
+No other integration suites or browser coverage are implied.
+
 ## Reproduction and acceptance boundary
 
 1. Preserve the frozen corpus and live-capture source hashes. Select a
