@@ -31,12 +31,12 @@
         "deepwell/src/services/render/list_pages/scanner/tests/stress.rs",
         "deepwell/tests/list_pages.rs"
       ],
-      "next_action": "Independently review the 58 survivors against the frozen Wikidot specification and live/corpus evidence. Add separate match, work-budget, and offset owners only where an observable contract is evidenced; classify genuinely equivalent or compile-failing candidates with specific reasons. Keep this owner unaccepted until dispositions and remaining test owners are complete.",
+      "next_action": "Independently review the 54 survivors against the frozen Wikidot specification and live/corpus evidence. Add separate match, work-budget, and offset owners only where an observable contract is evidenced; classify genuinely equivalent or compile-failing candidates with specific reasons. Keep this owner unaccepted until dispositions and remaining test owners are complete.",
       "replay": {
         "date": "2026-10-08",
         "mutants": 136,
-        "caught": 74,
-        "missed": 58,
+        "caught": 78,
+        "missed": 54,
         "unviable": 4,
         "timeout": 0,
         "owner": "deepwell/src/services/render/list_pages/scanner/tests.rs",
@@ -68,28 +68,48 @@
           "/tmp/wj-1990-scanner-shard-7-8-20261008",
           "/tmp/wj-1990-offset-mutant-20261008/mutants.out"
         ],
-        "targeted_replay": {
-          "date": "2026-10-08",
-          "mutation_filter": "scanner.rs:1889:50",
-          "mutants": 2,
-          "caught": 2,
-          "missed": 0,
-          "evidence": "/tmp/wj-1990-offset-mutant-20261008/mutants.out",
-          "owner_test": "unclosed_at_marker_preservation_does_not_hide_a_later_valid_module"
-        },
+        "targeted_replays": [
+          {
+            "date": "2026-10-08",
+            "mutation_filter": "scanner.rs:1889:50",
+            "mutants": 2,
+            "caught": 2,
+            "missed": 0,
+            "evidence": "/tmp/wj-1990-offset-mutant-20261008/mutants.out",
+            "owner_test": "unclosed_at_marker_preservation_does_not_hide_a_later_valid_module"
+          },
+          {
+            "date": "2026-10-08",
+            "mutation_filter": "scanner.rs:1652:40",
+            "mutants": 2,
+            "caught": 2,
+            "missed": 0,
+            "evidence": "/tmp/wj-1990-literal-cursor-mutant-20261008/mutants.out",
+            "owner_test": "projected_literal_region_cursor_advances_are_counted_as_scanner_work"
+          },
+          {
+            "date": "2026-10-08",
+            "mutation_filter": "scanner.rs:1653:48",
+            "mutants": 2,
+            "caught": 2,
+            "missed": 0,
+            "evidence": "/tmp/wj-1990-literal-sum-mutant-20261008/mutants.out",
+            "owner_test": "projected_literal_region_cursor_advances_are_counted_as_scanner_work"
+          }
+        ],
         "independent_reconciliation": {
           "date": "2026-10-08",
           "tool": "scripts/reconcile-test-quality-mutants.mjs",
           "report": "/tmp/wj-1990-scanner-reconciled-20261008-1132.json",
           "report_sha256": "788f8f280f5aa1010daf4c8b0bed307ed25ff3e644b9ce414f4b7f1b3311da42",
           "initial_shards": 8,
-          "targeted_replay_outputs": 5,
+          "targeted_replay_outputs": 7,
           "distinct_initial_mutants": 136,
           "initial_caught": 63,
           "initial_missed": 69,
-          "transitions_missed_to_caught": 11,
-          "final_caught": 74,
-          "final_missed": 58,
+          "transitions_missed_to_caught": 15,
+          "final_caught": 78,
+          "final_missed": 54,
           "disposition": "unreviewed; neither passing tests nor accounting alone accept surviving mutants"
         },
         "survivor_triage": {
@@ -100,7 +120,7 @@
           "priority_behavioral_boolean": 6,
           "priority_work_accounting": 52,
           "behavioral_lines": [1645, 1743, 1744, 1912, 1913],
-          "disposition": "all 58 pending independent Wikidot contract or reviewed local work-budget evidence; no equivalent classification granted"
+          "disposition": "all 54 pending independent Wikidot contract or reviewed local work-budget evidence; no equivalent classification granted"
         },
         "survivor_disposition": "pending_independent_review"
       }
@@ -132,7 +152,7 @@
       "tests": [
         {
           "path": "deepwell/src/services/render/list_pages/scanner/tests.rs",
-          "sha256": "e0df0deadd720cf0c78db215e30e7adcad56308ed8eeed3d9677b98613524a12",
+          "sha256": "80652a35110df6701f1b4e645a6a6ccdc3023cc535807f8260df381ff01460bf",
           "anchors": [
             "scanner_keeps_generated_comment_gate_rows_inside_the_module"
           ]

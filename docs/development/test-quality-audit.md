@@ -190,11 +190,14 @@ All 136 candidates were replayed across eight bounded shards against the
 Deepwell library tests. A targeted replay of both offset mutations in the
 unclosed `module654` suffix-recovery branch then caught them after the owner
 asserted the later module's absolute `start`, `body_start`, `end`, original
-source slice, and scanner work totals. The combined result is now **74 caught,
-58 missed, 4 unviable, and 0 timed out**. The owner remains unaccepted: the 58
-survivors need independent review by behavioral match, scanner work-budget,
-and returned-offset contract, and any integration-owned behavior still needs
-its own owner. The dated local shard outputs are retained under
+source slice, and scanner work totals. Two more targeted replays caught all
+four projected literal-cursor accounting mutations after the owner asserted
+the CSS and anchor cursor costs in a source containing two CSS regions and one
+anchor marker. The combined result is now **78 caught, 54 missed, 4 unviable,
+and 0 timed out**. The owner remains unaccepted: the 54 survivors need
+independent review by behavioral match, scanner work-budget, and returned-offset
+contract, and any integration-owned behavior still needs its own owner. The
+dated local shard outputs are retained under
 `/tmp/wj-1990-scanner-*` for this workstation; they are evidence for this
 source state, not committed report artifacts.
 

@@ -806,6 +806,29 @@ fn ambiguous_scan_work_includes_literal_range_advances() {
 }
 
 #[test]
+fn projected_literal_region_cursor_advances_are_counted_as_scanner_work() {
+    let source = concat!(
+        "[[module ListPages name=\"outer\"]]A\n",
+        ">\0[[module CSS]]",
+        "[[module ListPages name=\"hidden\"]]B[[/module]]",
+        "[[/module]]C>\0[[module CSS]]",
+        "[[module ListPages name=\"hidden-again\"]]Z[[/module]][[/module]]D",
+        "[[/module]]\n[[# tabanchor]]\n",
+        "prose after the CSS regions\n",
+        "[[module ListPages name=\"live\"]]Y[[/module]]",
+    );
+    let (modules, work, literal_range_advances) =
+        find_list_pages_module_matches_with_cursor_work(source);
+
+    assert_eq!(modules.len(), 2, "{modules:#?}");
+    assert_eq!(modules[0].head, "name=\"outer\"");
+    assert!(modules[0].body.ends_with('D'));
+    assert_eq!(modules[1].head, "name=\"live\"");
+    assert_eq!(literal_range_advances, 5);
+    assert_eq!(work, 2_179);
+}
+
+#[test]
 fn unresolved_parser_functions_always_fail_closed() {
     let ambiguous = concat!(
         "prefix\\\n",
