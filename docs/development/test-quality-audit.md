@@ -137,6 +137,34 @@ two are `bin/` targets, and one each is `main.rs` and `lib.rs`. That explains
 some possible compilation boundaries, but does not classify the remaining
 54 files as untested without examining their actual owners.
 
+### Mutation-site line/column cross-check (LLVM unit suite)
+
+The independent `scripts/test-quality-mutation-coverage.mjs` utility joins
+**individual frozen cargo-mutants survivor identities** (line *and* column)
+with their covering LLVM source segment from a single specified test suite.
+It reports three distinct categories: `zero_count` (instrumented but never
+executed in that suite), `positive_count` (its region executed, but the mutant
+still survived), and `no_countable_segment` (unmappable or gap region, *not*
+zero by assumption). Every record retains the original mutation identity,
+source coordinates, and the segment counter, and the output seals the source,
+LLVM JSON and reconciled-input hashes. Run this only on a fresh coverage
+export from a clean worktree with a reviewed source SHA, for example:
+
+```sh
+node scripts/test-quality-mutation-coverage.mjs \
+  --llvm /tmp/current-deepwell-unit.json \
+  --reconciliation /tmp/wj-1990-scanner-reconciled-20261008-1208.json \
+  --source deepwell/src/services/render/list_pages/scanner.rs \
+  --source-sha256 41c1f5132bd938cf8fb0fb4228767583b59b7529a1ad0fd7740376ebbdb9d30e \
+  --output /tmp/current-scanner-survivor-unit-coverage.json
+```
+
+A positive region count is **not** proof that the mutated expression or both
+sides of a short-circuit were evaluated. A zero unit count is **not** proof of
+a missing test: the integration-scope owner must be examined. This diagnostic
+neither alters mutation dispositions nor replaces the independently grounded
+browser/Wikidot contract evidence.
+
 ### Framerail
 
 ```sh
