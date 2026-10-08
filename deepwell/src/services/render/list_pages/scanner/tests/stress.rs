@@ -398,3 +398,43 @@ fn projected_unresolved_conditional_charges_single_literal_in_both_scanners() {
     assert_eq!(work, 249, "direct 161 + projected 87 + cursor 1");
     assert!(work <= source.len() * MAX_SINGLE_SCANNER_WORK_MULTIPLIER);
 }
+
+#[test]
+fn projected_quoted_continuation_recovery_charges_direct_work_and_literal_advances() {
+    // The quoted-line continuation forces a source projection. The direct
+    // recovery scanner remains unambiguous and must account for its own work
+    // and literal-region cursor traversals rather than dropping or multiplying
+    // the contributions. These are internal accounting invariants, not live
+    // Wikidot rendering oracles.
+    for (label, source, expected_work, expected_advances) in [
+        (
+            "one literal",
+            "@@literal@@\n> quoted\\\n> second row\n[[module ListPages]]T[[/module]]",
+            367,
+            5,
+        ),
+        (
+            "two literals",
+            "@@first@@\n@@second@@\n> quoted\\\n> second row\n[[module ListPages]]T[[/module]]",
+            406,
+            8,
+        ),
+    ] {
+        let (modules, work, advances) =
+            find_list_pages_module_matches_with_cursor_work(source);
+        assert_eq!(modules.len(), 1, "{label}: preserve the later module");
+        assert_eq!(
+            modules[0].start,
+            source.find("[[module ListPages]]").unwrap(),
+            "{label}"
+        );
+        assert_eq!(modules[0].body, "T", "{label}");
+        assert!(modules[0].runtime_safe, "{label}");
+        assert_eq!(work, expected_work, "{label}: additive scan work");
+        assert_eq!(advances, expected_advances, "{label}: cursor advances");
+        assert!(
+            work <= source.len() * MAX_SINGLE_SCANNER_WORK_MULTIPLIER,
+            "{label}"
+        );
+    }
+}
