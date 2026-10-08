@@ -6,7 +6,7 @@
     "wikidot-verification",
     "executed shared helpers"
   ],
-  "inventory_digest": "0729f92b374b2ed2a6d49ad3dcfd06e6eee6e0daf8b30c12a83681e4dec9b2aa",
+  "inventory_digest": "7800cc66a0c5faa55a86ab98009e95fb4ebc14fbcced26e7663eaeb2233b5c15",
   "inputs": [
     {
       "path": "deepwell/Cargo.toml",
@@ -11251,7 +11251,7 @@
       "id": "resource-scanner-mutation-20261008",
       "kind": "mutation",
       "path": "docs/development/test-quality-audit/resource-scanner-mutation-20261008/receipt.json",
-      "sha256": "585c3e53d000078b6cac71efb0492fe6eeb110bd5d5bf4bfcaa84ea3dbcbfe5a"
+      "sha256": "2aec835c7ca020ffe5d36ba551d8cd357363b233ccf8f84de32003311cd38cdd"
     }
   ],
   "acceptance": null,
