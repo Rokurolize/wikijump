@@ -37,12 +37,14 @@ pub(super) async fn expand(
     ctx: &ServiceContext<'_>,
     wikitext: String,
     settings: &WikitextSettings,
+    page_info: &PageInfo<'_>,
     viewer_user_id: Option<i64>,
     url: UrlArguments<'_>,
 ) -> Result<String> {
     if !settings.enable_page_syntax {
         return Ok(wikitext);
     }
+    let wikitext = upgrade_seeded_platform_page(wikitext, page_info);
 
     let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
     let mut output = String::with_capacity(wikitext.len());
@@ -63,6 +65,39 @@ pub(super) async fn expand(
     }
 
     expand_activity(ctx, output, settings, viewer_user_id).await
+}
+
+fn upgrade_seeded_platform_page(wikitext: String, page_info: &PageInfo<'_>) -> String {
+    if page_info.site != "www" || page_info.category.as_deref() != Some("platform") {
+        return wikitext;
+    }
+
+    match page_info.page.as_ref() {
+        "activity"
+            if [
+                "RecentWRevisions",
+                "MostActiveSites",
+                "MostActiveForums",
+                "NewWUsers",
+                "SomeGlobalStats",
+            ]
+            .iter()
+            .all(|module| legacy_module_is_present(&wikitext, module)) =>
+        {
+            include_str!("../../../../seeder/platform-activity.ftml").to_owned()
+        }
+        "sites" if legacy_module_is_present(&wikitext, "ListAllWikis") => {
+            include_str!("../../../../seeder/platform-sites.ftml").to_owned()
+        }
+        _ => wikitext,
+    }
+}
+
+fn legacy_module_is_present(wikitext: &str, module: &str) -> bool {
+    let pattern = format!(r"(?i)\[\[module\s+{module}\s*\]\]");
+    Regex::new(&pattern)
+        .expect("legacy platform module expression is valid")
+        .is_match(wikitext)
 }
 
 async fn expand_activity(
@@ -264,6 +299,12 @@ async fn render_activity(
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
+    use ftml::data::{PageInfo, ScoreValue};
+
+    use super::upgrade_seeded_platform_page;
+
     #[test]
     fn seeded_platform_pages_use_owned_runtime_modules() {
         let activity = include_str!("../../../../seeder/platform-activity.ftml");
@@ -276,5 +317,44 @@ mod tests {
         assert!(!activity.contains("[[module SomeGlobalStats]]"));
         assert!(sites.contains("[[module PlatformSites]]"));
         assert!(!sites.contains("[[module ListAllWikis]]"));
+    }
+
+    #[test]
+    fn persisted_first_party_pages_upgrade_without_rewriting_user_pages() {
+        let mut page_info = PageInfo {
+            page: Cow::Borrowed("activity"),
+            category: Some(Cow::Borrowed("platform")),
+            site: Cow::Borrowed("www"),
+            title: Cow::Borrowed("Activity"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let legacy_activity = concat!(
+            "[[module RecentWRevisions]] [[module MostActiveSites]] ",
+            "[[module MostActiveForums]] [[module NewWUsers]] ",
+            "[[module SomeGlobalStats]]",
+        );
+        assert_eq!(
+            upgrade_seeded_platform_page(legacy_activity.to_owned(), &page_info),
+            include_str!("../../../../seeder/platform-activity.ftml"),
+        );
+
+        page_info.page = Cow::Borrowed("sites");
+        assert_eq!(
+            upgrade_seeded_platform_page(
+                "[[module ListAllWikis]]".to_owned(),
+                &page_info,
+            ),
+            include_str!("../../../../seeder/platform-sites.ftml"),
+        );
+
+        page_info.site = Cow::Borrowed("example");
+        let authored = "[[module ListAllWikis]]".to_owned();
+        assert_eq!(
+            upgrade_seeded_platform_page(authored.clone(), &page_info),
+            authored,
+        );
     }
 }
