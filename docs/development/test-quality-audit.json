@@ -11232,6 +11232,12 @@
       "kind": "mutation",
       "path": "docs/development/test-quality-audit/generated-gate-close-unit-mutation-20261009/receipt.json",
       "sha256": "cde10c341fee0944c29b250d1bb80a27a97708bb6251f48d138343fd4d2d368d"
+    },
+    {
+      "id": "wikidot-verification-node-coverage-20261009",
+      "kind": "coverage",
+      "path": "docs/development/test-quality-audit/wikidot-verification-node-coverage-20261009/receipt.json",
+      "sha256": "f4e604c5bc3afec9b5aac26fc5bb30c1ccc230a5060caaa39eb1c6f0dbcde6d3"
     }
   ],
   "acceptance": null,
