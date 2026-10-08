@@ -25,7 +25,9 @@
           return
         }
 
-        if (result.type === "failure" && result.data) {
+        // Field-level validation failures are shown inline; only server
+        // failures that carry a message open the error dialog.
+        if (result.type === "failure" && result.data?.message) {
           errorPopupState.current = {
             state: true,
             message: result.data?.message,
