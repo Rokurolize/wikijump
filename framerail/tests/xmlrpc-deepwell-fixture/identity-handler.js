@@ -18,6 +18,20 @@ export const handleIdentityRpc = ({ rpcRequest, request }) => {
       "password",
       "user_agent"
     ]) &&
+    rpcRequest.params.name_or_email === "fixture-member" &&
+    rpcRequest.params.password === "fixture-member-password" &&
+    typeof rpcRequest.params.ip_address === "string" &&
+    typeof rpcRequest.params.user_agent === "string"
+  ) {
+    result = { needs_mfa: false, session_token: "fixture-authenticated-session-token" }
+  } else if (
+    rpcRequest.method === "login" &&
+    hasExactKeys(rpcRequest.params, [
+      "ip_address",
+      "name_or_email",
+      "password",
+      "user_agent"
+    ]) &&
     rpcRequest.params.name_or_email === process.env.XML_RPC_WRITE_USERNAME &&
     rpcRequest.params.password === process.env.XML_RPC_WRITE_PASSWORD &&
     typeof rpcRequest.params.ip_address === "string" &&
@@ -32,13 +46,26 @@ export const handleIdentityRpc = ({ rpcRequest, request }) => {
     rpcRequest.method === "session_get" &&
     Array.isArray(rpcRequest.params) &&
     rpcRequest.params.length === 1 &&
-    rpcRequest.params[0] === "fixture-session-token"
+    ["fixture-session-token", "fixture-authenticated-session-token"].includes(
+      rpcRequest.params[0]
+    )
   ) {
     pageWriteRequests.sessionGet.push({
       headers: requestContextHeaders(request),
       params: rpcRequest.params
     })
-    result = { user_id: 123 }
+    result =
+      rpcRequest.params[0] === "fixture-authenticated-session-token"
+        ? {
+            session_token: "fixture-authenticated-session-token",
+            user_id: 6000008,
+            created_at: "2026-01-01T00:00:00Z",
+            expires_at: "2099-01-01T00:00:00Z",
+            ip_address: "127.0.0.1",
+            user_agent: "fixture-browser",
+            restricted: false
+          }
+        : { user_id: 123 }
   } else if (
     rpcRequest.method === "user_get" &&
     hasExactKeys(rpcRequest.params, ["user"]) &&

@@ -714,7 +714,9 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
         "session_token",
         "site_id"
       ]) &&
-        rpcRequest.params.session_token === "fixture-session-token")) &&
+        ["fixture-session-token", "fixture-authenticated-session-token"].includes(
+          rpcRequest.params.session_token
+        ))) &&
     rpcRequest.params.site_id === 6000005 &&
     Array.isArray(rpcRequest.params.locales) &&
     (rpcRequest.params.route === null ||
