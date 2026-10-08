@@ -438,3 +438,49 @@ fn projected_quoted_continuation_recovery_charges_direct_work_and_literal_advanc
         );
     }
 }
+
+#[test]
+fn terminal_scanner_work_counts_projected_merge_and_literal_advances() {
+    // Fully closed authored ListPages modules stay at their original source
+    // positions. Account for each scanner and literal traversal, including
+    // projection/merge overhead, rather than conflating their contributions.
+    // These are internal work-counter invariants, not a live Wikidot oracle.
+    for (label, source, expected_work, expected_advances) in [
+        (
+            "direct two literals",
+            "@@first@@\n@@second@@\n[[module ListPages]]T[[/module]]",
+            91,
+            2,
+        ),
+        (
+            "projected one literal",
+            "@@hidden@@\n> quoted\\\n> second row\n[[module ListPages]]T[[/module]]",
+            363,
+            5,
+        ),
+        (
+            "projected no prefix",
+            "> quoted\\\n> second row\n[[module ListPages]]T[[/module]]",
+            316,
+            2,
+        ),
+    ] {
+        let (modules, work, advances) =
+            find_list_pages_module_matches_with_cursor_work(source);
+        assert_eq!(modules.len(), 1, "{label}: later module remains");
+        assert_eq!(
+            modules[0].start,
+            source.find("[[module ListPages]]").unwrap(),
+            "{label}"
+        );
+        assert_eq!(modules[0].body, "T", "{label}");
+        assert_eq!(modules[0].end, source.len(), "{label}");
+        assert!(modules[0].runtime_safe, "{label}");
+        assert_eq!(advances, expected_advances, "{label}: literal traversal");
+        assert_eq!(work, expected_work, "{label}: complete scanner work");
+        assert!(
+            work <= source.len() * MAX_SINGLE_SCANNER_WORK_MULTIPLIER,
+            "{label}"
+        );
+    }
+}
