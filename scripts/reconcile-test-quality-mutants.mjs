@@ -8,6 +8,35 @@ import {resolve} from "node:path";
 import {reconcileMutationRuns} from "./test-quality-mutation-reconciliation.mjs";
 
 function main(args) {
+  if (args.length === 2 && args[0] === "--verify-report") {
+    const prior = JSON.parse(readFileSync(resolve(args[1]), "utf8"));
+    if (!Array.isArray(prior.source_files) || prior.source_files.length === 0) {
+      throw new Error("reconciliation report has no sealed input files");
+    }
+    const initialRuns = [];
+    const replays = [];
+    let startedReplays = false;
+    for (const source of prior.source_files) {
+      if (source.role !== "initial" && source.role !== "replay") {
+        throw new Error(`unknown reconciliation source role: ${source.role}`);
+      }
+      if (source.role === "initial" && startedReplays) {
+        throw new Error("initial shard appears after targeted replays");
+      }
+      if (source.role === "replay") startedReplays = true;
+      const bytes = readFileSync(source.path);
+      const digest = createHash("sha256").update(bytes).digest("hex");
+      if (digest !== source.sha256) throw new Error(`reconciliation input hash changed: ${source.path}`);
+      (source.role === "initial" ? initialRuns : replays).push(JSON.parse(bytes.toString("utf8")));
+    }
+    const recomputed = reconcileMutationRuns({baselineRuns: initialRuns, replays});
+    const {source_files: _sources, ...oldReport} = prior;
+    if (JSON.stringify(oldReport) !== JSON.stringify(recomputed)) {
+      throw new Error("reconciliation report differs from sealed source outcomes");
+    }
+    process.stdout.write(`Verified ${recomputed.frozen_mutants} unique mutants from ${prior.source_files.length} sealed outcome files; ${recomputed.unresolved_survivors.length} survivors remain.\n`);
+    return;
+  }
   const initial = [];
   const replay = [];
   let output;
