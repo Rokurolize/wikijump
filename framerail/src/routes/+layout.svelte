@@ -451,6 +451,10 @@
 <style global lang="scss">
   @use "../lib/css/abstracts/variables" as *;
 
+  .odate[class*="time_"]:not(:empty) {
+    display: inline !important;
+  }
+
   $tablet-max-width: 767px;
 
   .header-wordmark {

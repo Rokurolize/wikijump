@@ -480,13 +480,45 @@ test("WIKIDOT History preserves source row selectors and functional actions acro
     await expect(row.locator(".printuser.avatarhover")).toBeVisible()
     await expect(row.locator(".odate[class*='format_%25e']")).toHaveCount(1)
     await expect(row.locator(".odate")).toHaveText("15 Aug 2026 00:00")
+    await expect(row.locator(".odate")).toBeVisible()
     await expect(row.locator('input[type="radio"][name="from"]')).toBeVisible()
     await expect(row.locator('input[type="radio"][name="to"]')).toBeVisible()
     const cells = await row
       .locator("td")
       .evaluateAll((items) => items.map((cell) => cell.textContent?.trim() ?? ""))
     expect(cells).toHaveLength(7)
+
+    const revisionDates = table.locator('tbody > tr[id^="revision-row-"] .odate')
+    const dateCount = await revisionDates.count()
+    for (let dateIndex = 0; dateIndex < dateCount; dateIndex += 1) {
+      await expect(revisionDates.nth(dateIndex)).toBeVisible()
+    }
   }
+})
+
+test("WIKIDOT reveals populated odate spans after hydration and dynamic insertion", async ({
+  page
+}) => {
+  await page.setExtraHTTPHeaders(SITE_HEADERS)
+  await page.goto("/page-workflow-probe")
+  await page.evaluate(() => {
+    const content = document.querySelector("#page-content")
+    if (!content) throw new Error("page content was not rendered")
+
+    const populated = document.createElement("span")
+    populated.className = "odate time_1785638315 format_%25e%20%25b%20%25Y"
+    populated.textContent = "02 Aug 2026 02:38"
+    populated.dataset.testid = "odate-populated"
+    content.append(populated)
+
+    const empty = document.createElement("span")
+    empty.className = "odate time_1785638315 format_%25e%20%25b%20%25Y"
+    empty.dataset.testid = "odate-empty"
+    content.append(empty)
+  })
+
+  await expect(page.getByTestId("odate-populated")).toBeVisible()
+  await expect(page.getByTestId("odate-empty")).not.toBeVisible()
 })
 
 test("mobile Files pane keeps long Japanese filenames and actions horizontally accessible", async ({
