@@ -20,7 +20,7 @@ const SEARCH_ALL_FORM_HTML: &str = r#"<div class="search-box">
 <div class="query-area">
 <form action="dummy" id="search-form-all">
 <div>
-<input class="text" type="text" size="30" name="query" id="search-form-all-input" value=""/>
+<input class="text" type="text" size="30" name="query" id="search-form-all-input" value="" aria-label="Search all Wikis"/>
 <input class="button" type="submit" value="Search"/>
 </div>
 <div style="margin-top:5px;">

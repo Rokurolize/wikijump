@@ -12956,7 +12956,7 @@ async fn searchall_module_matches_live_form_and_unavailable_route_contract() {
         r#"<div class="search-box">"#,
         r#"<div class="query-area">"#,
         r#"<form action="dummy" id="search-form-all">"#,
-        r#"<input class="text" type="text" size="30" name="query" id="search-form-all-input" value=""/>"#,
+        r#"<input class="text" type="text" size="30" name="query" id="search-form-all-input" value="" aria-label="Search all Wikis"/>"#,
         r#"<input class="button" type="submit" value="Search"/>"#,
         r#"<input id="search-all-pf" class="radio" type="radio" name="area" value="pf" checked="checked"/>"#,
         r#"<label for="search-all-pf">pages and forums</label>"#,

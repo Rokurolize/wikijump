@@ -162,7 +162,7 @@ pub(super) fn render_new_page_module(
         r#"<form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);">"#,
     );
     output.push_str(&format!(
-        r#"<input class="text" name="pageName" type="text" size="{}" maxlength="128" style="margin: 1px"/>"#,
+        r#"<input class="text" name="pageName" type="text" size="{}" maxlength="128" style="margin: 1px" aria-label="Name of the new page"/>"#,
         escape_list_pages_html_attr(size),
     ));
     if let NewPageTemplateRendering::Multiple(options) = &templates {
