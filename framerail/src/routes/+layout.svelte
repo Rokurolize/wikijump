@@ -45,6 +45,7 @@
     windowsTileDeclaration
   } from "$lib/site-icons"
   import { installWikidotCategories } from "$lib/wikidot/wikidot-categories.js"
+  import { installJavascriptAnchorGuard } from "$lib/wikidot/wikidot-javascript-anchors.js"
   import { installWikidotNewPageHelper } from "$lib/wikidot/wikidot-new-page-helper"
   import WikidotBottomToolbar from "$lib/wikidot/WikidotBottomToolbar.svelte"
   import {
@@ -174,6 +175,7 @@
     let disposed = false
     let stop: (() => void) | undefined
     const uninstallSearchAll = installWikidotSearchAll(window)
+    const uninstallJavascriptAnchorGuard = installJavascriptAnchorGuard(document)
     installWikidotCategories(window)
     installWikidotNewPageHelper(window)
     const wikidotSearchForm =
@@ -190,6 +192,7 @@
       disposed = true
       stop?.()
       uninstallSearchAll()
+      uninstallJavascriptAnchorGuard()
       wikidotSearchForm?.removeEventListener("submit", submitWikidotSearch)
       wikidotSearchInput?.removeEventListener("focus", clearWikidotSearchPrompt)
     }
