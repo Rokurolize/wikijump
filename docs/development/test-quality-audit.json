@@ -31,12 +31,12 @@
         "deepwell/src/services/render/list_pages/scanner/tests/stress.rs",
         "deepwell/tests/list_pages.rs"
       ],
-      "next_action": "Independently review the 52 survivors against the frozen Wikidot specification and live/corpus evidence. Add separate match, work-budget, and offset owners only where an observable contract is evidenced; classify genuinely equivalent or compile-failing candidates with specific reasons. Keep this owner unaccepted until dispositions and remaining test owners are complete.",
+      "next_action": "Independently review the 44 survivors against the frozen Wikidot specification and live/corpus evidence. Add separate match, work-budget, and offset owners only where an observable contract is evidenced; classify genuinely equivalent or compile-failing candidates with specific reasons. Keep this owner unaccepted until dispositions and remaining test owners are complete.",
       "replay": {
         "date": "2026-10-08",
         "mutants": 136,
-        "caught": 80,
-        "missed": 52,
+        "caught": 88,
+        "missed": 44,
         "unviable": 4,
         "timeout": 0,
         "owner": "deepwell/src/services/render/list_pages/scanner/tests.rs",
@@ -59,6 +59,7 @@
           "/tmp/wj-1990-scanner-shard-1-8-20261008",
           "/tmp/wj-1990-scanner-shard-1-targeted-verified-20261008",
           "/tmp/wj-1990-scanner-shard-1-resume-verified-20261008",
+          "/tmp/wj-1990-scanner-shard-1-resume-verified-20261008",
           "/tmp/wj-1990-scanner-shard-2-8-20261008",
           "/tmp/wj-1990-scanner-shard-2-targeted-20261008",
           "/tmp/wj-1990-scanner-shard-3-8-20261008",
@@ -70,7 +71,10 @@
           "/tmp/wj-1990-literal-cursor-mutant-20261008/mutants.out",
           "/tmp/wj-1990-literal-sum-mutant-20261008/mutants.out",
           "/tmp/wj-1990-empty-tail-mutant-20261008/mutants.out",
-          "/tmp/wj-1990-empty-tail-single-mutant-20261008/mutants.out"
+          "/tmp/wj-1990-empty-tail-single-mutant-20261008/mutants.out",
+          "/tmp/wj-1990-collapsible-suffix-work-mutant-20261008/mutants.out",
+          "/tmp/wj-1990-collapsible-suffix-work-extended-mutant-20261008/mutants.out",
+          "/tmp/wj-1990-collapsible-suffix-work-extended-mutant-20261008/mutants.out"
         ],
         "targeted_replays": [
           {
@@ -117,32 +121,69 @@
             "missed": 0,
             "evidence": "/tmp/wj-1990-empty-tail-single-mutant-20261008/mutants.out",
             "owner_test": "closed_listpages_module_does_not_consume_a_nonempty_body_as_an_empty_tail"
+          },
+          {
+            "date": "2026-10-08",
+            "mutation_filter": "scanner.rs:(1827:21|1826:21|1833:25|1831:25)",
+            "mutants": 8,
+            "caught": 8,
+            "missed": 0,
+            "evidence": "/tmp/wj-1990-collapsible-suffix-work-extended-mutant-20261008/mutants.out",
+            "owner_test": "projected_collapsible_recovery_counts_literal_work_in_its_suffix"
+          },
+          {
+            "date": "2026-10-08",
+            "mutation_filter": "scanner.rs:(1827:21|1826:21|1833:25|1831:25)",
+            "mutants": 8,
+            "caught": 8,
+            "missed": 0,
+            "evidence": "/tmp/wj-1990-collapsible-suffix-work-extended-mutant-20261008/mutants.out",
+            "owner_test": "projected_collapsible_recovery_counts_literal_work_in_its_suffix"
           }
         ],
         "independent_reconciliation": {
           "date": "2026-10-08",
           "tool": "scripts/reconcile-test-quality-mutants.mjs",
-          "report": "/tmp/wj-1990-scanner-reconciled-20261008-1132.json",
-          "report_sha256": "788f8f280f5aa1010daf4c8b0bed307ed25ff3e644b9ce414f4b7f1b3311da42",
+          "report": "/tmp/wj-1990-scanner-reconciled-20261008-final.json",
+          "report_sha256": "682c45ee877925196197ac5965d919c7bb0c8d031e8028c4f051673a7dbfc527",
           "initial_shards": 8,
-          "targeted_replay_outputs": 9,
+          "targeted_replay_outputs": 10,
           "distinct_initial_mutants": 136,
           "initial_caught": 63,
           "initial_missed": 69,
-          "transitions_missed_to_caught": 17,
-          "final_caught": 80,
-          "final_missed": 52,
+          "initial_unviable": 4,
+          "initial_timeout": 0,
+          "transitions_missed_to_caught": 24,
+          "transitions_missed_to_unviable": 1,
+          "transitions_unviable_to_caught": 1,
+          "transition_events": 26,
+          "nonmonotonic_outcomes": 0,
+          "final_caught": 88,
+          "final_missed": 44,
           "disposition": "unreviewed; neither passing tests nor accounting alone accept surviving mutants"
         },
         "survivor_triage": {
           "date": "2026-10-08",
           "source_sha256": "41c1f5132bd938cf8fb0fb4228767583b59b7529a1ad0fd7740376ebbdb9d30e",
-          "report": "/tmp/wj-1990-scanner-survivor-triage-20261008.json",
-          "report_sha256": "c60dd277826d58becd81b519c517d16f17b69f36efd68fb8b0f3bbe26fa80c10",
-          "priority_behavioral_boolean": 6,
-          "priority_work_accounting": 52,
-          "behavioral_lines": [1645, 1743, 1744, 1912, 1913],
-          "disposition": "all 52 pending independent Wikidot contract or reviewed local work-budget evidence; no equivalent classification granted"
+          "report": "/tmp/wj-1990-scanner-survivor-triage-20261008-1208.json",
+          "report_sha256": "39dc18870f7268796d8c7d1ff58b1e717024f2d2b42294f08634b49bbc92e463",
+          "priority_behavioral_boolean": 4,
+          "priority_work_accounting": 40,
+          "behavioral_lines": [
+            1645,
+            1912,
+            1913
+          ],
+          "disposition": "all 44 pending independent Wikidot contract or reviewed local work-budget evidence; no equivalent classification granted"
+        },
+        "independent_oracle_review": {
+          "date": "2026-10-08",
+          "path": "docs/development/listpages-scanner-survivor-oracle-review-20261008.md",
+          "corpus_cases": 23964,
+          "corpus_pending_live": 23964,
+          "malformed_executable_cases": 60,
+          "direct_live_evidence_in_reviewed_artifacts": false,
+          "classification": "four conditional candidates require new source-grounded behavior owners; 40 arithmetic/work accounting candidates require distinct bounded-work ownership; none accepted"
         },
         "survivor_disposition": "pending_independent_review"
       }
@@ -174,7 +215,7 @@
       "tests": [
         {
           "path": "deepwell/src/services/render/list_pages/scanner/tests.rs",
-          "sha256": "80652a35110df6701f1b4e645a6a6ccdc3023cc535807f8260df381ff01460bf",
+          "sha256": "cc387735a67a1bf287c78aac3e10879832496b1e3b38c8262ec4958d410333a0",
           "anchors": [
             "scanner_keeps_generated_comment_gate_rows_inside_the_module"
           ]

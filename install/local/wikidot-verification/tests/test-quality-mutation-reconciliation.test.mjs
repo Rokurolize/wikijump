@@ -74,4 +74,22 @@ test("reconciliation CLI seals outcome identities and refuses to overwrite a rep
   const second = spawnSync(process.execPath, argv, {encoding: "utf8"});
   assert.notEqual(second.status, 0);
   assert.match(second.stderr, /refusing to overwrite/u);
+
+  const verify = () => spawnSync(process.execPath, [script, "--verify-report", output], {encoding: "utf8"});
+  const valid = verify();
+  assert.equal(valid.status, 0, valid.stderr);
+  assert.match(valid.stdout, /Verified 1 unique mutants/u);
+
+  const brokenReport = structuredClone(report);
+  brokenReport.reconciled.caught = 0;
+  writeFileSync(output, JSON.stringify(brokenReport));
+  const alteredReport = verify();
+  assert.notEqual(alteredReport.status, 0);
+  assert.match(alteredReport.stderr, /report differs/u);
+
+  writeFileSync(output, JSON.stringify(report));
+  writeFileSync(join(replay, "outcomes.json"), JSON.stringify(run(mutant("one", "MissedMutant"))));
+  const alteredInput = verify();
+  assert.notEqual(alteredInput.status, 0);
+  assert.match(alteredInput.stderr, /input hash changed/u);
 });

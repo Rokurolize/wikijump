@@ -2325,7 +2325,8 @@ fn corpus_unclosed_at_marker_body_owns_the_first_collapsible_opening() {
         "[[module ListPages name=\"later-valid\"]]ROW[[/module]]",
     );
     let source = format!("{consumed}{later}");
-    let modules = find_list_pages_module_matches(&source);
+    let (modules, work, literal_range_advances) =
+        find_list_pages_module_matches_with_cursor_work(&source);
 
     assert_eq!(modules.len(), 2, "{modules:#?}");
     assert_eq!(modules[0].start, 0);
@@ -2348,6 +2349,8 @@ fn corpus_unclosed_at_marker_body_owns_the_first_collapsible_opening() {
     assert_eq!(modules[1].original, later_module);
     assert_eq!(modules[1].head, r#"name="later-valid""#);
     assert_eq!(modules[1].body, "ROW");
+    assert_eq!(literal_range_advances, 2);
+    assert_eq!(work, 1_634);
 
     for unsupported in [
         concat!(
@@ -2379,6 +2382,34 @@ fn corpus_unclosed_at_marker_body_owns_the_first_collapsible_opening() {
         );
         assert_eq!(modules[0].end, modules[0].body_start);
     }
+}
+
+#[test]
+fn projected_collapsible_recovery_counts_literal_work_in_its_suffix() {
+    let consumed = concat!(
+        "[[module ListPages fullname=\"@@##red|missing-page##@@\" ",
+        "separate=\"yes\" limit=\"250\"]]@@\n",
+        "documentation\n",
+        "> @@[[module ListPages fullname=\"@@##red|example##@@\"]]@@\n",
+        "[[collapsible show=\"+ Syntax\" hide=\"- Syntax\"]]",
+    );
+    let suffix = concat!(
+        "\nVISIBLE\n[[/collapsible]]\n",
+        "@@[[module ListPages name=\"literal-only\"]]HIDDEN[[/module]]@@\n",
+        "[[module ListPages name=\"later-valid\"]]ROW[[/module]]",
+    );
+    let source = format!("\t{consumed}{suffix}");
+    let (modules, work, literal_range_advances) =
+        find_list_pages_module_matches_with_cursor_work(&source);
+
+    assert_eq!(modules.len(), 2, "{modules:#?}");
+    assert_eq!(modules[0].start, 1);
+    assert_eq!(modules[0].end, consumed.len() + 1);
+    assert_eq!(modules[1].start, consumed.len() + 1 + "\nVISIBLE\n[[/collapsible]]\n@@[[module ListPages name=\"literal-only\"]]HIDDEN[[/module]]@@\n".len());
+    assert_eq!(modules[1].head, r#"name="later-valid""#);
+    assert_eq!(modules[1].body, "ROW");
+    assert_eq!(literal_range_advances, 8);
+    assert_eq!(work, 3_314);
 }
 
 #[test]
