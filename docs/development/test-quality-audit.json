@@ -137,6 +137,23 @@
           "final_missed": 52,
           "disposition": "unreviewed; neither passing tests nor accounting alone accept surviving mutants"
         },
+        "unit_mutation_locus_coverage": {
+          "date": "2026-10-08",
+          "scope": "cargo llvm-cov --lib only; integration coverage not included",
+          "source_sha256": "41c1f5132bd938cf8fb0fb4228767583b59b7529a1ad0fd7740376ebbdb9d30e",
+          "unit_test_results": {"passed": 1618, "ignored": 1, "failed": 0},
+          "llvm_json": "/tmp/wj-1990-scanner-unit-llvm-20261008.json",
+          "llvm_sha256": "59c17406f0d379aafb879e0f27f9375466bf5e01daf3e187111f3931b1845dab",
+          "report": "/tmp/wj-1990-scanner-site-coverage-20261008.json",
+          "report_sha256": "2afbf20da6b5826b21087c6182625c7118e7110b28382d8aebf5997049d07fb6",
+          "survivor_count": 52,
+          "zero_count": 14,
+          "positive_count": 35,
+          "no_countable_segment": 3,
+          "scanner_file_covered_lines": 1399,
+          "scanner_file_instrumented_lines": 1490,
+          "disposition": "none accepted; zero unit counts may have integration owners, positive counts do not prove assertions or short-circuited operands ran, and absent segments are not zero counts"
+        },
         "survivor_triage": {
           "date": "2026-10-08",
           "source_sha256": "41c1f5132bd938cf8fb0fb4228767583b59b7529a1ad0fd7740376ebbdb9d30e",

@@ -112,6 +112,32 @@ compatibility claims. Replacing `+` with `-` or `*` can still change the
 shared rendering budget even when the emitted HTML is identical.
 The closed-module empty-tail mutations at 1743–1744 are caught by newer tests.
 
+## Instrumented local ownership frontier (unit suite, not an external oracle)
+
+A fresh, source-SHA-pinned `cargo llvm-cov --lib` run in the isolated worktree
+passed **1,618 tests** (one ignored) and measured `scanner.rs` at
+**1,399/1,490 instrumented lines (93.89%)**. Joining the exact line *and
+column* of each of the 52 independently reconciled survivors to the active
+LLVM segment yields **14 zero-count**, **35 positive-count**, and **three
+without a countable segment**. All 14 zero-count sites fall in the two
+ambiguous-recovery early returns (`1590–1591`: eight; `1627–1628`: six).
+The per-mutation diagnostic is
+`/tmp/wj-1990-scanner-site-coverage-20261008.json` (SHA-256
+`2afbf20da6b5826b21087c6182625c7118e7110b28382d8aebf5997049d07fb6`),
+whose raw LLVM source is
+`/tmp/wj-1990-scanner-unit-llvm-20261008.json` (SHA-256
+`59c17406f0d379aafb879e0f27f9375466bf5e01daf3e187111f3931b1845dab`).
+
+This establishes a **test ownership triage**, not behavioral sufficiency.
+Add controlled malformed/ambiguous inputs to test whether those early returns
+are reached and enforce a locally defined fail-closed resource contract; then
+compare integrated execution separately. For the 35 positive-count locations,
+test assertions remain insensitive to the mutations and require stronger
+independent observable or resource-budget invariants. The three uncountable
+short-circuit/gap positions (`1645`, `1912`, `1913`) cannot be reported as
+zero-hit just because LLVM did not supply a direct count. No mutation has been
+accepted or reclassified as equivalent from this instrumentation.
+
 ## Reproduction and acceptance boundary
 
 1. Preserve the frozen corpus and live-capture source hashes. Select a

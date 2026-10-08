@@ -165,6 +165,25 @@ a missing test: the integration-scope owner must be examined. This diagnostic
 neither alters mutation dispositions nor replaces the independently grounded
 browser/Wikidot contract evidence.
 
+**Fresh, source-pinned 2026-10-08 unit result:** 1,618 unit tests passed,
+one ignored; `scanner.rs` alone has 1,399 / 1,490 instrumented lines
+(93.89%) and 56 / 57 functions (98.25%). Of the **52 surviving** scanner
+mutants, **14** are in zero-count LLVM regions, **35** in positive-count
+regions, and **three** have no countable segment. All 14 unit-unexecuted
+mutants cluster in the recovery-ambiguous early return (`1590–1591`: eight)
+and projected-ambiguous early return (`1627–1628`: six). The three
+uncountable positions include the four-condition frontier's CSS/anchor
+intersection and two short-circuit positions (`1645`, `1912`, `1913`),
+not a proven zero-execution claim. These observations **locate where
+additional owners are needed**, not whether the mutations are equivalent.
+The full 52-site report is
+`/tmp/wj-1990-scanner-site-coverage-20261008.json` (SHA-256
+`2afbf20da6b5826b21087c6182625c7118e7110b28382d8aebf5997049d07fb6`),
+from fresh `/tmp/wj-1990-scanner-unit-llvm-20261008.json` (SHA-256
+`59c17406f0d379aafb879e0f27f9375466bf5e01daf3e187111f3931b1845dab`).
+The source SHA is
+`41c1f5132bd938cf8fb0fb4228767583b59b7529a1ad0fd7740376ebbdb9d30e`.
+
 ### Framerail
 
 ```sh

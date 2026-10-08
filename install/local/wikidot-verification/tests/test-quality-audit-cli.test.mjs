@@ -221,6 +221,20 @@ test("full audit verify rejects contradictory replayed frontier outcomes", (t) =
   assert.match(result.stderr, /outcomes sum to 135, expected 136/u);
 });
 
+test("audit verify rejects contradictory mutation-site coverage accounting", (t) => {
+  const fixture = withLedger(t, (ledger) => {
+    ledger.next_mutation_frontier[0].replay.unit_mutation_locus_coverage.zero_count += 1;
+  });
+  const result = spawnSync(process.execPath, [
+    command, "verify", "--output-dir", join(fixture.directory, "output"),
+  ], {
+    cwd: root, env: {...process.env, WIKIJUMP_TEST_QUALITY_LEDGER: fixture.ledgerPath},
+    encoding: "utf8", timeout: 30_000,
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /contradictory unit mutation-site coverage/u);
+});
+
 test("audit inventory resolves side-effect suite imports and transitive owners", (t) => {
   const fixture = withLedger(t);
   const result = audit("inventory", fixture);

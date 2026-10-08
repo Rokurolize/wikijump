@@ -495,6 +495,17 @@ async function verifyPlannedMutationFrontiers(frontiers = []) {
           fail(`mutation frontier ${frontier.owner_candidate} has contradictory independent reconciliation`);
         }
       }
+      const coverage = replay.unit_mutation_locus_coverage;
+      if (coverage) {
+        const totalSites = coverage.zero_count + coverage.positive_count + coverage.no_countable_segment;
+        if (coverage.survivor_count !== replay.missed || totalSites !== replay.missed ||
+            !String(coverage.scope ?? "").includes("--lib") ||
+            !/^[0-9a-f]{64}$/u.test(coverage.source_sha256 ?? "") ||
+            !/^[0-9a-f]{64}$/u.test(coverage.llvm_sha256 ?? "") ||
+            !/^[0-9a-f]{64}$/u.test(coverage.report_sha256 ?? "")) {
+          fail(`mutation frontier ${frontier.owner_candidate} has contradictory unit mutation-site coverage`);
+        }
+      }
     }
     const {stdout} = await runValidationCommand("cargo", [
       "mutants", "--list", "--manifest-path", "deepwell/Cargo.toml",
