@@ -45,7 +45,8 @@ export const fixtureState = {
     parentDirectMetadata: [],
     parentRelationshipsGet: [],
     siteGet: [],
-    voteList: []
+    voteList: [],
+    pageGetScore: []
   },
   /**
    * @type {{
@@ -72,7 +73,8 @@ export const fixtureState = {
     parentUpdate: [],
     sessionGet: [],
     userGet: [],
-    voteSet: []
+    voteSet: [],
+    voteRemove: []
   },
   /** @type {Array<Record<string, unknown>>} */
   userCreateRequests: [],
@@ -94,7 +96,13 @@ export const fixtureState = {
     nextRevisionId: 9100000,
     nextFileId: 5000000,
     nextPendingBlobId: 1
-  }
+  },
+  ratingScores: {
+    3000341: 3,
+    3000342: 0
+  },
+  /** @type {Record<number, number>} */
+  voteValues: {}
 }
 
 const MIN_I64 = -(1n << 63n)

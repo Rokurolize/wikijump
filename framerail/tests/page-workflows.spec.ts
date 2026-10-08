@@ -213,6 +213,72 @@ test("article routes carry load and mutation context through Deepwell", async ({
   )
 })
 
+test("rating pane loads its score and refreshes after plus, minus, and cancel", async ({
+  page
+}) => {
+  const scoreStatuses: number[] = []
+  page.on("response", (response) => {
+    if (response.url().includes("?/score")) scoreStatuses.push(response.status())
+  })
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/page-workflow-rating-probe")
+  await waitForSvelteDelegatedHandler(page, "#pagerate-button")
+  await page.locator("#pagerate-button").click()
+
+  const rating = page.locator(".page-rate-widget-box")
+  const score = rating.locator(".number.prw54353")
+  await expect(rating).toBeVisible()
+  await expect(score).toHaveText("0")
+  expect(scoreStatuses).toEqual([200])
+
+  const refreshAfter = async (
+    action: () => Promise<unknown>,
+    actionName: string,
+    expectedScoreRequests: number,
+    expectedScore: string
+  ) => {
+    const actionResponse = page.waitForResponse((response) =>
+      response.url().includes(`?/${actionName}`)
+    )
+    await action()
+    expect((await actionResponse).status()).toBe(200)
+    await expect(score).toHaveText(expectedScore)
+    await expect.poll(() => scoreStatuses.length).toBe(expectedScoreRequests)
+  }
+
+  await refreshAfter(() => rating.locator(".rateup a").click(), "voteCast", 2, "1")
+  await page.getByRole("link", { name: "Look who rated this page" }).click()
+  await expect(page.locator("#who-rated-page-area")).toContainText("Guest")
+  await refreshAfter(() => rating.locator(".ratedown a").click(), "voteCast", 3, "-1")
+  await refreshAfter(() => rating.locator(".cancel a").click(), "voteCancel", 4, "0")
+  await page.getByRole("link", { name: "Look who rated this page" }).click()
+  await expect(page.locator("#who-rated-page-area")).not.toContainText("Guest")
+  expect(scoreStatuses).toEqual([200, 200, 200, 200])
+
+  scoreStatuses.length = 0
+  await page.goto("/page-workflow-star-probe")
+  await waitForSvelteDelegatedHandler(page, "#pagerate-button")
+  await page.locator("#pagerate-button").click()
+  const starWidget = page.locator(".page-rate-widget")
+  await expect(starWidget).toBeVisible()
+  await expect(starWidget.locator(".page-rate-widget-start")).toHaveAttribute(
+    "data-rating",
+    "3"
+  )
+  await expect.poll(() => scoreStatuses.length).toBe(1)
+  const starVoteResponse = page.waitForResponse((response) =>
+    response.url().includes("?/voteCast")
+  )
+  await starWidget.locator('img[alt="4"]').click()
+  expect((await starVoteResponse).status()).toBe(200)
+  await expect.poll(() => scoreStatuses.length).toBe(2)
+  await expect(starWidget.locator(".page-rate-widget-start")).toHaveAttribute(
+    "data-rating",
+    "4"
+  )
+  expect(scoreStatuses).toEqual([200, 200])
+})
+
 test("autonumbered page creation follows the assigned slug", async ({ page }) => {
   await installNativeEventListenerProbe(page)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
