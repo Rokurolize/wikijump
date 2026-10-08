@@ -212,6 +212,41 @@ test("account route loads expose their public SvelteKit page data", async () => 
   assert.deepEqual(userViewNames, [undefined, "account-fixture"])
 })
 
+test("public profile websites render safe actionable links and leave user pages as text", () => {
+  const data = {
+    site: { name: "Profile fixture" },
+    site_file_domain: "files.wikijump.test",
+    user: { user_id: 41, name: "Profile fixture", slug: "profile-fixture" },
+    internationalization: { "user-profile-info.website": "Website:" }
+  }
+  const userData = (website) => ({
+    name: "Profile fixture",
+    website,
+    userPage: "other-site:profile-fixture"
+  })
+
+  const normalized = render(userProfilePage, {
+    props: { data, userData: userData("scp-wiki.wikidot.com/seekgull") }
+  }).body
+  assert.match(
+    normalized,
+    /<a class="[^"]*website-link[^"]*" href="https:\/\/scp-wiki\.wikidot\.com\/seekgull">scp-wiki\.wikidot\.com\/seekgull<\/a>/u
+  )
+  assert.match(
+    normalized,
+    /<span class="user-attribute-value[^"]*">other-site:profile-fixture<\/span>/u
+  )
+
+  const unsafe = render(userProfilePage, {
+    props: { data, userData: userData("javascript:alert(1)") }
+  }).body
+  assert.match(
+    unsafe,
+    /<span class="user-attribute-value[^"]*">javascript:alert\(1\)<\/span>/u
+  )
+  assert.doesNotMatch(unsafe, /href="javascript:alert\(1\)"/u)
+})
+
 test("display settings persist the forum signature through the existing account mutation", async () => {
   const calls = []
   client.request = async (method, params, context) => {
