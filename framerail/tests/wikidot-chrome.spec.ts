@@ -122,6 +122,12 @@ test("seeded platform SearchAll intercepts submit after hydration", async ({ pag
 
   await page.goto("/platform:search")
   await waitForNativeEventListener(page, null, "submit")
+  await page.getByRole("link", { name: "terms-conditions", exact: true }).click()
+  await expect(page).toHaveURL(/\/$/u)
+  await page.goBack()
+  await expect(page).toHaveURL(/\/platform:search$/u)
+  await waitForNativeEventListener(page, null, "submit")
+
   const keyboardForm = page.locator("#search-form-all")
   const keyboardQuery = keyboardForm.locator("#search-form-all-input")
   await keyboardForm.locator("#search-all-p").check()
