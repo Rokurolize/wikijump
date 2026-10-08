@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { normalizePublicWebsiteUrl } from "$lib/public-website-url.js"
   import type { userEditSchema } from "$lib/server/load/user"
   import type { InferOutput } from "valibot"
   import type { PageData } from "./$types"
@@ -14,6 +15,7 @@
       ? `https://${data.site_file_domain}/-/avatar/${data.user.user_id}`
       : null
   )
+  let websiteHref = $derived(normalizePublicWebsiteUrl(userData?.website))
 
   $effect(() => {
     let url: string | undefined
@@ -100,7 +102,13 @@
       <span class="user-attribute-label"
         >{data.internationalization?.["user-profile-info.website"]}</span
       >
-      <span class="user-attribute-value">{userData.website}</span>
+      {#if websiteHref}
+        <a class="user-attribute-value website-link" href={websiteHref}
+          >{userData.website}</a
+        >
+      {:else}
+        <span class="user-attribute-value">{userData.website}</span>
+      {/if}
     </div>
   {/if}
 
