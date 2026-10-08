@@ -104,3 +104,45 @@ test("an authenticated visitor is redirected without a registration confirmation
   await expect(page).toHaveURL(`${APP_URL}/`)
   await expect(page.getByRole("status")).toHaveCount(0)
 })
+
+test("registration validation errors stay inline and never open an empty dialog", async ({
+  page,
+  request
+}) => {
+  await installNativeEventListenerProbe(page)
+  await page.setExtraHTTPHeaders(SITE_HEADERS)
+  await page.goto(`${APP_URL}/-/register`)
+  await expect(page.locator("#register")).toBeVisible()
+
+  await page.locator("#username").fill("fixture-short-password")
+  await page.locator("#register .email").fill("short@example.invalid")
+  await page.locator("#register .auth-password").fill("too-short")
+  await page.locator(".confirm-password").fill("too-short")
+  await page.locator("#locale").selectOption(["en"])
+  await waitForNativeEventListener(page, "#register", "submit")
+  await page.locator("#register button[type=submit]").click()
+
+  await expect(
+    page
+      .locator("#register .auth-password")
+      .locator("xpath=following-sibling::p[contains(@class, 'error')]")
+  ).toContainText("error-form.password-too-short")
+  await expect(page.locator("#modal-message")).toHaveCount(0)
+  expect(
+    (await userCreateRequests(request)).some(
+      (create: { name: string }) => create.name === "fixture-short-password"
+    )
+  ).toBe(false)
+
+  await page.locator("#register .auth-password").fill("Good-fixture-password-2026")
+  await page.locator(".confirm-password").fill("Good-fixture-password-2027")
+  await waitForNativeEventListener(page, "#register", "submit")
+  await page.locator("#register button[type=submit]").click()
+
+  await expect(
+    page
+      .locator(".confirm-password")
+      .locator("xpath=following-sibling::p[contains(@class, 'error')]")
+  ).toContainText("error-form.password-mismatch")
+  await expect(page.locator("#modal-message")).toHaveCount(0)
+})
