@@ -205,6 +205,15 @@ impl DomainService {
         preferred_https_origin(&Self::preferred_domain(config, site), config.https_port)
     }
 
+    /// Gets the HTTPS origin for an already-resolved preferred domain.
+    ///
+    /// Runtime views that project a site row rather than loading its model can
+    /// still use the configured public listener port without duplicating URL
+    /// assembly rules.
+    pub fn preferred_https_origin_for_domain(config: &Config, domain: &str) -> String {
+        preferred_https_origin(domain, config.https_port)
+    }
+
     /// Return the preferred domain for the `www` site.
     ///
     /// This site is a special exception, instead of visiting `www.wikijump.com`

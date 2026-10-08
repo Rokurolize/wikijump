@@ -192,8 +192,8 @@ async fn render_sites(
     let selected = visible.get(start..end).unwrap_or_default();
     let mut html = String::from("<div class=\"platform-site-list\"><ul>");
     for site in selected {
-        let domain = DomainService::preferred_domain(ctx.config(), site);
-        let href = format!("https://{domain}/");
+        let origin = DomainService::preferred_https_origin(ctx.config(), site);
+        let href = format!("{origin}/");
         html.push_str(&format!(
             "<li><a href=\"{}\">{}</a></li>",
             escape_list_pages_html_attr(&href),
@@ -270,18 +270,20 @@ async fn render_activity(
         if !can_view {
             continue;
         }
-        let domain = match item.preferred_domain.as_deref() {
-            Some(domain) => domain.to_owned(),
+        let origin = match item.preferred_domain.as_deref() {
+            Some(domain) => {
+                DomainService::preferred_https_origin_for_domain(ctx.config(), domain)
+            }
             None => {
                 let site = Site::find_by_id(item.site_id)
                     .one(ctx.transaction())
                     .await
                     .or_raise(make_error)?
                     .ok_or_else(make_error)?;
-                DomainService::preferred_domain(ctx.config(), &site).into_owned()
+                DomainService::preferred_https_origin(ctx.config(), &site)
             }
         };
-        let href = format!("https://{domain}/{}", item.page_slug);
+        let href = format!("{origin}/{}", item.page_slug);
         html.push_str(&format!(
             "<li><a href=\"{}\">{}</a> <span class=\"platform-activity-site\">{}</span> <time datetime=\"{}\">{}</time> <span class=\"platform-revision-number\">(revision {})</span></li>",
             escape_list_pages_html_attr(&href),
