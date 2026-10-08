@@ -9072,6 +9072,7 @@
           "deepwell/tests/list_pages.rs#listpages_rating_vote_scalars_resolve_authored_expr_envelopes",
           "deepwell/tests/list_pages.rs#listpages_resolves_crossing_link_conditionals_after_row_substitution",
           "deepwell/tests/list_pages.rs#listpages_respects_corpus_literal_context_ownership",
+          "deepwell/tests/list_pages.rs#listpages_retained_wikidot_unclosed_head_live_preview_boundaries",
           "deepwell/tests/list_pages.rs#listpages_row_keeps_content_across_repeated_empty_raw_boundaries",
           "deepwell/tests/list_pages.rs#listpages_runtime_scalar_title_stays_inert_in_delayed_row",
           "deepwell/tests/list_pages.rs#listpages_section_zero_html_opener_keeps_preview_literal_and_saved_html_executable",
