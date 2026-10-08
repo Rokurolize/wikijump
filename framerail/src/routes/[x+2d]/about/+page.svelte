@@ -80,9 +80,21 @@
 </table>
 
 <style lang="scss">
+  // Contain long package, repository, and version values inside the viewport
+  // instead of letting the table widen the whole page.
   table.platform-info {
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
+
     .info-attribute-name {
       text-align: left;
+      width: 40%;
+      overflow-wrap: anywhere;
+    }
+
+    .info-attribute-value {
+      overflow-wrap: anywhere;
     }
   }
 </style>
