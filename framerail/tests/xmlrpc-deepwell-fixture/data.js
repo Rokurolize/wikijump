@@ -222,6 +222,23 @@ export const pages = {
     compiled_body_html:
       '<div class="search-box"><div class="query-area"><form action="dummy" id="search-form-all"><div><input class="text" type="text" size="30" name="query" id="search-form-all-input" value="" aria-label="Search all Wikis"><input class="button" type="submit" value="Search"></div><div style="margin-top:5px;"><input id="search-all-pf" class="radio" type="radio" name="area" value="pf" checked="checked"><label for="search-all-pf">pages and forums</label><input id="search-all-p" class="radio" type="radio" name="area" value="p"><label for="search-all-p">pages only</label><input id="search-all-f" class="radio" type="radio" name="area" value="f"><label for="search-all-f">forums only</label></div></form></div><div class="search-results"></div></div>'
   },
+  "platform:search": {
+    page_id: 3000327,
+    revision_id: 9000327,
+    page_created_at: "2026-08-09T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-08-09T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Wikijump: Search all sites",
+    slug: "platform:search",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "[[module SearchAll]]",
+    compiled_body_html:
+      '<div class="search-box"><div class="query-area"><form action="dummy" id="search-form-all"><div><input class="text" type="text" size="30" name="query" id="search-form-all-input" value="" aria-label="Search all Wikis"><input class="button" type="submit" value="Search"></div><div style="margin-top:5px;"><input id="search-all-pf" class="radio" type="radio" name="area" value="pf" checked="checked"><label for="search-all-pf">pages and forums</label><input id="search-all-p" class="radio" type="radio" name="area" value="p"><label for="search-all-p">pages only</label><input id="search-all-f" class="radio" type="radio" name="area" value="f"><label for="search-all-f">forums only</label></div></form></div><div class="search-results"></div></div>'
+  },
   "search:site": {
     page_id: 3000326,
     revision_id: 9000326,

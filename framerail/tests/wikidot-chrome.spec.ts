@@ -105,3 +105,27 @@ test("SearchAll module submits the selected live area route", async ({ page }) =
 
   await expect(page).toHaveURL(/\/search:all\/a\/f\/q\/%20%20a%2Fb%3F%20c%20%20$/u)
 })
+
+test("seeded platform SearchAll intercepts submit after hydration", async ({ page }) => {
+  await installNativeEventListenerProbe(page)
+  await page.setExtraHTTPHeaders(headers)
+  await page.goto("/platform:search")
+  await waitForNativeEventListener(page, null, "submit")
+
+  const form = page.locator("#search-form-all")
+  const query = form.locator("#search-form-all-input")
+  await expect(form).toHaveAttribute("action", "dummy")
+
+  await query.fill("SCP")
+  await form.locator('input[type="submit"]').click()
+  await expect(page).toHaveURL(/\/search:all\/a\/pf\/q\/SCP$/u)
+
+  await page.goto("/platform:search")
+  await waitForNativeEventListener(page, null, "submit")
+  const keyboardForm = page.locator("#search-form-all")
+  const keyboardQuery = keyboardForm.locator("#search-form-all-input")
+  await keyboardForm.locator("#search-all-p").check()
+  await keyboardQuery.fill("  a/b? c  ")
+  await keyboardQuery.press("Enter")
+  await expect(page).toHaveURL(/\/search:all\/a\/p\/q\/%20%20a%2Fb%3F%20c%20%20$/u)
+})
