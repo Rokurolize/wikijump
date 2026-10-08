@@ -6,7 +6,7 @@
     "wikidot-verification",
     "executed shared helpers"
   ],
-  "inventory_digest": "a33dfa0006805b8e62eab6162f59f3f21016c1323cce29144767e7ac14e90bbf",
+  "inventory_digest": "4f85ff67169281ae66301f707c1f360b89f8fe4755d694f7066c12eeb5f581a4",
   "inputs": [
     {
       "path": "deepwell/Cargo.toml",

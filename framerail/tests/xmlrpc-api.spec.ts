@@ -18,6 +18,7 @@ const emptyPageReadRequests = {
   forumPostGet: [],
   pageGet: [],
   pageGetDirect: [],
+  pageGetScore: [],
   pageLifecycleIdentity: [],
   pageRevisionDiff: [],
   pageRevisionGet: [],
