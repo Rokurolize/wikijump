@@ -154,6 +154,20 @@
           "corpus_pending_live": 23964,
           "malformed_executable_cases": 60,
           "direct_live_evidence_in_reviewed_artifacts": false,
+          "adjacent_real_unclosed_head_oracles": {
+            "cases": ["lpgen-0140-syntax-whitespace-malformed", "lpgen-0141-syntax-whitespace-malformed"],
+            "capture": "install/local/wikidot-verification/artifacts/listpages-campaign-generated-live-preview.jsonl",
+            "capture_sha256": "7da22f7f2650c16903616c13569b2aaee7c7b7205a41d5e06beab0f5e83464e0",
+            "rendered_test": "listpages_retained_wikidot_unclosed_head_live_preview_boundaries",
+            "rendered_baseline": "1 passed, 0 failed",
+            "integrity_test": "install/local/wikidot-verification/tests/listpages-unclosed-live-oracle-integrity.test.mjs",
+            "targeted_mutation_output": "/tmp/wj-1990-1912-1913-rendered-oracle-mutants/mutants.out/outcomes.json",
+            "targeted_mutation_sha256": "829d91f72519aee828516b7dfef8bf1878e50a5ce58400b2cd3efc736bba8665",
+            "targeted_mutants": 3,
+            "caught": 0,
+            "missed": 3,
+            "classification": "external behavior regression established but not a behavioral mutation owner for 1912-1913"
+          },
           "classification": "four conditional candidates require new source-grounded behavior owners; 48 arithmetic/work accounting candidates require distinct bounded-work ownership; none accepted"
         },
         "survivor_disposition": "pending_independent_review"
@@ -193,7 +207,7 @@
         },
         {
           "path": "deepwell/tests/list_pages.rs",
-          "sha256": "6955dc400653979b046380cf012b64a8e22c19c5b7c6eb98015e9b61695e7f61",
+          "sha256": "7b5c9e6902133c551cb0a561d28d8a55f939dff93f8240937af13055789bd93c",
           "anchors": [
             "listpages_created_by_id_comment_gates_resolve_after_row_substitution"
           ]

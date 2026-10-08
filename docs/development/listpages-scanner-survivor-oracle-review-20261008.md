@@ -71,6 +71,21 @@ closer, so the downstream tail-consumption choice has no raw closer to
 consume. A new rendered regression can preserve these independently observed
 facts, but may only be assigned a mutation owner after a targeted kill.
 
+This boundary is now pinned by
+`deepwell/tests/list_pages.rs::listpages_retained_wikidot_unclosed_head_live_preview_boundaries`
+(**1/1 PASS** using the task-owned Deepwell integration stack), and by
+`install/local/wikidot-verification/tests/listpages-unclosed-live-oracle-integrity.test.mjs`
+(**1/1 PASS**, checking capture bytes, source spellings, anonymous provenance,
+and raw-HTML hashes). A deliberately bounded mutation replay targeted exactly
+three surviving `scanner.rs:1912–1913` candidates with this rendered test,
+reusing the independently passing baseline and `--baseline skip`:
+**0 caught / 3 missed / 0 unviable / 0 timeout**. Evidence is sealed at
+`/tmp/wj-1990-1912-1913-rendered-oracle-mutants/mutants.out/outcomes.json`
+(SHA-256 `829d91f72519aee828516b7dfef8bf1878e50a5ce58400b2cd3efc736bba8665`).
+This demonstrates an *oracle-backed regression* but **explicitly rejects**
+its ownership of the `consume_empty_tail` recovery seam. The initial scanner
+inventory remains 136 and the reconciled 80/52/4 count is unchanged.
+
 ## Four unresolved conditional mutations
 
 | Location | Surviving mutation | Proposed independent owner and missing evidence |
@@ -83,6 +98,18 @@ facts, but may only be assigned a mutation owner after a targeted kill.
 The four are **possible behavioral owner gaps**, not confirmed divergences.
 The other 48 unresolved mutations change scanner work accounting, arithmetic,
 or offsets; they still require bounded-resource/absolute-position owners.
+Their locations are not one homogeneous behavioral owner:
+
+| Accounting path in frozen scanner source | Unresolved mutants | Required owner |
+| --- | ---: | --- |
+| Changed-quote recovery (`1590–1602`) | 11 | Recovery cursor work + changed-quote literal advances under bounded input |
+| Projected literal/index and event filtering (`1627–1653`, **excluding** conditional `1645`) | 6 | Separate CSS/anchor monotone-cursor work and projection scanning |
+| Nested suffix offsets/work (`1826–1902`) | 26 | Exact relative-to-absolute module boundaries and repeated suffix-work caps |
+| Final returned work totals (`1933–1936`) | 5 | Independent scan-work counters on relevant nonempty inputs |
+
+These are **candidate local resource/work invariants**, not Wikidot
+compatibility claims. Replacing `+` with `-` or `*` can still change the
+shared rendering budget even when the emitted HTML is identical.
 The closed-module empty-tail mutations at 1743–1744 are caught by newer tests.
 
 ## Reproduction and acceptance boundary
