@@ -443,6 +443,38 @@ function verifyIdentity(identity, label) {
   if (actual !== identity.sha256) fail(`${label} hash is stale: ${identity.path}`);
 }
 
+async function verifyPlannedMutationFrontiers(frontiers = []) {
+  for (const frontier of frontiers) {
+    verifyIdentity({path: frontier.source, sha256: frontier.source_sha256}, `mutation frontier ${frontier.owner_candidate}`);
+    if (!new Set(["inventory_only_not_replayed", "replayed_unreviewed_survivors"]).has(frontier.status)) {
+      fail(`mutation frontier ${frontier.owner_candidate} claims unsupported status ${frontier.status}`);
+    }
+    if (frontier.status === "replayed_unreviewed_survivors") {
+      const replay = frontier.replay;
+      if (!replay) fail(`replayed mutation frontier ${frontier.owner_candidate} has no replay evidence`);
+      const total = replay.caught + replay.missed + replay.unviable + replay.timeout;
+      if (replay.mutants !== frontier.mutation_count || total !== replay.mutants) {
+        fail(`mutation frontier ${frontier.owner_candidate} outcomes sum to ${total}, expected ${frontier.mutation_count}`);
+      }
+      if (replay.missed === 0) {
+        fail(`mutation frontier ${frontier.owner_candidate} has no survivors but is marked unreviewed`);
+      }
+    }
+    const {stdout} = await runValidationCommand("cargo", [
+      "mutants", "--list", "--manifest-path", "deepwell/Cargo.toml",
+      "-f", frontier.source.replace(/^deepwell\//u, ""), "-F", frontier.symbol,
+    ], {capture: true, cwd: root});
+    const count = stdout.split("\n").filter((line) => line.trim() !== "").length;
+    if (count !== frontier.mutation_count) {
+      fail(`mutation frontier ${frontier.owner_candidate} inventory changed: ${count} != ${frontier.mutation_count}`);
+    }
+    const digest = createHash("sha256").update(stdout).digest("hex");
+    if (digest !== frontier.mutation_list_sha256) {
+      fail(`mutation frontier ${frontier.owner_candidate} list identity changed`);
+    }
+  }
+}
+
 async function verify(outputDir, ownerId) {
   const ledger = loadLedger();
   for (const lockfile of ledger.lockfiles) verifyIdentity(lockfile, "lockfile");
@@ -488,6 +520,8 @@ async function verify(outputDir, ownerId) {
       }
     }
   }
+
+  if (!ownerId) await verifyPlannedMutationFrontiers(ledger.next_mutation_frontier);
 
   mkdirSync(outputDir, {recursive: true});
   const result = {

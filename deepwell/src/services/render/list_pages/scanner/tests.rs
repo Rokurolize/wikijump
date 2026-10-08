@@ -782,6 +782,20 @@ fn projected_structural_end_excludes_deleted_eof_suffix() {
 }
 
 #[test]
+fn ambiguous_scan_work_includes_literal_range_advances() {
+    let source = concat!(
+        "@@[[module ListPages name=\"literal\"]]X[[/module]]@@",
+        "[[#if true]]",
+    );
+    let (modules, work, literal_range_advances) =
+        find_list_pages_module_matches_with_cursor_work(source);
+
+    assert!(modules.is_empty());
+    assert_eq!(literal_range_advances, 1);
+    assert_eq!(work, source.len() + literal_range_advances);
+}
+
+#[test]
 fn unresolved_parser_functions_always_fail_closed() {
     let ambiguous = concat!(
         "prefix\\\n",
@@ -1979,6 +1993,15 @@ fn corpus_inline_raw_documentation_tail_cannot_supply_a_module_close() {
     assert!(modules[1].preserve_original, "{modules:#?}");
     assert_eq!(modules[0].original, "[[Module Listpages]]");
     assert_eq!(modules[1].original, "[[Module Listpages]]");
+    let second_example_start =
+        repeated_examples[1..].find("[[Module Listpages]]").unwrap() + 1;
+    assert_eq!(modules[0].start, 0);
+    assert_eq!(modules[1].start, second_example_start);
+    assert_eq!(
+        modules[1].body_start,
+        second_example_start + "[[Module Listpages]]".len(),
+    );
+    assert_eq!(modules[1].end, modules[1].body_start);
 
     // A single ordinary inline-raw body remains a complete module. The
     // campaign evidence only rejects the multi-span documentation tail.
@@ -2241,6 +2264,11 @@ fn at_marker_footnote_tail_does_not_hide_a_later_valid_module() {
     assert_eq!(modules[0].body, "");
     assert_eq!(modules[0].original, malformed);
     assert_eq!(modules[1].start, malformed.len() + 1);
+    assert_eq!(
+        modules[1].body_start,
+        malformed.len() + 1 + valid.find("]]").unwrap() + 2,
+    );
+    assert_eq!(modules[1].end, malformed.len() + 1 + valid.len());
     assert_eq!(modules[1].head, r#"name="later-valid""#);
     assert_eq!(modules[1].body, "\n%%fullname%%\n");
     assert_eq!(modules[1].original, valid);
@@ -2276,10 +2304,15 @@ fn corpus_unclosed_at_marker_body_owns_the_first_collapsible_opening() {
     assert_eq!(modules[0].end, consumed.len());
     assert_eq!(modules[0].original, consumed);
     assert!(!modules[0].preserve_original);
+    let later_start = "\nVISIBLE\n[[/collapsible]]\n".len();
+    let later_module = &later[later_start..];
+    assert_eq!(modules[1].start, consumed.len() + later_start);
     assert_eq!(
-        modules[1].start,
-        consumed.len() + "\nVISIBLE\n[[/collapsible]]\n".len()
+        modules[1].body_start,
+        consumed.len() + later_start + later_module.find("]]").unwrap() + 2,
     );
+    assert_eq!(modules[1].end, source.len());
+    assert_eq!(modules[1].original, later_module);
     assert_eq!(modules[1].head, r#"name="later-valid""#);
     assert_eq!(modules[1].body, "ROW");
 

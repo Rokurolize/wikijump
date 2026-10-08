@@ -171,15 +171,18 @@ coverage acceptance verdict for issue #1990.
 
 ## Mutation testing
 
-The next **inventory-only** mutation frontier is the production ListPages
-scanner match/work function
+The production ListPages scanner match/work function
 `find_list_pages_module_matches_with_cursor_work_context_lowercase`.
 The 2026-10-08 source identified **136 current cargo-mutants candidates**;
-the frozen list digest and candidate tests are in `next_mutation_frontier`.
-This is **not** a replay result or accepted owner. Review and separate
-behavioral match, scanner work-budget, and integration observations before
-running bounded shards; their outcomes cannot be inferred from the old
-generated-gate helper's 39 mutants.
+the frozen list digest and replay summary are in `next_mutation_frontier`.
+All 136 candidates were replayed across eight bounded shards against the
+Deepwell library tests. After focused replays for scanner boundary/offset
+regressions, the combined result is **72 caught, 60 missed, 4 unviable, and
+0 timed out**. The owner remains unaccepted: the 60 survivors need independent
+review by behavioral match, scanner work-budget, and returned-offset contract,
+and any integration-owned behavior still needs its own owner. The dated local
+shard outputs are retained under `/tmp/wj-1990-scanner-*` for this workstation;
+they are evidence for this source state, not committed report artifacts.
 
 Use `cargo-mutants` against a task-owned disposable integration stack, never
 against the whole repository. A broad sweep is expensive, disk-heavy, and

@@ -1,4 +1,24 @@
 use super::super::*;
+use crate::services::render::render_budget::RenderCostBudget;
+
+#[test]
+fn list_pages_scanner_charges_source_proportional_units_rounded_up() {
+    let exact_unit = "x".repeat(SCANNER_COST_UNIT_BYTES);
+    let exact_budget = RenderCostBudget::new(1);
+    assert!(
+        find_list_pages_module_matches_with_budget(&exact_unit, &exact_budget,)
+            .is_empty()
+    );
+    assert!(!exact_budget.is_exhausted());
+
+    let partial_unit = "x".repeat(SCANNER_COST_UNIT_BYTES + 1);
+    let partial_budget = RenderCostBudget::new(1);
+    assert!(
+        find_list_pages_module_matches_with_budget(&partial_unit, &partial_budget,)
+            .is_empty()
+    );
+    assert!(partial_budget.is_exhausted());
+}
 
 #[test]
 fn event_scanner_cursor_work_counter_tracks_displacement() {
@@ -116,6 +136,18 @@ fn legacy_marker_recovery_does_not_retain_lowercase_suffixes() {
     let lowercase_bytes = take_lowercase_source_bytes();
 
     assert_eq!(modules.len(), PREFIXES);
+    let prefix_len = "[[module ListPages @@x[[/footnote]]".len();
+    for (index, module) in modules.iter().enumerate() {
+        let start = index * prefix_len;
+        let end = (index + 1) * prefix_len;
+        assert_eq!(module.start, start, "legacy module {index}");
+        assert_eq!(module.end, end, "legacy module {index}");
+        assert_eq!(
+            module.original,
+            &source[start..end],
+            "legacy module {index}"
+        );
+    }
     assert!(
         lowercase_bytes <= source.len() * 2,
         "legacy marker recovery lowercased {lowercase_bytes} bytes for {} source bytes",

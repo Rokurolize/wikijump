@@ -18,7 +18,7 @@
   },
   "next_mutation_frontier": [
     {
-      "status": "inventory_only_not_replayed",
+      "status": "replayed_unreviewed_survivors",
       "owner_candidate": "deepwell:listpages:scanner-match-and-work",
       "source": "deepwell/src/services/render/list_pages/scanner.rs",
       "source_sha256": "41c1f5132bd938cf8fb0fb4228767583b59b7529a1ad0fd7740376ebbdb9d30e",
@@ -31,7 +31,44 @@
         "deepwell/src/services/render/list_pages/scanner/tests/stress.rs",
         "deepwell/tests/list_pages.rs"
       ],
-      "next_action": "Review the 136-member mutation list, split independently meaningful scanner-match and bounded-work owner assertions, freeze each denominator, then run bounded replay without accepting inferred survivors. No mutation outcome has been claimed for this candidate."
+      "next_action": "Independently review the 60 survivors against the frozen Wikidot specification and live/corpus evidence. Add separate match, work-budget, and offset owners only where an observable contract is evidenced; classify genuinely equivalent or compile-failing candidates with specific reasons. Keep this owner unaccepted until dispositions and remaining test owners are complete.",
+      "replay": {
+        "date": "2026-10-08",
+        "mutants": 136,
+        "caught": 72,
+        "missed": 60,
+        "unviable": 4,
+        "timeout": 0,
+        "owner": "deepwell/src/services/render/list_pages/scanner/tests.rs",
+        "cargo_mutants_args": [
+          "--in-place",
+          "--manifest-path",
+          "deepwell/Cargo.toml",
+          "--file",
+          "src/services/render/list_pages/scanner.rs",
+          "-F",
+          "find_list_pages_module_matches_with_cursor_work_context_lowercase",
+          "--shard",
+          "k/8",
+          "--",
+          "--lib"
+        ],
+        "evidence": [
+          "/tmp/wj-1990-scanner-shard-0-8-before-tests-20261008",
+          "/tmp/wj-1990-scanner-targeted-verified-20261008",
+          "/tmp/wj-1990-scanner-shard-1-8-20261008",
+          "/tmp/wj-1990-scanner-shard-1-targeted-verified-20261008",
+          "/tmp/wj-1990-scanner-shard-1-resume-verified-20261008",
+          "/tmp/wj-1990-scanner-shard-2-8-20261008",
+          "/tmp/wj-1990-scanner-shard-2-targeted-20261008",
+          "/tmp/wj-1990-scanner-shard-3-8-20261008",
+          "/tmp/wj-1990-scanner-shard-4-8-20261008",
+          "/tmp/wj-1990-scanner-shard-5-8-20261008",
+          "/tmp/wj-1990-scanner-shard-6-8-20261008",
+          "/tmp/wj-1990-scanner-shard-7-8-20261008"
+        ],
+        "survivor_disposition": "pending_independent_review"
+      }
     }
   ],
   "lockfiles": [
@@ -60,7 +97,7 @@
       "tests": [
         {
           "path": "deepwell/src/services/render/list_pages/scanner/tests.rs",
-          "sha256": "e186d7fbd7bb3a1bd032efd42f006115d15e24bcbe79fc1b92e22bfee2590a0a",
+          "sha256": "8f3c97d02068c182c49fedfd6c3acb2db6c5abfc2de8dbbc9ae8db9d98e79ad4",
           "anchors": [
             "scanner_keeps_generated_comment_gate_rows_inside_the_module"
           ]

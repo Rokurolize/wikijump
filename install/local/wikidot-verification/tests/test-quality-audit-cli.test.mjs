@@ -129,6 +129,84 @@ test("audit mutate rejects a removed owner before starting services", (t) => {
   assert.match(result.stderr, /was removed after reviewed mutation evidence/u);
 });
 
+test("full audit verify rejects a changed mutation frontier list identity", (t) => {
+  const fixture = withLedger(t, (ledger) => {
+    ledger.next_mutation_frontier[0].mutation_list_sha256 = "0".repeat(64);
+  });
+  const result = spawnSync(process.execPath, [
+    command, "verify", "--output-dir", join(fixture.directory, "output"),
+  ], {
+    cwd: root, env: {...process.env, WIKIJUMP_TEST_QUALITY_LEDGER: fixture.ledgerPath},
+    encoding: "utf8", timeout: 30_000,
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /mutation frontier.*list identity changed/u);
+});
+
+test("full audit verify validates inventory and accounting for replayed survivor frontiers", (t) => {
+  const fixture = withLedger(t, (ledger) => {
+    const frontier = ledger.next_mutation_frontier[0];
+    frontier.status = "replayed_unreviewed_survivors";
+    frontier.replay = {
+      date: "2026-10-08",
+      mutants: 136,
+      caught: 72,
+      missed: 60,
+      unviable: 4,
+      timeout: 0,
+      owner: "deepwell/src/services/render/list_pages/scanner/tests.rs",
+      evidence: [
+        "/tmp/wj-1990-scanner-shard-0-8-before-tests-20261008",
+        "/tmp/wj-1990-scanner-targeted-verified-20261008",
+        "/tmp/wj-1990-scanner-shard-1-8-20261008",
+        "/tmp/wj-1990-scanner-shard-1-targeted-verified-20261008",
+        "/tmp/wj-1990-scanner-shard-1-resume-verified-20261008",
+        "/tmp/wj-1990-scanner-shard-2-8-20261008",
+        "/tmp/wj-1990-scanner-shard-2-targeted-20261008",
+        "/tmp/wj-1990-scanner-shard-3-8-20261008",
+        "/tmp/wj-1990-scanner-shard-4-8-20261008",
+        "/tmp/wj-1990-scanner-shard-5-8-20261008",
+        "/tmp/wj-1990-scanner-shard-6-8-20261008",
+        "/tmp/wj-1990-scanner-shard-7-8-20261008",
+      ],
+      survivor_disposition: "pending_independent_review",
+    };
+  });
+  const result = spawnSync(process.execPath, [
+    command, "verify", "--output-dir", join(fixture.directory, "output"),
+  ], {
+    cwd: root,
+    env: {...process.env, WIKIJUMP_TEST_QUALITY_LEDGER: fixture.ledgerPath},
+    encoding: "utf8",
+    timeout: 30_000,
+  });
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test("full audit verify rejects contradictory replayed frontier outcomes", (t) => {
+  const fixture = withLedger(t, (ledger) => {
+    const frontier = ledger.next_mutation_frontier[0];
+    frontier.status = "replayed_unreviewed_survivors";
+    frontier.replay = {
+      mutants: 136,
+      caught: 72,
+      missed: 59,
+      unviable: 4,
+      timeout: 0,
+    };
+  });
+  const result = spawnSync(process.execPath, [
+    command, "verify", "--output-dir", join(fixture.directory, "output"),
+  ], {
+    cwd: root,
+    env: {...process.env, WIKIJUMP_TEST_QUALITY_LEDGER: fixture.ledgerPath},
+    encoding: "utf8",
+    timeout: 30_000,
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /outcomes sum to 135, expected 136/u);
+});
+
 test("audit inventory resolves side-effect suite imports and transitive owners", (t) => {
   const fixture = withLedger(t);
   const result = audit("inventory", fixture);
