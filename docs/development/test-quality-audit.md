@@ -104,9 +104,12 @@ whose deliberately frozen Git environments reject Node 24's injected
 `NODE_V8_COVERAGE` property. The full uninstrumented baseline still runs every
 entrypoint. The repository coverage command instruments every compatible owner
 and records those exact exclusions; `test-quality-coverage.mjs` fails if any
-named path disappears from the current inventory. The retained evidence and
-failing probes are in
-`docs/development/test-quality-audit/wikidot-verification-node-coverage-20261009/`.
+named path disappears from the current inventory. The reproduced failures and
+exact-owner reruns remain in
+`docs/development/test-quality-audit/wikidot-verification-node-coverage-20261009/`;
+the current full-run results for Deepwell, Framerail, and Wikidot verification
+are retained in
+`docs/development/test-quality-audit/test-quality-coverage-20261009/`.
 
 ## Mutation testing
 

@@ -11232,6 +11232,12 @@
       "kind": "mutation",
       "path": "docs/development/test-quality-audit/generated-gate-close-unit-mutation-20261009/receipt.json",
       "sha256": "bf1732111302b9754e80bdb0bcde196ac5ee7cffc4aaccb226d03d15e43ad61e"
+    },
+    {
+      "id": "test-quality-full-coverage-20261009",
+      "kind": "coverage",
+      "path": "docs/development/test-quality-audit/test-quality-coverage-20261009/receipt.json",
+      "sha256": "5d471b6f4dc050ef7bde5ed7d4941970097d2f7cb2d64f5ec1bee142ac4060b3"
     }
   ],
   "acceptance": null,
