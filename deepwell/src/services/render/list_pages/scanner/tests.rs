@@ -221,6 +221,61 @@ fn generated_gate_close_uses_the_first_structural_close_after_inactive_branches(
 }
 
 #[test]
+fn generated_gate_close_preserves_boundaries_around_gate_ranges() {
+    // The opener is outside the preceding authored comment even though its
+    // indentation reaches back into that literal range.
+    let after_comment = concat!(
+        "[[module ListPages name=\"gate\"]]\n",
+        "[!-- authored comment --]\n",
+        "                    [[#ifexpr %%created_by_id%% < 42 |  | [!-- ]]\n",
+        "LOW [[/module]]\n",
+        "[!-- --]\n",
+        "VISIBLE [[/module]]",
+    );
+    let body_start = after_comment.find('\n').unwrap() + 1;
+    let expected_end = after_comment.rfind("[[/module]]").unwrap() + "[[/module]]".len();
+    assert_eq!(
+        generated_gate_module_close(after_comment, body_start),
+        Some(expected_end),
+    );
+
+    // A structural closer immediately after the generated comment terminator
+    // is outside the inactive branch and therefore closes the module first.
+    let adjacent_close = concat!(
+        "[[module ListPages name=\"gate\"]]\n",
+        "[[#ifexpr %%created_by_id%% < 42 |  | [!-- ]]\n",
+        "LOW [[/module]]\n",
+        "[!-- --][[/module]]\n",
+        "VISIBLE [[/module]]",
+    );
+    let body_start = adjacent_close.find('\n').unwrap() + 1;
+    let expected_end = adjacent_close.find("[!-- --][[/module]]").unwrap()
+        + "[!-- --]".len()
+        + "[[/module]]".len();
+    assert_eq!(
+        generated_gate_module_close(adjacent_close, body_start),
+        Some(expected_end),
+    );
+
+    // A structural closer before the gate is never owned by the inactive
+    // branch, even when marker offset arithmetic is perturbed.
+    let before_gate = concat!(
+        "[[module ListPages name=\"gate\"]]\n",
+        "VISIBLE [[/module]]\n",
+        "[[#ifexpr %%created_by_id%% < 42 |  | [!-- ]]\n",
+        "LOW [[/module]]\n",
+        "[!-- --]\n",
+        "LATER [[/module]]",
+    );
+    let body_start = before_gate.find('\n').unwrap() + 1;
+    let expected_end = before_gate.find("[[/module]]").unwrap() + "[[/module]]".len();
+    assert_eq!(
+        generated_gate_module_close(before_gate, body_start),
+        Some(expected_end),
+    );
+}
+
+#[test]
 fn scanner_ignores_inert_prose_after_supported_list_pages_arguments() {
     // Anonymous PagePreview boundary matrix:
     // listpages-head-recovery-{prose-ascii,prose-unicode,prose-nested-block,
