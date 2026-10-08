@@ -283,6 +283,12 @@ mod tests {
      {
         let seeder_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("seeder");
         let seed = SeedData::load(&seeder_path).expect("seed data should load");
+        let template_site = seed
+            .sites
+            .iter()
+            .find(|site| site.slug == "template-en")
+            .expect("default template site");
+        assert_eq!(template_site.license, crate::types::License::Cc0);
         let pages = seed
             .pages
             .get("template-en")
@@ -313,6 +319,18 @@ mod tests {
         assert!(join.wikitext.contains("[[[admin:manage|Site Manager]]]"));
         assert!(join.wikitext.contains("[[module MembershipApply]]"));
         assert!(join.wikitext.contains("[[module MembershipByPassword]]"));
+
+        let start = pages
+            .iter()
+            .find(|page| page.slug == "start")
+            .expect("default template homepage");
+        assert!(
+            start
+                .wikitext
+                .contains("effective license for this page is shown in its footer")
+        );
+        assert!(start.wikitext.contains("[[[admin:manage|Site Manager]]]"));
+        assert!(!start.wikitext.contains("Creative Commons"));
     }
 
     #[test]
