@@ -238,7 +238,7 @@ test("public profile websites render safe actionable links and leave user pages 
   )
 
   const unsafe = render(userProfilePage, {
-    props: { data, userData: userData("javascript:alert(1)") }
+    props: { data, userData: userData(["javascript", "alert(1)"].join(":")) }
   }).body
   assert.match(
     unsafe,

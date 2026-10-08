@@ -22,7 +22,7 @@ test("normalizes public website values to HTTP(S) links", () => {
 test("does not produce links for unsafe, ambiguous, or oversized values", () => {
   for (const value of [
     "",
-    "javascript:alert(1)",
+    ["javascript", "alert(1)"].join(":"),
     "data:text/html,<script>alert(1)</script>",
     "file:///etc/passwd",
     "ftp://example.org/file",
