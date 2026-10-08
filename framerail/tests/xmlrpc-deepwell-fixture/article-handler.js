@@ -534,8 +534,16 @@ const optionValue = (extra, name) => {
 
 /** @param {{ slug: string; extra: string }} route */
 const pageForArticleRoute = (route) => {
-  const page = pages[route.slug]
+  const aliases = {
+    "PAGE-WORKFLOW-PROBE": "page-workflow-probe",
+    "page_workflow-probe": "page-workflow-probe",
+    "page-workflow-probe.": "page-workflow-probe",
+    "page-workflow-probe ": "page-workflow-probe"
+  }
+  const canonicalSlug = aliases[route.slug]
+  const page = pages[canonicalSlug ?? route.slug]
   if (!page) return null
+  const resolvedPage = canonicalSlug ? { ...page, redirect_page: page.slug } : page
   if (route.slug === "listpages-navigation") {
     if (route.extra !== "" && !LISTPAGES_NAVIGATION_EXTRA.test(route.extra)) {
       return null
@@ -563,7 +571,7 @@ const pageForArticleRoute = (route) => {
   ) {
     return page
   }
-  return route.extra === "" ? page : null
+  return route.extra === "" ? resolvedPage : null
 }
 
 const siteView = {

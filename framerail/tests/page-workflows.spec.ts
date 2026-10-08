@@ -19,6 +19,23 @@ const AUTHENTICATED_HEADERS = {
 }
 const FIXTURE_URL = `http://127.0.0.1:${process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747"}`
 
+test("canonical page URL aliases issue a 301 and preserve route state", async ({
+  page,
+  request
+}) => {
+  const redirect = await request.get("/PAGE-WORKFLOW-PROBE?view=history", {
+    headers: SITE_HEADERS,
+    maxRedirects: 0
+  })
+  expect(redirect.status()).toBe(301)
+  expect(redirect.headers().location).toBe("/page-workflow-probe?view=history")
+
+  await page.setExtraHTTPHeaders(SITE_HEADERS)
+  await page.goto("/PAGE-WORKFLOW-PROBE?view=history#history-target")
+  await expect(page).toHaveURL(/\/page-workflow-probe\?view=history#history-target$/u)
+  await expect(page.locator("#page-content")).toContainText("Page workflow probe")
+})
+
 async function expectSuccessfulAction(response: APIResponse) {
   const body = await response.text()
   expect(response.ok(), body).toBe(true)
