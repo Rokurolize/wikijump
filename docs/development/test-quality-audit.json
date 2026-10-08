@@ -92,6 +92,16 @@
           "final_missed": 58,
           "disposition": "unreviewed; neither passing tests nor accounting alone accept surviving mutants"
         },
+        "survivor_triage": {
+          "date": "2026-10-08",
+          "source_sha256": "41c1f5132bd938cf8fb0fb4228767583b59b7529a1ad0fd7740376ebbdb9d30e",
+          "report": "/tmp/wj-1990-scanner-survivor-triage-20261008.json",
+          "report_sha256": "c60dd277826d58becd81b519c517d16f17b69f36efd68fb8b0f3bbe26fa80c10",
+          "priority_behavioral_boolean": 6,
+          "priority_work_accounting": 52,
+          "behavioral_lines": [1645, 1743, 1744, 1912, 1913],
+          "disposition": "all 58 pending independent Wikidot contract or reviewed local work-budget evidence; no equivalent classification granted"
+        },
         "survivor_disposition": "pending_independent_review"
       }
     }

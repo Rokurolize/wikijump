@@ -210,6 +210,18 @@ result contains input SHA-256 digests and all 58 unresolved survivor identities:
 Arithmetic reconciliation is **not** a survivor acceptance or proof of
 external behavioral equivalence.
 
+A separate source-anchored first-pass triage partitions these **58 still
+unreviewed** mutants into **six possible behavioral gate/tail changes** (the
+CSS/anchor intersection at `scanner.rs:1645`, closed-module tail predicates
+at `1743–1744`, and unclosed-module empty-tail predicates at `1912–1913`)
+and **52 arithmetic/work-accounting mutants**. The latter may change returned
+work diagnostics or scanner-budget enforcement, so none is presumptively
+equivalent. The full per-mutation triage is saved outside the checkout at
+`/tmp/wj-1990-scanner-survivor-triage-20261008.json` (SHA-256
+`c60dd277826d58becd81b519c517d16f17b69f36efd68fb8b0f3bbe26fa80c10`).
+Review the six possible behavior changes against independent Wikidot/corpus
+observations first; retain separate bounded-work assertions for the other 52.
+
 Use `cargo-mutants` against a task-owned disposable integration stack, never
 against the whole repository. A broad sweep is expensive, disk-heavy, and
 low-signal.
