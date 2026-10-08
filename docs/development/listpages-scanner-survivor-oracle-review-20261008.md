@@ -43,6 +43,34 @@ ownership inspection. In contrast, the archived `final-unclosed-*` live
 matrix confirms behavior for unclosed **quoted arguments**, not the missing
 `[[/module]]` branch relevant to `1912–1913`.
 
+## Additional real missing-closer PagePreview oracles
+
+A targeted scan of the retained `*listpages*live*.jsonl` observation family
+found **473 captured cases with an explicit ListPages source** and two with
+no `[[/module]]` at all. Both are anonymous, read-only Wikidot
+`edit/PagePreviewModule` captures from
+`install/local/wikidot-verification/artifacts/listpages-campaign-generated-live-preview.jsonl`
+(SHA-256 `7da22f7f2650c16903616c13569b2aaee7c7b7205a41d5e06beab0f5e83464e0`):
+
+- `lpgen-0140-syntax-whitespace-malformed`: source is exactly
+  `[[module ListPages category="fragment"]]` followed by newline and
+  `%%title%%`, with **no closing module**. The captured output contains
+  an empty `list-pages-box` followed by `<p>%%title%%</p>`; Wikidot executes
+  the completed opener but does not capture subsequent authored prose as its
+  row template.
+- `lpgen-0141-syntax-whitespace-malformed`: source is exactly
+  `[[module ListPages category="fragment"` followed by newline and
+  `%%title%%`, with **neither a completed opening delimiter nor a closing
+  module**. The capture leaves the opener visible as encoded prose and
+  emits no `list-pages-box`.
+
+These are *external behavioral evidence* for the completed-versus-incomplete
+head boundary. They are **not directly sufficient** to distinguish the
+`consume_empty_tail` Boolean mutations at lines 1912–1913: both omit a raw
+closer, so the downstream tail-consumption choice has no raw closer to
+consume. A new rendered regression can preserve these independently observed
+facts, but may only be assigned a mutation owner after a targeted kill.
+
 ## Four unresolved conditional mutations
 
 | Location | Surviving mutation | Proposed independent owner and missing evidence |
