@@ -11244,6 +11244,12 @@
       "kind": "assessment",
       "path": "docs/development/test-quality-audit/generated-gate-close-unit-disposition-review-20261009.json",
       "sha256": "bdea653c20cf1e1dafcdc19c6e5ffb3b4f293457ae625d877ccd51e946371498"
+    },
+    {
+      "id": "offline-portable-validation-20261009",
+      "kind": "validation",
+      "path": "docs/development/test-quality-audit/offline-portable-validation-20261009.json",
+      "sha256": "7bcb4ecf7d611a4c4089760a895dd7d56c1cd023268ec5740abce1f16f42e262"
     }
   ],
   "acceptance": null,
