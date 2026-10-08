@@ -79,11 +79,18 @@
     use:enhance
   >
     <label for="name">{data.internationalization?.["user-profile-info.name"]}</label>
-    <input name="name" class="user-attribute name" type="text" bind:value={$form.name} />
+    <input
+      id="name"
+      name="name"
+      class="user-attribute name"
+      type="text"
+      bind:value={$form.name}
+    />
     <label for="real-name"
       >{data.internationalization?.["user-profile-info.real-name"]}</label
     >
     <input
+      id="real-name"
       name="realName"
       class="user-attribute real-name"
       type="text"
@@ -91,6 +98,7 @@
     />
     <label for="email">{data.internationalization?.["user-profile-info.email"]}</label>
     <input
+      id="email"
       name="email"
       class="user-attribute email"
       type="text"
@@ -98,6 +106,7 @@
     />
     <label for="avatar">{data.internationalization?.["user-profile-info.avatar"]}</label>
     <input
+      id="avatar"
       name="avatar"
       class="user-attribute avatar"
       accept="image/png,image/jpeg,image/bmp"
@@ -106,6 +115,7 @@
     />
     <label for="gender">{data.internationalization?.["user-profile-info.gender"]}</label>
     <input
+      id="gender"
       name="gender"
       class="user-attribute gender"
       type="text"
@@ -115,6 +125,7 @@
       >{data.internationalization?.["user-profile-info.birthday"]}</label
     >
     <input
+      id="birthday"
       name="birthday"
       class="user-attribute birthday"
       type="date"
@@ -124,6 +135,7 @@
       >{data.internationalization?.["user-profile-info.location"]}</label
     >
     <input
+      id="location"
       name="location"
       class="user-attribute location"
       type="text"
@@ -132,6 +144,7 @@
     <label for="website">{data.internationalization?.["user-profile-info.website"]}</label
     >
     <input
+      id="website"
       name="website"
       class="user-attribute website"
       type="text"
@@ -141,6 +154,7 @@
       >{data.internationalization?.["user-profile-info.user-page"]}</label
     >
     <input
+      id="user-page"
       name="userPage"
       class="user-attribute user-page"
       type="text"
@@ -150,6 +164,7 @@
       >{data.internationalization?.["user-profile-info.biography"]}</label
     >
     <input
+      id="biography"
       name="biography"
       class="user-attribute biography"
       type="text"
@@ -158,6 +173,7 @@
     <label for="locales">{data.internationalization?.["user-profile-info.locales"]}</label
     >
     <input
+      id="locales"
       name="locales"
       class="user-attribute locales"
       type="text"
