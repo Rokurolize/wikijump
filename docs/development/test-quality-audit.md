@@ -57,6 +57,9 @@ computed dynamic imports are not represented as known targets. `verify`
 rejects stale source/test/lockfile hashes, missing or invalid test anchors,
 missing owners, accepted owners with unresolved gaps, and changed mutation
 inventories.
+Source, test, and lockfile identities must remain repository-relative: the
+verifier rejects absolute paths, parent-directory escapes, and links that
+resolve outside the checkout before calculating their digests.
 
 The inventory additionally provides `static_import_ownership.source_candidates`
 for every production file. This reverse map lists tests whose *literal*

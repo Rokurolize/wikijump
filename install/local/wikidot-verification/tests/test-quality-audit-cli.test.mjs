@@ -61,6 +61,20 @@ test("audit verify rejects a stale production source hash", (t) => {
   assert.match(result.stderr, /source.*hash is stale/u);
 });
 
+test("audit verify confines declared lockfile identities to the checkout", (t) => {
+  const absolute = audit("verify", withLedger(t, (ledger) => {
+    ledger.lockfiles[0].path = "/etc/hosts";
+  }));
+  assert.notEqual(absolute.status, 0);
+  assert.match(absolute.stderr, /must use a relative path/u);
+
+  const relativeEscape = audit("verify", withLedger(t, (ledger) => {
+    ledger.lockfiles[0].path = "../../../etc/hosts";
+  }));
+  assert.notEqual(relativeEscape.status, 0);
+  assert.match(relativeEscape.stderr, /path is outside root/u);
+});
+
 test("audit verify rejects a missing behavioral test anchor", (t) => {
   const result = audit("verify", withLedger(t, (ledger) => {
     auditedOwner(ledger).tests[0].anchors = ["nonexistent_owner_test_000000"];

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import {createHash} from "node:crypto";
-import {existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync} from "node:fs";
-import {dirname, extname, relative, resolve} from "node:path";
+import {existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync} from "node:fs";
+import {dirname, extname, isAbsolute, relative, resolve} from "node:path";
 import {fileURLToPath} from "node:url";
 
 import {
@@ -457,8 +457,13 @@ function verifyMutationEvidence(owner) {
 }
 
 function verifyIdentity(identity, label) {
+  if (!identity.path || isAbsolute(identity.path)) fail(`${label} must use a relative path`);
   const path = resolve(root, identity.path);
+  const relativePath = relative(root, path);
+  if (relativePath === ".." || relativePath.startsWith("../")) fail(`${label} path is outside root`);
   if (!existsSync(path)) fail(`${label} is missing: ${identity.path}`);
+  const resolvedLink = relative(root, realpathSync(path));
+  if (resolvedLink === ".." || resolvedLink.startsWith("../")) fail(`${label} linked path is outside root`);
   const actual = sha256File(path);
   if (actual !== identity.sha256) fail(`${label} hash is stale: ${identity.path}`);
 }
