@@ -309,6 +309,72 @@ fn set_mutation_request_context(
     });
 }
 
+#[tokio::test]
+async fn public_page_view_resolves_observed_url_aliases_to_the_canonical_page() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}))
+        .expect("editable local authoring site should exist")
+        .site;
+    let slug = format!("url-alias-{}", cuid());
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Owned(slug.clone())),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "URL alias target body",
+            "title": "URL alias target",
+            "alt_title": null,
+            "slug": slug.clone(),
+            "layout": "wikidot",
+            "revision_comments": "create URL alias target",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+    let alias_name = slug.strip_prefix("url-").expect("test slug prefix");
+    let aliases = [
+        format!("URL-{alias_name}"),
+        slug.replacen('-', "_", 1),
+        format!("{slug}."),
+        format!("{slug} "),
+    ];
+    for alias in aliases {
+        let view = run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site.site_id,
+                "session_token": null,
+                "route": {"slug": alias, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        match view {
+            GetPageViewOutput::Found {
+                page,
+                redirect_page,
+                ..
+            } => {
+                assert_eq!(page.slug, slug);
+                assert_eq!(redirect_page.as_deref(), Some(slug.as_str()));
+            }
+            other => panic!("expected canonical page for URL alias, got {other:?}"),
+        }
+    }
+}
+
 async fn import_cacheable_page_attribution_fixture(
     runner: &mut TestRunner,
     site_id: i64,

@@ -120,14 +120,14 @@ test("unsupported runtime redirect locations fail closed", () => {
   }
 })
 
-test("legacy slug normalization remains a 308 and retains route options", () => {
+test("canonical slug redirects use a 301 and retain route options and query", () => {
   assert.deepEqual(
     resolvePageRedirect(
       { redirect_page: "normalized", redirect_kind: null },
       "source",
       "history",
-      "https://example.test/source/history"
+      "https://example.test/source/history?view=history"
     ),
-    { status: 308, location: "/normalized/history" }
+    { status: 301, location: "/normalized/history?view=history" }
   )
 })

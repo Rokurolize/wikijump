@@ -80,7 +80,10 @@ use crate::services::{
 };
 use crate::types::Reference;
 use crate::types::{Action, PageId, PageOrder, Permission, RerenderDepth, Resource};
-use crate::utils::{get_category_name, locale_for_ftml, parse_locales, split_category};
+use crate::utils::{
+    get_category_name, locale_for_ftml, observed_wikidot_page_url_alias, parse_locales,
+    split_category,
+};
 use ftml::prelude::{PageInfo, ScoreValue};
 use ftml::render::html::HtmlOutput;
 use ref_map::OptionRefMap;
@@ -634,11 +637,13 @@ impl ViewService {
         };
 
         let redirect_page = Self::should_redirect_page(page_full_slug);
+        let page_lookup_alias = observed_wikidot_page_url_alias(page_full_slug);
+        let page_lookup_slug = page_lookup_alias.as_deref().unwrap_or(page_full_slug);
         let options = PageOptions::parse(page_extra);
         let module_arguments = PageModuleArguments::parse(page_extra);
 
         // Get page, revision, and text fields
-        let (category_slug, page_only_slug) = split_category(page_full_slug);
+        let (category_slug, page_only_slug) = split_category(page_lookup_slug);
         let category_id = Self::get_category_id(ctx, site_id, category_slug)
             .await
             .or_raise(make_error)?;
@@ -755,7 +760,7 @@ impl ViewService {
         } = match PageService::get_optional(
             ctx,
             site.site_id,
-            Reference::Slug(cow!(page_full_slug)),
+            Reference::Slug(cow!(page_lookup_slug)),
         )
         .await
         .or_raise(make_error)?

@@ -141,12 +141,12 @@
           "deepwell/tests/page.rs#article_view_uses_category_license_and_site_fallback",
           "deepwell/tests/page.rs#article_view_uses_effective_page_discussion_policy_and_stored_nesting",
           "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
-          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions",
           "deepwell/tests/page.rs#failed_page_create_rolls_back_its_allocated_number",
           "deepwell/tests/page.rs#imported_redirect_noredirect_renders_live_error_block",
           "deepwell/tests/page.rs#normal_page_create_allocates_category_numbers_without_consuming_conflicts",
           "deepwell/tests/page.rs#page_select_rejects_non_finite_rating_filters",
           "deepwell/tests/page.rs#page_view_rerenders_stale_persisted_compiled_artifact",
+          "deepwell/tests/page.rs#public_page_view_resolves_observed_url_aliases_to_the_canonical_page",
           "deepwell/tests/page.rs#renderer_epoch_invalidates_pre_freeze_compiled_artifacts",
           "deepwell/tests/page.rs#wikidot_files_saved_view_requires_page_view_and_complete_descriptors",
           "deepwell/tests/page_meta_tag.rs#page_meta_tag_overrides_site_tag_in_effective_reads_and_article_view",
@@ -3379,7 +3379,7 @@
         "reference": "deepwell/tests/members_freshness.rs#imported_members_sources_preserve_runtime_cache_boundaries",
         "alternatives": [
           "deepwell/tests/mutation_authorization.rs#wikidot_database_import_endpoints_require_platform_staff",
-          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions",
+          "deepwell/tests/page.rs#public_page_view_resolves_observed_url_aliases_to_the_canonical_page",
           "deepwell/tests/page.rs#saved_tagcloud_page_view_follows_independent_tag_mutations"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -3440,7 +3440,7 @@
         "reference": "deepwell/tests/members_freshness.rs#imported_members_sources_preserve_runtime_cache_boundaries",
         "alternatives": [
           "deepwell/tests/mutation_authorization.rs#wikidot_database_import_endpoints_require_platform_staff",
-          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions",
+          "deepwell/tests/page.rs#public_page_view_resolves_observed_url_aliases_to_the_canonical_page",
           "deepwell/tests/page.rs#saved_tagcloud_page_view_follows_independent_tag_mutations"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -5195,6 +5195,7 @@
           "deepwell/tests/page.rs#page_select_filters_pages_with_page_query_semantics",
           "deepwell/tests/page.rs#page_view_separates_generated_css_modules_from_compiled_body_html",
           "deepwell/tests/page.rs#parent_mutations_require_child_page_edit_permission",
+          "deepwell/tests/page.rs#public_page_view_resolves_observed_url_aliases_to_the_canonical_page",
           "deepwell/tests/page.rs#rerender_uses_latest_navigation_page_revision",
           "deepwell/tests/page.rs#restore_rerender_failure_rolls_back_resurrection_identity_and_revision",
           "deepwell/tests/page.rs#restored_countpages_page_stores_and_serves_its_current_self_count",
@@ -7686,6 +7687,7 @@
           "deepwell/tests/page.rs#page_view_rerenders_stale_persisted_compiled_artifact",
           "deepwell/tests/page.rs#page_view_separates_generated_css_modules_from_compiled_body_html",
           "deepwell/tests/page.rs#pagecalendar_module_renders_live_category_links_and_counts",
+          "deepwell/tests/page.rs#public_page_view_resolves_observed_url_aliases_to_the_canonical_page",
           "deepwell/tests/page.rs#renderer_epoch_invalidates_pre_freeze_compiled_artifacts",
           "deepwell/tests/page.rs#request_argument_page_views_do_not_persist_hosted_text_blocks",
           "deepwell/tests/page.rs#rerender_uses_latest_navigation_page_revision",
@@ -9270,6 +9272,7 @@
           "deepwell/tests/page.rs#pagecalendar_module_matches_live_tag_url_and_current_category_quirks",
           "deepwell/tests/page.rs#pagecalendar_module_renders_live_category_links_and_counts",
           "deepwell/tests/page.rs#parent_mutations_require_child_page_edit_permission",
+          "deepwell/tests/page.rs#public_page_view_resolves_observed_url_aliases_to_the_canonical_page",
           "deepwell/tests/page.rs#random_countpages_capped_sample_does_not_reveal_private_matches",
           "deepwell/tests/page.rs#render_scoped_include_source_cache_preserves_occurrence_semantics",
           "deepwell/tests/page.rs#renderer_epoch_invalidates_pre_freeze_compiled_artifacts",

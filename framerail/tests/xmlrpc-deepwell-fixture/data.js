@@ -575,7 +575,7 @@ export const toArticleViewResult = (page) => ({
         offset: null,
         data: ""
       },
-      redirect_page: null,
+      redirect_page: page.redirect_page ?? null,
       wikitext: page.wikitext,
       compiled_body_html: page.compiled_body_html,
       compiled_body_styles: page.compiled_body_styles ?? [],
