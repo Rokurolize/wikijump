@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation"
+  import { goto, invalidateAll } from "$app/navigation"
+  import { authCancelDestination } from "$lib/auth-cancel.js"
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { superForm } from "sveltekit-superforms"
   import { untrack } from "svelte"
@@ -11,6 +12,10 @@
   let isLoggedIn = $derived<boolean>(data.isLoggedIn)
   let mfaSessionToken = $state<string | undefined>()
   let totpOrCode = $state("")
+
+  const cancelLogin = async () => {
+    await goto(authCancelDestination(), { replaceState: true })
+  }
 
   const { form, enhance } = superForm(
     untrack(() => data.loginForm),
@@ -77,7 +82,11 @@
       bind:value={$form.password}
     />
     <div class="action-row auth-actions">
-      <button class="action-button auth-button button-cancel clickable" type="button">
+      <button
+        class="action-button auth-button button-cancel clickable"
+        onclick={cancelLogin}
+        type="button"
+      >
         {data.internationalization?.cancel}
       </button>
       <button class="action-button auth-button button-login clickable" type="submit">
