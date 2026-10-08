@@ -353,3 +353,48 @@ fn projected_quoted_recovery_counts_literal_region_cursor_before_fail_closed() {
     );
     assert!(work <= source.len() * 8);
 }
+
+#[test]
+fn projected_unresolved_conditional_charges_both_scanners_literal_cursor_work() {
+    // A line-continuation produces the unresolved [[#if ...]] boundary only
+    // after early-runtime projection. Neither of the preceding balanced @@
+    // spans may become a module, nor may a later ListPages body execute.
+    // The direct and projected scans each cross both literal spans; the
+    // final work count also charges the projected cursor's two advances.
+    let source = concat!(
+        "@@[[module ListPages]]hidden[[/module]]@@\n",
+        "@@[[module ListPages]]hidden[[/module]]@@\n",
+        "[[#\\\nif true]]\n",
+        "[[module ListPages]]T[[/module]]",
+    );
+    let (modules, work, literal_advances) =
+        find_list_pages_module_matches_with_cursor_work(source);
+    assert!(
+        modules.is_empty(),
+        "unresolved projected conditional fails closed"
+    );
+    assert_eq!(literal_advances, 4, "two spans in each scanner");
+    assert_eq!(work, 334, "direct 203 + projected 129 + cursor 2");
+    assert!(work <= source.len() * MAX_SINGLE_SCANNER_WORK_MULTIPLIER);
+}
+
+#[test]
+fn projected_unresolved_conditional_charges_single_literal_in_both_scanners() {
+    // One preceding balanced @@ span is skipped once in the direct scan and
+    // once in the projected scan. Addition must count both traversals;
+    // multiplication of the independent cursor counts is not equivalent.
+    let source = concat!(
+        "@@[[module ListPages]]hidden[[/module]]@@\n",
+        "[[#\\\nif true]]\n",
+        "[[module ListPages]]T[[/module]]",
+    );
+    let (modules, work, literal_advances) =
+        find_list_pages_module_matches_with_cursor_work(source);
+    assert!(
+        modules.is_empty(),
+        "unresolved projected conditional fails closed"
+    );
+    assert_eq!(literal_advances, 2, "one literal span per scan");
+    assert_eq!(work, 249, "direct 161 + projected 87 + cursor 1");
+    assert!(work <= source.len() * MAX_SINGLE_SCANNER_WORK_MULTIPLIER);
+}
