@@ -180,6 +180,24 @@ preserved outside the checkout at
 These figures are historical evidence for that source state, not the combined
 coverage acceptance verdict for issue #1990.
 
+## Site-level mutation coverage diagnostics
+
+`node scripts/test-quality-mutation-coverage.mjs` maps each surviving
+`cargo-mutants` identity (exact source line **and column**) to the active
+LLVM region in a fresh `cargo llvm-cov --json` report. Supply
+`--llvm`, `--reconciliation`, `--source`, `--source-sha256` and a fresh
+`--output` file. The report retains the original mutant identities and
+source/input SHA-256 digests; it refuses missing/duplicate sources, malformed
+mutant IDs, source hash drift, and output overwrite. Unit test owners live at
+`install/local/wikidot-verification/tests/test-quality-mutation-coverage.test.mjs`.
+
+The three statuses are `zero_count` (region not executed by **that suite**),
+`positive_count` (region executed, but the mutant may still be unobserved or
+short-circuited), and `no_countable_segment` (gap/not attributable, **not**
+a zero). These are strictly ownership diagnostics, **never** evidence that a
+mutant is equivalent or accepted. Run the tool on an immutable source revision
+and do not conflate unit-only, targeted integration or browser coverage.
+
 ## Mutation testing
 
 The production ListPages scanner match/work function
