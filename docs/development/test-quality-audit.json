@@ -11245,7 +11245,14 @@
       "review": null
     }
   ],
-  "proofs": [],
+  "proofs": [
+    {
+      "id": "resource-scanner-mutation-20261008",
+      "kind": "mutation",
+      "path": "docs/development/test-quality-audit/resource-scanner-mutation-20261008/receipt.json",
+      "sha256": "585c3e53d000078b6cac71efb0492fe6eeb110bd5d5bf4bfcaa84ea3dbcbfe5a"
+    }
+  ],
   "acceptance": null,
   "tool_versions": {
     "node": "v24.21.0",
