@@ -141,8 +141,15 @@ export const handleSiteRpc = ({ rpcRequest }) => {
     rpcRequest.params.messages !== null &&
     Array.isArray(rpcRequest.params.strip_message_keys)
   ) {
+    const authLabels = {
+      specifier: "Email or Username",
+      password: "Password",
+      "password.placeholder": "Enter password...",
+      "confirm-password": "Confirm Password",
+      "mfa-code": "MFA code"
+    }
     result = Object.fromEntries(
-      Object.keys(rpcRequest.params.messages).map((key) => [key, key])
+      Object.keys(rpcRequest.params.messages).map((key) => [key, authLabels[key] ?? key])
     )
   } else {
     return undefined
