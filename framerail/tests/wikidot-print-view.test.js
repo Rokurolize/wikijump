@@ -36,7 +36,9 @@ test("printer-friendly loader preserves the required empty route suffix", async 
   for (const [path, slug, extra] of [
     ["start", "start", ""],
     ["category:page", "category:page", ""],
-    ["category:page/revision/2", "category:page", "revision/2"]
+    ["category:page/revision/2", "category:page", "revision/2"],
+    ["/_admin", "_admin", ""],
+    ["//_admin", "_admin", ""]
   ]) {
     await load({ params: { path }, request, cookies, locals })
     assert.deepEqual(calls.pop(), [slug, extra, request, cookies, locals])

@@ -37,6 +37,10 @@ use crate::services::user::User;
 use crate::types::Reference;
 use time::OffsetDateTime;
 
+pub(super) fn is_reserved_admin_slug(slug: &str) -> bool {
+    slug.trim_matches('/').eq_ignore_ascii_case("_admin")
+}
+
 // NOTE: Any changes to the output structures here, including the variant names,
 //       MUST be reflected in framerail!
 
@@ -284,4 +288,19 @@ pub enum ViewType {
     Page,
     User,
     Admin,
+}
+
+#[cfg(test)]
+mod reserved_route_tests {
+    use super::is_reserved_admin_slug;
+
+    #[test]
+    fn recognizes_admin_route_aliases_without_matching_categories() {
+        for slug in ["_admin", "_ADMIN", "/_admin", "//_admin//"] {
+            assert!(is_reserved_admin_slug(slug), "{slug}");
+        }
+        for slug in ["admin", "category:_admin", "_admin:page"] {
+            assert!(!is_reserved_admin_slug(slug), "{slug}");
+        }
+    }
 }
