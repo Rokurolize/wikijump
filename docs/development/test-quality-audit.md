@@ -205,30 +205,33 @@ source state, not committed report artifacts.
 
 The dated shard evidence has also been **independently reconciled by mutation
 identity**, rather than incorrectly summing targeted replay attempts. Initial
-eight shards: **63 caught, 69 missed, four unviable**. Five targeted outputs
-changed **11 previously missed** candidates to caught, yielding the recorded
-**74 / 58 / 4** without double counting. Use
+eight shards: **63 caught, 69 missed, four unviable**. Nine targeted outputs
+produced a net **17 additionally caught** candidates, yielding the recorded
+**80 / 52 / 4** without double counting. There were 18 replay transition
+events: one candidate went from missed to temporarily unviable to caught;
+the transient compile outcome requires review rather than silently being
+treated as a stable source classification. Use
 `scripts/reconcile-test-quality-mutants.mjs` with repeated `--initial DIR`
 (one per original shard), repeated `--replay DIR` (targeted runs), and a fresh
 `--output FILE`. The tool refuses duplicate frozen identities, unexpected
 replay mutations, regressions of caught mutants, and output overwrite. The
-result contains input SHA-256 digests and all 58 unresolved survivor identities:
-`/tmp/wj-1990-scanner-reconciled-20261008-1132.json`, SHA-256
-`788f8f280f5aa1010daf4c8b0bed307ed25ff3e644b9ce414f4b7f1b3311da42`.
+result contains input SHA-256 digests and all 52 unresolved survivor identities:
+`/tmp/wj-1990-scanner-reconciled-20261008-1208.json`, SHA-256
+`2d9104b6301d7a5b85173d00b3736ab7d2e427a8bb7762b1cc2ba90fb1800ab0`.
 Arithmetic reconciliation is **not** a survivor acceptance or proof of
 external behavioral equivalence.
 
-A separate source-anchored first-pass triage partitions these **58 still
-unreviewed** mutants into **six possible behavioral gate/tail changes** (the
-CSS/anchor intersection at `scanner.rs:1645`, closed-module tail predicates
-at `1743–1744`, and unclosed-module empty-tail predicates at `1912–1913`)
-and **52 arithmetic/work-accounting mutants**. The latter may change returned
+A separate source-anchored first-pass triage partitions these **52 still
+unreviewed** mutants into **four possible behavioral gate/tail changes** (the
+CSS/anchor intersection at `scanner.rs:1645` and unclosed-module empty-tail
+predicates at `1912–1913`; closed-module predicates at `1743–1744` are now
+caught) and **48 arithmetic/work-accounting mutants**. The latter may change returned
 work diagnostics or scanner-budget enforcement, so none is presumptively
 equivalent. The full per-mutation triage is saved outside the checkout at
-`/tmp/wj-1990-scanner-survivor-triage-20261008.json` (SHA-256
-`c60dd277826d58becd81b519c517d16f17b69f36efd68fb8b0f3bbe26fa80c10`).
-Review the six possible behavior changes against independent Wikidot/corpus
-observations first; retain separate bounded-work assertions for the other 52.
+`/tmp/wj-1990-scanner-survivor-triage-20261008-1208.json` (SHA-256
+`39dc18870f7268796d8c7d1ff58b1e717024f2d2b42294f08634b49bbc92e463`).
+Review the four possible behavior changes against independent Wikidot/corpus
+observations first; retain separate bounded-work assertions for the other 48.
 
 Use `cargo-mutants` against a task-owned disposable integration stack, never
 against the whole repository. A broad sweep is expensive, disk-heavy, and

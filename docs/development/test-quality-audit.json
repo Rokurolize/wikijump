@@ -59,6 +59,7 @@
           "/tmp/wj-1990-scanner-shard-1-8-20261008",
           "/tmp/wj-1990-scanner-shard-1-targeted-verified-20261008",
           "/tmp/wj-1990-scanner-shard-1-resume-verified-20261008",
+          "/tmp/wj-1990-scanner-shard-1-resume-verified-20261008",
           "/tmp/wj-1990-scanner-shard-2-8-20261008",
           "/tmp/wj-1990-scanner-shard-2-targeted-20261008",
           "/tmp/wj-1990-scanner-shard-3-8-20261008",
@@ -122,14 +123,16 @@
         "independent_reconciliation": {
           "date": "2026-10-08",
           "tool": "scripts/reconcile-test-quality-mutants.mjs",
-          "report": "/tmp/wj-1990-scanner-reconciled-20261008-1132.json",
-          "report_sha256": "788f8f280f5aa1010daf4c8b0bed307ed25ff3e644b9ce414f4b7f1b3311da42",
+          "report": "/tmp/wj-1990-scanner-reconciled-20261008-1208.json",
+          "report_sha256": "2d9104b6301d7a5b85173d00b3736ab7d2e427a8bb7762b1cc2ba90fb1800ab0",
           "initial_shards": 8,
           "targeted_replay_outputs": 9,
           "distinct_initial_mutants": 136,
           "initial_caught": 63,
           "initial_missed": 69,
           "transitions_missed_to_caught": 17,
+          "transition_events": 18,
+          "nonmonotonic_outcomes": 1,
           "final_caught": 80,
           "final_missed": 52,
           "disposition": "unreviewed; neither passing tests nor accounting alone accept surviving mutants"
@@ -137,12 +140,21 @@
         "survivor_triage": {
           "date": "2026-10-08",
           "source_sha256": "41c1f5132bd938cf8fb0fb4228767583b59b7529a1ad0fd7740376ebbdb9d30e",
-          "report": "/tmp/wj-1990-scanner-survivor-triage-20261008.json",
-          "report_sha256": "c60dd277826d58becd81b519c517d16f17b69f36efd68fb8b0f3bbe26fa80c10",
-          "priority_behavioral_boolean": 6,
-          "priority_work_accounting": 52,
-          "behavioral_lines": [1645, 1743, 1744, 1912, 1913],
+          "report": "/tmp/wj-1990-scanner-survivor-triage-20261008-1208.json",
+          "report_sha256": "39dc18870f7268796d8c7d1ff58b1e717024f2d2b42294f08634b49bbc92e463",
+          "priority_behavioral_boolean": 4,
+          "priority_work_accounting": 48,
+          "behavioral_lines": [1645, 1912, 1913],
           "disposition": "all 52 pending independent Wikidot contract or reviewed local work-budget evidence; no equivalent classification granted"
+        },
+        "independent_oracle_review": {
+          "date": "2026-10-08",
+          "path": "docs/development/listpages-scanner-survivor-oracle-review-20261008.md",
+          "corpus_cases": 23964,
+          "corpus_pending_live": 23964,
+          "malformed_executable_cases": 60,
+          "direct_live_evidence_in_reviewed_artifacts": false,
+          "classification": "four conditional candidates require new source-grounded behavior owners; 48 arithmetic/work accounting candidates require distinct bounded-work ownership; none accepted"
         },
         "survivor_disposition": "pending_independent_review"
       }
