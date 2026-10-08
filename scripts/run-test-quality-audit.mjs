@@ -206,12 +206,32 @@ async function inventory(outputDir) {
   const production = productionFiles().map((path) => ({path: repositoryPath(path), sha256: sha256File(path)}));
   const tests = testFiles().map(nodeOwnerRecord);
   const targets = await cargoTargets();
+  // Static import reachability is only a candidate owner link. In particular,
+  // Rust test ownership, spawned CLI suites, transformed SvelteKit modules,
+  // and computed dynamic imports cannot be proved by this graph.
+  const candidates = new Map(production.map(({path}) => [path, []]));
+  for (const owner of tests) {
+    for (const source of owner.reachable_imported_modules) {
+      candidates.get(source)?.push(owner.path);
+    }
+  }
+  const staticImportOwnership = [...candidates].map(([source, ownerPaths]) => ({
+    source, static_importing_tests: ownerPaths.sort(),
+  }));
+  const candidateCount = staticImportOwnership.filter(({static_importing_tests}) => static_importing_tests.length > 0).length;
   const report = {
     schema: 1,
     generated_at: new Date().toISOString(),
     tool_versions: await toolVersions(),
     production,
     executable_owners: tests,
+    static_import_ownership: {
+      semantics: "candidate importer only; not behavioral coverage, test execution, or a missing-test verdict",
+      production_file_count: production.length,
+      with_static_import_candidates: candidateCount,
+      without_static_import_candidates: production.length - candidateCount,
+      source_candidates: staticImportOwnership,
+    },
     cargo_targets: targets,
     deepwell_binaries: targets.filter((target) => target.kind.includes("bin")),
     proc_macros: targets.filter((target) => target.kind.includes("proc-macro")),
@@ -458,6 +478,17 @@ async function verifyPlannedMutationFrontiers(frontiers = []) {
       }
       if (replay.missed === 0) {
         fail(`mutation frontier ${frontier.owner_candidate} has no survivors but is marked unreviewed`);
+      }
+      const reconciliation = replay.independent_reconciliation;
+      if (reconciliation) {
+        if (reconciliation.distinct_initial_mutants !== frontier.mutation_count ||
+            reconciliation.initial_caught + reconciliation.initial_missed + replay.unviable + replay.timeout !== frontier.mutation_count ||
+            reconciliation.initial_caught + reconciliation.transitions_missed_to_caught !== replay.caught ||
+            reconciliation.initial_missed - reconciliation.transitions_missed_to_caught !== replay.missed ||
+            reconciliation.final_caught !== replay.caught || reconciliation.final_missed !== replay.missed ||
+            !/^[0-9a-f]{64}$/u.test(reconciliation.report_sha256 ?? "")) {
+          fail(`mutation frontier ${frontier.owner_candidate} has contradictory independent reconciliation`);
+        }
       }
     }
     const {stdout} = await runValidationCommand("cargo", [

@@ -77,6 +77,21 @@
           "evidence": "/tmp/wj-1990-offset-mutant-20261008/mutants.out",
           "owner_test": "unclosed_at_marker_preservation_does_not_hide_a_later_valid_module"
         },
+        "independent_reconciliation": {
+          "date": "2026-10-08",
+          "tool": "scripts/reconcile-test-quality-mutants.mjs",
+          "report": "/tmp/wj-1990-scanner-reconciled-20261008-1132.json",
+          "report_sha256": "788f8f280f5aa1010daf4c8b0bed307ed25ff3e644b9ce414f4b7f1b3311da42",
+          "initial_shards": 8,
+          "targeted_replay_outputs": 5,
+          "distinct_initial_mutants": 136,
+          "initial_caught": 63,
+          "initial_missed": 69,
+          "transitions_missed_to_caught": 11,
+          "final_caught": 74,
+          "final_missed": 58,
+          "disposition": "unreviewed; neither passing tests nor accounting alone accept surviving mutants"
+        },
         "survivor_disposition": "pending_independent_review"
       }
     }

@@ -58,6 +58,14 @@ rejects stale source/test/lockfile hashes, missing or invalid test anchors,
 missing owners, accepted owners with unresolved gaps, and changed mutation
 inventories.
 
+The inventory additionally provides `static_import_ownership.source_candidates`
+for every production file. This reverse map lists tests whose *literal*
+direct/transitive import graph reaches that file. It is strictly a candidate
+ownership index: an absent import edge is not proof of a missing test, and a
+present edge is not proof of execution or behavioral coverage. Rust owner tests,
+spawned CLI entrypoints, transformed SvelteKit modules, and computed dynamic
+imports require independent ownership checks.
+
 `coverage` records separate Deepwell unit, integration, combined, and
 `relation-impl-derive` proc-macro coverage. Deepwell integration measurement
 uses the same task-owned PostgreSQL/Valkey/MinIO lifecycle as ordinary
@@ -186,6 +194,21 @@ and returned-offset contract, and any integration-owned behavior still needs
 its own owner. The dated local shard outputs are retained under
 `/tmp/wj-1990-scanner-*` for this workstation; they are evidence for this
 source state, not committed report artifacts.
+
+The dated shard evidence has also been **independently reconciled by mutation
+identity**, rather than incorrectly summing targeted replay attempts. Initial
+eight shards: **63 caught, 69 missed, four unviable**. Five targeted outputs
+changed **11 previously missed** candidates to caught, yielding the recorded
+**74 / 58 / 4** without double counting. Use
+`scripts/reconcile-test-quality-mutants.mjs` with repeated `--initial DIR`
+(one per original shard), repeated `--replay DIR` (targeted runs), and a fresh
+`--output FILE`. The tool refuses duplicate frozen identities, unexpected
+replay mutations, regressions of caught mutants, and output overwrite. The
+result contains input SHA-256 digests and all 58 unresolved survivor identities:
+`/tmp/wj-1990-scanner-reconciled-20261008-1132.json`, SHA-256
+`788f8f280f5aa1010daf4c8b0bed307ed25ff3e644b9ce414f4b7f1b3311da42`.
+Arithmetic reconciliation is **not** a survivor acceptance or proof of
+external behavioral equivalence.
 
 Use `cargo-mutants` against a task-owned disposable integration stack, never
 against the whole repository. A broad sweep is expensive, disk-heavy, and

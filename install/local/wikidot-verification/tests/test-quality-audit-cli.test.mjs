@@ -230,4 +230,12 @@ test("audit inventory resolves side-effect suite imports and transitive owners",
   ]);
   assert.ok(owner.reachable_imported_modules.includes("framerail/src/lib/server/cache/article-response/index.js"));
   assert.ok(owner.reachable_imported_modules.includes("framerail/tests/article-response-fast-path/helpers.js"));
+  const ownership = report.static_import_ownership;
+  assert.equal(ownership.production_file_count, report.production.length);
+  assert.equal(ownership.with_static_import_candidates + ownership.without_static_import_candidates,
+    ownership.production_file_count);
+  assert.match(ownership.semantics, /not behavioral coverage/u);
+  const cacheSource = ownership.source_candidates.find(({source}) => source ===
+    "framerail/src/lib/server/cache/article-response/index.js");
+  assert.ok(cacheSource.static_importing_tests.includes("framerail/tests/article-response-cache.test.js"));
 });
