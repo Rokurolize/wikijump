@@ -2,6 +2,7 @@
   import Page from "./[slug]/PageView.svelte"
 
   import { errorPopupState } from "$lib/layout/stores.svelte"
+  import { acceptedSnapshot, partialPatch } from "$lib/user-profile-draft.js"
   import { invalidateAll } from "$app/navigation"
   import { fileProxy, superForm } from "sveltekit-superforms"
   import { untrack } from "svelte"
@@ -17,18 +18,15 @@
   // avatar will always be undefined if not uploaded a new avatar
   type checkFormType = Omit<InferOutput<typeof userEditSchema>, "avatar">
 
-  let lastSubmitted = $state<checkFormType>({
-    name: untrack(() => data.user?.name ?? ""),
-    realName: untrack(() => data.user?.real_name ?? ""),
-    email: untrack(() => data.user?.email ?? ""),
-    gender: untrack(() => data.user?.gender ?? ""),
-    birthday: untrack(() => data.user?.birthday ?? ""),
-    location: untrack(() => data.user?.location ?? ""),
-    website: untrack(() => data.user?.website ?? ""),
-    userPage: untrack(() => data.user?.user_page ?? ""),
-    biography: untrack(() => data.user?.biography ?? ""),
-    locales: untrack(() => data.user?.locales?.join(" ") ?? "")
-  })
+  // The last accepted account state. It is the baseline for partial patches and
+  // the value shown in the profile view, so it changes only after the server
+  // confirms a save. Rejected drafts never become part of it.
+  let lastSubmitted = $state<checkFormType>(untrack(() => acceptedSnapshot(data.user)))
+
+  // Cancel and reopening the editor always start from the accepted state.
+  const discardDraft = () => {
+    $form = { ...lastSubmitted, avatar: undefined }
+  }
 
   const { form, enhance } = superForm(
     untrack(() => data.userEditForm),
@@ -36,28 +34,17 @@
       dataType: "json",
       onSubmit: ({ jsonData }) => {
         const { avatar, ...rest } = $form
-        const submitForm = (
-          Object.entries(rest) as [keyof checkFormType, string][]
-        ).reduce<Partial<InferOutput<typeof userEditSchema>>>(
-          (acc, [key, value]) => {
-            if (value === lastSubmitted[key]) {
-              return acc
-            }
-            return { ...acc, [key]: value }
-          },
-          { avatar }
-        )
-
-        lastSubmitted = rest
-
-        jsonData(submitForm)
+        jsonData(partialPatch(rest, lastSubmitted, avatar))
       },
       onResult: async ({ result, cancel }) => {
         if (result.type === "success" && result.data) {
           isEdit = false
           await invalidateAll()
           cancel()
-          $form = untrack(() => ({ ...lastSubmitted, avatar: $form.avatar }))
+          // Adopt what the server persisted, including normalized values, rather
+          // than the client payload.
+          lastSubmitted = acceptedSnapshot(data.user)
+          discardDraft()
         }
         if (result.type === "failure" && result.data) {
           errorPopupState.current = {
@@ -179,7 +166,10 @@
     <div class="action-row editor-actions">
       <button
         class="action-button editor-button button-cancel clickable"
-        onclick={() => (isEdit = false)}
+        onclick={() => {
+          isEdit = false
+          discardDraft()
+        }}
         type="button"
       >
         {data.internationalization?.cancel}
