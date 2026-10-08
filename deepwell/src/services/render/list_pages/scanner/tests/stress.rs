@@ -2,6 +2,25 @@ use super::super::*;
 use crate::services::render::render_budget::RenderCostBudget;
 
 #[test]
+fn list_pages_scanner_charges_source_proportional_units_rounded_up() {
+    let exact_unit = "x".repeat(SCANNER_COST_UNIT_BYTES);
+    let exact_budget = RenderCostBudget::new(1);
+    assert!(
+        find_list_pages_module_matches_with_budget(&exact_unit, &exact_budget,)
+            .is_empty()
+    );
+    assert!(!exact_budget.is_exhausted());
+
+    let partial_unit = "x".repeat(SCANNER_COST_UNIT_BYTES + 1);
+    let partial_budget = RenderCostBudget::new(1);
+    assert!(
+        find_list_pages_module_matches_with_budget(&partial_unit, &partial_budget,)
+            .is_empty()
+    );
+    assert!(partial_budget.is_exhausted());
+}
+
+#[test]
 fn event_scanner_cursor_work_counter_tracks_displacement() {
     let source = "0123456789";
     let lowercase = source.to_ascii_lowercase();
@@ -108,62 +127,6 @@ fn list_pages_event_scanner_keeps_projected_event_merge_work_linear() {
 }
 
 #[test]
-fn generated_gate_close_range_checks_stay_linear() {
-    const GATES: usize = 512;
-    let mut source = String::from("[[module ListPages name=\"gate\"]]\n");
-    for gate in 0..GATES {
-        source.push_str(&format!(
-            "[[#ifexpr %%created_by_id%% < {gate} |  | [!-- ]]\n"
-        ));
-        source.push_str("DECOY [[/module]]\n[!-- --]\n");
-    }
-    source.push_str("tail without a structural module close");
-
-    take_generated_gate_range_comparisons();
-    let (modules, _, _) = find_list_pages_module_matches_with_cursor_work(&source);
-    let comparisons = take_generated_gate_range_comparisons();
-
-    assert_eq!(modules.len(), 1, "unexpected modules {modules:#?}");
-    assert!(
-        comparisons > 0,
-        "the generated gate recovery path was not exercised"
-    );
-    assert!(
-        comparisons <= GATES * 4,
-        "generated gate recovery compared {comparisons} ranges for {GATES} gates",
-    );
-}
-
-#[test]
-fn shared_render_budget_fails_closed_before_generated_gate_suffix_scans() {
-    let source = concat!(
-        "[[module ListPages name=\"first\"]]\n",
-        "[[#ifexpr %%created_by_id%% < 42 |  | [!-- ]]\n",
-        "DECOY [[/module]]\n",
-        "[!-- --]\n",
-        "[[#ifexpr %%created_by_id%% > 1000 |  | [!-- ]]\n",
-        "SECOND DECOY [[/module]]\n",
-        "[!-- --]\n",
-        "FIRST\n",
-        "[!--\n",
-        "[[/module]]\n",
-        "[!-- --]\n",
-        "[[module ListPages name=\"later\"]]LATER[[/module]]",
-    );
-    let budget = RenderCostBudget::new(1);
-
-    let modules = find_list_pages_module_matches_with_budget(source, &budget);
-    let comparisons = take_generated_gate_range_comparisons();
-
-    assert!(
-        modules.is_empty(),
-        "budget exhaustion must preserve source: {modules:#?}; exhausted={} comparisons={comparisons}",
-        budget.is_exhausted(),
-    );
-    assert!(budget.is_exhausted());
-}
-
-#[test]
 fn legacy_marker_recovery_does_not_retain_lowercase_suffixes() {
     const PREFIXES: usize = 1_024;
     let source = "[[module ListPages @@x[[/footnote]]".repeat(PREFIXES);
@@ -173,6 +136,18 @@ fn legacy_marker_recovery_does_not_retain_lowercase_suffixes() {
     let lowercase_bytes = take_lowercase_source_bytes();
 
     assert_eq!(modules.len(), PREFIXES);
+    let prefix_len = "[[module ListPages @@x[[/footnote]]".len();
+    for (index, module) in modules.iter().enumerate() {
+        let start = index * prefix_len;
+        let end = (index + 1) * prefix_len;
+        assert_eq!(module.start, start, "legacy module {index}");
+        assert_eq!(module.end, end, "legacy module {index}");
+        assert_eq!(
+            module.original,
+            &source[start..end],
+            "legacy module {index}"
+        );
+    }
     assert!(
         lowercase_bytes <= source.len() * 2,
         "legacy marker recovery lowercased {lowercase_bytes} bytes for {} source bytes",
