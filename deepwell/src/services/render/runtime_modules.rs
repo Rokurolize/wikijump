@@ -2,6 +2,7 @@
 
 mod membership;
 mod page_calendar;
+mod platform_directory;
 mod platform_navigation;
 mod rate;
 mod rated_pages;
@@ -1243,6 +1244,15 @@ impl RenderService {
         wikitext = platform_navigation::expand(ctx, wikitext, settings)
             .await
             .or_raise(make_error)?;
+        wikitext = platform_directory::expand(
+            ctx,
+            wikitext,
+            settings,
+            options.viewer_user_id,
+            options.url,
+        )
+        .await
+        .or_raise(make_error)?;
         wikitext = {
             let _stage = StageGuard::new(options.trace, CorpusRenderStage::CountPages);
             Self::expand_count_pages(
