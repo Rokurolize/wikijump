@@ -486,10 +486,16 @@ async function verifyPlannedMutationFrontiers(frontiers = []) {
       }
       const reconciliation = replay.independent_reconciliation;
       if (reconciliation) {
+        const missedToCaught = reconciliation.transitions_missed_to_caught;
+        const missedToUnviable = reconciliation.transitions_missed_to_unviable ?? 0;
+        const unviableToCaught = reconciliation.transitions_unviable_to_caught ?? 0;
         if (reconciliation.distinct_initial_mutants !== frontier.mutation_count ||
-            reconciliation.initial_caught + reconciliation.initial_missed + replay.unviable + replay.timeout !== frontier.mutation_count ||
-            reconciliation.initial_caught + reconciliation.transitions_missed_to_caught !== replay.caught ||
-            reconciliation.initial_missed - reconciliation.transitions_missed_to_caught !== replay.missed ||
+            reconciliation.initial_caught + reconciliation.initial_missed +
+              (reconciliation.initial_unviable ?? replay.unviable) +
+              (reconciliation.initial_timeout ?? replay.timeout) !== frontier.mutation_count ||
+            reconciliation.initial_caught + missedToCaught + unviableToCaught !== replay.caught ||
+            reconciliation.initial_missed - missedToCaught - missedToUnviable !== replay.missed ||
+            (reconciliation.initial_unviable ?? replay.unviable) + missedToUnviable - unviableToCaught !== replay.unviable ||
             reconciliation.final_caught !== replay.caught || reconciliation.final_missed !== replay.missed ||
             !/^[0-9a-f]{64}$/u.test(reconciliation.report_sha256 ?? "")) {
           fail(`mutation frontier ${frontier.owner_candidate} has contradictory independent reconciliation`);
