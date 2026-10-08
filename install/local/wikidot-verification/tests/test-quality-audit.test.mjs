@@ -7,7 +7,7 @@ import {
   buildAuditInventory, createAuditLedger, jsonHash, loadAuditProofs, sha256, validateAuditLedger, validateMutationReceipt,
 } from "../src/test-quality-inventory.mjs";
 import {applyNodeMutation, runNodeMutations} from "../src/test-quality-mutations.mjs";
-import {summarizeLcov} from "../src/test-quality-coverage.mjs";
+import {mergeLcovReports, summarizeLcov} from "../src/test-quality-coverage.mjs";
 import {runAuditCommand} from "../src/audit-command.mjs";
 
 async function fixture(t) {
@@ -126,6 +126,14 @@ test("Node mutation spans must match the exact original bytes and preserve surro
 
 test("coverage parsing preserves zero-coverage files and distinguishes line, function and branch denominators", () => {
   assert.deepEqual(summarizeLcov("SF:owner.js\nLF:12\nLH:0\nFNF:2\nFNH:0\nBRF:4\nBRH:0\nend_of_record\n"), [{path: "owner.js", lines: {total: 12, hit: 0}, functions: {total: 2, hit: 0}, branches: {total: 4, hit: 0}}]);
+});
+
+test("coverage batches merge hits by line, function and branch without double-counting", () => {
+  const merged = mergeLcovReports([
+    "TN:\nSF:owner.js\nFN:1,run\nFNDA:0,run\nFNF:1\nFNH:0\nBRDA:1,0,0,0\nBRDA:1,0,1,-\nBRF:2\nBRH:0\nDA:1,0\nDA:2,1\nLF:2\nLH:1\nend_of_record\n",
+    "TN:\nSF:owner.js\nFN:1,run\nFNDA:2,run\nFNF:1\nFNH:1\nBRDA:1,0,0,1\nBRDA:1,0,1,1\nBRF:2\nBRH:2\nDA:1,3\nDA:2,0\nLF:2\nLH:1\nend_of_record\n",
+  ]);
+  assert.deepEqual(summarizeLcov(merged), [{path: "owner.js", lines: {total: 2, hit: 2}, functions: {total: 1, hit: 1}, branches: {total: 2, hit: 2}}]);
 });
 
 test("interrupted commands await child restoration before caller cleanup", async (t) => {

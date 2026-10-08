@@ -87,6 +87,16 @@ contract. Retain the failed instrumented probe, a passing uninstrumented baselin
 and the exact affected owner; measure compatible owners separately. Never turn
 an unrelated test failure into an instrumentation exclusion.
 
+Node coverage runs the compatible test entrypoints in sequential batches of at
+most 25 files. Each batch writes its own LCOV report; the audit merges line,
+function, and branch hits by source identity so a file exercised by multiple
+batches is not double-counted. Batching also prevents one subprocess's empty V8
+profile from discarding otherwise valid package coverage. If a frozen child
+environment fails under instrumentation, retain that probe and the complete
+passing baseline, then retry the exact owner in smaller batches. Exclude an owner
+only if the failure remains reproducible after batching; the summary lists only
+owners actually excluded from its test entrypoints.
+
 ## Mutation testing
 
 Use `cargo-mutants` against a task-owned disposable integration stack, never

@@ -6,7 +6,7 @@
     "wikidot-verification",
     "executed shared helpers"
   ],
-  "inventory_digest": "f741f8e346bed8ea368c281a627407bee937a14443407659f3b465849d0c7a1a",
+  "inventory_digest": "0729f92b374b2ed2a6d49ad3dcfd06e6eee6e0daf8b30c12a83681e4dec9b2aa",
   "inputs": [
     {
       "path": "deepwell/Cargo.toml",
@@ -10902,7 +10902,7 @@
     },
     {
       "path": "install/local/wikidot-verification/src/test-quality-coverage.mjs",
-      "sha256": "acee5de0535ad53b434611629df572d6300c97e4f0e3d46d4c9297010d341e82",
+      "sha256": "21bcdd687949b936b699b9255361185825eed6ce462b4db61ab3035f32e7b8d8",
       "status": "pending",
       "anchors": [],
       "findings": [],

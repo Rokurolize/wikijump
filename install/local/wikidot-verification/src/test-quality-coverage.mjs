@@ -17,7 +17,65 @@ export function summarizeLcov(text) {
   return files;
 }
 
-export async function runNodeCoverage(root, testFiles, output, {packageRoot, signal} = {}) {
+export function mergeLcovReports(reports) {
+  const records = new Map();
+  for (const text of reports) {
+    for (const block of text.split("end_of_record")) {
+      const lines = block.trim().split("\n");
+      const source = lines.find((line) => line.startsWith("SF:"))?.slice(3);
+      if (!source) continue;
+      const record = records.get(source) ?? {metadata: new Map(), lines: new Map(), functions: new Map(), branches: new Map()};
+      for (const line of lines) {
+        if (line.startsWith("DA:")) {
+          const [lineNumber, count, checksum] = line.slice(3).split(",");
+          const previous = record.lines.get(lineNumber);
+          record.lines.set(lineNumber, {count: Math.max(Number(count), previous?.count ?? 0), checksum: checksum ?? previous?.checksum});
+        } else if (line.startsWith("FNDA:")) {
+          const [count, ...name] = line.slice(5).split(",");
+          const key = name.join(",");
+          record.functions.set(key, {...(record.functions.get(key) ?? {}), count: Math.max(Number(count), record.functions.get(key)?.count ?? 0)});
+        } else if (line.startsWith("FN:")) {
+          const [lineNumber, ...name] = line.slice(3).split(",");
+          const key = name.join(",");
+          record.functions.set(key, {...(record.functions.get(key) ?? {}), lineNumber, name: key});
+        } else if (line.startsWith("BRDA:")) {
+          const [lineNumber, blockNumber, branchNumber, count] = line.slice(5).split(",");
+          const key = `${lineNumber},${blockNumber},${branchNumber}`;
+          const previous = record.branches.get(key);
+          const numericCount = count === "-" ? 0 : Number(count);
+          record.branches.set(key, {count: Math.max(numericCount, previous?.count ?? 0), unknown: count === "-" && previous?.unknown !== false});
+        } else if (line.startsWith("TN:")) {
+          const [key, value] = line.split(":");
+          if (!record.metadata.has(key)) record.metadata.set(key, value);
+        }
+      }
+      records.set(source, record);
+    }
+  }
+  const output = [];
+  for (const [source, record] of [...records].sort(([left], [right]) => left.localeCompare(right))) {
+    const functions = [...record.functions.values()].sort((left, right) => left.name.localeCompare(right.name));
+    const branches = [...record.branches].sort(([left], [right]) => left.localeCompare(right));
+    const lines = [...record.lines].sort(([left], [right]) => Number(left) - Number(right));
+    const functionHits = functions.filter((item) => item.count > 0).length;
+    const branchHits = branches.filter(([, item]) => item.count > 0).length;
+    const lineHits = lines.filter(([, item]) => item.count > 0).length;
+    output.push([
+      ...[...record.metadata].map(([key, value]) => `${key}:${value}`),
+      `SF:${source}`,
+      ...functions.filter((item) => item.lineNumber !== undefined).map((item) => `FN:${item.lineNumber},${item.name}`),
+      ...functions.map((item) => `FNDA:${item.count ?? 0},${item.name}`),
+      `FNF:${functions.length}`, `FNH:${functionHits}`,
+      ...branches.map(([key, item]) => `BRDA:${key},${item.count > 0 ? item.count : item.unknown ? "-" : 0}`),
+      `BRF:${branches.length}`, `BRH:${branchHits}`,
+      ...lines.map(([lineNumber, item]) => `DA:${lineNumber},${item.count}${item.checksum === undefined ? "" : `,${item.checksum}`}`),
+      `LF:${lines.length}`, `LH:${lineHits}`, "end_of_record",
+    ].join("\n"));
+  }
+  return `${output.join("\n")}\n`;
+}
+
+export async function runNodeCoverage(root, testFiles, output, {packageRoot, signal, excludedTestFiles = [], batchSize = 25} = {}) {
   await fs.mkdir(output, {recursive: true, mode: 0o700});
   if (packageRoot === "framerail") {
     await runAuditCommand("pnpm", ["--dir", "framerail", "exec", "svelte-kit", "sync"], {cwd: root, signal});
@@ -26,19 +84,32 @@ export async function runNodeCoverage(root, testFiles, output, {packageRoot, sig
   const baseline = await runAuditCommand(baselineCommand[0], baselineCommand.slice(1), {
     cwd: root, signal, processGroup: true, logPath: path.join(output, "baseline.log"),
   });
+  const excluded = new Set(excludedTestFiles.filter((file) => testFiles.includes(file)));
+  const measuredTestFiles = testFiles.filter((file) => !excluded.has(file));
+  const batches = [];
+  for (let offset = 0; offset < measuredTestFiles.length; offset += batchSize) batches.push(measuredTestFiles.slice(offset, offset + batchSize));
+  const commands = [], reports = [];
+  let elapsed_ms = 0;
+  for (const [index, batch] of batches.entries()) {
+    const lcov = path.join(output, `coverage-${index}.lcov`);
+    const command = [process.execPath,
+      "--experimental-test-coverage", "--test-concurrency=1",
+      "--test-reporter=spec", `--test-reporter-destination=${path.join(output, `tests-${index}.log`)}`,
+      "--test-reporter=lcov", `--test-reporter-destination=${lcov}`,
+      `--test-coverage-include=${root}/${packageRoot ?? "install/local/wikidot-verification"}/{src,scripts}/**`,
+      "--test", ...batch,
+    ];
+    const result = await runAuditCommand(command[0], command.slice(1), {cwd: root, signal, processGroup: true, allowFailure: true, logPath: path.join(output, `runner-${index}.log`)});
+    commands.push({command, ...result});
+    elapsed_ms += result.elapsed_ms;
+    reports.push(await fs.readFile(lcov, "utf8"));
+  }
+  const merged = mergeLcovReports(reports);
   const lcov = path.join(output, "coverage.lcov");
-  const command = [process.execPath,
-    "--experimental-test-coverage", "--test-concurrency=1",
-    "--test-reporter=spec", `--test-reporter-destination=${path.join(output, "tests.log")}`,
-    "--test-reporter=lcov", `--test-reporter-destination=${lcov}`,
-    `--test-coverage-include=${root}/${packageRoot ?? "install/local/wikidot-verification"}/{src,scripts}/**`,
-    "--test", ...testFiles,
-  ];
-  const result = await runAuditCommand(command[0], command.slice(1), {cwd: root, signal, processGroup: true, allowFailure: true, logPath: path.join(output, "runner.log")});
-  const content = await fs.readFile(lcov, "utf8");
-  const report = {tool: `node ${process.version}`, metric: "V8", test_files: testFiles, baseline: {...baseline, command: baselineCommand}, command, ...result, files: summarizeLcov(content)};
+  await fs.writeFile(lcov, merged, {mode: 0o600});
+  const report = {tool: `node ${process.version}`, metric: "V8", batch_size: batchSize, test_files: testFiles, measured_test_files: measuredTestFiles, excluded_test_files: [...excluded], baseline: {...baseline, command: baselineCommand}, commands, elapsed_ms, code: commands.every((item) => item.code === 0) ? 0 : 1, files: summarizeLcov(merged)};
   await fs.writeFile(path.join(output, "summary.json"), `${JSON.stringify(report, null, 2)}\n`, {mode: 0o600});
-  if (result.code !== 0) throw new Error(`instrumented Node tests failed; inspect ${path.join(output, "tests.log")} before classifying a blind spot`);
+  if (report.code !== 0) throw new Error(`instrumented Node tests failed; inspect ${output} before classifying a blind spot`);
   return report;
 }
 
