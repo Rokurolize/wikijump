@@ -36,6 +36,58 @@ use serde_json::json;
 use uuid::Uuid;
 
 #[tokio::test]
+async fn listpages_retained_wikidot_unclosed_head_live_preview_boundaries() {
+    // Independent anonymous Wikidot PagePreviewModule captures from
+    // listpages-campaign-generated-live-preview.jsonl (2026-07-30):
+    // lpgen-0140 (complete opener without closing module) executes its
+    // empty/default query but leaves the row marker outside the module;
+    // lpgen-0141 (incomplete opener itself) stays literal and never executes.
+    // Do not treat this test as an owner of scanner.rs:1912-1913 until a
+    // targeted mutation replay proves that those predicates affect it.
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+
+    let complete = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site.site.site_id,
+        "Wikidot retained ListPages unclosed complete head",
+        "[[module ListPages category=\"fragment\"]]\n%%title%%".to_owned(),
+    )
+    .await
+    .expect("the evidenced complete but unclosed opener should render")
+    .html_output
+    .body;
+    assert!(
+        complete.contains("list-pages-box") && complete.contains("<p>%%title%%</p>"),
+        "an unclosed but complete opening executes while its row remains outside:\n{complete}"
+    );
+    assert!(
+        !complete.contains("[[module ListPages"),
+        "the executed opening must not leak as literal text:\n{complete}"
+    );
+
+    let incomplete = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site.site.site_id,
+        "Wikidot retained ListPages incomplete head",
+        "[[module ListPages category=\"fragment\"\n%%title%%".to_owned(),
+    )
+    .await
+    .expect("the evidenced incomplete opener should remain authored text")
+    .html_output
+    .body;
+    assert!(
+        incomplete.contains("[[module ListPages category=&quot;fragment&quot;")
+            && incomplete.contains("%%title%%")
+            && !incomplete.contains("list-pages-box"),
+        "an incomplete opener must remain literal rather than execute:\n{incomplete}"
+    );
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
 async fn syntax_preview_preserves_delayed_listpages_literal() {
     let runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
