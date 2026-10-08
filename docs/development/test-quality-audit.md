@@ -235,43 +235,47 @@ recovery case combines leading-tab projection with a literal-only module in
 the resumed suffix; its exact `work` and literal-advance assertions caught all
 five arithmetic survivors from the collapsible recovery path. A projected suffix
 fixture then caught eight work-accounting mutations across the malformed-head
-recovery path. Independent reconciliation now reports **88 caught, 44 missed,
-4 unviable, and 0 timed out**. The owner remains unaccepted: the 44 survivors need
-independent review by behavioral match, scanner work-budget, and returned-offset
-contract, and any integration-owned behavior still needs its own owner. The
+recovery path. Independent reconciliation initially reported **88 caught, 44
+missed, 4 unviable, and 0 timed out**. A further source-locked replay of the
+two absolute suffix-end offset mutations (`scanner.rs:1890:43`) against
+`unclosed_at_marker_preservation_does_not_hide_a_later_valid_module` caught
+both; the verified result is now **90 caught, 42 missed, 4 unviable, and 0 timed
+out**. The owner remains unaccepted: the 42 survivors need independent review
+by behavioral match, scanner work-budget, and returned-offset contract, and any
+integration-owned behavior still needs its own owner. The
 dated local shard outputs are retained under
 `/tmp/wj-1990-scanner-*` for this workstation; they are evidence for this
 source state, not committed report artifacts.
 
 The dated shard evidence has also been **independently reconciled by mutation
 identity**, rather than incorrectly summing targeted replay attempts. Initial
-eight shards: **63 caught, 69 missed, four unviable**. Ten targeted outputs
-produce **88 caught, 44 missed, four unviable, zero timeouts**. The reconciler
-records 26 outcome transitions: 24 missed-to-caught, one missed-to-unviable,
+eight shards: **63 caught, 69 missed, four unviable**. Eleven targeted outputs
+produce **90 caught, 42 missed, four unviable, zero timeouts**. The reconciler
+records 28 outcome transitions: 26 missed-to-caught, one missed-to-unviable,
 and one unviable-to-caught. Use
 `scripts/reconcile-test-quality-mutants.mjs` with repeated `--initial DIR`
 (one per original shard), repeated `--replay DIR` (targeted runs), and a fresh
 `--output FILE`. The tool refuses duplicate frozen identities, unexpected
 replay mutations, regressions of caught mutants, and output overwrite. The
-result contains sealed input SHA-256 digests and all 44 unresolved survivor
-identities at `/tmp/wj-1990-scanner-reconciled-20261008-final.json` (SHA-256
-`682c45ee877925196197ac5965d919c7bb0c8d031e8028c4f051673a7dbfc527`). Verify
-the report and all 18 sealed input files with
+result contains sealed input SHA-256 digests and all 42 unresolved survivor
+identities at `/tmp/wj-1990-scanner-reconciled-offset-recheck-20261008.json`
+(SHA-256 `f8a263aab95d9a35002c07a7134d8c2865b64bc4e15246225cf17162ca1ca860`). Verify
+the report and all 19 sealed input files with
 `node scripts/reconcile-test-quality-mutants.mjs --verify-report <path>`.
 Arithmetic reconciliation is **not** a survivor acceptance or proof of
 external behavioral equivalence.
 
-A separate source-anchored first-pass triage partitions these **44 still
+A separate source-anchored first-pass triage partitions these **42 still
 unreviewed** mutants into **four possible behavioral gate/tail changes** (the
 CSS/anchor intersection at `scanner.rs:1645` and unclosed-module empty-tail
 predicates at `1912–1913`; closed-module predicates at `1743–1744` are now
-caught) and **40 arithmetic/work-accounting mutants**. The latter may change
+caught) and **38 arithmetic/work-accounting mutants**. The latter may change
 returned work diagnostics or scanner-budget enforcement, so none is
 presumptively equivalent. The full per-mutation triage currently describes
 the earlier 52-mutant set; the sealed reconciliation report is authoritative
 for current identities. Review the four possible behavior changes against
 independent Wikidot/corpus observations first; retain separate bounded-work
-assertions for the other 40.
+assertions for the other 38.
 
 Use `cargo-mutants` against a task-owned disposable integration stack, never
 against the whole repository. A broad sweep is expensive, disk-heavy, and

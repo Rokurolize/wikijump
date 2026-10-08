@@ -57,6 +57,20 @@ The other 40 unresolved mutations change scanner work accounting, arithmetic,
 or offsets; they still require bounded-resource/absolute-position owners.
 The closed-module empty-tail mutations at 1743–1744 are caught by newer tests.
 
+## Follow-up mutation-owner replay (2026-10-08)
+
+A source-locked targeted replay of the two `scanner.rs:1890:43` suffix-end
+translation mutations against the existing
+`unclosed_at_marker_preservation_does_not_hide_a_later_valid_module` test
+caught both. That test asserts the later module's absolute `start`,
+`body_start`, `end`, original source slice, and work counters. This establishes
+an internal absolute-offset ownership contract for the already represented
+recovery case; it does **not** supply new live Wikidot output for malformed
+module-closer behavior. The independently reconciled frontier is now
+`136 = 90 caught + 42 missed + 4 unviable`, with 42 survivors still
+unaccepted. The retained report is
+`/tmp/wj-1990-scanner-reconciled-offset-recheck-20261008.json`.
+
 ## Reproduction and acceptance boundary
 
 1. Preserve the frozen corpus and live-capture source hashes. Select a

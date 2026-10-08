@@ -31,12 +31,12 @@
         "deepwell/src/services/render/list_pages/scanner/tests/stress.rs",
         "deepwell/tests/list_pages.rs"
       ],
-      "next_action": "Independently review the 44 survivors against the frozen Wikidot specification and live/corpus evidence. Add separate match, work-budget, and offset owners only where an observable contract is evidenced; classify genuinely equivalent or compile-failing candidates with specific reasons. Keep this owner unaccepted until dispositions and remaining test owners are complete.",
+      "next_action": "Independently review the 42 remaining survivors against the frozen Wikidot specification and live/corpus evidence. Add separate match, work-budget, and offset owners only where an observable contract is evidenced; classify genuinely equivalent or compile-failing candidates with specific reasons. Keep this owner unaccepted until dispositions and remaining test owners are complete.",
       "replay": {
         "date": "2026-10-08",
         "mutants": 136,
-        "caught": 88,
-        "missed": 44,
+        "caught": 90,
+        "missed": 42,
         "unviable": 4,
         "timeout": 0,
         "owner": "deepwell/src/services/render/list_pages/scanner/tests.rs",
@@ -74,7 +74,8 @@
           "/tmp/wj-1990-empty-tail-single-mutant-20261008/mutants.out",
           "/tmp/wj-1990-collapsible-suffix-work-mutant-20261008/mutants.out",
           "/tmp/wj-1990-collapsible-suffix-work-extended-mutant-20261008/mutants.out",
-          "/tmp/wj-1990-collapsible-suffix-work-extended-mutant-20261008/mutants.out"
+          "/tmp/wj-1990-collapsible-suffix-work-extended-mutant-20261008/mutants.out",
+          "/tmp/wj-1990-offset-recheck-20261008-4/mutants.out"
         ],
         "targeted_replays": [
           {
@@ -139,28 +140,38 @@
             "missed": 0,
             "evidence": "/tmp/wj-1990-collapsible-suffix-work-extended-mutant-20261008/mutants.out",
             "owner_test": "projected_collapsible_recovery_counts_literal_work_in_its_suffix"
+          },
+          {
+            "date": "2026-10-08",
+            "mutation_filter": "scanner.rs:1890:43",
+            "mutants": 2,
+            "caught": 2,
+            "missed": 0,
+            "evidence": "/tmp/wj-1990-offset-recheck-20261008-4/mutants.out",
+            "owner_test": "unclosed_at_marker_preservation_does_not_hide_a_later_valid_module",
+            "test_command": "cargo test --manifest-path deepwell/Cargo.toml --lib services::render::list_pages::scanner::tests::unclosed_at_marker_preservation_does_not_hide_a_later_valid_module -- --exact"
           }
         ],
         "independent_reconciliation": {
           "date": "2026-10-08",
           "tool": "scripts/reconcile-test-quality-mutants.mjs",
-          "report": "/tmp/wj-1990-scanner-reconciled-20261008-final.json",
-          "report_sha256": "682c45ee877925196197ac5965d919c7bb0c8d031e8028c4f051673a7dbfc527",
+          "report": "/tmp/wj-1990-scanner-reconciled-offset-recheck-20261008.json",
+          "report_sha256": "f8a263aab95d9a35002c07a7134d8c2865b64bc4e15246225cf17162ca1ca860",
           "initial_shards": 8,
-          "targeted_replay_outputs": 10,
+          "targeted_replay_outputs": 11,
           "distinct_initial_mutants": 136,
           "initial_caught": 63,
           "initial_missed": 69,
           "initial_unviable": 4,
           "initial_timeout": 0,
-          "transitions_missed_to_caught": 24,
+          "transitions_missed_to_caught": 26,
           "transitions_missed_to_unviable": 1,
           "transitions_unviable_to_caught": 1,
-          "transition_events": 26,
+          "transition_events": 28,
           "nonmonotonic_outcomes": 0,
-          "final_caught": 88,
-          "final_missed": 44,
-          "disposition": "unreviewed; neither passing tests nor accounting alone accept surviving mutants"
+          "final_caught": 90,
+          "final_missed": 42,
+          "disposition": "42 survivors remain unreviewed; two absolute suffix-end offset mutations now caught by the existing module654 preservation test"
         },
         "survivor_triage": {
           "date": "2026-10-08",
@@ -168,13 +179,13 @@
           "report": "/tmp/wj-1990-scanner-survivor-triage-20261008-1208.json",
           "report_sha256": "39dc18870f7268796d8c7d1ff58b1e717024f2d2b42294f08634b49bbc92e463",
           "priority_behavioral_boolean": 4,
-          "priority_work_accounting": 40,
+          "priority_work_accounting": 38,
           "behavioral_lines": [
             1645,
             1912,
             1913
           ],
-          "disposition": "all 44 pending independent Wikidot contract or reviewed local work-budget evidence; no equivalent classification granted"
+          "disposition": "42 remain pending: four conditional candidates require independent Wikidot evidence; 38 arithmetic/work/offset candidates require reviewed bounded-work or absolute-position ownership; none accepted"
         },
         "independent_oracle_review": {
           "date": "2026-10-08",
@@ -183,9 +194,9 @@
           "corpus_pending_live": 23964,
           "malformed_executable_cases": 60,
           "direct_live_evidence_in_reviewed_artifacts": false,
-          "classification": "four conditional candidates require new source-grounded behavior owners; 40 arithmetic/work accounting candidates require distinct bounded-work ownership; none accepted"
+          "classification": "four conditional candidates require new source-grounded behavior owners; 38 arithmetic/work accounting candidates remain and require distinct bounded-work or absolute-position ownership; none accepted"
         },
-        "survivor_disposition": "pending_independent_review"
+        "survivor_disposition": "pending_independent_review: 42 survivors remain"
       }
     }
   ],
