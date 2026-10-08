@@ -6,7 +6,7 @@
     "wikidot-verification",
     "executed shared helpers"
   ],
-  "inventory_digest": "7800cc66a0c5faa55a86ab98009e95fb4ebc14fbcced26e7663eaeb2233b5c15",
+  "inventory_digest": "68595e69b40258670dde925364780621371558f1f0326fcb9670d583d83f55d1",
   "inputs": [
     {
       "path": "deepwell/Cargo.toml",
@@ -10877,7 +10877,7 @@
     },
     {
       "path": "install/local/wikidot-verification/src/test-quality-coverage.mjs",
-      "sha256": "21bcdd687949b936b699b9255361185825eed6ce462b4db61ab3035f32e7b8d8",
+      "sha256": "e863bfcf60618297579bac0c21e1eb8807896f4a6505726bc4ef1f6508559619",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -11205,7 +11205,7 @@
     },
     {
       "path": "scripts/run-test-quality-audit.mjs",
-      "sha256": "b2fb41eb2aa79f59d4de8e5b834c863ad8caebc9bca671260d050336a648771a",
+      "sha256": "935300fc1198d96b46a0976090b50ecc8dd7bf57e4f82e85bb4b94c5ae9c95a8",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -11225,19 +11225,13 @@
       "id": "resource-scanner-mutation-20261008",
       "kind": "mutation",
       "path": "docs/development/test-quality-audit/resource-scanner-mutation-20261008/receipt.json",
-      "sha256": "2aec835c7ca020ffe5d36ba551d8cd357363b233ccf8f84de32003311cd38cdd"
+      "sha256": "bcc415108a7a807794a1945b7f142fff8a4ba91d88f04099cd5cb4e3a4db6ef3"
     },
     {
       "id": "generated-gate-close-unit-mutation-20261009",
       "kind": "mutation",
       "path": "docs/development/test-quality-audit/generated-gate-close-unit-mutation-20261009/receipt.json",
-      "sha256": "cde10c341fee0944c29b250d1bb80a27a97708bb6251f48d138343fd4d2d368d"
-    },
-    {
-      "id": "wikidot-verification-node-coverage-20261009",
-      "kind": "coverage",
-      "path": "docs/development/test-quality-audit/wikidot-verification-node-coverage-20261009/receipt.json",
-      "sha256": "f4e604c5bc3afec9b5aac26fc5bb30c1ccc230a5060caaa39eb1c6f0dbcde6d3"
+      "sha256": "bf1732111302b9754e80bdb0bcde196ac5ee7cffc4aaccb226d03d15e43ad61e"
     }
   ],
   "acceptance": null,

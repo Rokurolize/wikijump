@@ -4,7 +4,7 @@ import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {buildAuditInventory, loadAuditProofs, validateAuditLedger} from "../install/local/wikidot-verification/src/test-quality-inventory.mjs";
 import {runAuditCommand, withAuditSignals} from "../install/local/wikidot-verification/src/audit-command.mjs";
-import {runNodeCoverage, runRustCoverage} from "../install/local/wikidot-verification/src/test-quality-coverage.mjs";
+import {coverageInstrumentationExclusions, runNodeCoverage, runRustCoverage} from "../install/local/wikidot-verification/src/test-quality-coverage.mjs";
 import {runNodeMutations, runRustMutations} from "../install/local/wikidot-verification/src/test-quality-mutations.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -68,7 +68,8 @@ async function run(options, signal) {
       await runRustCoverage(root, path.join(options.output, "rust"), signal);
       for (const packageRoot of ["framerail", "install/local/wikidot-verification"]) {
         const tests = inventory.entrypoints.filter((file) => file.startsWith(`${packageRoot}/tests/`));
-        await runNodeCoverage(root, tests, path.join(options.output, path.basename(packageRoot)), {packageRoot, signal});
+        const excludedTestFiles = coverageInstrumentationExclusions(packageRoot, tests);
+        await runNodeCoverage(root, tests, path.join(options.output, path.basename(packageRoot)), {packageRoot, signal, excludedTestFiles});
       }
     }
     metadata.status = "complete";

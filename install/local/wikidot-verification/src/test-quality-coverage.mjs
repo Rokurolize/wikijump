@@ -1,7 +1,19 @@
 import fs from "node:fs/promises";
+import {readFileSync} from "node:fs";
 import path from "node:path";
 import {runAuditCommand} from "./audit-command.mjs";
 import {withTaskOwnedDeepwellStack} from "./deepwell-test-stack.mjs";
+
+const WIKIDOT_VERIFICATION_COVERAGE_BLIND_SPOTS = Object.freeze(JSON.parse(
+  readFileSync(new URL("../fixtures/test-quality-coverage-exclusions.json", import.meta.url), "utf8"),
+).test_files);
+
+export function coverageInstrumentationExclusions(packageRoot, testFiles) {
+  if (packageRoot !== "install/local/wikidot-verification") return [];
+  const missing = WIKIDOT_VERIFICATION_COVERAGE_BLIND_SPOTS.filter((file) => !testFiles.includes(file));
+  if (missing.length > 0) throw new Error(`stale Wikidot verification instrumentation exclusions: ${missing.join(", ")}`);
+  return [...WIKIDOT_VERIFICATION_COVERAGE_BLIND_SPOTS];
+}
 
 export function summarizeLcov(text) {
   const files = [];

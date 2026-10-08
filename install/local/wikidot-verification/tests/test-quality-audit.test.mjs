@@ -3,11 +3,12 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import coverageExclusions from "../fixtures/test-quality-coverage-exclusions.json" with {type: "json"};
 import {
   buildAuditInventory, createAuditLedger, jsonHash, loadAuditProofs, sha256, validateAuditLedger, validateMutationReceipt,
 } from "../src/test-quality-inventory.mjs";
 import {applyNodeMutation, runNodeMutations} from "../src/test-quality-mutations.mjs";
-import {mergeLcovReports, summarizeLcov} from "../src/test-quality-coverage.mjs";
+import {coverageInstrumentationExclusions, mergeLcovReports, summarizeLcov} from "../src/test-quality-coverage.mjs";
 import {runAuditCommand} from "../src/audit-command.mjs";
 
 async function fixture(t) {
@@ -134,6 +135,13 @@ test("coverage batches merge hits by line, function and branch without double-co
     "TN:\nSF:owner.js\nFN:1,run\nFNDA:2,run\nFNF:1\nFNH:1\nBRDA:1,0,0,1\nBRDA:1,0,1,1\nBRF:2\nBRH:2\nDA:1,3\nDA:2,0\nLF:2\nLH:1\nend_of_record\n",
   ]);
   assert.deepEqual(summarizeLcov(merged), [{path: "owner.js", lines: {total: 2, hit: 2}, functions: {total: 1, hit: 1}, branches: {total: 2, hit: 2}}]);
+});
+
+test("Wikidot verification coverage exclusions are exact and fail on inventory drift", () => {
+  const files = coverageExclusions.test_files;
+  assert.deepEqual(coverageInstrumentationExclusions("install/local/wikidot-verification", files), files);
+  assert.deepEqual(coverageInstrumentationExclusions("framerail", files), []);
+  assert.throws(() => coverageInstrumentationExclusions("install/local/wikidot-verification", files.slice(1)), /stale Wikidot verification instrumentation exclusions/u);
 });
 
 test("interrupted commands await child restoration before caller cleanup", async (t) => {
