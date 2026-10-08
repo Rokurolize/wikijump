@@ -54,7 +54,8 @@ export function candidateDeepwellConfig(source, port) {
   for (const [before, after] of [
     ["run-seeder = false", "run-seeder = true"],
     ['seeder-path = "seeder"', 'seeder-path = "/opt/deepwell/seeder"'],
-    ['main = "wikijump.com"', `main = "wikijump.localhost:${port}"`],
+    ['main = "wikijump.com"', 'main = "wikijump.localhost"'],
+    ["https-port = 443", `https-port = ${port}`],
     ['files = "wjfiles.com"', `files = "wjfiles.localhost:${port}"`],
     ["mock-mailcheck = false", "mock-mailcheck = true"],
   ]) {
