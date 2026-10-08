@@ -160,6 +160,38 @@ test("registration validation errors stay inline and never open an empty dialog"
   await expect(page.locator("#modal-message")).toHaveCount(0)
 })
 
+test("a native registration POST renders the success confirmation", async ({
+  browser,
+  request
+}) => {
+  const context = await browser.newContext({ javaScriptEnabled: false })
+  try {
+    const page = await context.newPage()
+    await page.setExtraHTTPHeaders(SITE_HEADERS)
+    await page.goto(`${APP_URL}/-/register`)
+    await page.locator("#username").fill("fixture-native-registration")
+    await page.locator("#register .email").fill("native-registration@example.invalid")
+    await page.locator("#register .auth-password").fill("Good-fixture-password-2026")
+    await page.locator(".confirm-password").fill("Good-fixture-password-2026")
+    await page.locator("#locale").selectOption(["en"])
+    await page.locator("#register button[type=submit]").click()
+
+    await expect(page.getByRole("status")).toContainText("register.toast")
+    await expect(page.getByRole("status").getByRole("link")).toHaveAttribute(
+      "href",
+      "/-/login"
+    )
+    await expect(page.locator("#register")).toHaveCount(0)
+    expect(
+      (await userCreateRequests(request)).some(
+        (create: { name: string }) => create.name === "fixture-native-registration"
+      )
+    ).toBe(true)
+  } finally {
+    await context.close()
+  }
+})
+
 test("MFA code field has a persistent accessible label and one-time-code autofill", async ({
   page
 }) => {

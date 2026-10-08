@@ -141,13 +141,21 @@ export const handleSiteRpc = ({ rpcRequest }) => {
     rpcRequest.params.messages !== null &&
     Array.isArray(rpcRequest.params.strip_message_keys)
   ) {
-    const authLabels = {
-      specifier: "Email or Username",
-      password: "Password",
-      "password.placeholder": "Enter password...",
-      "confirm-password": "Confirm Password",
-      "mfa-code": "MFA code"
-    }
+    const isJapanese = rpcRequest.params.locales.some((locale) =>
+      `${locale}`.toLowerCase().startsWith("ja")
+    )
+    const authLabels = isJapanese
+      ? {
+          "error-form.password-mismatch": "パスワードが一致しません。",
+          "error-form.password-too-short": "パスワードは15文字以上で入力してください。"
+        }
+      : {
+          specifier: "Email or Username",
+          password: "Password",
+          "password.placeholder": "Enter password...",
+          "confirm-password": "Confirm Password",
+          "mfa-code": "MFA code"
+        }
     result = Object.fromEntries(
       Object.keys(rpcRequest.params.messages).map((key) => [key, authLabels[key] ?? key])
     )
