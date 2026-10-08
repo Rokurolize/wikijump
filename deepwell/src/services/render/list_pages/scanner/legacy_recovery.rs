@@ -100,10 +100,15 @@ pub(super) fn unclosed_at_marker_collapsible_prefix_end(
             .strip_suffix('\n')
             .unwrap_or(line_with_ending);
         let lowercase = line.to_ascii_lowercase();
-        if lowercase.starts_with("[[collapsible show=\"")
-            && lowercase.ends_with("\"]]")
-            && lowercase.contains("\" hide=\"")
-        {
+        let opening = lowercase
+            .strip_prefix("[[")
+            .and_then(|opening| opening.split_once(' '));
+        if opening.is_some_and(|(module, attributes)| {
+            module == "collapsible"
+                && attributes.starts_with("show=\"")
+                && attributes.ends_with("\"]]")
+                && attributes.contains("\" hide=\"")
+        }) {
             return Some(offset + line.len());
         }
         offset += line_with_ending.len();

@@ -6,7 +6,7 @@
     "wikidot-verification",
     "executed shared helpers"
   ],
-  "inventory_digest": "1d948e25f9c48ffedec7b10b51965f639a1b62094f95931412ff64c4220c849c",
+  "inventory_digest": "f8ff9eb2c1def12577fc6644723c5c8968e93aaa398a67fd3e98176e2a17fe17",
   "inputs": [
     {
       "path": "deepwell/Cargo.toml",
@@ -144,6 +144,26 @@
       ],
       "mutation_inventory_sha256": "aa094d158f88cea00e08f3bd196dce294be157e998620def6d232e49b8f06702",
       "mutation_inventory_count": 5
+    },
+    {
+      "id": "wikidot-syntax-renderer",
+      "kind": "rust",
+      "files": [
+        "deepwell/src/bin/wikidot_syntax_renderer.rs"
+      ],
+      "manifest": "deepwell/Cargo.toml",
+      "anchors": [
+        "deepwell/tests/wikidot_syntax_renderer.rs#syntax_renderer_streams_rendered_and_invalid_cases_as_json_lines"
+      ],
+      "targets": [
+        {
+          "cargo_args": [
+            "--test",
+            "wikidot_syntax_renderer"
+          ]
+        }
+      ],
+      "stack": false
     }
   ],
   "records": [
@@ -647,7 +667,9 @@
       "path": "deepwell/src/bin/wikidot_syntax_renderer.rs",
       "sha256": "73d2a3a26452902c2cd94f938c8c5c9bdf14d65237c402e94db6e384fa0ed007",
       "status": "pending",
-      "anchors": [],
+      "anchors": [
+        "deepwell/tests/wikidot_syntax_renderer.rs#syntax_renderer_streams_rendered_and_invalid_cases_as_json_lines"
+      ],
       "findings": [],
       "review": null
     },
@@ -3357,7 +3379,7 @@
     },
     {
       "path": "deepwell/src/services/render/list_pages/scanner/legacy_recovery.rs",
-      "sha256": "edc5d81368c11084cb317f77e614652fc81a8da0ca600439bf87d7bb74de4300",
+      "sha256": "be7cac52045ff395475542910ebce600c46e85d15240f63dcb48c72ea790e6c3",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -11222,34 +11244,22 @@
   ],
   "proofs": [
     {
-      "id": "resource-scanner-mutation-20261008",
-      "kind": "mutation",
-      "path": "docs/development/test-quality-audit/resource-scanner-mutation-20261008/receipt.json",
-      "sha256": "2f881e45e119b187a4f8fb2d0ab6e8e0a1aa98be0bda692b5cc68ad4e444ce2b"
-    },
-    {
-      "id": "generated-gate-close-unit-mutation-20261009",
-      "kind": "mutation",
-      "path": "docs/development/test-quality-audit/generated-gate-close-unit-mutation-20261009/receipt.json",
-      "sha256": "a1697b94f326d3b736f97043a980f2cd2c9d19ce96fa4e5a7ff5a2c149b6b8ea"
-    },
-    {
-      "id": "test-quality-full-coverage-20261009",
+      "id": "test-quality-full-coverage-20261009e",
       "kind": "coverage",
-      "path": "docs/development/test-quality-audit/test-quality-coverage-20261009/receipt.json",
-      "sha256": "2c58f6f7ca99dd81af57737511051daa9562769331b9703e47742bedc0d5a4e5"
+      "path": "docs/development/test-quality-audit/test-quality-coverage-20261009e/receipt.json",
+      "sha256": "aec84ec28b98ead93cb39bbd194799f2af1c39c69e01641368b8b725b7c801ae"
     },
     {
-      "id": "generated-gate-close-unit-assessment-20261009",
-      "kind": "assessment",
-      "path": "docs/development/test-quality-audit/generated-gate-close-unit-disposition-review-20261009.json",
-      "sha256": "bdea653c20cf1e1dafcdc19c6e5ffb3b4f293457ae625d877ccd51e946371498"
+      "id": "generated-gate-close-unit-mutation-20261009e",
+      "kind": "mutation",
+      "path": "docs/development/test-quality-audit/generated-gate-close-unit-mutation-20261009e/receipt.json",
+      "sha256": "42e4225e315e2a4f289c19b40f664e2ef07502183629ebba59550bd10d91933c"
     },
     {
-      "id": "offline-portable-validation-20261009",
-      "kind": "validation",
-      "path": "docs/development/test-quality-audit/offline-portable-validation-20261009.json",
-      "sha256": "7bcb4ecf7d611a4c4089760a895dd7d56c1cd023268ec5740abce1f16f42e262"
+      "id": "resource-scanner-mutation-20261009e",
+      "kind": "mutation",
+      "path": "docs/development/test-quality-audit/resource-scanner-mutation-20261009e/receipt.json",
+      "sha256": "92da3516b4aac1027f69653d1d40ba67b8c5a625256a1bcd137c73db42af41dd"
     }
   ],
   "acceptance": null,
