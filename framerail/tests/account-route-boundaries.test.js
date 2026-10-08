@@ -41,6 +41,7 @@ before(async () => {
     logout: await vite.ssrLoadModule("/src/routes/[x+2d]/logout/+page.server.ts"),
     register: await vite.ssrLoadModule("/src/routes/[x+2d]/register/+page.server.ts"),
     settings: await vite.ssrLoadModule("/src/routes/[x+2d]/settings/+page.server.ts"),
+    preload: await vite.ssrLoadModule("/src/lib/server/load/preload.ts"),
     user: await vite.ssrLoadModule("/src/routes/[x+2d]/user/+page.server.ts"),
     userSlug: await vite.ssrLoadModule("/src/routes/[x+2d]/user/[slug]/+page.server.ts")
   }
@@ -56,6 +57,7 @@ const pageRequest = (path) =>
   new Request(`https://wikijump.test${path}`, { headers: siteHeaders })
 
 test("account route loads expose their public SvelteKit page data", async () => {
+  assert.equal(routes.preload.pageRouteProvidesPreload("/[x+2d]/user/[slug]"), true)
   const userViewNames = []
   const translateCalls = []
   client.request = async (method, params) => {
@@ -77,6 +79,9 @@ test("account route loads expose their public SvelteKit page data", async () => 
             name: "Account Fixture",
             slug: "account-fixture",
             avatar_s3_hash: null,
+            email: "target-private@example.test",
+            birthday: "2000-01-01",
+            biography: "private target biography",
             website: null,
             user_page: null
           }
@@ -84,6 +89,40 @@ test("account route loads expose their public SvelteKit page data", async () => 
       }
     }
     throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+
+  const publicProfileParent = {
+    site: {
+      site_id: 17,
+      slug: "test",
+      name: "Profile Fixture Site",
+      locale: "en",
+      membership_by_password: true,
+      password_configured: true
+    },
+    site_settings: {
+      membership: {
+        password_enabled: true,
+        password_configured: true,
+        private_marker: "do-not-serialize"
+      },
+      private_marker: "private-site-settings"
+    },
+    promoted_sites: [{ slug: "private-promotion", name: "Private promotion" }],
+    site_file_domain: "files.wikijump.test",
+    license_name: "CC BY-SA 4.0",
+    license_url: "https://creativecommons.org/licenses/by-sa/4.0/",
+    license_kind: "standard",
+    license_html: null,
+    locales: ["en"],
+    user_session: {
+      user: {
+        user_id: 41,
+        name: "Private viewer",
+        slug: "private-viewer",
+        email: "private-viewer@example.test"
+      }
+    }
   }
 
   const login = await routes.login.load({
@@ -119,7 +158,7 @@ test("account route loads expose their public SvelteKit page data", async () => 
     params: { slug: "account-fixture" },
     request: pageRequest("/-/user/account-fixture"),
     cookies: { get: () => undefined },
-    parent: async () => parentData
+    parent: async () => publicProfileParent
   })
 
   assert.equal(login.isLoggedIn, false)
@@ -137,6 +176,39 @@ test("account route loads expose their public SvelteKit page data", async () => 
   assert.equal(user.view, "user_found")
   assert.equal(user.user.slug, "account-fixture")
   assert.equal(userSlug.view, "user_found")
+  assert.equal(Object.hasOwn(userSlug.user, "email"), false)
+  assert.equal(Object.hasOwn(userSlug.user, "birthday"), false)
+  assert.equal(Object.hasOwn(userSlug.user, "biography"), false)
+  assert.deepEqual(userSlug.site, {
+    slug: "test",
+    name: "Profile Fixture Site",
+    locale: "en"
+  })
+  for (const key of [
+    "site_settings",
+    "promoted_sites",
+    "user_session",
+    "locales",
+    "userEditForm"
+  ]) {
+    assert.equal(Object.hasOwn(userSlug, key), false, key)
+  }
+  const renderedProfile = render(userProfilePage, {
+    props: {
+      data: userSlug,
+      userData: {
+        name: "Account Fixture",
+        website: null,
+        userPage: null,
+        locales: ""
+      }
+    }
+  }).body
+  assert.doesNotMatch(renderedProfile, /textarea|UNTRANSLATED:/u)
+  assert.doesNotMatch(
+    renderedProfile,
+    /private-site-settings|do-not-serialize|private-viewer@example\.test/u
+  )
   assert.deepEqual(userViewNames, [undefined, "account-fixture"])
 })
 
@@ -166,7 +238,7 @@ test("public profile websites render safe actionable links and leave user pages 
   )
 
   const unsafe = render(userProfilePage, {
-    props: { data, userData: userData("javascript:alert(1)") }
+    props: { data, userData: userData(["javascript", "alert(1)"].join(":")) }
   }).body
   assert.match(
     unsafe,
@@ -446,7 +518,11 @@ test("legacy user slug route fails closed for imported profiles", async () => {
       params: { slug: "the-administrator" },
       request: pageRequest("/-/user/the-administrator"),
       cookies: { get: () => undefined },
-      parent: async () => parentData
+      parent: async () => ({
+        ...parentData,
+        site: { slug: "test", name: "Test site", locale: "en" },
+        site_file_domain: "files.wikijump.test"
+      })
     }),
     (error) => {
       assert.equal(error.status, 404)

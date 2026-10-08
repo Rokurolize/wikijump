@@ -37,15 +37,11 @@
   <title>{data.user?.name ?? data.user?.slug} | {data?.site?.name}</title>
 </svelte:head>
 
-<h1>UNTRANSLATED: Loaded user profile</h1>
-
-<textarea class="debug">{JSON.stringify(data, null, 2)}</textarea>
-
 <div class="user-info" data-id={data.user?.user_id}>
   {#if userData?.name}
-    <h2 class="user-attribute name">
+    <h1 class="user-attribute name">
       {userData.name}
-    </h2>
+    </h1>
   {/if}
 
   {#if userData?.realName}
@@ -139,10 +135,3 @@
     </div>
   {/if}
 </div>
-
-<style global lang="scss">
-  .debug {
-    width: 100%;
-    height: 60vh;
-  }
-</style>

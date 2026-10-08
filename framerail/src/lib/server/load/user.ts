@@ -17,20 +17,53 @@ import { fail, superValidate, withFiles } from "sveltekit-superforms"
 import { valibot } from "sveltekit-superforms/adapters"
 import { file, object, optional, string } from "valibot"
 
-import type { PreloadDataAsync } from "$lib/server/deepwell/views"
-import type { TranslateKeys, UserModel } from "$lib/types"
+import type { PreloadData, PreloadDataAsync } from "$lib/server/deepwell/views"
+import type { TranslateKeys, TranslatedKeys, UserModel } from "$lib/types"
 import type { Cookies, RequestEvent } from "@sveltejs/kit"
 
+type UserPageData = {
+  user?: Partial<UserModel & { avatar: string }>
+  view: string
+  internationalization: TranslatedKeys
+}
+
+type PublicUserPageData = {
+  site: Pick<PreloadData["site"], "slug" | "name" | "locale">
+  site_file_domain: PreloadData["site_file_domain"]
+  license_name: PreloadData["license_name"]
+  license_url: PreloadData["license_url"]
+  license_kind: PreloadData["license_kind"]
+  license_html: PreloadData["license_html"]
+} & UserPageData
+
+type OwnUserPageData = PreloadData &
+  UserPageData & { userEditForm: Awaited<ReturnType<typeof makeUserEditForm>> }
+
+export function loadUser(
+  request: Request,
+  cookies: Cookies,
+  preloadData: PreloadDataAsync,
+  username: string
+): Promise<PublicUserPageData>
+export function loadUser(
+  request: Request,
+  cookies: Cookies,
+  preloadData: PreloadDataAsync
+): Promise<OwnUserPageData>
 export async function loadUser(
   request: Request,
   cookies: Cookies,
   preloadData: PreloadDataAsync,
   username?: string
-) {
+): Promise<PublicUserPageData | OwnUserPageData> {
   const { siteId } = loadSiteInfo(request.headers)
   const sessionToken = cookies.get("wikijump_token")
 
-  const parentData = await preloadData()
+  let parentData = await preloadData()
+  if (username && !parentData.site) {
+    const { loadPreload } = await import("$lib/server/load/preload")
+    parentData = await loadPreload(request, cookies)
+  }
   const locales = parentData.locales
 
   const response = await userView(siteId, locales, sessionToken, username)
@@ -89,6 +122,7 @@ export async function loadUser(
     response.data.user.user_type !== "wikidot"
   ) {
     const isViewingAnotherUser =
+      username !== undefined ||
       parentData.user_session?.user?.user_id !== response.data.user.user_id
 
     const user = response.data.user
@@ -129,7 +163,30 @@ export async function loadUser(
 
   const internationalization = await translate(locales, translateKeys)
 
-  const userEditForm = await superValidate(request, valibot(userEditSchema))
+  if (username) {
+    const pageData = {
+      site: {
+        slug: parentData.site.slug,
+        name: parentData.site.name,
+        locale: parentData.site.locale
+      },
+      site_file_domain: parentData.site_file_domain,
+      license_name: parentData.license_name,
+      license_url: parentData.license_url,
+      license_kind: parentData.license_kind,
+      license_html: parentData.license_html,
+      ...viewData,
+      view: unsupportedImportedUser ? "user_missing" : response.type,
+      internationalization
+    }
+
+    if (errorStatus !== null) {
+      error(errorStatus, pageData as App.Error)
+    }
+
+    return pageData
+  }
+
   const pageData = {
     ...parentData,
     ...viewData,
@@ -141,7 +198,12 @@ export async function loadUser(
     error(errorStatus, pageData)
   }
 
+  const userEditForm = await makeUserEditForm(request)
   return { ...pageData, userEditForm }
+}
+
+async function makeUserEditForm(request: Request) {
+  return superValidate(request, valibot(userEditSchema))
 }
 
 export function sanitizeUserData(
