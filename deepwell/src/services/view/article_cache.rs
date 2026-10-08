@@ -19,7 +19,7 @@
  */
 
 use super::options::PageOptions;
-use super::structs::{GetPageView, GetPageViewOutput};
+use super::structs::{GetPageView, GetPageViewOutput, is_reserved_admin_slug};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::BlueprintPageService;
 use crate::services::ServiceContext;
@@ -78,6 +78,9 @@ impl ArticlePageCache {
         }
 
         let page_slug = input.route.as_ref().map(|route| route.slug.clone());
+        if page_slug.as_deref().is_some_and(is_reserved_admin_slug) {
+            return Ok(None);
+        }
         let statement = Statement::from_sql_and_values(
             DatabaseBackend::Postgres,
             str!(

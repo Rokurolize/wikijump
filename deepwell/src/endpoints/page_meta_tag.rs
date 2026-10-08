@@ -21,7 +21,7 @@ use crate::services::MutationAuthorization;
 use crate::services::page_meta_tag::{
     DeletePageMetaTag, PageMetaTag, PageMetaTagService, SetPageMetaTag,
 };
-use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::permission::PermissionService;
 use crate::types::{Action, Permission, Reference, Resource};
 
 #[derive(Deserialize)]
@@ -39,21 +39,10 @@ pub async fn page_meta_tags(
     let page = PageService::get(ctx, input.site_id, Reference::Id(input.page_id))
         .await
         .or_raise(make_error)?;
-    let can_view = PermissionService::check_user_can(
-        ctx,
-        &CheckPermissionContext {
-            user_id: ctx.request().user_id,
-            site_id: input.site_id,
-            page_reference: Some(Reference::Id(page.page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(page.page_category_id)),
-            action: Action::View,
-        },
-    )
-    .await
-    .or_raise(make_error)?;
+    let can_view =
+        PermissionService::check_user_can_view_page(ctx, ctx.request().user_id, &page)
+            .await
+            .or_raise(make_error)?;
     if !can_view {
         return Err(Error::new(
             "user does not have permission to view metadata tags for this page",

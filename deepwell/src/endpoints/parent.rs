@@ -83,10 +83,7 @@ pub async fn parent_get_direct_metadata(
     else {
         return Ok(None);
     };
-    if !page_is_viewable(ctx, site_id, &child)
-        .await
-        .or_raise(make_error)?
-    {
+    if !page_is_viewable(ctx, &child).await.or_raise(make_error)? {
         return Ok(None);
     }
     let relationships =
@@ -107,10 +104,7 @@ pub async fn parent_get_direct_metadata(
         return Ok(None);
     };
 
-    if !page_is_viewable(ctx, site_id, &parent)
-        .await
-        .or_raise(make_error)?
-    {
+    if !page_is_viewable(ctx, &parent).await.or_raise(make_error)? {
         return Ok(None);
     }
 
@@ -249,10 +243,7 @@ pub async fn parent_get_all(
     let child = PageService::get(ctx, site_id, page)
         .await
         .or_raise(make_error)?;
-    if !page_is_viewable(ctx, site_id, &child)
-        .await
-        .or_raise(make_error)?
-    {
+    if !page_is_viewable(ctx, &child).await.or_raise(make_error)? {
         return Err(Error::new(
             "user does not have permission to view this child page",
             ErrorType::PermissionDenied,
@@ -274,10 +265,7 @@ pub async fn parent_get_all(
 
     let mut pages = Vec::with_capacity(parent_pages.len());
     for parent in parent_pages {
-        if page_is_viewable(ctx, site_id, &parent)
-            .await
-            .or_raise(make_error)?
-        {
+        if page_is_viewable(ctx, &parent).await.or_raise(make_error)? {
             pages.push(parent.slug);
         }
     }
@@ -285,25 +273,8 @@ pub async fn parent_get_all(
     Ok(pages)
 }
 
-async fn page_is_viewable(
-    ctx: &ServiceContext<'_>,
-    site_id: i64,
-    page: &PageModel,
-) -> Result<bool> {
-    PermissionService::check_user_can(
-        ctx,
-        &CheckPermissionContext {
-            user_id: ctx.request().user_id,
-            site_id,
-            page_reference: Some(Reference::Id(page.page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(page.page_category_id)),
-            action: Action::View,
-        },
-    )
-    .await
+async fn page_is_viewable(ctx: &ServiceContext<'_>, page: &PageModel) -> Result<bool> {
+    PermissionService::check_user_can_view_page(ctx, ctx.request().user_id, page).await
 }
 
 pub async fn parent_update(

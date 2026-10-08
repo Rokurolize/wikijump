@@ -27,7 +27,7 @@ use crate::services::page_revision::{
     PageRevisionCountOutput, PageRevisionDiffOutput, PageRevisionModelFiltered,
     UpdatePageRevisionDetails,
 };
-use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::permission::PermissionService;
 use crate::services::{MutationAuthorization, TextService};
 use crate::types::{Action, PageDetails, Permission, Reference, Resource};
 use ftml::data::UserInfo;
@@ -262,21 +262,10 @@ async fn ensure_page_view_permission(
         .await
         .or_raise(make_error)?;
 
-    let can_view = PermissionService::check_user_can(
-        ctx,
-        &CheckPermissionContext {
-            user_id: ctx.request().user_id,
-            site_id,
-            page_reference: Some(Reference::Id(page.page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(page.page_category_id)),
-            action: Action::View,
-        },
-    )
-    .await
-    .or_raise(make_error)?;
+    let can_view =
+        PermissionService::check_user_can_view_page(ctx, ctx.request().user_id, &page)
+            .await
+            .or_raise(make_error)?;
 
     if can_view {
         Ok(page.page_id)

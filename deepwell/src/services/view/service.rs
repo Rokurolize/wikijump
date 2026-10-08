@@ -39,7 +39,7 @@ use super::structs::{
     GetArticleViewOutput, GetPageView, GetPageViewOutput, GetPreloadView,
     GetPreloadViewOutput, GetUserView, GetUserViewOutput, PageRedirectKind, PageRoute,
     PageTemplateSummary, PromotedSiteView, UserSession, Viewer, ViewerLicenseKind,
-    WikidotPageBreadcrumbView, WikidotPageSnapshotView,
+    WikidotPageBreadcrumbView, WikidotPageSnapshotView, is_reserved_admin_slug,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::license::WikidotLicense;
@@ -524,6 +524,17 @@ impl ViewService {
             .map_or(viewer.site.default_page.as_str(), |route| {
                 route.slug.as_str()
             });
+        if is_reserved_admin_slug(page_full_slug) {
+            return PermissionService::check_user_can_access_admin(
+                ctx,
+                viewer
+                    .user_session
+                    .as_ref()
+                    .map(|session| session.user.user_id),
+                viewer.site.site_id,
+            )
+            .await;
+        }
         let (category_slug, _) = split_category(page_full_slug);
         let category_id =
             Self::get_category_id(ctx, viewer.site.site_id, category_slug).await?;
@@ -646,6 +657,57 @@ impl ViewService {
             // impact on FTML first.
             language: cow!(locale_for_ftml(&site.locale)),
         };
+
+        // The static `/_admin` route is site management, not an ordinary wiki
+        // article. Check this before looking up the authored page or revision;
+        // extra path segments and alternate renderers must not turn it back
+        // into a public page read.
+        if is_reserved_admin_slug(page_full_slug) {
+            let can_access_admin = PermissionService::check_user_can_access_admin(
+                ctx,
+                user_session.as_ref().map(|session| session.user.user_id),
+                site_id,
+            )
+            .await
+            .or_raise(make_error)?;
+            if !can_access_admin {
+                let GetBlueprintPageOutput { render_output, .. } =
+                    BlueprintPageService::get(
+                        ctx,
+                        &site,
+                        BlueprintPageType::Unauthorized,
+                        &locales,
+                        config.default_page_layout,
+                        page_info,
+                    )
+                    .await
+                    .or_raise(make_error)?;
+                let RenderOutput {
+                    html_output:
+                        HtmlOutput {
+                            body: compiled_body_html,
+                            styles: compiled_body_styles,
+                            ..
+                        },
+                    ..
+                } = render_output;
+                let theme = SettingsService::get_theme(ctx, site_id, category_id)
+                    .await
+                    .or_raise(make_error)?;
+
+                return Ok(GetPageViewOutput::Permissions {
+                    options,
+                    redirect_page: None,
+                    redirect_kind: None,
+                    compiled_body_html,
+                    compiled_body_styles,
+                    compiled_top_bar_html: None,
+                    compiled_side_bar_html: None,
+                    theme,
+                    banned: false,
+                });
+            }
+        }
 
         // Helper structures to designate which variant of GetPageViewOutput to return.
 
@@ -1836,21 +1898,10 @@ ORDER BY breadcrumb_chain.depth ASC
             }
         };
 
-        let user_can_access_admin = PermissionService::check_user_can(
-            ctx,
-            &CheckPermissionContext {
-                user_id,
-                site_id,
-                page_reference: None,
-            },
-            Permission {
-                resource_type: Resource::Site,
-                resource_category: None,
-                action: Action::Edit,
-            },
-        )
-        .await
-        .or_raise(make_error)?;
+        let user_can_access_admin =
+            PermissionService::check_user_can_access_admin(ctx, user_id, site_id)
+                .await
+                .or_raise(make_error)?;
 
         // Determine whether to return the actual admin panel content
         let output = if user_can_access_admin {
