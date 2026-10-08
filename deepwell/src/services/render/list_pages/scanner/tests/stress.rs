@@ -263,7 +263,7 @@ fn deferred_nested_head_rollbacks_exhaust_a_linear_work_budget() {
         assert_eq!(literal_range_advances, 0, "{label}");
         assert!(work > source.len(), "{label}: work counter stayed vacuous");
         assert!(
-            work <= source.len() * 8,
+            work <= source.len() * MAX_SINGLE_SCANNER_WORK_MULTIPLIER,
             "{label}: {work} work for {} source bytes",
             source.len(),
         );
@@ -282,7 +282,7 @@ fn whole_head_literal_index_budget_preserves_the_authored_source() {
     assert!(modules.is_empty());
     assert_eq!(literal_range_advances, 0);
     assert!(work > source.len());
-    assert!(work <= source.len() * 8);
+    assert!(work <= source.len() * MAX_SINGLE_SCANNER_WORK_MULTIPLIER);
 }
 
 #[test]
