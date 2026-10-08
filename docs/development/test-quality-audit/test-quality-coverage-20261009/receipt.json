@@ -1,10 +1,10 @@
 {
   "id": "test-quality-full-coverage-20261009",
   "kind": "coverage",
-  "inventory_digest": "68595e69b40258670dde925364780621371558f1f0326fcb9670d583d83f55d1",
-  "source_revision": "f877613e39b0b4db58432c81bb256da4c29f9080",
+  "inventory_digest": "1d948e25f9c48ffedec7b10b51965f639a1b62094f95931412ff64c4220c849c",
+  "source_revision": "27b1944fd4df2383220fbdffb10d3a4b247dab23",
   "measurement_runner_source_revision": "01d8d2e4ff1c971ed4a227d83b69c76fc0048c5a",
-  "source_tree_note": "Coverage ran against the working tree whose full audit inventory digest is recorded below; those source/test bytes were committed unchanged in source_revision before the receipt was retained.",
+  "source_tree_note": "The original measurement ran on the worktree identified by measurement_inventory_digest. The current source_revision has the same production-record hashes and the same coverage entrypoint list and bytes; the only inventory difference is the separately tested, non-entrypoint JSON-RPC witness assertion captured by inventory_reconciliation.",
   "node": "v24.21.0",
   "inventory": {
     "files": 3013,
@@ -441,6 +441,19 @@
     {
       "path": "docs/development/test-quality-audit/wikidot-verification-node-coverage-20261009/remeasured/results.json",
       "sha256": "09bec68fa3d73874329a0f2a0b6a83786548f2a72e2a945ee46e993ab23cc1cd"
+    },
+    {
+      "path": "docs/development/test-quality-audit/test-quality-coverage-20261009/inventory-reconciliation.json",
+      "sha256": "67463e74e05b9945dcaf1b9511d09a96225e7b7418c302926647f91e6fc7f3cc"
+    },
+    {
+      "path": "docs/development/test-quality-audit/test-quality-coverage-20261009/inventory-current.json.gz",
+      "sha256": "0d4443797a6767525f399fe0625aec13e9cdf016a54b305cce32f00913b18349"
     }
-  ]
+  ],
+  "measurement_inventory_digest": "68595e69b40258670dde925364780621371558f1f0326fcb9670d583d83f55d1",
+  "inventory_reconciliation": {
+    "path": "docs/development/test-quality-audit/test-quality-coverage-20261009/inventory-reconciliation.json",
+    "sha256": "67463e74e05b9945dcaf1b9511d09a96225e7b7418c302926647f91e6fc7f3cc"
+  }
 }
