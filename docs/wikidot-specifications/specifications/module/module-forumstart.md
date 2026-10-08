@@ -58,6 +58,24 @@ Evidence:
 - `install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json` (SHA-256 `0a188e7960890a0ad05fbb7733671072abc1f08156e0d2df7e70b523e3405fd4`), cases: `frontforum-sandbox-limit-one`, `frontforum-sandbox-limit-two`, `frontforum-sandbox-invalid-category`, `frontforum-scp-limit-one`, `sandbox-forum-start-visible`, `sandbox-forum-start-hidden`, `sandbox-category-populated-page-one`, `sandbox-category-empty-page-one`, `sandbox-category-missing`, `sandbox-thread-populated`, `sandbox-thread-missing`, `sandbox-thread-posts-populated`, `sandbox-thread-posts-missing`, `scp-comments-forward`, `scp-comments-reverse`, `scp-comments-missing-page`, `sandbox-recent-posts-all-page-one`, `sandbox-recent-posts-category-page-one`, `sandbox-recent-posts-missing-category`
 - `install/local/wikidot-verification/artifacts/forum-q1034-pagination-live-20260809.json` (SHA-256 `48c014f29e3ffa893073ef90048b353880d929e2bb612d358ee977dafbe679b2`), cases: `scp-category-1113520-page-1`, `scp-category-1113520-page-2`, `scp-category-1113520-page-11`, `scp-category-1113520-page-12`
 
+### ForumStart route suffixes select hidden mode only by their first segment
+
+- Observation ID: `forumstart-route-hidden-prefix-20261008`
+- Classification: `documentation-correction`
+- Observed at: `2026-10-08`
+- Analysis: Current anonymous, read-only Wikidot browser observations on www.wikidot.com confirm the route and visible category mode recorded in issue #2115. The route results correct the earlier claim that only the exact /hidden/show suffix is established. The issue retains the HTTP status comparison, and the checked-in observation artifact records the visible document/title and category-mode results. No forum mutations or permission changes were performed.
+
+Normative behavior:
+
+- A ForumStart extra path whose first slash-delimited segment is hidden selects the hidden-inclusive view; observed tails include show, hide, false, and show/extra.
+- Other extra paths, including garbage and garbage/extra, return the ordinary ForumStart view rather than a route error.
+- The suffix affects only the ForumStart hidden-view selection. It is not a row selector, query parameter, HTML fragment, or permission override; Deepwell continues to enforce the authoritative public/private category visibility rules.
+- The observed routes return HTTP 200 with the normal Forum Categories document title. The hidden-inclusive variants visibly contain the Hidden heading and the Per page discussions and Deleted threads categories; ordinary variants omit that heading and those categories.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/forumstart-route-suffix-live-20261008.json` (SHA-256 `4f1786c5427627b802c5f91ddaf46557223fa0477ed6ebdcacfc842cab8483cc`), cases: `forumstart-base`, `forumstart-hidden-show`, `forumstart-hidden-hide`, `forumstart-hidden-false`, `forumstart-hidden-tail-ignored`, `forumstart-unknown-suffix`, `forumstart-unknown-multisegment-suffix`
+
 
 
 ## Suggested public TDD seams

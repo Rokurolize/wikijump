@@ -1,0 +1,98 @@
+{
+  "schema": "wikijump.wikidot_forumstart_route_observation.v1",
+  "observation_id": "forumstart-route-hidden-prefix-20261008",
+  "observed_at_utc": "2026-10-07T21:45:23Z",
+  "observed_at_local": "2026-10-08",
+  "timezone": "Asia/Tokyo",
+  "authority": "Anonymous, read-only browser observation of current Wikidot; no mutation performed.",
+  "source_issue": "https://github.com/Rokurolize/wikijump/issues/2115",
+  "source_page": "https://www.wikidot.com/forum/start",
+  "browser_surface": "Chrome via Codex in-app browser",
+  "status_evidence": "The current HTTP comparison table is retained in issue #2115. Direct browser observations below corroborate document title and visible mode/content for the hidden and ordinary variants.",
+  "cases": [
+    {
+      "path": "/forum/start",
+      "http_status": 200,
+      "document_title": "Forum Categories - Wikidot - Free and Pro Wiki Hosting",
+      "hidden_heading_visible": false,
+      "category_names_visible": [
+        "Changelog"
+      ],
+      "case_id": "forumstart-base"
+    },
+    {
+      "path": "/forum/start/hidden/show",
+      "http_status": 200,
+      "document_title": "Forum Categories - Wikidot - Free and Pro Wiki Hosting",
+      "hidden_heading_visible": true,
+      "category_names_visible": [
+        "Per page discussions",
+        "Deleted threads",
+        "Changelog"
+      ],
+      "case_id": "forumstart-hidden-show"
+    },
+    {
+      "path": "/forum/start/hidden/hide",
+      "http_status": 200,
+      "document_title": "Forum Categories - Wikidot - Free and Pro Wiki Hosting",
+      "hidden_heading_visible": true,
+      "category_names_visible": [
+        "Per page discussions",
+        "Deleted threads",
+        "Changelog"
+      ],
+      "case_id": "forumstart-hidden-hide"
+    },
+    {
+      "path": "/forum/start/hidden/false",
+      "http_status": 200,
+      "document_title": "Forum Categories - Wikidot - Free and Pro Wiki Hosting",
+      "hidden_heading_visible": true,
+      "category_names_visible": [
+        "Per page discussions",
+        "Deleted threads",
+        "Changelog"
+      ],
+      "case_id": "forumstart-hidden-false"
+    },
+    {
+      "path": "/forum/start/hidden/show/extra",
+      "http_status": 200,
+      "document_title": "Forum Categories - Wikidot - Free and Pro Wiki Hosting",
+      "hidden_heading_visible": true,
+      "category_names_visible": [
+        "Per page discussions",
+        "Deleted threads",
+        "Changelog"
+      ],
+      "case_id": "forumstart-hidden-tail-ignored"
+    },
+    {
+      "path": "/forum/start/garbage",
+      "http_status": 200,
+      "document_title": "Forum Categories - Wikidot - Free and Pro Wiki Hosting",
+      "hidden_heading_visible": false,
+      "category_names_visible": [
+        "Changelog"
+      ],
+      "case_id": "forumstart-unknown-suffix"
+    },
+    {
+      "path": "/forum/start/garbage/extra",
+      "http_status": 200,
+      "document_title": "Forum Categories - Wikidot - Free and Pro Wiki Hosting",
+      "hidden_heading_visible": false,
+      "category_names_visible": [
+        "Changelog"
+      ],
+      "case_id": "forumstart-unknown-multisegment-suffix"
+    }
+  ],
+  "limits": [
+    "A hidden-prefixed suffix selects the existing server-authoritative hidden-inclusive ForumStart module behavior.",
+    "A suffix outside the hidden prefix selects the ordinary ForumStart view.",
+    "The suffix itself does not select forum rows, add query parameters, or grant permission to read private categories.",
+    "The observation does not establish mutation or forum-object permission behavior."
+  ]
+}
