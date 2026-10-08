@@ -1251,6 +1251,7 @@ impl RenderService {
             page_info,
             options.viewer_user_id,
             options.url,
+            compat_html,
         )
         .await
         .or_raise(make_error)?;

@@ -40,6 +40,7 @@ pub(super) async fn expand(
     page_info: &PageInfo<'_>,
     viewer_user_id: Option<i64>,
     url: UrlArguments<'_>,
+    compat_html: &mut CompatHtmlFragments,
 ) -> Result<String> {
     if !settings.enable_page_syntax {
         return Ok(wikitext);
@@ -55,16 +56,17 @@ pub(super) async fn expand(
         }
         output.push_str(&wikitext[cursor..matched.start()]);
         let html = render_sites(ctx, viewer_user_id, url.page.unwrap_or(1)).await?;
-        output.push_str(&html);
+        output.push_str(&retain_rendered_html(html, compat_html));
         cursor = matched.end();
     }
     if cursor > 0 {
         output.push_str(&wikitext[cursor..]);
     } else {
-        return expand_activity(ctx, wikitext, settings, viewer_user_id).await;
+        return expand_activity(ctx, wikitext, settings, viewer_user_id, compat_html)
+            .await;
     }
 
-    expand_activity(ctx, output, settings, viewer_user_id).await
+    expand_activity(ctx, output, settings, viewer_user_id, compat_html).await
 }
 
 fn upgrade_seeded_platform_page(wikitext: String, page_info: &PageInfo<'_>) -> String {
@@ -105,6 +107,7 @@ async fn expand_activity(
     wikitext: String,
     settings: &WikitextSettings,
     viewer_user_id: Option<i64>,
+    compat_html: &mut CompatHtmlFragments,
 ) -> Result<String> {
     if !settings.enable_page_syntax {
         return Ok(wikitext);
@@ -117,7 +120,10 @@ async fn expand_activity(
             continue;
         }
         output.push_str(&wikitext[cursor..matched.start()]);
-        output.push_str(&render_activity(ctx, viewer_user_id).await?);
+        output.push_str(&retain_rendered_html(
+            render_activity(ctx, viewer_user_id).await?,
+            compat_html,
+        ));
         cursor = matched.end();
     }
     if cursor == 0 {
@@ -297,13 +303,23 @@ async fn render_activity(
     Ok(html)
 }
 
+fn retain_rendered_html(html: String, compat_html: &mut CompatHtmlFragments) -> String {
+    compat_html.push_block_html(html)
+}
+
 #[cfg(test)]
 mod tests {
     use std::borrow::Cow;
 
     use ftml::data::{PageInfo, ScoreValue};
+    use ftml::layout::Layout;
+    use ftml::render::{Render, html::HtmlRender};
+    use ftml::settings::{WikitextMode, WikitextSettings};
 
-    use super::upgrade_seeded_platform_page;
+    use super::{retain_rendered_html, upgrade_seeded_platform_page};
+    use crate::services::render::RenderService;
+    use crate::services::render::compat::CompatHtmlFragments;
+    use crate::services::render::compat::text_fragments::CompatTextFragments;
 
     #[test]
     fn seeded_platform_pages_use_owned_runtime_modules() {
@@ -356,5 +372,45 @@ mod tests {
             upgrade_seeded_platform_page(authored.clone(), &page_info),
             authored,
         );
+    }
+
+    #[test]
+    fn directory_html_remains_html_through_wikitext_rendering() {
+        let html = concat!(
+            "<div class=\"platform-site-list\"><ul>",
+            "<li><a href=\"https://public.wikijump.localhost/\">Public site</a></li>",
+            "</ul></div>",
+        );
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let page_info = PageInfo {
+            page: Cow::Borrowed("sites"),
+            category: Some(Cow::Borrowed("platform")),
+            site: Cow::Borrowed("www"),
+            title: Cow::Borrowed("All sites"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let mut compat_text = CompatTextFragments::new(html);
+        let mut compat_html = CompatHtmlFragments::new(html);
+        let source = retain_rendered_html(html.to_owned(), &mut compat_html);
+        let mut protected = RenderService::finalize_runtime_module_residuals(
+            source,
+            &settings,
+            false,
+            &mut compat_text,
+            &mut compat_html,
+        );
+        ftml::preprocess_for_layout(&mut protected, settings.layout);
+        let tokens = ftml::tokenize(&protected);
+        let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
+        assert!(errors.is_empty(), "{errors:#?}");
+        let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+        let rendered = compat_html.restore(&rendered);
+        let rendered = compat_text.restore(&rendered);
+
+        assert!(rendered.contains(html), "{rendered}");
+        assert!(!rendered.contains("&lt;div class=\"platform-site-list\""));
     }
 }
