@@ -40,14 +40,14 @@ test("source audit inventory CLI writes a fresh report and prints its identity",
   assert.match(result.stdout, new RegExp(inventory.digest));
 });
 
-test("incomplete verification reports pending records and mutation owners without current receipts", (t) => {
+test("incomplete verification reports pending records after mutation owners are proven", (t) => {
   const directory = output(t);
   const result = run(["verify", "--allow-incomplete", "--output-dir", directory]);
   assert.equal(result.status, 0, result.stderr);
   const verification = JSON.parse(readFileSync(join(directory, "verification.json"), "utf8"));
   assert.ok(verification.production_files > 0);
   assert.ok(verification.unresolved_records > 0);
-  assert.ok(verification.unresolved_mutations > 0);
+  assert.equal(verification.unresolved_mutations, 0);
   assert.equal(verification.closure_ready, false);
 });
 

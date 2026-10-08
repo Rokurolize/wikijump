@@ -1,17 +1,17 @@
-✖ malformed URL tokens and authority-shaped paths do not hide subsequent resources (2.89332ms)
-✖ resource output order is independent of authored order (1.17261ms)
-✖ detects CSS @import local--files URL (0.35559ms)
-✖ detects CSS url(...) local--files URL (0.19665ms)
-✖ detects bare local--files URL (0.21717ms)
-✖ uses distinct target paths for query variants (0.20637ms)
-✖ deduplicates duplicate resource references deterministically (0.23157ms)
-✖ non-local external URLs are ignored or out-of-scope (0.40734ms)
-✖ trims sentence-ending punctuation from bare local--files URLs (0.25407ms)
-✖ canonicalization preserves path double slashes (0.3366ms)
-✖ deduplicates repeated out-of-scope local--files URLs (0.29988ms)
-✖ trims a Wikidot image-option pipe after a local--files URL (0.18351ms)
-✖ keeps wdfiles.com local-file resources in scope (0.15543ms)
-✖ unsafe in-scope resource paths do not abort later scan results (0.19629ms)
+✖ malformed URL tokens and authority-shaped paths do not hide subsequent resources (3.08997ms)
+✖ resource output order is independent of authored order (1.11222ms)
+✖ detects CSS @import local--files URL (0.48087ms)
+✖ detects CSS url(...) local--files URL (0.21708ms)
+✖ detects bare local--files URL (0.24093ms)
+✖ uses distinct target paths for query variants (0.20367ms)
+✖ deduplicates duplicate resource references deterministically (0.22266ms)
+✖ non-local external URLs are ignored or out-of-scope (0.48879ms)
+✖ trims sentence-ending punctuation from bare local--files URLs (0.27918ms)
+✖ canonicalization preserves path double slashes (0.28602ms)
+✖ deduplicates repeated out-of-scope local--files URLs (0.23679ms)
+✖ trims a Wikidot image-option pipe after a local--files URL (0.17883ms)
+✖ keeps wdfiles.com local-file resources in scope (0.14292ms)
+✖ unsafe in-scope resource paths do not abort later scan results (0.19323ms)
 ℹ tests 14
 ℹ suites 0
 ℹ pass 0
@@ -19,12 +19,12 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 85.28652
+ℹ duration_ms 80.42787
 
 ✖ failing tests:
 
 test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:6:1
-✖ malformed URL tokens and authority-shaped paths do not hide subsequent resources (2.89332ms)
+✖ malformed URL tokens and authority-shaped paths do not hide subsequent resources (3.08997ms)
   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
   + actual - expected
   
@@ -68,7 +68,7 @@ test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:6:1
   }
 
 test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:23:1
-✖ resource output order is independent of authored order (1.17261ms)
+✖ resource output order is independent of authored order (1.11222ms)
   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
   + actual - expected
   
@@ -104,7 +104,7 @@ test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:23:1
   }
 
 test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:37:1
-✖ detects CSS @import local--files URL (0.35559ms)
+✖ detects CSS @import local--files URL (0.48087ms)
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   
   0 !== 1
@@ -125,7 +125,7 @@ test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:37:1
   }
 
 test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:57:1
-✖ detects CSS url(...) local--files URL (0.19665ms)
+✖ detects CSS url(...) local--files URL (0.21708ms)
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   
   0 !== 1
@@ -146,7 +146,7 @@ test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:57:1
   }
 
 test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:74:1
-✖ detects bare local--files URL (0.21717ms)
+✖ detects bare local--files URL (0.24093ms)
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   
   0 !== 1
@@ -167,7 +167,7 @@ test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:74:1
   }
 
 test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:91:1
-✖ uses distinct target paths for query variants (0.20637ms)
+✖ uses distinct target paths for query variants (0.20367ms)
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   
   0 !== 2
@@ -188,7 +188,7 @@ test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:91:1
   }
 
 test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:113:1
-✖ deduplicates duplicate resource references deterministically (0.23157ms)
+✖ deduplicates duplicate resource references deterministically (0.22266ms)
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   
   0 !== 1
@@ -209,7 +209,7 @@ test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:113:1
   }
 
 test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:130:1
-✖ non-local external URLs are ignored or out-of-scope (0.40734ms)
+✖ non-local external URLs are ignored or out-of-scope (0.48879ms)
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   
   1 !== 0
@@ -230,7 +230,7 @@ test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:130:1
   }
 
 test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:145:1
-✖ trims sentence-ending punctuation from bare local--files URLs (0.25407ms)
+✖ trims sentence-ending punctuation from bare local--files URLs (0.27918ms)
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   
   0 !== 1
@@ -251,7 +251,7 @@ test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:145:1
   }
 
 test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:163:1
-✖ canonicalization preserves path double slashes (0.3366ms)
+✖ canonicalization preserves path double slashes (0.28602ms)
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   
   0 !== 2
@@ -272,7 +272,7 @@ test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:163:1
   }
 
 test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:184:1
-✖ deduplicates repeated out-of-scope local--files URLs (0.29988ms)
+✖ deduplicates repeated out-of-scope local--files URLs (0.23679ms)
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   
   1 !== 0
@@ -293,7 +293,7 @@ test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:184:1
   }
 
 test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:200:1
-✖ trims a Wikidot image-option pipe after a local--files URL (0.18351ms)
+✖ trims a Wikidot image-option pipe after a local--files URL (0.17883ms)
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   
   0 !== 1
@@ -314,7 +314,7 @@ test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:200:1
   }
 
 test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:219:1
-✖ keeps wdfiles.com local-file resources in scope (0.15543ms)
+✖ keeps wdfiles.com local-file resources in scope (0.14292ms)
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   
   0 !== 1
@@ -335,7 +335,7 @@ test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:219:1
   }
 
 test at install/local/wikidot-verification/tests/resource-scanner.test.mjs:235:1
-✖ unsafe in-scope resource paths do not abort later scan results (0.19629ms)
+✖ unsafe in-scope resource paths do not abort later scan results (0.19323ms)
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   
   0 !== 1
