@@ -31,12 +31,12 @@
         "deepwell/src/services/render/list_pages/scanner/tests/stress.rs",
         "deepwell/tests/list_pages.rs"
       ],
-      "next_action": "Independently review the 60 survivors against the frozen Wikidot specification and live/corpus evidence. Add separate match, work-budget, and offset owners only where an observable contract is evidenced; classify genuinely equivalent or compile-failing candidates with specific reasons. Keep this owner unaccepted until dispositions and remaining test owners are complete.",
+      "next_action": "Independently review the 58 survivors against the frozen Wikidot specification and live/corpus evidence. Add separate match, work-budget, and offset owners only where an observable contract is evidenced; classify genuinely equivalent or compile-failing candidates with specific reasons. Keep this owner unaccepted until dispositions and remaining test owners are complete.",
       "replay": {
         "date": "2026-10-08",
         "mutants": 136,
-        "caught": 72,
-        "missed": 60,
+        "caught": 74,
+        "missed": 58,
         "unviable": 4,
         "timeout": 0,
         "owner": "deepwell/src/services/render/list_pages/scanner/tests.rs",
@@ -65,8 +65,18 @@
           "/tmp/wj-1990-scanner-shard-4-8-20261008",
           "/tmp/wj-1990-scanner-shard-5-8-20261008",
           "/tmp/wj-1990-scanner-shard-6-8-20261008",
-          "/tmp/wj-1990-scanner-shard-7-8-20261008"
+          "/tmp/wj-1990-scanner-shard-7-8-20261008",
+          "/tmp/wj-1990-offset-mutant-20261008/mutants.out"
         ],
+        "targeted_replay": {
+          "date": "2026-10-08",
+          "mutation_filter": "scanner.rs:1889:50",
+          "mutants": 2,
+          "caught": 2,
+          "missed": 0,
+          "evidence": "/tmp/wj-1990-offset-mutant-20261008/mutants.out",
+          "owner_test": "unclosed_at_marker_preservation_does_not_hide_a_later_valid_module"
+        },
         "survivor_disposition": "pending_independent_review"
       }
     }
@@ -97,7 +107,7 @@
       "tests": [
         {
           "path": "deepwell/src/services/render/list_pages/scanner/tests.rs",
-          "sha256": "8f3c97d02068c182c49fedfd6c3acb2db6c5abfc2de8dbbc9ae8db9d98e79ad4",
+          "sha256": "e0df0deadd720cf0c78db215e30e7adcad56308ed8eeed3d9677b98613524a12",
           "anchors": [
             "scanner_keeps_generated_comment_gate_rows_inside_the_module"
           ]

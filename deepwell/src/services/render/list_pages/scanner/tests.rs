@@ -338,6 +338,16 @@ fn unclosed_listpages_head_consumes_immediate_raw_closer() {
 }
 
 #[test]
+fn closed_listpages_module_does_not_consume_a_nonempty_body_as_an_empty_tail() {
+    let source = "[[module ListPages name=\"closed\"]]ROW[[/module]]";
+    let modules = find_list_pages_module_matches(source);
+
+    assert_eq!(modules.len(), 1);
+    assert_eq!(modules[0].body, "ROW");
+    assert!(!modules[0].consume_empty_tail);
+}
+
+#[test]
 fn corpus_unicode_tag_head_remains_runtime_executable() {
     let head = r#"separate="1" tags="+阿尔兹海默症 -中心" order="random"  perPage="50""#;
     assert_eq!(
@@ -2387,15 +2397,24 @@ fn unclosed_at_marker_preservation_does_not_hide_a_later_valid_module() {
     let raw_tail = "@@\nDOC\n@@\n";
     let later = "[[module ListPages name=\"later-valid\"]]ROW[[/module]]";
     let source = format!("{preserved}{raw_tail}{later}");
-    let modules = find_list_pages_module_matches(&source);
+    let (modules, work, literal_range_advances) =
+        find_list_pages_module_matches_with_cursor_work(&source);
 
     assert_eq!(modules.len(), 2, "{modules:#?}");
     assert_eq!(modules[0].original, preserved);
     assert!(modules[0].preserve_original);
     assert!(modules[0].preserve_as_module654);
     assert_eq!(modules[1].start, preserved.len() + raw_tail.len());
+    assert_eq!(
+        modules[1].body_start,
+        modules[1].start + later.find("]]").unwrap() + 2,
+    );
+    assert_eq!(modules[1].end, source.len());
     assert_eq!(modules[1].head, r#"name="later-valid""#);
     assert_eq!(modules[1].body, "ROW");
+    assert_eq!(modules[1].original, later);
+    assert_eq!(literal_range_advances, 4);
+    assert_eq!(work, 593);
 }
 
 #[test]

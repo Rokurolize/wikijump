@@ -176,13 +176,16 @@ The production ListPages scanner match/work function
 The 2026-10-08 source identified **136 current cargo-mutants candidates**;
 the frozen list digest and replay summary are in `next_mutation_frontier`.
 All 136 candidates were replayed across eight bounded shards against the
-Deepwell library tests. After focused replays for scanner boundary/offset
-regressions, the combined result is **72 caught, 60 missed, 4 unviable, and
-0 timed out**. The owner remains unaccepted: the 60 survivors need independent
-review by behavioral match, scanner work-budget, and returned-offset contract,
-and any integration-owned behavior still needs its own owner. The dated local
-shard outputs are retained under `/tmp/wj-1990-scanner-*` for this workstation;
-they are evidence for this source state, not committed report artifacts.
+Deepwell library tests. A targeted replay of both offset mutations in the
+unclosed `module654` suffix-recovery branch then caught them after the owner
+asserted the later module's absolute `start`, `body_start`, `end`, original
+source slice, and scanner work totals. The combined result is now **74 caught,
+58 missed, 4 unviable, and 0 timed out**. The owner remains unaccepted: the 58
+survivors need independent review by behavioral match, scanner work-budget,
+and returned-offset contract, and any integration-owned behavior still needs
+its own owner. The dated local shard outputs are retained under
+`/tmp/wj-1990-scanner-*` for this workstation; they are evidence for this
+source state, not committed report artifacts.
 
 Use `cargo-mutants` against a task-owned disposable integration stack, never
 against the whole repository. A broad sweep is expensive, disk-heavy, and
