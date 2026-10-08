@@ -66,6 +66,15 @@ static ACTOR_SENSITIVE_CATEGORIES_MODULE_REGEX: LazyLock<Regex> =
 static ACTOR_SENSITIVE_SITE_CHANGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?m)^[\t ]*\[\[module[\t ]+SiteChanges[\t ]*\]\][\t ]*$").unwrap()
 });
+static PLATFORM_DIRECTORY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)\[\[module\s+Platform(?:Sites|Activity)\s*\]\]").unwrap()
+});
+static LEGACY_PLATFORM_DIRECTORY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r"(?i)\[\[module\s+(?:RecentWRevisions|MostActiveSites|MostActiveForums|NewWUsers|SomeGlobalStats|ListAllWikis)\s*\]\]",
+    )
+    .unwrap()
+});
 static MEMBERSHIP_BY_PASSWORD_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+membershipbypassword\b").unwrap());
 static MEMBERSHIP_EMAIL_INVITATION_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -258,6 +267,8 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || LIST_DRAFTS_MODULE_REGEX.is_match(wikitext)
         || ACTOR_SENSITIVE_CATEGORIES_MODULE_REGEX.is_match(wikitext)
         || ACTOR_SENSITIVE_SITE_CHANGES_MODULE_REGEX.is_match(wikitext)
+        || PLATFORM_DIRECTORY_MODULE_REGEX.is_match(wikitext)
+        || LEGACY_PLATFORM_DIRECTORY_MODULE_REGEX.is_match(wikitext)
         || MEMBERSHIP_BY_PASSWORD_MODULE_REGEX.is_match(wikitext)
         || MEMBERSHIP_MODULE_REGEX.is_match(wikitext)
         || MEMBERSHIP_EMAIL_INVITATION_MODULE_REGEX.is_match(wikitext)
@@ -570,6 +581,20 @@ mod tests {
             "[[module Clone]]",
             "[[module ManageSite]]",
             "[[module PetitionAdmin]]",
+        ] {
+            assert!(wikitext_requires_runtime_render(source));
+            assert!(!wikitext_reads_url_arguments(source));
+        }
+    }
+
+    #[test]
+    fn platform_directory_modules_render_from_live_visibility_state() {
+        for source in [
+            "[[module PlatformSites]]",
+            "[[module PlatformActivity]]",
+            "[[module platformsites]]",
+            "[[module RecentWRevisions]]",
+            "[[module ListAllWikis]]",
         ] {
             assert!(wikitext_requires_runtime_render(source));
             assert!(!wikitext_reads_url_arguments(source));

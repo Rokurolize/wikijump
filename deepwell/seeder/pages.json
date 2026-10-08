@@ -182,6 +182,16 @@
             "wikitext": "topbar"
         },
         {
+            "slug": "search:site",
+            "title": "Search this site",
+            "wikitext": "search-site"
+        },
+        {
+            "slug": "admin:manage",
+            "title": "Site Manager",
+            "wikitext": "admin-manage"
+        },
+        {
             "slug": "_admin",
             "title": "Admin Panel",
             "wikitext": "_admin"

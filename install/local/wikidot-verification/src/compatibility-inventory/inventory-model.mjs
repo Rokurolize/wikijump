@@ -20,8 +20,8 @@ const AUDITED_CURRENT_CATALOG_ISSUES = Object.freeze({
   fallback_mapping_sha256: "9a7489f1083ef9a114f95221997194afcb6eb1b957ad36f307e309a3a3668ff7"
 })
 const AUDITED_ISSUE_GROUPS = Object.freeze({
-  deepwell_jsonrpc_method: Object.freeze({ count: 178, surface_ids_sha256: "1d6741307d53a95f377b75c18c743b06d024c957c4926c0f105519fcede9ff9d", mapping_sha256: "6509a354f6e111725c0e90ed973db595f39c2011a426e4714925ff3958d1df95" }),
-  framerail_route: Object.freeze({ count: 30, surface_ids_sha256: "15147d35e636af683d7feca934d2c2007655643f3cd2794f3b5fd4b7cc0f79af", mapping_sha256: "365bcd4a9f322dc087f89dd362b8c2497fc1c3dd51cfccdbb6f41d528abc19d7" }),
+  deepwell_jsonrpc_method: Object.freeze({ count: 179, surface_ids_sha256: "7695d6bbd8e085bb5e8ef8877cc2a2eb1c6fca4ddf0032377076d877b914f7b7", mapping_sha256: "ab6e6e330f824b5ebe400ecb6c056cec13b7e63ac4e55fb477f3bee027aa2a41" }),
+  framerail_route: Object.freeze({ count: 31, surface_ids_sha256: "31d89fe734a129b15d1aca45ad526a9e7f2f522922d1da2bb6e35676050f70aa", mapping_sha256: "fbfb91104041b9242419e6613a2adcc1f7558e756b0ba9712eed933a6d2f2a1b" }),
   framerail_server_action: Object.freeze({ count: 107, surface_ids_sha256: "2d24668b2c1a9c5dd03f76aeba6e4ebe40127e0570bf0b788bec5d980cefd836", mapping_sha256: "03447d40bc082d4b323530ec2abf0b57ad3906fac5ef268cb1bb344e8e9fa0fd" }),
   framerail_amc_action_shape: Object.freeze({ count: 2, surface_ids_sha256: "69e643ef40a7efffbcc2cea03dc0f864aa0fb62d51ab8fd0c6062c74af9bee49", mapping_sha256: "945b06829bdf00f44c78040b1b2a4f793bb3e67325c98a94cffee4079c008646" }),
   framerail_amc_module_shape: Object.freeze({ count: 27, surface_ids_sha256: "4f2f2705c525444287f6d2f2835903263953f78d8d2d830f46b296e139de8b13", mapping_sha256: "90c279280479e68e0227a8c4d26ececa5a74b0f0ef8937abeac548dcffc89b61" }),
@@ -71,6 +71,7 @@ export const DEFERRED_XMLRPC_CATALOG_FEATURES = new Set([
   "catalog-feature:api-users-get-me"
 ])
 const FRAMERAIL_ROUTE_ISSUE_EXCEPTIONS = new Map([
+  ["framerail-route:/feed/forum/{feed}", 2091],
   ["framerail-route:/local--favicon/{filename}", 756],
   ["framerail-route:/printer--friendly/{*path}", 777],
   ["framerail-route:/forum/c-{category}/{*name}", 1034],

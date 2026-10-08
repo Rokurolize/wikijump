@@ -7,7 +7,7 @@ import {runAuditCommand, withAuditSignals} from "../install/local/wikidot-verifi
 import {coverageInstrumentationExclusions, runNodeCoverage, runRustCoverage} from "../install/local/wikidot-verification/src/test-quality-coverage.mjs";
 import {runNodeMutations, runRustMutations} from "../install/local/wikidot-verification/src/test-quality-mutations.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
 const ledgerPath = path.join(root, "docs/development/test-quality-audit.json");
 
 function argumentsFor(values) {

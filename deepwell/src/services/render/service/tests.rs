@@ -533,12 +533,29 @@ fn renders_wikidot_new_page_module_placeholder() {
     ));
     assert!(rendered.contains(r#"<form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);">"#));
     assert!(
-        rendered.contains(r#"<input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/>"#)
+        rendered.contains(r#"<input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px" aria-label="Name of the new page"/>"#)
     );
     assert!(
         rendered.contains(r#"<input type="submit" class="button" value="Create page" style="margin: 1px;"/>"#)
     );
     assert!(!rendered.contains("[[module NewPage"));
+}
+
+#[test]
+fn multiple_new_page_modules_have_independent_accessible_names_without_ids() {
+    let rendered = RenderService::expand_new_page_modules(
+        "[[module NewPage]]\n[[module NewPage size=15]]".to_owned(),
+        &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+    );
+
+    assert_eq!(
+        rendered
+            .matches(r#"aria-label="Name of the new page""#)
+            .count(),
+        2
+    );
+    assert_eq!(rendered.matches(r#"name="pageName""#).count(), 2);
+    assert!(!rendered.contains("id="));
 }
 
 #[test]
@@ -575,7 +592,7 @@ fn renders_wikidot_new_page_module_uses_live_argument_quirks() {
     );
 
     assert!(
-        rendered.contains(r#"<input class="text" name="pageName" type="text" size="999" maxlength="128" style="margin: 1px"/>"#)
+        rendered.contains(r#"<input class="text" name="pageName" type="text" size="999" maxlength="128" style="margin: 1px" aria-label="Name of the new page"/>"#)
     );
     assert!(rendered.contains(
         r#"<input type="submit" class="button" value="   " style="margin: 1px;"/>"#
@@ -783,6 +800,7 @@ fn protects_wikidot_new_page_module_html_before_parsing() {
     let mut wikitext = render_new_page_module(
         r#" size="15" button="new <page>""#,
         NewPageTemplateRendering::None,
+        "Name of the new page",
     )
     .replacen(
         r#"<div class="new-page-box""#,

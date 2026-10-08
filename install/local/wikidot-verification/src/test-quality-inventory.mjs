@@ -238,11 +238,16 @@ export function validateAuditLedger(ledger, inventory, {allowIncomplete = false,
   };
   // Validate every mutation proof, including ones not yet accepted for closure.
   let unresolvedMutations = 0;
+  const reviewedMutationOwners = new Set();
   for (const proof of proofs.values()) if (proof.kind === "mutation") {
     const owner = owners.get(proof.owner);
     requireValue(owner, `missing mutation executable owner: ${proof.owner}`);
+    reviewedMutationOwners.add(owner.id);
     const sourceHash = owner.kind === "rust" ? jsonHash(owner.files.map((file) => [file, expected.get(file).sha256])) : expected.get(owner.files[0]).sha256;
     unresolvedMutations += validateMutationReceipt(proof, {owner: owner.id, definition: owner, sourceHash, inventoryHash: owner.mutation_inventory_sha256, ownerHash: jsonHash(owner), proofs, allowIncomplete}).unresolved;
+  }
+  for (const owner of owners.values()) {
+    if (owner.mutation_inventory_sha256 && !reviewedMutationOwners.has(owner.id)) unresolvedMutations += 1;
   }
   const seen = new Set();
   let pending = 0;

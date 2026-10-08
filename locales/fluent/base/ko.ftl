@@ -77,6 +77,8 @@ register = 가입하기
 specifier = 이메일 또는 사용자명
   .placeholder = 이메일 또는 사용자명을 입력하세요.
 
+mfa-code = MFA 코드
+
 username = 사용자명
   .placeholder = 사용자명을 입력하세요.
   .info = 나중에 바꿀 수 있습니다.

@@ -23,7 +23,7 @@ use crate::models::page_lock::Model as PageLockModel;
 use crate::services::page_lock::{
     CreatePageLockInput, GetPageLockHistoryInput, RemovePageLockInput,
 };
-use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::permission::PermissionService;
 use crate::services::{MutationAuthorization, PageLockService};
 use crate::types::{Action, Permission, Reference, Resource};
 
@@ -74,26 +74,15 @@ async fn require_page_view_permission(
                 ErrorType::Permission,
             )
         })?;
-    let can_view = PermissionService::check_user_can(
-        ctx,
-        &CheckPermissionContext {
-            user_id: ctx.request().user_id,
-            site_id,
-            page_reference: Some(Reference::Id(page.page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(page.page_category_id)),
-            action: Action::View,
-        },
-    )
-    .await
-    .or_raise(|| {
-        Error::new(
-            "failed to check page view permission",
-            ErrorType::Permission,
-        )
-    })?;
+    let can_view =
+        PermissionService::check_user_can_view_page(ctx, ctx.request().user_id, &page)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to check page view permission",
+                    ErrorType::Permission,
+                )
+            })?;
 
     if can_view {
         Ok(())

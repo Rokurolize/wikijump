@@ -47,11 +47,12 @@ use crate::services::page_query::PageQueryService;
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::render::{
-    LegacyActionRegistry, LegacyBrowserAction, SiteChangesLoad,
-    WikidotForumModuleRequest, WikidotForumModuleResponse, WikidotListPagesFeedInput,
-    WikidotListPagesFeedOutput, WikidotMembersListModuleResponse,
-    WikidotSiteChangesFilter, WikidotSiteChangesModuleRequest,
-    WikidotSiteChangesModuleResponse, wikidot_site_changes_empty_response,
+    LegacyActionRegistry, LegacyBrowserAction, SiteChangesLoad, WikidotForumFeedKind,
+    WikidotForumFeedOutput, WikidotForumModuleRequest, WikidotForumModuleResponse,
+    WikidotListPagesFeedInput, WikidotListPagesFeedOutput,
+    WikidotMembersListModuleResponse, WikidotSiteChangesFilter,
+    WikidotSiteChangesModuleRequest, WikidotSiteChangesModuleResponse,
+    wikidot_site_changes_empty_response,
 };
 use crate::services::settings::PageRatingVisibility;
 use crate::services::{MutationAuthorization, SettingsService, TextService};
@@ -242,18 +243,10 @@ pub async fn wikidot_page_discussion_create(
         return Ok(None);
     }
 
-    let can_view = PermissionService::check_user_can(
+    let can_view = PermissionService::check_user_can_view_page(
         ctx,
-        &CheckPermissionContext {
-            user_id: ctx.request().user_id,
-            site_id: input.site_id,
-            page_reference: Some(Reference::Id(observed_page.page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(observed_page.page_category_id)),
-            action: Action::View,
-        },
+        ctx.request().user_id,
+        &observed_page,
     )
     .await
     .or_raise(|| {
@@ -440,18 +433,10 @@ pub async fn wikidot_site_changes_module(
             else {
                 return Ok(not_ok());
             };
-            let can_view_host = PermissionService::check_user_can(
+            let can_view_host = PermissionService::check_user_can_view_page(
                 ctx,
-                &CheckPermissionContext {
-                    user_id: ctx.request().user_id,
-                    site_id: input.site_id,
-                    page_reference: Some(Reference::Id(host_page.page_id)),
-                },
-                Permission {
-                    resource_type: Resource::Page,
-                    resource_category: Some(Reference::Id(host_page.page_category_id)),
-                    action: Action::View,
-                },
+                ctx.request().user_id,
+                &host_page,
             )
             .await
             .or_raise(|| {
@@ -588,6 +573,41 @@ pub async fn wikidot_forum_module(
             ErrorType::Page,
         )
     })
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct WikidotForumFeedInput {
+    site_id: i64,
+    kind: String,
+}
+
+pub async fn wikidot_forum_feed(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<WikidotForumFeedOutput>> {
+    let input: WikidotForumFeedInput = parse!(params, Page);
+    if ctx
+        .request()
+        .site_id
+        .is_some_and(|request_site_id| request_site_id != input.site_id)
+    {
+        return Err(Error::new(
+            "forum feed site does not match the request context",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+    let kind = match input.kind.as_str() {
+        "threads" => WikidotForumFeedKind::Threads,
+        "posts" => WikidotForumFeedKind::Posts,
+        _ => {
+            return Err(
+                Error::new("invalid forum feed kind", ErrorType::BadRequest).into()
+            );
+        }
+    };
+    RenderService::wikidot_forum_feed(ctx, input.site_id, kind).await
 }
 
 pub async fn wikidot_members_list_module(
@@ -774,15 +794,58 @@ pub async fn page_get(
 
     let make_error = || Error::new("failed to get page", ErrorType::Page);
 
+    if matches!(&reference, Reference::Slug(slug) if slug.trim_matches('/').eq_ignore_ascii_case("_admin"))
+        && !PermissionService::check_user_can_access_admin(
+            ctx,
+            ctx.request().user_id,
+            site_id,
+        )
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to check admin page permission",
+                ErrorType::Permission,
+            )
+        })?
+    {
+        return Err(Error::new(
+            "user does not have permission to view this page",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+
     let page = PageService::get_optional(ctx, site_id, reference)
         .await
         .or_raise(make_error)?;
 
     match page {
         None => Ok(None),
-        Some(page) => build_page_output(ctx, page, details)
-            .await
-            .or_raise(make_error),
+        Some(page) => {
+            if page.slug.eq_ignore_ascii_case("_admin")
+                && !PermissionService::check_user_can_view_page(
+                    ctx,
+                    ctx.request().user_id,
+                    &page,
+                )
+                .await
+                .or_raise(|| {
+                    Error::new(
+                        "failed to check page view permission",
+                        ErrorType::Permission,
+                    )
+                })?
+            {
+                return Err(Error::new(
+                    "user does not have permission to view this page",
+                    ErrorType::PermissionDenied,
+                )
+                .into());
+            }
+            build_page_output(ctx, page, details)
+                .await
+                .or_raise(make_error)
+        }
     }
 }
 
@@ -810,26 +873,14 @@ pub async fn page_view_permission(
         return Ok(false);
     };
 
-    PermissionService::check_user_can(
-        ctx,
-        &CheckPermissionContext {
-            user_id: ctx.request().user_id,
-            site_id,
-            page_reference: Some(Reference::Id(page.page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(page.page_category_id)),
-            action: Action::View,
-        },
-    )
-    .await
-    .or_raise(|| {
-        Error::new(
-            "failed to check page view permission",
-            ErrorType::Permission,
-        )
-    })
+    PermissionService::check_user_can_view_page(ctx, ctx.request().user_id, &page)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to check page view permission",
+                ErrorType::Permission,
+            )
+        })
 }
 
 /// Return display-name-only lifecycle identities for a viewable page.
@@ -855,21 +906,10 @@ pub async fn page_lifecycle_identity(
     else {
         return Ok(None);
     };
-    let can_view = PermissionService::check_user_can(
-        ctx,
-        &CheckPermissionContext {
-            user_id: ctx.request().user_id,
-            site_id,
-            page_reference: Some(Reference::Id(page.page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(page.page_category_id)),
-            action: Action::View,
-        },
-    )
-    .await
-    .or_raise(make_error)?;
+    let can_view =
+        PermissionService::check_user_can_view_page(ctx, ctx.request().user_id, &page)
+            .await
+            .or_raise(make_error)?;
     if !can_view {
         return Ok(None);
     }
@@ -990,26 +1030,15 @@ async fn get_page_who_rated_target(
     else {
         return Err(deny().into());
     };
-    let can_view = PermissionService::check_user_can(
-        ctx,
-        &CheckPermissionContext {
-            user_id: ctx.request().user_id,
-            site_id,
-            page_reference: Some(Reference::Id(page.page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(page.page_category_id)),
-            action: Action::View,
-        },
-    )
-    .await
-    .or_raise(|| {
-        Error::new(
-            "failed to check page rating visibility",
-            ErrorType::Permission,
-        )
-    })?;
+    let can_view =
+        PermissionService::check_user_can_view_page(ctx, ctx.request().user_id, &page)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to check page rating visibility",
+                    ErrorType::Permission,
+                )
+            })?;
     if !can_view {
         return Err(deny().into());
     }
@@ -1040,9 +1069,31 @@ pub async fn page_get_direct(
 
     match page {
         None => Ok(None),
-        Some(page) => build_page_output(ctx, page, details)
-            .await
-            .or_raise(make_error),
+        Some(page) => {
+            if page.slug.eq_ignore_ascii_case("_admin")
+                && !PermissionService::check_user_can_view_page(
+                    ctx,
+                    ctx.request().user_id,
+                    &page,
+                )
+                .await
+                .or_raise(|| {
+                    Error::new(
+                        "failed to check page view permission",
+                        ErrorType::Permission,
+                    )
+                })?
+            {
+                return Err(Error::new(
+                    "user does not have permission to view this page",
+                    ErrorType::PermissionDenied,
+                )
+                .into());
+            }
+            build_page_output(ctx, page, details)
+                .await
+                .or_raise(make_error)
+        }
     }
 }
 

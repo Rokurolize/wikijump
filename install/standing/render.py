@@ -27,8 +27,8 @@ IMAGE_ARGUMENTS = (
     "caddy_image",
 )
 
-PRODUCTION_DOMAIN_BLOCK = '[domain]\nmain = "wikijump.com"\nfiles = "wjfiles.com"'
-STANDING_DOMAIN_BLOCK = '[domain]\nmain = "wikijump.localhost"\nfiles = "wjfiles.localhost"'
+PRODUCTION_DOMAIN_BLOCK = '[domain]\nmain = "wikijump.com"\nhttps-port = 443\nfiles = "wjfiles.com"'
+STANDING_DOMAIN_BLOCK = '[domain]\nmain = "wikijump.localhost"\nhttps-port = 18443\nfiles = "wjfiles.localhost"'
 
 
 def command(*args: str, cwd: Path) -> str:
@@ -146,7 +146,11 @@ def main() -> int:
             "project_name": project_name,
             "network_name": network_name,
             "deepwell_config_source_sha256": deepwell_config_source_sha256,
-            "deepwell_domain_override": {"main": "wikijump.localhost", "files": "wjfiles.localhost"},
+            "deepwell_domain_override": {
+                "main": "wikijump.localhost",
+                "https_port": 18443,
+                "files": "wjfiles.localhost",
+            },
             **identity,
             "images": images,
             "persistent_volumes": list(PERSISTENT_VOLUMES),

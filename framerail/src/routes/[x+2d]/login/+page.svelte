@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation"
+  import { goto, invalidateAll } from "$app/navigation"
+  import { authCancelDestination } from "$lib/auth-cancel.js"
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { superForm } from "sveltekit-superforms"
   import { untrack } from "svelte"
@@ -11,6 +12,10 @@
   let isLoggedIn = $derived<boolean>(data.isLoggedIn)
   let mfaSessionToken = $state<string | undefined>()
   let totpOrCode = $state("")
+
+  const cancelLogin = async () => {
+    await goto(authCancelDestination(), { replaceState: true })
+  }
 
   const { form, enhance } = superForm(
     untrack(() => data.loginForm),
@@ -46,11 +51,15 @@
 {:else if mfaSessionToken}
   <form id="login-mfa" class="login-form" method="POST" use:enhance>
     <input name="mfaSessionToken" type="hidden" value={mfaSessionToken} />
+    <label class="visually-hidden" for="login-mfa-code">
+      {data.internationalization?.["mfa-code"]}
+    </label>
     <input
+      id="login-mfa-code"
       name="totpOrCode"
       class="auth-mfa-code"
       autocomplete="one-time-code"
-      placeholder="MFA code"
+      placeholder={data.internationalization?.["mfa-code"]}
       type="text"
       bind:value={totpOrCode}
     />
@@ -62,22 +71,36 @@
   </form>
 {:else}
   <form id="login" class="login-form" method="POST" use:enhance>
+    <label class="visually-hidden" for="login-name-or-email">
+      {data.internationalization?.["specifier"]}
+    </label>
     <input
+      id="login-name-or-email"
       name="nameOrEmail"
       class="auth-name-or-email"
+      autocomplete="username"
       placeholder={data.internationalization?.specifier}
       type="text"
       bind:value={$form.nameOrEmail}
     />
+    <label class="visually-hidden" for="login-password">
+      {data.internationalization?.["password"]}
+    </label>
     <input
+      id="login-password"
       name="password"
       class="auth-password"
+      autocomplete="current-password"
       placeholder={data.internationalization?.password}
       type="password"
       bind:value={$form.password}
     />
     <div class="action-row auth-actions">
-      <button class="action-button auth-button button-cancel clickable" type="button">
+      <button
+        class="action-button auth-button button-cancel clickable"
+        onclick={cancelLogin}
+        type="button"
+      >
         {data.internationalization?.cancel}
       </button>
       <button class="action-button auth-button button-login clickable" type="submit">
@@ -97,6 +120,18 @@
 
     .action-row {
       justify-content: center;
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
   }
 </style>

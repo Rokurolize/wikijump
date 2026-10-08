@@ -48,14 +48,12 @@ strings cannot authorize acceptance. Final closure additionally requires current
 portable, proc-macro, generated-contract, scanner, and final-preflight evidence;
 a verified normal two-parent merge; and applicable merged-head standing proof.
 
-The compact gate inventory freezes **39** `generated_gate_module_close` entries
-from cargo-mutants 27.1.0. The historical 36-entry count is not inherited.
-The generated-gate close recovery seam has one mutation owner: its named unit
-tests exercise the helper directly. The rendered ListPages row-substitution
-case remains a separate integration assertion; it does not independently reach
-that recovery path. Do not provision an integration mutation stack for this
-helper. Standing volumes and persistent local development services are never
-part of this lifecycle.
+The former 39-entry generated-gate recovery inventory is retained only in
+the dated evidence package. The current develop implementation removed that
+recovery helper, so those receipts do not bind the merged source tree and are
+not admitted by the active ledger. Any future mutation proof must target a
+current executable owner. Standing volumes and persistent local development
+services are never part of the audit lifecycle.
 
 ## Measured coverage
 
@@ -221,3 +219,16 @@ exactly one of:
 
 Only genuine missing regressions need new tests. Coverage percentage is
 evidence, not the objective.
+
+## Earlier mutation frontier
+
+The mutation frontier recorded on 2026-10-08 is preserved at
+docs/development/test-quality-audit-frontier-20261008.json, with its original
+method notes in docs/development/test-quality-audit-frontier-20261008.md. Its
+sharded replay driver remains available as
+scripts/run-test-quality-frontier-audit.mjs; its CLI regression is retained
+separately. Its 2026-10-08 identity snapshot is historical and is expected to
+fail current-source drift checks after this merge; use the current audit runner
+above for present-day verification. Those records are historical mutation evidence. The current
+source/test ownership denominator and fail-closed proof admission are maintained
+by the ledger and commands above.

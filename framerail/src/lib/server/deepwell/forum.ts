@@ -1,6 +1,7 @@
 import { client } from "$lib/server/deepwell"
 
 import type { RequestContext } from "../request-context"
+import type { WikidotForumFeedKind, WikidotForumFeedOutput } from "../forum-feed"
 
 export interface WikidotForumModuleOutput {
   status: string
@@ -55,6 +56,18 @@ export async function wikidotForumModule(
       module_name: moduleName,
       parameters
     },
+    requestContext
+  )
+}
+
+export async function wikidotForumFeed(
+  siteId: number,
+  kind: WikidotForumFeedKind,
+  requestContext: RequestContext = {}
+): Promise<WikidotForumFeedOutput | null> {
+  return client.request(
+    "wikidot_forum_feed",
+    { site_id: siteId, kind },
     requestContext
   )
 }

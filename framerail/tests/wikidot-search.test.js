@@ -55,11 +55,14 @@ test("Wikidot SearchAll preserves its area and path-encodes the submitted query"
 test("Wikidot SearchAll submit listener navigates rendered module forms", () => {
   const listeners = new Map()
   const document = {
-    addEventListener(type, listener) {
-      listeners.set(type, listener)
+    addEventListener(type, listener, capture) {
+      listeners.set(type, { listener, capture })
     },
-    removeEventListener(type, listener) {
-      if (listeners.get(type) === listener) listeners.delete(type)
+    removeEventListener(type, listener, capture) {
+      const registration = listeners.get(type)
+      if (registration?.listener === listener && registration.capture === capture) {
+        listeners.delete(type)
+      }
     }
   }
   const window = { document, location: { href: "http://example.test/current" } }
@@ -74,7 +77,9 @@ test("Wikidot SearchAll submit listener navigates rendered module forms", () => 
   let prevented = false
 
   const dispose = installWikidotSearchAll(window)
-  listeners.get("submit")({
+  const registration = listeners.get("submit")
+  assert.equal(registration.capture, true)
+  registration.listener({
     target: form,
     preventDefault() {
       prevented = true

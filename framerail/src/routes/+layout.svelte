@@ -45,6 +45,7 @@
     windowsTileDeclaration
   } from "$lib/site-icons"
   import { installWikidotCategories } from "$lib/wikidot/wikidot-categories.js"
+  import { installJavascriptAnchorGuard } from "$lib/wikidot/wikidot-javascript-anchors.js"
   import { installWikidotNewPageHelper } from "$lib/wikidot/wikidot-new-page-helper"
   import WikidotBottomToolbar from "$lib/wikidot/WikidotBottomToolbar.svelte"
   import {
@@ -174,6 +175,7 @@
     let disposed = false
     let stop: (() => void) | undefined
     const uninstallSearchAll = installWikidotSearchAll(window)
+    const uninstallJavascriptAnchorGuard = installJavascriptAnchorGuard(document)
     installWikidotCategories(window)
     installWikidotNewPageHelper(window)
     const wikidotSearchForm =
@@ -190,6 +192,7 @@
       disposed = true
       stop?.()
       uninstallSearchAll()
+      uninstallJavascriptAnchorGuard()
       wikidotSearchForm?.removeEventListener("submit", submitWikidotSearch)
       wikidotSearchInput?.removeEventListener("focus", clearWikidotSearchPrompt)
     }
@@ -451,6 +454,10 @@
 <style global lang="scss">
   @use "../lib/css/abstracts/variables" as *;
 
+  .odate[class*="time_"]:not(:empty) {
+    display: inline !important;
+  }
+
   $tablet-max-width: 767px;
 
   .header-wordmark {
@@ -466,19 +473,24 @@
   .footer-inner {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     gap: 10px;
     align-items: center;
     justify-content: stretch;
     width: 100%;
+    max-width: 100%;
   }
 
+  // Wrap the links instead of pushing the powered-by line past narrow viewports.
   .footer-items {
     display: flex;
-    flex: 1;
+    flex: 1 1 auto;
     flex-direction: row;
+    flex-wrap: wrap;
     gap: 10px;
     align-items: center;
     justify-content: flex-start;
+    min-width: 0;
     padding: 0;
     list-style: none;
 

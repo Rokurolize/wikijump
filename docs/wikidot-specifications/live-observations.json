@@ -3573,6 +3573,37 @@
           ]
         }
       ]
+    },
+    {
+      "id": "forumstart-route-hidden-prefix-20261008",
+      "title": "ForumStart hidden-prefix route selection",
+      "feature_ids": [
+        "module-forumstart"
+      ],
+      "classification": "route-option",
+      "observed_at": "2026-10-08",
+      "analysis": "Anonymous read-only browser observations established that /forum/start and unknown suffixes show the ordinary category view, while /forum/start/hidden/show, /forum/start/hidden/hide, /forum/start/hidden/false, and /forum/start/hidden/show/extra include the hidden categories. The suffix does not select forum rows, add query parameters, or grant private-category permission.",
+      "normative_behavior": [
+        "A hidden-prefixed suffix selects the existing server-authoritative hidden-inclusive ForumStart behavior.",
+        "A suffix outside the hidden prefix selects the ordinary ForumStart view.",
+        "The suffix itself does not select forum rows, add query parameters, or grant permission to read private categories.",
+        "The observation does not establish mutation or forum-object permission behavior."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/forumstart-route-suffix-live-20261008.json",
+          "sha256": "4f1786c5427627b802c5f91ddaf46557223fa0477ed6ebdcacfc842cab8483cc",
+          "case_ids": [
+            "forumstart-base",
+            "forumstart-hidden-show",
+            "forumstart-hidden-hide",
+            "forumstart-hidden-false",
+            "forumstart-hidden-tail-ignored",
+            "forumstart-unknown-suffix",
+            "forumstart-unknown-multisegment-suffix"
+          ]
+        }
+      ]
     }
   ]
 }

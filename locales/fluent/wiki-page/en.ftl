@@ -2,6 +2,9 @@
 
 wiki-page-category = category: { $category }
 
+wiki-page-module-new-page-name = Name of the new page
+wiki-page-module-search-all-query = Search all Wikis
+
 wiki-page-revision = revision: { $revision }
 
 wiki-page-last-edit = last edited: { $date } ({ $days ->

@@ -19,7 +19,7 @@
  */
 
 use super::options::PageOptions;
-use super::structs::{GetPageView, GetPageViewOutput};
+use super::structs::{GetPageView, GetPageViewOutput, is_reserved_admin_slug};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::BlueprintPageService;
 use crate::services::ServiceContext;
@@ -78,6 +78,9 @@ impl ArticlePageCache {
         }
 
         let page_slug = input.route.as_ref().map(|route| route.slug.clone());
+        if page_slug.as_deref().is_some_and(is_reserved_admin_slug) {
+            return Ok(None);
+        }
         let statement = Statement::from_sql_and_values(
             DatabaseBackend::Postgres,
             str!(
@@ -328,7 +331,7 @@ mod tests {
 
         assert_eq!(
             key,
-            "deepwell:article-view:page:v12:site=7:page=11:rev=13:updated=17:public=29:permission=site=19,user=23:template=89ab:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61",
+            "deepwell:article-view:page:v13:site=7:page=11:rev=13:updated=17:public=29:permission=site=19,user=23:template=89ab:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61",
         );
     }
 
@@ -421,7 +424,7 @@ mod tests {
             assert_eq!(
                 key.as_deref(),
                 Some(
-                    "deepwell:article-view:page:v12:site=7:page=11:rev=13:updated=17:public=29:permission=site=19,user=23:template=:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61"
+                    "deepwell:article-view:page:v13:site=7:page=11:rev=13:updated=17:public=29:permission=site=19,user=23:template=:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61"
                 ),
                 "{source}",
             );

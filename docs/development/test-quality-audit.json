@@ -6,7 +6,7 @@
     "wikidot-verification",
     "executed shared helpers"
   ],
-  "inventory_digest": "f8ff9eb2c1def12577fc6644723c5c8968e93aaa398a67fd3e98176e2a17fe17",
+  "inventory_digest": "a33dfa0006805b8e62eab6162f59f3f21016c1323cce29144767e7ac14e90bbf",
   "inputs": [
     {
       "path": "deepwell/Cargo.toml",
@@ -46,33 +46,6 @@
     }
   ],
   "owners": [
-    {
-      "id": "generated-gate-close-unit",
-      "kind": "rust",
-      "files": [
-        "deepwell/src/services/render/list_pages/scanner.rs"
-      ],
-      "manifest": "deepwell/Cargo.toml",
-      "function": "generated_gate_module_close",
-      "anchors": [
-        "deepwell/src/services/render/list_pages/scanner/tests.rs#generated_gate_close_uses_the_first_structural_close_after_inactive_branches",
-        "deepwell/src/services/render/list_pages/scanner/tests.rs#generated_gate_close_preserves_boundaries_around_gate_ranges",
-        "deepwell/src/services/render/list_pages/scanner/tests.rs#scanner_keeps_generated_comment_gate_rows_inside_the_module",
-        "deepwell/src/services/render/list_pages/scanner/tests/stress.rs#generated_gate_close_range_checks_stay_linear"
-      ],
-      "targets": [
-        {
-          "cargo_args": [
-            "--lib",
-            "services::render::list_pages::scanner::tests"
-          ]
-        }
-      ],
-      "stack": false,
-      "mutation_inventory_sha256": "9278be41b087762148ec92b27008220ccc357fd9ccdf20a1eda5345ded4c0e67",
-      "mutation_inventory_count": 39,
-      "frozen_inventory": "docs/development/test-quality-audit/generated-gate-close.inventory.json"
-    },
     {
       "id": "resource-scanner",
       "kind": "node",
@@ -576,6 +549,14 @@
       "review": null
     },
     {
+      "path": "deepwell/migrations/20261008010000_forum_feed_recent_indexes.sql",
+      "sha256": "39324eda3535489c04aea6f96c079128d33afa32f0c81538ed529cb15e1d51af",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "deepwell/relation-impl-derive/src/case.rs",
       "sha256": "66106f15ff6b50622d23084f7a237bc66c79fead38fa797643fc046c9d0c73b8",
       "status": "pending",
@@ -649,7 +630,7 @@
     },
     {
       "path": "deepwell/src/api.rs",
-      "sha256": "a5dff7d1ef92fa4595329423d097c4907810a40e6e30b52acab3a949ebd6c9d1",
+      "sha256": "f984618edcd5769093d450e97b99a1254042daab419dda9ef288d90309b68f8f",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -667,9 +648,7 @@
       "path": "deepwell/src/bin/wikidot_syntax_renderer.rs",
       "sha256": "73d2a3a26452902c2cd94f938c8c5c9bdf14d65237c402e94db6e384fa0ed007",
       "status": "pending",
-      "anchors": [
-        "deepwell/tests/wikidot_syntax_renderer.rs#syntax_renderer_streams_rendered_and_invalid_cases_as_json_lines"
-      ],
+      "anchors": [],
       "findings": [],
       "review": null
     },
@@ -683,7 +662,7 @@
     },
     {
       "path": "deepwell/src/config/file.rs",
-      "sha256": "f95994f0e6755c871a56f9adbc6139971496194780a3f8a03472be7721c21086",
+      "sha256": "c43722e8afc337192233acb7e446d8d47cbfeec57049f6eafd2295bc2b3f1c9c",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -699,7 +678,7 @@
     },
     {
       "path": "deepwell/src/config/object.rs",
-      "sha256": "ea7a6732966b26388121f827c7fb354748b62fe515816d97bea63dbb655d68a2",
+      "sha256": "d83a3238dee247d6810f70ab54dbca893de2ac4c73e18e4f7d6615ea94c32b65",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -899,7 +878,7 @@
     },
     {
       "path": "deepwell/src/endpoints/page_lock.rs",
-      "sha256": "59eaced0f3f6ea21a000ea3876cba5833153d60c464a636fd9ce7b11ee58bb14",
+      "sha256": "9d5889ab72012a1a934204728a3aa188ff2acd12ccd3661640a2d9344510f14c",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -907,7 +886,7 @@
     },
     {
       "path": "deepwell/src/endpoints/page_meta_tag.rs",
-      "sha256": "69365e960e8a99b93cbdcf0ee020ff4cdff3c28afa5c17676156396a153d3be1",
+      "sha256": "e49b6f71966542617aa2d78189250dedae120d907349213a6349f1f4e7a7d128",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -915,7 +894,7 @@
     },
     {
       "path": "deepwell/src/endpoints/page_revision.rs",
-      "sha256": "d1a8e23a86a28046f9da3ec2aef1eecfcc739e80ae8219926f16854266be7350",
+      "sha256": "a285a6dfe135e1b983999040b48d3c78694bb3bd0fede0bee62250216a1e98d3",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -923,7 +902,7 @@
     },
     {
       "path": "deepwell/src/endpoints/page.rs",
-      "sha256": "e183ea1e8deaac105225beb8bbac16879ecfa70415b191b96fe48903dab3513c",
+      "sha256": "ee5ec6b96f083dd4259ef4f488c1543aa618932b115591e4cccc853ad3dd5a2a",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -939,7 +918,7 @@
     },
     {
       "path": "deepwell/src/endpoints/page/permissions.rs",
-      "sha256": "e3ab838add5fa419555da8778a4d1dc7f172da08a994469cd5c8d977095e6b6b",
+      "sha256": "9b9aaee1ff315e36ef7f9136532118861143b697df220e826ef4110db58dedc5",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -947,7 +926,7 @@
     },
     {
       "path": "deepwell/src/endpoints/parent.rs",
-      "sha256": "6d56acedbe45d7b2e014161421efb33fac61ebb0938c26774778c148e6db05dd",
+      "sha256": "a8b6e94c25e33b9c859d03ac25fc949c6a38b1c3b2d2acfcdf0737b303200092",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -1859,7 +1838,7 @@
     },
     {
       "path": "deepwell/src/services/domain/service.rs",
-      "sha256": "570f123f011d9ccf977506927f13b4807227efb699395fd58eeaa1a6e812ad01",
+      "sha256": "70faf868f7431f9f4dc4b008fac6f5081fa10d0be9ec230c703d0d552fcc65f5",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -2579,7 +2558,7 @@
     },
     {
       "path": "deepwell/src/services/permission/service.rs",
-      "sha256": "53b7159b4c36fc301418407fe621f458829d3000e1307ef01ef4b69deaae7f71",
+      "sha256": "e9e5284213b687c7515d43bb369cf0ceaf8390748257be152be6f4e7a1d2e145",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -2971,7 +2950,7 @@
     },
     {
       "path": "deepwell/src/services/render/forum_read_routes.rs",
-      "sha256": "5d85b46e0be7cdc669c297abdade55b77653cc68c2284d09577b6e21a35c0437",
+      "sha256": "7aea2db4e0078c91ffa4b54d0f05ffa0bc63baf8da10495f3a4fd8e97e2ffab5",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -3003,7 +2982,7 @@
     },
     {
       "path": "deepwell/src/services/render/generator.rs",
-      "sha256": "4ce1d52d87f08c3a1d70628094e5173bebb2973603c7820ed6761ef0c5871d53",
+      "sha256": "e664dd591f7f8da3c22b02833f37d03580b5c8d16e1512f73700c2f0043a56b9",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -3339,7 +3318,7 @@
     },
     {
       "path": "deepwell/src/services/render/list_pages/scanner.rs",
-      "sha256": "fba6a6f254ecbdbeabdf49a65642917d40d95ff11b714242943431459b7835fb",
+      "sha256": "41c1f5132bd938cf8fb0fb4228767583b59b7529a1ad0fd7740376ebbdb9d30e",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -3707,7 +3686,7 @@
     },
     {
       "path": "deepwell/src/services/render/mod.rs",
-      "sha256": "cd34f30a0bf731d4397b2e7a8742d056c0b6f2148e90fb2c258387cb5de2a562",
+      "sha256": "f6abdca2ca1b358b25ed55882643883814ffc59b67f81f7ae8a2071cd64783ce",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -3739,7 +3718,7 @@
     },
     {
       "path": "deepwell/src/services/render/new_page_module.rs",
-      "sha256": "0c7867400514fdd68b14743fe4e4e7ef71f4633e95a792c3600cc89e0ea42564",
+      "sha256": "aadce2a2a0a2060339772db0b0dc265129a2bc0fae8d0abda94e200e52f966f1",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -3907,7 +3886,7 @@
     },
     {
       "path": "deepwell/src/services/render/runtime_modules.rs",
-      "sha256": "fb09af830ce87132818e892994ee59c90d9b104d1287026fec77fb7a17bad9bc",
+      "sha256": "fa35f49dadbd9e5d65fb0a980b7cc02a082beef3a770f20af504e720bc0dce67",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -3924,6 +3903,22 @@
     {
       "path": "deepwell/src/services/render/runtime_modules/page_calendar.rs",
       "sha256": "1efdc15e6a121c345d68e3212bc5afe3a9ee4e63262c588ba9c0f7d90ab42b92",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/services/render/runtime_modules/platform_directory.rs",
+      "sha256": "3f36f922daecb73b3a30758668c5455631f5147a16a72e6f0399299f9a12bd34",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/services/render/runtime_modules/platform_navigation.rs",
+      "sha256": "17a5f7842bf0c7385369ae7b43f2b56bc07ea7823450c901c9f584610d3cc64a",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -3963,7 +3958,7 @@
     },
     {
       "path": "deepwell/src/services/render/runtime_modules/user_lists.rs",
-      "sha256": "37df47635c68bb647cb592689503ca278fb8242f395c541941f6b7ac168310a4",
+      "sha256": "5d25f5465abced429299b4b49d0869c7bb52035b47b6c6004db85f052d18ca00",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -3995,7 +3990,7 @@
     },
     {
       "path": "deepwell/src/services/render/search_feed.rs",
-      "sha256": "047a501a8e7de056d266ae029c44551f407434e6a50a695993c8ae643620f318",
+      "sha256": "0220615752ba81192a3b9920a60ba744bc4745d3113af2a4ab65e80aeeeed00b",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -4003,7 +3998,7 @@
     },
     {
       "path": "deepwell/src/services/render/service.rs",
-      "sha256": "73814b9b319e2ba09c0254b978971b3969e3def97bf584bb0d5e8c6886e8dec7",
+      "sha256": "a005592a9548c10c707d12b819c4a6d9dcc27997eb4cce829b5ca5b44c2005a2",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -4067,7 +4062,7 @@
     },
     {
       "path": "deepwell/src/services/render/url_arguments.rs",
-      "sha256": "6c1f60c527d1ff3c32fb6c2e7dbd3d47ba762c1fb44c47a7b8512b721919eca3",
+      "sha256": "9fbe10202352854ceba2d813e17d55680d71a464b62f4d7c7d2445ff206d10ef",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -4331,7 +4326,7 @@
     },
     {
       "path": "deepwell/src/services/view/article_cache.rs",
-      "sha256": "8439fe84bbca9b1ed0be603b6dfb4a41ca09def40380ff873603b0f39d0156be",
+      "sha256": "22c4f22f429fbbe7c7fc60616e0c40ab174cb51b49b5d3684c4f78c97c190f31",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -4387,7 +4382,7 @@
     },
     {
       "path": "deepwell/src/services/view/service.rs",
-      "sha256": "8ca1697f065ca76e67225cacecd5168ae7df90e312ee0c92ab87783a0f008718",
+      "sha256": "b61a69f5a8853914690d8aeba0bab473903973c27c21354fd84ee86e883b1876",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -4403,7 +4398,7 @@
     },
     {
       "path": "deepwell/src/services/view/structs.rs",
-      "sha256": "16c9e311b8780838d5b5a1da1273fa46b675c9a204dfecd8bca0efbf6dc5370c",
+      "sha256": "4b71db74e8f610666cba79764a91fe29f089540e4924438e6a34b486e1d42042",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -4707,7 +4702,7 @@
     },
     {
       "path": "deepwell/src/utils/slug.rs",
-      "sha256": "712c81be008d52be7bb6da586da5daab47b4637255836ed5d5ba25c7dc915fb6",
+      "sha256": "3aa145c90996652c30952edb39c555e537163ef5be85514a02372f5c5fdd66e0",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -4763,7 +4758,7 @@
     },
     {
       "path": "framerail/playwright.browser-support.config.ts",
-      "sha256": "8be2ea94ddae9f1beebabae9d3708800eb5d06dc08a8d3c8766439604aa678bc",
+      "sha256": "bef02e61a7d8b8607cab8d74f1668c1bd4083d12defa942749a0e19c302e9e82",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -4868,6 +4863,14 @@
     {
       "path": "framerail/src/lib/admin/wikidot-site-languages.js",
       "sha256": "80de70c08dae152225102ba9b31c683e7915524a4af734b0a658dd053c244dbc",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/lib/auth-cancel.js",
+      "sha256": "fb1ba6dfbf1d4315d3ab2ae1da63164d866eb606f51abf41b565440c1675810d",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -5402,6 +5405,14 @@
       "review": null
     },
     {
+      "path": "framerail/src/lib/page-error-data.ts",
+      "sha256": "a1745ca3a5a888b390caa275236a3b24b8c99f017d1914e74baa5a1ebea3bbaf",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "framerail/src/lib/page-mutation-destination.ts",
       "sha256": "fbeb78dfd5ae00baf847e8f3d2bdbbf1dab215b2a0a22b9ab2f81e21cc94417c",
       "status": "pending",
@@ -5420,6 +5431,14 @@
     {
       "path": "framerail/src/lib/popup/public-error-data.js",
       "sha256": "95e0ed7366663094e469a873152c68d8bafe938fc724c0ead50c78222d5583e2",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/lib/public-website-url.js",
+      "sha256": "3aa5cb89e5fb02016cca4607b1b79118fc938808718c0c2e3991f4c6a2d37c23",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -5731,7 +5750,7 @@
     },
     {
       "path": "framerail/src/lib/server/deepwell/forum.ts",
-      "sha256": "1ea3f443f31aff5feadf410d389ec25245a12a05947281b6246233f5f59449bf",
+      "sha256": "dccb4550221eda8bbfe852a676afaedd07f2890a9e822c47a0528000b30161a2",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -5842,8 +5861,16 @@
       "review": null
     },
     {
+      "path": "framerail/src/lib/server/forum-feed.ts",
+      "sha256": "4827f06393c11643c1468c8a1c68f63a231ad7b111ec81f2ad54feb301e87caf",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "framerail/src/lib/server/forum-routes.js",
-      "sha256": "14b87d55850755d0fa6f78fba5c580a1c96e7df0c9029f64b782d4eaa807663f",
+      "sha256": "2463b5d45a1173a94acb80e6808ef72add778a15cb6429151a6592615e176603",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -5875,7 +5902,7 @@
     },
     {
       "path": "framerail/src/lib/server/load/auth-form-redaction.js",
-      "sha256": "b24984bed8b19bcd30097044719c4e660c2fbceacaa5297be9d23cf8b30b2677",
+      "sha256": "72ad4dd87b947790458905bdea755cb621cbab08339a2272438ce8d56aa99b9c",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -5899,7 +5926,7 @@
     },
     {
       "path": "framerail/src/lib/server/load/login.ts",
-      "sha256": "4b69f5dba916c96faf31864626f245c793900007b2f96dcf933b4ecb9e8e411a",
+      "sha256": "424f90a5f6a8f82957b4924958874251eeb80da1304047925507245b3f0515db",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6019,7 +6046,7 @@
     },
     {
       "path": "framerail/src/lib/server/load/page/page.ts",
-      "sha256": "93dc8c044c1764ec67006aa91633a9e4e2b1408a9c2196935a6857a28fc7f008",
+      "sha256": "00bc9b3bff24c46fddbbcd0b0bf8566e823ec8c4e1eaf417799d63ab2c2324e7",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6035,7 +6062,7 @@
     },
     {
       "path": "framerail/src/lib/server/load/preload.ts",
-      "sha256": "f72b679bff0cb033f98451b0d940c59e3040bdcbb817c8e2a6ed4fe1aa71d9a9",
+      "sha256": "3307826b4e7df979d95b842beb52fda3a9978eb3a148e1b8e4ed1237e9e716b7",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6043,7 +6070,7 @@
     },
     {
       "path": "framerail/src/lib/server/load/register.ts",
-      "sha256": "bff0c6d0fc736791c8d8fca089e17d4fabe94ecb8324771344df35fc44aca233",
+      "sha256": "fe95310c16faa7a770f687c9c99ddcdb5048df9b4d13a3ebd33cf20471fc22b4",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6059,7 +6086,7 @@
     },
     {
       "path": "framerail/src/lib/server/load/user-settings.ts",
-      "sha256": "bcaf9d47ef2fecd87d1a258e9fccfb95737fe95514940d8d6e0e53b8d15a1e8e",
+      "sha256": "ab48a5af804ca882ac32f4e85807888473ed1b1240dd55c21ec55ca966e7ee10",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6067,7 +6094,7 @@
     },
     {
       "path": "framerail/src/lib/server/load/user.ts",
-      "sha256": "46a2e97c80e0b5eeab3a585b46ceb5679c4565cc60119154227dc3d2309f1af3",
+      "sha256": "ab4b75bfcb5c56bb1745fab6930ce51680db9fc1603db49b1fc9aa9bfc1b9b7a",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6075,7 +6102,7 @@
     },
     {
       "path": "framerail/src/lib/server/page-redirect.ts",
-      "sha256": "8ea658bb1eea89dac4283dd2553388d0f0015078fb373acadce1046901296020",
+      "sha256": "4c4e57d22c08958d0859382fd1ceba4017671ba697082e69afeba0d7338e7585",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6290,6 +6317,22 @@
       "review": null
     },
     {
+      "path": "framerail/src/lib/user-interface-locales.ts",
+      "sha256": "002491950d1e4935b4953c12f8169711088357fe83bb6129649c3f7e9dd88f08",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/lib/user-profile-draft.js",
+      "sha256": "c1de31bb289c41b609e3128a3c03428900130a5ba1835b2a3b3367225a2384ed",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "framerail/src/lib/user-settings.js",
       "sha256": "83b3583ccb1599c32f23b533a378e96e92eee33fbc2623900aac926507b2b427",
       "status": "pending",
@@ -6490,6 +6533,14 @@
       "review": null
     },
     {
+      "path": "framerail/src/lib/wikidot/wikidot-javascript-anchors.js",
+      "sha256": "d1b56874fa0678368bc5766b25470b291cedbe45d93b8676a503411dfc6e8c1d",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "framerail/src/lib/wikidot/wikidot-legacy-action-request.js",
       "sha256": "0242dee1daf89744529bc86b58543602b1362b60cef2c56322312dff71bdef57",
       "status": "pending",
@@ -6579,7 +6630,7 @@
     },
     {
       "path": "framerail/src/lib/wikidot/wikidot-search.js",
-      "sha256": "f598ff491b3efe5de3da65cc4e859bf72801d015dd44d97d5dbb220cee2a3d96",
+      "sha256": "8694fc0a6241af994fb0cbc54211bf1ac8aa88714b7e7c96dac361c6f88fc3b2",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6907,7 +6958,7 @@
     },
     {
       "path": "framerail/src/routes/[slug]/[...extra]/VotePane.svelte",
-      "sha256": "55be3163917131490588d5c934e44f1da7f53eba2e5a3a0f709e50ff7b5721bc",
+      "sha256": "c7b8dfa4bb17192b4a9fe788e10ecbcb29afd4b23ad34e894fe13ef231141c54",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6946,16 +6997,16 @@
       "review": null
     },
     {
-      "path": "framerail/src/routes/[x+2d]/[slug]/[...extra]/+page.svelte",
-      "sha256": "b31d199a2874bc9cb56f43a7415e502ef0e41e40e704f011447d17dbe521f1eb",
+      "path": "framerail/src/routes/[x+2d]/[slug]/[...extra]/+page.server.ts",
+      "sha256": "fb17333af088a633b8d3bba806860809d4c6bd00ed01bb51424108adddb63576",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "framerail/src/routes/[x+2d]/+page.svelte",
-      "sha256": "68e7bfc723846a85421253857f8bcafd2f1ea5bda1e23e6d3a16111c59fa2064",
+      "path": "framerail/src/routes/[x+2d]/+page.server.ts",
+      "sha256": "4bccfd7d48ca30a787f5a267b5568da7d31ce85eddd579895f66fc8712342243",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6971,7 +7022,7 @@
     },
     {
       "path": "framerail/src/routes/[x+2d]/about/+page.svelte",
-      "sha256": "ff294afedab50478b5efd269ef7e328c134964b2dbf111cef4807c12409b87c6",
+      "sha256": "36bb002e403f139d41ed530fbe3407d79ceadacd0a2fe333e94e9eed2a9a6321",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7115,7 +7166,7 @@
     },
     {
       "path": "framerail/src/routes/[x+2d]/login/+page.svelte",
-      "sha256": "788ebf1495732352f81731a3f67f5fbba5bec62e43c69a419efe2c7b78879232",
+      "sha256": "e46f7ff61479c50023a2f49f3e7a276ebef165e141021f1985c5bd06ed673857",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7139,7 +7190,7 @@
     },
     {
       "path": "framerail/src/routes/[x+2d]/register/+page.server.ts",
-      "sha256": "4fb13974345ab4246d257c475b285477ed431b8207852bf17c2db796900ce904",
+      "sha256": "a839017a370583d3264ad6234a86b2e8b90159652bb1d9011bdad21be6d1b806",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7147,7 +7198,7 @@
     },
     {
       "path": "framerail/src/routes/[x+2d]/register/+page.svelte",
-      "sha256": "79d04ea2f001dafebd5455896f6c8b6899039defa1a84798160ba71b971ad229",
+      "sha256": "84e8cc7e4eb5f62fda9f2546cd9aee78f1843d64270fe33eacfff833a611426b",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7163,7 +7214,7 @@
     },
     {
       "path": "framerail/src/routes/[x+2d]/settings/+page.svelte",
-      "sha256": "a2652943c1a7c873895309cc3fab432477160444c7c35bb6cac5ea2a1745f812",
+      "sha256": "9d03e03419e9db2f06e097b997c125e9a3e45d6d486e42072567b6776b167def",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7187,7 +7238,7 @@
     },
     {
       "path": "framerail/src/routes/[x+2d]/user/[slug]/PageView.svelte",
-      "sha256": "dd75c2fb303c4d39f715c05f846e9f28261e627f175d4ba26b4c50df3f05334c",
+      "sha256": "b166cc8746642a2c3f8ae5c6fa676da221333f106ef6a604d3a8ac51e2017166",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7211,7 +7262,7 @@
     },
     {
       "path": "framerail/src/routes/[x+2d]/user/+page.svelte",
-      "sha256": "c592d4803a24c7a6fef3aec416df6ce2864f6543a1d3b1bf41722fd9a2f16989",
+      "sha256": "9c39aa6a6dacb0483636241859980228c4e084ee016a0e0f062f258d0ca89507",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7243,7 +7294,7 @@
     },
     {
       "path": "framerail/src/routes/+error.svelte",
-      "sha256": "17cf841cb923a59de2d4fe5a75be25a19f07ae3a82ceed9864db5a20b64f1a2f",
+      "sha256": "3d1d95cb080d5eee7dafb797d08b8fac1ecef771ed5c606c38637c01d8832cb1",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7259,7 +7310,7 @@
     },
     {
       "path": "framerail/src/routes/+layout.svelte",
-      "sha256": "23b72d6f072c9f488848c5540aa530e6aec106d526a9c3a3e603ed5ce73d6ff3",
+      "sha256": "7ed0911ff6b28aaff8bbc42d2c0fc0e5646ceda8137dbca5d6056090782ece05",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7292,6 +7343,14 @@
     {
       "path": "framerail/src/routes/common--images/jquery-raty/[asset]/+server.ts",
       "sha256": "58243be691e16e0f6a075f6a4aa1214fe057e3fa886c0871d1a6e029c599e372",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/routes/feed/forum/[feed]/+server.ts",
+      "sha256": "969c7914bc3212aeb071489f7c7f7b2f6a44b2ecd6b8a170b6a96846866bf5c7",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7395,7 +7454,7 @@
     },
     {
       "path": "framerail/src/routes/printer--friendly/[...path]/+page.server.ts",
-      "sha256": "d4158648bc9a279f953d7c741338b89e29d873eb8d669823c6bff7e0e8300bfa",
+      "sha256": "09cfc8f3d521ded26a3622ae70b947e3c26d01e094adf04b9266f17425c06653",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7426,6 +7485,14 @@
       "review": null
     },
     {
+      "path": "framerail/src/routes/WikiPageError.svelte",
+      "sha256": "e4cd7350799cd9b5258f2acbdf1cd1419b8ce6fc3a213ba15e86c7faaf866b43",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "framerail/src/routes/xml-rpc-api.php/+server.ts",
       "sha256": "33e6d044d549a792911a3bde08a43da9915461b139c3036782c43189c1d465c1",
       "status": "pending",
@@ -7435,7 +7502,7 @@
     },
     {
       "path": "framerail/src/types/index.ts",
-      "sha256": "8397083ba632de6caac64321b59978fc116b47c6876009caac9307d732a612b8",
+      "sha256": "0b6fed3613131d8e6bac31ae15a216f6d98139fe2c92d816006c84d1f77ca520",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -8795,7 +8862,7 @@
     },
     {
       "path": "install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs",
-      "sha256": "de9c020f3e8a16b4b800e994dd7483c3f7432a0176d3a78653cf7808d507bce7",
+      "sha256": "2cceb63263b9eb4b93b0dfc6a5c7c139f38f5af5612248b1ae6b8bd662f77ba8",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -8907,7 +8974,7 @@
     },
     {
       "path": "install/local/wikidot-verification/scripts/start-promotion-candidate.mjs",
-      "sha256": "33f064395aa3860b80cdab915259eb10e6f0c4f4aabfe4757c24060da46ea3f9",
+      "sha256": "491fab10c10330400d2e13f56e97698179ebd988534fc5e7ebe0b9c4477fc272",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -9020,6 +9087,22 @@
     {
       "path": "install/local/wikidot-verification/scripts/verify-ftml-live-pages.mjs",
       "sha256": "f5381cbe756b8bf0ea6718abf3b26be47b252e529c0184910da0bbf715ebea65",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/verify-issue2056-platform-navigation.mjs",
+      "sha256": "b15bf2197aba8b85363d16da7aaf02ecf9e4908f3a16965bffb8670d94fb70fb",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/verify-issue2064-platform-directory.mjs",
+      "sha256": "3feb41316d475e43c5cbcf63acca91a2569ade724aa7ba5157408eb616e64ea0",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -9363,7 +9446,7 @@
     },
     {
       "path": "install/local/wikidot-verification/src/compatibility-inventory/inventory-model.mjs",
-      "sha256": "ec98652a21723e9d93f271cec50026aa4bb99ec23747eff9460c7467de3f0f09",
+      "sha256": "4973da77d540aabdd37d9d1e4d3e90634f36cfd6ad0ef18812d7f631875f8ac0",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -9612,6 +9695,14 @@
     {
       "path": "install/local/wikidot-verification/src/corpus-snapshot.mjs",
       "sha256": "e5b2de1260f929940d3e6a3bd50a7997da83324c863b0cbe179971ccb0717237",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/src/deepwell-integration-stack.mjs",
+      "sha256": "d028c960bd2f9a865da2e2ecd078aac453856e3c0495ad0d0c0caae48016619f",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -10907,7 +10998,7 @@
     },
     {
       "path": "install/local/wikidot-verification/src/test-quality-inventory.mjs",
-      "sha256": "5aa31c45d53792b96fdbbea9bb43d34943b424165cd671a09ea41de29a0f536f",
+      "sha256": "802d0529d54e6e42dc6407745d0fcf911e76cfea8cbb2db0ed0c1b2739961dcf",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -11194,6 +11285,14 @@
       "review": null
     },
     {
+      "path": "scripts/reconcile-test-quality-mutants.mjs",
+      "sha256": "e2332698017ebdcc6cf63fa690f996d5cb8496dde30908a386b066cd00017c2a",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "scripts/run-browser-test-no-external-network.sh",
       "sha256": "5bba894759d0f02a0c027d0250f3acc62317acb97274661606dce5b1c0b3e2ba",
       "status": "pending",
@@ -11227,7 +11326,15 @@
     },
     {
       "path": "scripts/run-test-quality-audit.mjs",
-      "sha256": "935300fc1198d96b46a0976090b50ecc8dd7bf57e4f82e85bb4b94c5ae9c95a8",
+      "sha256": "9f051ddc53baad2dbd07681096649b291da8f92d0027e7967600a2e63739580e",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "scripts/run-test-quality-frontier-audit.mjs",
+      "sha256": "6da422de31355497febad4fe61fa6507b36d434975c6ceddde793f9acb0fccbb",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -11240,28 +11347,41 @@
       "anchors": [],
       "findings": [],
       "review": null
-    }
-  ],
-  "proofs": [
-    {
-      "id": "test-quality-full-coverage-20261009e",
-      "kind": "coverage",
-      "path": "docs/development/test-quality-audit/test-quality-coverage-20261009e/receipt.json",
-      "sha256": "aec84ec28b98ead93cb39bbd194799f2af1c39c69e01641368b8b725b7c801ae"
     },
     {
-      "id": "generated-gate-close-unit-mutation-20261009e",
-      "kind": "mutation",
-      "path": "docs/development/test-quality-audit/generated-gate-close-unit-mutation-20261009e/receipt.json",
-      "sha256": "42e4225e315e2a4f289c19b40f664e2ef07502183629ebba59550bd10d91933c"
+      "path": "scripts/test-quality-coverage-metrics.mjs",
+      "sha256": "e5c08eecdb62b52ee5f64e9e4f7fbcd4529bf49deebbae2c906502a03462e107",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
     },
     {
-      "id": "resource-scanner-mutation-20261009e",
-      "kind": "mutation",
-      "path": "docs/development/test-quality-audit/resource-scanner-mutation-20261009e/receipt.json",
-      "sha256": "92da3516b4aac1027f69653d1d40ba67b8c5a625256a1bcd137c73db42af41dd"
+      "path": "scripts/test-quality-mutation-coverage.mjs",
+      "sha256": "02d9c4ef5e8f1e36fc97b69f617a2dbf9b52479dda32b2ed7922316c471efa8a",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "scripts/test-quality-mutation-reconciliation.mjs",
+      "sha256": "8b3c36820695c3f55ca47654fcd3adcce4123b332a8685931bf04a49985e092f",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "scripts/verify-test-quality-evidence-identities.mjs",
+      "sha256": "0d777e939e417d1d397a276e2214108635ec51d0399a4350827f848f46685508",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
     }
   ],
+  "proofs": [],
   "acceptance": null,
   "tool_versions": {
     "node": "v24.21.0",
@@ -11270,5 +11390,14 @@
     "rustc": "1.95.0",
     "pnpm": "11.10.0"
   },
-  "historical_evidence_policy": "Historical issue comments are provenance until source, test, lockfile, tool and mutation identities are reconciled."
+  "historical_evidence_policy": "Historical issue comments are provenance until source, test, lockfile, tool and mutation identities are reconciled.",
+  "rebased_historical_evidence": {
+    "digest": "f8ff9eb2c1def12577fc6644723c5c8968e93aaa398a67fd3e98176e2a17fe17",
+    "proofs": [
+      "test-quality-full-coverage-20261009e",
+      "generated-gate-close-unit-mutation-20261009e",
+      "resource-scanner-mutation-20261009e"
+    ],
+    "records": 1384
+  }
 }

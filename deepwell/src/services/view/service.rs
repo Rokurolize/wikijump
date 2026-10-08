@@ -39,7 +39,7 @@ use super::structs::{
     GetArticleViewOutput, GetPageView, GetPageViewOutput, GetPreloadView,
     GetPreloadViewOutput, GetUserView, GetUserViewOutput, PageRedirectKind, PageRoute,
     PageTemplateSummary, PromotedSiteView, UserSession, Viewer, ViewerLicenseKind,
-    WikidotPageBreadcrumbView, WikidotPageSnapshotView,
+    WikidotPageBreadcrumbView, WikidotPageSnapshotView, is_reserved_admin_slug,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::license::WikidotLicense;
@@ -80,7 +80,10 @@ use crate::services::{
 };
 use crate::types::Reference;
 use crate::types::{Action, PageId, PageOrder, Permission, RerenderDepth, Resource};
-use crate::utils::{get_category_name, locale_for_ftml, parse_locales, split_category};
+use crate::utils::{
+    get_category_name, locale_for_ftml, observed_wikidot_page_url_alias, parse_locales,
+    split_category,
+};
 use ftml::prelude::{PageInfo, ScoreValue};
 use ftml::render::html::HtmlOutput;
 use ref_map::OptionRefMap;
@@ -524,6 +527,17 @@ impl ViewService {
             .map_or(viewer.site.default_page.as_str(), |route| {
                 route.slug.as_str()
             });
+        if is_reserved_admin_slug(page_full_slug) {
+            return PermissionService::check_user_can_access_admin(
+                ctx,
+                viewer
+                    .user_session
+                    .as_ref()
+                    .map(|session| session.user.user_id),
+                viewer.site.site_id,
+            )
+            .await;
+        }
         let (category_slug, _) = split_category(page_full_slug);
         let category_id =
             Self::get_category_id(ctx, viewer.site.site_id, category_slug).await?;
@@ -623,11 +637,13 @@ impl ViewService {
         };
 
         let redirect_page = Self::should_redirect_page(page_full_slug);
+        let page_lookup_alias = observed_wikidot_page_url_alias(page_full_slug);
+        let page_lookup_slug = page_lookup_alias.as_deref().unwrap_or(page_full_slug);
         let options = PageOptions::parse(page_extra);
         let module_arguments = PageModuleArguments::parse(page_extra);
 
         // Get page, revision, and text fields
-        let (category_slug, page_only_slug) = split_category(page_full_slug);
+        let (category_slug, page_only_slug) = split_category(page_lookup_slug);
         let category_id = Self::get_category_id(ctx, site_id, category_slug)
             .await
             .or_raise(make_error)?;
@@ -646,6 +662,57 @@ impl ViewService {
             // impact on FTML first.
             language: cow!(locale_for_ftml(&site.locale)),
         };
+
+        // The static `/_admin` route is site management, not an ordinary wiki
+        // article. Check this before looking up the authored page or revision;
+        // extra path segments and alternate renderers must not turn it back
+        // into a public page read.
+        if is_reserved_admin_slug(page_full_slug) {
+            let can_access_admin = PermissionService::check_user_can_access_admin(
+                ctx,
+                user_session.as_ref().map(|session| session.user.user_id),
+                site_id,
+            )
+            .await
+            .or_raise(make_error)?;
+            if !can_access_admin {
+                let GetBlueprintPageOutput { render_output, .. } =
+                    BlueprintPageService::get(
+                        ctx,
+                        &site,
+                        BlueprintPageType::Unauthorized,
+                        &locales,
+                        config.default_page_layout,
+                        page_info,
+                    )
+                    .await
+                    .or_raise(make_error)?;
+                let RenderOutput {
+                    html_output:
+                        HtmlOutput {
+                            body: compiled_body_html,
+                            styles: compiled_body_styles,
+                            ..
+                        },
+                    ..
+                } = render_output;
+                let theme = SettingsService::get_theme(ctx, site_id, category_id)
+                    .await
+                    .or_raise(make_error)?;
+
+                return Ok(GetPageViewOutput::Permissions {
+                    options,
+                    redirect_page: None,
+                    redirect_kind: None,
+                    compiled_body_html,
+                    compiled_body_styles,
+                    compiled_top_bar_html: None,
+                    compiled_side_bar_html: None,
+                    theme,
+                    banned: false,
+                });
+            }
+        }
 
         // Helper structures to designate which variant of GetPageViewOutput to return.
 
@@ -693,7 +760,7 @@ impl ViewService {
         } = match PageService::get_optional(
             ctx,
             site.site_id,
-            Reference::Slug(cow!(page_full_slug)),
+            Reference::Slug(cow!(page_lookup_slug)),
         )
         .await
         .or_raise(make_error)?
@@ -1836,21 +1903,10 @@ ORDER BY breadcrumb_chain.depth ASC
             }
         };
 
-        let user_can_access_admin = PermissionService::check_user_can(
-            ctx,
-            &CheckPermissionContext {
-                user_id,
-                site_id,
-                page_reference: None,
-            },
-            Permission {
-                resource_type: Resource::Site,
-                resource_category: None,
-                action: Action::Edit,
-            },
-        )
-        .await
-        .or_raise(make_error)?;
+        let user_can_access_admin =
+            PermissionService::check_user_can_access_admin(ctx, user_id, site_id)
+                .await
+                .or_raise(make_error)?;
 
         // Determine whether to return the actual admin panel content
         let output = if user_can_access_admin {

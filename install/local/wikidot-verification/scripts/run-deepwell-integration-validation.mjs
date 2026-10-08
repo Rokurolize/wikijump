@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 
+import process from "node:process";
+
 import {
-  nextestPartition, testThreads, withTaskOwnedDeepwellStack,
-} from "../src/deepwell-test-stack.mjs";
-import {withAuditSignals} from "../src/audit-command.mjs";
+  deepwellNextestPartition,
+  deepwellTestThreads,
+  runValidationCommand,
+  withDeepwellIntegrationStack,
+} from "../src/deepwell-integration-stack.mjs";
 
 async function run() {
   if (process.argv.slice(2).some((argument) => argument === "--help" || argument === "-h")) {
@@ -22,26 +26,28 @@ async function run() {
     );
     return;
   }
+
   const separator = process.argv.indexOf("--", 2);
   const cargoTestArgs = process.argv.slice(2, separator === -1 ? undefined : separator);
   const harnessArgs = separator === -1 ? [] : process.argv.slice(separator + 1);
-  await withAuditSignals((signal) => withTaskOwnedDeepwellStack(async ({env, cargo, execute}) => {
-    const partition = nextestPartition();
+
+  await withDeepwellIntegrationStack(async ({env, cargo}) => {
+    const partition = deepwellNextestPartition(env);
     if (partition) {
-      await execute(cargo, [
+      await runValidationCommand(cargo, [
         "nextest", "run", "--offline", "--locked",
         "--manifest-path", "deepwell/Cargo.toml", ...cargoTestArgs,
-        "--partition", partition, "--test-threads", testThreads(),
+        "--partition", partition, "--test-threads", deepwellTestThreads(env),
         ...(harnessArgs.length ? ["--", ...harnessArgs] : []),
       ], {env});
     } else {
-      await execute(cargo, [
+      await runValidationCommand(cargo, [
         "test", "--offline", "--locked",
         "--manifest-path", "deepwell/Cargo.toml", ...cargoTestArgs,
-        "--", "--test-threads", testThreads(), ...harnessArgs,
+        "--", "--test-threads", deepwellTestThreads(env), ...harnessArgs,
       ], {env});
     }
-  }, {signal}));
+  });
 }
 
 run().catch((error) => {

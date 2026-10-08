@@ -77,6 +77,8 @@ register = Zarejestruj się
 specifier = Email lub Nazwa Użytkownika
   .placeholder = Wprowadź email lub nazwę użytkownika...
 
+mfa-code = Kod MFA
+
 username = Nazwa użytkownika
   .placeholder = Wprowadź nazwę użytkownika...
   .info = Możesz to później zmienić.
