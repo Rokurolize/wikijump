@@ -327,3 +327,29 @@ fn projected_quoted_continuation_malformed_syntax_fails_closed_with_linear_work(
         );
     }
 }
+
+#[test]
+fn projected_quoted_recovery_counts_literal_region_cursor_before_fail_closed() {
+    // The inline literal is not an executable module. Projection changes the
+    // following quote-continuation ownership; its malformed ListPages head
+    // must fail closed even after the recovery scanner passed a literal span.
+    let source = concat!(
+        "@@[[module ListPages]]hidden[[/module]]@@\n",
+        "> intro\\\n> [[module ListPages name=\"incomplete\n[[/module]]",
+    );
+    let (modules, work, literal_advances) =
+        find_list_pages_module_matches_with_cursor_work(source);
+    assert!(
+        modules.is_empty(),
+        "ambiguous projected input must be preserved"
+    );
+    assert_eq!(
+        literal_advances, 3,
+        "direct and recovery literal cursor work"
+    );
+    assert_eq!(
+        work, 320,
+        "account for direct, recovery and literal cursor work"
+    );
+    assert!(work <= source.len() * 8);
+}
