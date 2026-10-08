@@ -262,7 +262,7 @@ fn generated_gate_close_preserves_boundaries_around_gate_ranges() {
     let before_gate = concat!(
         "[[module ListPages name=\"gate\"]]\n",
         "VISIBLE [[/module]]\n",
-        "[[#ifexpr %%created_by_id%% < 42 |  | [!-- ]]\n",
+        "                                                                                [[#ifexpr %%created_by_id%% < 42 |  | [!-- ]]\n",
         "LOW [[/module]]\n",
         "[!-- --]\n",
         "LATER [[/module]]",
