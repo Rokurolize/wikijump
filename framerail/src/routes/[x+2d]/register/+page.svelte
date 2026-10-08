@@ -175,5 +175,18 @@
       grid-column: span 2;
       justify-self: center;
     }
+
+    // Two fixed columns cannot fit a 375px phone viewport, so stack the fields.
+    @media (max-width: 600px) {
+      grid-template-columns: minmax(0, 1fr);
+
+      .input-container {
+        min-width: 0;
+      }
+
+      .action-row {
+        grid-column: auto;
+      }
+    }
   }
 </style>

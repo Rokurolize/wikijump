@@ -473,19 +473,24 @@
   .footer-inner {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     gap: 10px;
     align-items: center;
     justify-content: stretch;
     width: 100%;
+    max-width: 100%;
   }
 
+  // Wrap the links instead of pushing the powered-by line past narrow viewports.
   .footer-items {
     display: flex;
-    flex: 1;
+    flex: 1 1 auto;
     flex-direction: row;
+    flex-wrap: wrap;
     gap: 10px;
     align-items: center;
     justify-content: flex-start;
+    min-width: 0;
     padding: 0;
     list-style: none;
 
