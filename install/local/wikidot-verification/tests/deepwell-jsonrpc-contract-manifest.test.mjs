@@ -62,9 +62,10 @@ test("Deepwell JSON-RPC manifest exactly covers the current registered contract"
   const byMethod = new Map(manifest.methods.map((method) => [method.method, method]))
   assert.equal(byMethod.get("parent_get_direct_metadata").transaction_isolation, "RepeatableRead")
   assert.equal(byMethod.get("parent_get").transaction_isolation, "default")
-  for (const method of ["page_draft_exists", "page_draft_remove", "page_draft_save", "site_tools_list_drafts"]) {
-    assert.equal(byMethod.get(method).test_witness.kind, "source_contract_only")
+  for (const method of ["page_draft_exists", "page_draft_remove", "page_draft_save"]) {
+    assert.equal(byMethod.get(method).test_witness.kind, "endpoint_behavioral")
   }
+  assert.equal(byMethod.get("site_tools_list_drafts").test_witness.kind, "source_contract_only")
   assert.equal(byMethod.get("page_draft_exists").mutation_class.classification, "read_only")
   assert.equal(byMethod.get("site_tools_list_drafts").mutation_class.classification, "read_only")
   for (const method of ["page_draft_remove", "page_draft_save"]) {

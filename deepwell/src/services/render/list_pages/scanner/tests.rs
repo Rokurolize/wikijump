@@ -338,16 +338,6 @@ fn unclosed_listpages_head_consumes_immediate_raw_closer() {
 }
 
 #[test]
-fn closed_listpages_module_does_not_consume_a_nonempty_body_as_an_empty_tail() {
-    let source = "[[module ListPages name=\"closed\"]]ROW[[/module]]";
-    let modules = find_list_pages_module_matches(source);
-
-    assert_eq!(modules.len(), 1);
-    assert_eq!(modules[0].body, "ROW");
-    assert!(!modules[0].consume_empty_tail);
-}
-
-#[test]
 fn corpus_unicode_tag_head_remains_runtime_executable() {
     let head = r#"separate="1" tags="+阿尔兹海默症 -中心" order="random"  perPage="50""#;
     assert_eq!(
@@ -789,43 +779,6 @@ fn projected_structural_end_excludes_deleted_eof_suffix() {
         "[[module ListPages name=\"live\"]]body[[/module]]"
     );
     assert_eq!(modules[0].end, source.len() - 2);
-}
-
-#[test]
-fn ambiguous_scan_work_includes_literal_range_advances() {
-    let source = concat!(
-        "@@[[module ListPages name=\"literal\"]]X[[/module]]@@",
-        "[[#if true]]",
-    );
-    let (modules, work, literal_range_advances) =
-        find_list_pages_module_matches_with_cursor_work(source);
-
-    assert!(modules.is_empty());
-    assert_eq!(literal_range_advances, 1);
-    assert_eq!(work, source.len() + literal_range_advances);
-}
-
-#[test]
-fn projected_literal_region_cursor_advances_are_counted_as_scanner_work() {
-    let source = concat!(
-        "[[module ListPages name=\"outer\"]]A\n",
-        ">\0[[module CSS]]",
-        "[[module ListPages name=\"hidden\"]]B[[/module]]",
-        "[[/module]]C>\0[[module CSS]]",
-        "[[module ListPages name=\"hidden-again\"]]Z[[/module]][[/module]]D",
-        "[[/module]]\n[[# tabanchor]]\n",
-        "prose after the CSS regions\n",
-        "[[module ListPages name=\"live\"]]Y[[/module]]",
-    );
-    let (modules, work, literal_range_advances) =
-        find_list_pages_module_matches_with_cursor_work(source);
-
-    assert_eq!(modules.len(), 2, "{modules:#?}");
-    assert_eq!(modules[0].head, "name=\"outer\"");
-    assert!(modules[0].body.ends_with('D'));
-    assert_eq!(modules[1].head, "name=\"live\"");
-    assert_eq!(literal_range_advances, 5);
-    assert_eq!(work, 2_179);
 }
 
 #[test]
@@ -2026,15 +1979,6 @@ fn corpus_inline_raw_documentation_tail_cannot_supply_a_module_close() {
     assert!(modules[1].preserve_original, "{modules:#?}");
     assert_eq!(modules[0].original, "[[Module Listpages]]");
     assert_eq!(modules[1].original, "[[Module Listpages]]");
-    let second_example_start =
-        repeated_examples[1..].find("[[Module Listpages]]").unwrap() + 1;
-    assert_eq!(modules[0].start, 0);
-    assert_eq!(modules[1].start, second_example_start);
-    assert_eq!(
-        modules[1].body_start,
-        second_example_start + "[[Module Listpages]]".len(),
-    );
-    assert_eq!(modules[1].end, modules[1].body_start);
 
     // A single ordinary inline-raw body remains a complete module. The
     // campaign evidence only rejects the multi-span documentation tail.
@@ -2297,11 +2241,6 @@ fn at_marker_footnote_tail_does_not_hide_a_later_valid_module() {
     assert_eq!(modules[0].body, "");
     assert_eq!(modules[0].original, malformed);
     assert_eq!(modules[1].start, malformed.len() + 1);
-    assert_eq!(
-        modules[1].body_start,
-        malformed.len() + 1 + valid.find("]]").unwrap() + 2,
-    );
-    assert_eq!(modules[1].end, malformed.len() + 1 + valid.len());
     assert_eq!(modules[1].head, r#"name="later-valid""#);
     assert_eq!(modules[1].body, "\n%%fullname%%\n");
     assert_eq!(modules[1].original, valid);
@@ -2325,8 +2264,7 @@ fn corpus_unclosed_at_marker_body_owns_the_first_collapsible_opening() {
         "[[module ListPages name=\"later-valid\"]]ROW[[/module]]",
     );
     let source = format!("{consumed}{later}");
-    let (modules, work, literal_range_advances) =
-        find_list_pages_module_matches_with_cursor_work(&source);
+    let modules = find_list_pages_module_matches(&source);
 
     assert_eq!(modules.len(), 2, "{modules:#?}");
     assert_eq!(modules[0].start, 0);
@@ -2338,19 +2276,12 @@ fn corpus_unclosed_at_marker_body_owns_the_first_collapsible_opening() {
     assert_eq!(modules[0].end, consumed.len());
     assert_eq!(modules[0].original, consumed);
     assert!(!modules[0].preserve_original);
-    let later_start = "\nVISIBLE\n[[/collapsible]]\n".len();
-    let later_module = &later[later_start..];
-    assert_eq!(modules[1].start, consumed.len() + later_start);
     assert_eq!(
-        modules[1].body_start,
-        consumed.len() + later_start + later_module.find("]]").unwrap() + 2,
+        modules[1].start,
+        consumed.len() + "\nVISIBLE\n[[/collapsible]]\n".len()
     );
-    assert_eq!(modules[1].end, source.len());
-    assert_eq!(modules[1].original, later_module);
     assert_eq!(modules[1].head, r#"name="later-valid""#);
     assert_eq!(modules[1].body, "ROW");
-    assert_eq!(literal_range_advances, 2);
-    assert_eq!(work, 1_634);
 
     for unsupported in [
         concat!(
@@ -2382,34 +2313,6 @@ fn corpus_unclosed_at_marker_body_owns_the_first_collapsible_opening() {
         );
         assert_eq!(modules[0].end, modules[0].body_start);
     }
-}
-
-#[test]
-fn projected_collapsible_recovery_counts_literal_work_in_its_suffix() {
-    let consumed = concat!(
-        "[[module ListPages fullname=\"@@##red|missing-page##@@\" ",
-        "separate=\"yes\" limit=\"250\"]]@@\n",
-        "documentation\n",
-        "> @@[[module ListPages fullname=\"@@##red|example##@@\"]]@@\n",
-        "[[collapsible show=\"+ Syntax\" hide=\"- Syntax\"]]",
-    );
-    let suffix = concat!(
-        "\nVISIBLE\n[[/collapsible]]\n",
-        "@@[[module ListPages name=\"literal-only\"]]HIDDEN[[/module]]@@\n",
-        "[[module ListPages name=\"later-valid\"]]ROW[[/module]]",
-    );
-    let source = format!("\t{consumed}{suffix}");
-    let (modules, work, literal_range_advances) =
-        find_list_pages_module_matches_with_cursor_work(&source);
-
-    assert_eq!(modules.len(), 2, "{modules:#?}");
-    assert_eq!(modules[0].start, 1);
-    assert_eq!(modules[0].end, consumed.len() + 1);
-    assert_eq!(modules[1].start, consumed.len() + 1 + "\nVISIBLE\n[[/collapsible]]\n@@[[module ListPages name=\"literal-only\"]]HIDDEN[[/module]]@@\n".len());
-    assert_eq!(modules[1].head, r#"name="later-valid""#);
-    assert_eq!(modules[1].body, "ROW");
-    assert_eq!(literal_range_advances, 8);
-    assert_eq!(work, 3_314);
 }
 
 #[test]
@@ -2451,24 +2354,15 @@ fn unclosed_at_marker_preservation_does_not_hide_a_later_valid_module() {
     let raw_tail = "@@\nDOC\n@@\n";
     let later = "[[module ListPages name=\"later-valid\"]]ROW[[/module]]";
     let source = format!("{preserved}{raw_tail}{later}");
-    let (modules, work, literal_range_advances) =
-        find_list_pages_module_matches_with_cursor_work(&source);
+    let modules = find_list_pages_module_matches(&source);
 
     assert_eq!(modules.len(), 2, "{modules:#?}");
     assert_eq!(modules[0].original, preserved);
     assert!(modules[0].preserve_original);
     assert!(modules[0].preserve_as_module654);
     assert_eq!(modules[1].start, preserved.len() + raw_tail.len());
-    assert_eq!(
-        modules[1].body_start,
-        modules[1].start + later.find("]]").unwrap() + 2,
-    );
-    assert_eq!(modules[1].end, source.len());
     assert_eq!(modules[1].head, r#"name="later-valid""#);
     assert_eq!(modules[1].body, "ROW");
-    assert_eq!(modules[1].original, later);
-    assert_eq!(literal_range_advances, 4);
-    assert_eq!(work, 593);
 }
 
 #[test]

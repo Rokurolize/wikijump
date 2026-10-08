@@ -8,11 +8,11 @@ import {fileURLToPath} from "node:url";
 import test from "node:test";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../../..");
-const driver = join(root, "scripts/run-test-quality-audit.mjs");
+const driver = join(root, "scripts/run-test-quality-frontier-audit.mjs");
 const sha = (path) => createHash("sha256").update(readFileSync(join(root, path))).digest("hex");
 
-const sourcePath = "docs/development/test-quality-audit.md";
-const testPath = "scripts/run-test-quality-audit.mjs";
+const sourcePath = "docs/development/test-quality-audit-frontier-20261008.md";
+const testPath = "scripts/run-test-quality-frontier-audit.mjs";
 
 function identity(path) {
   return {path, sha256: sha(path)};

@@ -406,6 +406,17 @@ describe("Wikidot site settings public boundaries", () => {
     )
 
     const previewData = { ...enabledData, theme_previewer_no_ui: true }
+    const blank = renderComponent(
+      rootLayoutComponent,
+      {},
+      requestContext({ ...previewData, theme_previewer_blank: true }, {
+        routeId: "/[slug]/[...extra]"
+      })
+    )
+    assert.match(blank.head, /wikidot-base-[a-z0-9]+\.css/u)
+    assert.match(blank.head, /pagerate-[a-z0-9]+\.css/u)
+    assert.doesNotMatch(blank.head, /data-wikidot-site-theme|styles\/sigma-/u)
+
     const preview = renderComponent(
       rootLayoutComponent,
       {},

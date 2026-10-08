@@ -149,6 +149,7 @@
           "deepwell/tests/page.rs#public_page_view_resolves_observed_url_aliases_to_the_canonical_page",
           "deepwell/tests/page.rs#renderer_epoch_invalidates_pre_freeze_compiled_artifacts",
           "deepwell/tests/page.rs#wikidot_files_saved_view_requires_page_view_and_complete_descriptors",
+          "deepwell/tests/page/theme_previewer.rs#blank_theme_previewer_survives_save_and_include_but_not_preview_or_removal",
           "deepwell/tests/page_meta_tag.rs#page_meta_tag_overrides_site_tag_in_effective_reads_and_article_view",
           "deepwell/tests/site.rs#hosted_sites_keep_same_slug_page_state_isolated_at_public_endpoints",
           "deepwell/tests/site.rs#promoted_sites_are_public_imported_sites_and_fail_closed_after_anonymous_view_revocation"
@@ -3772,16 +3773,10 @@
       },
       "transaction_isolation": "default",
       "test_witness": {
-        "kind": "source_contract_only",
-        "reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract",
-        "coverage_gap": {
-          "searched_root": "deepwell/tests",
-          "reason": "no direct run_endpoint handler invocation or rpc_request method invocation was found",
-          "searched_invocations": [
-            "run_endpoint!(runner, handler, ...)",
-            "rpc_request(\"method\", ...)"
-          ]
-        }
+        "kind": "endpoint_behavioral",
+        "reference": "deepwell/tests/auth.rs#logout_invalidates_only_the_named_session_and_rejects_reuse",
+        "alternatives": [],
+        "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
     },
     {
@@ -5364,16 +5359,10 @@
       },
       "transaction_isolation": "default",
       "test_witness": {
-        "kind": "source_contract_only",
-        "reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract",
-        "coverage_gap": {
-          "searched_root": "deepwell/tests",
-          "reason": "no direct run_endpoint handler invocation or rpc_request method invocation was found",
-          "searched_invocations": [
-            "run_endpoint!(runner, handler, ...)",
-            "rpc_request(\"method\", ...)"
-          ]
-        }
+        "kind": "endpoint_behavioral",
+        "reference": "deepwell/tests/page.rs#listdrafts_module_reads_persisted_drafts_and_enforces_target_filters",
+        "alternatives": [],
+        "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
     },
     {
@@ -5425,16 +5414,10 @@
       },
       "transaction_isolation": "default",
       "test_witness": {
-        "kind": "source_contract_only",
-        "reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract",
-        "coverage_gap": {
-          "searched_root": "deepwell/tests",
-          "reason": "no direct run_endpoint handler invocation or rpc_request method invocation was found",
-          "searched_invocations": [
-            "run_endpoint!(runner, handler, ...)",
-            "rpc_request(\"method\", ...)"
-          ]
-        }
+        "kind": "endpoint_behavioral",
+        "reference": "deepwell/tests/page.rs#listdrafts_module_reads_persisted_drafts_and_enforces_target_filters",
+        "alternatives": [],
+        "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
     },
     {
@@ -5486,16 +5469,10 @@
       },
       "transaction_isolation": "default",
       "test_witness": {
-        "kind": "source_contract_only",
-        "reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract",
-        "coverage_gap": {
-          "searched_root": "deepwell/tests",
-          "reason": "no direct run_endpoint handler invocation or rpc_request method invocation was found",
-          "searched_invocations": [
-            "run_endpoint!(runner, handler, ...)",
-            "rpc_request(\"method\", ...)"
-          ]
-        }
+        "kind": "endpoint_behavioral",
+        "reference": "deepwell/tests/page.rs#listdrafts_module_reads_persisted_drafts_and_enforces_target_filters",
+        "alternatives": [],
+        "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
     },
     {
@@ -5585,6 +5562,7 @@
           "deepwell/tests/page/page_modules.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
           "deepwell/tests/page/page_move.rs#basic_move",
           "deepwell/tests/page/page_query.rs#page_query_revision_order_keeps_unrequested_count_out_of_results",
+          "deepwell/tests/page/theme_previewer.rs#blank_theme_previewer_survives_save_and_include_but_not_preview_or_removal",
           "deepwell/tests/page_lifecycle_identity.rs#lifecycle_identity_preserves_imported_native_and_mixed_display_names",
           "deepwell/tests/page_template_assignment.rs#assigned_data_form_template_edit_invalidates_warm_imported_article_cache",
           "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal",
@@ -7731,6 +7709,7 @@
           "deepwell/tests/page/page_modules.rs#pages_module_renders_the_site_index_and_clamps_pagination",
           "deepwell/tests/page/page_modules.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
           "deepwell/tests/page/page_move.rs#page_move_renders_with_destination_category_context",
+          "deepwell/tests/page/theme_previewer.rs#blank_theme_previewer_survives_save_and_include_but_not_preview_or_removal",
           "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_remains_editable_and_renders_form_variables",
           "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_resolves_pagepath_data_but_preserves_form_raw",
           "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal",
@@ -8498,8 +8477,9 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/auth.rs#mfa_setup_reset_disable_and_totp_login_flow",
+        "reference": "deepwell/tests/auth.rs#logout_invalidates_only_the_named_session_and_rejects_reuse",
         "alternatives": [
+          "deepwell/tests/auth.rs#mfa_setup_reset_disable_and_totp_login_flow",
           "deepwell/tests/auth.rs#restricted_mfa_session_has_a_shared_five_failure_budget",
           "deepwell/tests/auth.rs#restricted_mfa_sessions_are_not_normal_login_sessions",
           "deepwell/tests/auth.rs#session_other_listing_and_invalidation_keep_current_session",
@@ -9462,6 +9442,7 @@
           "deepwell/tests/page/page_query.rs#page_query_vote_filter_and_order_use_imported_snapshot_vote_counts",
           "deepwell/tests/page/page_query.rs#score_selectors_at_limit_render_countpages_normally",
           "deepwell/tests/page/page_query.rs#score_selectors_at_limit_render_listpages_normally",
+          "deepwell/tests/page/theme_previewer.rs#blank_theme_previewer_survives_save_and_include_but_not_preview_or_removal",
           "deepwell/tests/page_discussion.rs#imported_page_discussion_pointer_can_be_claimed_by_only_one_page",
           "deepwell/tests/page_discussion.rs#page_discussion_page_lookup_holds_an_exclusive_row_lock",
           "deepwell/tests/page_discussion.rs#page_discussion_policy_lookup_holds_an_exclusive_category_lock",
@@ -11419,6 +11400,7 @@
           "deepwell/tests/page/page_modules.rs#backlinks_page_preview_controls_identity_visibility_and_scan_boundaries",
           "deepwell/tests/page/page_modules.rs#nextpreviouspage_preview_without_page_context_renders_live_range_error",
           "deepwell/tests/page/page_modules.rs#nextpreviouspage_title_tie_uses_creation_order_and_previous_stays_inclusive",
+          "deepwell/tests/page/theme_previewer.rs#blank_theme_previewer_survives_save_and_include_but_not_preview_or_removal",
           "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"

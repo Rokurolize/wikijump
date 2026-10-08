@@ -11400,7 +11400,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "8f58323bd659b4d392e688562a5a9c2296680e8ee93bbee7845096823f105750"
+      "source_input_set_sha256": "d55cc0dceb43f3c5aa5129a82f89a161ffadf0d43eeeec588cdf66d9bb052097"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11561,7 +11561,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "76cb52e3f27631fea405d74b863ed71c52262a938f95ec88dc96dacc997a7144"
+        "sha256": "0a12296526c2cf7bbd6ec1d72c0ed00d11b647271fd50fdd8e596ac9ece5d027"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11625,7 +11625,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "e1058a889d11832304f97da4c53483965f894ea789a566d8979e9adfc176e388"
+        "sha256": "bcf10bd1136726c2318dd71b560dcfba7f905191cd9b95fd664ba5de80f33824"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11637,7 +11637,7 @@
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "9739dbf959f8d04ee5a2fccbf8cf9a660ddc850d701a18a332564d06ee2be704"
+        "sha256": "8620a546b10837b8a05bf886580be73933f5fc3ec1fb5ecb71b8e509a8c10146"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -25129,7 +25129,7 @@
         ],
         "cases": [],
         "tests": [
-          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+          "deepwell/tests/auth.rs#logout_invalidates_only_the_named_session_and_rejects_reuse"
         ]
       },
       "evidence": {
@@ -26254,7 +26254,7 @@
         ],
         "cases": [],
         "tests": [
-          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+          "deepwell/tests/page.rs#listdrafts_module_reads_persisted_drafts_and_enforces_target_filters"
         ]
       },
       "evidence": {
@@ -26299,7 +26299,7 @@
         ],
         "cases": [],
         "tests": [
-          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+          "deepwell/tests/page.rs#listdrafts_module_reads_persisted_drafts_and_enforces_target_filters"
         ]
       },
       "evidence": {
@@ -26344,7 +26344,7 @@
         ],
         "cases": [],
         "tests": [
-          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+          "deepwell/tests/page.rs#listdrafts_module_reads_persisted_drafts_and_enforces_target_filters"
         ]
       },
       "evidence": {
@@ -28414,7 +28414,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/auth.rs#mfa_setup_reset_disable_and_totp_login_flow"
+          "deepwell/tests/auth.rs#logout_invalidates_only_the_named_session_and_rejects_reuse"
         ]
       },
       "evidence": {

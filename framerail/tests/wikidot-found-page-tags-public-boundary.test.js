@@ -2,6 +2,7 @@
 import assert from "node:assert/strict"
 import { fileURLToPath } from "node:url"
 import { after, before, test } from "node:test"
+import { parse } from "svelte/compiler"
 
 import { createTestViteServer } from "./vite-test-server.js"
 
@@ -78,14 +79,38 @@ const renderFoundPage = (data) =>
     context: new Map([[PAGE_LAYOUT_CONTEXT_KEY, { current: Layout.WIKIDOT }]])
   }).body
 
+const assertTagTree = (body, tags, hidden = false) => {
+  const tree = body.match(/<div class="page-tags(?: hidden)?"><span>[\s\S]*?<\/span><\/div>/u)
+  assert.ok(tree, "tag links must retain their native div/span wrappers")
+  const root = parse(tree[0]).html.children
+  assert.equal(root.length, 1)
+  assert.equal(root[0].type, "Element")
+  assert.equal(root[0].name, "div")
+  assert.equal(
+    root[0].attributes.find((attribute) => attribute.name === "class")?.value[0]?.data,
+    `page-tags${hidden ? " hidden" : ""}`
+  )
+
+  const spans = root[0].children.filter((child) => child.type === "Element")
+  assert.equal(spans.length, 1)
+  assert.equal(spans[0].name, "span")
+  assert.ok(spans[0].children.every((child) => child.type === "Comment" || child.type === "Element"))
+
+  const links = spans[0].children.filter((child) => child.type === "Element")
+  assert.deepEqual(
+    links.map((link) => ({
+      href: link.attributes.find((attribute) => attribute.name === "href")?.value[0]?.data,
+      label: link.children.filter((child) => child.type === "Text").map((child) => child.data).join("")
+    })),
+    tags.map((tag) => ({ href: `/system:page-tags/tag/${tag}#pages`, label: tag }))
+  )
+}
+
 test("default Wikidot found-page route SSR preserves the native span around ordered tag links", () => {
   const body = renderFoundPage(foundPageData)
 
   assert.match(body, /<!--page-source-note-->/u)
-  assert.match(
-    body,
-    /<div class="page-tags"><span><!--1dsqzw2--><a href="\/system:page-tags\/tag\/_lp-holder-hidden#pages">_lp-holder-hidden<\/a><a href="\/system:page-tags\/tag\/lp-same-a-20260727#pages">lp-same-a-20260727<\/a><a href="\/system:page-tags\/tag\/lp-same-b-20260727#pages">lp-same-b-20260727<\/a><!----><\/span><\/div>/u
-  )
+  assertTagTree(body, foundPageData.page_revision.tags)
 })
 
 test("default Wikidot tag leaf SSR preserves the span around supplied revision tags", () => {
@@ -93,10 +118,7 @@ test("default Wikidot tag leaf SSR preserves the span around supplied revision t
     props: { tags: ["lp-range-20260727", "older-revision-tag"], hidden: false }
   }).body
 
-  assert.equal(
-    body,
-    '<!--[--><!--[0--><div class="page-tags"><span><!--1s3gosb--><a href="/system:page-tags/tag/lp-range-20260727#pages">lp-range-20260727</a><a href="/system:page-tags/tag/older-revision-tag#pages">older-revision-tag</a><!----></span></div><!--]--><!--]-->'
-  )
+  assertTagTree(body, ["lp-range-20260727", "older-revision-tag"])
 })
 
 test("tagless found-page route SSR omits page-tags", () => {
@@ -115,8 +137,5 @@ test("editing found-page route SSR preserves the hidden page-tags state", () => 
     data_form: { fields: [] }
   })
 
-  assert.match(
-    body,
-    /<div class="page-tags hidden"><span><!--1dsqzw2--><a href="\/system:page-tags\/tag\/_lp-holder-hidden#pages">/u
-  )
+  assertTagTree(body, foundPageData.page_revision.tags, true)
 })

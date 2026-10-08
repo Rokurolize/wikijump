@@ -41,8 +41,8 @@ Normative behavior:
 
 Evidence:
 
-- `install/local/theme-lab/ports/authority-evidence/native-theme-previewer-blank-20261003/receipt.json` (SHA-256 `3ed236a9c69c4b24c91080e97e6220237e8a530b12c07094e9a733744e0f84ed`), cases: none
-- `install/local/theme-lab/ports/authority-evidence/wikifot-native-site-theme-reset-20261003/receipt.json` (SHA-256 `839dd08d080f5287b4e60c50603962185ee7ed8c3d08f1010f61b5934421981f`), cases: none
+- `install/local/theme-lab/ports/authority-evidence/native-theme-previewer-blank-20261003/receipt.json` (SHA-256 `3ed236a9c69c4b24c91080e97e6220237e8a530b12c07094e9a733744e0f84ed`), cases: `abutted`, `spaced`, `code`, `comment`
+- `install/local/theme-lab/ports/authority-evidence/wikifot-native-site-theme-reset-20261003/receipt.json` (SHA-256 `839dd08d080f5287b4e60c50603962185ee7ed8c3d08f1010f61b5934421981f`), cases: `https://scp-wiki.wikidot.com/theme:wikifot`, `https://scp-wiki.wikidot.com/noodles-goober-inc`, `https://scp-wiki.wikidot.com/wynths-authorpage`
 
 
 
@@ -57,6 +57,7 @@ These seams are recommendations. The implementation agent must present and confi
 
 - Module names and attribute names are compatibility-sensitive and must not be modernized.
 - Examples are acceptance-test inputs, not permission to infer behavior beyond the documented case.
+- Observation theme-previewer-blank-saved-page-and-preview-20261003 binds blank saved-page theme selection separately from empty PagePreview output. Its resolved executable include content owns persisted presentation state; code and comments remain inert. Unknown heads and values remain outside that observation.
 
 ## Source inventory
 
