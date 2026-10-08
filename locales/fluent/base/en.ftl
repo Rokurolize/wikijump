@@ -93,6 +93,8 @@ register = Register
 specifier = Email or Username
   .placeholder = Enter email or username...
 
+mfa-code = MFA code
+
 username = Username
   .placeholder = Enter username...
   .info = You will be able to change this later.

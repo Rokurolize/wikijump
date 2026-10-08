@@ -18,6 +18,20 @@ export const handleIdentityRpc = ({ rpcRequest, request }) => {
       "password",
       "user_agent"
     ]) &&
+    rpcRequest.params.name_or_email === "fixture-mfa-member" &&
+    rpcRequest.params.password === "fixture-mfa-password" &&
+    typeof rpcRequest.params.ip_address === "string" &&
+    typeof rpcRequest.params.user_agent === "string"
+  ) {
+    result = { needs_mfa: true, session_token: "fixture-pending-mfa-session-token" }
+  } else if (
+    rpcRequest.method === "login" &&
+    hasExactKeys(rpcRequest.params, [
+      "ip_address",
+      "name_or_email",
+      "password",
+      "user_agent"
+    ]) &&
     rpcRequest.params.name_or_email === "fixture-member" &&
     rpcRequest.params.password === "fixture-member-password" &&
     typeof rpcRequest.params.ip_address === "string" &&

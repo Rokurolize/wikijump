@@ -54,6 +54,7 @@
         id="username"
         name="username"
         class="username"
+        autocomplete="username"
         placeholder={data.internationalization?.["username.placeholder"]}
         required
         type="text"
@@ -70,6 +71,7 @@
         id="email"
         name="email"
         class="email"
+        autocomplete="email"
         placeholder={data.internationalization?.["email.placeholder"]}
         required
         type="text"
@@ -88,15 +90,19 @@
     </label>
     <div class="input-container">
       <input
+        id="password"
         name="password"
         class="auth-password"
+        autocomplete="new-password"
+        aria-invalid={$errors.password ? "true" : undefined}
+        aria-describedby={$errors.password ? "register-password-error" : undefined}
         placeholder={data.internationalization?.["password.placeholder"]}
         required
         type="password"
         bind:value={$form.password}
       />
       {#if $errors.password}
-        <p class="error">
+        <p id="register-password-error" class="error">
           {data.internationalization?.["error-form.password-too-short"]}
         </p>
       {/if}
@@ -107,15 +113,21 @@
     </label>
     <div class="input-container">
       <input
+        id="confirm-password"
         name="confirmPassword"
         class="confirm-password"
+        autocomplete="new-password"
+        aria-invalid={$errors.confirmPassword ? "true" : undefined}
+        aria-describedby={$errors.confirmPassword
+          ? "register-confirm-password-error"
+          : undefined}
         placeholder={data.internationalization?.["password.placeholder"]}
         required
         type="password"
         bind:value={$form.confirmPassword}
       />
       {#if $errors.confirmPassword}
-        <p class="error">
+        <p id="register-confirm-password-error" class="error">
           {data.internationalization?.["error-form.password-mismatch"]}
         </p>
       {/if}

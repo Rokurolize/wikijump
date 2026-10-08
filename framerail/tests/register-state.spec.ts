@@ -127,6 +127,14 @@ test("registration validation errors stay inline and never open an empty dialog"
       .locator("#register .auth-password")
       .locator("xpath=following-sibling::p[contains(@class, 'error')]")
   ).toContainText("error-form.password-too-short")
+  await expect(page.locator("#register .auth-password")).toHaveAttribute(
+    "aria-invalid",
+    "true"
+  )
+  await expect(page.locator("#register .auth-password")).toHaveAttribute(
+    "aria-describedby",
+    "register-password-error"
+  )
   await expect(page.locator("#modal-message")).toHaveCount(0)
   expect(
     (await userCreateRequests(request)).some(
@@ -144,5 +152,27 @@ test("registration validation errors stay inline and never open an empty dialog"
       .locator(".confirm-password")
       .locator("xpath=following-sibling::p[contains(@class, 'error')]")
   ).toContainText("error-form.password-mismatch")
+  await expect(page.locator(".confirm-password")).toHaveAttribute("aria-invalid", "true")
+  await expect(page.locator(".confirm-password")).toHaveAttribute(
+    "aria-describedby",
+    "register-confirm-password-error"
+  )
   await expect(page.locator("#modal-message")).toHaveCount(0)
+})
+
+test("MFA code field has a persistent accessible label and one-time-code autofill", async ({
+  page
+}) => {
+  await installNativeEventListenerProbe(page)
+  await page.setExtraHTTPHeaders(SITE_HEADERS)
+  await page.goto(`${APP_URL}/-/login`)
+
+  await page.locator(".auth-name-or-email").fill("fixture-mfa-member")
+  await page.locator(".auth-password").fill("fixture-mfa-password")
+  await waitForNativeEventListener(page, "#login", "submit")
+  await page.locator('#login button[type="submit"]').click()
+
+  const code = page.locator("#login-mfa-code")
+  await expect(code).toHaveAccessibleName("MFA code")
+  await expect(code).toHaveAttribute("autocomplete", "one-time-code")
 })

@@ -78,6 +78,7 @@ export interface Locales {
   "register.toast": string
   specifier: string
   "specifier.placeholder": string
+  "mfa-code": string
   username: string
   "username.placeholder": string
   "username.info": string
@@ -342,6 +343,8 @@ export interface Locales {
   "password-recovery": string
   "password-recovery.email-sent": string
   "wiki-page-category": string
+  "wiki-page-module-new-page-name": string
+  "wiki-page-module-search-all-query": string
   "wiki-page-revision": string
   "wiki-page-last-edit": string
   "wiki-page-source": string
@@ -448,4 +451,13 @@ export interface Locales {
   "wiki-page-private": string
   "wiki-page-banned": string
   "wiki-page-no-render": string
+}
+
+export enum Langs {
+  en = "en",
+  ja = "ja",
+  ko = "ko",
+  pl = "pl",
+  vi = "vi",
+  zh_Hans = "zh-Hans"
 }

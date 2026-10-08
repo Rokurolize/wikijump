@@ -92,6 +92,8 @@ register = 注册
 specifier = 电子邮箱或用户名
   .placeholder = 输入电子邮箱或用户名……
 
+mfa-code = MFA 验证码
+
 username = 用户名
   .placeholder = 输入用户名……
   .info = 您可在稍后修改这项内容。
