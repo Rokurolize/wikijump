@@ -74,32 +74,6 @@
       "frozen_inventory": "docs/development/test-quality-audit/generated-gate-close.inventory.json"
     },
     {
-      "id": "generated-gate-close-listpages",
-      "kind": "rust",
-      "files": [
-        "deepwell/src/services/render/list_pages/scanner.rs"
-      ],
-      "manifest": "deepwell/Cargo.toml",
-      "function": "generated_gate_module_close",
-      "anchors": [
-        "deepwell/tests/list_pages.rs#listpages_created_by_id_comment_gates_resolve_after_row_substitution"
-      ],
-      "targets": [
-        {
-          "cargo_args": [
-            "--test",
-            "list_pages",
-            "listpages_created_by_id_comment_gates_resolve_after_row_substitution"
-          ]
-        }
-      ],
-      "stack": true,
-      "state_isolation": "disposable-per-variant",
-      "mutation_inventory_sha256": "9278be41b087762148ec92b27008220ccc357fd9ccdf20a1eda5345ded4c0e67",
-      "mutation_inventory_count": 39,
-      "frozen_inventory": "docs/development/test-quality-audit/generated-gate-close.inventory.json"
-    },
-    {
       "id": "resource-scanner",
       "kind": "node",
       "files": [

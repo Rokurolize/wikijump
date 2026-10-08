@@ -50,10 +50,12 @@ a verified normal two-parent merge; and applicable merged-head standing proof.
 
 The compact gate inventory freezes **39** `generated_gate_module_close` entries
 from cargo-mutants 27.1.0. The historical 36-entry count is not inherited.
-Scanner-result, complexity, and rendered ListPages owners remain distinct. The
-integration owner provisions fresh PostgreSQL/Valkey/MinIO services for every
-variant: database rollback does not revert Valkey or S3. Standing volumes and
-persistent local development services are never part of this lifecycle.
+The generated-gate close recovery seam has one mutation owner: its named unit
+tests exercise the helper directly. The rendered ListPages row-substitution
+case remains a separate integration assertion; it does not independently reach
+that recovery path. Do not provision an integration mutation stack for this
+helper. Standing volumes and persistent local development services are never
+part of this lifecycle.
 
 ## Measured coverage
 
