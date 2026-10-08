@@ -193,8 +193,10 @@ asserted the later module's absolute `start`, `body_start`, `end`, original
 source slice, and scanner work totals. Two more targeted replays caught all
 four projected literal-cursor accounting mutations after the owner asserted
 the CSS and anchor cursor costs in a source containing two CSS regions and one
-anchor marker. The combined result is now **78 caught, 54 missed, 4 unviable,
-and 0 timed out**. The owner remains unaccepted: the 54 survivors need
+anchor marker. Separate replay of the two empty-tail boolean mutations also
+confirmed the closed nonempty-body owner catches both. The combined result is
+now **80 caught, 52 missed, 4 unviable, and 0 timed out**. The owner remains
+unaccepted: the 52 survivors need
 independent review by behavioral match, scanner work-budget, and returned-offset
 contract, and any integration-owned behavior still needs its own owner. The
 dated local shard outputs are retained under

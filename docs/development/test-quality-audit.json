@@ -31,12 +31,12 @@
         "deepwell/src/services/render/list_pages/scanner/tests/stress.rs",
         "deepwell/tests/list_pages.rs"
       ],
-      "next_action": "Independently review the 54 survivors against the frozen Wikidot specification and live/corpus evidence. Add separate match, work-budget, and offset owners only where an observable contract is evidenced; classify genuinely equivalent or compile-failing candidates with specific reasons. Keep this owner unaccepted until dispositions and remaining test owners are complete.",
+      "next_action": "Independently review the 52 survivors against the frozen Wikidot specification and live/corpus evidence. Add separate match, work-budget, and offset owners only where an observable contract is evidenced; classify genuinely equivalent or compile-failing candidates with specific reasons. Keep this owner unaccepted until dispositions and remaining test owners are complete.",
       "replay": {
         "date": "2026-10-08",
         "mutants": 136,
-        "caught": 78,
-        "missed": 54,
+        "caught": 80,
+        "missed": 52,
         "unviable": 4,
         "timeout": 0,
         "owner": "deepwell/src/services/render/list_pages/scanner/tests.rs",
@@ -66,7 +66,11 @@
           "/tmp/wj-1990-scanner-shard-5-8-20261008",
           "/tmp/wj-1990-scanner-shard-6-8-20261008",
           "/tmp/wj-1990-scanner-shard-7-8-20261008",
-          "/tmp/wj-1990-offset-mutant-20261008/mutants.out"
+          "/tmp/wj-1990-offset-mutant-20261008/mutants.out",
+          "/tmp/wj-1990-literal-cursor-mutant-20261008/mutants.out",
+          "/tmp/wj-1990-literal-sum-mutant-20261008/mutants.out",
+          "/tmp/wj-1990-empty-tail-mutant-20261008/mutants.out",
+          "/tmp/wj-1990-empty-tail-single-mutant-20261008/mutants.out"
         ],
         "targeted_replays": [
           {
@@ -95,6 +99,24 @@
             "missed": 0,
             "evidence": "/tmp/wj-1990-literal-sum-mutant-20261008/mutants.out",
             "owner_test": "projected_literal_region_cursor_advances_are_counted_as_scanner_work"
+          },
+          {
+            "date": "2026-10-08",
+            "mutation_filter": "scanner.rs:1744:29",
+            "mutants": 1,
+            "caught": 1,
+            "missed": 0,
+            "evidence": "/tmp/wj-1990-empty-tail-mutant-20261008/mutants.out",
+            "owner_test": "closed_listpages_module_does_not_consume_a_nonempty_body_as_an_empty_tail"
+          },
+          {
+            "date": "2026-10-08",
+            "mutation_filter": "scanner.rs:1743:29",
+            "mutants": 1,
+            "caught": 1,
+            "missed": 0,
+            "evidence": "/tmp/wj-1990-empty-tail-single-mutant-20261008/mutants.out",
+            "owner_test": "closed_listpages_module_does_not_consume_a_nonempty_body_as_an_empty_tail"
           }
         ],
         "independent_reconciliation": {
@@ -103,13 +125,13 @@
           "report": "/tmp/wj-1990-scanner-reconciled-20261008-1132.json",
           "report_sha256": "788f8f280f5aa1010daf4c8b0bed307ed25ff3e644b9ce414f4b7f1b3311da42",
           "initial_shards": 8,
-          "targeted_replay_outputs": 7,
+          "targeted_replay_outputs": 9,
           "distinct_initial_mutants": 136,
           "initial_caught": 63,
           "initial_missed": 69,
-          "transitions_missed_to_caught": 15,
-          "final_caught": 78,
-          "final_missed": 54,
+          "transitions_missed_to_caught": 17,
+          "final_caught": 80,
+          "final_missed": 52,
           "disposition": "unreviewed; neither passing tests nor accounting alone accept surviving mutants"
         },
         "survivor_triage": {
@@ -120,7 +142,7 @@
           "priority_behavioral_boolean": 6,
           "priority_work_accounting": 52,
           "behavioral_lines": [1645, 1743, 1744, 1912, 1913],
-          "disposition": "all 54 pending independent Wikidot contract or reviewed local work-budget evidence; no equivalent classification granted"
+          "disposition": "all 52 pending independent Wikidot contract or reviewed local work-budget evidence; no equivalent classification granted"
         },
         "survivor_disposition": "pending_independent_review"
       }
