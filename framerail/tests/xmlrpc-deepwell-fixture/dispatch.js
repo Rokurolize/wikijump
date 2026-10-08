@@ -1,4 +1,5 @@
 import { handleFileRpc } from "./file-handler.js"
+import { handleInfoRpc } from "./info-handler.js"
 import { handleReadRpc } from "./read-handler.js"
 import { sendRpcError, sendRpcResult } from "./response.js"
 import { handleWriteRpc } from "./write-handler.js"
@@ -15,7 +16,10 @@ import { fixtureState } from "./context.js"
 export const dispatchFixtureRpc = ({ rpcRequest, request, response, port }) => {
   const input = { rpcRequest, request, response, fixtureState }
   const outcome =
-    handleReadRpc(input) ?? handleWriteRpc(input) ?? handleFileRpc({ ...input, port })
+    handleInfoRpc(input) ??
+    handleReadRpc(input) ??
+    handleWriteRpc(input) ??
+    handleFileRpc({ ...input, port })
 
   if (outcome && "responded" in outcome && outcome.responded) return
   if (outcome) {
