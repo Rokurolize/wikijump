@@ -290,19 +290,28 @@ fn projected_quoted_continuation_malformed_syntax_fails_closed_with_linear_work(
     // A backslash continuation changes quoted-line ownership in the projected
     // source. An unresolved conditional or an unterminated nested module head
     // still must not cause the later ListPages-shaped source to execute.
-    for (label, source) in [
+    for (label, source, expected_work, expected_literal_advances) in [
         (
             "unresolved quoted conditional",
             "> [[#if true]] text\\\n> [[module ListPages]]T[[/module]]",
+            110,
+            0,
         ),
         (
             "unterminated quoted head",
             "> intro\\\n> [[module ListPages name=\"incomplete\n[[/module]]",
+            234,
+            1,
         ),
     ] {
         let (modules, work, literal_advances) =
             find_list_pages_module_matches_with_cursor_work(source);
         assert!(modules.is_empty(), "{label} must fail closed");
+        assert_eq!(work, expected_work, "{label}: complete recovery work");
+        assert_eq!(
+            literal_advances, expected_literal_advances,
+            "{label}: literal cursor advances"
+        );
         assert!(
             work >= source.len(),
             "{label}: work must account for a full scan"

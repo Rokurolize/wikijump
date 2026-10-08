@@ -35,8 +35,8 @@
       "replay": {
         "date": "2026-10-08",
         "mutants": 136,
-        "caught": 90,
-        "missed": 42,
+        "caught": 96,
+        "missed": 36,
         "unviable": 4,
         "timeout": 0,
         "owner": "deepwell/src/services/render/list_pages/scanner/tests.rs",
@@ -75,7 +75,8 @@
           "/tmp/wj-1990-collapsible-suffix-work-mutant-20261008/mutants.out",
           "/tmp/wj-1990-collapsible-suffix-work-extended-mutant-20261008/mutants.out",
           "/tmp/wj-1990-collapsible-suffix-work-extended-mutant-20261008/mutants.out",
-          "/tmp/wj-1990-offset-recheck-20261008-4/mutants.out"
+          "/tmp/wj-1990-offset-recheck-20261008-4/mutants.out",
+          "/tmp/wj-1990-work-recheck-20261008-1/mutants.out"
         ],
         "targeted_replays": [
           {
@@ -150,28 +151,39 @@
             "evidence": "/tmp/wj-1990-offset-recheck-20261008-4/mutants.out",
             "owner_test": "unclosed_at_marker_preservation_does_not_hide_a_later_valid_module",
             "test_command": "cargo test --manifest-path deepwell/Cargo.toml --lib services::render::list_pages::scanner::tests::unclosed_at_marker_preservation_does_not_hide_a_later_valid_module -- --exact"
+          },
+          {
+            "date": "2026-10-08",
+            "mutation_filter": "scanner.rs:(1590:71|1590:45|1590:29|1591:41)",
+            "mutants": 8,
+            "caught": 6,
+            "missed": 2,
+            "evidence": "/tmp/wj-1990-work-recheck-20261008-1/mutants.out",
+            "owner_test": "projected_quoted_continuation_malformed_syntax_fails_closed_with_linear_work",
+            "test_command": "cargo test --manifest-path deepwell/Cargo.toml --lib services::render::list_pages::scanner::tests::stress::projected_quoted_continuation_malformed_syntax_fails_closed_with_linear_work -- --exact",
+            "review": "Two recovery-advance arithmetic mutants remain missed because recovery_advances is zero for both unresolved quoted fixtures; six other work-counter mutants are caught by the owner. Keep the two unresolved mutants unaccepted."
           }
         ],
         "independent_reconciliation": {
           "date": "2026-10-08",
           "tool": "scripts/reconcile-test-quality-mutants.mjs",
-          "report": "/tmp/wj-1990-scanner-reconciled-offset-recheck-20261008.json",
-          "report_sha256": "f8a263aab95d9a35002c07a7134d8c2865b64bc4e15246225cf17162ca1ca860",
+          "report": "/tmp/wj-1990-scanner-reconciled-work-recheck-20261008.json",
+          "report_sha256": "83c0cce02a3abbaaaf2aba53f2e845d1d7100b65604197a61bb70fdcf1673ba7",
           "initial_shards": 8,
-          "targeted_replay_outputs": 11,
+          "targeted_replay_outputs": 12,
           "distinct_initial_mutants": 136,
           "initial_caught": 63,
           "initial_missed": 69,
           "initial_unviable": 4,
           "initial_timeout": 0,
-          "transitions_missed_to_caught": 26,
+          "transitions_missed_to_caught": 32,
           "transitions_missed_to_unviable": 1,
           "transitions_unviable_to_caught": 1,
-          "transition_events": 28,
+          "transition_events": 34,
           "nonmonotonic_outcomes": 0,
-          "final_caught": 90,
-          "final_missed": 42,
-          "disposition": "42 survivors remain unreviewed; two absolute suffix-end offset mutations now caught by the existing module654 preservation test"
+          "final_caught": 96,
+          "final_missed": 36,
+          "disposition": "36 survivors remain unreviewed; the projected quoted continuation work owner catches six of eight targeted work-counter mutants; two recovery-advance mutations remain unaccepted"
         },
         "survivor_triage": {
           "date": "2026-10-08",
@@ -179,13 +191,13 @@
           "report": "/tmp/wj-1990-scanner-survivor-triage-20261008-1208.json",
           "report_sha256": "39dc18870f7268796d8c7d1ff58b1e717024f2d2b42294f08634b49bbc92e463",
           "priority_behavioral_boolean": 4,
-          "priority_work_accounting": 38,
+          "priority_work_accounting": 32,
           "behavioral_lines": [
             1645,
             1912,
             1913
           ],
-          "disposition": "42 remain pending: four conditional candidates require independent Wikidot evidence; 38 arithmetic/work/offset candidates require reviewed bounded-work or absolute-position ownership; none accepted"
+          "disposition": "36 remain pending: four conditional candidates require independent Wikidot evidence; 32 arithmetic/work/offset candidates require reviewed bounded-work or absolute-position ownership; none accepted. Two replayed recovery-advance arithmetic variants remain misses."
         },
         "independent_oracle_review": {
           "date": "2026-10-08",
@@ -194,9 +206,9 @@
           "corpus_pending_live": 23964,
           "malformed_executable_cases": 60,
           "direct_live_evidence_in_reviewed_artifacts": false,
-          "classification": "four conditional candidates require new source-grounded behavior owners; 38 arithmetic/work accounting candidates remain and require distinct bounded-work or absolute-position ownership; none accepted"
+          "classification": "four conditional candidates require new source-grounded behavior owners; 32 arithmetic/work accounting candidates remain and require distinct bounded-work or absolute-position ownership; none accepted"
         },
-        "survivor_disposition": "pending_independent_review: 42 survivors remain"
+        "survivor_disposition": "pending_independent_review: 36 survivors remain"
       }
     }
   ],

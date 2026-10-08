@@ -385,3 +385,14 @@ exactly one of:
 
 Only genuine missing regressions need new tests. Coverage percentage is
 evidence, not the objective.
+
+A final focused work-counter replay for the projected quoted-continuation
+owner (`scanner.rs:1590/1591`) caught six of eight arithmetic mutants. The two
+remaining substitutions alter only `recovery_advances`; instrumentation of the
+ambiguous recovery branch showed that both reviewed malformed fixtures have
+zero recovery advances. Their survival remains actionable and unaccepted. The
+owner now pins exact measured `work` and literal-advance counts for both cases.
+The sealed reconciliation is `/tmp/wj-1990-scanner-reconciled-work-recheck-20261008.json`
+(SHA-256 `83c0cce02a3abbaaaf2aba53f2e845d1d7100b65604197a61bb70fdcf1673ba7`):
+**96 caught, 36 missed, 4 unviable, 0 timed out**. The 36 survivors remain
+unreviewed; the owner is not accepted.

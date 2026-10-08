@@ -84,3 +84,20 @@ unaccepted. The retained report is
 4. Keep the entire owner `replayed_unreviewed_survivors` until every survivor
    has a concrete independent disposition. Passing a new local test alone is
    insufficient to reclassify a mutation as equivalent or accepted.
+
+## 2026-10-08 work-counter replay addendum
+
+The projected quoted-continuation malformed-syntax test now asserts its exact
+measured scanner work (`110` and `234`) and literal-range advance counts (`0`
+and `1`) in addition to fail-closed behavior and linear upper bounds. Its
+source-locked replay covered eight recovery accounting mutants: six were
+caught and two substitutions at `scanner.rs:1590:71` and `scanner.rs:1591:41`
+remained missed. Instrumentation showed `recovery_advances == 0` for both
+fixtures, so those particular substitutions are not distinguished by these
+cases. They remain unaccepted and among the outstanding survivors.
+
+The reconciled inventory is now **136 = 96 caught + 36 missed + 4 unviable**.
+Four behavioral candidates still require independent Wikidot evidence; the
+remaining 32 work/arithmetic/offset candidates still need reviewed owners or
+specific equivalent/unviable dispositions. No survivor is accepted by this
+addendum.
