@@ -2,6 +2,7 @@
 
 mod membership;
 mod page_calendar;
+mod platform_navigation;
 mod rate;
 mod rated_pages;
 mod tag_cloud;
@@ -63,6 +64,7 @@ use super::site_utility_modules::expand_site_utility_modules;
 use super::url_arguments::UrlArguments;
 use super::user_directory::{MEMBERS_MODULE_REGEX, render_members_module};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::services::domain::DomainService;
 use crate::services::membership::{JoinModuleState, MembershipService};
 use crate::services::page_query::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DateSelector,
@@ -1238,6 +1240,9 @@ impl RenderService {
         )
         .await
         .or_raise(make_error)?;
+        wikitext = platform_navigation::expand(ctx, wikitext, settings)
+            .await
+            .or_raise(make_error)?;
         wikitext = {
             let _stage = StageGuard::new(options.trace, CorpusRenderStage::CountPages);
             Self::expand_count_pages(
