@@ -6,11 +6,12 @@ export const handleSiteRpc = ({ rpcRequest }) => {
 
   if (
     rpcRequest.method === "preload_view" &&
-    (hasExactKeys(rpcRequest.params, ["site_id", "locales", "session_token"]) ||
-      hasExactKeys(rpcRequest.params, ["site_id", "locales"])) &&
+    (hasExactKeys(rpcRequest.params, ["site_id", "locales"]) ||
+      hasExactKeys(rpcRequest.params, ["site_id", "locales", "session_token"])) &&
     rpcRequest.params?.site_id === 6000005 &&
     Array.isArray(rpcRequest.params.locales) &&
-    (rpcRequest.params.session_token === undefined ||
+    (rpcRequest.params.session_token === null ||
+      rpcRequest.params.session_token === undefined ||
       ["fixture-session-token", "fixture-authenticated-session-token"].includes(
         rpcRequest.params.session_token
       ))
