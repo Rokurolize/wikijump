@@ -9,7 +9,11 @@ const root = fileURLToPath(new URL("..", import.meta.url))
 
 const requestEvent = ({ locales, sessionToken, submittedUser } = {}) => {
   const data = new FormData()
-  if (locales !== undefined) data.set("locales", locales)
+  if (locales !== undefined) {
+    for (const locale of Array.isArray(locales) ? locales : [locales]) {
+      data.append("locales", locale)
+    }
+  }
   if (submittedUser !== undefined) data.set("user", String(submittedUser))
 
   return {
@@ -91,13 +95,13 @@ test("user settings bind persistence to the server session actor", async () => {
     assert.equal(calls.length, 0)
 
     const missingSession = await userDisplaySettingsAction(
-      requestEvent({ locales: "en-US" })
+      requestEvent({ locales: ["en-US"] })
     )
     assert.equal(missingSession.status, 401)
     assert.equal(calls.length, 0)
 
     const staleSession = await userDisplaySettingsAction(
-      requestEvent({ locales: "en-US", sessionToken: "stale-session" })
+      requestEvent({ locales: ["en-US"], sessionToken: "stale-session" })
     )
     assert.equal(staleSession.status, 401)
     assert.equal(staleSession.data.message, "Session token is invalid")
@@ -110,13 +114,13 @@ test("user settings bind persistence to the server session actor", async () => {
 
     const saved = await userDisplaySettingsAction(
       requestEvent({
-        locales: "ja_JP, en-US ja_JP",
+        locales: ["ja_JP", "en-US", "ja_JP"],
         sessionToken: "issue-1063-session",
         submittedUser: 999
       })
     )
     assert.equal(saved.form.valid, true)
-    assert.equal(saved.form.data.locales, "ja-JP en-US")
+    assert.deepEqual(saved.form.data.locales, ["ja-JP", "en-US"])
     assert.deepEqual(
       calls.map(({ method }) => method),
       ["session_get", "user_edit"]
@@ -146,7 +150,7 @@ test("user settings bind persistence to the server session actor", async () => {
         }
       }
     }))
-    assert.equal(reloaded.displaySettingsForm.data.locales, "ja-JP en-US")
+    assert.deepEqual(reloaded.displaySettingsForm.data.locales, ["ja-JP", "en-US"])
   } finally {
     if (client && originalRequest) client.request = originalRequest
     if (vite) await vite.close()

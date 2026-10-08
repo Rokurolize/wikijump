@@ -449,11 +449,3 @@ export interface Locales {
   "wiki-page-banned": string
   "wiki-page-no-render": string
 }
-
-export enum Langs {
-  en = "en",
-  ko = "ko",
-  pl = "pl",
-  vi = "vi",
-  zh_Hans = "zh-Hans"
-}
