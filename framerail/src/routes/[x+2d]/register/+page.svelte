@@ -7,9 +7,12 @@
 
   import type { PageProps } from "./$types"
 
-  let { data }: PageProps = $props()
+  let { data, form: actionData }: PageProps = $props()
 
-  let isRegistered = $state<boolean>(false)
+  let enhancedRegistrationSucceeded = $state(false)
+  let isRegistered = $derived(
+    actionData?.isRegistered === true || enhancedRegistrationSucceeded
+  )
 
   const cancelRegistration = async () => {
     await goto(authCancelDestination(), { replaceState: true })
@@ -20,7 +23,7 @@
     {
       onResult: async ({ result, cancel }) => {
         if (result.type === "success" && result.data?.isRegistered) {
-          isRegistered = true
+          enhancedRegistrationSucceeded = true
           cancel()
           return
         }
