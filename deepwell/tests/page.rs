@@ -3445,7 +3445,7 @@ async fn rerender_uses_latest_navigation_page_revision() {
     assert!(
         rerendered_home
             .compiled_generator
-            .ends_with("; deepwell-render/v12")
+            .ends_with("; deepwell-render/v13")
     );
 }
 
@@ -4262,11 +4262,11 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
         .article_page_cache_key
         .expect("imported static page should have an anonymous cache key");
     assert!(
-        current_key.starts_with("deepwell:article-view:page:v12:"),
+        current_key.starts_with("deepwell:article-view:page:v13:"),
         "source-freeze cache key must carry the final renderer epoch: {current_key}",
     );
     let stale_key = current_key.replacen(
-        "deepwell:article-view:page:v12:",
+        "deepwell:article-view:page:v13:",
         "deepwell:article-view:page:v11:",
         1,
     );
@@ -4396,7 +4396,7 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     assert!(
         page_revision
             .compiled_generator
-            .ends_with("; deepwell-render/v12")
+            .ends_with("; deepwell-render/v13")
     );
     assert!(compiled_body_html.contains(CURRENT_BODY));
     assert!(!compiled_body_html.contains(STALE_BODY));
@@ -4421,7 +4421,7 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     assert!(
         page_revision
             .compiled_generator
-            .ends_with("; deepwell-render/v12"),
+            .ends_with("; deepwell-render/v13"),
         "page view must expose the current compiled generator",
     );
     assert!(compiled_body_html.contains(CURRENT_BODY));
@@ -4435,7 +4435,7 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     assert!(
         persisted
             .compiled_generator
-            .ends_with("; deepwell-render/v12"),
+            .ends_with("; deepwell-render/v13"),
         "read-time refresh should persist the current compiled generator",
     );
     let persisted_body =
@@ -12956,7 +12956,7 @@ async fn searchall_module_matches_live_form_and_unavailable_route_contract() {
         r#"<div class="search-box">"#,
         r#"<div class="query-area">"#,
         r#"<form action="dummy" id="search-form-all">"#,
-        r#"<input class="text" type="text" size="30" name="query" id="search-form-all-input" value=""/>"#,
+        r#"<input class="text" type="text" size="30" name="query" id="search-form-all-input" value="" aria-label="Search all Wikis"/>"#,
         r#"<input class="button" type="submit" value="Search"/>"#,
         r#"<input id="search-all-pf" class="radio" type="radio" name="area" value="pf" checked="checked"/>"#,
         r#"<label for="search-all-pf">pages and forums</label>"#,
@@ -13085,6 +13085,35 @@ async fn searchall_module_matches_live_form_and_unavailable_route_contract() {
             "{case_id} should render the current live backend failure:\n{queried}",
         );
     }
+}
+
+#[tokio::test]
+async fn japanese_site_localizes_module_input_accessible_names() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}))
+        .expect("local Japanese authoring site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Japanese module labels",
+            "wikitext": "[[module NewPage]]\n[[module SearchAll]]",
+        }),
+    );
+
+    assert!(
+        preview.body.contains(r#"aria-label="新しいページ名""#),
+        "NewPage should use the Japanese accessible name for a Japanese site:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains(r#"aria-label="すべてのWikiを検索""#),
+        "SearchAll should use the Japanese accessible name for a Japanese site:\n{}",
+        preview.body,
+    );
 }
 
 #[tokio::test]

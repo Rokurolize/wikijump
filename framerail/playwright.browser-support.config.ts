@@ -9,7 +9,7 @@ const withBaseUse = (device: (typeof devices)[keyof typeof devices]) => ({
 
 const config: PlaywrightTestConfig = {
   ...baseConfig,
-  testMatch: "**/{browser-support,forum-start-routes}.spec.ts",
+  testMatch: "**/{browser-support,forum-start-routes,module-accessible-names}.spec.ts",
   projects: [
     {
       name: "chromium",

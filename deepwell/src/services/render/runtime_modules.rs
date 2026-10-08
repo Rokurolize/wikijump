@@ -55,7 +55,8 @@ use super::search_feed::expand_search_feed_modules;
 use super::service::{
     MAX_LISTPAGES_RENDER_SCAN_ROWS, PAGECALENDAR_MODULE_REGEX, RATE_MODULE_REGEX,
     RATEDPAGES_MODULE_REGEX, REGISTRY_MODULE_REGEX, RenderService, TAGCLOUD_MODULE_REGEX,
-    escape_list_pages_html_attr, escape_list_pages_html_text, render_clone_module,
+    escape_list_pages_html_attr, escape_list_pages_html_text,
+    localized_runtime_module_label, render_clone_module,
 };
 use super::site_changes::expand_site_changes_modules;
 use super::site_utility_modules::expand_site_utility_modules;
@@ -815,7 +816,11 @@ impl RenderService {
             output.push_str(&wikitext[cursor..matched.start()]);
             let head = captures.name("head").map_or("", |mtch| mtch.as_str());
             let rendered = if name.eq_ignore_ascii_case("NewPage") {
-                render_new_page_module(head, NewPageTemplateRendering::None)
+                render_new_page_module(
+                    head,
+                    NewPageTemplateRendering::None,
+                    "Name of the new page",
+                )
             } else if name.eq_ignore_ascii_case("Clone") {
                 render_clone_module(head)
             } else {
@@ -856,6 +861,7 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         wikitext: String,
         settings: &WikitextSettings,
+        language: &str,
         current_site_id: Option<i64>,
         compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
@@ -863,6 +869,12 @@ impl RenderService {
             return Ok(wikitext);
         }
 
+        let accessible_name = localized_runtime_module_label(
+            ctx,
+            language,
+            "wiki-page-module-new-page-name",
+            "Name of the new page",
+        );
         let mut output = String::with_capacity(wikitext.len());
         let mut cursor = 0;
         for module in executable_new_page_modules(&wikitext) {
@@ -874,7 +886,8 @@ impl RenderService {
             };
             let templates =
                 resolve_new_page_templates(ctx, current_site_id, template_names).await?;
-            let rendered = render_new_page_module(module.head, templates);
+            let rendered =
+                render_new_page_module(module.head, templates, &accessible_name);
             output.push_str(&compat_html.push_html(rendered));
             cursor = module.source_range.end;
         }
@@ -1334,8 +1347,19 @@ impl RenderService {
         )
         .await
         .or_raise(make_error)?;
-        wikitext =
-            expand_search_feed_modules(wikitext, settings, options.url, compat_html);
+        let search_all_accessible_name = localized_runtime_module_label(
+            ctx,
+            page_info.language.as_ref(),
+            "wiki-page-module-search-all-query",
+            "Search all Wikis",
+        );
+        wikitext = expand_search_feed_modules(
+            wikitext,
+            settings,
+            options.url,
+            &search_all_accessible_name,
+            compat_html,
+        );
         wikitext = Self::expand_simpletodo_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_send_invitations_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_membership_email_invitation_modules(
