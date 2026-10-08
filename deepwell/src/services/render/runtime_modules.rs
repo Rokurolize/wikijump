@@ -1248,6 +1248,7 @@ impl RenderService {
             ctx,
             wikitext,
             settings,
+            page_info,
             options.viewer_user_id,
             options.url,
         )
