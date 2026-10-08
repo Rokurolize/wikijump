@@ -11238,6 +11238,12 @@
       "kind": "coverage",
       "path": "docs/development/test-quality-audit/test-quality-coverage-20261009/receipt.json",
       "sha256": "2c58f6f7ca99dd81af57737511051daa9562769331b9703e47742bedc0d5a4e5"
+    },
+    {
+      "id": "generated-gate-close-unit-assessment-20261009",
+      "kind": "assessment",
+      "path": "docs/development/test-quality-audit/generated-gate-close-unit-disposition-review-20261009.json",
+      "sha256": "bdea653c20cf1e1dafcdc19c6e5ffb3b4f293457ae625d877ccd51e946371498"
     }
   ],
   "acceptance": null,
