@@ -449,11 +449,57 @@
     {
       "path": "docs/development/test-quality-audit/test-quality-coverage-20261009/inventory-current.json.gz",
       "sha256": "0d4443797a6767525f399fe0625aec13e9cdf016a54b305cce32f00913b18349"
+    },
+    {
+      "path": "docs/development/test-quality-audit/test-quality-coverage-20261009/coverage-ownership-map.json.gz",
+      "sha256": "b416e50b9e8382206e2f7b31aac76e9ec52ecf4e559d2465b488f35518eed327"
     }
   ],
   "measurement_inventory_digest": "68595e69b40258670dde925364780621371558f1f0326fcb9670d583d83f55d1",
   "inventory_reconciliation": {
     "path": "docs/development/test-quality-audit/test-quality-coverage-20261009/inventory-reconciliation.json",
     "sha256": "67463e74e05b9945dcaf1b9511d09a96225e7b7418c302926647f91e6fc7f3cc"
+  },
+  "coverage_ownership_map": {
+    "path": "docs/development/test-quality-audit/test-quality-coverage-20261009/coverage-ownership-map.json.gz",
+    "sha256": "b416e50b9e8382206e2f7b31aac76e9ec52ecf4e559d2465b488f35518eed327",
+    "expanded_bytes": 1061160,
+    "stored_bytes": 127911,
+    "summary": {
+      "measured": 834,
+      "unmeasured": 550,
+      "zero_lines": 81,
+      "partial_lines": 651,
+      "all_lines_covered": 102
+    },
+    "packages": {
+      "deepwell/": {
+        "production": 571,
+        "measured": 409,
+        "unmeasured": 162,
+        "zero_lines": 81,
+        "partial_lines": 317,
+        "all_lines_covered": 11,
+        "direct_test_anchors": 195
+      },
+      "framerail/": {
+        "production": 348,
+        "measured": 112,
+        "unmeasured": 236,
+        "zero_lines": 0,
+        "partial_lines": 51,
+        "all_lines_covered": 61,
+        "direct_test_anchors": 0
+      },
+      "install/local/wikidot-verification/": {
+        "production": 451,
+        "measured": 313,
+        "unmeasured": 138,
+        "zero_lines": 0,
+        "partial_lines": 283,
+        "all_lines_covered": 30,
+        "direct_test_anchors": 0
+      }
+    }
   }
 }

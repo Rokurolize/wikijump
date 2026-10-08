@@ -11237,7 +11237,7 @@
       "id": "test-quality-full-coverage-20261009",
       "kind": "coverage",
       "path": "docs/development/test-quality-audit/test-quality-coverage-20261009/receipt.json",
-      "sha256": "c50edc77e1f95acddd001425c2a78cd78f5f6969254902954de5d36c6bb6430f"
+      "sha256": "2c58f6f7ca99dd81af57737511051daa9562769331b9703e47742bedc0d5a4e5"
     }
   ],
   "acceptance": null,
