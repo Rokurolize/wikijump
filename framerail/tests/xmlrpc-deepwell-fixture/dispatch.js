@@ -1,6 +1,7 @@
 import { handleFileRpc } from "./file-handler.js"
 import { handleInfoRpc } from "./info-handler.js"
 import { handleReadRpc } from "./read-handler.js"
+import { handleProfileRpc } from "./profile-handler.js"
 import { sendRpcError, sendRpcResult } from "./response.js"
 import { handleWriteRpc } from "./write-handler.js"
 import { fixtureState } from "./context.js"
@@ -17,6 +18,7 @@ export const dispatchFixtureRpc = ({ rpcRequest, request, response, port }) => {
   const input = { rpcRequest, request, response, fixtureState }
   const outcome =
     handleInfoRpc(input) ??
+    handleProfileRpc(input) ??
     handleReadRpc(input) ??
     handleWriteRpc(input) ??
     handleFileRpc({ ...input, port })
