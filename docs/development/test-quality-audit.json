@@ -11252,6 +11252,12 @@
       "kind": "mutation",
       "path": "docs/development/test-quality-audit/resource-scanner-mutation-20261008/receipt.json",
       "sha256": "2aec835c7ca020ffe5d36ba551d8cd357363b233ccf8f84de32003311cd38cdd"
+    },
+    {
+      "id": "generated-gate-close-unit-mutation-20261009",
+      "kind": "mutation",
+      "path": "docs/development/test-quality-audit/generated-gate-close-unit-mutation-20261009/receipt.json",
+      "sha256": "cde10c341fee0944c29b250d1bb80a27a97708bb6251f48d138343fd4d2d368d"
     }
   ],
   "acceptance": null,
