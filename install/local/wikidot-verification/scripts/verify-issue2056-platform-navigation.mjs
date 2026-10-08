@@ -68,7 +68,11 @@ async function verify({siteUrl, platformOrigin, browserRoot}) {
       );
 
       const targetUrl = `${platformOrigin}/platform:${slug}`;
+      const navigationResponse = page.waitForResponse(
+        (response) => response.url() === targetUrl && response.request().isNavigationRequest(),
+      );
       await link.click();
+      assert.equal((await navigationResponse).status(), 200, `${label} platform response`);
       await page.waitForURL(targetUrl);
       assert.equal(page.url(), targetUrl, `${label} platform URL`);
       assert.equal(await page.title().then((title) => title.length > 0), true, `${label} title`);
