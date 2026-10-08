@@ -30,19 +30,18 @@ pub(super) async fn expand(
             continue;
         }
         output.push_str(&wikitext[cursor..matched.start()]);
-        let platform_domain = match domain.as_ref() {
+        let platform_origin = match domain.as_ref() {
             Some(domain) => domain.clone(),
             None => {
                 let platform_site =
                     SiteService::get(ctx, Reference::Slug(Cow::Borrowed("www"))).await?;
                 let resolved_domain =
-                    DomainService::preferred_domain(ctx.config(), &platform_site)
-                        .into_owned();
+                    DomainService::preferred_https_origin(ctx.config(), &platform_site);
                 domain = Some(resolved_domain.clone());
                 resolved_domain
             }
         };
-        output.push_str(&render_platform_navigation(&platform_domain));
+        output.push_str(&render_platform_navigation(&platform_origin));
         cursor = matched.end();
     }
     if cursor == 0 {
@@ -52,14 +51,14 @@ pub(super) async fn expand(
     Ok(output)
 }
 
-fn render_platform_navigation(domain: &str) -> String {
+fn render_platform_navigation(origin: &str) -> String {
     format!(
         concat!(
-            "* [https://{domain}/platform:activity Recent activity]\n",
-            "* [https://{domain}/platform:sites All wikis]\n",
-            "* [https://{domain}/platform:search Search]",
+            "* [{origin}/platform:activity Recent activity]\n",
+            "* [{origin}/platform:sites All wikis]\n",
+            "* [{origin}/platform:search Search]",
         ),
-        domain = domain,
+        origin = origin,
     )
 }
 
@@ -77,15 +76,15 @@ mod tests {
     use ftml::settings::{WikitextMode, WikitextSettings};
 
     #[test]
-    fn platform_navigation_uses_the_selected_www_domain_and_wikidot_link_renderer() {
+    fn platform_navigation_uses_the_selected_www_origin_and_wikidot_link_renderer() {
         let seeded_sidebar = include_str!("../../../../seeder/sidebar.ftml");
         assert!(seeded_sidebar.contains(PLATFORM_NAVIGATION_MODULE));
         assert!(!seeded_sidebar.contains("[[[:www:platform:"));
 
-        let source = render_platform_navigation("platform.example.test");
-        assert!(source.contains("https://platform.example.test/platform:activity"));
-        assert!(source.contains("https://platform.example.test/platform:sites"));
-        assert!(source.contains("https://platform.example.test/platform:search"));
+        let source = render_platform_navigation("https://platform.example.test:18445");
+        assert!(source.contains("https://platform.example.test:18445/platform:activity"));
+        assert!(source.contains("https://platform.example.test:18445/platform:sites"));
+        assert!(source.contains("https://platform.example.test:18445/platform:search"));
 
         let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
         let page_info = PageInfo {
@@ -116,9 +115,9 @@ mod tests {
         let rendered = compat_text.restore(&rendered);
 
         for href in [
-            "https://platform.example.test/platform:activity",
-            "https://platform.example.test/platform:sites",
-            "https://platform.example.test/platform:search",
+            "https://platform.example.test:18445/platform:activity",
+            "https://platform.example.test:18445/platform:sites",
+            "https://platform.example.test:18445/platform:search",
         ] {
             assert!(rendered.contains(href), "missing {href}: {rendered}");
         }
