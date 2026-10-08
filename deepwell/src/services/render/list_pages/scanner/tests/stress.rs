@@ -263,7 +263,7 @@ fn deferred_nested_head_rollbacks_exhaust_a_linear_work_budget() {
         assert_eq!(literal_range_advances, 0, "{label}");
         assert!(work > source.len(), "{label}: work counter stayed vacuous");
         assert!(
-            work <= source.len() * MAX_SINGLE_SCANNER_WORK_MULTIPLIER,
+            work <= source.len() * 8,
             "{label}: {work} work for {} source bytes",
             source.len(),
         );
@@ -282,5 +282,39 @@ fn whole_head_literal_index_budget_preserves_the_authored_source() {
     assert!(modules.is_empty());
     assert_eq!(literal_range_advances, 0);
     assert!(work > source.len());
-    assert!(work <= source.len() * MAX_SINGLE_SCANNER_WORK_MULTIPLIER);
+    assert!(work <= source.len() * 8);
+}
+
+#[test]
+fn projected_quoted_continuation_malformed_syntax_fails_closed_with_linear_work() {
+    // A backslash continuation changes quoted-line ownership in the projected
+    // source. An unresolved conditional or an unterminated nested module head
+    // still must not cause the later ListPages-shaped source to execute.
+    for (label, source) in [
+        (
+            "unresolved quoted conditional",
+            "> [[#if true]] text\\\n> [[module ListPages]]T[[/module]]",
+        ),
+        (
+            "unterminated quoted head",
+            "> intro\\\n> [[module ListPages name=\"incomplete\n[[/module]]",
+        ),
+    ] {
+        let (modules, work, literal_advances) =
+            find_list_pages_module_matches_with_cursor_work(source);
+        assert!(modules.is_empty(), "{label} must fail closed");
+        assert!(
+            work >= source.len(),
+            "{label}: work must account for a full scan"
+        );
+        assert!(
+            work <= source.len() * 8,
+            "{label}: work {work} is not bounded by source length {}",
+            source.len()
+        );
+        assert!(
+            literal_advances <= source.len(),
+            "{label}: literal cursor advances are bounded"
+        );
+    }
 }
