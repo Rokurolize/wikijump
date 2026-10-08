@@ -3555,11 +3555,22 @@
       "evidence": [
         {
           "path": "install/local/theme-lab/ports/authority-evidence/native-theme-previewer-blank-20261003/receipt.json",
-          "sha256": "3ed236a9c69c4b24c91080e97e6220237e8a530b12c07094e9a733744e0f84ed"
+          "sha256": "3ed236a9c69c4b24c91080e97e6220237e8a530b12c07094e9a733744e0f84ed",
+          "case_ids": [
+            "abutted",
+            "spaced",
+            "code",
+            "comment"
+          ]
         },
         {
           "path": "install/local/theme-lab/ports/authority-evidence/wikifot-native-site-theme-reset-20261003/receipt.json",
-          "sha256": "839dd08d080f5287b4e60c50603962185ee7ed8c3d08f1010f61b5934421981f"
+          "sha256": "839dd08d080f5287b4e60c50603962185ee7ed8c3d08f1010f61b5934421981f",
+          "case_ids": [
+            "https://scp-wiki.wikidot.com/theme:wikifot",
+            "https://scp-wiki.wikidot.com/noodles-goober-inc",
+            "https://scp-wiki.wikidot.com/wynths-authorpage"
+          ]
         }
       ]
     }

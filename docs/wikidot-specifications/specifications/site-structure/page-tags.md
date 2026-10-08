@@ -43,29 +43,6 @@ Evidence:
 - `install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures.json` (SHA-256 `9494777d18face903fa6b8c48444f4c3aa687fae6175156977700fa8476559ea`), cases: `lp-live-tag-selectors`, `lp-live-range-selectors`, `lp-live-parent-selectors`, `lp-live-metric-selectors`
 - `install/local/wikidot-verification/artifacts/listpages-campaign-live-fixture-classification.json` (SHA-256 `8864c8c37d8e9cb12eca1c1a76fe413b9e14a328368e6087a9a71a478ca20499`), cases: `lp-live-tag-selectors`, `lp-live-range-selectors`, `lp-live-parent-selectors`, `lp-live-metric-selectors`
 
-### The standard SCP-JP shell wraps tag anchors in a span
-
-- Observation ID: `default-page-tags-span-20261002`
-- Classification: `documentation-clarification`
-- Retained captures: `2026-09-29` and `2026-10-01`; inspected offline `2026-10-02`
-- Evidence: `install/local/theme-lab/evidence/wikidot-default-page-tags-dom-20261002.json`
-  binds the original anonymous SCP-JP `scp-173` and `scp-173-jp` response bytes,
-  acquisition times, and complete tag fragments. Both standard
-  `#container` / `#header` / `#main-content` shells contain
-  `.page-tags > span > a`, with adjacent anchors in retained order.
-
-Normative behavior:
-
-- The standard Wikidot saved-page shell renders ordered tag links inside one
-  span within `.page-tags`; tagless pages still omit the region.
-- The earlier direct-child observation remains valid for its captured shell.
-  Those sandbox responses have a different `main` / `footer.footer-wrap`
-  layout. They do not establish the standard shell's wrapper. Custom layouts
-  can supply their own structure around the documented `[[tags]]` placeholder;
-  rendering those layouts remains a separate, unsupported runtime capability.
-- The distinction concerns the shell wrapper only. It does not change tag
-  labels, ordering, encoding, escaping, editing, or revision selection.
-
 
 
 ## Suggested public TDD seams

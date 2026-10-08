@@ -19,6 +19,7 @@ import {
   parseWikidotLiveEvidenceRows,
   resolveWikidotLiveEvidenceFormat,
   verifiedExternalEvidenceCaseIds,
+  verifiedNativeThemeCaseIds,
 } from "./lib/wikidot-live-evidence.mjs";
 import { escapeMarkdownTableCell } from "./lib/markdown.mjs";
 
@@ -219,6 +220,7 @@ for (const observation of liveObservations.observations) {
     }
     const capturedCaseIds = new Set();
     for (const row of evidenceRows) {
+      for (const caseId of verifiedNativeThemeCaseIds(row, dirname(evidencePath), evidenceFileBytes)) capturedCaseIds.add(caseId);
       if (
         row.schema === "wikijump_syntax_differential.saved_page_probe.v1" &&
         typeof row.fullname === "string"
@@ -510,7 +512,14 @@ for (const fullname of syntaxPages) {
     documentationStatus:
       sourcePage.lineCount === 0 ? "partially-documented" : "documented",
     implementationNotes:
-      sourcePage.lineCount === 0
+      slug === "foldable-list" ? [
+  "Frozen native `WIKIDOT.page.fixers.fixFoldableMenus` and `_foldableMenuToggle` establish browser behavior independently of the initial PagePreview DOM. The retained script object is SHA-256 `49bcabdb14d446bb93d261f9c967bedfa7cdf7b214807a8180974cbd00b21f11` in `install/local/theme-lab/ports/authority-evidence/replay/objects/49/`.",
+  "The fixer hides each nested UL, remembers its authored inline display, adds `folded` to its nearest LI before the container boundary, and wraps that LI's first child in an anchor when necessary. Links to the current page unfold their ancestor list items.",
+  "A container owns its click listener; the nearest authored LI owns `folded`/`unfolded` state. A control-only container can therefore operate on a surrounding LI. Real navigation links retain their navigation behavior. Fold controls toggle the first descendant UL and restore its remembered display when opened.",
+  "These controls do not change the URL hash, create history entries, or send page mutations. Nested containers retain their native event bubbling behavior.",
+  "The frozen Sigma-10 credit controls provide an independent settled-state browser proof: `install/local/theme-lab/ports/authority-evidence/native-sigma10-fold-controls-settled-20261002/receipt.json`. Trusted clicks cover open, nested otherwise, return, and close. The ordinary nested-list and replacement-article cases are exercised by `framerail/tests/wikidot-foldable-lists.spec.ts` in the normal product regression gate.",
+  "Framerail owns this browser action; FTML continues to render the authored initial tree. Newly rendered article content must receive the same initialization, and obsolete listeners must be removed when its owner is destroyed."
+] : sourcePage.lineCount === 0
         ? [
             "The canonical page has an empty source. The supporting quick-reference evidence is the complete documented contract in this snapshot.",
           ]
@@ -585,6 +594,7 @@ for (const fullname of modulePages) {
     implementationNotes: [
       "Module names and attribute names are compatibility-sensitive and must not be modernized.",
       "Examples are acceptance-test inputs, not permission to infer behavior beyond the documented case.",
+      ...(fullname === "doc-modules:themepreviewer-module" ? ["Observation theme-previewer-blank-saved-page-and-preview-20261003 binds blank saved-page theme selection separately from empty PagePreview output. Its resolved executable include content owns persisted presentation state; code and comments remain inert. Unknown heads and values remain outside that observation."] : []),
       ...(fullname === "doc-modules:listpages-module"
         ? [
             "Wikijump runtime invariant (not a claim about live Wikidot): one root-and-nested render admits at most 512 ListPages modules, 2 MiB of aggregate matched module source, 256 KiB per template body, and 16 MiB of actual generated wikitext. A nested expansion pass additionally evaluates at most 64 modules before using the existing controlled unsupported-module diagnostic.",

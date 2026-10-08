@@ -78,14 +78,25 @@ const renderFoundPage = (data) =>
     context: new Map([[PAGE_LAYOUT_CONTEXT_KEY, { current: Layout.WIKIDOT }]])
   }).body
 
+const assertTagTree = (body, tags, hidden = false) => {
+  const tree = body.match(/<div class="page-tags(?: hidden)?"><span>[\s\S]*?<\/span><\/div>/u)
+  assert.ok(tree, "tag links must retain their native div/span wrappers")
+  // Only this generated leaf contains compiler comments. Authored article
+  // comments remain observable and are asserted separately below.
+  const markup = tree[0].replace(/<!--[\s\S]*?-->/gu, "")
+  assert.equal(
+    markup,
+    `<div class="page-tags${hidden ? " hidden" : ""}"><span>${tags
+      .map((tag) => `<a href="/system:page-tags/tag/${tag}#pages">${tag}</a>`)
+      .join("")}</span></div>`
+  )
+}
+
 test("default Wikidot found-page route SSR preserves the native span around ordered tag links", () => {
   const body = renderFoundPage(foundPageData)
 
   assert.match(body, /<!--page-source-note-->/u)
-  assert.match(
-    body,
-    /<div class="page-tags"><span><!--1dsqzw2--><a href="\/system:page-tags\/tag\/_lp-holder-hidden#pages">_lp-holder-hidden<\/a><a href="\/system:page-tags\/tag\/lp-same-a-20260727#pages">lp-same-a-20260727<\/a><a href="\/system:page-tags\/tag\/lp-same-b-20260727#pages">lp-same-b-20260727<\/a><!----><\/span><\/div>/u
-  )
+  assertTagTree(body, foundPageData.page_revision.tags)
 })
 
 test("default Wikidot tag leaf SSR preserves the span around supplied revision tags", () => {
@@ -93,10 +104,7 @@ test("default Wikidot tag leaf SSR preserves the span around supplied revision t
     props: { tags: ["lp-range-20260727", "older-revision-tag"], hidden: false }
   }).body
 
-  assert.equal(
-    body,
-    '<!--[--><!--[0--><div class="page-tags"><span><!--1s3gosb--><a href="/system:page-tags/tag/lp-range-20260727#pages">lp-range-20260727</a><a href="/system:page-tags/tag/older-revision-tag#pages">older-revision-tag</a><!----></span></div><!--]--><!--]-->'
-  )
+  assertTagTree(body, ["lp-range-20260727", "older-revision-tag"])
 })
 
 test("tagless found-page route SSR omits page-tags", () => {
@@ -115,8 +123,5 @@ test("editing found-page route SSR preserves the hidden page-tags state", () => 
     data_form: { fields: [] }
   })
 
-  assert.match(
-    body,
-    /<div class="page-tags hidden"><span><!--1dsqzw2--><a href="\/system:page-tags\/tag\/_lp-holder-hidden#pages">/u
-  )
+  assertTagTree(body, foundPageData.page_revision.tags, true)
 })

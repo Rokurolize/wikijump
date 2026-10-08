@@ -24,6 +24,9 @@ mod common;
 #[path = "page/page_modules.rs"]
 mod page_modules;
 
+#[path = "page/theme_previewer.rs"]
+mod theme_previewer;
+
 #[path = "page/forum.rs"]
 mod forum;
 
@@ -79,9 +82,7 @@ use deepwell::services::forum_post::{
 };
 use deepwell::services::forum_thread::CreateForumThread;
 use deepwell::services::page::{CreatePage, GetPageOutput};
-use deepwell::services::page_draft::{
-    PageDraftIdentity, PageDraftPageType, PageDraftService, SavePageDraft,
-};
+use deepwell::services::page_draft::{PageDraftPageType, PageDraftService};
 use deepwell::services::page_lock::{CreatePageLockInput, PageLockService};
 use deepwell::services::page_query::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DataFormSelector,
@@ -11202,58 +11203,54 @@ async fn listdrafts_module_reads_persisted_drafts_and_enforces_target_filters() 
         site_id,
         Reference::Id(existing_page_id),
     );
-    PageDraftService::save(
-        runner.context(),
-        SavePageDraft {
-            site_id,
-            user_id: ADMIN_USER_ID,
-            page_id: Some(existing_page_id),
-            slug: EXISTING_SLUG.to_owned(),
-            title: "Existing draft v1".to_owned(),
-            wikitext: "existing draft source v1".to_owned(),
-        },
-    )
-    .await
-    .expect("existing-page draft should persist");
-    PageDraftService::save(
-        runner.context(),
-        SavePageDraft {
-            site_id,
-            user_id: ADMIN_USER_ID,
-            page_id: None,
-            slug: ABSENT_SLUG.to_owned(),
-            title: "Absent draft v1".to_owned(),
-            wikitext: "absent draft source v1".to_owned(),
-        },
-    )
-    .await
-    .expect("not-yet-created-page draft should persist");
-    PageDraftService::save(
-        runner.context(),
-        SavePageDraft {
-            site_id,
-            user_id: ADMIN_USER_ID,
-            page_id: Some(private_page_id),
-            slug: PRIVATE_SLUG.to_owned(),
-            title: "Private draft must stay hidden".to_owned(),
-            wikitext: "private draft source".to_owned(),
-        },
-    )
-    .await
-    .expect("private existing-page draft should persist for the administrator");
-    PageDraftService::save(
-        runner.context(),
-        SavePageDraft {
-            site_id,
-            user_id: ADMIN_USER_ID,
-            page_id: None,
-            slug: format!("{PRIVATE_CATEGORY}:absent"),
-            title: "Private absent draft must stay hidden".to_owned(),
-            wikitext: "private absent draft source".to_owned(),
-        },
-    )
-    .await
-    .expect("private absent-page draft should persist for the administrator");
+    assert!(run_endpoint!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": Some(existing_page_id),
+            "slug": EXISTING_SLUG.to_owned(),
+            "title": "Existing draft v1".to_owned(),
+            "wikitext": "existing draft source v1".to_owned(),
+        })
+    ));
+    assert!(run_endpoint!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": null,
+            "slug": ABSENT_SLUG.to_owned(),
+            "title": "Absent draft v1".to_owned(),
+            "wikitext": "absent draft source v1".to_owned(),
+        })
+    ));
+    assert!(run_endpoint!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": Some(private_page_id),
+            "slug": PRIVATE_SLUG.to_owned(),
+            "title": "Private draft must stay hidden".to_owned(),
+            "wikitext": "private draft source".to_owned(),
+        })
+    ));
+    assert!(run_endpoint!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": null,
+            "slug": format!("{PRIVATE_CATEGORY}:absent"),
+            "title": "Private absent draft must stay hidden".to_owned(),
+            "wikitext": "private absent draft source".to_owned(),
+        })
+    ));
 
     let all = PageDraftService::list(runner.context(), site_id, PageDraftPageType::All)
         .await
@@ -11326,44 +11323,38 @@ async fn listdrafts_module_reads_persisted_drafts_and_enforces_target_filters() 
         site_id,
         Reference::Id(private_page_id),
     );
-    assert!(
-        PageDraftService::save(
-            runner.context(),
-            SavePageDraft {
-                site_id,
-                user_id: SAMPLE_USER_ID,
-                page_id: Some(private_page_id),
-                slug: PRIVATE_SLUG.to_owned(),
-                title: "must not edit private target".to_owned(),
-                wikitext: "must not edit private target".to_owned(),
-            },
-        )
-        .await
-        .is_err(),
-        "a user without private-page edit permission must not save a draft",
+    let error = run_endpoint_err!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": SAMPLE_USER_ID,
+            "page_id": Some(private_page_id),
+            "slug": PRIVATE_SLUG.to_owned(),
+            "title": "must not edit private target".to_owned(),
+            "wikitext": "must not edit private target".to_owned(),
+        })
     );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
     set_mutation_request_context(
         &mut runner,
         SAMPLE_USER_ID,
         site_id,
         Reference::Slug(Cow::Owned(format!("{PRIVATE_CATEGORY}:absent"))),
     );
-    assert!(
-        PageDraftService::save(
-            runner.context(),
-            SavePageDraft {
-                site_id,
-                user_id: SAMPLE_USER_ID,
-                page_id: None,
-                slug: format!("{PRIVATE_CATEGORY}:absent"),
-                title: "must not create private target draft".to_owned(),
-                wikitext: "must not create private target draft".to_owned(),
-            },
-        )
-        .await
-        .is_err(),
-        "a user without private-category create permission must not save a draft",
+    let error = run_endpoint_err!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": SAMPLE_USER_ID,
+            "page_id": null,
+            "slug": format!("{PRIVATE_CATEGORY}:absent"),
+            "title": "must not create private target draft".to_owned(),
+            "wikitext": "must not create private target draft".to_owned(),
+        })
     );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
 
     for (case_id, source) in [
         (
@@ -11399,19 +11390,18 @@ async fn listdrafts_module_reads_persisted_drafts_and_enforces_target_filters() 
         site_id,
         Reference::Id(existing_page_id),
     );
-    PageDraftService::save(
-        runner.context(),
-        SavePageDraft {
-            site_id,
-            user_id: ADMIN_USER_ID,
-            page_id: Some(existing_page_id),
-            slug: EXISTING_SLUG.to_owned(),
-            title: "Existing draft v2".to_owned(),
-            wikitext: "existing draft source v2".to_owned(),
-        },
-    )
-    .await
-    .expect("saving the same target should update one persisted draft");
+    assert!(run_endpoint!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": Some(existing_page_id),
+            "slug": EXISTING_SLUG.to_owned(),
+            "title": "Existing draft v2".to_owned(),
+            "wikitext": "existing draft source v2".to_owned(),
+        })
+    ));
     let updated =
         PageDraftService::list(runner.context(), site_id, PageDraftPageType::Exists)
             .await
@@ -11423,67 +11413,55 @@ async fn listdrafts_module_reads_persisted_drafts_and_enforces_target_filters() 
         )
     );
 
-    assert!(
-        PageDraftService::exists(
-            runner.context(),
-            PageDraftIdentity {
-                site_id,
-                user_id: ADMIN_USER_ID,
-                page_id: None,
-                slug: ABSENT_SLUG.to_owned(),
-            },
-        )
-        .await
-        .expect("persisted absent-page draft should have an exact identity")
-    );
-    assert!(
-        PageDraftService::remove(
-            runner.context(),
-            PageDraftIdentity {
-                site_id,
-                user_id: ADMIN_USER_ID,
-                page_id: None,
-                slug: ABSENT_SLUG.to_owned(),
-            },
-        )
-        .await
-        .expect("explicit draft discard should succeed")
-    );
-    assert!(
-        !PageDraftService::exists(
-            runner.context(),
-            PageDraftIdentity {
-                site_id,
-                user_id: ADMIN_USER_ID,
-                page_id: None,
-                slug: ABSENT_SLUG.to_owned(),
-            },
-        )
-        .await
-        .expect("discarded draft existence check should succeed")
-    );
+    assert!(run_endpoint!(
+        runner,
+        page_draft_exists,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": null,
+            "slug": ABSENT_SLUG.to_owned(),
+        })
+    ));
+    assert!(run_endpoint!(
+        runner,
+        page_draft_remove,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": null,
+            "slug": ABSENT_SLUG.to_owned(),
+        })
+    ));
+    assert!(!run_endpoint!(
+        runner,
+        page_draft_exists,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": null,
+            "slug": ABSENT_SLUG.to_owned(),
+        })
+    ));
 
     runner.set_request_context(RequestContext {
         user_id: None,
         site_id: Some(site_id),
         ..Default::default()
     });
-    assert!(
-        PageDraftService::save(
-            runner.context(),
-            SavePageDraft {
-                site_id,
-                user_id: ADMIN_USER_ID,
-                page_id: None,
-                slug: "fixture-listdrafts-anonymous-save".to_owned(),
-                title: "must not persist".to_owned(),
-                wikitext: "must not persist".to_owned(),
-            },
-        )
-        .await
-        .is_err(),
-        "an anonymous request must not persist another actor's page draft",
+    let error = run_endpoint_err!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": null,
+            "slug": "fixture-listdrafts-anonymous-save".to_owned(),
+            "title": "must not persist".to_owned(),
+            "wikitext": "must not persist".to_owned(),
+        })
     );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
 }
 
 #[tokio::test]
