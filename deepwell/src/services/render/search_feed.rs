@@ -20,7 +20,7 @@ const SEARCH_ALL_FORM_HTML: &str = r#"<div class="search-box">
 <div class="query-area">
 <form action="dummy" id="search-form-all">
 <div>
-<input class="text" type="text" size="30" name="query" id="search-form-all-input" value="" aria-label="Search all Wikis"/>
+<input class="text" type="text" size="30" name="query" id="search-form-all-input" value="" aria-label="WIKIJUMP_SEARCH_ALL_QUERY_LABEL"/>
 <input class="button" type="submit" value="Search"/>
 </div>
 <div style="margin-top:5px;">
@@ -83,6 +83,7 @@ fn expand_search_all_modules(
     wikitext: String,
     settings: &WikitextSettings,
     url: UrlArguments<'_>,
+    accessible_query_name: &str,
     compat_html: &mut CompatHtmlFragments,
 ) -> String {
     if !settings.enable_page_syntax || !SEARCH_ALL_MODULE_REGEX.is_match(&wikitext) {
@@ -91,9 +92,12 @@ fn expand_search_all_modules(
 
     let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
     let rendered = if search_all_has_query(url) {
-        SEARCH_ALL_UNAVAILABLE_HTML
+        SEARCH_ALL_UNAVAILABLE_HTML.to_owned()
     } else {
-        SEARCH_ALL_FORM_HTML
+        SEARCH_ALL_FORM_HTML.replace(
+            "WIKIJUMP_SEARCH_ALL_QUERY_LABEL",
+            &super::service::escape_list_pages_html_attr(accessible_query_name),
+        )
     };
     let mut output = String::with_capacity(wikitext.len());
     let mut cursor = 0;
@@ -102,7 +106,7 @@ fn expand_search_all_modules(
             continue;
         }
         output.push_str(&wikitext[cursor..matched.start()]);
-        output.push_str(&compat_html.push_block_html(rendered.to_owned()));
+        output.push_str(&compat_html.push_block_html(rendered.clone()));
         cursor = matched.end();
     }
     if cursor == 0 {
@@ -116,9 +120,16 @@ pub(super) fn expand_search_feed_modules(
     mut wikitext: String,
     settings: &WikitextSettings,
     url: UrlArguments<'_>,
+    accessible_query_name: &str,
     compat_html: &mut CompatHtmlFragments,
 ) -> String {
-    wikitext = expand_search_all_modules(wikitext, settings, url, compat_html);
+    wikitext = expand_search_all_modules(
+        wikitext,
+        settings,
+        url,
+        accessible_query_name,
+        compat_html,
+    );
     if !settings.enable_page_syntax || !SEARCH_FEED_MODULE_REGEX.is_match(&wikitext) {
         return wikitext;
     }
@@ -169,6 +180,7 @@ mod tests {
             source.to_owned(),
             &settings,
             UrlArguments::default(),
+            "Search all Wikis",
             &mut compat_html,
         );
         compat_html.restore(&expanded)

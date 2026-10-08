@@ -13088,6 +13088,35 @@ async fn searchall_module_matches_live_form_and_unavailable_route_contract() {
 }
 
 #[tokio::test]
+async fn japanese_site_localizes_module_input_accessible_names() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}))
+        .expect("local Japanese authoring site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Japanese module labels",
+            "wikitext": "[[module NewPage]]\n[[module SearchAll]]",
+        }),
+    );
+
+    assert!(
+        preview.body.contains(r#"aria-label="新しいページ名""#),
+        "NewPage should use the Japanese accessible name for a Japanese site:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains(r#"aria-label="すべてのWikiを検索""#),
+        "SearchAll should use the Japanese accessible name for a Japanese site:\n{}",
+        preview.body,
+    );
+}
+
+#[tokio::test]
 async fn currencyconvert_executes_only_on_the_www_plans_system_page() {
     const SOURCE: &str = concat!(
         "BEFORE\n",

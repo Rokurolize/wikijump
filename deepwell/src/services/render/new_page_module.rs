@@ -136,6 +136,7 @@ pub(super) fn new_page_template_names(head: &str) -> Option<Vec<&str>> {
 pub(super) fn render_new_page_module(
     head: &str,
     templates: NewPageTemplateRendering,
+    accessible_name: &str,
 ) -> String {
     if let NewPageTemplateRendering::Error(message) = templates {
         return format!(
@@ -162,8 +163,9 @@ pub(super) fn render_new_page_module(
         r#"<form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);">"#,
     );
     output.push_str(&format!(
-        r#"<input class="text" name="pageName" type="text" size="{}" maxlength="128" style="margin: 1px" aria-label="Name of the new page"/>"#,
+        r#"<input class="text" name="pageName" type="text" size="{}" maxlength="128" style="margin: 1px" aria-label="{}"/>"#,
         escape_list_pages_html_attr(size),
+        escape_list_pages_html_attr(accessible_name),
     ));
     if let NewPageTemplateRendering::Multiple(options) = &templates {
         output.push_str(r#"<select name="template" style="margin: 1px">"#);
@@ -329,6 +331,7 @@ mod tests {
                     title: "Template B".to_owned(),
                 },
             ]),
+            "Name of the new page",
         );
 
         assert!(rendered.contains(r#"<select name="template" style="margin: 1px">"#));

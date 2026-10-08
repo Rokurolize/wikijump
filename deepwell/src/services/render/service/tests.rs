@@ -800,6 +800,7 @@ fn protects_wikidot_new_page_module_html_before_parsing() {
     let mut wikitext = render_new_page_module(
         r#" size="15" button="new <page>""#,
         NewPageTemplateRendering::None,
+        "Name of the new page",
     )
     .replacen(
         r#"<div class="new-page-box""#,
