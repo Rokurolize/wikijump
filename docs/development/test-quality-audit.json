@@ -4758,7 +4758,7 @@
     },
     {
       "path": "framerail/playwright.browser-support.config.ts",
-      "sha256": "bef02e61a7d8b8607cab8d74f1668c1bd4083d12defa942749a0e19c302e9e82",
+      "sha256": "7d7f1af9c231eaffbbb8c85f9293e5479bbe140a05e3550d7754907a77d24d16",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7478,7 +7478,7 @@
     },
     {
       "path": "framerail/src/routes/printer--friendly/[...path]/+page.svelte",
-      "sha256": "67a38a8c64c2c65c653fd7db577a8eca81cae6191e02b594335dc97dea5b3172",
+      "sha256": "ac11588f94706805f2bf8f117bb96d6265cac3b54235fcf7a0e5d5a1d762af66",
       "status": "pending",
       "anchors": [],
       "findings": [],
