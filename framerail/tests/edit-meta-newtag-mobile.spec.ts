@@ -9,25 +9,40 @@ const APP_URL = `http://localhost:${process.env.PLAYWRIGHT_APP_PORT ?? "4173"}`
 const EDIT_META_MODULE = "edit/EditMetaModule"
 
 /**
- * Empty legacy-shaped Edit Meta response. The native pane parses it for
- * rows; an empty `padding-left:3em` container yields zero rows without an
- * error.
+ * Legacy-shaped Edit Meta response with one persisted row. Cancellation
+ * coverage verifies that the row survives remounts without a write
+ * request.
  */
-const EMPTY_EDIT_META_BODY = `<h1>Meta tags for the page</h1>
+const FIXTURE_EDIT_META_BODY = `<h1>Meta tags for the page</h1>
 <p>Using the interface below you can edit special HTML &lt;meta&gt; tags for the page.</p>
 <h2>Current meta tags:</h2>
-<div style="padding-left:3em;"></div>
+<div style="padding-left:3em;"><div>remove &lt;meta name="fixture-existing" content="unchanged-value"/&gt;</div></div>
 <p></p>`
 
 /**
  * The fixture Deepwell server does not implement the Edit Meta module, so
  * the pane's requests are answered with a canned legacy body. Every
- * intercepted mutation event is recorded so the spec can prove the exact
- * wire events (saveMetaTag for a page-specific tag) without any server
- * write.
+ * intercepted action-bearing request is recorded so the spec can prove
+ * cancellation makes no write request without any server mutation.
  */
 const interceptEditMetaModule = async (page: import("@playwright/test").Page) => {
   const mutations: string[] = []
+  const writeRequests: string[] = []
+  const appOrigin = new URL(APP_URL).origin
+  page.on("request", (request) => {
+    if (request.method() === "GET" || request.method() === "HEAD") return
+    const url = new URL(request.url())
+    if (url.origin !== appOrigin) return
+
+    const params = new URLSearchParams(request.postData() ?? "")
+    const editMetaRead =
+      url.pathname === "/ajax-module-connector.php" &&
+      params.get("moduleName") === EDIT_META_MODULE &&
+      !params.has("action") &&
+      params.get("event") !== "saveMetaTag" &&
+      params.get("event") !== "deleteMetaTag"
+    if (!editMetaRead) writeRequests.push(`${request.method()} ${url.pathname}`)
+  })
   await page.route("**/ajax-module-connector.php", async (route) => {
     const params = new URLSearchParams(route.request().postData() ?? "")
     if (params.get("moduleName") !== EDIT_META_MODULE) {
@@ -35,16 +50,16 @@ const interceptEditMetaModule = async (page: import("@playwright/test").Page) =>
       return
     }
     const event = params.get("event")
-    if (event === "saveMetaTag" || event === "deleteMetaTag") {
+    if (params.has("action") || event === "saveMetaTag" || event === "deleteMetaTag") {
       mutations.push(`${event}:${params.get("allPages") ?? "false"}`)
     }
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ status: "ok", body: EMPTY_EDIT_META_BODY })
+      body: JSON.stringify({ status: "ok", body: FIXTURE_EDIT_META_BODY })
     })
   })
-  return mutations
+  return { mutations, writeRequests }
 }
 
 const waitForWikidotHydration = (page: import("@playwright/test").Page) =>
@@ -58,16 +73,23 @@ const waitForWikidotHydration = (page: import("@playwright/test").Page) =>
   })
 
 /** Opens Options -> Edit Meta and stops with the add button visible. */
+const openEditMetaPaneFromOptions = async (page: import("@playwright/test").Page) => {
+  const editMetaButton = page.locator("#edit-meta-button")
+  if (!(await editMetaButton.isVisible())) {
+    await waitForSvelteDelegatedHandler(page, "#more-options-button")
+    await page.locator("#more-options-button").click()
+  }
+  await waitForSvelteDelegatedHandler(page, "#edit-meta-button")
+  await editMetaButton.click()
+  await expect(page.locator("#action-area #edit-meta-addbutton")).toBeVisible()
+  await waitForSvelteDelegatedHandler(page, "#edit-meta-addbutton button")
+}
+
 const openEditMetaPane = async (page: import("@playwright/test").Page) => {
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   await page.goto(`${APP_URL}/scp-173`)
   await waitForWikidotHydration(page)
-  await waitForSvelteDelegatedHandler(page, "#more-options-button")
-  await page.locator("#more-options-button").click()
-  await waitForSvelteDelegatedHandler(page, "#edit-meta-button")
-  await page.locator("#edit-meta-button").click()
-  await expect(page.locator("#action-area #edit-meta-addbutton")).toBeVisible()
-  await waitForSvelteDelegatedHandler(page, "#edit-meta-addbutton button")
+  await openEditMetaPaneFromOptions(page)
 }
 
 const clickAddNewMetaTag = async (page: import("@playwright/test").Page) => {
@@ -151,7 +173,7 @@ const expectFormBounded = async (
 test("Edit Meta new-tag form stays bounded at 320px and sends no mutation on cancel", async ({
   page
 }) => {
-  const mutations = await interceptEditMetaModule(page)
+  const { mutations, writeRequests } = await interceptEditMetaModule(page)
   await page.setViewportSize({ width: 320, height: 720 })
   await openEditMetaPane(page)
 
@@ -172,15 +194,75 @@ test("Edit Meta new-tag form stays bounded at 320px and sends no mutation on can
   await expect(page.locator('button:has-text("Add to All Pages")')).toBeEnabled()
   await expect(page.locator('button:has-text("Add to This Page")')).toBeEnabled()
 
-  // Cancel restores the previous pane state without a mutation request.
+  // Cancel discards both draft fields and sends no action-bearing request.
   await page.locator("#edit-meta-newtag-form button.btn-danger").click()
   await expect(page.locator("#edit-meta-newtag-form")).toHaveCount(0)
   await expect(page.locator("#action-area #edit-meta-addbutton")).toBeVisible()
-  expect(mutations, "cancel must not send saveMetaTag/deleteMetaTag").toEqual([])
+  await clickAddNewMetaTag(page)
+  expect(await page.locator('input[name="metaName"]').inputValue()).toBe("")
+  expect(await page.locator('input[name="metaContent"]').inputValue()).toBe("")
+  expect(mutations, "cancel must not send an Edit Meta action").toEqual([])
+  expect(writeRequests, "cancel must not issue any app write request").toEqual([])
+})
+
+test("Edit Meta cancel discards drafts across pane close, pane switch, and reload", async ({
+  page
+}) => {
+  const { mutations, writeRequests } = await interceptEditMetaModule(page)
+  await openEditMetaPane(page)
+
+  const expectPersistedFixtureRow = async () => {
+    await expect(page.locator("#action-area")).toContainText("fixture-existing")
+    await expect(page.locator("#action-area")).toContainText("unchanged-value")
+  }
+  const expectBlankDraft = async () => {
+    await clickAddNewMetaTag(page)
+    expect(await page.locator('input[name="metaName"]').inputValue()).toBe("")
+    expect(await page.locator('input[name="metaContent"]').inputValue()).toBe("")
+  }
+  const fillDraft = async (name: string) => {
+    await page.locator('input[name="metaName"]').fill(name)
+    await page.locator('input[name="metaContent"]').fill("must-not-return")
+  }
+
+  await expectPersistedFixtureRow()
+  await expectBlankDraft()
+  await fillDraft("pane-close-draft")
+  await page.locator("#action-area .action-area-close").click()
+  await expect(page.locator("#action-area")).toHaveClass(/hidden/u)
+  await openEditMetaPaneFromOptions(page)
+  await expectPersistedFixtureRow()
+  await expectBlankDraft()
+
+  await fillDraft("pane-switch-draft")
+  const appendButton = page.locator("#edit-append-button")
+  if (!(await appendButton.isVisible())) {
+    await waitForSvelteDelegatedHandler(page, "#more-options-button")
+    await page.locator("#more-options-button").click()
+  }
+  await expect(appendButton).toBeVisible()
+  await waitForSvelteDelegatedHandler(page, "#edit-append-button")
+  await page.locator("#edit-append-button").click()
+  await expect(page.locator("#action-area .page-append-header")).toBeVisible()
+  await openEditMetaPaneFromOptions(page)
+  await expectPersistedFixtureRow()
+  await expectBlankDraft()
+
+  await fillDraft("reload-draft")
+  await page.reload()
+  await waitForWikidotHydration(page)
+  await expect(page.locator("#action-area")).toHaveClass(/hidden/u)
+  await openEditMetaPaneFromOptions(page)
+  await expectPersistedFixtureRow()
+  await expectBlankDraft()
+  expect(mutations, "discarding drafts must not issue any Edit Meta action").toEqual([])
+  expect(writeRequests, "discarding drafts must not issue any app write request").toEqual(
+    []
+  )
 })
 
 test("Edit Meta new-tag form stays bounded at 375px", async ({ page }) => {
-  const mutations = await interceptEditMetaModule(page)
+  const { mutations, writeRequests } = await interceptEditMetaModule(page)
   await page.setViewportSize({ width: 375, height: 812 })
   await openEditMetaPane(page)
 
@@ -192,10 +274,11 @@ test("Edit Meta new-tag form stays bounded at 375px", async ({ page }) => {
   await page.locator("#edit-meta-newtag-form button.btn-danger").click()
   await expect(page.locator("#edit-meta-newtag-form")).toHaveCount(0)
   expect(mutations).toEqual([])
+  expect(writeRequests).toEqual([])
 })
 
 test("Edit Meta new-tag form stays usable on desktop", async ({ page }) => {
-  const mutations = await interceptEditMetaModule(page)
+  const { mutations, writeRequests } = await interceptEditMetaModule(page)
   await page.setViewportSize({ width: 1280, height: 800 })
   await openEditMetaPane(page)
 
@@ -208,12 +291,13 @@ test("Edit Meta new-tag form stays usable on desktop", async ({ page }) => {
   await page.locator("#edit-meta-newtag-form button.btn-danger").click()
   await expect(page.locator("#edit-meta-newtag-form")).toHaveCount(0)
   expect(mutations).toEqual([])
+  expect(writeRequests).toEqual([])
 })
 
 test("Add to This Page keeps the saveMetaTag wire contract without widening the layout", async ({
   page
 }) => {
-  const mutations = await interceptEditMetaModule(page)
+  const { mutations } = await interceptEditMetaModule(page)
   await page.setViewportSize({ width: 320, height: 720 })
   await openEditMetaPane(page)
 
