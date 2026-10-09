@@ -75,3 +75,55 @@ test("a stale active file-list response cannot replace the Restore view", async 
   await expectDeletedRestoreView(page)
   await expect(page.locator(".file-list")).not.toContainText(ACTIVE_FILE_NAME)
 })
+
+test("a stale failed file-list response cannot show an error or replace the Restore view", async ({
+  page
+}) => {
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  const heldActiveLists: Route[] = []
+  await page.route(
+    (url) => url.search === "?/fileList",
+    async (route) => {
+      const body = JSON.parse(route.request().postData() ?? "{}") as { deleted?: boolean }
+      if (body.deleted === false && heldActiveLists.length === 0) {
+        heldActiveLists.push(route)
+        return
+      }
+      await route.continue()
+    }
+  )
+
+  await page.goto("/page-workflow-probe", { waitUntil: "domcontentloaded" })
+  await waitForSvelteDelegatedHandler(page, "#files-button")
+  await page.locator("#files-button").click()
+  await expect.poll(() => heldActiveLists.length).toBe(1)
+
+  await page
+    .locator(".file-panel")
+    .getByRole("button", { name: "restore", exact: true })
+    .first()
+    .click()
+  await expectDeletedRestoreView(page)
+
+  // Answer the superseded active request with a failure in SvelteKit's
+  // devalue action-result shape; it must neither show a popup nor replace rows.
+  const staleFailure = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).search === "?/fileList" &&
+      (response.request().postData() ?? "").includes('"deleted":false')
+  )
+  await heldActiveLists[0].fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({
+      type: "failure",
+      status: 500,
+      data: JSON.stringify([{ message: 1 }, "Stale failure"])
+    })
+  })
+  await staleFailure
+  await page.waitForTimeout(500)
+
+  await expect(page.getByText("Stale failure")).toHaveCount(0)
+  await expectDeletedRestoreView(page)
+})
