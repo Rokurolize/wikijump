@@ -73,10 +73,11 @@ export const fixtureState = {
     parentUpdate: [],
     sessionGet: [],
     userGet: [],
+    userEdit: [],
     voteSet: [],
     voteRemove: []
   },
-  /** @type {Array<Record<string, unknown>>} */
+  /** @type {Record<string, unknown>[]} */
   userCreateRequests: [],
   /** @type {Record<string, RecordedRpcRequest[]>} */
   fileRequests: {

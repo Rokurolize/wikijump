@@ -1,15 +1,64 @@
+import { fixtureState } from "./context.js"
+
 /** @param {{ rpcRequest: any }} input */
 export const handleProfileRpc = ({ rpcRequest }) => {
+  if (rpcRequest.method === "user_edit") {
+    fixtureState.pageWriteRequests.userEdit.push({
+      paramKeys: Object.keys(rpcRequest.params ?? {}).sort()
+    })
+    return undefined
+  }
   if (rpcRequest.method !== "user_view") return undefined
 
   const params = rpcRequest.params ?? {}
-  if (
-    params.site_id !== 6000005 ||
-    !Array.isArray(params.locales) ||
-    params.session_token !== undefined
-  ) {
+  if (params.site_id !== 6000005 || !Array.isArray(params.locales)) {
     return undefined
   }
+
+  if (
+    params.session_token === "fixture-authenticated-session-token" &&
+    params.user === undefined
+  ) {
+    return {
+      result: {
+        type: "user_found",
+        data: {
+          user: {
+            user_id: 6000008,
+            user_type: "regular",
+            created_at: "2026-01-01T00:00:00Z",
+            updated_at: null,
+            deleted_at: null,
+            from_wikidot: false,
+            name: "Fixture Member",
+            slug: "fixture-member",
+            name_changes_left: 0,
+            last_name_change_added_at: "2026-01-01T00:00:00Z",
+            last_renamed_at: null,
+            email: "fixture-member@example.test",
+            email_verified_at: null,
+            email_validation_info: null,
+            email_validation_at: null,
+            password: "",
+            multi_factor_secret: null,
+            multi_factor_recovery_codes: null,
+            locales: ["en"],
+            avatar_s3_hash: [17, 34, 51],
+            forum_signature: null,
+            real_name: null,
+            gender: null,
+            birthday: null,
+            location: null,
+            biography: null,
+            website: null,
+            user_page: null
+          }
+        }
+      }
+    }
+  }
+
+  if (params.session_token !== undefined) return undefined
 
   // Only exact roster slugs resolve; inherited Object.prototype keys such as
   // "constructor" must keep failing closed instead of serving a bogus profile.
