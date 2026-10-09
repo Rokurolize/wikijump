@@ -62,4 +62,8 @@
   :global(#print-source-info) {
     margin-bottom: 0.75rem;
   }
+
+  :global(#print-source-info[hidden]) {
+    display: none !important;
+  }
 </style>
