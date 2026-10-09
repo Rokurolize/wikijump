@@ -1,9 +1,4 @@
-import {
-  expect,
-  installNativeEventListenerProbe,
-  test,
-  waitForNativeEventListener
-} from "./hermetic-playwright"
+import { expect, test } from "./hermetic-playwright"
 
 const SITE_HEADERS = {
   "X-Wikijump-Site-Id": "6000005",
@@ -24,7 +19,6 @@ const PAGES = [
 test("native footer and About diagnostics stay within narrow viewports", async ({
   page
 }) => {
-  await installNativeEventListenerProbe(page)
   for (const { path, widths } of PAGES) {
     await page.setExtraHTTPHeaders(
       path === "/platform:search" ? PLATFORM_HEADERS : SITE_HEADERS
@@ -97,14 +91,16 @@ test("native footer and About diagnostics stay within narrow viewports", async (
       }
 
       if (path === "/platform:search" && width === 280) {
-        await waitForNativeEventListener(page, null, "submit")
+        await page.waitForLoadState("networkidle")
         await page.route("**/search:all/a/pf/q/responsive", async (route) =>
           route.fulfill({ status: 200, body: "Search route reached" })
         )
         const searchForm = page.locator("#search-form-all")
         await searchForm.locator("#search-form-all-input").fill("responsive")
-        await searchForm.locator("input[type='submit']").click()
-        await expect(page).toHaveURL(/\/search:all\/a\/pf\/q\/responsive$/u)
+        await Promise.all([
+          page.waitForURL(/\/search:all\/a\/pf\/q\/responsive$/u),
+          searchForm.locator("input[type='submit']").click()
+        ])
       }
 
       if (width === 320) {
