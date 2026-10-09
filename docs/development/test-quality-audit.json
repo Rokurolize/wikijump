@@ -6,7 +6,7 @@
     "wikidot-verification",
     "executed shared helpers"
   ],
-  "inventory_digest": "1b23d5bfa5f3efcd85bf11830af61092bec30dc332e0e603fa9ffa1cd16a34a8",
+  "inventory_digest": "95d0266ae2324b76a2a13f13944a4e04ba43c2356fc3290dad230d263ca8e61f",
   "inputs": [
     {
       "path": "deepwell/Cargo.toml",
@@ -6509,6 +6509,14 @@
       "review": null
     },
     {
+      "path": "framerail/src/lib/wikidot/wikidot-footnotes.ts",
+      "sha256": "3095a32d568e90bacef2eb563babb0b564c63571467a5811571612e45e569d39",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "framerail/src/lib/wikidot/wikidot-gallery-lightbox.js",
       "sha256": "08a6bbd9861b776e81af0432815b4cfb6e9e721c998567d7a0bf065f3e23eee3",
       "status": "pending",
@@ -6671,6 +6679,14 @@
     {
       "path": "framerail/src/lib/wikidot/wikidot-tabviews.ts",
       "sha256": "0a497ad9ec915338de3c1e9f28a6130b3801157a62834a10d50fdd78e22144ba",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/lib/wikidot/wikidot-toc.ts",
+      "sha256": "290a7f7345c1e19b6ea9e93520c37af5829a84d85a0c3876ec521e65a890bb91",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -11383,10 +11399,16 @@
   ],
   "proofs": [
     {
-      "id": "resource-scanner-mutation-20261009e",
+      "id": "resource-scanner-mutation-20261009h",
       "kind": "mutation",
-      "path": "docs/development/test-quality-audit/resource-scanner-mutation-20261009e/resource-scanner-mutation.json",
-      "sha256": "6cd8abfd2bdc04071f37ae43483260c6e3d929743463dd5fd249e28273abbe16"
+      "path": "docs/development/test-quality-audit/resource-scanner-mutation-20261009h/resource-scanner-mutation.json",
+      "sha256": "e95dfb806491e41fb264cc81297cf20c859ec51080c61fff8e49abda2398a51f"
+    },
+    {
+      "id": "test-quality-full-coverage-20261009h",
+      "kind": "coverage",
+      "path": "docs/development/test-quality-audit/test-quality-coverage-20261009h/receipt.json",
+      "sha256": "0c92d2037b8bb41d74ac7a212109ae8754b18010176c7f3485b5603113ff5ee7"
     }
   ],
   "acceptance": null,
