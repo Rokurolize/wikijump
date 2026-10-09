@@ -484,3 +484,61 @@ fn terminal_scanner_work_counts_projected_merge_and_literal_advances() {
         );
     }
 }
+
+#[test]
+fn unclosed_collapsible_boundary_accounts_for_suffix_work_and_literal_advances() {
+    // The unclosed module/collapsible boundary comes from the retained
+    // 2026-08-01 Wikidot PagePreviewModule observation exercised by
+    // `corpus_unclosed_at_marker_body_owns_the_first_collapsible_opening`.
+    // The extra escaped suffixes extend only scanner accounting coverage;
+    // they are NOT separate live Wikidot behavior oracles.
+    let consumed = concat!(
+        "[[module ListPages fullname=\"@@##red|missing-page##@@\" ",
+        "separate=\"yes\" limit=\"250\"]]@@\n",
+        "documentation\n",
+        "> @@[[module ListPages fullname=\"@@##red|example##@@\"]]@@\n",
+        "[[collapsible show=\"+ Syntax\" hide=\"- Syntax\"]]",
+    );
+    for (label, suffix, expected_work, expected_advances) in [
+        (
+            "no extra literal",
+            "\nVISIBLE\n[[/collapsible]]\n[[module ListPages name=\"later-valid\"]]ROW[[/module]]",
+            2_936,
+            4,
+        ),
+        (
+            "one escaped module",
+            "\nVISIBLE\n[[/collapsible]]\n@@[[module ListPages name=\"literal-only\"]]HIDDEN[[/module]]@@\n[[module ListPages name=\"later-valid\"]]ROW[[/module]]",
+            3_314,
+            8,
+        ),
+        (
+            "additional escaped prefix",
+            "\nVISIBLE\n[[/collapsible]]\n@@hidden@@\n@@[[module ListPages name=\"literal-only\"]]HIDDEN[[/module]]@@\n[[module ListPages name=\"later-valid\"]]ROW[[/module]]",
+            3_386,
+            12,
+        ),
+    ] {
+        let source = format!("\t{consumed}{suffix}");
+        let (modules, work, advances) =
+            find_list_pages_module_matches_with_cursor_work(&source);
+        assert_eq!(modules.len(), 2, "{label}: preserve both modules");
+        assert_eq!(modules[0].start, 1, "{label}");
+        assert_eq!(modules[0].end, consumed.len() + 1, "{label}");
+        assert_eq!(modules[0].body, "", "{label}");
+        assert!(!modules[0].preserve_original, "{label}");
+        let expected_start = source
+            .rfind("[[module ListPages name=\"later-valid\"]]")
+            .unwrap();
+        assert_eq!(modules[1].start, expected_start, "{label}: absolute offset");
+        assert_eq!(modules[1].end, source.len(), "{label}: suffix end");
+        assert_eq!(modules[1].body, "ROW", "{label}");
+        assert_eq!(modules[1].head, "name=\"later-valid\"", "{label}");
+        assert_eq!(advances, expected_advances, "{label}: suffix cursor work");
+        assert_eq!(work, expected_work, "{label}: full prefix/suffix work");
+        assert!(
+            work <= source.len() * MAX_SINGLE_SCANNER_WORK_MULTIPLIER,
+            "{label}"
+        );
+    }
+}
