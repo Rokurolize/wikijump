@@ -41,7 +41,7 @@ const config: PlaywrightTestConfig = {
     },
     {
       name: "webkit-https-edit-meta",
-      testMatch: "**/edit-meta-newtag-mobile.spec.ts",
+      testMatch: "**/{edit-meta-newtag-mobile,module-accessible-names}.spec.ts",
       use: {
         ...withBaseUse(devices["Desktop Safari"]),
         ignoreHTTPSErrors: true
