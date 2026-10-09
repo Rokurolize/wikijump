@@ -6,7 +6,7 @@
     "wikidot-verification",
     "executed shared helpers"
   ],
-  "inventory_digest": "7854a033b0cea33ca20c8e1f25f64d6f20edacc7534a3e8e2fd9141bbb7653bb",
+  "inventory_digest": "b905fe53ea42c831332fd8b95613ff9c218bcdc678a83d269e962523a6609c80",
   "inputs": [
     {
       "path": "deepwell/Cargo.toml",
@@ -6934,7 +6934,7 @@
     },
     {
       "path": "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
-      "sha256": "9cc01f3ba33fdef70c7dd8b0189e980a37fd9b45f1335ae0af8b2720d5ab7e32",
+      "sha256": "4d989fdba2da6f00e93e7ae1ff961610497f72b672fa4cef63cb8cbd0305f0e6",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6943,6 +6943,14 @@
     {
       "path": "framerail/src/routes/[slug]/[...extra]/ParentPane.svelte",
       "sha256": "d38be379fd2bdf89267c61c259fc095cf34395062c4f6f64f2601127f60565e9",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/routes/[slug]/[...extra]/responsive-tables.css",
+      "sha256": "ca6113280118aa8174dceee14851bb674a2c76ac83c0b9abc90879a441911064",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7591,6 +7599,14 @@
     {
       "path": "framerail/vite.config.ts",
       "sha256": "8e28c2c5f97a7bd5dc8303c42c9dc3314413192454008efb095a6b0a14218f51",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/vite.playwright-https.config.ts",
+      "sha256": "accee2b4b334e13be56f20bbd652adaf839059e878468d7011738704bbf016ef",
       "status": "pending",
       "anchors": [],
       "findings": [],
