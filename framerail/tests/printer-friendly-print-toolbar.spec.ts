@@ -33,7 +33,7 @@ test("printer-friendly controls stay on screen and leave print output", async ({
 
   await page.emulateMedia({ media: "print" })
   await expectVisible(page, "#print-options", false)
-  await expectVisible(page, "#print-options + hr", false)
+  await expectVisible(page, "#container > hr", false)
   await expect(page.getByRole("link", { name: "PRINT THE PAGE" })).toBeHidden()
   await expect(page.getByRole("link", { name: "Close this window" })).toBeHidden()
   await expectVisible(page, "#print-source-info", true)
@@ -49,28 +49,26 @@ test("font size chosen before printing keeps article formatting without controls
   page,
   browserName
 }) => {
+  // WebKit upgrades this http://localhost page's subresources to https
+  // (Kit CSP upgrade-insecure-requests, no TLS in the dev server), so the
+  // font-size handler is never attached there. Skip rather than set the
+  // handler's style directly, which would pass without exercising it.
+  test.skip(
+    browserName === "webkit",
+    "WebKit local http hydration does not attach the font-size handler; run on an https candidate"
+  )
   await page.setExtraHTTPHeaders(headers)
   await page.goto(printerFriendlyPath, { waitUntil: "domcontentloaded" })
-  if (browserName === "webkit") {
-    // WebKit upgrades the http://localhost subresources of this page to https
-    // because the Kit CSP sets upgrade-insecure-requests, and the local dev
-    // server has no TLS, so hydration never attaches the font-size handler.
-    // Write the same inline style the handler writes so the print check still runs.
-    await page.locator("#print-content").evaluate((element) => {
-      element.style.fontSize = "12pt"
-    })
-  } else {
-    const twelvePoint = page.getByRole("link", { name: "12pt", exact: true })
-    // The font-size handler is attached by hydration, so repeat the idempotent
-    // click until the generated handler has taken effect.
-    await expect(async () => {
-      await twelvePoint.click()
-      await expect(page.locator("#print-content")).toHaveAttribute(
-        "style",
-        /font-size: 12pt/u
-      )
-    }).toPass()
-  }
+  const twelvePoint = page.getByRole("link", { name: "12pt", exact: true })
+  // The font-size handler is attached by hydration, so repeat the idempotent
+  // click until the generated handler has taken effect.
+  await expect(async () => {
+    await twelvePoint.click()
+    await expect(page.locator("#print-content")).toHaveAttribute(
+      "style",
+      /font-size: 12pt/u
+    )
+  }).toPass()
 
   await page.emulateMedia({ media: "print" })
   await expectVisible(page, "#print-options", false)

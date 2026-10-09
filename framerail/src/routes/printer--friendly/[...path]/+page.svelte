@@ -67,7 +67,7 @@
     /* The on-screen option controls and the separator generated for them
        must not reach printed or PDF output. Source attribution stays. */
     :global(body.print-body #container #print-options),
-    :global(body.print-body #container #print-options + hr) {
+    :global(body.print-body #container > hr) {
       display: none;
     }
   }

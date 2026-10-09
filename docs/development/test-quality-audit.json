@@ -7478,7 +7478,7 @@
     },
     {
       "path": "framerail/src/routes/printer--friendly/[...path]/+page.svelte",
-      "sha256": "63cf85d830bcd3368b9612e5ba6e1ee1a7cdeaf2e39aef2d76b5720e8ae6fb90",
+      "sha256": "ac11588f94706805f2bf8f117bb96d6265cac3b54235fcf7a0e5d5a1d762af66",
       "status": "pending",
       "anchors": [],
       "findings": [],
