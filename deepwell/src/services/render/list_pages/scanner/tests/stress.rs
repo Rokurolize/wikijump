@@ -612,3 +612,40 @@ fn unclosed_listpages_empty_tail_distinguishes_default_and_explicit_query() {
         );
     }
 }
+
+#[test]
+fn recovered_dangling_quote_without_closer_keeps_default_template_tail_ownership() {
+    // The malformed head shape is retained from the 2026-08-01 Wikidot
+    // PagePreviewModule boundary matrix. The *unclosed* suffix variants
+    // here assert scanner ownership invariants, not separate live Wikidot
+    // observations. The default-template path must differ from an ordinary
+    // well-formed unclosed explicit query.
+    let prefix = "[[module ListPages category=\"*\" limit=\"1\" order=\"name\" ";
+    for (label, tail, suffix, consume_empty_tail) in [
+        (
+            "unclosed with row",
+            "mystery=\"alpha]]",
+            "\nAUTHORED-CUSTOM-ROW\n",
+            true,
+        ),
+        (
+            "second unclosed head",
+            "alternate=\"bravo-42]]",
+            "\nAUTHORED-CUSTOM-ROW\n",
+            true,
+        ),
+    ] {
+        let source = format!("{prefix}{tail}{suffix}");
+        let matches = find_list_pages_module_matches(&source);
+        assert_eq!(matches.len(), 1, "{label}: {matches:#?}");
+        let module = &matches[0];
+        assert_eq!(module.start, 0, "{label}");
+        assert_eq!(module.body_start, prefix.len() + tail.len() + 1, "{label}");
+        assert_eq!(module.end, module.body_start, "{label}");
+        assert_eq!(module.body, "", "{label}");
+        assert_eq!(module.original, &source[..module.body_start], "{label}");
+        assert!(!module.runtime_safe && !module.preserve_original, "{label}");
+        assert!(!module.head.is_empty(), "{label}");
+        assert_eq!(module.consume_empty_tail, consume_empty_tail, "{label}");
+    }
+}
