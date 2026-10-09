@@ -4382,7 +4382,7 @@
     },
     {
       "path": "deepwell/src/services/view/service.rs",
-      "sha256": "b61a69f5a8853914690d8aeba0bab473903973c27c21354fd84ee86e883b1876",
+      "sha256": "ff0487c68cf12cb6b65c926870dcb470449b523840db44939bf735bf7db94305",
       "status": "pending",
       "anchors": [],
       "findings": [],
