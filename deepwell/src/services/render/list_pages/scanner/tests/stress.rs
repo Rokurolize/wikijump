@@ -578,3 +578,37 @@ fn unclosed_preservation_counts_literal_advances_in_resumed_suffix() {
         "include all scanner and resumed-suffix work additively"
     );
 }
+
+#[test]
+fn unclosed_listpages_empty_tail_distinguishes_default_and_explicit_query() {
+    // These are internal scanner ownership assertions, not fresh live Wikidot
+    // oracles. Neither ordinary unclosed invocation has an authored closing
+    // module tag to consume, regardless of whether its head is empty.
+    for (label, source, head, consume_tail) in [
+        ("bare", "[[module ListPages]]", "", false),
+        (
+            "explicit query",
+            "[[module ListPages name=\"definitely-missing\"]]",
+            "name=\"definitely-missing\"",
+            false,
+        ),
+    ] {
+        let (matches, work, literal_advances) =
+            find_list_pages_module_matches_with_cursor_work(source);
+        assert_eq!(matches.len(), 1, "{label}: {matches:#?}");
+        let module = &matches[0];
+        assert_eq!(module.start, 0, "{label}");
+        assert_eq!(module.body_start, source.len(), "{label}");
+        assert_eq!(module.end, source.len(), "{label}");
+        assert_eq!(module.head, head, "{label}");
+        assert_eq!(module.body, "", "{label}");
+        assert_eq!(module.original, source, "{label}");
+        assert!(!module.preserve_original, "{label}");
+        assert_eq!(module.consume_empty_tail, consume_tail, "{label}");
+        assert_eq!(literal_advances, 0, "{label}");
+        assert!(
+            work > 0 && work <= source.len() * MAX_SINGLE_SCANNER_WORK_MULTIPLIER,
+            "{label}"
+        );
+    }
+}
