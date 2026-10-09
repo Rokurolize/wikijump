@@ -103,6 +103,7 @@ const foundPageTranslateKeys = (
     "wiki-page-vote.dislike": {},
     "wiki-page-vote.cancel": {},
     "wiki-page-vote.who-rated": {},
+    "wiki-page-vote.user": {},
     "files": {},
     "upload": {},
     "restore": {},

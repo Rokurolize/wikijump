@@ -86,6 +86,22 @@ export const pages = {
     wikitext: "**Item #:** SCP-173",
     compiled_body_html: "<p><strong>Item #:</strong> SCP-173</p>"
   },
+  "vote-pane-wikijump-probe": {
+    page_id: 30002178,
+    revision_id: 90002178,
+    page_created_at: "2026-10-10T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-10-10T00:00:00Z",
+    revision_user_id: 456,
+    creator_user_id: 456,
+    title: "Vote pane fixture",
+    slug: "vote-pane-wikijump-probe",
+    tags: [],
+    rating: 0,
+    wikitext: "Vote pane fixture",
+    compiled_body_html: "<p>Vote pane fixture.</p>"
+  },
   "scp-173-parent": {
     page_id: 3000172,
     revision_id: 9000172,
@@ -644,7 +660,7 @@ export const toArticleViewResult = (page) => ({
         page_category_id: 1,
         slug: page.slug,
         discussion_thread_id: null,
-        layout: "wikidot"
+        layout: page.slug === "vote-pane-wikijump-probe" ? "wikijump" : "wikidot"
       },
       page_revision: {
         revision_id: page.revision_id,
