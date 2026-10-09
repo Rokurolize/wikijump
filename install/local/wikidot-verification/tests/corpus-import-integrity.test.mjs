@@ -58,6 +58,19 @@ test('integrity report passes matching source, provenance, import state, and req
   assert.equal(result.pages[0].rendered_body_characters, 42);
 });
 
+test('integrity report does not accept a shell-ready page as a completed import', () => {
+  const bytes = Buffer.from('SCP-173\n', 'utf8');
+  const sha = crypto.createHash('sha256').update(bytes).digest('hex');
+  const result = verifyIntegrityRows(
+    [{fullname: 'scp-173', source_sha256: sha}],
+    `scp-173|30000001|30000002|${bytes.toString('base64')}|${sha}|42|shell_ready`,
+    {renderedBodySlugs: ['scp-173']},
+  );
+
+  assert.equal(result.status, 'fail');
+  assert.deepEqual(result.failures.map((failure) => failure.reason), ['import_not_done:shell_ready']);
+});
+
 test('integrity report fails closed for missing pages and source, provenance, import, or body mismatches', () => {
   const bytes = Buffer.from('\n', 'utf8');
   const sha = crypto.createHash('sha256').update('real source').digest('hex');
