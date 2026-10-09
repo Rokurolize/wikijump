@@ -4758,7 +4758,7 @@
     },
     {
       "path": "framerail/playwright.browser-support.config.ts",
-      "sha256": "7d7f1af9c231eaffbbb8c85f9293e5479bbe140a05e3550d7754907a77d24d16",
+      "sha256": "64f3dd54866986806b58a7688dfd9dd3ae3b1e1c884131ba5413c9524cf0f78f",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6814,7 +6814,7 @@
     },
     {
       "path": "framerail/src/routes/[slug]/[...extra]/EditMetaPane.svelte",
-      "sha256": "445127ccfe2469899af05fd858794a3be636df083dac3bd33518bba06948845a",
+      "sha256": "85fb3442f6d2eadbff08381cf1d0898a40e661b5516d2083f98e2eaeeed4338f",
       "status": "pending",
       "anchors": [],
       "findings": [],

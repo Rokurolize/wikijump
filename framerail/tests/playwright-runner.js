@@ -1,3 +1,4 @@
+import { rmSync } from "node:fs"
 import { spawn } from "node:child_process"
 import { createServer } from "node:net"
 import { fileURLToPath } from "node:url"
@@ -21,11 +22,18 @@ const allocatePort = () =>
 
 const appPort = await allocatePort()
 const fixturePort = await allocatePort()
+const browserSupportHttps = process.argv.includes("playwright.browser-support.config.ts")
+const cleanupBrowserSupportHttps = () => {
+  if (browserSupportHttps) {
+    rmSync("/tmp/wikijump-playwright-tls-2242", { recursive: true, force: true })
+  }
+}
 const child = spawn(process.execPath, [playwrightCli, "test", ...process.argv.slice(2)], {
   env: {
     ...process.env,
     PLAYWRIGHT_APP_PORT: String(appPort),
-    PLAYWRIGHT_FIXTURE_PORT: String(fixturePort)
+    PLAYWRIGHT_FIXTURE_PORT: String(fixturePort),
+    PLAYWRIGHT_HTTPS_APP_PORT: "4373"
   },
   stdio: "inherit"
 })
@@ -35,9 +43,11 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 }
 
 child.once("error", (error) => {
+  cleanupBrowserSupportHttps()
   console.error(error)
   process.exitCode = 1
 })
 child.once("exit", (code, signal) => {
+  cleanupBrowserSupportHttps()
   process.exitCode = signal ? 1 : (code ?? 1)
 })
