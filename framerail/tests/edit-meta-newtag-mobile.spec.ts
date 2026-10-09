@@ -4,7 +4,10 @@ const SITE_HEADERS = {
   "X-Wikijump-Site-Id": "6000005",
   "X-Wikijump-Site-Slug": "scp-wiki"
 }
-const APP_URL = `http://localhost:${process.env.PLAYWRIGHT_APP_PORT ?? "4173"}`
+const appURL = (projectName: string) =>
+  projectName === "webkit-https-edit-meta"
+    ? `https://localhost:${process.env.PLAYWRIGHT_HTTPS_APP_PORT ?? "4373"}`
+    : `http://localhost:${process.env.PLAYWRIGHT_APP_PORT ?? "4173"}`
 
 const EDIT_META_MODULE = "edit/EditMetaModule"
 
@@ -25,10 +28,13 @@ const FIXTURE_EDIT_META_BODY = `<h1>Meta tags for the page</h1>
  * intercepted action-bearing request is recorded so the spec can prove
  * cancellation makes no write request without any server mutation.
  */
-const interceptEditMetaModule = async (page: import("@playwright/test").Page) => {
+const interceptEditMetaModule = async (
+  page: import("@playwright/test").Page,
+  baseURL: string
+) => {
   const mutations: string[] = []
   const writeRequests: string[] = []
-  const appOrigin = new URL(APP_URL).origin
+  const appOrigin = new URL(baseURL).origin
   page.on("request", (request) => {
     if (request.method() === "GET" || request.method() === "HEAD") return
     const url = new URL(request.url())
@@ -85,12 +91,22 @@ const openEditMetaPaneFromOptions = async (page: import("@playwright/test").Page
   await waitForSvelteDelegatedHandler(page, "#edit-meta-addbutton button")
 }
 
-const openEditMetaPane = async (page: import("@playwright/test").Page) => {
+const openEditMetaPane = async (
+  page: import("@playwright/test").Page,
+  baseURL: string
+) => {
   await page.setExtraHTTPHeaders(SITE_HEADERS)
-  await page.goto(`${APP_URL}/scp-173`)
+  await page.goto(`${baseURL}/scp-173`)
   await waitForWikidotHydration(page)
   await openEditMetaPaneFromOptions(page)
 }
+
+test.beforeEach(({ browserName }, testInfo) => {
+  test.skip(
+    browserName === "webkit" && testInfo.project.name === "webkit",
+    "WebKit Edit Meta acceptance runs against the real-TLS browser-support fixture"
+  )
+})
 
 const clickAddNewMetaTag = async (page: import("@playwright/test").Page) => {
   await page.locator("#edit-meta-addbutton button").click()
@@ -172,10 +188,11 @@ const expectFormBounded = async (
 
 test("Edit Meta new-tag form stays bounded at 320px and sends no mutation on cancel", async ({
   page
-}) => {
-  const { mutations, writeRequests } = await interceptEditMetaModule(page)
+}, testInfo) => {
+  const baseURL = appURL(testInfo.project.name)
+  const { mutations, writeRequests } = await interceptEditMetaModule(page, baseURL)
   await page.setViewportSize({ width: 320, height: 720 })
-  await openEditMetaPane(page)
+  await openEditMetaPane(page, baseURL)
 
   const before = await measure(page)
   await clickAddNewMetaTag(page)
@@ -207,9 +224,10 @@ test("Edit Meta new-tag form stays bounded at 320px and sends no mutation on can
 
 test("Edit Meta cancel discards drafts across pane close, pane switch, and reload", async ({
   page
-}) => {
-  const { mutations, writeRequests } = await interceptEditMetaModule(page)
-  await openEditMetaPane(page)
+}, testInfo) => {
+  const baseURL = appURL(testInfo.project.name)
+  const { mutations, writeRequests } = await interceptEditMetaModule(page, baseURL)
+  await openEditMetaPane(page, baseURL)
 
   const expectPersistedFixtureRow = async () => {
     await expect(page.locator("#action-area")).toContainText("fixture-existing")
@@ -261,10 +279,11 @@ test("Edit Meta cancel discards drafts across pane close, pane switch, and reloa
   )
 })
 
-test("Edit Meta new-tag form stays bounded at 375px", async ({ page }) => {
-  const { mutations, writeRequests } = await interceptEditMetaModule(page)
+test("Edit Meta new-tag form stays bounded at 375px", async ({ page }, testInfo) => {
+  const baseURL = appURL(testInfo.project.name)
+  const { mutations, writeRequests } = await interceptEditMetaModule(page, baseURL)
   await page.setViewportSize({ width: 375, height: 812 })
-  await openEditMetaPane(page)
+  await openEditMetaPane(page, baseURL)
 
   const before = await measure(page)
   await clickAddNewMetaTag(page)
@@ -277,10 +296,11 @@ test("Edit Meta new-tag form stays bounded at 375px", async ({ page }) => {
   expect(writeRequests).toEqual([])
 })
 
-test("Edit Meta new-tag form stays usable on desktop", async ({ page }) => {
-  const { mutations, writeRequests } = await interceptEditMetaModule(page)
+test("Edit Meta new-tag form stays usable on desktop", async ({ page }, testInfo) => {
+  const baseURL = appURL(testInfo.project.name)
+  const { mutations, writeRequests } = await interceptEditMetaModule(page, baseURL)
   await page.setViewportSize({ width: 1280, height: 800 })
-  await openEditMetaPane(page)
+  await openEditMetaPane(page, baseURL)
 
   const before = await measure(page)
   await clickAddNewMetaTag(page)
@@ -296,10 +316,11 @@ test("Edit Meta new-tag form stays usable on desktop", async ({ page }) => {
 
 test("Add to This Page keeps the saveMetaTag wire contract without widening the layout", async ({
   page
-}) => {
-  const { mutations } = await interceptEditMetaModule(page)
+}, testInfo) => {
+  const baseURL = appURL(testInfo.project.name)
+  const { mutations } = await interceptEditMetaModule(page, baseURL)
   await page.setViewportSize({ width: 320, height: 720 })
-  await openEditMetaPane(page)
+  await openEditMetaPane(page, baseURL)
 
   const before = await measure(page)
   await clickAddNewMetaTag(page)
