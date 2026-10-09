@@ -222,6 +222,24 @@ export const pages = {
     compiled_body_html:
       '<h1 id="toc0"><span>First heading</span></h1><h1 id="toc1"><span>Second heading</span></h1><table style="margin:0; padding:0"><tr><td style="margin:0; padding:0"><div id="toc"><div id="toc-action-bar"><a href="javascript:;" onclick="WIKIDOT.page.listeners.foldToc(event)">Fold</a><a style="display: none" href="javascript:;" onclick="WIKIDOT.page.listeners.unfoldToc(event)">Unfold</a></div><div class="title">Table of Contents</div><div id="toc-list"><div style="margin-left: 1em;"><a href="#toc0">First heading</a></div><div style="margin-left: 1em;"><a href="#toc1">Second heading</a></div></div></div></td></tr></table><div id="toc" class="floatright"><div id="toc-action-bar"><a href="javascript:;" onclick="WIKIDOT.page.listeners.foldToc(event)">Fold</a><a style="display: none" href="javascript:;" onclick="WIKIDOT.page.listeners.unfoldToc(event)">Unfold</a></div><div class="title">Table of Contents</div><div id="toc-list"><div style="margin-left: 1em;"><a href="#toc0">First heading</a></div><div style="margin-left: 1em;"><a href="#toc1">Second heading</a></div></div></div>'
   },
+  "wikidot-footnotes": {
+    page_id: 3000326,
+    revision_id: 9000326,
+    page_created_at: "2026-07-13T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-13T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Wikidot Footnotes",
+    slug: "wikidot-footnotes",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext:
+      "Reference one.[[footnote]]Note one.[[/footnote]] Reference two.[[footnote]]Note two.[[/footnote]]\n\n[[footnoteblock]]",
+    compiled_body_html:
+      '<p>Reference one.<sup class="footnoteref"><a id="footnoteref-1" href="javascript:;" class="footnoteref" onclick="WIKIDOT.page.utils.scrollToReference(\'footnote-1\')">1</a></sup> Reference two.<sup class="footnoteref"><a id="footnoteref-2" href="javascript:;" class="footnoteref" onclick="WIKIDOT.page.utils.scrollToReference(\'footnote-2\')">2</a></sup></p><div class="footnotes-footer"><div class="footnote-footer" id="footnote-1"><a href="javascript:;" onclick="WIKIDOT.page.utils.scrollToReference(\'footnoteref-1\')">1</a>. Note one.</div><div class="footnote-footer" id="footnote-2"><a href="javascript:;" onclick="WIKIDOT.page.utils.scrollToReference(\'footnoteref-2\')">2</a>. Note two.</div></div><div style="height: 1200px"></div><a id="ordinary-javascript-link" href="javascript:;" onclick="window.__unexpectedFootnoteAction = true">unrelated</a>'
+  },
   "search:all": {
     page_id: 3000325,
     revision_id: 9000325,
