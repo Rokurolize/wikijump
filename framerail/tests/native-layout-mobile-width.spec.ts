@@ -1,4 +1,9 @@
-import { expect, test } from "./hermetic-playwright"
+import {
+  expect,
+  installNativeEventListenerProbe,
+  test,
+  waitForNativeEventListener
+} from "./hermetic-playwright"
 
 const SITE_HEADERS = {
   "X-Wikijump-Site-Id": "6000005",
@@ -19,6 +24,7 @@ const PAGES = [
 test("native footer and About diagnostics stay within narrow viewports", async ({
   page
 }) => {
+  await installNativeEventListenerProbe(page)
   for (const { path, widths } of PAGES) {
     await page.setExtraHTTPHeaders(
       path === "/platform:search" ? PLATFORM_HEADERS : SITE_HEADERS
@@ -57,14 +63,10 @@ test("native footer and About diagnostics stay within narrow viewports", async (
           }))
           .slice(0, 8)
       }))
-      // The platform SearchAll size=30 input independently extends 7px at
-      // 280px; keep this footer assertion scoped to the footer's own bounds.
-      if (path !== "/platform:search" || width !== 280) {
-        expect(
-          dimensions.document,
-          `${path} at ${width}px: ${JSON.stringify(dimensions)}`
-        ).toBeLessThanOrEqual(dimensions.viewport + 1)
-      }
+      expect(
+        dimensions.document,
+        `${path} at ${width}px: ${JSON.stringify(dimensions)}`
+      ).toBeLessThanOrEqual(dimensions.viewport + 1)
 
       const footer = page.locator(".footer-inner")
       await expect(footer.locator(".footer-item a")).toHaveCount(4)
@@ -92,6 +94,17 @@ test("native footer and About diagnostics stay within narrow viewports", async (
           ])
           expect(text?.trim()).toBe(href)
         }
+      }
+
+      if (path === "/platform:search" && width === 280) {
+        await waitForNativeEventListener(page, null, "submit")
+        await page.route("**/search:all/a/pf/q/responsive", async (route) =>
+          route.fulfill({ status: 200, body: "Search route reached" })
+        )
+        const searchForm = page.locator("#search-form-all")
+        await searchForm.locator("#search-form-all-input").fill("responsive")
+        await searchForm.locator("input[type='submit']").click()
+        await expect(page).toHaveURL(/\/search:all\/a\/pf\/q\/responsive$/u)
       }
 
       if (width === 320) {
