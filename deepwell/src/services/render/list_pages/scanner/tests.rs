@@ -2551,3 +2551,62 @@ fn corpus_monospace_and_comment_owners_hide_listpages_candidates() {
         );
     }
 }
+#[test]
+fn preserved_module654_suffix_charges_projected_merge_and_recursive_work() {
+    // The unclosed head and raw-tail preservation is a retained live Wikidot
+    // behavioral oracle (unclosed_at_marker_preservation_does_not_hide_a_later_valid_module).
+    // Quoted-line continuation extensions below test internal work counters;
+    // their exact renderings are NOT independently verified live Wikidot oracles.
+    let preserved = "[[module ListPages name=\"missing\"]]";
+    let raw_tail = "@@\nDOC\n@@\n";
+    let later = "[[module ListPages name=\"later-valid\"]]ROW[[/module]]";
+    for (label, prefix, gap, expected_work, expected_advances) in [
+        ("no projection", "", "", 593, 4),
+        ("quoted prefix", "> quoted\\\n> second row\n", "", 1_522, 9),
+        ("quoted suffix", "", "> quoted\\\n> second row\n", 2_097, 14),
+        (
+            "literal and quoted prefix",
+            "@@hidden@@\n> quoted\\\n> second row\n",
+            "",
+            1_569,
+            12,
+        ),
+    ] {
+        let source = format!("{prefix}{preserved}{raw_tail}{gap}{later}");
+        let (modules, work, advances) =
+            find_list_pages_module_matches_with_cursor_work(&source);
+        assert_eq!(modules.len(), 2, "{label}: preserve and resume");
+        assert_eq!(modules[0].start, prefix.len(), "{label}");
+        assert_eq!(
+            modules[0].body_start,
+            prefix.len() + preserved.len(),
+            "{label}"
+        );
+        assert_eq!(modules[0].end, modules[0].body_start, "{label}");
+        assert!(
+            modules[0].preserve_original && modules[0].preserve_as_module654,
+            "{label}"
+        );
+        assert_eq!(modules[0].original, preserved, "{label}");
+        assert_eq!(
+            modules[1].start,
+            prefix.len() + preserved.len() + raw_tail.len() + gap.len(),
+            "{label}"
+        );
+        assert_eq!(modules[1].end, source.len(), "{label}");
+        assert_eq!(modules[1].body, "ROW", "{label}");
+        assert_eq!(modules[1].original, later, "{label}");
+        assert_eq!(
+            advances, expected_advances,
+            "{label}: literal traversal total"
+        );
+        assert_eq!(
+            work, expected_work,
+            "{label}: direct + projected + advances + merge + suffix"
+        );
+        assert!(
+            work <= source.len() * MAX_SINGLE_SCANNER_WORK_MULTIPLIER * 2,
+            "{label}"
+        );
+    }
+}
