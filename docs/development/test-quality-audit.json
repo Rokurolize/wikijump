@@ -5406,7 +5406,7 @@
     },
     {
       "path": "framerail/src/lib/page-error-data.ts",
-      "sha256": "a1745ca3a5a888b390caa275236a3b24b8c99f017d1914e74baa5a1ebea3bbaf",
+      "sha256": "d675a386e60ca13a0a3952dc1f9d9547a6cb49d23c9e8bccfc700fc40b429cc3",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6046,7 +6046,7 @@
     },
     {
       "path": "framerail/src/lib/server/load/page/page.ts",
-      "sha256": "00bc9b3bff24c46fddbbcd0b0bf8566e823ec8c4e1eaf417799d63ab2c2324e7",
+      "sha256": "51b0bc8a50e650af2fa11dbddec660a90973652c09a3b1f1b59cd8bf4a6ccc8b",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7502,7 +7502,7 @@
     },
     {
       "path": "framerail/src/routes/WikiPageError.svelte",
-      "sha256": "e4cd7350799cd9b5258f2acbdf1cd1419b8ce6fc3a213ba15e86c7faaf866b43",
+      "sha256": "2c970045f6aed675a58e49bd727c4cc832c9fe8677656f8d9a5cb1ad3376303b",
       "status": "pending",
       "anchors": [],
       "findings": [],
