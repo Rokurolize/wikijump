@@ -10,7 +10,7 @@ const withBaseUse = (device: (typeof devices)[keyof typeof devices]) => ({
 const config: PlaywrightTestConfig = {
   ...baseConfig,
   testMatch:
-    "**/{auth-accessible-names,browser-support,edit-meta-newtag-mobile,forum-start-routes,module-accessible-names,printer-friendly-print-toolbar}.spec.ts",
+    "**/{auth-accessible-names,browser-support,edit-meta-newtag-mobile,forum-start-routes,module-accessible-names,printer-friendly-print-toolbar,vote-pane-japanese-i18n}.spec.ts",
   webServer: [
     baseConfig.webServer!,
     {
@@ -41,7 +41,7 @@ const config: PlaywrightTestConfig = {
     },
     {
       name: "webkit-https-edit-meta",
-      testMatch: "**/edit-meta-newtag-mobile.spec.ts",
+      testMatch: "**/{edit-meta-newtag-mobile,vote-pane-japanese-i18n}.spec.ts",
       use: {
         ...withBaseUse(devices["Desktop Safari"]),
         ignoreHTTPSErrors: true

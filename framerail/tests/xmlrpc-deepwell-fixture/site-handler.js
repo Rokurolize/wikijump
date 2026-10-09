@@ -156,8 +156,36 @@ export const handleSiteRpc = ({ rpcRequest }) => {
           "confirm-password": "Confirm Password",
           "mfa-code": "MFA code"
         }
+    const voteLabels = isJapanese
+      ? {
+          "wiki-page-vote": "ページの評価",
+          "wiki-page-vote.description": "このページの内容を評価してみましょう。",
+          "wiki-page-vote.set": "投票する",
+          "wiki-page-vote.remove": "投票を取り消す",
+          "wiki-page-vote.list": "投票者一覧",
+          "wiki-page-vote.score": "評価",
+          "wiki-page-vote.like": "好き",
+          "wiki-page-vote.dislike": "好きじゃない",
+          "wiki-page-vote.cancel": "投票を取り消す",
+          "wiki-page-vote.who-rated": "誰がこのページに評価したかを閲覧"
+        }
+      : {
+          "wiki-page-vote": "Page rating",
+          "wiki-page-vote.description": "Simply rate contents of this page.",
+          "wiki-page-vote.set": "Cast vote",
+          "wiki-page-vote.remove": "Cancel vote",
+          "wiki-page-vote.list": "List votes",
+          "wiki-page-vote.score": "Rating",
+          "wiki-page-vote.like": "I like it",
+          "wiki-page-vote.dislike": "I don't like it",
+          "wiki-page-vote.cancel": "Cancel my vote",
+          "wiki-page-vote.who-rated": "Look who rated this page"
+        }
     result = Object.fromEntries(
-      Object.keys(rpcRequest.params.messages).map((key) => [key, authLabels[key] ?? key])
+      Object.keys(rpcRequest.params.messages).map((key) => [
+        key,
+        authLabels[key] ?? voteLabels[key] ?? key
+      ])
     )
   } else {
     return undefined
