@@ -53,6 +53,7 @@ test("Wikidot footnote references and returns scroll under strict CSP", async ({
   await expect(firstReference).toHaveAttribute("href", /^javascript:;$/u)
   await firstReference.click()
   await expectCentered(page, "#footnote-1")
+  expect(await firstNote.evaluate((target) => target.getAnimations().length)).toBe(0)
   expect(
     await page.evaluate(() => ({ length: history.length, url: location.href }))
   ).toEqual(historyBefore)
@@ -65,6 +66,13 @@ test("Wikidot footnote references and returns scroll under strict CSP", async ({
   await expectCentered(page, "#footnote-2")
   await secondNote.locator(":scope > a").click()
   await expectCentered(page, "#footnoteref-2")
+
+  await page.setViewportSize({ width: 320, height: 720 })
+  await firstReference.click()
+  await expectCentered(page, "#footnote-1")
+  await firstNote.locator(":scope > a").click()
+  await expectCentered(page, "#footnoteref-1")
+  await page.setViewportSize({ width: 1280, height: 720 })
 
   // The delegated action remains installed while PageView replaces its rendered body.
   await page.locator("#page-content").evaluate((content) => {
