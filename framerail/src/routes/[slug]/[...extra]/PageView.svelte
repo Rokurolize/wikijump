@@ -121,8 +121,13 @@
     }
   }
 
-  async function navigateEdit() {
-    // Check edit permission first
+  /**
+   * The single edit-permission boundary shared by the option-bar Edit
+   * click and the `#_editpage` / `#_edittags` Hash Magic dispatch. It
+   * calls the same server action and surfaces the same localized denial
+   * dialog; it never grants, denies, or authorizes from hash text.
+   */
+  async function checkEditPermission(): Promise<boolean> {
     const res = await fetch("?/editPermission", {
       method: "POST",
       body: ""
@@ -139,28 +144,43 @@
         message: result.data.message,
         data: result.data
       }
-    } else if (result.type === "success" && result.data?.res) {
-      if (!result.data.res.can_edit) {
-        errorPopupState.current = {
-          state: true,
-          message: editPermissionDeniedMessage(data.site.locale),
-          data: null
-        }
-      } else {
-        // Permission granted, navigate to edit page
-        const options: string[] = Object.entries({
-          norender: data.options.no_render,
-          noredirect: data.options.no_redirect,
-          debug: data.options.debug
-        })
-          .filter(([, enabled]) => enabled)
-          .map(([key]) => `/${key}`)
-
-        goto(resolve(`/${data.page!.slug}${options.join("")}/edit`, {}), {
-          noScroll: true
-        })
-      }
+      return false
     }
+    if (result.type === "success" && result.data?.res && !result.data.res.can_edit) {
+      errorPopupState.current = {
+        state: true,
+        message: editPermissionDeniedMessage(data.site.locale),
+        data: null
+      }
+      return false
+    }
+    return result.type === "success" && result.data?.res?.can_edit === true
+  }
+
+  async function navigateEdit() {
+    // Check edit permission first
+    if (!(await checkEditPermission())) return
+
+    // Permission granted, navigate to edit page
+    const options: string[] = Object.entries({
+      norender: data.options.no_render,
+      noredirect: data.options.no_redirect,
+      debug: data.options.debug
+    })
+      .filter(([, enabled]) => enabled)
+      .map(([key]) => `/${key}`)
+
+    goto(resolve(`/${data.page!.slug}${options.join("")}/edit`, {}), {
+      noScroll: true
+    })
+  }
+
+  async function openEditTagsPane() {
+    // The Hash Magic tag command reuses the edit-permission boundary before
+    // mounting the tag editor, so an unauthorized actor receives the same
+    // denial dialog instead of an editable form.
+    if (!(await checkEditPermission())) return
+    activatePagePane(PagePane.Tags)
   }
 
   function setShowRevision(state: boolean) {
@@ -387,6 +407,9 @@
   })
 
   onMount(() => {
+    // Hash Magic still applies under debug/norender documents (an edit hash on
+    // a debug page is still an edit request); only the non-Wikidot layout and
+    // the already-open /edit route skip the initial dispatch.
     if (pageLayoutContext.current !== Layout.WIKIDOT || data.options?.edit) return
 
     switch (resolveWikidotHashMagicPagePane(window.location.href)) {
@@ -395,6 +418,12 @@
         break
       case "files":
         activatePagePane(PagePane.File)
+        break
+      case "edit-page":
+        void navigateEdit()
+        break
+      case "edit-tags":
+        void openEditTagsPane()
         break
     }
   })
